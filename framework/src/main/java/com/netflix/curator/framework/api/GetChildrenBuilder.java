@@ -13,10 +13,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface BackgroundPathAndBytesable<T> extends
-    Backgroundable<PathAndBytesable<T>>,
-    PathAndBytesable<T>
+import java.util.List;
+
+public interface GetChildrenBuilder extends
+    Watchable<BackgroundPathable<List<String>>>,
+    BackgroundPathable<List<String>>,
+    Statable<WatchPathable<List<String>>>
 {
 }

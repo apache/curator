@@ -13,7 +13,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;

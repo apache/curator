@@ -13,17 +13,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-import org.apache.zookeeper.CreateMode;
-
-public interface CreateModable<T>
+public interface BackgroundPathable<T> extends
+    Backgroundable<Pathable<T>>,
+    Pathable<T>
 {
-    /**
-     * Set a create mode - the default is {@link CreateMode#PERSISTENT}
-     *
-     * @param mode new create mode
-     * @return this
-     */
-    public T withMode(CreateMode mode);
 }

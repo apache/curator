@@ -15,6 +15,10 @@
  */
 package com.netflix.curator.framework;
 
+import com.netflix.curator.framework.api.BackgroundCallback;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.retry.RetryOneTime;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;

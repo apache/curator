@@ -13,17 +13,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface PathAndBytesable<T>
+public interface ACLCreateModePathAndBytesable<T> extends
+    ACLPathAndBytesable<T>,
+    CreateModable<ACLPathAndBytesable<T>>
 {
-    /**
-     * Commit the currently building operation using the given path and data
-     *
-     * @param path the path
-     * @param data the data
-     * @return operation result if any
-     * @throws Exception errors
-     */
-    public T        forPath(String path, byte[] data) throws Exception;
 }

@@ -16,6 +16,9 @@
 package com.netflix.curator.framework;
 
 import com.netflix.curator.RetryPolicy;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
 import org.apache.zookeeper.KeeperException;

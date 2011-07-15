@@ -13,8 +13,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
+import com.netflix.curator.framework.CuratorFramework;
 import org.apache.zookeeper.Watcher;
 
 public enum CuratorEventType

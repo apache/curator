@@ -17,12 +17,12 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.framework.BackgroundCallback;
-import com.netflix.curator.framework.BackgroundPathAndBytesable;
-import com.netflix.curator.framework.CuratorEvent;
-import com.netflix.curator.framework.CuratorEventType;
-import com.netflix.curator.framework.PathAndBytesable;
-import com.netflix.curator.framework.SetDataBuilder;
+import com.netflix.curator.framework.api.BackgroundCallback;
+import com.netflix.curator.framework.api.BackgroundPathAndBytesable;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.PathAndBytesable;
+import com.netflix.curator.framework.api.SetDataBuilder;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Executor;

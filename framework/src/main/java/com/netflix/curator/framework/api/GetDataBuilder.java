@@ -13,12 +13,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-import org.apache.zookeeper.data.Stat;
-
-public interface SetDataBuilder extends
-    BackgroundPathAndBytesable<Stat>,
-    Versionable<BackgroundPathAndBytesable<Stat>>
+public interface GetDataBuilder extends
+    Watchable<BackgroundPathable<byte[]>>,
+    BackgroundPathable<byte[]>,
+    Statable<WatchPathable<byte[]>>
 {
 }

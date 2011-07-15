@@ -16,8 +16,8 @@
 package com.netflix.curator.framework.imps;
 
 import com.google.common.collect.ImmutableList;
-import com.netflix.curator.framework.CuratorEvent;
-import com.netflix.curator.framework.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;

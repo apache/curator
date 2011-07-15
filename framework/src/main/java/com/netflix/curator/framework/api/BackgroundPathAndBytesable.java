@@ -13,10 +13,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface ACLBackgroundPathable<T> extends
-    ACLable<BackgroundPathable<T>>,
-    BackgroundPathable<T>
+public interface BackgroundPathAndBytesable<T> extends
+    Backgroundable<PathAndBytesable<T>>,
+    PathAndBytesable<T>
 {
 }

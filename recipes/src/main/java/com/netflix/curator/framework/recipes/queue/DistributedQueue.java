@@ -17,10 +17,10 @@ package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.netflix.curator.framework.CuratorEvent;
-import com.netflix.curator.framework.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.CuratorListener;
+import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.recipes.leader.LeaderSelector;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;

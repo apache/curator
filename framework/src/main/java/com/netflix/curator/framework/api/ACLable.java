@@ -13,24 +13,19 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
+import java.util.List;
 
-public interface Watchable<T>
+public interface ACLable<T>
 {
     /**
-     * Have the operation set a watch
+     * Set an ACL list (default is {@link ZooDefs.Ids#OPEN_ACL_UNSAFE})
      *
+     * @param aclList the ACL list to use
      * @return this
      */
-    public T watched();
-
-    /**
-     * Set a watcher for the operation
-     *
-     * @param watcher the watcher
-     * @return this
-     */
-    public T usingWatcher(Watcher watcher);
+    public T withACL(List<ACL> aclList);
 }

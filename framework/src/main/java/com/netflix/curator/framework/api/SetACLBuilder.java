@@ -13,11 +13,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface ACLCreateModeBackgroundPathAndBytesable<T> extends
-    ACLBackgroundPathAndBytesable<T>,
-    BackgroundPathAndBytesable<T>,
-    CreateModable<ACLBackgroundPathAndBytesable<T>>
+import org.apache.zookeeper.data.Stat;
+
+public interface SetACLBuilder extends
+    ACLable<BackgroundPathable<Stat>>,
+    Versionable<ACLable<BackgroundPathable<Stat>>>
 {
 }

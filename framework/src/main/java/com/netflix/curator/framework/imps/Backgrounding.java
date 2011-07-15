@@ -15,8 +15,8 @@
  */
 package com.netflix.curator.framework.imps;
 
-import com.netflix.curator.framework.BackgroundCallback;
-import com.netflix.curator.framework.CuratorEvent;
+import com.netflix.curator.framework.api.BackgroundCallback;
+import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.CuratorFramework;
 import java.util.concurrent.Executor;
 

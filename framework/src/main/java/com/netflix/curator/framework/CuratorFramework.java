@@ -16,6 +16,15 @@
 package com.netflix.curator.framework;
 
 import com.netflix.curator.CuratorZookeeperClient;
+import com.netflix.curator.framework.api.CreateBuilder;
+import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.api.DeleteBuilder;
+import com.netflix.curator.framework.api.ExistsBuilder;
+import com.netflix.curator.framework.api.GetACLBuilder;
+import com.netflix.curator.framework.api.GetChildrenBuilder;
+import com.netflix.curator.framework.api.GetDataBuilder;
+import com.netflix.curator.framework.api.SetACLBuilder;
+import com.netflix.curator.framework.api.SetDataBuilder;
 import java.io.Closeable;
 import java.util.concurrent.Executor;
 
@@ -88,14 +97,14 @@ public interface CuratorFramework extends Closeable
      *
      * @return builder object
      */
-    public GetACLBuilder    getACL();
+    public GetACLBuilder getACL();
 
     /**
      * Start a set ACL builder
      *
      * @return builder object
      */
-    public SetACLBuilder    setACL();
+    public SetACLBuilder setACL();
 
         /**
      * Perform a sync on the given path - syncs are always in the background

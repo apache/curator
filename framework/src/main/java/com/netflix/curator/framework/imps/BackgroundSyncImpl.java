@@ -16,7 +16,7 @@
 package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.framework.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorEventType;
 import org.apache.zookeeper.AsyncCallback;
 
 class BackgroundSyncImpl implements BackgroundOperation<String>

@@ -13,10 +13,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface WatchPathable<T> extends
-    Watchable<Pathable<T>>,
-    Pathable<T>
+public interface CreateModalPathAndBytesable<T> extends
+    CreateModable<PathAndBytesable<T>>,
+    PathAndBytesable<T>
 {
 }
