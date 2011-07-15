@@ -97,7 +97,7 @@ public class DistributedPriorityQueue<T> implements Closeable
      * return quickly.
      *
      * @param items items to add
-     * @param priority item's priority - lower numbers come out of the queue first
+     * @param priority item priority - lower numbers come out of the queue first
      * @throws Exception connection issues
      */
     public void     putMulti(MultiItem<T> items, int priority) throws Exception
