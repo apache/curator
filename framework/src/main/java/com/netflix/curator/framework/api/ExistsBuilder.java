@@ -13,17 +13,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
 import org.apache.zookeeper.data.Stat;
 
-public interface Statable<T>
+public interface ExistsBuilder extends
+    Watchable<BackgroundPathable<Stat>>,
+    BackgroundPathable<Stat>
 {
-    /**
-     * Have the operation fill the provided stat object
-     *
-     * @param stat the stat to have filled in
-     * @return this
-     */
-    public T storingStatIn(Stat stat);
 }

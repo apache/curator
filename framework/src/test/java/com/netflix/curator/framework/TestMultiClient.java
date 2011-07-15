@@ -16,6 +16,9 @@
 package com.netflix.curator.framework;
 
 import com.google.common.io.Closeables;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.retry.RetryOneTime;
 import org.apache.zookeeper.Watcher;
 import org.testng.Assert;

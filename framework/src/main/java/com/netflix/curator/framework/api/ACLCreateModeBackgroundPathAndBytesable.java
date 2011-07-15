@@ -13,16 +13,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface Pathable<T>
+public interface ACLCreateModeBackgroundPathAndBytesable<T> extends
+    ACLBackgroundPathAndBytesable<T>,
+    BackgroundPathAndBytesable<T>,
+    CreateModable<ACLBackgroundPathAndBytesable<T>>
 {
-    /**
-     * Commit the currently building operation using the given path
-     *
-     * @param path the path
-     * @return operation result if any
-     * @throws Exception errors
-     */
-    public T       forPath(String path) throws Exception;
 }

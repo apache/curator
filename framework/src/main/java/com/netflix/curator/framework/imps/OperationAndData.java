@@ -15,8 +15,7 @@
  */
 package com.netflix.curator.framework.imps;
 
-import com.netflix.curator.framework.BackgroundCallback;
-import com.netflix.curator.framework.BackgroundCallback;
+import com.netflix.curator.framework.api.BackgroundCallback;
 
 class OperationAndData<T>
 {

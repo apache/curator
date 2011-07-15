@@ -16,7 +16,6 @@
 package com.netflix.curator;
 
 import com.netflix.curator.drivers.TracerDriver;
-import com.netflix.curator.drivers.TracerDriver;
 import java.util.concurrent.TimeUnit;
 
 /**

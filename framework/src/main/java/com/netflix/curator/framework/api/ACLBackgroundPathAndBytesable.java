@@ -13,13 +13,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-import org.apache.zookeeper.data.ACL;
-import java.util.List;
-
-public interface GetACLBuilder extends
-    BackgroundPathable<List<ACL>>,
-    Statable<Pathable<List<ACL>>>
+public interface ACLBackgroundPathAndBytesable<T> extends
+    ACLable<BackgroundPathAndBytesable<T>>,
+    BackgroundPathAndBytesable<T>
 {
 }

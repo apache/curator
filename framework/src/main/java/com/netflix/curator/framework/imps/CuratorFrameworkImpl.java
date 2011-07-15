@@ -22,6 +22,7 @@ import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
 import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.framework.*;
+import com.netflix.curator.framework.api.*;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;

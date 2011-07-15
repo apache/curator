@@ -17,15 +17,15 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.CuratorZookeeperClient;
-import com.netflix.curator.framework.CuratorEvent;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.CuratorListener;
-import com.netflix.curator.framework.CreateBuilder;
-import com.netflix.curator.framework.DeleteBuilder;
-import com.netflix.curator.framework.ExistsBuilder;
-import com.netflix.curator.framework.GetChildrenBuilder;
-import com.netflix.curator.framework.GetDataBuilder;
-import com.netflix.curator.framework.SetDataBuilder;
+import com.netflix.curator.framework.api.CreateBuilder;
+import com.netflix.curator.framework.api.ExistsBuilder;
+import com.netflix.curator.framework.api.GetChildrenBuilder;
+import com.netflix.curator.framework.api.GetDataBuilder;
+import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.api.DeleteBuilder;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.SetDataBuilder;
 import org.apache.zookeeper.ZooKeeper;
 import java.util.concurrent.Executor;
 

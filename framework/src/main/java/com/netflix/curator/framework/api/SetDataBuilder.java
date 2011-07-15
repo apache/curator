@@ -13,17 +13,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface CreateBuilder extends
-    BackgroundPathAndBytesable<String>,
-    CreateModable<ACLBackgroundPathAndBytesable<String>>,
-    ACLCreateModeBackgroundPathAndBytesable<String>
+import org.apache.zookeeper.data.Stat;
+
+public interface SetDataBuilder extends
+    BackgroundPathAndBytesable<Stat>,
+    Versionable<BackgroundPathAndBytesable<Stat>>
 {
-    /**
-     * Causes any parent nodes to get created if they haven't already been
-     *
-     * @return this
-     */
-    public ACLCreateModePathAndBytesable<String>    creatingParentsIfNeeded();
 }

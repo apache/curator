@@ -13,10 +13,24 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface ACLVersionBackgroundPathable<T> extends
-    ACLable<Versionable<BackgroundPathable<T>>>,
-    Versionable<BackgroundPathable<T>>
+import org.apache.zookeeper.Watcher;
+
+public interface Watchable<T>
 {
+    /**
+     * Have the operation set a watch
+     *
+     * @return this
+     */
+    public T watched();
+
+    /**
+     * Set a watcher for the operation
+     *
+     * @param watcher the watcher
+     * @return this
+     */
+    public T usingWatcher(Watcher watcher);
 }

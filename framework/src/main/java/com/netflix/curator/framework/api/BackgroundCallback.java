@@ -13,10 +13,21 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface DeleteBuilder extends
-    BackgroundPathable<Void>,
-    Versionable<BackgroundPathable<Void>>
+import com.netflix.curator.framework.CuratorFramework;
+
+/**
+ * Functor for an async background operation
+ */
+public interface BackgroundCallback
 {
+    /**
+     * Called when the async background operation completes
+     *
+     * @param client the client
+     * @param event operation result details
+     * @throws Exception errors
+     */
+    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception;
 }

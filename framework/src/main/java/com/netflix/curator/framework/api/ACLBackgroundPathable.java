@@ -13,15 +13,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-public interface Versionable<T>
+public interface ACLBackgroundPathable<T> extends
+    ACLable<BackgroundPathable<T>>,
+    BackgroundPathable<T>
 {
-    /**
-     * Use the given version (the default is -1)
-     *
-     * @param version version to use
-     * @return this
-     */
-    public T     withVersion(int version);
 }

@@ -17,13 +17,11 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.framework.ACLable;
-import com.netflix.curator.framework.BackgroundCallback;
-import com.netflix.curator.framework.BackgroundPathable;
-import com.netflix.curator.framework.CuratorEvent;
-import com.netflix.curator.framework.CuratorEventType;
-import com.netflix.curator.framework.Pathable;
-import com.netflix.curator.framework.SetACLBuilder;
+import com.netflix.curator.framework.api.*;
+import com.netflix.curator.framework.api.BackgroundCallback;
+import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.SetACLBuilder;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;

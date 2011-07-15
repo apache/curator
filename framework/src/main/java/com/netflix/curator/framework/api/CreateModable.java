@@ -13,19 +13,17 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.data.ACL;
-import java.util.List;
+import org.apache.zookeeper.CreateMode;
 
-public interface ACLable<T>
+public interface CreateModable<T>
 {
     /**
-     * Set an ACL list (default is {@link ZooDefs.Ids#OPEN_ACL_UNSAFE})
+     * Set a create mode - the default is {@link CreateMode#PERSISTENT}
      *
-     * @param aclList the ACL list to use
+     * @param mode new create mode
      * @return this
      */
-    public T withACL(List<ACL> aclList);
+    public T withMode(CreateMode mode);
 }

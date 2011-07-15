@@ -13,13 +13,17 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-import java.util.List;
-
-public interface GetChildrenBuilder extends
-    Watchable<BackgroundPathable<List<String>>>,
-    BackgroundPathable<List<String>>,
-    Statable<WatchPathable<List<String>>>
+public interface CreateBuilder extends
+    BackgroundPathAndBytesable<String>,
+    CreateModable<ACLBackgroundPathAndBytesable<String>>,
+    ACLCreateModeBackgroundPathAndBytesable<String>
 {
+    /**
+     * Causes any parent nodes to get created if they haven't already been
+     *
+     * @return this
+     */
+    public ACLCreateModePathAndBytesable<String>    creatingParentsIfNeeded();
 }

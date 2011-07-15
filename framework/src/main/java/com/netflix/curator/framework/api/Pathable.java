@@ -13,19 +13,16 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.api;
 
-/**
- * Functor for an async background operation
- */
-public interface BackgroundCallback
+public interface Pathable<T>
 {
     /**
-     * Called when the async background operation completes
+     * Commit the currently building operation using the given path
      *
-     * @param client the client
-     * @param event operation result details
+     * @param path the path
+     * @return operation result if any
      * @throws Exception errors
      */
-    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception;
+    public T       forPath(String path) throws Exception;
 }
