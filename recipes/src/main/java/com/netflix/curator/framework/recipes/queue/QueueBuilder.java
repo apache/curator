@@ -31,11 +31,12 @@ public class QueueBuilder<T>
             factory,
             executor,
             maxInternalQueue,
+            Integer.MAX_VALUE,
             false
         );
     }
 
-    public DistributedPriorityQueue<T>      buildPriorityQueue()
+    public DistributedPriorityQueue<T>      buildPriorityQueue(int minItemsBeforeRefresh)
     {
         return new DistributedPriorityQueue<T>
         (
@@ -44,7 +45,8 @@ public class QueueBuilder<T>
             queuePath,
             factory,
             executor,
-            maxInternalQueue
+            maxInternalQueue,
+            minItemsBeforeRefresh
         );
     }
 

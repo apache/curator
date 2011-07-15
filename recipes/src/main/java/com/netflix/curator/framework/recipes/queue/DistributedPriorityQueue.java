@@ -15,12 +15,11 @@
  */
 package com.netflix.curator.framework.recipes.queue;
 
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -35,9 +34,30 @@ public class DistributedPriorityQueue<T> implements Closeable
 {
     private final DistributedQueue<T>      queue;
 
-    DistributedPriorityQueue(CuratorFramework client, QueueSerializer<T> serializer, String queuePath, ThreadFactory threadFactory, Executor executor, int maxInternalQueue)
+    DistributedPriorityQueue
+        (
+            CuratorFramework    client,
+            QueueSerializer<T>  serializer,
+            String              queuePath,
+            ThreadFactory       threadFactory,
+            Executor            executor,
+            int                 maxInternalQueue,
+            int                 minItemsBeforeRefresh
+        )
     {
-        queue = new DistributedQueue<T>(client, serializer, queuePath, threadFactory, executor, maxInternalQueue, true);
+        Preconditions.checkArgument(minItemsBeforeRefresh >= 0);
+
+        queue = new DistributedQueue<T>
+        (
+            client,
+            serializer,
+            queuePath,
+            threadFactory,
+            executor,
+            maxInternalQueue,
+            minItemsBeforeRefresh,
+            true
+        );
     }
 
     /**

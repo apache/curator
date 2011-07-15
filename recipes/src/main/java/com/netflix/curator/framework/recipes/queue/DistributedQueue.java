@@ -68,6 +68,7 @@ public class DistributedQueue<T> implements Closeable
     private final ExecutorService service;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicReference<Exception> backgroundException = new AtomicReference<Exception>(null);
+    private final int minItemsBeforeRefresh;
     private final boolean refreshOnWatch;
     private final AtomicBoolean refreshOnWatchSignaled = new AtomicBoolean(false);
     private final CuratorListener listener = new CuratorListener()
@@ -100,8 +101,19 @@ public class DistributedQueue<T> implements Closeable
 
     private static final String     QUEUE_ITEM_NAME = "queue-";
 
-    DistributedQueue(CuratorFramework client, QueueSerializer<T> serializer, String queuePath, ThreadFactory threadFactory, Executor executor, int maxInternalQueue, boolean refreshOnWatch)
+    DistributedQueue
+       (
+           CuratorFramework     client,
+           QueueSerializer<T>   serializer,
+           String               queuePath,
+           ThreadFactory        threadFactory,
+           Executor             executor,
+           int                  maxInternalQueue,
+           int                  minItemsBeforeRefresh,
+           boolean              refreshOnWatch
+       )
     {
+        this.minItemsBeforeRefresh = minItemsBeforeRefresh;
         this.refreshOnWatch = refreshOnWatch;
         Preconditions.checkNotNull(client);
         Preconditions.checkNotNull(serializer);
@@ -322,11 +334,21 @@ public class DistributedQueue<T> implements Closeable
     private void processChildren(List<String> children) throws Exception
     {
         Collections.sort(children); // makes sure items are processed in the order they were added
+
+        int         min = minItemsBeforeRefresh;
         for ( String itemNode : children )
         {
-            if ( refreshOnWatchSignaled.compareAndSet(true, false) || Thread.currentThread().isInterrupted() )
+            if ( Thread.currentThread().isInterrupted() )
             {
                 break;
+            }
+
+            if ( min-- <= 0 )
+            {
+                if ( refreshOnWatchSignaled.compareAndSet(true, false) )
+                {
+                    break;
+                }
             }
 
             String  itemPath = ZKPaths.makePath(queuePath, itemNode);

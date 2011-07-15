@@ -16,7 +16,6 @@
 package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.io.Closeables;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
@@ -27,11 +26,67 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class TestDistributedPriorityQueue extends BaseClassForTests
 {
+    @Test
+    public void     testMinItemsBeforeRefresh() throws Exception
+    {
+        DistributedPriorityQueue<Integer>   queue = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            queue = QueueBuilder.builder(client, new IntSerializer(), "/test").maxInternalQueue(0).buildPriorityQueue(3);
+            queue.start();
+
+            for ( int i = 0; i < 10; ++i )
+            {
+                queue.put(i, 10);
+            }
+
+            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(0));
+            queue.put(1000, 1); // lower priority
+            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(1));      // was sitting in put()
+            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(2));      // because of minItemsBeforeRefresh
+            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(1000));   // minItemsBeforeRefresh has expired
+        }
+        finally
+        {
+            Closeables.closeQuietly(queue);
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void     testSortingWhileTaking() throws Exception
+    {
+        DistributedPriorityQueue<Integer>   queue = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            queue = QueueBuilder.builder(client, new IntSerializer(), "/test").maxInternalQueue(0).buildPriorityQueue(0);
+            queue.start();
+
+            for ( int i = 0; i < 10; ++i )
+            {
+                queue.put(i, 10);
+            }
+
+            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(0));
+            queue.put(1000, 1); // lower priority
+            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(1));   // was sitting in put()
+            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(1000));
+        }
+        finally
+        {
+            Closeables.closeQuietly(queue);
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void     testAdditions() throws Exception
     {
@@ -58,7 +113,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                     return super.deserialize(bytes);
                 }
             };
-            queue = QueueBuilder.builder(client, serializer, "/test").maxInternalQueue(1).buildPriorityQueue();
+            queue = QueueBuilder.builder(client, serializer, "/test").maxInternalQueue(1).buildPriorityQueue(1);
             queue.start();
 
             for ( int i = 0; i < 10; ++i )
@@ -90,7 +145,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = new DistributedPriorityQueue<Integer>(client, new IntSerializer(), "/test", Executors.defaultThreadFactory(), MoreExecutors.sameThreadExecutor(), 0);
+            queue = QueueBuilder.builder(client, new IntSerializer(), "/test").maxInternalQueue(0).buildPriorityQueue(0);
             queue.start();
 
             nums.add(Integer.MIN_VALUE);
