@@ -27,6 +27,7 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>
@@ -177,7 +178,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
         else
         {
-            returnPath = pathInForeground(path, data, returnPath);
+            returnPath = pathInForeground(path, data);
             returnPath = client.unfixForNamespace(returnPath);
         }
         return returnPath;
@@ -210,26 +211,25 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         );
     }
 
-    private String pathInForeground(String path, byte[] data, String returnPath) throws Exception
+    private String pathInForeground(final String path, final byte[] data) throws Exception
     {
         TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
+        String    returnPath = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<String>()
             {
-                if ( createParentsIfNeeded )
+                @Override
+                public String call() throws Exception
                 {
-                    ZKPaths.mkdirs(client.getZooKeeper(), path, false);
+                    if ( createParentsIfNeeded )
+                    {
+                        ZKPaths.mkdirs(client.getZooKeeper(), path, false);
+                    }
+                    return client.getZooKeeper().create(path, data, acling.getAclList(), createMode);
                 }
-                returnPath = client.getZooKeeper().create(path, data, acling.getAclList(), createMode);
-                retryLoop.markComplete();
             }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
+        );
         trace.commit();
         return returnPath;
     }

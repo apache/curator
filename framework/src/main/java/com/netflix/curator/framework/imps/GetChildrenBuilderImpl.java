@@ -28,6 +28,7 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<String>
@@ -160,31 +161,30 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
         return children;
     }
 
-    private List<String> pathInForeground(String path) throws Exception
+    private List<String> pathInForeground(final String path) throws Exception
     {
-        List<String>    children = null;
-
-        TimeTrace trace = client.getZookeeperClient().startTracer("GetChildrenBuilderImpl-Foreground");
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
+        TimeTrace       trace = client.getZookeeperClient().startTracer("GetChildrenBuilderImpl-Foreground");
+        List<String>    children = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<List<String>>()
             {
-                if ( watching.isWatched() )
+                @Override
+                public List<String> call() throws Exception
                 {
-                    children = client.getZooKeeper().getChildren(path, true, responseStat);
+                    List<String>    children;
+                    if ( watching.isWatched() )
+                    {
+                        children = client.getZooKeeper().getChildren(path, true, responseStat);
+                    }
+                    else
+                    {
+                        children = client.getZooKeeper().getChildren(path, watching.getWatcher(), responseStat);
+                    }
+                    return children;
                 }
-                else
-                {
-                    children = client.getZooKeeper().getChildren(path, watching.getWatcher(), responseStat);
-                }
-                retryLoop.markComplete();
             }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
+        );
         trace.commit();
         return children;
     }

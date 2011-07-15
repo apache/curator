@@ -24,6 +24,7 @@ import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.DeleteBuilder;
 import org.apache.zookeeper.AsyncCallback;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
@@ -112,22 +113,22 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         return null;
     }
 
-    private void pathInForeground(String path) throws Exception
+    private void pathInForeground(final String path) throws Exception
     {
-        TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
+        TimeTrace       trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
+        RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<Void>()
             {
-                client.getZooKeeper().delete(path, version);
-                retryLoop.markComplete();
+                @Override
+                public Void call() throws Exception
+                {
+                    client.getZooKeeper().delete(path, version);
+                    return null;
+                }
             }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
+        );
         trace.commit();
     }
 }

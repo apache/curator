@@ -25,6 +25,7 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>
@@ -110,24 +111,21 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>
         return result;
     }
 
-    private List<ACL> pathInForeground(String path) throws Exception
+    private List<ACL> pathInForeground(final String path) throws Exception
     {
-        List<ACL>    result = null;
-
-        TimeTrace trace = client.getZookeeperClient().startTracer("GetACLBuilderImpl-Foreground");
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
+        TimeTrace    trace = client.getZookeeperClient().startTracer("GetACLBuilderImpl-Foreground");
+        List<ACL>    result = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<List<ACL>>()
             {
-                result = client.getZooKeeper().getACL(path, responseStat);
-                retryLoop.markComplete();
+                @Override
+                public List<ACL> call() throws Exception
+                {
+                    return client.getZooKeeper().getACL(path, responseStat);
+                }
             }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
+        );
         trace.commit();
         return result;
     }

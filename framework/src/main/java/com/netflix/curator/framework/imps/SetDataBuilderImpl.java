@@ -25,6 +25,7 @@ import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.api.SetDataBuilder;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.data.Stat;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndBytes>
@@ -116,24 +117,21 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
         return resultStat;
     }
 
-    private Stat pathInForeground(String path, byte[] data) throws Exception
+    private Stat pathInForeground(final String path, final byte[] data) throws Exception
     {
-        Stat        resultStat = null;
-
-        TimeTrace trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Foreground");
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
+        TimeTrace   trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Foreground");
+        Stat        resultStat = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<Stat>()
             {
-                resultStat = client.getZooKeeper().setData(path, data, version);
-                retryLoop.markComplete();
+                @Override
+                public Stat call() throws Exception
+                {
+                    return client.getZooKeeper().setData(path, data, version);
+                }
             }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
+        );
         trace.commit();
         return resultStat;
     }

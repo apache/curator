@@ -26,6 +26,7 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, BackgroundOperation<String>
@@ -127,24 +128,21 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
         );
     }
 
-    private Stat pathInForeground(String path) throws Exception
+    private Stat pathInForeground(final String path) throws Exception
     {
-        Stat        resultStat = null;
-
-        TimeTrace trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Foreground");
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
+        TimeTrace   trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Foreground");
+        Stat        resultStat = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<Stat>()
             {
-                resultStat = client.getZooKeeper().setACL(path, acling.getAclList(), version);
-                retryLoop.markComplete();
+                @Override
+                public Stat call() throws Exception
+                {
+                    return client.getZooKeeper().setACL(path, acling.getAclList(), version);
+                }
             }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
+        );
         trace.commit();
         return resultStat;
     }

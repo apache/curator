@@ -17,14 +17,17 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.framework.api.*;
 import com.netflix.curator.framework.api.BackgroundCallback;
-import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.GetDataBuilder;
+import com.netflix.curator.framework.api.Pathable;
+import com.netflix.curator.framework.api.WatchPathable;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
@@ -148,34 +151,35 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
         }
         else
         {
-            responseData = pathInForeground(path, responseData);
+            responseData = pathInForeground(path);
         }
         return responseData;
     }
 
-    private byte[] pathInForeground(String path, byte[] responseData) throws Exception
+    private byte[] pathInForeground(final String path) throws Exception
     {
-        TimeTrace trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Foreground");
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
+        TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Foreground");
+        byte[]      responseData = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<byte[]>()
             {
-                if ( watching.isWatched() )
+                @Override
+                public byte[] call() throws Exception
                 {
-                    responseData = client.getZooKeeper().getData(path, true, responseStat);
+                    byte[]      responseData;
+                    if ( watching.isWatched() )
+                    {
+                        responseData = client.getZooKeeper().getData(path, true, responseStat);
+                    }
+                    else
+                    {
+                        responseData = client.getZooKeeper().getData(path, watching.getWatcher(), responseStat);
+                    }
+                    return responseData;
                 }
-                else
-                {
-                    responseData = client.getZooKeeper().getData(path, watching.getWatcher(), responseStat);
-                }
-                retryLoop.markComplete();
             }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
+        );
         trace.commit();
         return responseData;
     }

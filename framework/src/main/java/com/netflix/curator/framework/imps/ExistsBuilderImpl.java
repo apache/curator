@@ -26,6 +26,7 @@ import com.netflix.curator.framework.api.Pathable;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
@@ -119,35 +120,36 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
         }
         else
         {
-            returnStat = pathInForeground(path, returnStat);
+            returnStat = pathInForeground(path);
         }
 
         return returnStat;
     }
 
-    private Stat pathInForeground(String path, Stat returnStat) throws Exception
+    private Stat pathInForeground(final String path) throws Exception
     {
-        TimeTrace trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground");
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
+        TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground");
+        Stat        returnStat = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<Stat>()
             {
-                if ( watching.isWatched()  )
+                @Override
+                public Stat call() throws Exception
                 {
-                    returnStat = client.getZooKeeper().exists(path, true);
+                    Stat    returnStat;
+                    if ( watching.isWatched()  )
+                    {
+                        returnStat = client.getZooKeeper().exists(path, true);
+                    }
+                    else
+                    {
+                        returnStat = client.getZooKeeper().exists(path, watching.getWatcher());
+                    }
+                    return returnStat;
                 }
-                else
-                {
-                    returnStat = client.getZooKeeper().exists(path, watching.getWatcher());
-                }
-                retryLoop.markComplete();
             }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
+        );
         trace.commit();
         return returnStat;
     }
