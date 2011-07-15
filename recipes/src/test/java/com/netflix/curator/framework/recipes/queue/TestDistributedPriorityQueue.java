@@ -58,7 +58,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                     return super.deserialize(bytes);
                 }
             };
-            queue = new DistributedPriorityQueue<Integer>(client, serializer, "/test", Executors.defaultThreadFactory(), MoreExecutors.sameThreadExecutor(), 1);
+            queue = QueueBuilder.builder(client, serializer, "/test").maxInternalQueue(1).buildPriorityQueue();
             queue.start();
 
             for ( int i = 0; i < 10; ++i )

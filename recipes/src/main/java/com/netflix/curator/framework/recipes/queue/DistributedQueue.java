@@ -16,7 +16,6 @@
 package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
@@ -100,30 +99,6 @@ public class DistributedQueue<T> implements Closeable
     }
 
     private static final String     QUEUE_ITEM_NAME = "queue-";
-
-    /**
-     * @param client the client
-     * @param serializer serializer for in/out data
-     * @param queuePath the ZK path to use for the queue
-     */
-    public DistributedQueue(CuratorFramework client, QueueSerializer<T> serializer, String queuePath)
-    {
-        this(client, serializer, queuePath, Executors.defaultThreadFactory(), MoreExecutors.sameThreadExecutor(), Integer.MAX_VALUE, false);
-    }
-
-    /**
-     * @param client the client
-     * @param serializer serializer for in/out data
-     * @param queuePath the ZK path to use for the queue
-     * @param threadFactory factory to use for making internal threads
-     * @param executor the executor to run in
-     * @param maxInternalQueue queue items are taken from ZK and stored in an internal Java queue. maxInternalQueue specifies the
-     * max length for that queue. When full, new items will block until there's room in the queue
-     */
-    public DistributedQueue(CuratorFramework client, QueueSerializer<T> serializer, String queuePath, ThreadFactory threadFactory, Executor executor, int maxInternalQueue)
-    {
-        this(client, serializer, queuePath, threadFactory, executor, maxInternalQueue, false);
-    }
 
     DistributedQueue(CuratorFramework client, QueueSerializer<T> serializer, String queuePath, ThreadFactory threadFactory, Executor executor, int maxInternalQueue, boolean refreshOnWatch)
     {

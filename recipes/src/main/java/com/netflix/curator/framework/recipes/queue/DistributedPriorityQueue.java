@@ -35,26 +35,7 @@ public class DistributedPriorityQueue<T> implements Closeable
 {
     private final DistributedQueue<T>      queue;
 
-    /**
-     * @param client the client
-     * @param serializer serializer for in/out data
-     * @param queuePath the ZK path to use for the queue
-     */
-    public DistributedPriorityQueue(CuratorFramework client, QueueSerializer<T> serializer, String queuePath)
-    {
-        queue = new DistributedQueue<T>(client, serializer, queuePath, Executors.defaultThreadFactory(), MoreExecutors.sameThreadExecutor(), Integer.MAX_VALUE, true);
-    }
-
-    /**
-     * @param client the client
-     * @param serializer serializer for in/out data
-     * @param queuePath the ZK path to use for the queue
-     * @param threadFactory factory to use for making internal threads
-     * @param executor the executor to run in
-     * @param maxInternalQueue queue items are taken from ZK and stored in an internal Java queue. maxInternalQueue specifies the
-     * max length for that queue. When full, new items will block until there's room in the queue
-     */
-    public DistributedPriorityQueue(CuratorFramework client, QueueSerializer<T> serializer, String queuePath, ThreadFactory threadFactory, Executor executor, int maxInternalQueue)
+    DistributedPriorityQueue(CuratorFramework client, QueueSerializer<T> serializer, String queuePath, ThreadFactory threadFactory, Executor executor, int maxInternalQueue)
     {
         queue = new DistributedQueue<T>(client, serializer, queuePath, threadFactory, executor, maxInternalQueue, true);
     }

@@ -46,7 +46,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = new DistributedQueue<TestQueueItem>(client, serializer, QUEUE_PATH);
+            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).buildQueue();
             queue.start();
 
             MultiItem<TestQueueItem>    items = new MultiItem<TestQueueItem>()
@@ -89,7 +89,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = new DistributedQueue<TestQueueItem>(client, serializer, QUEUE_PATH);
+            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).buildQueue();
             queue.start();
 
             QueueProducer producer1 = new QueueProducer(queue, itemQty / 2, 0);
@@ -129,7 +129,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = new DistributedQueue<TestQueueItem>(client, serializer, QUEUE_PATH);
+            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).buildQueue();
             queue.start();
 
             QueueProducer       producer = new QueueProducer(queue, itemQty, 0);
@@ -181,7 +181,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = new DistributedQueue<TestQueueItem>(client, serializer, QUEUE_PATH);
+            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).buildQueue();
             queue.start();
 
             QueueProducer       producer = new QueueProducer(queue, itemQty, 0);
