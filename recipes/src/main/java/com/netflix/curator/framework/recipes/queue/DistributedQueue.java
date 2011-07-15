@@ -17,9 +17,9 @@ package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
-import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.recipes.leader.LeaderSelector;
 import com.netflix.curator.utils.ZKPaths;
@@ -203,7 +203,22 @@ public class DistributedQueue<T> implements Closeable
         checkState();
 
         String      path = makeItemPath();
-        internalPut(item, path);
+        internalPut(item, null, path);
+    }
+
+    /**
+     * Add a set of items into the queue. Adding is done in the background - thus, this method will
+     * return quickly.
+     *
+     * @param items items to add
+     * @throws Exception connection issues
+     */
+    public void     putMulti(MultiItem<T> items) throws Exception
+    {
+        checkState();
+
+        String      path = makeItemPath();
+        internalPut(null, items, path);
     }
 
     /**
@@ -250,9 +265,22 @@ public class DistributedQueue<T> implements Closeable
         return itemQueue.size();
     }
 
-    void internalPut(T item, String path) throws Exception
+    void internalPut(T item, MultiItem<T> multiItem, String path) throws Exception
     {
-        byte[]      bytes = serializer.serialize(item);
+        if ( item != null )
+        {
+            final AtomicReference<T>    ref = new AtomicReference<T>(item);
+            multiItem = new MultiItem<T>()
+            {
+                @Override
+                public T nextItem() throws Exception
+                {
+                    return ref.getAndSet(null);
+                }
+            };
+        }
+
+        byte[]      bytes = ItemSerializer.serialize(multiItem, serializer);
         client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).inBackground().forPath(path, bytes);
     }
 
@@ -333,8 +361,16 @@ public class DistributedQueue<T> implements Closeable
                 byte[]  bytes = client.getData().storingStatIn(stat).forPath(itemPath);
                 client.delete().withVersion(stat.getVersion()).forPath(itemPath);
 
-                T       item = serializer.deserialize(bytes);
-                itemQueue.put(item);
+                MultiItem<T>    items = ItemSerializer.deserialize(bytes, serializer);
+                for(;;)
+                {
+                    T       item = items.nextItem();
+                    if ( item == null )
+                    {
+                        break;
+                    }
+                    itemQueue.put(item);
+                }
             }
             catch ( KeeperException.NoNodeException ignore )
             {

@@ -28,12 +28,56 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class TestDistributedQueue extends BaseClassForTests
 {
     private static final String     QUEUE_PATH = "/a/queue";
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
+
+    @Test
+    public void     testPutMulti() throws Exception
+    {
+        final int                   itemQty = 100;
+
+        DistributedQueue<TestQueueItem>  queue = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            queue = new DistributedQueue<TestQueueItem>(client, serializer, QUEUE_PATH);
+            queue.start();
+
+            MultiItem<TestQueueItem>    items = new MultiItem<TestQueueItem>()
+            {
+                private int     index = 0;
+
+                @Override
+                public TestQueueItem nextItem() throws Exception
+                {
+                    if ( index >= itemQty )
+                    {
+                        return null;
+                    }
+                    return new TestQueueItem(Integer.toString(index++));
+                }
+            };
+            queue.putMulti(items);
+
+            for ( int i = 0; i < itemQty; ++i )
+            {
+                TestQueueItem queueItem = queue.take(1, TimeUnit.SECONDS);
+                Assert.assertNotNull(queueItem);
+                Assert.assertEquals(queueItem, new TestQueueItem(Integer.toString(i)));
+            }
+        }
+        finally
+        {
+            Closeables.closeQuietly(queue);
+            Closeables.closeQuietly(client);
+        }
+    }
 
     @Test
     public void     testMultiPutterSingleGetter() throws Exception

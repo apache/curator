@@ -88,7 +88,23 @@ public class DistributedPriorityQueue<T> implements Closeable
         queue.checkState();
 
         String      priorityHex = priorityToString(priority);
-        queue.internalPut(item, queue.makeItemPath() + priorityHex);
+        queue.internalPut(item, null, queue.makeItemPath() + priorityHex);
+    }
+
+    /**
+     * Add a set of items with the same priority into the queue. Adding is done in the background - thus, this method will
+     * return quickly.
+     *
+     * @param items items to add
+     * @param priority item's priority - lower numbers come out of the queue first
+     * @throws Exception connection issues
+     */
+    public void     putMulti(MultiItem<T> items, int priority) throws Exception
+    {
+        queue.checkState();
+
+        String      priorityHex = priorityToString(priority);
+        queue.internalPut(null, items, queue.makeItemPath() + priorityHex);
     }
 
     /**
