@@ -58,7 +58,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.2</version>
                 <configuration>
-                    <goals>assembly:assembly install</goals>
+                    <goals>install</goals>
                 </configuration>
             </plugin>
         </plugins>
