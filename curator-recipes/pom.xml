@@ -6,12 +6,12 @@
         <artifactId>curator</artifactId>
         <version>0.4-SNAPSHOT</version>
     </parent>
-    <artifactId>recipes</artifactId>
+    <artifactId>curator-recipes</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>com.netflix.curator</groupId>
-            <artifactId>framework</artifactId>
+            <artifactId>curator-framework</artifactId>
             <version>0.4-SNAPSHOT</version>
         </dependency>
     </dependencies>

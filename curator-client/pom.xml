@@ -6,13 +6,6 @@
         <artifactId>curator</artifactId>
         <version>0.4-SNAPSHOT</version>
     </parent>
-    <artifactId>framework</artifactId>
-
-    <dependencies>
-        <dependency>
-            <groupId>com.netflix.curator</groupId>
-            <artifactId>client</artifactId>
-            <version>0.4-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
+    <artifactId>curator-client</artifactId>
 </project>
+    

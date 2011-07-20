@@ -8,9 +8,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>client</module>
-        <module>framework</module>
-        <module>recipes</module>
+        <module>curator-client</module>
+        <module>curator-framework</module>
+        <module>curator-recipes</module>
     </modules>
 
     <scm>
