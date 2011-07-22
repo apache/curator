@@ -181,7 +181,7 @@ abstract class LockInternals<T>
                                 startMillis = System.currentTimeMillis();
                                 if ( millisToWait <= 0 )
                                 {
-                                    doDelete = true;
+                                    doDelete = true;    // timed out - delete our node
                                     break;
                                 }
 
@@ -202,10 +202,12 @@ abstract class LockInternals<T>
             doDelete = true;
             throw e;
         }
-
-        if ( doDelete )
+        finally
         {
-            client.delete().forPath(ourPath);
+            if ( doDelete )
+            {
+                client.delete().forPath(ourPath);
+            }
         }
 
         return haveTheLock ? ourPath : null;

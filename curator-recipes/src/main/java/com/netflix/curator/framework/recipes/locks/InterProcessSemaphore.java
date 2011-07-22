@@ -35,27 +35,58 @@ public class InterProcessSemaphore extends LockInternals<InterProcessSemaphore>
         volatile String     lockPath;
     }
 
+    /**
+     * @param client client
+     * @param path the path to lock
+     * @param numberOfLeases the number of leases allowed by this semaphore
+     */
     public InterProcessSemaphore(CuratorFramework client, String path, int numberOfLeases)
     {
         this(client, path, numberOfLeases, null);
     }
 
+    /**
+     * @param client client
+     * @param path the path to lock
+     * @param numberOfLeases the number of leases allowed by this semaphore
+     * @param clientClosingListener if not null, will get called if client connection unexpectedly closes
+     */
     public InterProcessSemaphore(CuratorFramework client, String path, int numberOfLeases, ClientClosingListener<InterProcessSemaphore> clientClosingListener)
     {
         super(client, path, LOCK_NAME, clientClosingListener, numberOfLeases);
     }
 
+    /**
+     * Acquire a lease if one is available. Otherwise block until one is.  Each call to acquire must be balanced by a call
+     * to {@link #release()}
+     *
+     * @throws Exception ZK errors, interruptions, another thread owns the lock
+     */
     public void acquire() throws Exception
     {
         internalAcquire();
     }
 
+    /**
+     * Acquire a lease if one is available - blocks until one is available or the given time expires.
+     * Each call to acquire that returns true must be balanced by a call to {@link #release()}
+     *
+     * @param time time to wait
+     * @param unit time unit
+     * @return true if a lease was acquired, false if not
+     * @throws Exception ZK errors, interruptions, another thread owns the lock
+     */
     public boolean acquire(long time, TimeUnit unit) throws Exception
     {
         String      lockPath = internalAcquire(time, unit);
         return (lockPath != null);
     }
 
+    /**
+     * Release the lease held by this instance
+     *
+     * @throws Exception ZK errors, interruptions, current thread does not own the lock
+     */
     public void  release() throws Exception
     {
         LockData        localData = lockData;
