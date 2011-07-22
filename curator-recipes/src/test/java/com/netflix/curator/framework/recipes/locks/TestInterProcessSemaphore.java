@@ -8,10 +8,93 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
 public class TestInterProcessSemaphore extends BaseClassForTests
 {
+    private static class Counter
+    {
+        int     currentCount = 0;
+        int     maxCount = 0;
+    }
+
+    @Test
+    public void     testRelease1AtATime() throws Exception
+    {
+        final int       MAX_LEASES = 10;
+        final int       THREADS = 100;
+
+        final CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final CountDownLatch  latch = new CountDownLatch(THREADS);
+            final Random          random = new Random();
+            final Counter         counter = new Counter();
+            ExecutorService       service = Executors.newCachedThreadPool();
+            for ( int i = 0; i < THREADS; ++i )
+            {
+                service.submit
+                (
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+                            semaphore.acquire();
+                            try
+                            {
+                                synchronized(counter)
+                                {
+                                    ++counter.currentCount;
+                                    if ( counter.currentCount > counter.maxCount )
+                                    {
+                                        counter.maxCount = counter.currentCount;
+                                    }
+                                }
+
+                                latch.await();
+                            }
+                            finally
+                            {
+                                synchronized(counter)
+                                {
+                                    --counter.currentCount;
+                                }
+                                semaphore.release();
+                                latch.countDown();
+                            }
+                            return null;
+                        }
+                    }
+                );
+            }
+
+            for ( int i = 0; i < THREADS; ++i )
+            {
+                Thread.sleep(random.nextInt(10) + 1);
+                latch.countDown();
+            }
+            Thread.sleep(1000);
+
+            synchronized(counter)
+            {
+                Assert.assertEquals(counter.maxCount, MAX_LEASES);
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void     testSimple() throws Exception
     {

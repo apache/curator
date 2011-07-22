@@ -19,9 +19,14 @@ import com.netflix.curator.framework.CuratorFramework;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
- * use the same lock path will achieve an inter-process critical section. Further, this mutex is
- * "fair" - each user will get the mutex in the order requested (from ZK's point of view)
+ * <p>A counting semaphore that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
+ * use the same lock path will achieve an inter-process limited set of leases. Further, this mutex is
+ * "fair" - each user will get a lease in the order requested (from ZK's point of view).</p>
+ *
+ * <p>IMPORTANT: The number of leases in the semaphore is merely a convention maintained by the users
+ * of a given path. i.e. no internal checks are done to prevent Process A acting as if there are 10 leases
+ * and Process B acting as if there are 20. Therefore, make sure that all instances in all processes
+ * use the same <code>numberOfLeases</code> value.</p>
  */
 public class InterProcessSemaphore extends LockInternals<InterProcessSemaphore>
 {
