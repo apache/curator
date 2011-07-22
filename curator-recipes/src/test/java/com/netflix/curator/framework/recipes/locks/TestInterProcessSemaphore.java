@@ -24,6 +24,102 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         int     maxCount = 0;
     }
 
+    private static class Stepper
+    {
+        private int     available = 0;
+
+        synchronized void        await() throws InterruptedException
+        {
+            while ( available == 0 )
+            {
+                wait();
+            }
+            --available;
+        }
+
+        synchronized void       countDown(int qty)
+        {
+            available += qty;
+            notifyAll();
+        }
+    }
+
+    @Test
+    public void     testReleaseInChunks() throws Exception
+    {
+        final int       MAX_LEASES = 11;
+        final int       THREADS = 100;
+
+        final CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final Stepper         latch = new Stepper();
+            final Random          random = new Random();
+            final Counter         counter = new Counter();
+            ExecutorService       service = Executors.newCachedThreadPool();
+            for ( int i = 0; i < THREADS; ++i )
+            {
+                service.submit
+                (
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+                            semaphore.acquire();
+                            try
+                            {
+                                synchronized(counter)
+                                {
+                                    ++counter.currentCount;
+                                    if ( counter.currentCount > counter.maxCount )
+                                    {
+                                        counter.maxCount = counter.currentCount;
+                                    }
+                                }
+
+                                latch.await();
+                            }
+                            finally
+                            {
+                                synchronized(counter)
+                                {
+                                    --counter.currentCount;
+                                }
+                                semaphore.release();
+                            }
+                            return null;
+                        }
+                    }
+                );
+            }
+
+            int     remaining = THREADS;
+            while ( remaining > 0 )
+            {
+                int times = Math.min(random.nextInt(5) + 1, remaining);
+                latch.countDown(times);
+                remaining -= times;
+                Thread.sleep(random.nextInt(100) + 1);
+            }
+            Thread.sleep(1000);
+
+            synchronized(counter)
+            {
+                Assert.assertTrue(counter.currentCount == 0);
+                Assert.assertTrue(counter.maxCount > 0);
+                Assert.assertTrue(counter.maxCount <= MAX_LEASES);
+                System.out.println(counter.maxCount);
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void     testRelease1AtATime() throws Exception
     {
@@ -69,7 +165,6 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                                     --counter.currentCount;
                                 }
                                 semaphore.release();
-                                latch.countDown();
                             }
                             return null;
                         }
@@ -86,6 +181,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
 
             synchronized(counter)
             {
+                Assert.assertTrue(counter.currentCount == 0);
                 Assert.assertEquals(counter.maxCount, MAX_LEASES);
             }
         }
