@@ -13,11 +13,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework.recipes.mutex;
+package com.netflix.curator.framework.recipes.locks;
 
 import com.netflix.curator.framework.CuratorFramework;
 
-public interface ClientClosingListener
+public interface ClientClosingListener<T>
 {
-    public void     notifyClientClosing(InterProcessMutex mutex, CuratorFramework client);
+    public void     notifyClientClosing(T lock, CuratorFramework client);
 }

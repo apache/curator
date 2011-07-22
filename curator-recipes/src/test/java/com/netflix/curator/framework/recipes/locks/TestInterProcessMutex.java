@@ -13,7 +13,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  */
-package com.netflix.curator.framework.recipes.mutex;
+package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;

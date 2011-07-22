@@ -18,8 +18,8 @@ package com.netflix.curator.framework.recipes.leader;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.recipes.mutex.ClientClosingListener;
-import com.netflix.curator.framework.recipes.mutex.InterProcessMutex;
+import com.netflix.curator.framework.recipes.locks.ClientClosingListener;
+import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
 import java.io.Closeable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -35,7 +35,7 @@ import java.util.concurrent.ThreadFactory;
  */
 public class LeaderSelector implements Closeable
 {
-    private final CuratorFramework client;
+    private final CuratorFramework          client;
     private final LeaderSelectorListener    listener;
     private final String                    mutexPath;
     private final ExecutorService           executorService;
@@ -121,10 +121,10 @@ public class LeaderSelector implements Closeable
 
     private void runLoop() throws Exception
     {
-        ClientClosingListener   clientClosingListener = new ClientClosingListener()
+        ClientClosingListener<InterProcessMutex>   clientClosingListener = new ClientClosingListener<InterProcessMutex>()
         {
             @Override
-            public void notifyClientClosing(InterProcessMutex mutex, final CuratorFramework client)
+            public void notifyClientClosing(InterProcessMutex lock, final CuratorFramework client)
             {
                 executor.execute
                 (
