@@ -17,6 +17,7 @@ package com.netflix.curator.framework.recipes.cache;
 
 import org.apache.zookeeper.data.Stat;
 
+@SuppressWarnings({"LoopStatementThatDoesntLoop"})
 public class ChildData implements Comparable<ChildData>
 {
     private final String    path;
@@ -31,9 +32,34 @@ public class ChildData implements Comparable<ChildData>
         this.data = data;
     }
 
-    boolean     isComplete()
+    boolean     isComplete(PathChildrenCacheMode mode)
     {
-        return (path != null) && (stat != null) && (data != null);
+        boolean     isComplete = false;
+        if ( path != null )
+        {
+            switch ( mode )
+            {
+                case CACHE_DATA_AND_STAT:
+                {
+                    isComplete = (stat != null) && (data != null);
+                    break;
+                }
+                
+                case CACHE_DATA:
+                {
+                    isComplete = (data != null);
+                    break;
+                }
+
+                case CACHE_PATHS_ONLY:
+                {
+                    isComplete = true;
+                    break;
+                }
+            }
+        }
+
+        return isComplete;
     }
 
     long        getThisObjectCreationTimeMs()
@@ -79,33 +105,47 @@ public class ChildData implements Comparable<ChildData>
         return path.hashCode();
     }
 
-    public ChildData setPath(String path)
-    {
-        return new ChildData(path, stat, data);
-    }
-
-    public ChildData setStat(Stat stat)
-    {
-        return new ChildData(path, stat, data);
-    }
-
-    public ChildData setData(byte[] data)
-    {
-        return new ChildData(path, stat, data);
-    }
-
+    /**
+     * Returns the full path of the this child
+     *
+     * @return full path
+     */
     public String getPath()
     {
         return path;
     }
 
+    /**
+     * Returns the stat data for this child when the cache mode is {@link PathChildrenCacheMode#CACHE_DATA_AND_STAT}
+     *
+     * @return stat or null
+     */
     public Stat getStat()
     {
         return stat;
     }
 
+    /**
+     * <p>Returns the node data for this child when the cache mode is {@link PathChildrenCacheMode#CACHE_DATA_AND_STAT}
+     * or {@link PathChildrenCacheMode#CACHE_DATA}.</p>
+     *
+     * <p><b>NOTE:</b> the byte array returned is the raw reference of this instance's field. If you change
+     * the values in the array any other callers to this method will see the change.</p>
+     *
+     * @return node data or null
+     */
     public byte[] getData()
     {
         return data;
+    }
+
+    ChildData setStat(Stat stat)
+    {
+        return new ChildData(path, stat, data);
+    }
+
+    ChildData setData(byte[] data)
+    {
+        return new ChildData(path, stat, data);
     }
 }

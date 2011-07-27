@@ -17,13 +17,12 @@ package com.netflix.curator.framework.recipes.cache;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
@@ -31,7 +30,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -53,9 +51,12 @@ import java.util.concurrent.ThreadFactory;
  */
 public class PathChildrenCache implements Closeable
 {
-    private final CuratorFramework client;
+    private final CuratorFramework          client;
     private final String                    path;
+    private final PathChildrenCacheMode     mode;
     private final ExecutorService           executorService;
+
+    private static final ChildData          existingDataMarker = new ChildData(null, null, null);
 
     private final BlockingQueue<EventEntry>                         listenerEvents = new LinkedBlockingQueue<EventEntry>();
     private final Map<PathChildrenCacheListener, ListenerEntry>     listeners = Maps.newConcurrentMap();
@@ -127,26 +128,27 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private static final int                EXPIRE_INCOMING_TIME_MS = 5 * 60 * 60 * 1000;   // 5 minutes
-
     /**
      * @param client the client
      * @param path path to watch
+     * @param mode caching mode
      */
-    public PathChildrenCache(CuratorFramework client, String path)
+    public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode)
     {
-        this(client, path, Executors.defaultThreadFactory());
+        this(client, path, mode, Executors.defaultThreadFactory());
     }
 
     /**
      * @param client the client
      * @param path path to watch
+     * @param mode caching mode
      * @param threadFactory factory to use when creating internal threads
      */
-    public PathChildrenCache(CuratorFramework client, String path, ThreadFactory threadFactory)
+    public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode, ThreadFactory threadFactory)
     {
         this.client = client;
         this.path = path;
+        this.mode = mode;
         executorService = Executors.newFixedThreadPool(1, threadFactory);
     }
 
@@ -222,7 +224,7 @@ public class PathChildrenCache implements Closeable
     }
 
     /**
-     * Return a copy of the current data. There are no guarantees of accuracy. This is
+     * Return the current data. There are no guarantees of accuracy. This is
      * merely the most recent view of the data. The data is returned in sorted order.
      *
      * @return list of children and data
@@ -233,6 +235,19 @@ public class PathChildrenCache implements Closeable
     }
 
     /**
+     * Return the current data for the given path. There are no guarantees of accuracy. This is
+     * merely the most recent view of the data. If there is no child with that path, <code>null</code>
+     * is returned.
+     *
+     * @param fullPath full path to the node to check
+     * @return data or null
+     */
+    public ChildData            getCurrentData(String fullPath)
+    {
+        return currentData.get(fullPath);
+    }
+
+    /**
      * Clear out current data and begin a new query on the path
      *
      * @throws Exception errors
@@ -240,12 +255,12 @@ public class PathChildrenCache implements Closeable
     public void clearAndRefresh() throws Exception
     {
         currentData.clear();
-        incomingData.clear();
         refresh();
     }
 
     private void refresh() throws Exception
     {
+        incomingData.clear();
         client.getChildren().usingWatcher(watcher).inBackground().forPath(path);
     }
 
@@ -331,7 +346,7 @@ public class PathChildrenCache implements Closeable
         {
             case CHILDREN:
             {
-                processChildren(event.getChildren(), true);
+                processChildren(event.getChildren());
                 break;
             }
 
@@ -371,20 +386,13 @@ public class PathChildrenCache implements Closeable
     {
         switch ( watchedEvent.getType() )
         {
-            case NodeCreated:
             case NodeDataChanged:
             {
-                processNodeCreated(ZKPaths.getNodeFromPath(watchedEvent.getPath()));
+                processDataChanged(watchedEvent.getPath());
                 break;
             }
 
-            case NodeDeleted:
-            {
-                processNodeDeleted(watchedEvent.getPath());
-                break;
-            }
-
-            case NodeChildrenChanged:
+            default:
             {
                 refresh();
                 break;
@@ -392,43 +400,31 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private void processNodeCreated(String path) throws Exception
+    private void processDataChanged(String path) throws Exception
     {
-        List<String>        l = Lists.newArrayList(path);
-        processChildren(l, false);
-    }
-
-    private void processNodeDeleted(String path)
-    {
-        ChildData       oldData = currentData.remove(path);
-        incomingData.remove(path);
-
-        if ( oldData != null )
-        {
-            listenerEvents.offer(new EventEntry(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, oldData)));
-        }
+        addIncomingPath(path);
     }
 
     private void        checkSetCurrent()
     {
-        Iterator<ChildData>     iterator = incomingData.values().iterator();
-        while ( iterator.hasNext() )
+        for ( Map.Entry<String, ChildData> entry : incomingData.entrySet() )
         {
-            ChildData       data = iterator.next();
-            if ( data.isComplete() )
+            String          path = entry.getKey();
+            ChildData       data = entry.getValue();
+
+            if ( data.isComplete(mode) )
             {
                 boolean     isNew = (currentData.put(data.getPath(), data) == null);
-                iterator.remove();
+                incomingData.remove(path);
 
                 listenerEvents.offer(new EventEntry(new PathChildrenCacheEvent(isNew ? PathChildrenCacheEvent.Type.CHILD_ADDED : PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
             }
-            else
+            else if ( isTheExistingDataMarker(data) )
             {
-                long        age = System.currentTimeMillis() - data.getThisObjectCreationTimeMs();
-                if ( age >= EXPIRE_INCOMING_TIME_MS )
-                {
-                    iterator.remove();
-                }
+                ChildData       removedData = currentData.remove(path);
+                incomingData.remove(path);
+
+                listenerEvents.offer(new EventEntry(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, removedData)));
             }
         }
     }
@@ -457,23 +453,51 @@ public class PathChildrenCache implements Closeable
         checkSetCurrent();
     }
 
-    private void processChildren(List<String> children, boolean doRetain) throws Exception
+    private void processChildren(List<String> children) throws Exception
     {
-        for ( String child : children )
+        for ( String path : currentData.keySet() )
         {
-            String actualPath = ZKPaths.makePath(path, child);
-            incomingData.put(actualPath, new ChildData(actualPath, null, null));
-        }
-        if ( doRetain )
-        {
-            currentData.keySet().retainAll(incomingData.keySet());
+            incomingData.put(path, existingDataMarker);
         }
 
         for ( String child : children )
         {
-            String actualPath = ZKPaths.makePath(path, child);
-            client.getData().usingWatcher(watcher).inBackground().forPath(actualPath);
-            client.checkExists().usingWatcher(watcher).inBackground().forPath(actualPath);
+            String      actualPath = ZKPaths.makePath(path, child);
+            addIncomingPath(actualPath);
         }
+
+        checkSetCurrent();
+    }
+
+    private void addIncomingPath(String actualPath) throws Exception
+    {
+        incomingData.put(actualPath, new ChildData(actualPath, null, null));
+
+        switch ( mode )
+        {
+            case CACHE_DATA_AND_STAT:
+            {
+                client.checkExists().inBackground().forPath(actualPath);    // to get the stat
+                client.getData().usingWatcher(watcher).inBackground().forPath(actualPath);  // watcher checks for data change
+                break;
+            }
+
+            case CACHE_DATA:
+            {
+                client.getData().usingWatcher(watcher).inBackground().forPath(actualPath);  // watcher checks for data change
+                break;
+            }
+
+            case CACHE_PATHS_ONLY:
+            {
+                // do nothing
+                break;
+            }
+        }
+    }
+
+    private static boolean isTheExistingDataMarker(ChildData data)
+    {
+        return data == existingDataMarker;
     }
 }
