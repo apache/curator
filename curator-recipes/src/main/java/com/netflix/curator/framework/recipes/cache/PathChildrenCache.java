@@ -169,6 +169,7 @@ public class PathChildrenCache implements Closeable
                 @Override
                 public Object call() throws Exception
                 {
+                    Thread.currentThread().setName("PathChildrenCache " + Thread.currentThread().getName());
                     listenerLoop();
                     return null;
                 }

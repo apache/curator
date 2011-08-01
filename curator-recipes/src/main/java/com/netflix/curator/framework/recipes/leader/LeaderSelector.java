@@ -92,6 +92,7 @@ public class LeaderSelector implements Closeable
                 @Override
                 public Object call() throws Exception
                 {
+                    Thread.currentThread().setName("LeaderSelector " + Thread.currentThread().getName());
                     runLoop();
                     return null;
                 }

@@ -154,6 +154,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     @Override
                     public Object call() throws Exception
                     {
+                        Thread.currentThread().setName("CuratorFrameworkImpl " + Thread.currentThread().getName());
                         backgroundOperationsLoop();
                         return null;
                     }

@@ -7,6 +7,14 @@
     <version>0.9-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <licenses>
+      <license>
+        <name>The Apache Software License, Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+
     <modules>
         <module>curator-client</module>
         <module>curator-framework</module>
