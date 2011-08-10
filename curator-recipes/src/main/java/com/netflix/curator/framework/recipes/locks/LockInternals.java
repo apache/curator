@@ -30,6 +30,27 @@ abstract class LockInternals<T>
     private final AtomicBoolean             basePathEnsured = new AtomicBoolean(false);
     private final Watcher                   watcher;
 
+    /**
+     * Attempt to delete the lock node so that sequence numbers get reset
+     *
+     * @throws Exception errors
+     */
+    public void clean() throws Exception
+    {
+        try
+        {
+            client.delete().forPath(basePath);
+        }
+        catch ( KeeperException.BadVersionException ignore )
+        {
+            // ignore - another thread/process got the lock
+        }
+        catch ( KeeperException.NotEmptyException ignore )
+        {
+            // ignore - other threads/processes are waiting
+        }
+    }
+
     LockInternals(CuratorFramework client, String path, String lockName, ClientClosingListener<T> clientClosingListener, int numberOfLeases)
     {
         Preconditions.checkArgument(numberOfLeases > 0);
@@ -96,24 +117,6 @@ abstract class LockInternals<T>
 
         client.delete().forPath(lockPath);
         clearLockData();
-
-        // attempt to delete the parent node so that sequence numbers get reset
-        try
-        {
-            Stat stat = client.checkExists().forPath(basePath);
-            if ( (stat != null) && (stat.getNumChildren() == 0) )
-            {
-                client.delete().withVersion(stat.getVersion()).forPath(basePath);
-            }
-        }
-        catch ( KeeperException.BadVersionException ignore )
-        {
-            // ignore - another thread/process got the lock
-        }
-        catch ( KeeperException.NotEmptyException ignore )
-        {
-            // ignore - other threads/processes are waiting
-        }
     }
 
     String getBasePath()
