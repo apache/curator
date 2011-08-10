@@ -15,8 +15,6 @@
  */
 package com.netflix.curator.retry;
 
-import com.google.common.base.Preconditions;
-
 /**
  * Retry policy that retries a max number of times
  */
@@ -28,7 +26,6 @@ public class RetryNTimes extends SleepingRetry
     {
         super(n);
         this.sleepMsBetweenRetries = sleepMsBetweenRetries;
-        Preconditions.checkArgument(n > 0);
     }
 
     @Override
