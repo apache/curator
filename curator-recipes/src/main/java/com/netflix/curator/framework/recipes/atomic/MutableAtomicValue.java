@@ -9,8 +9,14 @@ class MutableAtomicValue<T> implements AtomicValue<T>
 
     MutableAtomicValue(T preValue, T postValue)
     {
+        this(preValue, postValue, false);
+    }
+
+    MutableAtomicValue(T preValue, T postValue, boolean succeeded)
+    {
         this.preValue = preValue;
         this.postValue = postValue;
+        this.succeeded = succeeded;
     }
 
     @Override

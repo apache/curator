@@ -96,14 +96,14 @@ public class TestDistributedAtomicLong extends BaseClassForTests
             Assert.assertEquals(value.preValue().longValue(), 1L);
             Assert.assertEquals(value.postValue().longValue(), 0L);
 
-            value = dal.add(10);
+            value = dal.add(10L);
             Assert.assertTrue(value.succeeded());
             Assert.assertEquals(value.getStats().getOptimisticTries(), 1);
             Assert.assertEquals(value.getStats().getPromotedLockTries(), 0);
             Assert.assertEquals(value.preValue().longValue(), 0L);
             Assert.assertEquals(value.postValue().longValue(), 10L);
 
-            value = dal.add(-5);
+            value = dal.subtract(5L);
             Assert.assertTrue(value.succeeded());
             Assert.assertEquals(value.getStats().getOptimisticTries(), 1);
             Assert.assertEquals(value.getStats().getPromotedLockTries(), 0);

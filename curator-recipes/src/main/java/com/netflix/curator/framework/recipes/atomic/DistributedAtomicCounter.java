@@ -15,7 +15,7 @@ import java.nio.ByteBuffer;
  * <p>The various increment methods return an {@link AtomicValue} object. You must <b>always</b> check
  * {@link AtomicValue#succeeded()}. None of the increment methods are guaranteed to succeed.</p>
  */
-public class DistributedAtomicCounter
+public class DistributedAtomicCounter implements AtomicCounter<Long>
 {
     private final CuratorFramework  client;
     private final String            counterPath;
@@ -61,6 +61,7 @@ public class DistributedAtomicCounter
      * @return the current value
      * @throws Exception ZooKeeper errors
      */
+    @Override
     public AtomicValue<Long>     get() throws Exception
     {
         MutableAtomicValue<Long>    result = new MutableAtomicValue<Long>(0L, 0L);
@@ -81,6 +82,7 @@ public class DistributedAtomicCounter
      * @return the current value
      * @throws Exception ZooKeeper errors
      */
+    @Override
     public AtomicValue<Long>    increment() throws Exception
     {
         return worker(1);
@@ -93,6 +95,7 @@ public class DistributedAtomicCounter
      * @return the current value
      * @throws Exception ZooKeeper errors
      */
+    @Override
     public AtomicValue<Long>    decrement() throws Exception
     {
         return worker(-1);
@@ -106,7 +109,8 @@ public class DistributedAtomicCounter
      * @return the current value
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<Long>    add(long delta) throws Exception
+    @Override
+    public AtomicValue<Long>    add(Long delta) throws Exception
     {
         return worker(delta);
     }
@@ -119,9 +123,10 @@ public class DistributedAtomicCounter
      * @return the current value
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<Long>    subtract(long delta) throws Exception
+    @Override
+    public AtomicValue<Long> subtract(Long delta) throws Exception
     {
-        return worker(-delta);
+        return worker(-1 * delta);
     }
 
     private AtomicValue<Long>   worker(long addAmount) throws Exception
