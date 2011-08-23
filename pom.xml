@@ -29,6 +29,8 @@
 
     <scm>
         <connection>scm:git:git@github.com:Netflix/curator.git</connection>
+        <url>scm:git:git@github.com:Netflix/curator.git</url>
+        <developerConnection>scm:git:git@github.com:Netflix/curator.git</developerConnection>
     </scm>
 
     <dependencies>
