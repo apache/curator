@@ -81,7 +81,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.2</version>
                 <configuration>
-                    <goals>install</goals>
+                    <goals>deploy</goals>
                 </configuration>
             </plugin>
 
