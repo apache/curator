@@ -20,7 +20,7 @@ package com.netflix.curator.drivers;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Mechanism for timing methods
+ * Mechanism for timing methods and recording counters
  */
 public interface TracerDriver
 {
@@ -32,4 +32,12 @@ public interface TracerDriver
      * @param unit time unit
      */
     public void     addTrace(String name, long time, TimeUnit unit);
+
+    /**
+     * Add to a named counter
+     *
+     * @param name name of the counter
+     * @param increment amount to increment
+     */
+    public void     addCount(String name, int increment);
 }

@@ -18,6 +18,7 @@
 package com.netflix.curator;
 
 import com.netflix.curator.drivers.LoggingDriver;
+import com.netflix.curator.drivers.TracerDriver;
 import org.apache.zookeeper.KeeperException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,7 +59,8 @@ public class RetryLoop
 
     private final long              startTimeMs = System.currentTimeMillis();
     private final RetryPolicy       retryPolicy;
-    private final AtomicReference<LoggingDriver> log;
+    private final AtomicReference<LoggingDriver>    log;
+    private final AtomicReference<TracerDriver>     tracer;
 
     /**
      * Convenience utility: creates a retry loop calling the given proc and retrying if needed
@@ -88,10 +90,11 @@ public class RetryLoop
         return result;
     }
 
-    RetryLoop(RetryPolicy retryPolicy, AtomicReference<LoggingDriver> log)
+    RetryLoop(RetryPolicy retryPolicy, AtomicReference<LoggingDriver> log, AtomicReference<TracerDriver> tracer)
     {
         this.retryPolicy = retryPolicy;
         this.log = log;
+        this.tracer = tracer;
     }
 
     /**
@@ -156,11 +159,13 @@ public class RetryLoop
             log.get().debug("Retry-able exception received", exception);
             if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs) )
             {
+                tracer.get().addCount("retries-disallowed", 1);
                 log.get().debug("Retry policy not allowing retry");
                 rethrow = false;
             }
             else
             {
+                tracer.get().addCount("retries-allowed", 1);
                 log.get().debug("Retrying operation");
             }
         }

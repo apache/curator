@@ -64,6 +64,7 @@ class ConnectionState implements Watcher, Closeable
         if ( exception != null )
         {
             log.get().error("Background exception caught", exception);
+            tracer.get().addCount("background-exceptions", 1);
             throw exception;
         }
 
@@ -75,6 +76,7 @@ class ConnectionState implements Watcher, Closeable
             {
                 KeeperException.ConnectionLossException connectionLossException = new KeeperException.ConnectionLossException();
                 log.get().error("Connection timed out", connectionLossException);
+                tracer.get().addCount("connections-timed-out", 1);
                 throw connectionLossException;
             }
         }
@@ -134,6 +136,7 @@ class ConnectionState implements Watcher, Closeable
         }
         else
         {
+            tracer.get().addCount("re-connects", 1);
             localZooKeeper = new ZooKeeper(connectString, sessionTimeout, this, sessionId, sessionPassword);
         }
         ZooKeeper oldZooKeeper = zooKeeper.getAndSet(localZooKeeper);
@@ -153,6 +156,7 @@ class ConnectionState implements Watcher, Closeable
             if ( event.getState() == Event.KeeperState.Expired )
             {
                 log.get().warn("Session expired event received");
+                tracer.get().addCount("sessions-expired", 1);
                 try
                 {
                     reset();
