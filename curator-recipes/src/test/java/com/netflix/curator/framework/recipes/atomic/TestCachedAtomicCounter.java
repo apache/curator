@@ -39,7 +39,7 @@ public class TestCachedAtomicCounter extends BaseClassForTests
         {
             AtomicValue<Long>                           value = new MutableAtomicValue<Long>(0L, (long)FACTOR, true);
             final AtomicReference<AtomicValue<Long>>    fakeValueRef = new AtomicReference<AtomicValue<Long>>(value);
-            AtomicCounter<Long>                         dal = new AtomicCounter<Long>()
+            AtomicNumber<Long> dal = new AtomicNumber<Long>()
             {
                 @Override
                 public AtomicValue<Long> get() throws Exception
@@ -70,11 +70,22 @@ public class TestCachedAtomicCounter extends BaseClassForTests
                 {
                     return fakeValueRef.get();
                 }
+
+                @Override
+                public void forceSet(Long newValue) throws Exception
+                {
+                }
+
+                @Override
+                public AtomicValue<Long> compareAndSet(Long expectedValue, Long newValue) throws Exception
+                {
+                    return fakeValueRef.get();
+                }
             };
-            CachedAtomicCounter         cachedCounter = new CachedAtomicCounter(dal, FACTOR);
+            CachedAtomicLong cachedLong = new CachedAtomicLong(dal, FACTOR);
             for ( int i = 0; i < FACTOR; ++i )
             {
-                value = cachedCounter.next();
+                value = cachedLong.next();
                 Assert.assertTrue(value.succeeded());
                 Assert.assertEquals(value.preValue().longValue(), i);
                 Assert.assertEquals(value.postValue().longValue(), i + 1);
@@ -87,7 +98,7 @@ public class TestCachedAtomicCounter extends BaseClassForTests
                 }
             }
 
-            value = cachedCounter.next();
+            value = cachedLong.next();
             Assert.assertFalse(value.succeeded());
         }
         finally
@@ -103,11 +114,11 @@ public class TestCachedAtomicCounter extends BaseClassForTests
         client.start();
         try
         {
-            DistributedAtomicCounter    dal = new DistributedAtomicCounter(client, "/counter", new RetryOneTime(1));
-            CachedAtomicCounter         cachedCounter = new CachedAtomicCounter(dal, 100);
+            DistributedAtomicLong dal = new DistributedAtomicLong(client, "/counter", new RetryOneTime(1));
+            CachedAtomicLong cachedLong = new CachedAtomicLong(dal, 100);
             for ( long i = 0; i < 200; ++i )
             {
-                AtomicValue<Long>       value = cachedCounter.next();
+                AtomicValue<Long>       value = cachedLong.next();
                 Assert.assertTrue(value.succeeded());
                 Assert.assertEquals(value.preValue().longValue(), i);
                 Assert.assertEquals(value.postValue().longValue(), i + 1);

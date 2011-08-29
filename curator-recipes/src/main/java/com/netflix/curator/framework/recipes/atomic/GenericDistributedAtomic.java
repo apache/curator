@@ -23,7 +23,6 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import java.nio.ByteBuffer;
 
 /**
  * <p>A counter that attempts atomic increments. It first tries uses optimistic locking. If that fails,
@@ -33,7 +32,7 @@ import java.nio.ByteBuffer;
  * <p>The various increment methods return an {@link AtomicValue} object. You must <b>always</b> check
  * {@link AtomicValue#succeeded()}. None of the increment methods are guaranteed to succeed.</p>
  */
-public class DistributedAtomicCounter implements AtomicCounter<Long>
+public abstract class GenericDistributedAtomic<T extends Number & Comparable<T>> implements AtomicNumber<T>
 {
     private final CuratorFramework  client;
     private final String            counterPath;
@@ -48,7 +47,7 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
      * @param counterPath path to hold the counter value
      * @param retryPolicy the retry policy to use
      */
-    public DistributedAtomicCounter(CuratorFramework client, String counterPath, RetryPolicy retryPolicy)
+    protected GenericDistributedAtomic(CuratorFramework client, String counterPath, RetryPolicy retryPolicy)
     {
         this(client, counterPath, retryPolicy, null);
     }
@@ -63,7 +62,7 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
      * @param retryPolicy the retry policy to use
      * @param promotedToLock the arguments for the mutex promotion
      */
-    public DistributedAtomicCounter(CuratorFramework client, String counterPath, RetryPolicy retryPolicy, PromotedToLock promotedToLock)
+    protected GenericDistributedAtomic(CuratorFramework client, String counterPath, RetryPolicy retryPolicy, PromotedToLock promotedToLock)
     {
         this.client = client;
         this.counterPath = counterPath;
@@ -76,20 +75,68 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
      * Returns the current value of the counter. NOTE: if the value has never been set,
      * <code>0</code> is returned.
      *
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     @Override
-    public AtomicValue<Long>     get() throws Exception
+    public AtomicValue<T>     get() throws Exception
     {
-        MutableAtomicValue<Long>    result = new MutableAtomicValue<Long>(0L, 0L);
-        boolean                     createIt = getCurrentValue(result, new Stat());
-        if ( createIt )
-        {
-            result.preValue = 0L;
-        }
+        MutableAtomicValue<T>       result = numberHelper().newMutableAtomicValue();
+        getCurrentValue(result, new Stat());
         result.postValue = result.preValue;
         result.succeeded = true;
+        return result;
+    }
+
+    @Override
+    public void forceSet(T newValue) throws Exception
+    {
+        byte[] bytes = numberHelper().valueToBytes(newValue);
+        try
+        {
+            client.setData().forPath(counterPath, bytes);
+        }
+        catch ( KeeperException.NoNodeException dummy )
+        {
+            try
+            {
+                client.create().forPath(counterPath, bytes);
+            }
+            catch ( KeeperException.NodeExistsException dummy2 )
+            {
+                client.setData().forPath(counterPath, bytes);
+            }
+        }
+    }
+
+    @Override
+    public AtomicValue<T> compareAndSet(T expectedValue, T newValue) throws Exception
+    {
+        Stat                    stat = new Stat();
+        MutableAtomicValue<T>   result = numberHelper().newMutableAtomicValue();
+        boolean                 createIt = getCurrentValue(result, stat);
+        if ( !createIt && expectedValue.equals(result.preValue) )
+        {
+            byte[]      newData = numberHelper().valueToBytes(newValue);
+            try
+            {
+                client.setData().withVersion(stat.getVersion()).forPath(counterPath, newData);
+                result.succeeded = true;
+                result.postValue = newValue;
+            }
+            catch ( KeeperException.BadVersionException dummy )
+            {
+                result.succeeded = false;
+            }
+            catch ( KeeperException.NoNodeException dummy )
+            {
+                result.succeeded = false;
+            }
+        }
+        else
+        {
+            result.succeeded = false;
+        }
         return result;
     }
 
@@ -97,26 +144,26 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
      * Add 1 to the current value and return the new value information. Remember to always
      * check {@link AtomicValue#succeeded()}.
      *
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     @Override
-    public AtomicValue<Long>    increment() throws Exception
+    public AtomicValue<T>    increment() throws Exception
     {
-        return worker(1);
+        return worker(numberHelper().one());
     }
 
     /**
      * Subtract 1 from the current value and return the new value information. Remember to always
      * check {@link AtomicValue#succeeded()}.
      *
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     @Override
-    public AtomicValue<Long>    decrement() throws Exception
+    public AtomicValue<T>    decrement() throws Exception
     {
-        return worker(-1);
+        return worker(numberHelper().negativeOne());
     }
 
     /**
@@ -124,11 +171,11 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
      * check {@link AtomicValue#succeeded()}.
      *
      * @param delta amount to add
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     @Override
-    public AtomicValue<Long>    add(Long delta) throws Exception
+    public AtomicValue<T>    add(T delta) throws Exception
     {
         return worker(delta);
     }
@@ -138,18 +185,18 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
      * check {@link AtomicValue#succeeded()}.
      *
      * @param delta amount to subtract
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     @Override
-    public AtomicValue<Long> subtract(Long delta) throws Exception
+    public AtomicValue<T> subtract(T delta) throws Exception
     {
-        return worker(-1 * delta);
+        return worker(numberHelper().negate(delta));
     }
 
-    private AtomicValue<Long>   worker(long addAmount) throws Exception
+    private AtomicValue<T>   worker(T addAmount) throws Exception
     {
-        MutableAtomicValue<Long> result = new MutableAtomicValue<Long>(0L, 0L);
+        MutableAtomicValue<T> result = numberHelper().newMutableAtomicValue();
 
         tryOptimistic(result, addAmount);
         if ( !result.succeeded() && (mutex != null) )
@@ -160,7 +207,7 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
         return result;
     }
 
-    private void tryWithMutex(MutableAtomicValue<Long> result, long addAmount) throws Exception
+    private void tryWithMutex(MutableAtomicValue<T> result, T addAmount) throws Exception
     {
         long            startMs = System.currentTimeMillis();
         int             retryCount = 0;
@@ -196,7 +243,7 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
         result.stats.setPromotedTimeMs(System.currentTimeMillis() - startMs);
     }
 
-    private void tryOptimistic(MutableAtomicValue<Long> result, long addAmount) throws Exception
+    private void tryOptimistic(MutableAtomicValue<T> result, T addAmount) throws Exception
     {
         long            startMs = System.currentTimeMillis();
         int             retryCount = 0;
@@ -222,18 +269,17 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
         result.stats.setOptimisticTimeMs(System.currentTimeMillis() - startMs);
     }
 
-    private boolean tryOnce(MutableAtomicValue<Long> result, long addAmount) throws Exception
+    private boolean tryOnce(MutableAtomicValue<T> result, T addAmount) throws Exception
     {
         Stat        stat = new Stat();
         boolean     createIt = getCurrentValue(result, stat);
 
-        result.postValue = result.preValue + addAmount;
+        result.postValue = numberHelper().add(result.preValue, addAmount);
+        T           newValue = result.postValue();
 
-        byte[]                      newData = new byte[8];
-        ByteBuffer                  wrapper = ByteBuffer.wrap(newData);
-        wrapper.putLong(result.postValue());
 
-        boolean                     success = false;
+        byte[]      newData = numberHelper().valueToBytes(newValue);
+        boolean     success = false;
         try
         {
             if ( createIt )
@@ -262,21 +308,21 @@ public class DistributedAtomicCounter implements AtomicCounter<Long>
         return success;
     }
 
-    private boolean getCurrentValue(MutableAtomicValue<Long> result, Stat stat) throws Exception
+    protected abstract NumberHelper<T>  numberHelper();
+
+    private boolean getCurrentValue(MutableAtomicValue<T> result, Stat stat) throws Exception
     {
         boolean             createIt = false;
         try
         {
             byte[]                      data = client.getData().storingStatIn(stat).forPath(counterPath);
-            ByteBuffer wrapper = ByteBuffer.wrap(data);
-            result.preValue = wrapper.getLong();
+            result.preValue = numberHelper().bytesToValue(data);
         }
         catch ( KeeperException.NoNodeException e )
         {
-            result.preValue = 0L;
+            result.preValue = numberHelper().newMutableAtomicValue().preValue;
             createIt = true;
         }
         return createIt;
     }
-
 }

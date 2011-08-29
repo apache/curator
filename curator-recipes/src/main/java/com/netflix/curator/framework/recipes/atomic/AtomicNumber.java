@@ -18,22 +18,43 @@
 
 package com.netflix.curator.framework.recipes.atomic;
 
-public interface AtomicCounter<T>
+public interface AtomicNumber<T>
 {
     /**
      * Returns the current value of the counter. NOTE: if the value has never been set,
      * <code>0</code> is returned.
      *
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     public AtomicValue<T>     get() throws Exception;
 
     /**
+     * Atomically sets the value to the given updated value
+     * if the current value {@code ==} the expected value.
+     * Remember to always check {@link AtomicValue#succeeded()}.
+     *
+     *
+     * @param expectedValue the expected value
+     * @param newValue the new value for the counter
+     * @return value info
+     * @throws Exception ZooKeeper errors
+     */
+    public AtomicValue<T>    compareAndSet(T expectedValue, T newValue) throws Exception;
+
+    /**
+     * Forcibly sets the value of the counter without any guarantees of atomicity.
+     *
+     * @param newValue the new value
+     * @throws Exception ZooKeeper errors
+     */
+    public void              forceSet(T newValue) throws Exception;
+
+    /**
      * Add 1 to the current value and return the new value information. Remember to always
      * check {@link AtomicValue#succeeded()}.
      *
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     public AtomicValue<T>    increment() throws Exception;
@@ -42,7 +63,7 @@ public interface AtomicCounter<T>
      * Subtract 1 from the current value and return the new value information. Remember to always
      * check {@link AtomicValue#succeeded()}.
      *
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     public AtomicValue<T>    decrement() throws Exception;
@@ -52,7 +73,7 @@ public interface AtomicCounter<T>
      * check {@link AtomicValue#succeeded()}.
      *
      * @param delta amount to add
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     public AtomicValue<T>    add(T delta) throws Exception;
@@ -62,7 +83,7 @@ public interface AtomicCounter<T>
      * check {@link AtomicValue#succeeded()}.
      *
      * @param delta amount to subtract
-     * @return the current value
+     * @return value info
      * @throws Exception ZooKeeper errors
      */
     public AtomicValue<T>    subtract(T delta) throws Exception;

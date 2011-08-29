@@ -19,29 +19,29 @@
 package com.netflix.curator.framework.recipes.atomic;
 
 /**
- * Uses an {@link AtomicCounter} and allocates values in chunks for better performance
+ * Uses an {@link AtomicNumber} and allocates values in chunks for better performance
  */
-public class CachedAtomicCounter
+public class CachedAtomicLong
 {
-    private final AtomicCounter<Long>  counter;
+    private final AtomicNumber<Long>   number;
     private final long                 cacheFactor;
 
     private AtomicValue<Long>          currentValue = null;
     private int                        currentIndex = 0;
 
     /**
-     * @param counter the counter to use
+     * @param number the number to use
      * @param cacheFactor the number of values to allocate at a time
      */
-    public CachedAtomicCounter(AtomicCounter<Long> counter, int cacheFactor)
+    public CachedAtomicLong(AtomicNumber<Long> number, int cacheFactor)
     {
-        this.counter = counter;
+        this.number = number;
         this.cacheFactor = cacheFactor;
     }
 
     /**
      * Returns the next value (incrementing by 1). If a new chunk of numbers is needed, it is
-     * requested from the counter
+     * requested from the number
      *
      * @return next increment
      * @throws Exception errors
@@ -52,7 +52,7 @@ public class CachedAtomicCounter
 
         if ( currentValue == null )
         {
-            currentValue = counter.add(cacheFactor);
+            currentValue = number.add(cacheFactor);
             if ( !currentValue.succeeded() )
             {
                 currentValue = null;

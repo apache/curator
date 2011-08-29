@@ -35,10 +35,106 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TestDistributedAtomicLong extends BaseClassForTests
+public class TestDistributedAtomicCounter extends BaseClassForTests
 {
+    @Test
+    public void     testCompareAndSet() throws Exception
+    {
+        final CuratorFramework      client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final AtomicBoolean         doIncrement = new AtomicBoolean(false);
+            DistributedAtomicLong dal = new DistributedAtomicLong(client, "/counter", new RetryOneTime(1))
+            {
+                @Override
+                public byte[] valueToBytes(Long newValue)
+                {
+                    if ( doIncrement.get() )
+                    {
+                        DistributedAtomicLong inc = new DistributedAtomicLong(client, "/counter", new RetryOneTime(1));
+                        try
+                        {
+                            // this will force a bad version exception
+                            inc.increment();
+                        }
+                        catch ( Exception e )
+                        {
+                            throw new Error(e);
+                        }
+                    }
+
+                    return super.valueToBytes(newValue);
+                }
+            };
+            dal.forceSet(1L);
+
+            Assert.assertTrue(dal.compareAndSet(1L, 5L).succeeded());
+            Assert.assertFalse(dal.compareAndSet(1L, 5L).succeeded());
+
+            doIncrement.set(true);
+            Assert.assertFalse(dal.compareAndSet(5L, 10L).succeeded());
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void     testForceSet() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final DistributedAtomicLong dal = new DistributedAtomicLong(client, "/counter", new RetryOneTime(1));
+
+            ExecutorService                 executorService = Executors.newFixedThreadPool(2);
+            executorService.submit
+            (
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        for ( int i = 0; i < 1000; ++i )
+                        {
+                            dal.increment();
+                            Thread.sleep(10);
+                        }
+                        return null;
+                    }
+                }
+            );
+            executorService.submit
+            (
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        for ( int i = 0; i < 1000; ++i )
+                        {
+                            dal.forceSet(0L);
+                            Thread.sleep(10);
+                        }
+                        return null;
+                    }
+                }
+            );
+
+            Assert.assertTrue(dal.get().preValue() < 10);
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void     testSimulation() throws Exception
     {
@@ -98,7 +194,7 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         client.start();
         try
         {
-            DistributedAtomicCounter dal = new DistributedAtomicCounter(client, "/counter", new RetryOneTime(1));
+            DistributedAtomicLong dal = new DistributedAtomicLong(client, "/counter", new RetryOneTime(1));
 
             AtomicValue<Long>           value = dal.increment();
             Assert.assertTrue(value.succeeded());
@@ -145,7 +241,7 @@ public class TestDistributedAtomicLong extends BaseClassForTests
             RetryPolicy             retryPolicy = new ExponentialBackoffRetry(3, 3);
             PromotedToLock.Builder  builder = PromotedToLock.builder().lockPath("/lock").retryPolicy(retryPolicy);
 
-            DistributedAtomicCounter dal = new DistributedAtomicCounter(client, "/counter", retryPolicy, builder.build());
+            DistributedAtomicLong dal = new DistributedAtomicLong(client, "/counter", retryPolicy, builder.build());
             for ( int i = 0; i < executionQty; ++i )
             {
                 Thread.sleep(random.nextInt(100));
