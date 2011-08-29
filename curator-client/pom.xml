@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.netflix.curator</groupId>
         <artifactId>curator</artifactId>
-        <version>0.14</version>
+        <version>0.15-SNAPSHOT</version>
     </parent>
     <artifactId>curator-client</artifactId>
 </project>
