@@ -18,6 +18,7 @@
 
 package com.netflix.curator.utils;
 
+import com.netflix.curator.CuratorZookeeperClient;
 import org.apache.zookeeper.ZooKeeper;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -54,7 +55,7 @@ public class EnsurePath
     private static final Helper             doNothingHelper = new Helper()
     {
         @Override
-        public void ensure(ZooKeeper client, String path) throws Exception
+        public void ensure(CuratorZookeeperClient client, String path) throws Exception
         {
             // NOP
         }
@@ -62,7 +63,7 @@ public class EnsurePath
 
     private interface Helper
     {
-        public void     ensure(ZooKeeper client, String path) throws Exception;
+        public void     ensure(CuratorZookeeperClient client, String path) throws Exception;
     }
 
     /**
@@ -81,7 +82,7 @@ public class EnsurePath
      * @param client ZK client
      * @throws Exception ZK errors
      */
-    public void     ensure(ZooKeeper client) throws Exception
+    public void     ensure(CuratorZookeeperClient client) throws Exception
     {
         Helper  localHelper = helper.get();
         localHelper.ensure(client, path);
@@ -90,9 +91,10 @@ public class EnsurePath
     private class InitialHelper implements Helper
     {
         @Override
-        public synchronized void ensure(ZooKeeper client, String path) throws Exception
+        public synchronized void ensure(CuratorZookeeperClient client, String path) throws Exception
         {
-            ZKPaths.mkdirs(client, path, true);
+            client.blockUntilConnectedOrTimedOut();
+            ZKPaths.mkdirs(client.getZooKeeper(), path, true);
             helper.set(doNothingHelper);
         }
     }

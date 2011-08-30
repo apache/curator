@@ -20,13 +20,14 @@ package com.netflix.curator.framework.imps;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.CuratorZookeeperClient;
-import com.netflix.curator.framework.*;
+import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.*;
+import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -38,17 +39,16 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorFrameworkImpl implements CuratorFramework
 {
-    private final CuratorZookeeperClient client;
-    private final Map<CuratorListener, ListenerEntry<CuratorListener>>    listeners;
+    private final CuratorZookeeperClient                                client;
+    private final Map<CuratorListener, ListenerEntry<CuratorListener>>  listeners;
     private final ExecutorService                                       executorService;
     private final BlockingQueue<OperationAndData<?>>                    backgroundOperations;
     private final String                                                namespace;
-    private final AtomicBoolean                                         namespaceCreated = new AtomicBoolean(false);
+    private final EnsurePath                                            ensurePath;
     private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
 
     private enum State
@@ -106,6 +106,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         listeners = Maps.newConcurrentMap();
         backgroundOperations = new LinkedBlockingQueue<OperationAndData<?>>();
         namespace = builder.getNamespace();
+        ensurePath = (namespace != null) ? new EnsurePath(ZKPaths.makePath("/", namespace)) : null;
         executorService = Executors.newFixedThreadPool(2, builder.getThreadFactory());  // 1 for listeners, 1 for background ops
 
         if ( builder.getAuthScheme() != null )
@@ -126,6 +127,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         executorService = parent.executorService;
         backgroundOperations = parent.backgroundOperations;
         namespace = null;
+        ensurePath = null;
     }
 
     @Override
@@ -412,8 +414,28 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     String    fixForNamespace(String path)
     {
-        ensureNamespace();  // will end up recursing one time but is safe due to namespaceCreated.compareAndSet(false, true)
+        if ( !ensurePath() )
+        {
+            return "";
+        }
         return ZKPaths.fixForNamespace(namespace, path);
+    }
+
+    private boolean ensurePath()
+    {
+        if ( ensurePath != null )
+        {
+            try
+            {
+                ensurePath.ensure(client);
+            }
+            catch ( Exception e )
+            {
+                notifyErrorClosing(0, e);
+                return false;
+            }
+        }
+        return true;
     }
 
     private <DATA_TYPE> void sendToBackgroundCallback(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
@@ -515,29 +537,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     }
                 }
             );
-        }
-    }
-
-    private void ensureNamespace()
-    {
-        if ( namespaceCreated.compareAndSet(false, true) && (namespace != null) )
-        {
-            try
-            {
-                getZookeeperClient().blockUntilConnectedOrTimedOut();
-                if ( checkExists().forPath(null) == null )
-                {
-                    create().forPath(null, new byte[0]);
-                }
-            }
-            catch ( KeeperException.NodeExistsException ignore )
-            {
-                // safe to ignore
-            }
-            catch ( Exception e )
-            {
-                notifyErrorClosing(0, e);
-            }
         }
     }
 }

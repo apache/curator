@@ -35,31 +35,37 @@ import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class TestEnsurePath
 {
     @Test
     public void    testBasic() throws Exception
     {
-        ZooKeeper       client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
-        Stat            fakeStat = mock(Stat.class);
+        ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
+        CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
+        when(curator.getZooKeeper()).thenReturn(client);
+        Stat                    fakeStat = mock(Stat.class);
         when(client.exists(Mockito.<String>any(), anyBoolean())).thenReturn(fakeStat);
         
         EnsurePath      ensurePath = new EnsurePath("/one/two/three");
-        ensurePath.ensure(client);
+        ensurePath.ensure(curator);
 
         verify(client, times(3)).exists(Mockito.<String>any(), anyBoolean());
 
-        ensurePath.ensure(client);
+        ensurePath.ensure(curator);
         verifyNoMoreInteractions(client);
-        ensurePath.ensure(client);
+        ensurePath.ensure(curator);
         verifyNoMoreInteractions(client);
     }
 
     @Test
     public void    testSimultaneous() throws Exception
     {
-        final ZooKeeper         client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
+        ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
+        final CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
+        when(curator.getZooKeeper()).thenReturn(client);
+
         final Stat              fakeStat = mock(Stat.class);
         final CountDownLatch    startedLatch = new CountDownLatch(2);
         final CountDownLatch    finishedLatch = new CountDownLatch(2);
@@ -89,7 +95,7 @@ public class TestEnsurePath
                     public Void call() throws Exception
                     {
                         startedLatch.countDown();
-                        ensurePath.ensure(client);
+                        ensurePath.ensure(curator);
                         finishedLatch.countDown();
                         return null;
                     }
@@ -102,9 +108,9 @@ public class TestEnsurePath
         Assert.assertTrue(finishedLatch.await(10, TimeUnit.SECONDS));
         verify(client, times(6)).exists(Mockito.<String>any(), anyBoolean());
 
-        ensurePath.ensure(client);
+        ensurePath.ensure(curator);
         verifyNoMoreInteractions(client);
-        ensurePath.ensure(client);
+        ensurePath.ensure(curator);
         verifyNoMoreInteractions(client);
     }
 }
