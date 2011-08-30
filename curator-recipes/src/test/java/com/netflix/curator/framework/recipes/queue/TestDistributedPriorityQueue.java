@@ -45,7 +45,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
 
             for ( int i = 0; i < 10; ++i )
             {
-                queue.put(i, 10);
+                queue.put(i, 10 + i);
             }
 
             Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(0));
