@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.framework;
 
+import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
