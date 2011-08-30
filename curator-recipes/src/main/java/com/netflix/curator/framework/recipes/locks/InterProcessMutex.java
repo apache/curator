@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * use the same lock path will achieve an inter-process critical section. Further, this mutex is
  * "fair" - each user will get the mutex in the order requested (from ZK's point of view)
  */
-public class InterProcessMutex extends LockInternals<InterProcessMutex>
+public class InterProcessMutex extends LockInternals<InterProcessMutex> implements InterProcessLock
 {
     private volatile LockData           lockData;
 
@@ -61,9 +61,10 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex>
      * Acquire the mutex - blocking until it's available. Note: the same thread
      * can call acquire re-entrantly. Each call to acquire must be balanced by a call
      * to {@link #release()}
-     * 
+     *
      * @throws Exception ZK errors, interruptions, another thread owns the lock
      */
+    @Override
     public void acquire() throws Exception
     {
         internalAcquire();
@@ -79,6 +80,7 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex>
      * @return true if the mutex was acquired, false if not
      * @throws Exception ZK errors, interruptions, another thread owns the lock
      */
+    @Override
     public boolean acquire(long time, TimeUnit unit) throws Exception
     {
         return (internalAcquire(time, unit) != null);
@@ -89,6 +91,7 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex>
      *
      * @return true/false
      */
+    @Override
     public boolean isAcquiredInThisProcess()
     {
         return lockData != null;
@@ -100,6 +103,7 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex>
      *
      * @throws Exception ZK errors, interruptions, current thread does not own the lock
      */
+    @Override
     public void release() throws Exception
     {
         LockData    localData = lockData;
