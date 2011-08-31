@@ -104,9 +104,9 @@ public class TestEnsurePath
         }
 
         Assert.assertTrue(startedLatch.await(10, TimeUnit.SECONDS));
-        semaphore.release(6);
+        semaphore.release(3);
         Assert.assertTrue(finishedLatch.await(10, TimeUnit.SECONDS));
-        verify(client, times(6)).exists(Mockito.<String>any(), anyBoolean());
+        verify(client, times(3)).exists(Mockito.<String>any(), anyBoolean());
 
         ensurePath.ensure(curator);
         verifyNoMoreInteractions(client);
