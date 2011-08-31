@@ -28,6 +28,7 @@ import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.api.DeleteBuilder;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.SetDataBuilder;
+import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
 import java.util.concurrent.Executor;
 
@@ -159,5 +160,11 @@ public class NonNamespaceFacade extends CuratorFrameworkImpl
     String fixForNamespace(String path)
     {
         return path;
+    }
+
+    @Override
+    public EnsurePath newNamespaceAwareEnsurePath(String path)
+    {
+        return new EnsurePath(path);    // no namespace
     }
 }

@@ -322,6 +322,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return client;
     }
 
+    @Override
+    public EnsurePath newNamespaceAwareEnsurePath(String path)
+    {
+        return new EnsurePath(fixForNamespace(path));
+    }
+
     RetryLoop newRetryLoop()
     {
         return client.newRetryLoop();

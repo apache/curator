@@ -17,12 +17,12 @@
  */
 package com.netflix.curator.framework;
 
-import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -86,6 +86,30 @@ public class TestFramework extends BaseClassForTests
             client.create().creatingParentsIfNeeded().forPath("/one/two/another", "bar".getBytes());
             data = client.getData().forPath("/one/two/another");
             Assert.assertEquals(data, "bar".getBytes());
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void     testEnsurePathWithNamespace() throws Exception
+    {
+        final String namespace = "jz";
+
+        CuratorFrameworkFactory.Builder      builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).namespace(namespace).build();
+        client.start();
+        try
+        {
+            EnsurePath ensurePath = new EnsurePath("/pity/the/fool");
+            ensurePath.ensure(client.getZookeeperClient());
+            Assert.assertNull(client.getZookeeperClient().getZooKeeper().exists("/jz/pity/the/fool", false));
+
+            ensurePath = client.newNamespaceAwareEnsurePath("/pity/the/fool");
+            ensurePath.ensure(client.getZookeeperClient());
+            Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/jz/pity/the/fool", false));
         }
         finally
         {

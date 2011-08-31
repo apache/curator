@@ -27,6 +27,7 @@ import com.netflix.curator.framework.api.GetChildrenBuilder;
 import com.netflix.curator.framework.api.GetDataBuilder;
 import com.netflix.curator.framework.api.SetACLBuilder;
 import com.netflix.curator.framework.api.SetDataBuilder;
+import com.netflix.curator.utils.EnsurePath;
 import java.io.Closeable;
 import java.util.concurrent.Executor;
 
@@ -152,4 +153,12 @@ public interface CuratorFramework extends Closeable
      * @return client
      */
     public CuratorZookeeperClient getZookeeperClient();
+
+    /**
+     * Allocates an ensure path instance that is namespace aware
+     *
+     * @param path path to ensure
+     * @return new EnsurePath instance
+     */
+    public EnsurePath    newNamespaceAwareEnsurePath(String path);
 }

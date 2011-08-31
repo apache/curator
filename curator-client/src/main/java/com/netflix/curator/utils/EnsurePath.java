@@ -90,12 +90,19 @@ public class EnsurePath
 
     private class InitialHelper implements Helper
     {
+        private boolean         isSet = false;  // guarded by synchronization
+
         @Override
         public synchronized void ensure(CuratorZookeeperClient client, String path) throws Exception
         {
-            client.blockUntilConnectedOrTimedOut();
-            ZKPaths.mkdirs(client.getZooKeeper(), path, true);
-            helper.set(doNothingHelper);
+            if ( !isSet )
+            {
+                client.blockUntilConnectedOrTimedOut();
+                ZKPaths.mkdirs(client.getZooKeeper(), path, true);
+                helper.set(doNothingHelper);
+
+                isSet = true;
+            }
         }
     }
 }
