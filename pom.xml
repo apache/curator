@@ -13,6 +13,24 @@
       <version>7</version>
     </parent>
 
+    <profiles>
+        <profile>
+            <id>artifactory</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>netflix-artifactory-snapshots</id>
+                    <name>Netflix Artifactory Snapshots</name>
+                    <url>http://artifacts/libs-snapshots-local</url>
+                </snapshotRepository>
+                <repository>
+                    <id>netflix-artifactory-releases</id>
+                    <name>Netflix Artifactory Releases</name>
+                    <url>http://artifacts/libs-releases-local</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+    </profiles>
+
     <licenses>
       <license>
         <name>The Apache Software License, Version 2.0</name>
