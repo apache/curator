@@ -25,7 +25,7 @@
                 <repository>
                     <id>netflix-artifactory-releases</id>
                     <name>Netflix Artifactory Releases</name>
-                    <url>http://artifacts/libs-releases-local</url>
+                    <url>http://artifacts/ext-releases-local</url>
                 </repository>
             </distributionManagement>
         </profile>

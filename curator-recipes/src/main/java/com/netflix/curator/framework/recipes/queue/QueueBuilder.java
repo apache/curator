@@ -39,6 +39,7 @@ public class QueueBuilder<T>
     private ThreadFactory factory;
     private Executor executor;
     private int maxInternalQueue;
+    private QueueSafety<T> queueSafety;
 
     /**
      * Allocate a new builder
@@ -70,7 +71,8 @@ public class QueueBuilder<T>
             executor,
             maxInternalQueue,
             Integer.MAX_VALUE,
-            false
+            false,
+            queueSafety
         );
     }
 
@@ -103,7 +105,8 @@ public class QueueBuilder<T>
             factory,
             executor,
             maxInternalQueue,
-            minItemsBeforeRefresh
+            minItemsBeforeRefresh,
+            queueSafety
         );
     }
 
@@ -148,7 +151,43 @@ public class QueueBuilder<T>
      */
     public QueueBuilder<T>  maxInternalQueue(int maxInternalQueue)
     {
+        Preconditions.checkArgument(queueSafety == null, "Queue Safety is incompatible with maxInternalQueue");
+        Preconditions.checkArgument(maxInternalQueue >= 0);
+
         this.maxInternalQueue = maxInternalQueue;
+        return this;
+    }
+
+    /**
+     * <p>Without a queue safety, messages are removed and put into an internal queue that is consumed by the client
+     * application. If the application does not process the message for some reason (crash, etc.) the message is lost.</p>
+     *
+     * <p>Use a queue safety to make the message recoverable. The safety specifies a lock path used to hold a lock while
+     * the message is being processed - this prevents other processes from taking the message. The safety also specifies
+     * a consumer that the client app uses to process messages. IMPORTANT - do NOT use the {@link DistributedPriorityQueue#take()} or
+     * {@link DistributedQueue#take()} methods. When using a safety, you MUST consume the message when {@link QueueSafetyConsumer#consumeMessage(Object)} is
+     * called internally by the DistributedQueue.</p>
+     *
+     * @param queueSafety safety instances
+     * @return this
+     */
+    public QueueBuilder<T>  queueSafety(QueueSafety<T> queueSafety)
+    {
+        Preconditions.checkNotNull(queueSafety);
+
+        maxInternalQueue = 0;
+        this.queueSafety = queueSafety;
+        return this;
+    }
+
+    /**
+     * Set the queue as being able to produce only. It will not check for messages to be consumed.
+     *
+     * @return this
+     */
+    public QueueBuilder<T>  makeProducerOnly()
+    {
+        maxInternalQueue = -1;
         return this;
     }
 

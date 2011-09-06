@@ -38,13 +38,14 @@ public class DistributedPriorityQueue<T> implements Closeable
 
     DistributedPriorityQueue
         (
-            CuratorFramework    client,
-            QueueSerializer<T>  serializer,
-            String              queuePath,
-            ThreadFactory       threadFactory,
-            Executor            executor,
-            int                 maxInternalQueue,
-            int                 minItemsBeforeRefresh
+            CuratorFramework client,
+            QueueSerializer<T> serializer,
+            String queuePath,
+            ThreadFactory threadFactory,
+            Executor executor,
+            int maxInternalQueue,
+            int minItemsBeforeRefresh,
+            QueueSafety<T> queueSafety
         )
     {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0);
@@ -58,7 +59,8 @@ public class DistributedPriorityQueue<T> implements Closeable
             executor,
             maxInternalQueue,
             minItemsBeforeRefresh,
-            true
+            true,
+            queueSafety
         );
     }
 

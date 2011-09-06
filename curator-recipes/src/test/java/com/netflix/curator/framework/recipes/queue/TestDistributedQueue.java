@@ -28,15 +28,197 @@ import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
 public class TestDistributedQueue extends BaseClassForTests
 {
     private static final String     QUEUE_PATH = "/a/queue";
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
+
+    @Test
+    public void     testSafetyWithCrash() throws Exception
+    {
+        final int                   itemQty = 100;
+
+        DistributedQueue<TestQueueItem>  producerQueue = null;
+        DistributedQueue<TestQueueItem>  consumerQueue1 = null;
+        DistributedQueue<TestQueueItem>  consumerQueue2 = null;
+
+        CuratorFramework                 producerClient = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework                 consumerClient1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework                 consumerClient2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            producerClient.start();
+            consumerClient1.start();
+            consumerClient2.start();
+
+            ExecutorService     service = Executors.newCachedThreadPool();
+
+            // make the producer queue
+            {
+                producerQueue = QueueBuilder.builder(producerClient, serializer, QUEUE_PATH).makeProducerOnly().buildQueue();
+                producerQueue.start();
+                QueueProducer       producer = new QueueProducer(producerQueue, itemQty, 0);
+                service.submit(producer);
+            }
+
+            final Set<TestQueueItem>                takenItems = Sets.newTreeSet();
+            final Set<TestQueueItem>                takenItemsForConsumer1 = Sets.newTreeSet();
+            final Set<TestQueueItem>                takenItemsForConsumer2 = Sets.newTreeSet();
+            final AtomicReference<TestQueueItem>    thrownItemFromConsumer1 = new AtomicReference<TestQueueItem>(null);
+
+            // make the first consumer queue
+            {
+                final QueueSafetyConsumer<TestQueueItem>        ourQueue = new QueueSafetyConsumer<TestQueueItem>()
+                {
+                    @Override
+                    public void consumeMessage(TestQueueItem message) throws Exception
+                    {
+                        synchronized(takenItems)
+                        {
+                            if ( takenItems.size() > 10 )
+                            {
+                                thrownItemFromConsumer1.set(message);
+                                throw new Exception("dummy");   // simulate a crash
+                            }
+                        }
+                        
+                        addToTakenItems(message, takenItems, itemQty);
+                        synchronized(takenItemsForConsumer1)
+                        {
+                            takenItemsForConsumer1.add(message);
+                        }
+
+                        Thread.sleep((long)(Math.random() * 5));
+                    }
+                };
+                consumerQueue1 = QueueBuilder.builder(consumerClient1, serializer, QUEUE_PATH).
+                    queueSafety(new QueueSafety<TestQueueItem>("/a/locks", ourQueue)).
+                    buildQueue();
+                consumerQueue1.start();
+            }
+
+            // make the second consumer queue
+            {
+                final QueueSafetyConsumer<TestQueueItem>        ourQueue = new QueueSafetyConsumer<TestQueueItem>()
+                {
+                    @Override
+                    public void consumeMessage(TestQueueItem message) throws Exception
+                    {
+                        addToTakenItems(message, takenItems, itemQty);
+                        synchronized(takenItemsForConsumer2)
+                        {
+                            takenItemsForConsumer2.add(message);
+                        }
+                        Thread.sleep((long)(Math.random() * 5));
+                    }
+                };
+                consumerQueue2 = QueueBuilder.builder(consumerClient2, serializer, QUEUE_PATH).
+                    queueSafety(new QueueSafety<TestQueueItem>("/a/locks", ourQueue)).
+                    buildQueue();
+                consumerQueue2.start();
+            }
+
+            synchronized(takenItems)
+            {
+                while ( takenItems.size() < itemQty )
+                {
+                    takenItems.wait(1000);
+                }
+            }
+
+            int                 i = 0;
+            for ( TestQueueItem item : takenItems )
+            {
+                Assert.assertEquals(item.str, Integer.toString(i++));
+            }
+
+            Assert.assertNotNull(thrownItemFromConsumer1.get());
+            Assert.assertTrue((takenItemsForConsumer2.contains(thrownItemFromConsumer1.get())));
+            Assert.assertTrue(Sets.intersection(takenItemsForConsumer1, takenItemsForConsumer2).size() == 0);
+        }
+        finally
+        {
+            Closeables.closeQuietly(producerQueue);
+            Closeables.closeQuietly(consumerQueue1);
+            Closeables.closeQuietly(consumerQueue2);
+
+            Closeables.closeQuietly(producerClient);
+            Closeables.closeQuietly(consumerClient1);
+            Closeables.closeQuietly(consumerClient2);
+        }
+    }
+
+    private void addToTakenItems(TestQueueItem message, Set<TestQueueItem> takenItems, int itemQty)
+    {
+        synchronized(takenItems)
+        {
+            takenItems.add(message);
+            if ( takenItems.size() > itemQty )
+            {
+                takenItems.notifyAll();
+            }
+        }
+    }
+
+    @Test
+    public void     testSafetyBasic() throws Exception
+    {
+        final int                   itemQty = 10;
+
+        DistributedQueue<TestQueueItem>  queue = null;
+        CuratorFramework                 client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final BlockingQueue<TestQueueItem>        ourQueue = new ArrayBlockingQueue<TestQueueItem>(1);
+            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).
+                queueSafety(new QueueSafety<TestQueueItem>("/a/locks", ourQueue)).
+                buildQueue();
+            queue.start();
+
+            QueueProducer       producer = new QueueProducer(queue, itemQty, 0);
+
+            ExecutorService     service = Executors.newCachedThreadPool();
+            service.submit(producer);
+
+            final CountDownLatch        latch = new CountDownLatch(1);
+            service.submit
+            (
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        for ( int i = 0; i < itemQty; ++i )
+                        {
+                            TestQueueItem item = ourQueue.take();
+                            Assert.assertEquals(item.str, Integer.toString(i));
+                        }
+                        latch.countDown();
+                        return null;
+                    }
+                }
+            );
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            Closeables.closeQuietly(queue);
+            Closeables.closeQuietly(client);
+        }
+    }
 
     @Test
     public void     testPutMulti() throws Exception
