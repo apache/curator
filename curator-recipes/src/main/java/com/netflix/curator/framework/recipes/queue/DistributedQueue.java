@@ -48,12 +48,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * Guarantees:<br/>
  * <li>If a single consumer takes items out of the queue, they will be ordered FIFO. i.e. if ordering is important,
  * use a {@link LeaderSelector} to nominate a single consumer.</li>
- * <li>There is guaranteed processing of each message to the point of receipt by a given instance.
- * If an instance receives an item from the queue but dies while processing it, the item will be lost</li>
- * <li><b>IMPORTANT: </b>If you use a number greater than 1 for <code>maxInternalQueue</code> when
- * constructing a <code>DistributedQueue</code>, you risk that many items getting lost if your process
- * dies without processing them. i.e. <code>maxInternalQueue</code> items get taken out of the distributed
- * queue and placed in your local instance's in-memory queue.</li>
+ * <li>Unless a {@link QueueBuilder#lockPath(String)} is used, there is only guaranteed processing of each message to the point of receipt by a given instance.
+ * If an instance receives an item from the queue but dies while processing it, the item will be lost. If you need message recoverability, use
+ * a {@link QueueBuilder#lockPath(String)}</li>
  * </p>
  */
 public class DistributedQueue<T> implements Closeable
