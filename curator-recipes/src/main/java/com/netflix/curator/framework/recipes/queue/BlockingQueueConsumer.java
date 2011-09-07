@@ -37,7 +37,7 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      */
     public BlockingQueueConsumer()
     {
-        items = new LinkedBlockingQueue<T>();
+        this(new LinkedBlockingQueue<T>());
     }
 
     /**
@@ -45,7 +45,17 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      */
     public BlockingQueueConsumer(int capacity)
     {
-        items = new ArrayBlockingQueue<T>(capacity);
+        this(new ArrayBlockingQueue<T>(capacity));
+    }
+
+    /**
+     * Wrap the given blocking queue
+     *
+     * @param queue queue to use
+     */
+    public BlockingQueueConsumer(BlockingQueue<T> queue)
+    {
+        this.items = queue;
     }
 
     @Override
