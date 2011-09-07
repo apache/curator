@@ -25,12 +25,8 @@ import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
-import org.testng.collections.Lists;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -67,9 +63,9 @@ public class TestDistributedQueue extends BaseClassForTests
 
             // make the producer queue
             {
-                producerQueue = QueueBuilder.builder(producerClient, serializer, QUEUE_PATH).makeProducerOnly().buildQueue();
+                producerQueue = QueueBuilder.builder(producerClient, null, serializer, QUEUE_PATH).buildQueue();
                 producerQueue.start();
-                QueueProducer       producer = new QueueProducer(producerQueue, itemQty, 0);
+                QueueTestProducer producer = new QueueTestProducer(producerQueue, itemQty, 0);
                 service.submit(producer);
             }
 
@@ -80,7 +76,7 @@ public class TestDistributedQueue extends BaseClassForTests
 
             // make the first consumer queue
             {
-                final QueueSafetyConsumer<TestQueueItem>        ourQueue = new QueueSafetyConsumer<TestQueueItem>()
+                final QueueConsumer<TestQueueItem> ourQueue = new QueueConsumer<TestQueueItem>()
                 {
                     @Override
                     public void consumeMessage(TestQueueItem message) throws Exception
@@ -103,15 +99,15 @@ public class TestDistributedQueue extends BaseClassForTests
                         Thread.sleep((long)(Math.random() * 5));
                     }
                 };
-                consumerQueue1 = QueueBuilder.builder(consumerClient1, serializer, QUEUE_PATH).
-                    queueSafety(new QueueSafety<TestQueueItem>("/a/locks", ourQueue)).
+                consumerQueue1 = QueueBuilder.builder(consumerClient1, ourQueue, serializer, QUEUE_PATH).
+                    lockPath("/a/locks").
                     buildQueue();
                 consumerQueue1.start();
             }
 
             // make the second consumer queue
             {
-                final QueueSafetyConsumer<TestQueueItem>        ourQueue = new QueueSafetyConsumer<TestQueueItem>()
+                final QueueConsumer<TestQueueItem> ourQueue = new QueueConsumer<TestQueueItem>()
                 {
                     @Override
                     public void consumeMessage(TestQueueItem message) throws Exception
@@ -124,8 +120,8 @@ public class TestDistributedQueue extends BaseClassForTests
                         Thread.sleep((long)(Math.random() * 5));
                     }
                 };
-                consumerQueue2 = QueueBuilder.builder(consumerClient2, serializer, QUEUE_PATH).
-                    queueSafety(new QueueSafety<TestQueueItem>("/a/locks", ourQueue)).
+                consumerQueue2 = QueueBuilder.builder(consumerClient2, ourQueue, serializer, QUEUE_PATH).
+                    lockPath("/a/locks").
                     buildQueue();
                 consumerQueue2.start();
             }
@@ -182,13 +178,13 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            final BlockingQueue<TestQueueItem>        ourQueue = new ArrayBlockingQueue<TestQueueItem>(1);
-            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).
-                queueSafety(new QueueSafety<TestQueueItem>("/a/locks", ourQueue)).
+            final BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>();
+            queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).
+                lockPath("/a/locks").
                 buildQueue();
             queue.start();
 
-            QueueProducer       producer = new QueueProducer(queue, itemQty, 0);
+            QueueTestProducer producer = new QueueTestProducer(queue, itemQty, 0);
 
             ExecutorService     service = Executors.newCachedThreadPool();
             service.submit(producer);
@@ -203,7 +199,7 @@ public class TestDistributedQueue extends BaseClassForTests
                     {
                         for ( int i = 0; i < itemQty; ++i )
                         {
-                            TestQueueItem item = ourQueue.take();
+                            TestQueueItem item = consumer.take();
                             Assert.assertEquals(item.str, Integer.toString(i));
                         }
                         latch.countDown();
@@ -230,7 +226,9 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).buildQueue();
+            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>();
+
+            queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).buildQueue();
             queue.start();
 
             MultiItem<TestQueueItem>    items = new MultiItem<TestQueueItem>()
@@ -251,7 +249,7 @@ public class TestDistributedQueue extends BaseClassForTests
 
             for ( int i = 0; i < itemQty; ++i )
             {
-                TestQueueItem queueItem = queue.take(1, TimeUnit.SECONDS);
+                TestQueueItem   queueItem = consumer.take(1, TimeUnit.SECONDS);
                 Assert.assertNotNull(queueItem);
                 Assert.assertEquals(queueItem, new TestQueueItem(Integer.toString(i)));
             }
@@ -273,17 +271,17 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).buildQueue();
+            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>();
+
+            queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).buildQueue();
             queue.start();
 
-            QueueProducer producer1 = new QueueProducer(queue, itemQty / 2, 0);
-            QueueProducer       producer2 = new QueueProducer(queue, ((itemQty + 1) / 2), itemQty / 2);
-            QueueConsumer consumer = new QueueConsumer(queue);
+            QueueTestProducer producer1 = new QueueTestProducer(queue, itemQty / 2, 0);
+            QueueTestProducer producer2 = new QueueTestProducer(queue, ((itemQty + 1) / 2), itemQty / 2);
 
             ExecutorService     service = Executors.newCachedThreadPool();
             service.submit(producer1);
             service.submit(producer2);
-            service.submit(consumer);
 
             int                 iteration = 0;
             while ( consumer.size() < itemQty )
@@ -304,58 +302,6 @@ public class TestDistributedQueue extends BaseClassForTests
     }
 
     @Test
-    public void     testSinglePutterMultiGetter() throws Exception
-    {
-        final int                   itemQty = 100;
-
-        DistributedQueue<TestQueueItem>  queue = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        client.start();
-        try
-        {
-            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).buildQueue();
-            queue.start();
-
-            QueueProducer       producer = new QueueProducer(queue, itemQty, 0);
-            QueueConsumer       consumer1 = new QueueConsumer(queue);
-            QueueConsumer       consumer2 = new QueueConsumer(queue);
-
-            ExecutorService     service = Executors.newCachedThreadPool();
-            service.submit(producer);
-            service.submit(consumer1);
-            service.submit(consumer2);
-
-            int                 iteration = 0;
-            while ( (consumer1.size() + consumer2.size()) < itemQty )
-            {
-                Assert.assertTrue(++iteration < 10);
-                Thread.sleep(1000);
-            }
-
-            List<TestQueueItem> items1 = consumer1.getItems();
-            List<TestQueueItem> items2 = consumer2.getItems();
-            Sets.SetView<TestQueueItem> overlap = Sets.intersection(Sets.<TestQueueItem>newHashSet(items1), Sets.<TestQueueItem>newHashSet(items2));
-            Assert.assertEquals(overlap.size(), 0);
-
-            Assert.assertEquals(Sets.<TestQueueItem>newHashSet(items1).size(), items1.size()); // check no duplicates
-            Assert.assertEquals(Sets.<TestQueueItem>newHashSet(items2).size(), items2.size()); // check no duplicates
-
-            List<TestQueueItem> items1Sorted = Lists.newArrayList(items1);
-            Collections.sort(items1Sorted);
-            Assert.assertEquals(items1Sorted, items1); // check ascending order
-
-            List<TestQueueItem> items2Sorted = Lists.newArrayList(items2);
-            Collections.sort(items2Sorted);
-            Assert.assertEquals(items2Sorted, items2); // check ascending order
-        }
-        finally
-        {
-            Closeables.closeQuietly(queue);
-            Closeables.closeQuietly(client);
-        }
-    }
-
-    @Test
     public void     testSimple() throws Exception
     {
         final int                   itemQty = 10;
@@ -365,15 +311,15 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = QueueBuilder.builder(client, serializer, QUEUE_PATH).buildQueue();
+            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>();
+
+            queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).buildQueue();
             queue.start();
 
-            QueueProducer       producer = new QueueProducer(queue, itemQty, 0);
-            QueueConsumer       consumer = new QueueConsumer(queue);
+            QueueTestProducer producer = new QueueTestProducer(queue, itemQty, 0);
 
             ExecutorService     service = Executors.newCachedThreadPool();
             service.submit(producer);
-            service.submit(consumer);
 
             int                 iteration = 0;
             while ( consumer.size() < itemQty )

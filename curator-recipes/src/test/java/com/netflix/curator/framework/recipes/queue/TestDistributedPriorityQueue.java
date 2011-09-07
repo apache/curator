@@ -40,7 +40,8 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = QueueBuilder.builder(client, new IntSerializer(), "/test").maxInternalQueue(0).buildPriorityQueue(3);
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
+            queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(3);
             queue.start();
 
             for ( int i = 0; i < 10; ++i )
@@ -48,11 +49,11 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                 queue.put(i, 10 + i);
             }
 
-            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(0));
+            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(0));
             queue.put(1000, 1); // lower priority
-            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(1));      // was sitting in put()
-            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(2));      // because of minItemsBeforeRefresh
-            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(1000));   // minItemsBeforeRefresh has expired
+            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(1));      // was sitting in put()
+            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(2));      // because of minItemsBeforeRefresh
+            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(1000));   // minItemsBeforeRefresh has expired
         }
         finally
         {
@@ -69,7 +70,8 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = QueueBuilder.builder(client, new IntSerializer(), "/test").maxInternalQueue(0).buildPriorityQueue(0);
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
+            queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(0);
             queue.start();
 
             for ( int i = 0; i < 10; ++i )
@@ -77,10 +79,10 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                 queue.put(i, 10);
             }
 
-            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(0));
+            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(0));
             queue.put(1000, 1); // lower priority
-            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(1));   // was sitting in put()
-            Assert.assertEquals(queue.take(1, TimeUnit.SECONDS), new Integer(1000));
+            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(1));   // was sitting in put()
+            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(1000));
         }
         finally
         {
@@ -115,7 +117,8 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                     return super.deserialize(bytes);
                 }
             };
-            queue = QueueBuilder.builder(client, serializer, "/test").maxInternalQueue(1).buildPriorityQueue(1);
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
+            queue = QueueBuilder.builder(client, consumer, serializer, "/test").buildPriorityQueue(1);
             queue.start();
 
             for ( int i = 0; i < 10; ++i )
@@ -128,7 +131,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                 }
             }
 
-            assertOrdering(queue, 10);
+            assertOrdering(consumer, 10);
         }
         finally
         {
@@ -147,7 +150,8 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         client.start();
         try
         {
-            queue = QueueBuilder.builder(client, new IntSerializer(), "/test").maxInternalQueue(0).buildPriorityQueue(0);
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
+            queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(0);
             queue.start();
 
             nums.add(Integer.MIN_VALUE);
@@ -161,7 +165,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                 queue.put(priority, priority);
             }
 
-            assertOrdering(queue, nums.size());
+            assertOrdering(consumer, nums.size());
         }
         catch ( AssertionError e )
         {
@@ -179,12 +183,12 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         }
     }
 
-    private void assertOrdering(DistributedPriorityQueue<Integer> queue, int qty) throws Exception
+    private void assertOrdering(BlockingQueueConsumer<Integer> consumer, int qty) throws Exception
     {
         int         previous = 0;
         for ( int i = 0; i < qty; ++i )
         {
-            Integer     value = queue.take(10, TimeUnit.SECONDS);
+            Integer     value = consumer.take(10, TimeUnit.SECONDS);
             Assert.assertNotNull(value);
             if ( i > 0 )
             {

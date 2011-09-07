@@ -23,7 +23,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -33,26 +32,27 @@ import java.util.concurrent.ThreadFactory;
 public class QueueBuilder<T>
 {
     private final CuratorFramework client;
+    private final QueueConsumer<T> consumer;
     private final QueueSerializer<T> serializer;
     private final String queuePath;
 
     private ThreadFactory factory;
     private Executor executor;
-    private int maxInternalQueue;
-    private QueueSafety<T> queueSafety;
+    private String lockPath;
 
     /**
      * Allocate a new builder
      *
+     *
      * @param client the curator client
+     * @param consumer functor to consume messages - NOTE: pass <code>null</code> to make this a producer-only queue
      * @param serializer serializer to use for items
      * @param queuePath path to store queue
-     * @param <T> item type
      * @return builder
      */
-    public static<T> QueueBuilder<T>        builder(CuratorFramework client, QueueSerializer<T> serializer, String queuePath)
+    public static<T> QueueBuilder<T>        builder(CuratorFramework client, QueueConsumer<T> consumer, QueueSerializer<T> serializer, String queuePath)
     {
-        return new QueueBuilder<T>(client, serializer, queuePath);
+        return new QueueBuilder<T>(client, consumer, serializer, queuePath);
     }
 
     /**
@@ -65,14 +65,14 @@ public class QueueBuilder<T>
         return new DistributedQueue<T>
         (
             client,
+            consumer,
             serializer,
             queuePath,
             factory,
             executor,
-            maxInternalQueue,
             Integer.MAX_VALUE,
             false,
-            queueSafety
+            lockPath
         );
     }
 
@@ -100,13 +100,13 @@ public class QueueBuilder<T>
         return new DistributedPriorityQueue<T>
         (
             client,
+            consumer,
             serializer,
             queuePath,
             factory,
             executor,
-            maxInternalQueue,
             minItemsBeforeRefresh,
-            queueSafety
+            lockPath
         );
     }
 
@@ -139,66 +139,31 @@ public class QueueBuilder<T>
     }
 
     /**
-     * <p>Change the max internal queue size. The default is {@link Integer#MAX_VALUE}.</p>
+     * <p>Without a lock set, queue items are removed before being sent to the queue consumer. This can result in message
+     * loss if the consumer fails to complete the message or the process dies.</p>
      *
-     * <p>Queue items are taken from ZooKeeper and stored in an internal Java list. <code>maxInternalQueue</code> is the
-     * max length for that list. When full, new items will block until there's room in the list.</p>
+     * <p>Use a lock to make the message recoverable. A lock is held while
+     * the message is being processed - this prevents other processes from taking the message. The message will not be removed
+     * from the queue until the consumer functor returns. Thus, if there is a failure or the process dies,
+     * the message will get sent to another process. There is a small performance penalty for this behavior however.
      *
-     * <p>NOTE: if you pass 0 for <code>maxInternalQueue</code>, a {@link SynchronousQueue} is used.</p>
-     *
-     * @param maxInternalQueue max internal list size
+     * @param path path for the lock
      * @return this
      */
-    public QueueBuilder<T>  maxInternalQueue(int maxInternalQueue)
+    public QueueBuilder<T>  lockPath(String path)
     {
-        Preconditions.checkArgument(queueSafety == null, "Queue Safety is incompatible with maxInternalQueue");
-        Preconditions.checkArgument(maxInternalQueue >= 0);
-
-        this.maxInternalQueue = maxInternalQueue;
+        lockPath = path;
         return this;
     }
 
-    /**
-     * <p>Without a queue safety, messages are removed and put into an internal queue that is consumed by the client
-     * application. If the application does not process the message for some reason (crash, etc.) the message is lost.</p>
-     *
-     * <p>Use a queue safety to make the message recoverable. The safety specifies a lock path used to hold a lock while
-     * the message is being processed - this prevents other processes from taking the message. The safety also specifies
-     * a consumer that the client app uses to process messages. IMPORTANT - do NOT use the {@link DistributedPriorityQueue#take()} or
-     * {@link DistributedQueue#take()} methods. When using a safety, you MUST consume the message when {@link QueueSafetyConsumer#consumeMessage(Object)} is
-     * called internally by the DistributedQueue.</p>
-     *
-     * @param queueSafety safety instances
-     * @return this
-     */
-    public QueueBuilder<T>  queueSafety(QueueSafety<T> queueSafety)
-    {
-        Preconditions.checkNotNull(queueSafety);
-
-        maxInternalQueue = 0;
-        this.queueSafety = queueSafety;
-        return this;
-    }
-
-    /**
-     * Set the queue as being able to produce only. It will not check for messages to be consumed.
-     *
-     * @return this
-     */
-    public QueueBuilder<T>  makeProducerOnly()
-    {
-        maxInternalQueue = -1;
-        return this;
-    }
-
-    private QueueBuilder(CuratorFramework client, QueueSerializer<T> serializer, String queuePath)
+    private QueueBuilder(CuratorFramework client, QueueConsumer<T> consumer, QueueSerializer<T> serializer, String queuePath)
     {
         this.client = client;
+        this.consumer = consumer;
         this.serializer = serializer;
         this.queuePath = queuePath;
 
         factory = Executors.defaultThreadFactory();
         executor = MoreExecutors.sameThreadExecutor();
-        maxInternalQueue = Integer.MAX_VALUE;
     }
 }

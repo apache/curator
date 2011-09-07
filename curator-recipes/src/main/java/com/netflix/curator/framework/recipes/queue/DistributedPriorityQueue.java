@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>An implementation of the Distributed Priority Queue ZK recipe.</p>
@@ -39,28 +38,27 @@ public class DistributedPriorityQueue<T> implements Closeable
     DistributedPriorityQueue
         (
             CuratorFramework client,
+            QueueConsumer<T> consumer,
             QueueSerializer<T> serializer,
             String queuePath,
             ThreadFactory threadFactory,
             Executor executor,
-            int maxInternalQueue,
             int minItemsBeforeRefresh,
-            QueueSafety<T> queueSafety
-        )
+            String lockPath)
     {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0);
 
         queue = new DistributedQueue<T>
         (
             client,
+            consumer, 
             serializer,
             queuePath,
             threadFactory,
             executor,
-            maxInternalQueue,
             minItemsBeforeRefresh,
             true,
-            queueSafety
+            lockPath
         );
     }
 
@@ -110,44 +108,6 @@ public class DistributedPriorityQueue<T> implements Closeable
 
         String      priorityHex = priorityToString(priority);
         queue.internalPut(null, items, queue.makeItemPath() + priorityHex);
-    }
-
-    /**
-     * Take the next item off of the queue blocking until there is an item available
-     *
-     * @return the item
-     * @throws Exception thread interruption or an error in the background thread
-     */
-    public T        take() throws Exception
-    {
-        return queue.take();
-    }
-
-    /**
-     * Take the next item off of the queue blocking until there is an item available
-     * or the specified timeout has elapsed
-     *
-     * @param timeout timeout
-     * @param unit unit
-     * @return the item or null if timed out
-     * @throws Exception thread interruption or an error in the background thread
-     */
-    public T        take(long timeout, TimeUnit unit) throws Exception
-    {
-        return queue.take(timeout, unit);
-    }
-
-    /**
-     * Return the number of pending items in the local Java queue. IMPORTANT: when this method
-     * returns a non-zero value, there is no guarantee that a subsequent call to take() will not
-     * block. i.e. items can get removed between this method call and others.
-     *
-     * @return item qty or 0
-     * @throws Exception an error in the background thread
-     */
-    public int      available() throws Exception
-    {
-        return queue.available();
     }
 
     /**

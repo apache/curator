@@ -27,14 +27,14 @@ import java.util.concurrent.BlockingQueue;
 public class QueueSafety<T>
 {
     private final String lockPath;
-    private final QueueSafetyConsumer<T> consumer;
+    private final QueueConsumer<T> consumer;
     private final BlockingQueue<T> queue;
 
     /**
      * @param lockPath ZKPath to use for locking purposes
      * @param consumer the message consumer
      */
-    public QueueSafety(String lockPath, QueueSafetyConsumer<T> consumer)
+    public QueueSafety(String lockPath, QueueConsumer<T> consumer)
     {
         this.lockPath = lockPath;
         this.consumer = consumer;
@@ -53,7 +53,7 @@ public class QueueSafety<T>
         return lockPath;
     }
 
-    QueueSafetyConsumer<T> getConsumer()
+    QueueConsumer<T> getConsumer()
     {
         return consumer;
     }

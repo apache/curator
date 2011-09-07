@@ -32,15 +32,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -69,11 +65,12 @@ public class DistributedQueue<T> implements Closeable
     private final ExecutorService service;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicReference<Exception> backgroundException = new AtomicReference<Exception>(null);
+    private final QueueConsumer<T> consumer;
     private final int minItemsBeforeRefresh;
     private final boolean refreshOnWatch;
     private final boolean isProducerOnly;
-    private final QueueSafety<T> safety;
     private final AtomicBoolean refreshOnWatchSignaled = new AtomicBoolean(false);
+    private final String lockPath;
     private final CuratorListener listener = new CuratorListener()
     {
         @Override
@@ -107,35 +104,31 @@ public class DistributedQueue<T> implements Closeable
     DistributedQueue
         (
             CuratorFramework client,
+            QueueConsumer<T> consumer,
             QueueSerializer<T> serializer,
             String queuePath,
             ThreadFactory threadFactory,
             Executor executor,
-            int maxInternalQueue,
             int minItemsBeforeRefresh,
             boolean refreshOnWatch,
-            QueueSafety<T> safety
+            String lockPath
         )
     {
-        this.minItemsBeforeRefresh = minItemsBeforeRefresh;
-        this.refreshOnWatch = refreshOnWatch;
         Preconditions.checkNotNull(client);
         Preconditions.checkNotNull(serializer);
         Preconditions.checkNotNull(queuePath);
         Preconditions.checkNotNull(threadFactory);
         Preconditions.checkNotNull(executor);
 
-        isProducerOnly = (maxInternalQueue < 0);
-        if ( safety == null )
-        {
-            safety = makeDefaultSafety(maxInternalQueue);
-        }
-
+        isProducerOnly = (consumer == null);
+        this.lockPath = lockPath;
+        this.consumer = consumer;
+        this.minItemsBeforeRefresh = minItemsBeforeRefresh;
+        this.refreshOnWatch = refreshOnWatch;
         this.client = client;
         this.serializer = serializer;
         this.queuePath = queuePath;
         this.executor = executor;
-        this.safety = safety;
         service = Executors.newSingleThreadExecutor(threadFactory);
     }
 
@@ -159,11 +152,11 @@ public class DistributedQueue<T> implements Closeable
         {
             // this is OK
         }
-        if ( safety.getLockPath() != null )
+        if ( lockPath != null )
         {
             try
             {
-                client.create().creatingParentsIfNeeded().forPath(safety.getLockPath(), new byte[0]);
+                client.create().creatingParentsIfNeeded().forPath(lockPath, new byte[0]);
             }
             catch ( KeeperException.NodeExistsException ignore )
             {
@@ -234,53 +227,6 @@ public class DistributedQueue<T> implements Closeable
         internalPut(null, items, path);
     }
 
-    /**
-     * Take the next item off of the queue blocking until there is an item available
-     *
-     * @return the item
-     * @throws Exception thread interruption or an error in the background thread
-     */
-    public T        take() throws Exception
-    {
-        checkState();
-        Preconditions.checkNotNull(safety.getQueue());
-
-        return safety.getQueue().take();
-    }
-
-    /**
-     * Take the next item off of the queue blocking until there is an item available
-     * or the specified timeout has elapsed
-     *
-     * @param timeout timeout
-     * @param unit unit
-     * @return the item or null if timed out
-     * @throws Exception thread interruption or an error in the background thread
-     */
-    public T        take(long timeout, TimeUnit unit) throws Exception
-    {
-        checkState();
-        Preconditions.checkNotNull(safety.getQueue());
-
-        return safety.getQueue().poll(timeout, unit);
-    }
-
-    /**
-     * Return the number of pending items in the local Java queue. IMPORTANT: when this method
-     * returns a non-zero value, there is no guarantee that a subsequent call to take() will not
-     * block. i.e. items can get removed between this method call and others.
-     *
-     * @return item qty or 0
-     * @throws Exception an error in the background thread
-     */
-    public int      available() throws Exception
-    {
-        checkState();
-        Preconditions.checkNotNull(safety.getQueue());
-
-        return safety.getQueue().size();
-    }
-
     void internalPut(T item, MultiItem<T> multiItem, String path) throws Exception
     {
         if ( item != null )
@@ -317,24 +263,6 @@ public class DistributedQueue<T> implements Closeable
     String makeItemPath()
     {
         return ZKPaths.makePath(queuePath, QUEUE_ITEM_NAME);
-    }
-
-    private QueueSafety<T> makeDefaultSafety(int maxInternalQueue)
-    {
-        BlockingQueue<T> internalQueue;
-        if ( maxInternalQueue < 0 )
-        {
-            internalQueue = null;
-        }
-        else if ( maxInternalQueue == 0 )
-        {
-            internalQueue = new SynchronousQueue<T>();
-        }
-        else
-        {
-            internalQueue = new LinkedBlockingQueue<T>(maxInternalQueue);
-        }
-        return new QueueSafety<T>(null, internalQueue);
     }
 
     private synchronized void internalNotify()
@@ -382,7 +310,7 @@ public class DistributedQueue<T> implements Closeable
     {
         Collections.sort(children); // makes sure items are processed in the order they were added
 
-        boolean     isUsingLockSafety = (safety.getLockPath() != null);
+        boolean     isUsingLockSafety = (lockPath != null);
         int         min = minItemsBeforeRefresh;
         for ( String itemNode : children )
         {
@@ -407,8 +335,8 @@ public class DistributedQueue<T> implements Closeable
                 byte[]  bytes = client.getData().storingStatIn(stat).forPath(itemPath);
                 if ( isUsingLockSafety )
                 {
-                    String  lockPath = ZKPaths.makePath(safety.getLockPath(), itemNode);
-                    client.create().withMode(CreateMode.EPHEMERAL).forPath(lockPath, new byte[0]);
+                    String  lockNodePath = ZKPaths.makePath(lockPath, itemNode);
+                    client.create().withMode(CreateMode.EPHEMERAL).forPath(lockNodePath, new byte[0]);
                     lockCreated = true;
                 }
                 else
@@ -424,15 +352,8 @@ public class DistributedQueue<T> implements Closeable
                     {
                         break;
                     }
-                    
-                    if ( safety.getConsumer() != null )
-                    {
-                        safety.getConsumer().consumeMessage(item);
-                    }
-                    else
-                    {
-                        safety.getQueue().put(item);
-                    }
+
+                    consumer.consumeMessage(item);
                 }
 
                 if ( isUsingLockSafety )
@@ -456,8 +377,8 @@ public class DistributedQueue<T> implements Closeable
             {
                 if ( lockCreated )
                 {
-                    String  lockPath = ZKPaths.makePath(safety.getLockPath(), itemNode);
-                    client.delete().forPath(lockPath);
+                    String  lockNodePath = ZKPaths.makePath(lockPath, itemNode);
+                    client.delete().forPath(lockNodePath);
                 }
             }
         }

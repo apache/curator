@@ -19,18 +19,15 @@
 package com.netflix.curator.framework.recipes.queue;
 
 /**
- * Consumer functor for use with {@link QueueSafety}
- * @see QueueSafety
+ * Message Consumer
  */
-public interface QueueSafetyConsumer<T>
+public interface QueueConsumer<T>
 {
     /**
-     * Process a message from the queue - the message is not removed from the queue until
-     * this method returns. If an exception is thrown or the process dies, the message will
-     * get re-queued/re-processed
+     * Process a message from the queue
      *
      * @param message message to process
-     * @throws Exception any errors (message will be re-queued)
+     * @throws Exception any errors
      */
     public void         consumeMessage(T message) throws Exception;
 }

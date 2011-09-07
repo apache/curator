@@ -19,13 +19,13 @@ package com.netflix.curator.framework.recipes.queue;
 
 import java.util.concurrent.Callable;
 
-public class QueueProducer implements Callable<Void>
+public class QueueTestProducer implements Callable<Void>
 {
     private final DistributedQueue<TestQueueItem> queue;
     private final int itemQty;
     private final int startIndex;
 
-    public QueueProducer(DistributedQueue<TestQueueItem> queue, int itemQty, int startIndex)
+    public QueueTestProducer(DistributedQueue<TestQueueItem> queue, int itemQty, int startIndex)
     {
         this.queue = queue;
         this.itemQty = itemQty;
