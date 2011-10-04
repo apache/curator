@@ -17,13 +17,13 @@
  */
 package com.netflix.curator.framework.recipes.leader;
 
+import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.testng.collections.Lists;
 import org.testng.internal.annotations.Sets;
 import java.util.List;
 import java.util.Set;

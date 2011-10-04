@@ -19,8 +19,8 @@
 package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
-import org.testng.collections.Lists;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -95,7 +95,7 @@ public class InterProcessMultiLock implements InterProcessLock
     public boolean acquire(long time, TimeUnit unit) throws Exception
     {
         Exception                   exception = null;
-        List<InterProcessLock>     acquired = Lists.newArrayList();
+        List<InterProcessLock>      acquired = Lists.newArrayList();
         boolean                     success = true;
         for ( InterProcessLock lock : locks )
         {

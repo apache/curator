@@ -18,7 +18,7 @@
 
 package com.netflix.curator.framework.recipes.queue;
 
-import org.testng.collections.Lists;
+import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;

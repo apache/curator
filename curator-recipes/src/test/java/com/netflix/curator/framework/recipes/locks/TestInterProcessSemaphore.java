@@ -18,13 +18,13 @@
 
 package com.netflix.curator.framework.recipes.locks;
 
+import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.testng.collections.Lists;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
