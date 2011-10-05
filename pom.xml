@@ -104,9 +104,22 @@
             </plugin>
 
             <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <version>2.8</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.8</version>
+                <configuration>
+                    <reportOutputDirectory>${project.basedir}</reportOutputDirectory>
+                    <destDir>doc</destDir>
+                </configuration>
+                <executions>
+                  <execution>
+                    <id>aggregate</id>
+                    <goals>
+                      <goal>aggregate</goal>
+                    </goals>
+                    <phase>site</phase>
+                  </execution>
+                </executions>
             </plugin>
 
             <plugin>
