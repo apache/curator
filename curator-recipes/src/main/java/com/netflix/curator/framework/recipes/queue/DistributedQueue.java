@@ -61,7 +61,6 @@ public class DistributedQueue<T> implements Closeable
     private final Executor executor;
     private final ExecutorService service;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final AtomicReference<Exception> backgroundException = new AtomicReference<Exception>(null);
     private final QueueConsumer<T> consumer;
     private final int minItemsBeforeRefresh;
     private final boolean refreshOnWatch;
@@ -249,12 +248,6 @@ public class DistributedQueue<T> implements Closeable
         {
             throw new IllegalStateException();
         }
-
-        Exception exception = backgroundException.getAndSet(null);
-        if ( exception != null )
-        {
-            throw exception;
-        }
     }
 
     String makeItemPath()
@@ -299,7 +292,7 @@ public class DistributedQueue<T> implements Closeable
         }
         catch ( Exception e )
         {
-            backgroundException.set(e);
+            client.getZookeeperClient().getLog().error("Exception caught in background handler", e);
         }
     }
 
@@ -314,6 +307,12 @@ public class DistributedQueue<T> implements Closeable
             if ( Thread.currentThread().isInterrupted() )
             {
                 break;
+            }
+
+            if ( !itemNode.startsWith(QUEUE_ITEM_NAME) )
+            {
+                client.getZookeeperClient().getLog().warn("Foreign node in queue path: " + itemNode);
+                continue;
             }
 
             if ( min-- <= 0 )
@@ -341,7 +340,17 @@ public class DistributedQueue<T> implements Closeable
                     client.delete().withVersion(stat.getVersion()).forPath(itemPath);
                 }
 
-                MultiItem<T>    items = ItemSerializer.deserialize(bytes, serializer);
+                MultiItem<T>    items;
+                try
+                {
+                    items = ItemSerializer.deserialize(bytes, serializer);
+                }
+                catch ( Exception e )
+                {
+                    client.getZookeeperClient().getLog().error("Corrupted queue item: " + itemNode);
+                    continue;
+                }
+
                 for(;;)
                 {
                     T       item = items.nextItem();
