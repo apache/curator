@@ -33,13 +33,9 @@ import java.util.concurrent.atomic.AtomicReference;
 class ConnectionState implements Watcher, Closeable
 {
     private volatile long connectionStartMs = 0;
-    private volatile long sessionId = 0;
-    private volatile byte[] sessionPassword = null;
 
-    private final AtomicReference<ZooKeeper> zooKeeper = new AtomicReference<ZooKeeper>(null);
+    private final HandleHolder zooKeeper;
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
-    private final String connectString;
-    private final int sessionTimeout;
     private final int connectionTimeoutMs;
     private final AtomicReference<LoggingDriver> log;
     private final AtomicReference<TracerDriver> tracer;
@@ -50,12 +46,11 @@ class ConnectionState implements Watcher, Closeable
 
     ConnectionState(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<LoggingDriver> log, AtomicReference<TracerDriver> tracer) throws IOException
     {
-        this.connectString = connectString;
-        this.sessionTimeout = sessionTimeoutMs;
         this.connectionTimeoutMs = connectionTimeoutMs;
         this.log = log;
         this.tracer = tracer;
         this.parentWatcher.set(parentWatcher);
+        zooKeeper = new HandleHolder(this, connectString, sessionTimeoutMs);
     }
 
     ZooKeeper getZooKeeper() throws Exception
@@ -81,7 +76,7 @@ class ConnectionState implements Watcher, Closeable
             }
         }
 
-        return zooKeeper.get();
+        return zooKeeper.getZooKeeper();
     }
 
     boolean isConnected()
@@ -94,55 +89,37 @@ class ConnectionState implements Watcher, Closeable
         return parentWatcher.getAndSet(newWatcher);
     }
 
-    void        start() throws IOException
+    void        start() throws Exception
     {
         log.get().debug("Starting");
         reset();
     }
 
     @Override
-    public void        close()
+    public void        close() throws IOException
     {
         log.get().debug("Closing");
 
-        ZooKeeper localZooKeeper = zooKeeper.getAndSet(null);
-        internalClose(localZooKeeper);
+        try
+        {
+            zooKeeper.closeAndClear();
+        }
+        catch ( Exception e )
+        {
+            throw new IOException(e);
+        }
+        finally
+        {
+            isConnected.set(false);
+        }
     }
 
-    private void internalClose(ZooKeeper localZooKeeper)
+    private void reset() throws Exception
     {
-        if ( localZooKeeper != null )
-        {
-            try
-            {
-                localZooKeeper.close();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                // Interrupted trying to close Zookeeper. Ignoring at this level.
-            }
-        }
         isConnected.set(false);
-    }
-
-    private void reset() throws IOException
-    {
-        ZooKeeper localZooKeeper;
-        if ( sessionId == 0 )
-        {
-            // i.e. first time connecting
-            localZooKeeper = new ZooKeeper(connectString, sessionTimeout, this);
-        }
-        else
-        {
-            tracer.get().addCount("re-connects", 1);
-            localZooKeeper = new ZooKeeper(connectString, sessionTimeout, this, sessionId, sessionPassword);
-        }
-        ZooKeeper oldZooKeeper = zooKeeper.getAndSet(localZooKeeper);
-        internalClose(oldZooKeeper);
-
         connectionStartMs = System.currentTimeMillis();
+        zooKeeper.closeAndReset();
+        zooKeeper.getZooKeeper();   // initiate connection
     }
 
     @Override
@@ -155,27 +132,13 @@ class ConnectionState implements Watcher, Closeable
             newIsConnected = (event.getState() == Event.KeeperState.SyncConnected);
             if ( event.getState() == Event.KeeperState.Expired )
             {
-                log.get().warn("Session expired event received");
-                tracer.get().addCount("sessions-expired", 1);
-                try
-                {
-                    reset();
-                }
-                catch ( IOException e )
-                {
-                    queueBackgroundException(e);
-                }
+                handleExpiredSession();
             }
         }
 
         if ( newIsConnected != wasConnected )
         {
             isConnected.set(newIsConnected);
-            if ( newIsConnected )
-            {
-                sessionId = zooKeeper.get().getSessionId();
-                sessionPassword = zooKeeper.get().getSessionPasswd();
-            }
         }
 
         Watcher localParentWatcher = parentWatcher.get();
@@ -187,8 +150,23 @@ class ConnectionState implements Watcher, Closeable
         }
     }
 
+    private void handleExpiredSession()
+    {
+        log.get().warn("Session expired event received");
+        tracer.get().addCount("session-expired", 1);
+
+        try
+        {
+            reset();
+        }
+        catch ( Exception e )
+        {
+            queueBackgroundException(e);
+        }
+    }
+
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
-    private void queueBackgroundException(IOException e)
+    private void queueBackgroundException(Exception e)
     {
         while ( backgroundExceptions.size() >= MAX_BACKGROUND_EXCEPTIONS )
         {

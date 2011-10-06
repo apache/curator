@@ -150,7 +150,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @throws IOException errors
      */
-    public void     start() throws IOException
+    public void     start() throws Exception
     {
         log.get().debug("Starting");
 
@@ -172,7 +172,14 @@ public class CuratorZookeeperClient implements Closeable
         log.get().debug("Closing");
 
         started.set(false);
-        state.close();
+        try
+        {
+            state.close();
+        }
+        catch ( IOException e )
+        {
+            getLog().error(e);
+        }
     }
 
     /**

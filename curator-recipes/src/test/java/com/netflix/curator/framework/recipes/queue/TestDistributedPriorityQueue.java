@@ -40,8 +40,10 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         client.start();
         try
         {
+            final int minItemsBeforeRefresh = 3;
+
             BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
-            queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(3);
+            queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(minItemsBeforeRefresh);
             queue.start();
 
             for ( int i = 0; i < 10; ++i )
@@ -51,9 +53,13 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
 
             Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(0));
             queue.put(1000, 1); // lower priority
-            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(1));      // was sitting in put()
-            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(2));      // because of minItemsBeforeRefresh
-            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(1000));   // minItemsBeforeRefresh has expired
+
+            int         count = 0;
+            while ( consumer.take(1, TimeUnit.SECONDS) < 1000 )
+            {
+                ++count;
+            }
+            Assert.assertTrue(Math.abs(minItemsBeforeRefresh - count) < minItemsBeforeRefresh);     // allows for some slack - testing that within a slop value the newly inserted item with lower priority comes out
         }
         finally
         {

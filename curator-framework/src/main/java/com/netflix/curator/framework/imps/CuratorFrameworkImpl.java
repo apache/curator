@@ -165,7 +165,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             handleBackgroundOperationException(null, e);
         }
