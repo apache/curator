@@ -24,21 +24,56 @@ import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
     @Test
+    public void     testSessionKilled() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().forPath("/sessionTest", new byte[0]);
+
+            final AtomicBoolean     sessionDied = new AtomicBoolean(false);
+            Watcher         watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    if ( event.getState() == Event.KeeperState.Expired )
+                    {
+                        sessionDied.set(true);
+                    }
+                }
+            };
+            client.checkExists().usingWatcher(watcher).forPath("/sessionTest");
+            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+            Assert.assertNotNull(client.checkExists().forPath("/sessionTest"));
+            Assert.assertTrue(sessionDied.get());
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
     public void         testNestedCalls() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        initialStartClient(client);
+        client.start();
         try
         {
             client.addListener
@@ -82,7 +117,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     public void         testBackgroundFailure() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(1));
-        initialStartClient(client);
+        client.start();
         try
         {
             final CountDownLatch        latch = new CountDownLatch(1);
@@ -117,17 +152,11 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
     }
 
-    private void initialStartClient(CuratorFramework client) throws InterruptedException
-    {
-        client.start();
-        client.getZookeeperClient().blockUntilConnectedOrTimedOut();
-    }
-
     @Test
     public void         testFailure() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(1));
-        initialStartClient(client);
+        client.start();
         try
         {
             client.checkExists().forPath("/hey");
@@ -155,7 +184,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         final File      tempDirectory = server.getTempDirectory();
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(1));
-        initialStartClient(client);
+        client.start();
         try
         {
             final AtomicInteger     retries = new AtomicInteger(0);
@@ -236,7 +265,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     public void         testStopped() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        initialStartClient(client);
+        client.start();
         client.getData();
         client.close();
 

@@ -79,6 +79,8 @@ public class RetryLoop
         {
             try
             {
+                client.internalBlockUntilConnectedOrTimedOut();
+                
                 result = proc.call();
                 retryLoop.markComplete();
             }

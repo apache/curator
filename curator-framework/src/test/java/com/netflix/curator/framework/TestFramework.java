@@ -44,8 +44,6 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
-
             client.create().withACL(ZooDefs.Ids.CREATOR_ALL_ACL).forPath("/test", new byte[0]);
 
             client.setData().forPath("/test", "test".getBytes());
@@ -77,8 +75,6 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
-
             client.create().creatingParentsIfNeeded().forPath("/one/two/three", "foo".getBytes());
             byte[]      data = client.getData().forPath("/one/two/three");
             Assert.assertEquals(data, "foo".getBytes());
@@ -127,8 +123,6 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
-
             String      actualPath = client.create().forPath("/test", new byte[0]);
             Assert.assertEquals(actualPath, "/test");
             Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/" + namespace + "/test", false));

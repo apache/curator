@@ -23,7 +23,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.File;
@@ -56,18 +55,7 @@ public class BasicTests extends BaseClassForTests
             client.blockUntilConnectedOrTimedOut();
             client.getZooKeeper().create("/foo", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
-            final CountDownLatch    zkLatch = new CountDownLatch(1);
-            Watcher         zkWatcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
-                {
-                    zkLatch.countDown();
-                }
-            };
-            ZooKeeper       zk = new ZooKeeper(server.getConnectString(), 10000, zkWatcher, client.getZooKeeper().getSessionId(), client.getZooKeeper().getSessionPasswd());
-            Assert.assertTrue(zkLatch.await(10, TimeUnit.SECONDS));
-            zk.close(); // this should cause a session error in the main client
+            KillSession.kill(server.getConnectString(), client.getZooKeeper().getSessionId(), client.getZooKeeper().getSessionPasswd());
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
             Assert.assertNotNull(client.getZooKeeper().exists("/foo", false));

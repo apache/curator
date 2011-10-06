@@ -108,34 +108,7 @@ public class CuratorZookeeperClient implements Closeable
         log.get().debug("blockUntilConnectedOrTimedOut() start");
         TimeTrace       trace = startTracer("blockUntilConnectedOrTimedOut");
 
-        long            waitTimeMs = connectionTimeoutMs;
-        while ( !state.isConnected() && (waitTimeMs > 0) )
-        {
-            final CountDownLatch    latch = new CountDownLatch(1);
-            Watcher                 previousWatcher = state.substituteParentWatcher
-            (
-                new Watcher()
-                {
-                    @Override
-                    public void process(WatchedEvent event)
-                    {
-                        latch.countDown();
-                    }
-                }
-            );
-
-            long        startTimeMs = System.currentTimeMillis();
-            try
-            {
-                latch.await(1, TimeUnit.SECONDS);
-            }
-            finally
-            {
-                state.substituteParentWatcher(previousWatcher);
-            }
-            long        elapsed = Math.max(1, System.currentTimeMillis() - startTimeMs);
-            waitTimeMs -= elapsed;
-        }
+        internalBlockUntilConnectedOrTimedOut();
 
         trace.commit();
 
@@ -252,5 +225,37 @@ public class CuratorZookeeperClient implements Closeable
     public void               setTracerDriver(TracerDriver tracer)
     {
         this.tracer.set(tracer);
+    }
+
+    void internalBlockUntilConnectedOrTimedOut() throws InterruptedException
+    {
+        long            waitTimeMs = connectionTimeoutMs;
+        while ( !state.isConnected() && (waitTimeMs > 0) )
+        {
+            final CountDownLatch latch = new CountDownLatch(1);
+            Watcher previousWatcher = state.substituteParentWatcher
+            (
+                new Watcher()
+                {
+                    @Override
+                    public void process(WatchedEvent event)
+                    {
+                        latch.countDown();
+                    }
+                }
+            );
+
+            long        startTimeMs = System.currentTimeMillis();
+            try
+            {
+                latch.await(1, TimeUnit.SECONDS);
+            }
+            finally
+            {
+                state.substituteParentWatcher(previousWatcher);
+            }
+            long        elapsed = Math.max(1, System.currentTimeMillis() - startTimeMs);
+            waitTimeMs -= elapsed;
+        }
     }
 }
