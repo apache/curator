@@ -160,6 +160,11 @@ public class LeaderSelector implements Closeable
                         {
                             listener.takeLeadership(client);
                         }
+                        catch ( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
+                            listener.handleException(client, e);
+                        }
                         catch ( Exception e )
                         {
                             listener.handleException(client, e);

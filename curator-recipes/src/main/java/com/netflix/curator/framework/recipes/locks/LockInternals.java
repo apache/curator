@@ -94,7 +94,7 @@ abstract class LockInternals<T>
             @Override
             public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if ( event.getType() == CuratorEventType.CLOSING )
+                if ( CuratorEventType.isClosingType(event) )
                 {
                     handleClosingEvent();
                 }

@@ -71,4 +71,29 @@ public enum CuratorEventType
      * Event sent when client is being closed
      */
     CLOSING
+    ;
+
+    /**
+     * Returns true if the given event represents some type of closing (either desired or error)
+     *
+     * @param event event to check
+     * @return true/false
+     */
+    public static boolean isClosingType(CuratorEvent event)
+    {
+        if ( event.getType() == CLOSING )
+        {
+            return true;
+        }
+
+        if ( event.getType() == WATCHED )
+        {
+            if ( event.getWatchedEvent().getState() != Watcher.Event.KeeperState.SyncConnected )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

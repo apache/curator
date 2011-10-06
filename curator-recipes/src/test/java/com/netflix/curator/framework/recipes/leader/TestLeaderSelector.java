@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.KillSession;
 import com.netflix.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -31,10 +32,61 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestLeaderSelector extends BaseClassForTests
 {
     private static final String     PATH_NAME = "/one/two/me";
+
+    @Test
+    public void     testKillSession() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final CountDownLatch    leadershipLatch = new CountDownLatch(1);
+            final CountDownLatch    closingLatch = new CountDownLatch(2);
+            LeaderSelectorListener  listener = new LeaderSelectorListener()
+            {
+                @Override
+                public void handleException(CuratorFramework client, Exception exception)
+                {
+                }
+
+                @Override
+                public void takeLeadership(CuratorFramework client) throws Exception
+                {
+                    leadershipLatch.countDown();
+                    Thread.sleep(1000000);
+                }
+
+                @Override
+                public void notifyClientClosing(CuratorFramework client)
+                {
+                    closingLatch.countDown();
+                }
+            };
+            LeaderSelector leaderSelector1 = new LeaderSelector(client, PATH_NAME, listener);
+            LeaderSelector leaderSelector2 = new LeaderSelector(client, PATH_NAME, listener);
+
+            leaderSelector1.start();
+            leaderSelector2.start();
+
+            Assert.assertTrue(leadershipLatch.await(10, TimeUnit.SECONDS));
+
+            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+
+            Assert.assertTrue(closingLatch.await(10, TimeUnit.SECONDS));
+
+            leaderSelector1.close();
+            leaderSelector2.close();
+        }
+        finally
+        {
+            client.close();
+        }
+    }
 
     @Test
     public void     testClosing() throws Exception
