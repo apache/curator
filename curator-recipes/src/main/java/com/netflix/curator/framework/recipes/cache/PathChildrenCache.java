@@ -265,6 +265,7 @@ public class PathChildrenCache implements Closeable
     {
         incomingData.clear();
         client.getChildren().usingWatcher(watcher).inBackground().forPath(path);
+        listenerEvents.offer(new EventEntry(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.RESET, null)));
     }
 
     private void listenerLoop()
@@ -397,6 +398,10 @@ public class PathChildrenCache implements Closeable
 
             default:
             {
+                if ( watchedEvent.getState() == Watcher.Event.KeeperState.Expired )
+                {
+                    System.out.println();
+                }
                 refresh();
                 break;
             }

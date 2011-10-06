@@ -43,7 +43,12 @@ public class PathChildrenCacheEvent
         /**
          * A child was removed from the path
          */
-        CHILD_REMOVED
+        CHILD_REMOVED,
+
+        /**
+         * The cache was cleared due to an error/ZK event, etc.
+         */
+        RESET
     }
 
     PathChildrenCacheEvent(Type type, ChildData data)
