@@ -212,12 +212,13 @@ abstract class LockInternals<T>
         {
             while ( client.isStarted() && !haveTheLock )
             {
-                List<String> children = getSortedChildren(basePath);
+                List<String>    children = getSortedChildren(basePath);
                 String          sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
                 int ourIndex = children.indexOf(sequenceNodeName);
                 if ( ourIndex < 0 )
                 {
                     client.getZookeeperClient().getLog().warn("Sequential path not found: " + ourPath);
+                    handleClosingEvent();
                     throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
                 }
 

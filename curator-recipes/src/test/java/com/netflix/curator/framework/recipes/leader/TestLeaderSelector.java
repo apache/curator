@@ -31,8 +31,9 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestLeaderSelector extends BaseClassForTests
 {
@@ -45,10 +46,13 @@ public class TestLeaderSelector extends BaseClassForTests
         client.start();
         try
         {
-            final CountDownLatch    leadershipLatch = new CountDownLatch(1);
-            final CountDownLatch    closingLatch = new CountDownLatch(2);
+            final Semaphore         semaphore = new Semaphore(0);
+            final CountDownLatch    interruptedLatch = new CountDownLatch(1);
+            final AtomicInteger     leaderCount = new AtomicInteger(0);
             LeaderSelectorListener  listener = new LeaderSelectorListener()
             {
+                private volatile Thread     ourThread;
+
                 @Override
                 public void handleException(CuratorFramework client, Exception exception)
                 {
@@ -57,14 +61,34 @@ public class TestLeaderSelector extends BaseClassForTests
                 @Override
                 public void takeLeadership(CuratorFramework client) throws Exception
                 {
-                    leadershipLatch.countDown();
-                    Thread.sleep(1000000);
+                    leaderCount.incrementAndGet();
+                    try
+                    {
+                        ourThread = Thread.currentThread();
+                        semaphore.release();
+                        try
+                        {
+                            Thread.sleep(1000000);
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
+                            interruptedLatch.countDown();
+                        }
+                    }
+                    finally
+                    {
+                        leaderCount.decrementAndGet();
+                    }
                 }
 
                 @Override
                 public void notifyClientClosing(CuratorFramework client)
                 {
-                    closingLatch.countDown();
+                    if ( ourThread != null )
+                    {
+                        ourThread.interrupt();
+                    }
                 }
             };
             LeaderSelector leaderSelector1 = new LeaderSelector(client, PATH_NAME, listener);
@@ -73,11 +97,13 @@ public class TestLeaderSelector extends BaseClassForTests
             leaderSelector1.start();
             leaderSelector2.start();
 
-            Assert.assertTrue(leadershipLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
 
             KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
 
-            Assert.assertTrue(closingLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(interruptedLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertEquals(leaderCount.get(), 1);
 
             leaderSelector1.close();
             leaderSelector2.close();
