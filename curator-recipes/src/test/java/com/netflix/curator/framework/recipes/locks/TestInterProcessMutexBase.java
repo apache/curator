@@ -21,6 +21,7 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.KillSession;
 import com.netflix.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -29,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,6 +40,57 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     private volatile CountDownLatch         countLatchForBar = null;
 
     protected abstract InterProcessLock      makeLock(CuratorFramework client);
+
+    @Test
+    public void     testKilledSession() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final InterProcessLock mutex1 = makeLock(client);
+            final InterProcessLock mutex2 = makeLock(client);
+
+            final Semaphore acquireSemaphore = new Semaphore(0);
+            Executors.newSingleThreadExecutor().submit
+            (
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        mutex1.acquire();
+                        acquireSemaphore.release();
+                        Thread.sleep(1000000);
+                        return null;
+                    }
+                }
+            );
+
+            Executors.newSingleThreadExecutor().submit
+            (
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        mutex2.acquire();
+                        acquireSemaphore.release();
+                        Thread.sleep(1000000);
+                        return null;
+                    }
+                }
+            );
+
+            Assert.assertTrue(acquireSemaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+            Assert.assertTrue(acquireSemaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
 
     @Test
     public void     testWithNamespace() throws Exception

@@ -20,6 +20,7 @@ package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.netflix.curator.RetryLoop;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
@@ -34,6 +35,7 @@ import org.apache.zookeeper.data.Stat;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -94,9 +96,16 @@ abstract class LockInternals<T>
             @Override
             public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if ( CuratorEventType.isClosingType(event) )
+                if ( event.getType() == CuratorEventType.CLOSING )
                 {
                     handleClosingEvent();
+                }
+                else if ( event.getType() == CuratorEventType.WATCHED )
+                {
+                    if ( event.getWatchedEvent().getState() != Watcher.Event.KeeperState.SyncConnected )
+                    {
+                        notifyFromWatcher();
+                    }
                 }
             }
 
@@ -150,35 +159,66 @@ abstract class LockInternals<T>
 
     protected abstract int lockCount();
 
+    private static class PathAndFlag
+    {
+        final boolean       hasTheLock;
+        final String        path;
+
+        private PathAndFlag(boolean hasTheLock, String path)
+        {
+            this.hasTheLock = hasTheLock;
+            this.path = path;
+        }
+    }
+
     protected String internalLock(long time, TimeUnit unit) throws Exception
     {
-        long startMillis = System.currentTimeMillis();
-        Long millisToWait = (unit != null) ? unit.toMillis(time) : null;
+        final long startMillis = System.currentTimeMillis();
+        final Long millisToWait = (unit != null) ? unit.toMillis(time) : null;
 
-        PathAndBytesable<String> createBuilder;
-        if ( basePathEnsured.get() )    // optimization - avoids calling creatingParentsIfNeeded() unnecessarily - first concurrent threads will do it, but not others
-        {
-            createBuilder = client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
-        }
-        else
-        {
-            createBuilder = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
-        }
-        String          ourPath = createBuilder.forPath(path, new byte[0]);
-        basePathEnsured.set(true);
+        PathAndFlag     pathAndFlag = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<PathAndFlag>()
+            {
+                @Override
+                public PathAndFlag call() throws Exception
+                {
+                    PathAndBytesable<String> createBuilder;
+                    if ( basePathEnsured.get() )    // optimization - avoids calling creatingParentsIfNeeded() unnecessarily - first concurrent threads will do it, but not others
+                    {
+                        createBuilder = client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
+                    }
+                    else
+                    {
+                        createBuilder = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
+                    }
+                    String          ourPath = createBuilder.forPath(path, new byte[0]);
+                    basePathEnsured.set(true);
 
-        boolean     doDelete = false;
+                    boolean hasTheClock = internalLockLoop(startMillis, millisToWait, ourPath);
+                    return new PathAndFlag(hasTheClock, ourPath);
+                }
+            }
+        );
+        return pathAndFlag.hasTheLock ? pathAndFlag.path : null;
+    }
+
+    private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception
+    {
         boolean     haveTheLock = false;
+        boolean     doDelete = false;
         try
         {
             while ( client.isStarted() && !haveTheLock )
             {
-                List<String>    children = getSortedChildren(basePath);
+                List<String> children = getSortedChildren(basePath);
                 String          sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
                 int ourIndex = children.indexOf(sequenceNodeName);
                 if ( ourIndex < 0 )
                 {
-                    throw new Exception("Sequential path not found: " + ourPath);
+                    client.getZookeeperClient().getLog().warn("Sequential path not found: " + ourPath);
+                    throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
                 }
 
                 if ( ourIndex < numberOfLeases )
@@ -218,6 +258,11 @@ abstract class LockInternals<T>
                 }
             }
         }
+        catch ( KeeperException e )
+        {
+            // ignore this and let the retry policy handle it
+            throw e;
+        }
         catch ( Exception e )
         {
             doDelete = true;
@@ -230,8 +275,7 @@ abstract class LockInternals<T>
                 client.delete().forPath(ourPath);
             }
         }
-
-        return haveTheLock ? ourPath : null;
+        return haveTheLock;
     }
 
     private void handleClosingEvent()
