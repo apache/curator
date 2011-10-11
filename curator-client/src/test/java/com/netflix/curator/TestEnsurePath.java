@@ -95,7 +95,6 @@ public class TestEnsurePath
                     public Void call() throws Exception
                     {
                         startedLatch.countDown();
-                        Assert.assertTrue(startedLatch.await(10, TimeUnit.SECONDS));
                         ensurePath.ensure(curator);
                         finishedLatch.countDown();
                         return null;
