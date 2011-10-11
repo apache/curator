@@ -25,7 +25,7 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
-import com.netflix.curator.framework.api.PathAndBytesable;
+import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 abstract class LockInternals<T>
 {
@@ -47,7 +46,7 @@ abstract class LockInternals<T>
     private final ClientClosingListener<T>  clientClosingListener;
     private final int                       numberOfLeases;
     private final CuratorListener           listener;
-    private final AtomicBoolean             basePathEnsured = new AtomicBoolean(false);
+    private final EnsurePath                ensurePath;
     private final Watcher                   watcher;
 
     /**
@@ -81,6 +80,8 @@ abstract class LockInternals<T>
         this.path = path + "/" + lockName;
         this.clientClosingListener = clientClosingListener;
         this.numberOfLeases = numberOfLeases;
+
+        ensurePath = client.newNamespaceAwareEnsurePath(basePath);
 
         watcher = new Watcher()
         {
@@ -184,19 +185,10 @@ abstract class LockInternals<T>
                 @Override
                 public PathAndFlag call() throws Exception
                 {
-                    PathAndBytesable<String> createBuilder;
-                    if ( basePathEnsured.get() )    // optimization - avoids calling creatingParentsIfNeeded() unnecessarily - first concurrent threads will do it, but not others
-                    {
-                        createBuilder = client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
-                    }
-                    else
-                    {
-                        createBuilder = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
-                    }
-                    String          ourPath = createBuilder.forPath(path, new byte[0]);
-                    basePathEnsured.set(true);
+                    ensurePath.ensure(client.getZookeeperClient());
 
-                    boolean hasTheClock = internalLockLoop(startMillis, millisToWait, ourPath);
+                    String      ourPath = client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, new byte[0]);
+                    boolean     hasTheClock = internalLockLoop(startMillis, millisToWait, ourPath);
                     return new PathAndFlag(hasTheClock, ourPath);
                 }
             }
