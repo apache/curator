@@ -230,7 +230,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             Assert.assertFalse(semaphore.acquire(1, TimeUnit.SECONDS));
 
             leases.remove(0).release();
-            Assert.assertNotNull(semaphore.acquire(3, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.acquire(3, TimeUnit.SECONDS));
         }
         finally
         {
