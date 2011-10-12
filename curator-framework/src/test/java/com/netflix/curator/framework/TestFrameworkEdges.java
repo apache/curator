@@ -213,7 +213,9 @@ public class TestFrameworkEdges extends BaseClassForTests
                             try
                             {
                                 server = new TestingServer(serverPort, Files.createTempDir());
+                                client.getZookeeperClient().setRetryPolicy(new RetryOneTime(10));
                                 client.checkExists().forPath("/foo");   // get the connection again
+                                client.getZookeeperClient().setRetryPolicy(this);
                             }
                             catch ( Exception e )
                             {
