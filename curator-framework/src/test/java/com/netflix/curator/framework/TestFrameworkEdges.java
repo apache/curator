@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.framework;
 
+import com.google.common.io.Files;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
@@ -29,8 +30,8 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.io.File;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -181,14 +182,13 @@ public class TestFrameworkEdges extends BaseClassForTests
     public void         testRetry() throws Exception
     {
         final int       serverPort = server.getPort();
-        final File      tempDirectory = server.getTempDirectory();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(1));
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(1));
         client.start();
         try
         {
             final AtomicInteger     retries = new AtomicInteger(0);
-            final CountDownLatch    latch = new CountDownLatch(2);
+            final Semaphore         semaphore = new Semaphore(0);
             client.getZookeeperClient().setRetryPolicy
             (
                 new RetryPolicy()
@@ -198,7 +198,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                     {
                         try
                         {
-                            Thread.sleep(1000);
+                            Thread.sleep(100);
                         }
                         catch ( InterruptedException e )
                         {
@@ -206,21 +206,19 @@ public class TestFrameworkEdges extends BaseClassForTests
                             return false;
                         }
 
-                        if ( retryCount == 5 )
+                        retries.incrementAndGet();
+                        if ( (retryCount + 1) == 5 )
                         {
-                            latch.countDown();
+                            semaphore.release();
                             try
                             {
-                                server = new TestingServer(serverPort, tempDirectory);
+                                server = new TestingServer(serverPort, Files.createTempDir());
+                                client.checkExists().forPath("/foo");   // get the connection again
                             }
                             catch ( Exception e )
                             {
                                 Assert.fail("", e);
                             }
-                        }
-                        else
-                        {
-                            retries.incrementAndGet();
                         }
                         return true;
                     }
@@ -231,14 +229,16 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             // test foreground retry
             client.checkExists().forPath("/hey");
-            Assert.assertTrue(retries.get() >= 5);
+            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertEquals(retries.get(), 5);
+
+            server.stop();
 
             // test background retry
-            server.stop();
             retries.set(0);
             client.checkExists().inBackground().forPath("/hey");
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-            Assert.assertTrue(retries.get() >= 5);
+            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertEquals(retries.get(), 5);
         }
         finally
         {
