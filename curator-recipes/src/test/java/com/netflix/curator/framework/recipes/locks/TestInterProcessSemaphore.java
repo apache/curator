@@ -210,6 +210,35 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     }
 
     @Test
+    public void     testCoopInterProcessSemaphore() throws Exception
+    {
+        final int       DEFAULT_MAX_LEASES = 3;
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            List<CoopInterProcessSemaphore>        leases = Lists.newArrayList();
+            for ( int i = DEFAULT_MAX_LEASES; i > 0; --i )
+            {
+                CoopInterProcessSemaphore      semaphore = new CoopInterProcessSemaphore(client, "/test", "/leases", i);    // i.e. 3, 2, 1
+                Assert.assertTrue(semaphore.acquire(10, TimeUnit.SECONDS)); // if CoopInterProcessSemaphore doesn't work, some of these acquires will fail
+                leases.add(semaphore);
+            }
+
+            CoopInterProcessSemaphore      semaphore = new CoopInterProcessSemaphore(client, "/test", "/leases", DEFAULT_MAX_LEASES);
+            Assert.assertFalse(semaphore.acquire(3, TimeUnit.SECONDS));
+
+            leases.remove(0).release();
+            Assert.assertTrue(semaphore.acquire(10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
     public void     testSimple() throws Exception
     {
         final int       MAX_LEASES = 3;
@@ -222,15 +251,15 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             for ( int i = 0; i < MAX_LEASES; ++i )
             {
                 InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
-                Assert.assertTrue(semaphore.acquire(3, TimeUnit.SECONDS));
+                Assert.assertTrue(semaphore.acquire(10, TimeUnit.SECONDS));
                 leases.add(semaphore);
             }
 
             InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
-            Assert.assertFalse(semaphore.acquire(1, TimeUnit.SECONDS));
+            Assert.assertFalse(semaphore.acquire(3, TimeUnit.SECONDS));
 
             leases.remove(0).release();
-            Assert.assertTrue(semaphore.acquire(3, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.acquire(10, TimeUnit.SECONDS));
         }
         finally
         {
