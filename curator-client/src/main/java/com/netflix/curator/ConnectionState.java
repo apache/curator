@@ -139,6 +139,7 @@ class ConnectionState implements Watcher, Closeable
         if ( newIsConnected != wasConnected )
         {
             isConnected.set(newIsConnected);
+            connectionStartMs = System.currentTimeMillis();
         }
 
         Watcher localParentWatcher = parentWatcher.get();
