@@ -20,6 +20,7 @@ package com.netflix.curator.utils;
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import org.apache.zookeeper.server.NIOServerCnxn;
+import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import java.io.File;
 import java.io.IOException;
@@ -132,6 +133,16 @@ public class TestingServer
      */
     public void stop()
     {
+        ZKDatabase zkDb = server.getZKDatabase();
+        try
+        {
+            zkDb.close();
+        }
+        catch ( IOException e )
+        {
+            System.err.println("Error closing logs");
+            e.printStackTrace();
+        }
         server.shutdown();
         factory.shutdown();
     }
