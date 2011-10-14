@@ -171,32 +171,6 @@ public class RetryLoop
                 log.get().debug("Retrying operation");
             }
         }
-        else if ( exception instanceof KeeperException )
-        {
-            KeeperException     keeperException = (KeeperException)exception;
-            if ( keeperException.code() == KeeperException.Code.NODEEXISTS )
-            {
-                if ( retryCount > 0 )
-                {
-                    /*
-                        Per the ZooKeeper FAQ, http://wiki.apache.org/hadoop/ZooKeeper/FAQ
-                            If you are doing a create request and the link was broken after the request
-                            reached the server and before the response was returned, the create request
-                            will succeed. If the link was broken before the packet went onto the wire,
-                            the create request failed. Unfortunately, there is no way for the client
-                            library to know, so it returns CONNECTION_LOSS. The programmer must figure
-                            out if the request succeeded or needs to be retried
-
-                        This exception says that the node exists. It only occurs when creating a node.
-                        Therefore, we will have gotten here on a create() retry. Just ignore it assuming
-                        that the initial create() succeeded.
-                     */
-
-                    rethrow = false;
-                    isDone = true;
-                }
-            }
-        }
 
         if ( rethrow )
         {
