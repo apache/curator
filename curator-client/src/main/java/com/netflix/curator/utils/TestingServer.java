@@ -17,11 +17,11 @@
  */
 package com.netflix.curator.utils;
 
-import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -30,7 +30,7 @@ import java.net.ServerSocket;
 /**
  * manages an internally running ZooKeeper server. FOR TESTING PURPOSES ONLY
  */
-public class TestingServer
+public class TestingServer implements Closeable
 {
     private final ZooKeeperServer server;
     private final int port;
@@ -150,6 +150,7 @@ public class TestingServer
     /**
      * Close the server and any open clients and delete the temp directory
      */
+    @Override
     public void close()
     {
         try
