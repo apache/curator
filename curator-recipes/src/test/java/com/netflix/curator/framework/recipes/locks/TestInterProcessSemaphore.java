@@ -19,6 +19,7 @@
 package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
@@ -206,6 +207,32 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    public void     testUpdatedCoopInterProcessSemaphore() throws Exception
+    {
+        CuratorFramework client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client1.start();
+            client2.start();
+
+            CoopInterProcessSemaphore      semaphore1 = new CoopInterProcessSemaphore(client1, "/test", "/leases", 1);
+            CoopInterProcessSemaphore      semaphore2 = new CoopInterProcessSemaphore(client1, "/test", "/leases", 1);
+            semaphore1.acquire();
+            Assert.assertFalse(semaphore2.acquire(3, TimeUnit.SECONDS));
+
+            semaphore1.changeNumberOfLeases(2);
+
+            Assert.assertTrue(semaphore2.acquire(10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            Closeables.closeQuietly(client1);
+            Closeables.closeQuietly(client2);
         }
     }
 

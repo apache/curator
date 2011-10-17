@@ -19,8 +19,6 @@
 package com.netflix.curator.framework.recipes.locks;
 
 import com.netflix.curator.framework.CuratorFramework;
-import org.apache.zookeeper.KeeperException;
-import java.nio.ByteBuffer;
 
 /**
  * Same functionality as {@link InterProcessSemaphore}. However, instead of the number
@@ -30,6 +28,8 @@ import java.nio.ByteBuffer;
  */
 public class CoopInterProcessSemaphore extends InterProcessSemaphore
 {
+    private final String leaseStorePath;
+
     /**
      * @param client client
      * @param lockPath the path to lock
@@ -39,7 +39,7 @@ public class CoopInterProcessSemaphore extends InterProcessSemaphore
      */
     public CoopInterProcessSemaphore(CuratorFramework client, String lockPath, String leaseStorePath, int defaultNumberOfLeases) throws Exception
     {
-        super(client, lockPath, getNumberOfLeases(client, leaseStorePath, defaultNumberOfLeases));
+        this(client, lockPath, leaseStorePath, defaultNumberOfLeases, null);
     }
 
     /**
@@ -52,24 +52,20 @@ public class CoopInterProcessSemaphore extends InterProcessSemaphore
      */
     public CoopInterProcessSemaphore(CuratorFramework client, String lockPath, String leaseStorePath, int defaultNumberOfLeases, ClientClosingListener<InterProcessSemaphore> clientClosingListener) throws Exception
     {
-        super(client, lockPath, getNumberOfLeases(client, leaseStorePath, defaultNumberOfLeases), clientClosingListener);
+        super(client, lockPath, defaultNumberOfLeases, clientClosingListener);
+        this.leaseStorePath = leaseStorePath;
+        initLeaseStorePath(leaseStorePath);
     }
 
-    private static int getNumberOfLeases(CuratorFramework client, String leaseStorePath, int defaultNumberOfLeases) throws Exception
+    /**
+     * Change the stored value of number of leases. This instance will updated immediately, other
+     * instances will update as their watchers are notified.
+     *
+     * @param newNumberOfLeases the new number of leases to use
+     * @throws Exception errors reading/writing the number of leases
+     */
+    public void changeNumberOfLeases(int newNumberOfLeases) throws Exception
     {
-        try
-        {
-            byte[] bytes = client.getData().forPath(leaseStorePath);
-            return ByteBuffer.wrap(bytes).getInt();
-        }
-        catch ( KeeperException.NoNodeException ignore )
-        {
-            // ignore
-        }
-
-        byte[]      bytes = new byte[4];
-        ByteBuffer.wrap(bytes).putInt(defaultNumberOfLeases);
-        client.create().creatingParentsIfNeeded().forPath(leaseStorePath, bytes);
-        return defaultNumberOfLeases;
+        changeNumberOfLeases(newNumberOfLeases, leaseStorePath);
     }
 }

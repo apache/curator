@@ -33,10 +33,12 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.common.PathUtils;
 import org.apache.zookeeper.data.Stat;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 abstract class LockInternals<T>
 {
@@ -44,7 +46,7 @@ abstract class LockInternals<T>
     private final String                    path;
     private final String                    basePath;
     private final ClientClosingListener<T>  clientClosingListener;
-    private final int                       numberOfLeases;
+    private final AtomicInteger             numberOfLeases;
     private final CuratorListener           listener;
     private final EnsurePath                ensurePath;
     private final Watcher                   watcher;
@@ -79,7 +81,7 @@ abstract class LockInternals<T>
         this.basePath = path;
         this.path = path + "/" + lockName;
         this.clientClosingListener = clientClosingListener;
-        this.numberOfLeases = numberOfLeases;
+        this.numberOfLeases = new AtomicInteger(numberOfLeases);
 
         ensurePath = client.newNamespaceAwareEnsurePath(basePath);
 
@@ -152,6 +154,41 @@ abstract class LockInternals<T>
         return basePath;
     }
 
+    protected void  changeNumberOfLeases(int newNumberOfLeases, String leaseStorePath) throws Exception
+    {
+        numberOfLeases.set(newNumberOfLeases);
+        if ( leaseStorePath != null )
+        {
+            byte[] bytes = wrapNumberOfLeases(newNumberOfLeases);
+            client.setData().forPath(leaseStorePath, bytes);
+        }
+    }
+
+    protected void  initLeaseStorePath(final String leaseStorePath) throws Exception
+    {
+        Watcher     leaseWatcher = new Watcher()
+        {
+            @Override
+            public void process(WatchedEvent event)
+            {
+                if ( event.getType() == Event.EventType.NodeDataChanged )
+                {
+                    try
+                    {
+                        int     newNumberOfLeases = getExistingNumberOfLeases(client, leaseStorePath, this);
+                        numberOfLeases.set(newNumberOfLeases);
+                    }
+                    catch ( Exception e )
+                    {
+                        client.getZookeeperClient().getLog().error("Could not read lease store node", e);
+                    }
+                }
+            }
+        };
+        int     number = getNumberOfLeases(client, leaseStorePath, numberOfLeases.get(), leaseWatcher);
+        numberOfLeases.set(number);
+    }
+
     protected abstract T getInstance();
 
     protected abstract void setLockData(String ourPath);
@@ -214,7 +251,7 @@ abstract class LockInternals<T>
                     throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
                 }
 
-                if ( ourIndex < numberOfLeases )
+                if ( ourIndex < numberOfLeases.get() )
                 {
                     // we have the lock
                     setLockData(ourPath);
@@ -292,4 +329,34 @@ abstract class LockInternals<T>
         Collections.sort(sortedList);
         return sortedList;
     }
+
+    private static byte[] wrapNumberOfLeases(int newNumberOfLeases)
+    {
+        byte[]      bytes = new byte[4];
+        ByteBuffer.wrap(bytes).putInt(newNumberOfLeases);
+        return bytes;
+    }
+
+    private static int getNumberOfLeases(CuratorFramework client, String leaseStorePath, int defaultNumberOfLeases, Watcher watcher) throws Exception
+    {
+        try
+        {
+            return getExistingNumberOfLeases(client, leaseStorePath, watcher);
+        }
+        catch ( KeeperException.NoNodeException ignore )
+        {
+            // ignore
+        }
+
+        byte[] bytes = wrapNumberOfLeases(defaultNumberOfLeases);
+        client.create().creatingParentsIfNeeded().forPath(leaseStorePath, bytes);
+        return defaultNumberOfLeases;
+    }
+
+    private static int getExistingNumberOfLeases(CuratorFramework client, String leaseStorePath, Watcher watcher) throws Exception
+    {
+        byte[] bytes = client.getData().usingWatcher(watcher).forPath(leaseStorePath);
+        return ByteBuffer.wrap(bytes).getInt();
+    }
+
 }
