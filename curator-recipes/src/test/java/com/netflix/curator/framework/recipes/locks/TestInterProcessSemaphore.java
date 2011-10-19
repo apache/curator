@@ -19,7 +19,6 @@
 package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
@@ -37,32 +36,6 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
 public class TestInterProcessSemaphore extends BaseClassForTests
 {
-    private static class Counter
-    {
-        int     currentCount = 0;
-        int     maxCount = 0;
-    }
-
-    private static class Stepper
-    {
-        private int     available = 0;
-
-        synchronized void        await() throws InterruptedException
-        {
-            while ( available == 0 )
-            {
-                wait();
-            }
-            --available;
-        }
-
-        synchronized void       countDown(int qty)
-        {
-            available += qty;
-            notifyAll();
-        }
-    }
-
     @Test
     public void     testReleaseInChunks() throws Exception
     {
@@ -203,61 +176,6 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                 Assert.assertTrue(counter.currentCount == 0);
                 Assert.assertEquals(counter.maxCount, MAX_LEASES);
             }
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
-    @Test
-    public void     testUpdatedCoopInterProcessSemaphore() throws Exception
-    {
-        CuratorFramework client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
-            client1.start();
-            client2.start();
-
-            CoopInterProcessSemaphore      semaphore1 = new CoopInterProcessSemaphore(client1, "/test", "/leases", 1);
-            CoopInterProcessSemaphore      semaphore2 = new CoopInterProcessSemaphore(client1, "/test", "/leases", 1);
-            semaphore1.acquire();
-            Assert.assertFalse(semaphore2.acquire(3, TimeUnit.SECONDS));
-
-            semaphore1.changeNumberOfLeases(2);
-
-            Assert.assertTrue(semaphore2.acquire(10, TimeUnit.SECONDS));
-        }
-        finally
-        {
-            Closeables.closeQuietly(client1);
-            Closeables.closeQuietly(client2);
-        }
-    }
-
-    @Test
-    public void     testCoopInterProcessSemaphore() throws Exception
-    {
-        final int       DEFAULT_MAX_LEASES = 3;
-
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        client.start();
-        try
-        {
-            List<CoopInterProcessSemaphore>        leases = Lists.newArrayList();
-            for ( int i = DEFAULT_MAX_LEASES; i > 0; --i )
-            {
-                CoopInterProcessSemaphore      semaphore = new CoopInterProcessSemaphore(client, "/test", "/leases", i);    // i.e. 3, 2, 1
-                Assert.assertTrue(semaphore.acquire(10, TimeUnit.SECONDS)); // if CoopInterProcessSemaphore doesn't work, some of these acquires will fail
-                leases.add(semaphore);
-            }
-
-            CoopInterProcessSemaphore      semaphore = new CoopInterProcessSemaphore(client, "/test", "/leases", DEFAULT_MAX_LEASES);
-            Assert.assertFalse(semaphore.acquire(3, TimeUnit.SECONDS));
-
-            leases.remove(0).release();
-            Assert.assertTrue(semaphore.acquire(10, TimeUnit.SECONDS));
         }
         finally
         {

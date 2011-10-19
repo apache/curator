@@ -38,6 +38,7 @@ public class InterProcessSemaphore extends LockInternals<InterProcessSemaphore>
 
     private static class LockData
     {
+        volatile Thread     owningThread;
         volatile String     lockPath;
     }
 
@@ -96,7 +97,7 @@ public class InterProcessSemaphore extends LockInternals<InterProcessSemaphore>
     public void  release() throws Exception
     {
         LockData        localData = lockData;
-        if ( localData == null )
+        if ( (localData == null) || (localData.owningThread != Thread.currentThread()) )
         {
             throw new IllegalMonitorStateException("You do not own the lock: " + getBasePath());
         }
@@ -109,7 +110,7 @@ public class InterProcessSemaphore extends LockInternals<InterProcessSemaphore>
         LockData localData = lockData;
         if ( localData != null )
         {
-            throw new IllegalMonitorStateException("This lock: " + getBasePath() + " is already acquired");
+            throw new IllegalMonitorStateException("This lock: " + getBasePath() + " is already owned by " + localData.owningThread);
         }
 
         return super.internalLock(time, unit);
@@ -125,7 +126,8 @@ public class InterProcessSemaphore extends LockInternals<InterProcessSemaphore>
     {
         LockData localData = new LockData();
         localData.lockPath = ourPath;
-
+        localData.owningThread = Thread.currentThread();
+        
         lockData = localData;
     }
 
