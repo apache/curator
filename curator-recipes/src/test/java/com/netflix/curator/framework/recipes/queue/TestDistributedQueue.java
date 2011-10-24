@@ -35,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
@@ -43,6 +44,60 @@ public class TestDistributedQueue extends BaseClassForTests
     private static final String     QUEUE_PATH = "/a/queue";
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
+
+    @Test
+    public void     testErrorMode() throws Exception
+    {
+        CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final AtomicReference<CountDownLatch>   latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+            final AtomicInteger                     count = new AtomicInteger(0);
+            QueueConsumer<TestQueueItem>            consumer = new QueueConsumer<TestQueueItem>()
+            {
+                @Override
+                public void consumeMessage(TestQueueItem message) throws Exception
+                {
+                    if ( count.incrementAndGet() < 2 )
+                    {
+                        throw new Exception();
+                    }
+                    latch.get().countDown();
+                }
+            };
+            DistributedQueue<TestQueueItem> queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).lockPath("/locks").buildQueue();
+            try
+            {
+                queue.start();
+
+                TestQueueItem       item = new TestQueueItem("1");
+                queue.put(item);
+
+                Assert.assertTrue(latch.get().await(10, TimeUnit.SECONDS));
+                Assert.assertEquals(count.get(), 2);
+
+                queue.setErrorMode(ErrorMode.DELETE);
+
+                count.set(0);
+                latch.set(new CountDownLatch(1));
+
+                item = new TestQueueItem("1");
+                queue.put(item);
+
+                Assert.assertFalse(latch.get().await(5, TimeUnit.SECONDS)); // consumer should get called only once
+                Assert.assertEquals(count.get(), 1);
+            }
+            finally
+            {
+                queue.close();
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+    }
 
     @Test
     public void     testNoDuplicateProcessing() throws Exception

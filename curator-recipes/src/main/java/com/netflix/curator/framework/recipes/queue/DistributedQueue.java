@@ -69,6 +69,7 @@ public class DistributedQueue<T> implements Closeable
     private final boolean isProducerOnly;
     private final AtomicBoolean refreshOnWatchSignaled = new AtomicBoolean(false);
     private final String lockPath;
+    private final AtomicReference<ErrorMode> errorMode = new AtomicReference<ErrorMode>(ErrorMode.REQUEUE);
 
     private final AtomicInteger     putCount = new AtomicInteger(0);
     private final CuratorListener   listener = new CuratorListener()
@@ -191,6 +192,19 @@ public class DistributedQueue<T> implements Closeable
                 }
             );
         }
+    }
+
+    /**
+     * Used when the queue is created with a {@link QueueBuilder#lockPath(String)}. Determines
+     * the behavior when the queue consumer throws an exception
+     *
+     * @param newErrorMode the new error mode (the default is {@link ErrorMode#REQUEUE}
+     */
+    public void     setErrorMode(ErrorMode newErrorMode)
+    {
+        Preconditions.checkNotNull(lockPath);
+
+        errorMode.set(newErrorMode);
     }
 
     /**
@@ -378,7 +392,7 @@ public class DistributedQueue<T> implements Closeable
         }
     }
 
-    private void processMessageBytes(String itemNode, byte[] bytes) throws Exception
+    private boolean processMessageBytes(String itemNode, byte[] bytes) throws Exception
     {
         MultiItem<T>    items;
         try
@@ -387,10 +401,11 @@ public class DistributedQueue<T> implements Closeable
         }
         catch ( Exception e )
         {
-            client.getZookeeperClient().getLog().error("Corrupted queue item: " + itemNode);
-            return;
+            client.getZookeeperClient().getLog().error("Corrupted queue item: " + itemNode, e);
+            return false;
         }
 
+        boolean     removeItem = true;
         for(;;)
         {
             T       item = items.nextItem();
@@ -399,8 +414,21 @@ public class DistributedQueue<T> implements Closeable
                 break;
             }
 
-            consumer.consumeMessage(item);
+            try
+            {
+                consumer.consumeMessage(item);
+            }
+            catch ( Exception e )
+            {
+                client.getZookeeperClient().getLog().error("Exception processing queue item: " + itemNode, e);
+                if ( errorMode.get() == ErrorMode.REQUEUE )
+                {
+                    removeItem = false;
+                    break;
+                }
+            }
         }
+        return removeItem;
     }
 
     private void processNormally(String itemNode) throws Exception
@@ -438,8 +466,10 @@ public class DistributedQueue<T> implements Closeable
 
             String  itemPath = ZKPaths.makePath(queuePath, itemNode);
             byte[]  bytes = client.getData().forPath(itemPath);
-            processMessageBytes(itemNode, bytes);
-            client.delete().forPath(itemPath);
+            if ( processMessageBytes(itemNode, bytes) )
+            {
+                client.delete().forPath(itemPath);
+            }
         }
         catch ( KeeperException.NodeExistsException ignore )
         {
