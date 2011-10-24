@@ -17,10 +17,13 @@
  */
 package com.netflix.curator.framework.recipes.queue;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import junit.framework.Assert;
@@ -40,6 +43,94 @@ public class TestDistributedQueue extends BaseClassForTests
     private static final String     QUEUE_PATH = "/a/queue";
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
+
+    @Test
+    public void     testNoDuplicateProcessing() throws Exception
+    {
+        final int                 itemQty = 1000;
+        final int                 consumerQty = 4;
+
+        CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            DistributedQueue<TestQueueItem> producerQueue = QueueBuilder.builder(client, null, serializer, QUEUE_PATH).buildQueue();
+            try
+            {
+                producerQueue.start();
+                for ( int i = 0; i < itemQty; ++i )
+                {
+                    TestQueueItem       item = new TestQueueItem(Integer.toString(i));
+                    producerQueue.put(item);
+                }
+                producerQueue.flushPuts(10, TimeUnit.SECONDS);
+            }
+            finally
+            {
+                producerQueue.close();
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+
+        final Set<String>                consumedMessages = Sets.newHashSet();
+        final Set<String>                duplicateMessages = Sets.newHashSet();
+
+        final CountDownLatch             latch = new CountDownLatch(itemQty);
+        List<DistributedQueue<TestQueueItem>>   consumers = Lists.newArrayList();
+        List<CuratorFramework>                  consumerClients = Lists.newArrayList();
+        try
+        {
+            final QueueConsumer<TestQueueItem> ourQueue = new QueueConsumer<TestQueueItem>()
+            {
+                @Override
+                public void consumeMessage(TestQueueItem message)
+                {
+                    synchronized(consumedMessages)
+                    {
+                        if ( consumedMessages.contains(message.str) )
+                        {
+                            duplicateMessages.add(message.str);
+                        }
+                        consumedMessages.add(message.str);
+                    }
+                    latch.countDown();
+                }
+            };
+
+            for ( int i = 0; i < consumerQty; ++i )
+            {
+                CuratorFramework thisClient = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+                consumerClients.add(thisClient);
+                thisClient.start();
+
+                DistributedQueue<TestQueueItem>     thisConsumer = QueueBuilder.builder(thisClient, ourQueue, serializer, QUEUE_PATH).
+                    lockPath("/a/locks").
+                    buildQueue();
+                consumers.add(thisConsumer);
+            }
+            for ( DistributedQueue<TestQueueItem> consumer : consumers )
+            {
+                consumer.start();
+            }
+
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(duplicateMessages.toString(), duplicateMessages.size() == 0);
+        }
+        finally
+        {
+            for ( DistributedQueue<TestQueueItem> consumer : consumers )
+            {
+                 Closeables.closeQuietly(consumer);
+            }
+            for ( CuratorFramework curatorFramework : consumerClients )
+            {
+                Closeables.closeQuietly(curatorFramework);
+            }
+        }
+    }
 
     @Test
     public void     testSafetyWithCrash() throws Exception
@@ -296,6 +387,54 @@ public class TestDistributedQueue extends BaseClassForTests
         }
         finally
         {
+            Closeables.closeQuietly(queue);
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void     testFlush() throws Exception
+    {
+        final CountDownLatch              latch = new CountDownLatch(1);
+        DistributedQueue<TestQueueItem>   queue = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.addListener
+            (
+                new CuratorListener()
+                {
+                    @Override
+                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                    {
+                        // this listener should get called before the queue's listener
+                        latch.await();
+                    }
+
+                    @Override
+                    public void clientClosedDueToError(CuratorFramework client, int resultCode, Throwable e)
+                    {
+                    }
+                }
+            );
+
+            queue = QueueBuilder.builder(client, null, serializer, "/test").buildQueue();
+            queue.start();
+
+            queue.put(new TestQueueItem("1"));
+            Assert.assertFalse(queue.flushPuts(3, TimeUnit.SECONDS));
+            latch.countDown();
+
+            Assert.assertTrue(queue.flushPuts(10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            if ( latch.getCount() > 0 )
+            {
+                latch.countDown();
+            }
+
             Closeables.closeQuietly(queue);
             Closeables.closeQuietly(client);
         }

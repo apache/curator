@@ -37,7 +37,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -67,7 +69,9 @@ public class DistributedQueue<T> implements Closeable
     private final boolean isProducerOnly;
     private final AtomicBoolean refreshOnWatchSignaled = new AtomicBoolean(false);
     private final String lockPath;
-    private final CuratorListener listener = new CuratorListener()
+
+    private final AtomicInteger     putCount = new AtomicInteger(0);
+    private final CuratorListener   listener = new CuratorListener()
     {
         @Override
         public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
@@ -77,6 +81,14 @@ public class DistributedQueue<T> implements Closeable
                 if ( event.getWatchedEvent().getType() == Watcher.Event.EventType.NodeChildrenChanged )
                 {
                     internalNotify();
+                }
+            }
+            else if ( event.getType() == CuratorEventType.CREATE )
+            {
+                synchronized(putCount)
+                {
+                    putCount.decrementAndGet();
+                    putCount.notifyAll();
                 }
             }
         }
@@ -181,6 +193,37 @@ public class DistributedQueue<T> implements Closeable
         }
     }
 
+    /**
+     * Wait until any pending puts are committed
+     *
+     * @param waitTime max wait time
+     * @param timeUnit time unit
+     * @return true if the flush was successful, false if it timed out first
+     * @throws InterruptedException if thread was interrupted
+     */
+    public boolean flushPuts(long waitTime, TimeUnit timeUnit) throws InterruptedException
+    {
+        long    msWaitRemaining = TimeUnit.MILLISECONDS.convert(waitTime, timeUnit);
+        synchronized(putCount)
+        {
+            while ( putCount.get() > 0 )
+            {
+                if ( msWaitRemaining <= 0 )
+                {
+                    return false;
+                }
+
+                long        startMs = System.currentTimeMillis();
+
+                putCount.wait(msWaitRemaining);
+
+                long        elapsedMs = System.currentTimeMillis() - startMs;
+                msWaitRemaining -= elapsedMs;
+            }
+        }
+        return true;
+    }
+
     @Override
     public void close() throws IOException
     {
@@ -238,6 +281,7 @@ public class DistributedQueue<T> implements Closeable
             };
         }
 
+        putCount.incrementAndGet();
         byte[]      bytes = ItemSerializer.serialize(multiItem, serializer);
         client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).inBackground().forPath(path, bytes);
     }
@@ -323,69 +367,97 @@ public class DistributedQueue<T> implements Closeable
                 }
             }
 
-            boolean     lockCreated = false;
-            String      itemPath = ZKPaths.makePath(queuePath, itemNode);
-            try
+            if ( isUsingLockSafety )
             {
-                Stat    stat = new Stat();
-                byte[]  bytes = client.getData().storingStatIn(stat).forPath(itemPath);
-                if ( isUsingLockSafety )
-                {
-                    String  lockNodePath = ZKPaths.makePath(lockPath, itemNode);
-                    client.create().withMode(CreateMode.EPHEMERAL).forPath(lockNodePath, new byte[0]);
-                    lockCreated = true;
-                }
-                else
-                {
-                    client.delete().withVersion(stat.getVersion()).forPath(itemPath);
-                }
-
-                MultiItem<T>    items;
-                try
-                {
-                    items = ItemSerializer.deserialize(bytes, serializer);
-                }
-                catch ( Exception e )
-                {
-                    client.getZookeeperClient().getLog().error("Corrupted queue item: " + itemNode);
-                    continue;
-                }
-
-                for(;;)
-                {
-                    T       item = items.nextItem();
-                    if ( item == null )
-                    {
-                        break;
-                    }
-
-                    consumer.consumeMessage(item);
-                }
-
-                if ( isUsingLockSafety )
-                {
-                    client.delete().withVersion(stat.getVersion()).forPath(itemPath);
-                }
+                processWithLockSafety(itemNode);
             }
-            catch ( KeeperException.NodeExistsException ignore )
+            else
             {
-                // another process got it
+                processNormally(itemNode);
             }
-            catch ( KeeperException.NoNodeException ignore )
+        }
+    }
+
+    private void processMessageBytes(String itemNode, byte[] bytes) throws Exception
+    {
+        MultiItem<T>    items;
+        try
+        {
+            items = ItemSerializer.deserialize(bytes, serializer);
+        }
+        catch ( Exception e )
+        {
+            client.getZookeeperClient().getLog().error("Corrupted queue item: " + itemNode);
+            return;
+        }
+
+        for(;;)
+        {
+            T       item = items.nextItem();
+            if ( item == null )
             {
-                // another process got it
+                break;
             }
-            catch ( KeeperException.BadVersionException ignore )
+
+            consumer.consumeMessage(item);
+        }
+    }
+
+    private void processNormally(String itemNode) throws Exception
+    {
+        try
+        {
+            String  itemPath = ZKPaths.makePath(queuePath, itemNode);
+            Stat    stat = new Stat();
+            byte[]  bytes = client.getData().storingStatIn(stat).forPath(itemPath);
+            client.delete().withVersion(stat.getVersion()).forPath(itemPath);
+            processMessageBytes(itemNode, bytes);
+        }
+        catch ( KeeperException.NodeExistsException ignore )
+        {
+            // another process got it
+        }
+        catch ( KeeperException.NoNodeException ignore )
+        {
+            // another process got it
+        }
+        catch ( KeeperException.BadVersionException ignore )
+        {
+            // another process got it
+        }
+    }
+
+    private void processWithLockSafety(String itemNode) throws Exception
+    {
+        String      lockNodePath = ZKPaths.makePath(lockPath, itemNode);
+        boolean     lockCreated = false;
+        try
+        {
+            client.create().withMode(CreateMode.EPHEMERAL).forPath(lockNodePath, new byte[0]);
+            lockCreated = true;
+
+            String  itemPath = ZKPaths.makePath(queuePath, itemNode);
+            byte[]  bytes = client.getData().forPath(itemPath);
+            processMessageBytes(itemNode, bytes);
+            client.delete().forPath(itemPath);
+        }
+        catch ( KeeperException.NodeExistsException ignore )
+        {
+            // another process got it
+        }
+        catch ( KeeperException.NoNodeException ignore )
+        {
+            // another process got it
+        }
+        catch ( KeeperException.BadVersionException ignore )
+        {
+            // another process got it
+        }
+        finally
+        {
+            if ( lockCreated )
             {
-                // another process got it
-            }
-            finally
-            {
-                if ( lockCreated )
-                {
-                    String  lockNodePath = ZKPaths.makePath(lockPath, itemNode);
-                    client.delete().forPath(lockNodePath);
-                }
+                client.delete().forPath(lockNodePath);
             }
         }
     }
