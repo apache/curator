@@ -15,9 +15,11 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.imps;
 
 import com.google.common.io.Closeables;
+import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;

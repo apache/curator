@@ -26,7 +26,6 @@ import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.utils.EnsurePath;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -34,6 +33,7 @@ import org.apache.zookeeper.common.PathUtils;
 import org.apache.zookeeper.data.Stat;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +48,7 @@ abstract class LockInternals<T>
     private final CuratorListener           listener;
     private final EnsurePath                ensurePath;
     private final Watcher                   watcher;
+    private final String                    lockName;
 
     /**
      * Attempt to delete the lock node so that sequence numbers get reset
@@ -72,6 +73,7 @@ abstract class LockInternals<T>
 
     LockInternals(CuratorFramework client, String path, String lockName, ClientClosingListener<T> clientClosingListener, int numberOfLeases)
     {
+        this.lockName = lockName;
         Preconditions.checkArgument(numberOfLeases > 0);
         PathUtils.validatePath(path);
 
@@ -187,7 +189,7 @@ abstract class LockInternals<T>
                 {
                     ensurePath.ensure(client.getZookeeperClient());
 
-                    String      ourPath = client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, new byte[0]);
+                    String      ourPath = client.create().withProtectedEphemeralSequential().forPath(path, new byte[0]);
                     boolean     hasTheClock = internalLockLoop(startMillis, millisToWait, ourPath);
                     return new PathAndFlag(hasTheClock, ourPath);
                 }
@@ -206,7 +208,7 @@ abstract class LockInternals<T>
             {
                 List<String>    children = getSortedChildren(basePath);
                 String          sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
-                int ourIndex = children.indexOf(sequenceNodeName);
+                int             ourIndex = children.indexOf(sequenceNodeName);
                 if ( ourIndex < 0 )
                 {
                     client.getZookeeperClient().getLog().warn("Sequential path not found: " + ourPath);
@@ -285,11 +287,33 @@ abstract class LockInternals<T>
         notifyAll();
     }
 
+    private String   fixForSorting(String str)
+    {
+        int index = str.lastIndexOf(lockName);
+        if ( index >= 0 )
+        {
+            index += lockName.length();
+            return index <= str.length() ? str.substring(index) : "";
+        }
+        return str;
+    }
+
     private List<String> getSortedChildren(String path) throws Exception
     {
         List<String> children = client.getChildren().forPath(path);
         List<String> sortedList = Lists.newArrayList(children);
-        Collections.sort(sortedList);
+        Collections.sort
+        (
+            sortedList,
+            new Comparator<String>()
+            {
+                @Override
+                public int compare(String lhs, String rhs)
+                {
+                    return fixForSorting(lhs).compareTo(fixForSorting(rhs));
+                }
+            }
+        );
         return sortedList;
     }
 }

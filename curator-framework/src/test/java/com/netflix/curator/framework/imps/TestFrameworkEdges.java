@@ -15,15 +15,18 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.imps;
 
 import com.google.common.io.Files;
 import com.netflix.curator.RetryPolicy;
+import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
+import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -38,6 +41,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
+    @Test
+    public void     testMissedResponseOnESCreate() throws Exception
+    {
+        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            CreateBuilderImpl               createBuilder = (CreateBuilderImpl)client.create();
+            createBuilder.failNextCreateForTesting = true;
+            String                          ourPath = createBuilder.withProtectedEphemeralSequential().forPath("/", new byte[0]);
+            Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
+            Assert.assertFalse(createBuilder.failNextCreateForTesting);
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void     testSessionKilled() throws Exception
     {

@@ -232,9 +232,9 @@ public class TestDistributedAtomicCounter extends BaseClassForTests
 
     private void doSimulation(int executionQty, SummaryStatistics timingStats, AtomicInteger optimisticTries, AtomicInteger promotedLockTries, AtomicInteger failures, AtomicInteger errors) throws Exception
     {
-        Random          random = new Random();
-        long            previousValue = -1;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Random              random = new Random();
+        long                previousValue = -1;
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -244,7 +244,7 @@ public class TestDistributedAtomicCounter extends BaseClassForTests
             DistributedAtomicLong dal = new DistributedAtomicLong(client, "/counter", retryPolicy, builder.build());
             for ( int i = 0; i < executionQty; ++i )
             {
-                Thread.sleep(random.nextInt(100));
+                Thread.sleep(random.nextInt(10));
 
                 long                start = System.currentTimeMillis();
                 AtomicValue<Long>   value = dal.increment();

@@ -17,28 +17,38 @@
  */
 package com.netflix.curator.framework.imps;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
 import com.netflix.curator.framework.api.*;
-import com.netflix.curator.framework.api.CuratorEventType;
-import com.netflix.curator.framework.api.CreateBuilder;
-import com.netflix.curator.framework.api.BackgroundCallback;
-import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>
 {
-    private final CuratorFrameworkImpl client;
-    private CreateMode                  createMode;
-    private Backgrounding               backgrounding;
-    private boolean                     createParentsIfNeeded;
-    private ACLing                      acling;
+    private final CuratorFrameworkImpl      client;
+    private CreateMode                      createMode;
+    private Backgrounding                   backgrounding;
+    private boolean                         createParentsIfNeeded;
+    private boolean                         doProtectedEphemeralSequential;
+    private String                          protectedEphemeralSequentialId;
+    private ACLing                          acling;
+
+    @VisibleForTesting
+    boolean failNextCreateForTesting = false;
+
+    @VisibleForTesting
+    static final String         PROTECTED_PREFIX = "_c_";
 
     CreateBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -47,6 +57,8 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         backgrounding = new Backgrounding();
         acling = new ACLing();
         createParentsIfNeeded = false;
+        doProtectedEphemeralSequential = false;
+        protectedEphemeralSequentialId = null;
     }
 
     @Override
@@ -123,6 +135,29 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                         return CreateBuilderImpl.this.forPath(path, data);
                     }
                 };
+            }
+
+            @Override
+            public String forPath(String path, byte[] data) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path, data);
+            }
+        };
+    }
+
+    @Override
+    public ACLPathAndBytesable<String> withProtectedEphemeralSequential()
+    {
+        doProtectedEphemeralSequential = true;
+        protectedEphemeralSequentialId = UUID.randomUUID().toString();
+        createMode = CreateMode.EPHEMERAL_SEQUENTIAL;
+
+        return new ACLPathAndBytesable<String>()
+        {
+            @Override
+            public PathAndBytesable<String> withACL(List<ACL> aclList)
+            {
+                return CreateBuilderImpl.this.withACL(aclList);
             }
 
             @Override
@@ -215,8 +250,10 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
     private String pathInForeground(final String path, final byte[] data) throws Exception
     {
-        TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
-        String    returnPath = RetryLoop.callWithRetry
+        TimeTrace               trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
+
+        final AtomicBoolean     firstTime = new AtomicBoolean(true);
+        String                  returnPath = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
             new Callable<String>()
@@ -224,15 +261,102 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 @Override
                 public String call() throws Exception
                 {
+                    boolean   localFirstTime = firstTime.getAndSet(false);
+
+                    String    localPath = adjustPath(path);
                     if ( createParentsIfNeeded )
                     {
-                        ZKPaths.mkdirs(client.getZooKeeper(), path, false);
+                        ZKPaths.mkdirs(client.getZooKeeper(), localPath, false);
                     }
-                    return client.getZooKeeper().create(path, data, acling.getAclList(), createMode);
+
+                    String  createdPath = null;
+                    if ( !localFirstTime && doProtectedEphemeralSequential )
+                    {
+                        createdPath = findProtectedNodeInForeground(localPath);
+                    }
+
+                    if ( createdPath == null )
+                    {
+                        createdPath = client.getZooKeeper().create(localPath, data, acling.getAclList(), createMode);
+                    }
+
+                    if ( failNextCreateForTesting )
+                    {
+                        failNextCreateForTesting = false;
+                        throw new KeeperException.ConnectionLossException();
+                    }
+                    return createdPath;
                 }
             }
         );
+        
         trace.commit();
         return returnPath;
+    }
+
+    private String  findProtectedNodeInForeground(final String path) throws Exception
+    {
+        TimeTrace       trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-findProtectedNodeInForeground");
+
+        String          returnPath = RetryLoop.callWithRetry
+        (
+            client.getZookeeperClient(),
+            new Callable<String>()
+            {
+                @Override
+                public String call() throws Exception
+                {
+                    String foundNode = null;
+                    try
+                    {
+                        final ZKPaths.PathAndNode   pathAndNode = ZKPaths.getPathAndNode(path);
+                        List<String>                children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
+
+                        final String                protectedPrefix = getProtectedPrefix();
+                        foundNode = Iterables.find
+                        (
+                            children,
+                            new Predicate<String>()
+                            {
+                                @Override
+                                public boolean apply(String node)
+                                {
+                                    return node.startsWith(protectedPrefix);
+                                }
+                            },
+                            null
+                        );
+                        if ( foundNode != null )
+                        {
+                            foundNode = ZKPaths.makePath(pathAndNode.getPath(), foundNode);
+                        }
+                    }
+                    catch ( KeeperException.NoNodeException ignore )
+                    {
+                        // ignore
+                    }
+                    return foundNode;
+                }
+            }
+        );
+
+        trace.commit();
+        return returnPath;
+    }
+
+    private String  adjustPath(String path) throws Exception
+    {
+        if ( doProtectedEphemeralSequential )
+        {
+            ZKPaths.PathAndNode     pathAndNode = ZKPaths.getPathAndNode(path);
+            String                  name = getProtectedPrefix() + pathAndNode.getNode();
+            path = ZKPaths.makePath(pathAndNode.getPath(), name);
+        }
+        return path;
+    }
+
+    private String getProtectedPrefix() throws Exception
+    {
+        return PROTECTED_PREFIX + protectedEphemeralSequentialId + "-";
     }
 }

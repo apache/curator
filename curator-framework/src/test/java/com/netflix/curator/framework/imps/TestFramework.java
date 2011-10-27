@@ -15,8 +15,10 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.imps;
 
+import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
@@ -39,7 +41,7 @@ public class TestFramework extends BaseClassForTests
     @Test
     public void     testCreateACL() throws Exception
     {
-        CuratorFrameworkFactory.Builder      builder = CuratorFrameworkFactory.builder();
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
         CuratorFramework client = builder.connectString(server.getConnectString()).authorization("digest", "me:pass".getBytes()).retryPolicy(new RetryOneTime(1)).build();
         client.start();
         try

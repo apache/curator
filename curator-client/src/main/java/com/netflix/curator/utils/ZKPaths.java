@@ -65,6 +65,51 @@ public class ZKPaths
         return path.substring(i + 1);
     }
 
+    public static class PathAndNode
+    {
+        private final String        path;
+        private final String        node;
+
+        public PathAndNode(String path, String node)
+        {
+            this.path = path;
+            this.node = node;
+        }
+
+        public String getPath()
+        {
+            return path;
+        }
+
+        public String getNode()
+        {
+            return node;
+        }
+    }
+
+    /**
+     * Given a full path, return the node name and its path. i.e. "/one/two/three" will return {"/one/two", "three"}
+     *
+     * @param path the path
+     * @return the node
+     */
+    public static PathAndNode getPathAndNode(String path)
+    {
+        PathUtils.validatePath(path);
+        int i = path.lastIndexOf('/');
+        if ( i < 0 )
+        {
+            return new PathAndNode(path, "");
+        }
+        if ( (i + 1) >= path.length()  )
+        {
+            return new PathAndNode("/", "");
+        }
+        String node = path.substring(i + 1);
+        String parentPath = (i > 0) ? path.substring(0, i) : "/";
+        return new PathAndNode(parentPath, node);
+    }
+
     /**
      * Make sure all the nodes in the path are created. NOTE: Unlike File.mkdirs(), Zookeeper doesn't distinguish
      * between directories and files. So, every node in the path is created. The data for each node is an empty blob

@@ -16,7 +16,7 @@
  *
  */
 
-package com.netflix.curator.framework;
+package com.netflix.curator.framework.imps;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;

@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.framework.imps;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -79,7 +80,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         (
             builder.getConnectString(),
             builder.getSessionTimeoutMs(),
-            builder.getConnectionTimeoutMs(), 
+            builder.getConnectionTimeoutMs(),
             new Watcher()
             {
                 @Override
@@ -96,7 +97,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
                         null,
                         null,
                         watchedEvent,
-                        null);
+                        null
+                    );
                     processEvent(event);
                 }
             },
@@ -115,11 +117,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    /**
-     * only used by {@link NonNamespaceFacade}
-     *
-     * @param parent parent instance
-     */
     protected CuratorFrameworkImpl(CuratorFrameworkImpl parent)
     {
         client = parent.client;
