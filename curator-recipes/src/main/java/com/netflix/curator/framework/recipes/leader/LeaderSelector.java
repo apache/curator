@@ -141,6 +141,22 @@ public class LeaderSelector implements Closeable
                     }
                 );
             }
+
+            @Override
+            public void unhandledError(CuratorFramework client, final Throwable e)
+            {
+                executor.execute
+                (
+                    new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            listener.unhandledError(LeaderSelector.this.client, e);
+                        }
+                    }
+                );
+            }
         };
         InterProcessMutex       mutex = new InterProcessMutex(client, mutexPath, clientClosingListener);
         hasLeadership = false;
@@ -163,11 +179,11 @@ public class LeaderSelector implements Closeable
                         catch ( InterruptedException e )
                         {
                             Thread.currentThread().interrupt();
-                            listener.handleException(client, e);
+                            listener.unhandledError(client, e);
                         }
                         catch ( Exception e )
                         {
-                            listener.handleException(client, e);
+                            listener.unhandledError(client, e);
                         }
                     }
                 }

@@ -101,7 +101,7 @@ abstract class LockInternals<T>
             {
                 if ( event.getType() == CuratorEventType.CLOSING )
                 {
-                    handleClosingEvent();
+                    notifyListener(null);
                 }
                 else if ( event.getType() == CuratorEventType.WATCHED )
                 {
@@ -113,9 +113,9 @@ abstract class LockInternals<T>
             }
 
             @Override
-            public void clientClosedDueToError(CuratorFramework client, int resultCode, Throwable e)
+            public void unhandledError(CuratorFramework client, Throwable e)
             {
-                // NOP - closing event will have been sent
+                notifyListener(e);
             }
         };
     }
@@ -212,7 +212,7 @@ abstract class LockInternals<T>
                 if ( ourIndex < 0 )
                 {
                     client.getZookeeperClient().getLog().warn("Sequential path not found: " + ourPath);
-                    handleClosingEvent();
+                    notifyListener(null);
                     throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
                 }
 
@@ -273,11 +273,18 @@ abstract class LockInternals<T>
         return haveTheLock;
     }
 
-    private void handleClosingEvent()
+    private void notifyListener(Throwable e)
     {
         if ( clientClosingListener != null )
         {
-            clientClosingListener.notifyClientClosing(getInstance(), client);
+            if ( e != null )
+            {
+                clientClosingListener.unhandledError(client, e);
+            }
+            else
+            {
+                clientClosingListener.notifyClientClosing(getInstance(), client);
+            }
         }
         notifyFromWatcher();
     }

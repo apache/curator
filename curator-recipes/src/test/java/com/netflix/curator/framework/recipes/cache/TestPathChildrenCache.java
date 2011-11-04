@@ -63,12 +63,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                     }
 
                     @Override
-                    public void handleException(CuratorFramework client, Exception exception)
-                    {
-                    }
-
-                    @Override
-                    public void notifyClientClosing(CuratorFramework client)
+                    public void unhandledError(CuratorFramework client, Throwable exception)
                     {
                     }
                 }
@@ -123,7 +118,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             new PathChildrenCacheListener()
             {
                 @Override
-                public void handleException(CuratorFramework client, Exception exception)
+                public void unhandledError(CuratorFramework client, Throwable exception)
                 {
                 }
 
@@ -134,11 +129,6 @@ public class TestPathChildrenCache extends BaseClassForTests
                     {
                         latch.countDown();
                     }
-                }
-
-                @Override
-                public void notifyClientClosing(CuratorFramework client)
-                {
                 }
             }
         );
@@ -194,7 +184,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                 new PathChildrenCacheListener()
                 {
                     @Override
-                    public void handleException(CuratorFramework client, Exception exception)
+                    public void unhandledError(CuratorFramework client, Throwable exception)
                     {
                         if ( exception instanceof IllegalAccessException )
                         {
@@ -206,11 +196,6 @@ public class TestPathChildrenCache extends BaseClassForTests
                     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
                     {
                         throw new IllegalAccessException();
-                    }
-
-                    @Override
-                    public void notifyClientClosing(CuratorFramework client)
-                    {
                     }
                 }
             );
@@ -243,7 +228,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                 new PathChildrenCacheListener()
                 {
                     @Override
-                    public void handleException(CuratorFramework client, Exception exception)
+                    public void unhandledError(CuratorFramework client, Throwable exception)
                     {
                     }
 
@@ -254,11 +239,6 @@ public class TestPathChildrenCache extends BaseClassForTests
                         {
                             events.offer(event.getType());
                         }
-                    }
-
-                    @Override
-                    public void notifyClientClosing(CuratorFramework client)
-                    {
                     }
                 }
             );

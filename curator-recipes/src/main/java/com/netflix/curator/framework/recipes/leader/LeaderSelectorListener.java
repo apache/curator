@@ -18,13 +18,14 @@
 package com.netflix.curator.framework.recipes.leader;
 
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.CuratorUnhandledErrorListener;
 
 /**
  * Notification for leadership
  *
  * @see LeaderSelector
  */
-public interface LeaderSelectorListener
+public interface LeaderSelectorListener extends CuratorUnhandledErrorListener
 {
     /**
      * Called when your instance has been granted leadership. This method
@@ -34,14 +35,6 @@ public interface LeaderSelectorListener
      * @throws Exception any errors
      */
     public void         takeLeadership(CuratorFramework client) throws Exception;
-
-    /**
-     * Called when an exception that can't be processed internally is caught
-     *
-     * @param client the client
-     * @param exception the exception
-     */
-    public void         handleException(CuratorFramework client, Exception exception);
 
     /**
      * Will get called if client connection unexpectedly closes. *IMPORTANT* this

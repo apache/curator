@@ -15,19 +15,22 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.framework.recipes.locks;
+package com.netflix.curator.framework.api;
 
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.CuratorUnhandledErrorListener;
 
-public interface ClientClosingListener<T> extends CuratorUnhandledErrorListener
+/**
+ * Receives notifications about errors and background events
+ */
+public interface CuratorUnhandledErrorListener
 {
     /**
-     * Called if the client is closed for some reason. If this is called, the lock that was held
-     * is no longer held.
+     * Called when all retries have failed. The connection will still be active but one or more
+     * operations may have failed. It is up to the client how to handle this. The safest thing to
+     * do is to close the client and create a new client, etc.
      *
-     * @param lock the lock that was previously held (it is no longer valid)
-     * @param client the client
+     * @param client client
+     * @param e the exception that caused the issue
      */
-    public void     notifyClientClosing(T lock, CuratorFramework client);
+    public void         unhandledError(CuratorFramework client, Throwable e);
 }

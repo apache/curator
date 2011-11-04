@@ -18,11 +18,12 @@
 package com.netflix.curator.framework.recipes.cache;
 
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.CuratorUnhandledErrorListener;
 
 /**
  * Listener for PathChildrenCache changes
  */
-public interface PathChildrenCacheListener
+public interface PathChildrenCacheListener extends CuratorUnhandledErrorListener
 {
     /**
      * Called when a change has occurred
@@ -32,19 +33,4 @@ public interface PathChildrenCacheListener
      * @throws Exception errors
      */
     public void     childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception;
-
-    /**
-     * Called when an exception that can't be processed internally is caught
-     *
-     * @param client the client
-     * @param exception the exception
-     */
-    public void     handleException(CuratorFramework client, Exception exception);
-
-    /**
-     * Will get called if client connection unexpectedly closes
-     *
-     * @param client the client
-     */
-    public void     notifyClientClosing(CuratorFramework client);
 }

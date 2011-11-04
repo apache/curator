@@ -28,6 +28,7 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.*;
 import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -334,6 +335,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return client.getZooKeeper();
     }
 
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
     {
         boolean     queueOperation = false;
@@ -353,7 +355,20 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
                 else
                 {
-                    notifyErrorClosing("Background operation retry gave up", event.getResultCode(), null);
+                    KeeperException.Code    code = KeeperException.Code.get(event.getResultCode());
+                    Exception               e = null;
+                    try
+                    {
+                        e = (code != null) ? KeeperException.create(code) : null;
+                    }
+                    catch ( Throwable ignore )
+                    {
+                    }
+                    if ( e == null )
+                    {
+                        e = new Exception("Unknown result code: " + event.getResultCode());
+                    }
+                    notifyError("Background operation retry gave up", e);
                 }
                 break;
             }
@@ -373,23 +388,15 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    void   notifyErrorClosing(String reason, final int resultCode, final Throwable e)
+    void notifyError(String reason, final Throwable e)
     {
         if ( (reason == null) || (reason.length() == 0) )
         {
             reason = "n/a";
         }
 
-        if ( e != null )
-        {
-            client.getLog().error("Closing due to \"" + reason + "\"", e);
-        }
-        else
-        {
-            client.getLog().error("Closing due to error code: " + resultCode + " and \"" + reason + "\"");
-        }
+        client.getLog().error("Closing due to \"" + reason + "\"", e);
 
-        client.close();
         for ( final ListenerEntry<CuratorListener> entry : listeners.values() )
         {
             entry.executor.execute
@@ -399,7 +406,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     @Override
                     public void run()
                     {
-                        entry.listener.clientClosedDueToError(CuratorFrameworkImpl.this, resultCode, e);
+                        entry.listener.unhandledError(CuratorFrameworkImpl.this, e);
                     }
                 }
             );
@@ -438,7 +445,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
             catch ( Exception e )
             {
-                notifyErrorClosing("Ensure path threw exception", 0, e);
+                notifyError("Ensure path threw exception", e);
                 return false;
             }
         }
@@ -476,7 +483,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             }
 
-            notifyErrorClosing("Background exception was not retry-able or retry gave up", 0, e);
+            notifyError("Background exception was not retry-able or retry gave up", e);
         } while ( false );
     }
 
@@ -491,7 +498,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
             catch ( Exception e )
             {
-                notifyErrorClosing("addAuthInfo for background operation threw exception", 0, e);
+                notifyError("addAuthInfo for background operation threw exception", e);
                 return;
             }
         }
@@ -539,7 +546,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                         }
                         catch ( Exception e )
                         {
-                            notifyErrorClosing("Event listener threw exception", 0, e);
+                            notifyError("Event listener threw exception", e);
                         }
                     }
                 }

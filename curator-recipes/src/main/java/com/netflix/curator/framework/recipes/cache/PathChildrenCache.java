@@ -21,12 +21,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -89,8 +89,9 @@ public class PathChildrenCache implements Closeable
         }
 
         @Override
-        public void clientClosedDueToError(CuratorFramework client, int resultCode, Throwable e)
+        public void unhandledError(CuratorFramework client, Throwable e)
         {
+            listenerEvents.offer(new EventEntry(e));
         }
     };
 
@@ -109,13 +110,7 @@ public class PathChildrenCache implements Closeable
     private static class EventEntry
     {
         final PathChildrenCacheEvent  event;
-        final Exception               exception;
-
-        private EventEntry()
-        {
-            this.event = null;
-            this.exception = null;
-        }
+        final Throwable               exception;
 
         private EventEntry(PathChildrenCacheEvent event)
         {
@@ -123,7 +118,7 @@ public class PathChildrenCache implements Closeable
             this.exception = null;
         }
 
-        private EventEntry(Exception exception)
+        private EventEntry(Throwable exception)
         {
             this.event = null;
             this.exception = exception;
@@ -270,47 +265,12 @@ public class PathChildrenCache implements Closeable
 
     private void listenerLoop()
     {
-        boolean     unexpectedClose = false;
         while ( !Thread.currentThread().isInterrupted() )
         {
             try
             {
-                final EventEntry event = listenerEvents.take();
-                if ( (event.event == null) && (event.exception == null) )
-                {
-                    // special case - unexpected close
-                    unexpectedClose = true;
-                    break;
-                }
-
-                for ( final ListenerEntry listener : listeners.values() )
-                {
-                    listener.executor.execute
-                    (
-                        new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                try
-                                {
-                                    if ( event.event != null )
-                                    {
-                                        listener.listener.childEvent(client, event.event);
-                                    }
-                                    else
-                                    {
-                                        listener.listener.handleException(client, event.exception);
-                                    }
-                                }
-                                catch ( Exception e )
-                                {
-                                    listenerEvents.offer(new EventEntry(e));
-                                }
-                            }
-                        }
-                    );
-                }
+                EventEntry event = listenerEvents.take();
+                callListeners(event);
             }
             catch ( InterruptedException e )
             {
@@ -318,16 +278,10 @@ public class PathChildrenCache implements Closeable
                 break;
             }
         }
-
-        if ( unexpectedClose )
-        {
-            handleUnexpectedClose();
-        }
     }
 
-    private void handleUnexpectedClose()
+    private void callListeners(final EventEntry event)
     {
-        Closeables.closeQuietly(this);
         for ( final ListenerEntry listener : listeners.values() )
         {
             listener.executor.execute
@@ -337,7 +291,21 @@ public class PathChildrenCache implements Closeable
                     @Override
                     public void run()
                     {
-                        listener.listener.notifyClientClosing(client);
+                        try
+                        {
+                            if ( event.event != null )
+                            {
+                                listener.listener.childEvent(client, event.event);
+                            }
+                            else
+                            {
+                                listener.listener.unhandledError(client, event.exception);
+                            }
+                        }
+                        catch ( Exception e )
+                        {
+                            listenerEvents.offer(new EventEntry(e));
+                        }
                     }
                 }
             );
@@ -374,7 +342,7 @@ public class PathChildrenCache implements Closeable
 
             case CLOSING:
             {
-                listenerEvents.offer(new EventEntry());
+                listenerEvents.offer(new EventEntry(new KeeperException.ConnectionLossException()));
                 break;
             }
 
