@@ -145,9 +145,9 @@ public class NonNamespaceFacade extends CuratorFrameworkImpl
     }
 
     @Override
-    void notifyErrorClosing(int resultCode, Throwable e)
+    void notifyErrorClosing(String reason, int resultCode, Throwable e)
     {
-        client.notifyErrorClosing(resultCode, e);
+        client.notifyErrorClosing(reason, resultCode, e);
     }
 
     @Override

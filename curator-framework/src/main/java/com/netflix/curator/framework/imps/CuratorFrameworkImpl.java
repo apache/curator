@@ -17,7 +17,6 @@
  */
 package com.netflix.curator.framework.imps;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -354,7 +353,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
                 else
                 {
-                    notifyErrorClosing(event.getResultCode(), null);
+                    notifyErrorClosing("Background operation retry gave up", event.getResultCode(), null);
                 }
                 break;
             }
@@ -374,15 +373,20 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    void   notifyErrorClosing(final int resultCode, final Throwable e)
+    void   notifyErrorClosing(String reason, final int resultCode, final Throwable e)
     {
+        if ( (reason == null) || (reason.length() == 0) )
+        {
+            reason = "n/a";
+        }
+
         if ( e != null )
         {
-            client.getLog().error("Closing due to error", e);
+            client.getLog().error("Closing due to \"" + reason + "\"", e);
         }
         else
         {
-            client.getLog().error("Closing due to error code: " + resultCode);
+            client.getLog().error("Closing due to error code: " + resultCode + " and \"" + reason + "\"");
         }
 
         client.close();
@@ -434,7 +438,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
             catch ( Exception e )
             {
-                notifyErrorClosing(0, e);
+                notifyErrorClosing("Ensure path threw exception", 0, e);
                 return false;
             }
         }
@@ -472,7 +476,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             }
 
-            notifyErrorClosing(0, e);
+            notifyErrorClosing("Background exception was not retry-able or retry gave up", 0, e);
         } while ( false );
     }
 
@@ -487,7 +491,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
             catch ( Exception e )
             {
-                notifyErrorClosing(0, e);
+                notifyErrorClosing("addAuthInfo for background operation threw exception", 0, e);
                 return;
             }
         }
@@ -535,7 +539,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                         }
                         catch ( Exception e )
                         {
-                            notifyErrorClosing(0, e);   // TODO - I'm not sure we should close here?
+                            notifyErrorClosing("Event listener threw exception", 0, e);
                         }
                     }
                 }
