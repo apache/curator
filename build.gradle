@@ -1,0 +1,56 @@
+/*
+	THIS IS STILL EXPERIMENTAL - IT IS NOT A COMPLETE IMPLEMENTATION
+*/
+
+subprojects 
+{
+    group = 'com.netflix.curator'
+    version = '0.32'
+
+    apply plugin: 'java'
+
+    repositories 
+    {
+       mavenCentral()
+    }
+
+    dependencies 
+    {
+        compile     'org.apache.zookeeper:zookeeper:3.3.1'
+        compile     'com.google.guava:guava:r09'
+        testCompile 'org.testng:testng:6.1.1'
+        testCompile 'org.testng:testng:6.1.1'
+    }
+}
+
+task aggregateJavadoc(type: Javadoc) {
+    description = 'Aggregate all subproject docs into a single docs directory'
+    source subprojects.collect {project -> project.sourceSets.main.allJava } 
+    classpath = files(subprojects.collect {project -> project.sourceSets.main.compileClasspath}) 
+    destinationDir = new File(projectDir, 'doc')
+}
+
+project(':curator-client')
+{
+    dependencies
+    {
+        testCompile 'org.mockito:mockito-core:1.8.5'
+    }
+}
+
+project(':curator-framework')
+{
+    dependencies
+    {
+        compile project(':curator-client')
+    }
+}
+
+project(':curator-recipes')
+{
+    dependencies
+    {
+        compile project(':curator-framework')
+	testCompile 'org.apache.commons:commons-math:2.0'
+    }
+}

@@ -1,0 +1,2 @@
+include 'curator-client','curator-framework','curator-recipes'
+
