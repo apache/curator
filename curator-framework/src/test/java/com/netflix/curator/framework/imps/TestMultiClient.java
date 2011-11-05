@@ -66,7 +66,7 @@ public class TestMultiClient extends BaseClassForTests
                     }
 
                     @Override
-                    public void clientClosedDueToError(CuratorFramework client, int resultCode, Throwable e)
+                    public void unhandledError(CuratorFramework client, Throwable e)
                     {
                     }
                 }
@@ -89,7 +89,7 @@ public class TestMultiClient extends BaseClassForTests
                     }
 
                     @Override
-                    public void clientClosedDueToError(CuratorFramework client, int resultCode, Throwable e)
+                    public void unhandledError(CuratorFramework client, Throwable e)
                     {
                     }
                 }

@@ -96,7 +96,7 @@ class Backgrounding
                             }
                             catch ( Exception e )
                             {
-                                client.notifyErrorClosing(0, e);   // TODO - I'm not sure we should close here?
+                                client.notifyError("Background operation result handling threw exception", e);
                             }
                         }
                     }

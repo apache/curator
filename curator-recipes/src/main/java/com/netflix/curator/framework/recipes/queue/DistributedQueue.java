@@ -95,7 +95,7 @@ public class DistributedQueue<T> implements Closeable
         }
 
         @Override
-        public void clientClosedDueToError(CuratorFramework client, int resultCode, Throwable e)
+        public void unhandledError(CuratorFramework client, Throwable e)
         {
             // nop
         }

@@ -22,7 +22,7 @@ import com.netflix.curator.framework.CuratorFramework;
 /**
  * Receives notifications about errors and background events
  */
-public interface CuratorListener
+public interface CuratorListener extends CuratorUnhandledErrorListener
 {
     /**
      * Called when a background task has completed or a watch has triggered
@@ -32,13 +32,4 @@ public interface CuratorListener
      * @throws Exception any errors
      */
     public void         eventReceived(CuratorFramework client, CuratorEvent event) throws Exception;
-
-    /**
-     * Called when all retries have failed. The connection will have been closed.
-     *
-     * @param client client (now closed)
-     * @param resultCode the result code that caused the issue or 0
-     * @param e the exception that caused the issue or null
-     */
-    public void         clientClosedDueToError(CuratorFramework client, int resultCode, Throwable e);
 }

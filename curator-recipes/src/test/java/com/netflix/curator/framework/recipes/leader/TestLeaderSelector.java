@@ -54,7 +54,7 @@ public class TestLeaderSelector extends BaseClassForTests
                 private volatile Thread     ourThread;
 
                 @Override
-                public void handleException(CuratorFramework client, Exception exception)
+                public void unhandledError(CuratorFramework client, Throwable exception)
                 {
                 }
 
@@ -125,7 +125,7 @@ public class TestLeaderSelector extends BaseClassForTests
             LeaderSelector leaderSelector1 = new LeaderSelector(client, PATH_NAME, new LeaderSelectorListener()
             {
                 @Override
-                public void handleException(CuratorFramework client, Exception exception)
+                public void unhandledError(CuratorFramework client, Throwable exception)
                 {
                 }
 
@@ -144,7 +144,7 @@ public class TestLeaderSelector extends BaseClassForTests
             LeaderSelector      leaderSelector2 = new LeaderSelector(client, PATH_NAME, new LeaderSelectorListener()
             {
                 @Override
-                public void handleException(CuratorFramework client, Exception exception)
+                public void unhandledError(CuratorFramework client, Throwable exception)
                 {
                 }
 
@@ -217,7 +217,7 @@ public class TestLeaderSelector extends BaseClassForTests
                 LeaderSelector      leaderSelector = new LeaderSelector(client, PATH_NAME, new LeaderSelectorListener()
                 {
                     @Override
-                    public void handleException(CuratorFramework client, Exception exception)
+                    public void unhandledError(CuratorFramework client, Throwable exception)
                     {
                     }
 
