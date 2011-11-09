@@ -90,7 +90,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     (
                         CuratorEventType.WATCHED,
                         watchedEvent.getState().getIntValue(),
-                        watchedEvent.getPath(),
+                        unfixForNamespace(watchedEvent.getPath()),
                         null,
                         null,
                         null,
@@ -415,7 +415,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     String    unfixForNamespace(String path)
     {
-        if ( namespace != null )
+        if ( (namespace != null) && (path != null) )
         {
             String      namespacePath = ZKPaths.makePath(namespace, null);
             if ( path.startsWith(namespacePath) )

@@ -113,7 +113,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
     @Override
     public BackgroundPathable<byte[]> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return this;
     }
 

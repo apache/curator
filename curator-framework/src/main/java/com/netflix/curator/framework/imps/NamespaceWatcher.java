@@ -15,40 +15,27 @@
  *     limitations under the License.
  *
  */
+
 package com.netflix.curator.framework.imps;
 
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 
-class Watching
+class NamespaceWatcher implements Watcher
 {
-    private final Watcher       watcher;
-    private final boolean       watched;
+    private final CuratorFrameworkImpl client;
+    private final Watcher actualWatcher;
 
-    Watching(boolean watched)
+    NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher)
     {
-        this.watcher = null;
-        this.watched = watched;
+        this.client = client;
+        this.actualWatcher = actualWatcher;
     }
 
-    Watching(CuratorFrameworkImpl client, Watcher watcher)
+    @Override
+    public void process(WatchedEvent event)
     {
-        this.watcher = new NamespaceWatcher(client, watcher);
-        this.watched = false;
-    }
-
-    Watching()
-    {
-        watcher = null;
-        watched = false;
-    }
-
-    Watcher getWatcher()
-    {
-        return watcher;
-    }
-
-    boolean isWatched()
-    {
-        return watched;
+        String      path = client.unfixForNamespace(event.getPath());
+        actualWatcher.process(new WatchedEvent(event.getType(), event.getState(), path));
     }
 }

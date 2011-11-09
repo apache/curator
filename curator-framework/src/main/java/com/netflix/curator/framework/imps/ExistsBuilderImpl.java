@@ -54,7 +54,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
     @Override
     public BackgroundPathable<Stat> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return this;
     }
 

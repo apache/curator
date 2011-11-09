@@ -27,6 +27,7 @@ import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
@@ -34,10 +35,48 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 public class TestFramework extends BaseClassForTests
 {
+    @Test
+    public void     testNamespaceWithWatcher() throws Exception
+    {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).namespace("aisa").retryPolicy(new RetryOneTime(1)).build();
+        client.start();
+        try
+        {
+            final SynchronousQueue<String>  queue = new SynchronousQueue<String>();
+            Watcher                         watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    try
+                    {
+                        queue.put(event.getPath());
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        throw new Error(e);
+                    }
+                }
+            };
+            client.create().forPath("/base", new byte[0]);
+            client.getChildren().usingWatcher(watcher).forPath("/base");
+            client.create().forPath("/base/child", new byte[0]);
+
+            String      path = queue.take();
+            Assert.assertEquals(path, "/base");
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void     testCreateACL() throws Exception
     {
