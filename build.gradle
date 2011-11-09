@@ -2,14 +2,14 @@
 	THIS IS STILL EXPERIMENTAL - IT IS NOT A COMPLETE IMPLEMENTATION
 */
 
-subprojects 
+subprojects
 {
-    group = 'com.netflix.curator'
-    version = '0.32'
-
     apply plugin: 'java'
 
-    repositories 
+    group = 'com.netflix.curator'
+    version = "0.4.1"
+
+    repositories
     {
        mavenCentral()
     }
@@ -22,7 +22,7 @@ subprojects
         testCompile 'org.testng:testng:6.1.1'
     }
 
-    task sourcesJar(type: Jar, dependsOn:classes) { 
+    task sourcesJar(type: Jar, dependsOn:classes) {
         classifier = 'sources' 
         from sourceSets.main.allSource 
     } 
@@ -61,6 +61,6 @@ project(':curator-recipes')
     dependencies
     {
         compile project(':curator-framework')
-	testCompile 'org.apache.commons:commons-math:2.0'
+	    testCompile 'org.apache.commons:commons-math:2.0'
     }
 }
