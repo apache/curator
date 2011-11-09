@@ -240,7 +240,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     name = client.unfixForNamespace(name);
 
                     trace.commit();
-                    CuratorEvent event = new CuratorEventImpl(CuratorEventType.CREATE, rc, path, name, ctx, null, null, null, null, null);
+                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, null, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
                 }
             },

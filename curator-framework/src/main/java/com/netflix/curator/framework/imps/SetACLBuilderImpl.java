@@ -122,7 +122,7 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
                 public void processResult(int rc, String path, Object ctx, Stat stat)
                 {
                     trace.commit();
-                    CuratorEvent event = new CuratorEventImpl(CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null);
+                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
                 }
             },

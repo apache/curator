@@ -41,6 +41,59 @@ import java.util.concurrent.TimeUnit;
 public class TestFramework extends BaseClassForTests
 {
     @Test
+    public void     testNamespaceInBackground() throws Exception
+    {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).namespace("aisa").retryPolicy(new RetryOneTime(1)).build();
+        client.start();
+        try
+        {
+            final SynchronousQueue<String>  queue = new SynchronousQueue<String>();
+            CuratorListener                 listener = new CuratorListener()
+            {
+                @Override
+                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    if ( event.getType() == CuratorEventType.EXISTS )
+                    {
+                        queue.put(event.getPath());
+                    }
+                }
+
+                @Override
+                public void unhandledError(CuratorFramework client, Throwable e)
+                {
+                }
+            };
+
+            client.addListener(listener);
+            client.create().forPath("/base", new byte[0]);
+            client.checkExists().inBackground().forPath("/base");
+
+            String      path = queue.poll(10, TimeUnit.SECONDS);
+            Assert.assertEquals(path, "/base");
+
+            client.removeListener(listener);
+
+            BackgroundCallback      callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    queue.put(event.getPath());
+                }
+            };
+            client.getChildren().inBackground(callback).forPath("/base");
+            path = queue.poll(10, TimeUnit.SECONDS);
+            Assert.assertEquals(path, "/base");
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
+    @Test
     public void     testNamespaceWithWatcher() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();

@@ -27,7 +27,7 @@ import java.util.List;
 
 class CuratorEventImpl implements CuratorEvent
 {
-    private final CuratorEventType type;
+    private final CuratorEventType  type;
     private final int               resultCode;
     private final String            path;
     private final String            name;
@@ -98,17 +98,17 @@ class CuratorEventImpl implements CuratorEvent
         return aclList;
     }
 
-    CuratorEventImpl(CuratorEventType type, int resultCode, String path, String name, Object context, Stat stat, byte[] data, List<String> children, WatchedEvent watchedEvent, List<ACL> aclList)
+    CuratorEventImpl(CuratorFrameworkImpl client, CuratorEventType type, int resultCode, String path, String name, Object context, Stat stat, byte[] data, List<String> children, WatchedEvent watchedEvent, List<ACL> aclList)
     {
         this.type = type;
         this.resultCode = resultCode;
-        this.path = path;
+        this.path = client.unfixForNamespace(path);
         this.name = name;
         this.context = context;
         this.stat = stat;
         this.data = data;
         this.children = children;
-        this.watchedEvent = watchedEvent;
+        this.watchedEvent = (watchedEvent != null) ? new NamespaceWatchedEvent(client, watchedEvent) : watchedEvent;
         this.aclList = (aclList != null) ? ImmutableList.copyOf(aclList) : null;
     }
 }

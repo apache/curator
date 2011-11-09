@@ -21,20 +21,10 @@ package com.netflix.curator.framework.imps;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 
-class NamespaceWatcher implements Watcher
+class NamespaceWatchedEvent extends WatchedEvent
 {
-    private final CuratorFrameworkImpl client;
-    private final Watcher actualWatcher;
-
-    NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher)
+    NamespaceWatchedEvent(CuratorFrameworkImpl client, WatchedEvent event)
     {
-        this.client = client;
-        this.actualWatcher = actualWatcher;
-    }
-
-    @Override
-    public void process(WatchedEvent event)
-    {
-        actualWatcher.process(new NamespaceWatchedEvent(client, event));
+        super(event.getType(), event.getState(), client.unfixForNamespace(event.getPath()));
     }
 }

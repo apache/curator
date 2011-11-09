@@ -89,7 +89,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx, List<ACL> acl, Stat stat)
             {
                 trace.commit();
-                CuratorEventImpl event = new CuratorEventImpl(CuratorEventType.GET_ACL, rc, path, null, ctx, stat, null, null, null, acl);
+                CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.GET_ACL, rc, path, null, ctx, stat, null, null, null, acl);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };

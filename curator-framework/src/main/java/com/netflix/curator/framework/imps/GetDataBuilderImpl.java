@@ -127,7 +127,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
             {
                 trace.commit();
-                CuratorEvent event = new CuratorEventImpl(CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null);
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };

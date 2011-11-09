@@ -24,9 +24,9 @@ import java.util.concurrent.Executor;
 
 class Backgrounding
 {
-    private final boolean           inBackground;
-    private final Object            context;
-    private final BackgroundCallback callback;
+    private final boolean               inBackground;
+    private final Object                context;
+    private final BackgroundCallback    callback;
 
     Backgrounding(Object context)
     {

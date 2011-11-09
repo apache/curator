@@ -88,6 +88,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 {
                     CuratorEvent event = new CuratorEventImpl
                     (
+                        CuratorFrameworkImpl.this,
                         CuratorEventType.WATCHED,
                         watchedEvent.getState().getIntValue(),
                         unfixForNamespace(watchedEvent.getPath()),
@@ -188,7 +189,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     @Override
                     public void run()
                     {
-                        CuratorEvent event = new CuratorEventImpl(CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
+                        CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
                         try
                         {
                             entry.listener.eventReceived(CuratorFrameworkImpl.this, event);

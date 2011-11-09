@@ -91,7 +91,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                 public void processResult(int rc, String path, Object ctx)
                 {
                     trace.commit();
-                    CuratorEvent event = new CuratorEventImpl(CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null);
+                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
                 }
             },
