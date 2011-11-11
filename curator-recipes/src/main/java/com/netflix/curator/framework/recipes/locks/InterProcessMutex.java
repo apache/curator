@@ -28,10 +28,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class InterProcessMutex implements InterProcessLock
 {
-    private final LockInternals<?> internals;
-    private final String                basePath;
+    private final LockInternals<?>  internals;
+    private final String            basePath;
 
-    private volatile LockData           lockData;
+    private volatile LockData       lockData;
 
     private static final SharedCount           sharedCount = new SharedCount()
     {

@@ -19,7 +19,20 @@
 package com.netflix.curator.framework.recipes.locks;
 
 import java.io.Closeable;
+import java.io.IOException;
 
+/**
+ * Represents an acquired lease from an {@link InterProcessSemaphore}. It is the client's responsibility
+ * to close this lease when it is no longer needed so that other blocked clients can use it. If the
+ * client crashes (or its session expires, etc.) the lease will automatically be closed.
+ */
 public interface Lease extends Closeable
 {
+    /**
+     * Releases the lease so that other clients/processes can acquire it
+     *
+     * @throws IOException
+     */
+    @Override
+    public void close() throws IOException;
 }
