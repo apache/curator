@@ -190,8 +190,8 @@ abstract class LockInternals<T>
                     ensurePath.ensure(client.getZookeeperClient());
 
                     String      ourPath = client.create().withProtectedEphemeralSequential().forPath(path, new byte[0]);
-                    boolean     hasTheClock = internalLockLoop(startMillis, millisToWait, ourPath);
-                    return new PathAndFlag(hasTheClock, ourPath);
+                    boolean     hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
+                    return new PathAndFlag(hasTheLock, ourPath);
                 }
             }
         );
