@@ -18,6 +18,7 @@
 package com.netflix.curator.framework.recipes.locks;
 
 import com.netflix.curator.framework.CuratorFramework;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -25,9 +26,21 @@ import java.util.concurrent.TimeUnit;
  * use the same lock path will achieve an inter-process critical section. Further, this mutex is
  * "fair" - each user will get the mutex in the order requested (from ZK's point of view)
  */
-public class InterProcessMutex extends LockInternals<InterProcessMutex> implements InterProcessLock
+public class InterProcessMutex implements InterProcessLock
 {
+    private final LockInternals<?> internals;
+    private final String                basePath;
+
     private volatile LockData           lockData;
+
+    private static final SharedCount           sharedCount = new SharedCount()
+    {
+        @Override
+        public int getCount() throws Exception
+        {
+            return 1;
+        }
+    };
 
     private static class LockData
     {
@@ -54,7 +67,8 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex> implemen
      */
     public InterProcessMutex(CuratorFramework client, String path, ClientClosingListener<InterProcessMutex> clientClosingListener)
     {
-        super(client, path, LOCK_NAME, clientClosingListener, 1);
+        basePath = path;
+        internals = new LockInternals<InterProcessMutex>(client, path, LOCK_NAME, this, clientClosingListener);
     }
 
     /**
@@ -67,7 +81,10 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex> implemen
     @Override
     public void acquire() throws Exception
     {
-        internalAcquire();
+        if ( !internalLock(-1, null) )
+        {
+            throw new IOException("Lost connection while trying to acquire lock: " + basePath);
+        }
     }
 
     /**
@@ -83,7 +100,7 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex> implemen
     @Override
     public boolean acquire(long time, TimeUnit unit) throws Exception
     {
-        return (internalAcquire(time, unit) != null);
+        return internalLock(time, unit);
     }
 
     /**
@@ -109,7 +126,7 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex> implemen
         LockData    localData = lockData;
         if ( (localData == null) || (localData.owningThread != Thread.currentThread()) )
         {
-            throw new IllegalMonitorStateException("You do not own the lock: " + getBasePath());
+            throw new IllegalMonitorStateException("You do not own the lock: " + basePath);
         }
 
         if ( --localData.lockCount > 0 )
@@ -118,57 +135,40 @@ public class InterProcessMutex extends LockInternals<InterProcessMutex> implemen
         }
         if ( localData.lockCount < 0 )
         {
-            throw new IllegalMonitorStateException("Lock count has gone negative for lock: " + getBasePath());
+            throw new IllegalMonitorStateException("Lock count has gone negative for lock: " + basePath);
         }
 
-        internalRelease(localData.lockPath);
-    }
-
-    @Override
-    protected InterProcessMutex getInstance()
-    {
-        return this;
-    }
-
-    @Override
-    protected void setLockData(String ourPath)
-    {
-        LockData        localLockData = new LockData();
-        localLockData.lockPath = ourPath;
-        localLockData.lockCount = 1;
-        localLockData.owningThread = Thread.currentThread();
-
-        lockData = localLockData;
-    }
-
-    @Override
-    protected void clearLockData()
-    {
+        internals.releaseLock(localData.lockPath);
         lockData = null;
     }
 
-    @Override
-    protected int lockCount()
-    {
-        LockData localLockData = lockData;
-        return (localLockData != null) ? localLockData.lockCount : -1;
-    }
-
-    protected String internalLock(long time, TimeUnit unit) throws Exception
+    private boolean internalLock(long time, TimeUnit unit) throws Exception
     {
         LockData    localData = lockData;
         boolean     re_entering = (localData != null) && (localData.owningThread == Thread.currentThread());
         if ( !re_entering && (localData != null) )
         {
-            throw new IllegalMonitorStateException("This lock: " + getBasePath() + " is already owned by " + localData.owningThread);
+            throw new IllegalMonitorStateException("This lock: " + basePath + " is already owned by " + localData.owningThread);
         }
 
         if ( re_entering )
         {
             ++localData.lockCount;
-            return localData.lockPath;
+            return true;
         }
 
-        return super.internalLock(time, unit);
+        String lockPath = internals.attemptLock(time, unit, sharedCount);
+        if ( lockPath != null )
+        {
+            LockData        localLockData = new LockData();
+            localLockData.lockPath = lockPath;
+            localLockData.lockCount = 1;
+            localLockData.owningThread = Thread.currentThread();
+
+            lockData = localLockData;
+            return true;
+        }
+
+        return false;
     }
 }
