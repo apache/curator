@@ -16,9 +16,9 @@
  *
  */
 
-package com.netflix.curator.framework.recipes.locks;
+package com.netflix.curator.framework.recipes.shared;
 
-interface SharedCount
+public interface SharedCountListener
 {
-    public int  getCount() throws Exception;
+    public void         countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception;
 }
