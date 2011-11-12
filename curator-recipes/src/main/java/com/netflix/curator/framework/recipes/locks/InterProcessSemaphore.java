@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.recipes.shared.SharedCount;
 import com.netflix.curator.framework.recipes.shared.SharedCountListener;
 import com.netflix.curator.framework.recipes.shared.SharedCountReader;
 import java.io.IOException;
@@ -37,24 +36,23 @@ import java.util.concurrent.TimeUnit;
  * </p>
  *
  * <p>
- *     The maximum number of leases is stored in a common node in ZK. Each unique InterProcessSemaphore
- *     path will have a single maximum leases node. Initially, the maximum is <code>0</code>. Use
- *     either {@link #setMaxLeases(int)} or {@link #compareAndSetMaxLeases(int, int)} to adjust
- *     the maximum number of leases as needed. Semaphores that share the path will adjust to
- *     the maximum number of leases via watches.
+ *     There are two modes for determining the max leases for the semaphore. In the first mode the
+ *     max leases is a convention maintained by the users of a given path. In the second mode a
+ *     {@link SharedCountReader} is used as the method for semaphores of a given path to determine
+ *     the max leases.
  * </p>
  *
  * <p>
- *     For a given path, no more than the currently set maximum number leases will be allowed. Note though
- *     that ZooKeeper's consistency guarantees apply and so it is possible that more than maximum
- *     leases can be acquired by clients that have yet to receive an updated value for the maximum
- *     lease node.
+ *     If a {@link SharedCountReader} is <b>not</b> used, no internal checks are done to prevent
+ *     Process A acting as if there are 10 leases and Process B acting as if there are 20. Therefore,
+ *     make sure that all instances in all processes use the same numberOfLeases value.
  * </p>
  *
  * <p>
  *     The various acquire methods return {@link Lease} objects that represent acquired leases. Clients
- *     must take care to close lease objects else the lease will be lost (ideally in a <code>finally</code>
- *     block). However, if the client session drops (crash, etc.), any leases held by the client are
+ *     must take care to close lease objects  (ideally in a <code>finally</code>
+ *     block) else the lease will be lost. However, if the client session drops (crash, etc.),
+ *     any leases held by the client are
  *     automatically closed and made available to other clients.
  * </p>
  */
@@ -67,6 +65,7 @@ public class InterProcessSemaphore
     /**
      * @param client the client
      * @param path path for the semaphore
+     * @param maxLeases the max number of leases to allow for this instance
      */
     public InterProcessSemaphore(CuratorFramework client, String path, int maxLeases)
     {
@@ -76,6 +75,7 @@ public class InterProcessSemaphore
     /**
      * @param client the client
      * @param path path for the semaphore
+     * @param count the shared count to use for the max leases
      */
     public InterProcessSemaphore(CuratorFramework client, String path, SharedCountReader count)
     {
@@ -86,12 +86,19 @@ public class InterProcessSemaphore
      * @param client the client
      * @param path path for the semaphore
      * @param clientClosingListener if not null, will get called if client connection unexpectedly closes
+     * @param maxLeases the max number of leases to allow for this instance
      */
     public InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener, int maxLeases)
     {
         this(client, path, clientClosingListener, maxLeases, null);
     }
 
+    /**
+     * @param client the client
+     * @param path path for the semaphore
+     * @param clientClosingListener if not null, will get called if client connection unexpectedly closes
+     * @param count the shared count to use for the max leases
+     */
     public InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener, SharedCountReader count)
     {
         this(client, path, clientClosingListener, 0, count);
@@ -129,6 +136,11 @@ public class InterProcessSemaphore
         }
     }
 
+    /**
+     * Convenience method. Closes the lease
+     *
+     * @param lease lease to close
+     */
     public void     returnLease(Lease lease)
     {
         Closeables.closeQuietly(lease);
