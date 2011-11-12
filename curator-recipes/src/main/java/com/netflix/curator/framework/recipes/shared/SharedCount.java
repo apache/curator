@@ -18,21 +18,14 @@
 
 package com.netflix.curator.framework.recipes.shared;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.imps.ListenerEntry;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages a shared integer. All clients watching the same path will have the up-to-date
@@ -40,40 +33,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class SharedCount implements Closeable, SharedCountReader
 {
-    private final Map<SharedCountListener, ListenerEntry<SharedCountListener>> listeners = Maps.newConcurrentMap();
-    private final CuratorFramework          client;
-    private final String                    path;
-    private final int                       seedValue;
-    private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
-    private final Watcher                   watcher = new Watcher()
-    {
-        @Override
-        public void process(WatchedEvent event)
-        {
-            try
-            {
-                if ( state.get() == State.STARTED )
-                {
-                    readCount();
-                    notifyListeners();
-                }
-            }
-            catch ( Exception e )
-            {
-                client.getZookeeperClient().getLog().error("From SharedCount process event", e);
-            }
-        }
-    };
-
-    private enum State
-    {
-        LATENT,
-        STARTED,
-        CLOSED
-    }
-
-    private volatile int        count;
-    private volatile Stat       stat = new Stat();
+    private final Map<SharedCountListener, SharedValueListener> listeners = Maps.newConcurrentMap();
+    private final SharedValue           sharedValue;
 
     /**
      * @param client the client
@@ -82,16 +43,13 @@ public class SharedCount implements Closeable, SharedCountReader
      */
     public SharedCount(CuratorFramework client, String path, int seedValue)
     {
-        this.client = client;
-        this.path = path;
-        this.seedValue = seedValue;
-        count = seedValue;
+        sharedValue = new SharedValue(client, path, toBytes(seedValue));
     }
 
     @Override
     public int getCount()
     {
-        return count;
+        return fromBytes(sharedValue.getValue());
     }
 
     /**
@@ -102,11 +60,7 @@ public class SharedCount implements Closeable, SharedCountReader
      */
     public void     setCount(int newCount) throws Exception
     {
-        Preconditions.checkState(state.get() == State.STARTED);
-
-        client.setData().forPath(path, toBytes(newCount));
-        stat.setVersion(stat.getVersion() + 1);
-        count = newCount;
+        sharedValue.setValue(toBytes(newCount));
     }
 
     /**
@@ -122,22 +76,7 @@ public class SharedCount implements Closeable, SharedCountReader
      */
     public boolean  trySetCount(int newCount) throws Exception
     {
-        Preconditions.checkState(state.get() == State.STARTED);
-
-        try
-        {
-            client.setData().withVersion(stat.getVersion()).forPath(path, toBytes(newCount));
-            stat.setVersion(stat.getVersion() + 1);
-            count = newCount;
-            return true;
-        }
-        catch ( KeeperException.BadVersionException ignore )
-        {
-            // ignore
-        }
-
-        readCount();
-        return false;
+        return sharedValue.trySetValue(toBytes(newCount));
     }
 
     @Override
@@ -147,11 +86,18 @@ public class SharedCount implements Closeable, SharedCountReader
     }
 
     @Override
-    public void     addListener(SharedCountListener listener, Executor executor)
+    public void     addListener(final SharedCountListener listener, Executor executor)
     {
-        Preconditions.checkState(state.get() == State.STARTED);
-
-        listeners.put(listener, new ListenerEntry<SharedCountListener>(listener, executor));
+        SharedValueListener     valueListener = new SharedValueListener()
+        {
+            @Override
+            public void valueHasChanged(SharedValueReader sharedValue, byte[] newValue) throws Exception
+            {
+                listener.countHasChanged(SharedCount.this, fromBytes(newValue));
+            }
+        };
+        sharedValue.addListener(valueListener, executor);
+        listeners.put(listener, valueListener);
     }
 
     @Override
@@ -168,33 +114,13 @@ public class SharedCount implements Closeable, SharedCountReader
      */
     public void     start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
-
-        try
-        {
-            client.create().creatingParentsIfNeeded().forPath(path, toBytes(seedValue));
-        }
-        catch ( KeeperException.NodeExistsException ignore )
-        {
-            // ignore
-        }
-
-        readCount();
+        sharedValue.start();
     }
 
     @Override
     public void close() throws IOException
     {
-        state.set(State.CLOSED);
-        listeners.clear();
-    }
-
-    private synchronized void readCount() throws Exception
-    {
-        Stat    localStat = new Stat();
-        byte[]  bytes = client.getData().storingStatIn(localStat).usingWatcher(watcher).forPath(path);
-        stat = localStat;
-        count = fromBytes(bytes);
+        sharedValue.close();
     }
 
     private static byte[]   toBytes(int value)
@@ -207,30 +133,5 @@ public class SharedCount implements Closeable, SharedCountReader
     private static int      fromBytes(byte[] bytes)
     {
         return ByteBuffer.wrap(bytes).getInt();
-    }
-
-    private void notifyListeners()
-    {
-        for ( final ListenerEntry<SharedCountListener> entry : listeners.values() )
-        {
-            entry.executor.execute
-            (
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            entry.listener.countHasChanged(SharedCount.this, count);
-                        }
-                        catch ( Exception e )
-                        {
-                            client.getZookeeperClient().getLog().error("From SharedCount listener", e);
-                        }
-                    }
-                }
-            );
-        }
     }
 }

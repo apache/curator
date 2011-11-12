@@ -19,16 +19,16 @@
 package com.netflix.curator.framework.recipes.shared;
 
 /**
- * Listener for changes to a shared count
+ * Listener for changes to a shared value
  */
-public interface SharedCountListener
+public interface SharedValueListener
 {
     /**
      * Called when the shared value has changed
      *
-     * @param sharedCount the shared count instance
-     * @param newCount the new count
+     * @param sharedValue the shared value instance
+     * @param newValue the new value
      * @throws Exception errors
      */
-    public void         countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception;
+    public void valueHasChanged(SharedValueReader sharedValue, byte[] newValue) throws Exception;
 }
