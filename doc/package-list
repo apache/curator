@@ -8,5 +8,6 @@ com.netflix.curator.framework.recipes.cache
 com.netflix.curator.framework.recipes.leader
 com.netflix.curator.framework.recipes.locks
 com.netflix.curator.framework.recipes.queue
+com.netflix.curator.framework.recipes.shared
 com.netflix.curator.retry
 com.netflix.curator.utils
