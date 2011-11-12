@@ -21,14 +21,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.utils.EnsurePath;
-import com.netflix.curator.utils.ZKPaths;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
+import com.netflix.curator.framework.recipes.shared.SharedCount;
+import com.netflix.curator.framework.recipes.shared.SharedCountListener;
+import com.netflix.curator.framework.recipes.shared.SharedCountReader;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
@@ -64,52 +60,26 @@ import java.util.concurrent.TimeUnit;
  */
 public class InterProcessSemaphore
 {
-    private final CuratorFramework  client;
     private final LockInternals<?>  internals;
-    private final String            maxLeasesPath;
-    private final EnsurePath        ensureMaxLeasesPath;
-    private final Watcher           watcher = new Watcher()
-    {
-        @Override
-        public void process(WatchedEvent event)
-        {
-            internals.getSyncLock().lock();
-            try
-            {
-                maxLeases = DIRTY;
-                internals.getSyncCondition().signalAll();
-            }
-            finally
-            {
-                internals.getSyncLock().unlock();
-            }
-        }
-    };
-    private final SharedCount               sharedCount = new SharedCount()
-    {
-        @Override
-        public int getCount() throws Exception
-        {
-            checkMaxLeases();
-            return maxLeases;
-        }
-    };
 
-    private volatile int            maxLeases = DIRTY;
-    private volatile Stat           maxLeasesStat = new Stat();
-
-    private static final int            DIRTY = -1;
-
-    private static final String         LOCK_PATH = "locks";
-    private static final String         MAX_LEASES_PATH = "max-leases";
+    private static final String     LOCK_NAME = "lock-";
 
     /**
      * @param client the client
      * @param path path for the semaphore
      */
-    public InterProcessSemaphore(CuratorFramework client, String path)
+    public InterProcessSemaphore(CuratorFramework client, String path, int maxLeases)
     {
-        this(client, path, null);
+        this(client, path, null, maxLeases, null);
+    }
+
+    /**
+     * @param client the client
+     * @param path path for the semaphore
+     */
+    public InterProcessSemaphore(CuratorFramework client, String path, SharedCountReader count)
+    {
+        this(client, path, null, 0, count);
     }
 
     /**
@@ -117,62 +87,33 @@ public class InterProcessSemaphore
      * @param path path for the semaphore
      * @param clientClosingListener if not null, will get called if client connection unexpectedly closes
      */
-    public InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener)
+    public InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener, int maxLeases)
     {
-        this.client = client;
-        
-        maxLeasesPath = ZKPaths.makePath(path, MAX_LEASES_PATH);
-        internals = new LockInternals<InterProcessSemaphore>(client, path, LOCK_PATH, this, clientClosingListener);
-        ensureMaxLeasesPath = client.newNamespaceAwareEnsurePath(path);
+        this(client, path, clientClosingListener, maxLeases, null);
     }
 
-    /**
-     * Atomically set a new value for the maximum number of leases. The new value is set only if
-     * the current value is the same as the <code>expectedValue</code> parameter. All semaphores
-     * that use this instance's path will update to use the new maximum number of leases value (ZK's
-     * normally consistency rules apply).
-     * 
-     * @param expectedValue the value currently expected for max leases. If the current value
-     * doesn't match, the max leases is not changed
-     * @param newValue new value for maximum leases
-     * @return true if the new value was set, false if not
-     * @throws Exception ZK errors, interruptions, etc.
-     */
-    public boolean  compareAndSetMaxLeases(int expectedValue, int newValue) throws Exception
+    public InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener, SharedCountReader count)
     {
-        checkMaxLeases();
-        
-        if ( expectedValue != maxLeases )
-        {
-            return false;
-        }
-
-        try
-        {
-            ensureMaxLeasesPath.ensure(client.getZookeeperClient());
-            client.setData().withVersion(maxLeasesStat.getVersion()).forPath(maxLeasesPath, maxToBytes(newValue));
-        }
-        catch ( KeeperException.BadVersionException dummy )
-        {
-            return false;
-        }
-
-        return true;
+        this(client, path, clientClosingListener, 0, count);
     }
 
-    /**
-     * Atomically set a new value for the maximum number of leases irrespective of its previous value.
-     * All semaphores that use this instance's path will update to use the new maximum number of leases
-     * value (ZK's normally consistency rules apply).
-     *
-     * @param newValue new value for maximum leases
-     * @throws Exception ZK errors, interruptions, etc.
-     */
-    public void     setMaxLeases(int newValue) throws Exception
+    private InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener, int maxLeases, SharedCountReader count)
     {
-        checkMaxLeases();
-
-        client.setData().forPath(maxLeasesPath, maxToBytes(newValue));
+        internals = new LockInternals<InterProcessSemaphore>(client, path, LOCK_NAME, this, clientClosingListener, (count != null) ? count.getCount() : maxLeases);
+        if ( count != null )
+        {
+            count.addListener
+            (
+                new SharedCountListener()
+                {
+                    @Override
+                    public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception
+                    {
+                        internals.setMaxLeases(newCount);
+                    }
+                }
+            );
+        }
     }
 
     /**
@@ -180,12 +121,17 @@ public class InterProcessSemaphore
      *
      * @param leases leases to close
      */
-    public void     closeAll(Collection<Lease> leases)
+    public void     returnAll(Collection<Lease> leases)
     {
         for ( Lease l : leases )
         {
             Closeables.closeQuietly(l);
         }
+    }
+
+    public void     returnLease(Lease lease)
+    {
+        Closeables.closeQuietly(lease);
     }
 
     /**
@@ -200,7 +146,7 @@ public class InterProcessSemaphore
      */
     public Lease acquire() throws Exception
     {
-        String      path = internalAcquire(-1, null);
+        String      path = internals.attemptLock(-1, null);
         return makeLease(path);
     }
 
@@ -210,7 +156,7 @@ public class InterProcessSemaphore
      * close enough leases.</p>
      *
      * <p>The client must close the leases when it is done with them. You should do this in a
-     * <code>finally</code> block. NOTE: You can use {@link #closeAll(Collection)} for this.</p>
+     * <code>finally</code> block. NOTE: You can use {@link #returnAll(Collection)} for this.</p>
      *
      * @param qty number of leases to acquire
      * @return the new leases
@@ -225,13 +171,13 @@ public class InterProcessSemaphore
         {
             while ( qty-- > 0 )
             {
-                String      path = internalAcquire(-1, null);
+                String      path = internals.attemptLock(-1, null);
                 builder.add(makeLease(path));
             }
         }
         catch ( Exception e )
         {
-            closeAll(builder.build());
+            returnAll(builder.build());
             throw e;
         }
         return builder.build();
@@ -252,7 +198,7 @@ public class InterProcessSemaphore
      */
     public Lease acquire(long time, TimeUnit unit) throws Exception
     {
-        String      path = internalAcquire(time, unit);
+        String      path = internals.attemptLock(time, unit);
         return (path != null) ? makeLease(path) : null;
     }
 
@@ -264,7 +210,7 @@ public class InterProcessSemaphore
      * leases are automatically closed.</p>
      *
      * <p>The client must close the leases when it is done with them. You should do this in a
-     * <code>finally</code> block. NOTE: You can use {@link #closeAll(Collection)} for this.</p>
+     * <code>finally</code> block. NOTE: You can use {@link #returnAll(Collection)} for this.</p>
      *
      * @param qty number of leases to acquire
      * @param time time to wait
@@ -287,10 +233,10 @@ public class InterProcessSemaphore
                 long        elapsedMs = System.currentTimeMillis() - startMs;
                 long        thisWaitMs = waitMs - elapsedMs;
 
-                String      path = (thisWaitMs > 0) ? internalAcquire(thisWaitMs, TimeUnit.MILLISECONDS) : null;
+                String      path = (thisWaitMs > 0) ? internals.attemptLock(thisWaitMs, TimeUnit.MILLISECONDS) : null;
                 if ( path == null )
                 {
-                    closeAll(builder.build());
+                    returnAll(builder.build());
                     return null;
                 }
                 builder.add(makeLease(path));
@@ -298,24 +244,11 @@ public class InterProcessSemaphore
         }
         catch ( Exception e )
         {
-            closeAll(builder.build());
+            returnAll(builder.build());
             throw e;
         }
 
         return builder.build();
-    }
-
-    private String internalAcquire(long thisWaitMs, TimeUnit unit) throws Exception
-    {
-        internals.getSyncLock().lock();
-        try
-        {
-            return internals.attemptLock(thisWaitMs, unit, sharedCount);
-        }
-        finally
-        {
-            internals.getSyncLock().unlock();
-        }
     }
 
     private Lease makeLease(final String path)
@@ -335,61 +268,5 @@ public class InterProcessSemaphore
                 }
             }
         };
-    }
-
-    private static byte[] maxToBytes(int max)
-    {
-        byte[]      bytes = new byte[4];
-        ByteBuffer.wrap(bytes).putInt(max);
-
-        return bytes;
-    }
-
-    private int     readMaxLeases() throws Exception
-    {
-        byte[]          bytes = null;
-        try
-        {
-            Stat        newStat = new Stat();
-            bytes = client.getData().storingStatIn(newStat).usingWatcher(watcher).forPath(maxLeasesPath);
-            maxLeasesStat = newStat;
-        }
-        catch ( KeeperException.NoNodeException dummy )
-        {
-            // ignore
-        }
-
-        if ( bytes == null )
-        {
-            try
-            {
-                client.create().forPath(maxLeasesPath, maxToBytes(0));
-            }
-            catch ( KeeperException.NodeExistsException ignore )
-            {
-                // ignore
-            }
-            return readMaxLeases(); // have to re-read to set our watcher
-        }
-        return ByteBuffer.wrap(bytes).getInt();
-    }
-
-    private void checkMaxLeases() throws Exception
-    {
-        ensureMaxLeasesPath.ensure(client.getZookeeperClient());
-
-        internals.getSyncLock().lock();
-        try
-        {
-            if ( maxLeases == DIRTY )
-            {
-                maxLeases = readMaxLeases();
-                internals.getSyncCondition().signalAll();
-            }
-        }
-        finally
-        {
-            internals.getSyncLock().unlock();
-        }
     }
 }

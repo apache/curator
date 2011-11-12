@@ -23,6 +23,7 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.shared.SharedCount;
 import com.netflix.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -44,40 +45,35 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     @Test
     public void testThreadedLeaseIncrease() throws Exception
     {
-        CuratorFramework client1 = null;
-        CuratorFramework client2 = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         try
         {
-            client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            client.start();
 
-            client1.start();
-            client2.start();
+            final SharedCount             count = new SharedCount(client, "/foo/count", 1);
+            count.start();
 
-            final InterProcessSemaphore   semaphore1 = new InterProcessSemaphore(client1, "/test");
-            final InterProcessSemaphore   semaphore2 = new InterProcessSemaphore(client2, "/test");
-
-            semaphore2.setMaxLeases(1);
+            final InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", count);
 
             ExecutorService     service = Executors.newCachedThreadPool();
 
             final CountDownLatch    latch = new CountDownLatch(1);
             Future<Object>          future1 = service.submit
-            (
-                new Callable<Object>()
-                {
-                    @Override
-                    public Object call() throws Exception
+                (
+                    new Callable<Object>()
                     {
-                        Lease lease = semaphore1.acquire(10, TimeUnit.SECONDS);
-                        Assert.assertNotNull(lease);
-                        latch.countDown();
-                        lease = semaphore1.acquire(10, TimeUnit.SECONDS);
-                        Assert.assertNotNull(lease);
-                        return null;
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            Lease lease = semaphore.acquire(10, TimeUnit.SECONDS);
+                            Assert.assertNotNull(lease);
+                            latch.countDown();
+                            lease = semaphore.acquire(10, TimeUnit.SECONDS);
+                            Assert.assertNotNull(lease);
+                            return null;
+                        }
                     }
-                }
-            );
+                );
             Future<Object>          future2 = service.submit
             (
                 new Callable<Object>()
@@ -86,7 +82,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                     public Object call() throws Exception
                     {
                         Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-                        Assert.assertTrue(semaphore2.compareAndSetMaxLeases(1, 2));
+                        Thread.sleep(1000); // make sure second acquire is waiting
+                        Assert.assertTrue(count.trySetCount(2));
                         return null;
                     }
                 }
@@ -97,8 +94,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client1);
-            Closeables.closeQuietly(client2);
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -117,10 +113,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             client1.start();
             client2.start();
 
-            semaphore1 = new InterProcessSemaphore(client1, "/test");
-            semaphore2 = new InterProcessSemaphore(client2, "/test");
-
-            Assert.assertTrue(semaphore1.compareAndSetMaxLeases(0, 1));
+            semaphore1 = new InterProcessSemaphore(client1, "/test", 1);
+            semaphore2 = new InterProcessSemaphore(client2, "/test", 1);
 
             Lease lease = semaphore2.acquire(10, TimeUnit.SECONDS);
             Assert.assertNotNull(lease);
@@ -149,20 +143,6 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         final Random          random = new Random();
         final int             SESSION_MAX = random.nextInt(75) + 25;
 
-        {
-            CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            client.start();
-            try
-            {
-                InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test");
-                semaphore.setMaxLeases(SESSION_MAX);
-            }
-            finally
-            {
-                client.close();
-            }
-        }
-
         List<Future<Object>>  futures = Lists.newArrayList();
         ExecutorService       service = Executors.newCachedThreadPool();
         final Counter         counter = new Counter();
@@ -182,7 +162,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                             client.start();
                             try
                             {
-                                InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test");
+                                InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", SESSION_MAX);
 
                                 for ( int i = 0; i < LOOP_QTY; ++i )
                                 {
@@ -224,7 +204,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                                         {
                                             counter.currentCount -= thisQty;
                                         }
-                                        semaphore.closeAll(leases);
+                                        semaphore.returnAll(leases);
                                         synchronized(available)
                                         {
                                             available.addAndGet(thisQty);
@@ -267,18 +247,6 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         final AtomicInteger     activeQty = new AtomicInteger(0);
         final AtomicInteger     uses = new AtomicInteger(0);
 
-        CuratorFramework                masterClient = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        masterClient.start();
-        try
-        {
-            InterProcessSemaphore   masterSemaphore = new InterProcessSemaphore(masterClient, "/test");
-            masterSemaphore.setMaxLeases(MAX);
-        }
-        finally
-        {
-            masterClient.close();
-        }
-
         List<Future<Object>>    futures = Lists.newArrayList();
         ExecutorService         service = Executors.newFixedThreadPool(CLIENT_QTY);
         for ( int i = 0; i < CLIENT_QTY; ++i )
@@ -294,7 +262,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         client.start();
                         try
                         {
-                            InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test");
+                            InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", MAX);
                             Lease lease = semaphore.acquire(10, TimeUnit.SECONDS);
                             Assert.assertNotNull(lease);
                             uses.incrementAndGet();
@@ -336,6 +304,126 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         Assert.assertEquals(uses.get(), CLIENT_QTY);
         Assert.assertEquals(maxLeases.get(), MAX);
     }
+    
+    @Test
+    public void     testReleaseInChunks() throws Exception
+    {
+        final int       MAX_LEASES = 11;
+        final int       THREADS = 100;
+
+        final CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final Stepper         latch = new Stepper();
+            final Random          random = new Random();
+            final Counter         counter = new Counter();
+            ExecutorService       service = Executors.newCachedThreadPool();
+            for ( int i = 0; i < THREADS; ++i )
+            {
+                service.submit
+                (
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+                            Lease lease = semaphore.acquire();
+                            try
+                            {
+                                synchronized(counter)
+                                {
+                                    ++counter.currentCount;
+                                    if ( counter.currentCount > counter.maxCount )
+                                    {
+                                        counter.maxCount = counter.currentCount;
+                                    }
+                                }
+
+                                latch.await();
+                            }
+                            finally
+                            {
+                                synchronized(counter)
+                                {
+                                    --counter.currentCount;
+                                }
+                                semaphore.returnLease(lease);
+                            }
+                            return null;
+                        }
+                    }
+                );
+            }
+
+            int     remaining = THREADS;
+            while ( remaining > 0 )
+            {
+                int times = Math.min(random.nextInt(5) + 1, remaining);
+                latch.countDown(times);
+                remaining -= times;
+                Thread.sleep(random.nextInt(100) + 1);
+            }
+            Thread.sleep(1000);
+
+            synchronized(counter)
+            {
+                Assert.assertTrue(counter.currentCount == 0);
+                Assert.assertTrue(counter.maxCount > 0);
+                Assert.assertTrue(counter.maxCount <= MAX_LEASES);
+                System.out.println(counter.maxCount);
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
+    @Test
+    public void     testThreads() throws Exception
+    {
+        final int        THREAD_QTY = 10;
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", 1);
+            ExecutorService               service = Executors.newFixedThreadPool(THREAD_QTY);
+            for ( int i = 0; i < THREAD_QTY; ++i )
+            {
+                service.submit
+                (
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            Lease   lease = semaphore.acquire();
+                            try
+                            {
+                                Thread.sleep(1);
+                            }
+                            finally
+                            {
+                                lease.close();
+                            }
+                            return null;
+                        }
+                    }
+                );
+            }
+            service.shutdown();
+            Assert.assertTrue(service.awaitTermination(10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
 
     @Test
     public void     testSimple() throws Exception
@@ -344,10 +432,40 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         client.start();
         try
         {
-            InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test");
-            semaphore.setMaxLeases(1);
+            InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", 1);
             Assert.assertNotNull(semaphore.acquire(10, TimeUnit.SECONDS));
             Assert.assertNull(semaphore.acquire(3, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void     testSimple2() throws Exception
+    {
+        final int       MAX_LEASES = 3;
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            List<Lease>        leases = Lists.newArrayList();
+            for ( int i = 0; i < MAX_LEASES; ++i )
+            {
+                InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+                Lease                      lease = semaphore.acquire(10, TimeUnit.SECONDS);
+                Assert.assertNotNull(lease);
+                leases.add(lease);
+            }
+
+            InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+            Lease lease = semaphore.acquire(3, TimeUnit.SECONDS);
+            Assert.assertNull(lease);
+
+            leases.remove(0).close();
+            Assert.assertNotNull(semaphore.acquire(10, TimeUnit.SECONDS));
         }
         finally
         {

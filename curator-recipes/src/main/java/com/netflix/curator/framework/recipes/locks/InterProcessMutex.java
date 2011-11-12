@@ -33,15 +33,6 @@ public class InterProcessMutex implements InterProcessLock
 
     private volatile LockData       lockData;
 
-    private static final SharedCount           sharedCount = new SharedCount()
-    {
-        @Override
-        public int getCount() throws Exception
-        {
-            return 1;
-        }
-    };
-
     private static class LockData
     {
         volatile Thread     owningThread;
@@ -68,7 +59,7 @@ public class InterProcessMutex implements InterProcessLock
     public InterProcessMutex(CuratorFramework client, String path, ClientClosingListener<InterProcessMutex> clientClosingListener)
     {
         basePath = path;
-        internals = new LockInternals<InterProcessMutex>(client, path, LOCK_NAME, this, clientClosingListener);
+        internals = new LockInternals<InterProcessMutex>(client, path, LOCK_NAME, this, clientClosingListener, 1);
     }
 
     /**
@@ -157,7 +148,7 @@ public class InterProcessMutex implements InterProcessLock
             return true;
         }
 
-        String lockPath = internals.attemptLock(time, unit, sharedCount);
+        String lockPath = internals.attemptLock(time, unit);
         if ( lockPath != null )
         {
             LockData        localLockData = new LockData();

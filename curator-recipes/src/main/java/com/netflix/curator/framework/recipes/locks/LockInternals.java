@@ -36,9 +36,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 class LockInternals<T>
 {
@@ -51,8 +48,8 @@ class LockInternals<T>
     private final Watcher                   watcher;
     private final String                    lockName;
     private final T                         parent;
-    private final Lock                      syncLock;
-    private final Condition                 syncCondition;
+
+    private volatile int    maxLeases;
 
     /**
      * Attempt to delete the lock node so that sequence numbers get reset
@@ -75,14 +72,12 @@ class LockInternals<T>
         }
     }
 
-    LockInternals(CuratorFramework client, String path, String lockName, T parent, ClientClosingListener<T> clientClosingListener)
+    LockInternals(CuratorFramework client, String path, String lockName, T parent, ClientClosingListener<T> clientClosingListener, int maxLeases)
     {
         this.lockName = lockName;
         this.parent = parent;
+        this.maxLeases = maxLeases;
         PathUtils.validatePath(path);
-
-        syncLock = new ReentrantLock();
-        syncCondition = syncLock.newCondition();
 
         this.client = client;
         this.basePath = path;
@@ -126,13 +121,19 @@ class LockInternals<T>
         };
     }
 
+    synchronized void setMaxLeases(int maxLeases)
+    {
+        this.maxLeases = maxLeases;
+        notifyAll();
+    }
+
     void releaseLock(String lockPath) throws Exception
     {
         client.removeListener(listener);
         client.delete().forPath(lockPath);
     }
 
-    String attemptLock(long time, TimeUnit unit, final SharedCount maxLeases) throws Exception
+    String attemptLock(long time, TimeUnit unit) throws Exception
     {
         final long startMillis = System.currentTimeMillis();
         final Long millisToWait = (unit != null) ? unit.toMillis(time) : null;
@@ -148,7 +149,7 @@ class LockInternals<T>
                     ensurePath.ensure(client.getZookeeperClient());
 
                     String      ourPath = client.create().withProtectedEphemeralSequential().forPath(path, new byte[0]);
-                    boolean     hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath, maxLeases);
+                    boolean     hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
                     return new PathAndFlag(hasTheLock, ourPath);
                 }
             }
@@ -163,16 +164,6 @@ class LockInternals<T>
         return null;
     }
 
-    Lock getSyncLock()
-    {
-        return syncLock;
-    }
-
-    Condition getSyncCondition()
-    {
-        return syncCondition;
-    }
-
     private static class PathAndFlag
     {
         final boolean       hasTheLock;
@@ -185,7 +176,7 @@ class LockInternals<T>
         }
     }
 
-    private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath, SharedCount maxLeases) throws Exception
+    private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception
     {
         boolean     haveTheLock = false;
         boolean     doDelete = false;
@@ -203,7 +194,7 @@ class LockInternals<T>
                     throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
                 }
 
-                if ( ourIndex < maxLeases.getCount() )
+                if ( ourIndex < maxLeases )
                 {
                     haveTheLock = true;
                 }
@@ -211,8 +202,7 @@ class LockInternals<T>
                 {
                     String previousSequenceNodeName = children.get(ourIndex - 1);
                     String previousSequencePath = basePath + "/" + previousSequenceNodeName;
-                    syncLock.lock();
-                    try
+                    synchronized(this)
                     {
                         Stat stat = client.checkExists().usingWatcher(watcher).forPath(previousSequencePath);
                         if ( stat != null )
@@ -227,17 +217,13 @@ class LockInternals<T>
                                     break;
                                 }
 
-                                syncCondition.await(millisToWait, TimeUnit.MILLISECONDS);
+                                wait(millisToWait);
                             }
                             else
                             {
-                                syncCondition.await();
+                                wait();
                             }
                         }
-                    }
-                    finally
-                    {
-                        syncLock.unlock();
                     }
                     // else it may have been deleted (i.e. lock released). Try to acquire again
                 }
@@ -279,17 +265,9 @@ class LockInternals<T>
         notifyFromWatcher();
     }
 
-    private void notifyFromWatcher()
+    private synchronized void notifyFromWatcher()
     {
-        syncLock.lock();
-        try
-        {
-            syncCondition.signalAll();
-        }
-        finally
-        {
-            syncLock.unlock();
-        }
+        notifyAll();
     }
 
     private String   fixForSorting(String str)
