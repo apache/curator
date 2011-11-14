@@ -39,7 +39,7 @@ public class TestingServer implements Closeable
 
     private static final int TIME_IN_MS = 2000;
 
-    private static int getRandomPort()
+    static int getRandomPort()
     {
         ServerSocket server = null;
         try
