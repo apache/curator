@@ -18,6 +18,7 @@
 package com.netflix.curator;
 
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.utils.TestingCluster;
 import com.netflix.curator.utils.TestingServer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;

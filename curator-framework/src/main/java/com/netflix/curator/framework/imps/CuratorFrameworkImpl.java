@@ -530,6 +530,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void processEvent(final CuratorEvent curatorEvent)
     {
+        validateDisconnection(curatorEvent);
+
         for ( final ListenerEntry<CuratorListener> entry : listeners.values() )
         {
             entry.executor.execute
@@ -552,6 +554,17 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     }
                 }
             );
+        }
+    }
+
+    private void validateDisconnection(CuratorEvent curatorEvent)
+    {
+        if ( curatorEvent.getType() == CuratorEventType.WATCHED )
+        {
+            if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.Disconnected )
+            {
+                internalSync(this, "/", null);  // we appear to have disconnected, force a new ZK event and see if we can connect to another server
+            }
         }
     }
 }

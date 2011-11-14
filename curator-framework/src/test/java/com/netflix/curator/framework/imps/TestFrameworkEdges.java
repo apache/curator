@@ -262,7 +262,7 @@ public class TestFrameworkEdges extends BaseClassForTests
             retries.set(0);
             client.checkExists().inBackground().forPath("/hey");
             Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
-            Assert.assertEquals(retries.get(), 5);
+            Assert.assertTrue(retries.get() >= 5);  // there may be more tries due to internal code trying to reconnect
         }
         finally
         {

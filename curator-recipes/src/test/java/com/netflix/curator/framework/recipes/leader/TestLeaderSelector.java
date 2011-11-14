@@ -18,18 +18,22 @@
 package com.netflix.curator.framework.recipes.leader;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.recipes.KillSession;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.utils.TestingServer;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.internal.annotations.Sets;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +42,51 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestLeaderSelector extends BaseClassForTests
 {
     private static final String     PATH_NAME = "/one/two/me";
+
+    @Test
+    public void     testServerDying() throws Exception
+    {
+        LeaderSelector      selector = null;
+        CuratorFramework    client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).sessionTimeoutMs(1000).build();
+        client.start();
+        try
+        {
+            final Semaphore             semaphore = new Semaphore(0);
+            LeaderSelectorListener      listener = new LeaderSelectorListener()
+            {
+                @Override
+                public void takeLeadership(CuratorFramework client) throws Exception
+                {
+                    semaphore.release();
+                    Thread.sleep(Integer.MAX_VALUE);
+                }
+
+                @Override
+                public void notifyClientClosing(CuratorFramework client)
+                {
+                }
+
+                @Override
+                public void unhandledError(CuratorFramework client, Throwable e)
+                {
+                    semaphore.release();
+                }
+            };
+            selector = new LeaderSelector(client, "/leader", listener);
+            selector.start();
+
+            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
+
+            server.close();
+
+            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            Closeables.closeQuietly(selector);
+            Closeables.closeQuietly(client);
+        }
+    }
 
     @Test
     public void     testKillSession() throws Exception
