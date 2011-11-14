@@ -1,0 +1,21 @@
+0.5.2 - Nov. 14, 2011
+=====================
+* Jérémie Bordier posted on the ZK mailing list about a split brain issue with the Leader Selector.
+If the Leader is connected to a server that suffers a network partition, it needs to get notified
+that it has lost leadership. Curator handled this somewhat but only if the client application
+executed periodic ZooKeeper operations. I've enhanced the CuratorFramework implementation to check
+for disconnection and executed a background sync (with retries). This will cause any listener's
+unhandledError() method to get called when there is a network partition.
+
+* New utility: TestingCluster. Allows for testing with an in-memory ZK ensemble.
+
+* Reworked distributed atomic implementations. I was unhappy with the complexity of the previous
+one. Now, there's a simpler master implementation DistributedAtomicValue that is the basis for the
+others. Adding new versions should be simpler as well.
+
+0.5.1 - Nov. 12, 2011
+=====================
+* Another pass at fixing the semaphore. Went back to the model of the count being merely a
+convention. Added a new recipe for a SharedCount that can be used in place of the count convention
+with the semaphore. This is the best of both worlds. The semaphore code is a lot simpler and will
+perform better. Thanks to Monal Daxini for the idea.
