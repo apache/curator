@@ -19,11 +19,11 @@
 package com.netflix.curator.framework.recipes.atomic;
 
 /**
- * Uses an {@link AtomicNumber} and allocates values in chunks for better performance
+ * Uses an {@link DistributedAtomicNumber} and allocates values in chunks for better performance
  */
 public class CachedAtomicLong
 {
-    private final AtomicNumber<Long>   number;
+    private final DistributedAtomicNumber<Long> number;
     private final long                 cacheFactor;
 
     private AtomicValue<Long>          currentValue = null;
@@ -33,7 +33,7 @@ public class CachedAtomicLong
      * @param number the number to use
      * @param cacheFactor the number of values to allocate at a time
      */
-    public CachedAtomicLong(AtomicNumber<Long> number, int cacheFactor)
+    public CachedAtomicLong(DistributedAtomicNumber<Long> number, int cacheFactor)
     {
         this.number = number;
         this.cacheFactor = cacheFactor;

@@ -18,6 +18,8 @@
 
 package com.netflix.curator.framework.recipes.atomic;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
@@ -31,67 +33,170 @@ import java.nio.ByteBuffer;
  * <p>The various increment methods return an {@link AtomicValue} object. You must <b>always</b> check
  * {@link AtomicValue#succeeded()}. None of the methods (other than get()) are guaranteed to succeed.</p>
  */
-public class DistributedAtomicLong extends GenericDistributedAtomic<Long> implements NumberHelper<Long>
+public class DistributedAtomicLong implements DistributedAtomicNumber<Long>
 {
+    private final DistributedAtomicValue        value;
+
     public DistributedAtomicLong(CuratorFramework client, String counterPath, RetryPolicy retryPolicy)
     {
-        super(client, counterPath, retryPolicy);
+        this(client, counterPath, retryPolicy, null);
     }
 
     public DistributedAtomicLong(CuratorFramework client, String counterPath, RetryPolicy retryPolicy, PromotedToLock promotedToLock)
     {
-        super(client, counterPath, retryPolicy, promotedToLock);
+        value = new DistributedAtomicValue(client, counterPath, retryPolicy, promotedToLock);
     }
 
     @Override
-    protected NumberHelper<Long> numberHelper()
+    public AtomicValue<Long>     get() throws Exception
     {
-        return this;
+        return new AtomicLong(value.get());
     }
 
     @Override
-    public byte[] valueToBytes(Long newValue)
+    public void forceSet(Long newValue) throws Exception
     {
+        value.forceSet(valueToBytes(newValue));
+    }
+
+    @Override
+    public AtomicValue<Long> compareAndSet(Long expectedValue, Long newValue) throws Exception
+    {
+        return new AtomicLong(value.compareAndSet(valueToBytes(expectedValue), valueToBytes(newValue)));
+    }
+
+    @Override
+    public AtomicValue<Long>   trySet(Long newValue) throws Exception
+    {
+        return new AtomicLong(value.trySet(valueToBytes(newValue)));
+    }
+
+    /**
+     * Add 1 to the current value and return the new value information. Remember to always
+     * check {@link AtomicValue#succeeded()}.
+     *
+     * @return value info
+     * @throws Exception ZooKeeper errors
+     */
+    @Override
+    public AtomicValue<Long>    increment() throws Exception
+    {
+        return worker(1L);
+    }
+
+    /**
+     * Subtract 1 from the current value and return the new value information. Remember to always
+     * check {@link AtomicValue#succeeded()}.
+     *
+     * @return value info
+     * @throws Exception ZooKeeper errors
+     */
+    @Override
+    public AtomicValue<Long>    decrement() throws Exception
+    {
+        return worker(-1L);
+    }
+
+    /**
+     * Add delta to the current value and return the new value information. Remember to always
+     * check {@link AtomicValue#succeeded()}.
+     *
+     * @param delta amount to add
+     * @return value info
+     * @throws Exception ZooKeeper errors
+     */
+    @Override
+    public AtomicValue<Long>    add(Long delta) throws Exception
+    {
+        return worker(delta);
+    }
+
+    /**
+     * Subtract delta from the current value and return the new value information. Remember to always
+     * check {@link AtomicValue#succeeded()}.
+     *
+     * @param delta amount to subtract
+     * @return value info
+     * @throws Exception ZooKeeper errors
+     */
+    @Override
+    public AtomicValue<Long> subtract(Long delta) throws Exception
+    {
+        return worker(-1 * delta);
+    }
+
+    @VisibleForTesting
+    byte[] valueToBytes(Long newValue)
+    {
+        Preconditions.checkNotNull(newValue);
+
         byte[]                      newData = new byte[8];
         ByteBuffer wrapper = ByteBuffer.wrap(newData);
         wrapper.putLong(newValue);
         return newData;
     }
 
-    @Override
-    public Long bytesToValue(byte[] data)
+    @VisibleForTesting
+    long bytesToValue(byte[] data)
     {
+        if ( (data == null) || (data.length == 0) )
+        {
+            return 0;
+        }
         ByteBuffer wrapper = ByteBuffer.wrap(data);
         return wrapper.getLong();
     }
 
-    @Override
-    public MutableAtomicValue<Long> newMutableAtomicValue()
+    private AtomicValue<Long>   worker(final Long addAmount) throws Exception
     {
-        return new MutableAtomicValue<Long>(0L, 0L);
+        Preconditions.checkNotNull(addAmount);
+
+        MakeValue               makeValue = new MakeValue()
+        {
+            @Override
+            public byte[] makeFrom(byte[] previous)
+            {
+                long        previousValue = (previous != null) ? bytesToValue(previous) : 0;
+                long        newValue = previousValue + addAmount;
+                return valueToBytes(newValue);
+            }
+        };
+
+        AtomicValue<byte[]>     result = value.trySet(makeValue);
+        return new AtomicLong(result);
     }
 
-    @Override
-    public Long one()
+    private class AtomicLong implements AtomicValue<Long>
     {
-        return 1L;
-    }
+        private AtomicValue<byte[]> bytes;
 
-    @Override
-    public Long negativeOne()
-    {
-        return -1L;
-    }
+        private AtomicLong(AtomicValue<byte[]> bytes)
+        {
+            this.bytes = bytes;
+        }
 
-    @Override
-    public Long negate(Long value)
-    {
-        return -1L * value;
-    }
+        @Override
+        public boolean succeeded()
+        {
+            return bytes.succeeded();
+        }
 
-    @Override
-    public Long add(Long a, Long b)
-    {
-        return a + b;
+        @Override
+        public Long preValue()
+        {
+            return bytesToValue(bytes.preValue());
+        }
+
+        @Override
+        public Long postValue()
+        {
+            return bytesToValue(bytes.postValue());
+        }
+
+        @Override
+        public AtomicStats getStats()
+        {
+            return bytes.getStats();
+        }
     }
 }

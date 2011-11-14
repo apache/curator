@@ -38,7 +38,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TestDistributedAtomicCounter extends BaseClassForTests
+public class TestDistributedAtomicLong extends BaseClassForTests
 {
     @Test
     public void     testCompareAndSet() throws Exception

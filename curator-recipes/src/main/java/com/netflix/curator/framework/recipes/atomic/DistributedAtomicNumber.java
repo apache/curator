@@ -18,7 +18,7 @@
 
 package com.netflix.curator.framework.recipes.atomic;
 
-public interface AtomicNumber<T>
+public interface DistributedAtomicNumber<T>
 {
     /**
      * Returns the current value of the counter. NOTE: if the value has never been set,
@@ -41,6 +41,8 @@ public interface AtomicNumber<T>
      * @throws Exception ZooKeeper errors
      */
     public AtomicValue<T>    compareAndSet(T expectedValue, T newValue) throws Exception;
+
+    public AtomicValue<T>    trySet(T newValue) throws Exception;
 
     /**
      * Forcibly sets the value of the counter without any guarantees of atomicity.

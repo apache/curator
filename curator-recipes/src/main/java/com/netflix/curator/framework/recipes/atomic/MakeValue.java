@@ -18,19 +18,7 @@
 
 package com.netflix.curator.framework.recipes.atomic;
 
-public interface NumberHelper<T>
+interface MakeValue
 {
-    public byte[] valueToBytes(T newValue);
-
-    public T bytesToValue(byte[] data);
-
-    public T one();
-
-    public T negativeOne();
-
-    public T negate(T value);
-
-    public T add(T a, T b);
-
-    public MutableAtomicValue<T> newMutableAtomicValue();
+    public byte[]       makeFrom(byte[] previous);
 }

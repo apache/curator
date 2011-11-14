@@ -39,8 +39,14 @@ public class TestCachedAtomicCounter extends BaseClassForTests
         {
             AtomicValue<Long>                           value = new MutableAtomicValue<Long>(0L, (long)FACTOR, true);
             final AtomicReference<AtomicValue<Long>>    fakeValueRef = new AtomicReference<AtomicValue<Long>>(value);
-            AtomicNumber<Long> dal = new AtomicNumber<Long>()
+            DistributedAtomicNumber<Long> dal = new DistributedAtomicNumber<Long>()
             {
+                @Override
+                public AtomicValue<Long> trySet(Long newValue) throws Exception
+                {
+                    return fakeValueRef.get();
+                }
+
                 @Override
                 public AtomicValue<Long> get() throws Exception
                 {
