@@ -21,19 +21,19 @@ package com.netflix.curator.framework.recipes.atomic;
 /**
  * Uses an {@link DistributedAtomicNumber} and allocates values in chunks for better performance
  */
-public class CachedAtomicLong
+public class CachedAtomicInteger
 {
-    private final DistributedAtomicLong number;
-    private final long                  cacheFactor;
+    private final DistributedAtomicInteger  number;
+    private final int                       cacheFactor;
 
-    private AtomicValue<Long>          currentValue = null;
+    private AtomicValue<Integer>       currentValue = null;
     private int                        currentIndex = 0;
 
     /**
      * @param number the number to use
      * @param cacheFactor the number of values to allocate at a time
      */
-    public CachedAtomicLong(DistributedAtomicLong number, int cacheFactor)
+    public CachedAtomicInteger(DistributedAtomicInteger number, int cacheFactor)
     {
         this.number = number;
         this.cacheFactor = cacheFactor;
@@ -46,9 +46,9 @@ public class CachedAtomicLong
      * @return next increment
      * @throws Exception errors
      */
-    public AtomicValue<Long>       next() throws Exception
+    public AtomicValue<Integer>       next() throws Exception
     {
-        MutableAtomicValue<Long> result = new MutableAtomicValue<Long>(0L, 0L);
+        MutableAtomicValue<Integer> result = new MutableAtomicValue<Integer>(0, 0);
 
         if ( currentValue == null )
         {
