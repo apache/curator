@@ -42,6 +42,14 @@ public interface DistributedAtomicNumber<T>
      */
     public AtomicValue<T>    compareAndSet(T expectedValue, T newValue) throws Exception;
 
+    /**
+     * Attempt to atomically set the value to the given value. Remember to always
+     * check {@link AtomicValue#succeeded()}.
+     *
+     * @param newValue the value to set
+     * @return value info
+     * @throws Exception ZooKeeper errors
+     */
     public AtomicValue<T>    trySet(T newValue) throws Exception;
 
     /**

@@ -25,6 +25,14 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
 
+/**
+ * <p>A distributed value that attempts atomic sets. It first tries uses optimistic locking. If that fails,
+ * an optional {@link InterProcessMutex} is taken. For both optimistic and mutex, a retry policy is used to
+ * retry the increment.</p>
+ *
+ * <p>The various methods return an {@link AtomicValue} object. You must <b>always</b> check
+ * {@link AtomicValue#succeeded()}. None of the methods (other than get()) are guaranteed to succeed.</p>
+ */
 public class DistributedAtomicValue
 {
     private final CuratorFramework  client;
@@ -33,11 +41,28 @@ public class DistributedAtomicValue
     private final PromotedToLock    promotedToLock;
     private final InterProcessMutex mutex;
 
+    /**
+     * Creates in optimistic mode only - i.e. the promotion to a mutex is not done
+     *
+     * @param client the client
+     * @param path path to hold the value
+     * @param retryPolicy the retry policy to use
+     */
     public DistributedAtomicValue(CuratorFramework client, String path, RetryPolicy retryPolicy)
     {
         this(client, path, retryPolicy, null);
     }
 
+    /**
+     * Creates in mutex promotion mode. The optimistic lock will be tried first using
+     * the given retry policy. If the increment does not succeed, a {@link InterProcessMutex} will be tried
+     * with its own retry policy
+     *
+     * @param client the client
+     * @param path path to hold the value
+     * @param retryPolicy the retry policy to use
+     * @param promotedToLock the arguments for the mutex promotion
+     */
     public DistributedAtomicValue(CuratorFramework client, String path, RetryPolicy retryPolicy, PromotedToLock promotedToLock)
     {
         this.client = client;
@@ -63,6 +88,12 @@ public class DistributedAtomicValue
         return result;
     }
 
+    /**
+     * Forcibly sets the value any guarantees of atomicity.
+     *
+     * @param newValue the new value
+     * @throws Exception ZooKeeper errors
+     */
     public void forceSet(byte[] newValue) throws Exception
     {
         try
@@ -82,6 +113,17 @@ public class DistributedAtomicValue
         }
     }
 
+    /**
+     * Atomically sets the value to the given updated value
+     * if the current value {@code ==} the expected value.
+     * Remember to always check {@link AtomicValue#succeeded()}.
+     *
+     *
+     * @param expectedValue the expected value
+     * @param newValue the new value
+     * @return value info
+     * @throws Exception ZooKeeper errors
+     */
     public AtomicValue<byte[]> compareAndSet(byte[] expectedValue, byte[] newValue) throws Exception
     {
         Stat                        stat = new Stat();
@@ -111,6 +153,14 @@ public class DistributedAtomicValue
         return result;
     }
 
+    /**
+     * Attempt to atomically set the value to the given value. Remember to always
+     * check {@link AtomicValue#succeeded()}.
+     *
+     * @param newValue the value to set
+     * @return value info
+     * @throws Exception ZooKeeper errors
+     */
     public AtomicValue<byte[]>   trySet(final byte[] newValue) throws Exception
     {
         MutableAtomicValue<byte[]>  result = new MutableAtomicValue<byte[]>(null, null, false);

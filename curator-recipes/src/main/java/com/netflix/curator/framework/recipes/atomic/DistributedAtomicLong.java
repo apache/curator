@@ -37,11 +37,28 @@ public class DistributedAtomicLong implements DistributedAtomicNumber<Long>
 {
     private final DistributedAtomicValue        value;
 
+    /**
+     * Creates in optimistic mode only - i.e. the promotion to a mutex is not done
+     *
+     * @param client the client
+     * @param counterPath path to hold the value
+     * @param retryPolicy the retry policy to use
+     */
     public DistributedAtomicLong(CuratorFramework client, String counterPath, RetryPolicy retryPolicy)
     {
         this(client, counterPath, retryPolicy, null);
     }
 
+    /**
+     * Creates in mutex promotion mode. The optimistic lock will be tried first using
+     * the given retry policy. If the increment does not succeed, a {@link InterProcessMutex} will be tried
+     * with its own retry policy
+     *
+     * @param client the client
+     * @param counterPath path to hold the value
+     * @param retryPolicy the retry policy to use
+     * @param promotedToLock the arguments for the mutex promotion
+     */
     public DistributedAtomicLong(CuratorFramework client, String counterPath, RetryPolicy retryPolicy, PromotedToLock promotedToLock)
     {
         value = new DistributedAtomicValue(client, counterPath, retryPolicy, promotedToLock);
