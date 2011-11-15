@@ -366,10 +366,6 @@ public class PathChildrenCache implements Closeable
 
             default:
             {
-                if ( watchedEvent.getState() == Watcher.Event.KeeperState.Expired )
-                {
-                    System.out.println();
-                }
                 refresh();
                 break;
             }
