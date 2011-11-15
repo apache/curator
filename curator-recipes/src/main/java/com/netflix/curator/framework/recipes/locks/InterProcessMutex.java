@@ -17,8 +17,15 @@
  */
 package com.netflix.curator.framework.recipes.locks;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.ZooKeeper;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -133,6 +140,35 @@ public class InterProcessMutex implements InterProcessLock
         lockData = null;
     }
 
+    /**
+     * Return a sorted list of all current nodes participating in the lock
+     *
+     * @return list of nodes
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Collection<String>   getParticipantNodes() throws Exception
+    {
+        List<String>        names = internals.getSortedChildren();
+        Iterable<String>    transformed = Iterables.transform
+        (
+            names,
+            new Function<String, String>()
+            {
+                @Override
+                public String apply(String name)
+                {
+                    return ZKPaths.makePath(basePath, name);
+                }
+            }
+        );
+        return ImmutableList.copyOf(transformed);
+    }
+
+    protected byte[]        getLockNodeBytes()
+    {
+        return new byte[0];
+    }
+
     private boolean internalLock(long time, TimeUnit unit) throws Exception
     {
         LockData    localData = lockData;
@@ -148,7 +184,7 @@ public class InterProcessMutex implements InterProcessLock
             return true;
         }
 
-        String lockPath = internals.attemptLock(time, unit);
+        String lockPath = internals.attemptLock(time, unit, getLockNodeBytes());
         if ( lockPath != null )
         {
             LockData        localLockData = new LockData();

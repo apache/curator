@@ -133,7 +133,26 @@ class LockInternals<T>
         client.delete().forPath(lockPath);
     }
 
-    String attemptLock(long time, TimeUnit unit) throws Exception
+    List<String> getSortedChildren() throws Exception
+    {
+        List<String> children = client.getChildren().forPath(basePath);
+        List<String> sortedList = Lists.newArrayList(children);
+        Collections.sort
+        (
+            sortedList,
+            new Comparator<String>()
+            {
+                @Override
+                public int compare(String lhs, String rhs)
+                {
+                    return fixForSorting(lhs).compareTo(fixForSorting(rhs));
+                }
+            }
+        );
+        return sortedList;
+    }
+
+    String attemptLock(long time, TimeUnit unit, final byte[] lockNodeBytes) throws Exception
     {
         final long startMillis = System.currentTimeMillis();
         final Long millisToWait = (unit != null) ? unit.toMillis(time) : null;
@@ -148,7 +167,7 @@ class LockInternals<T>
                 {
                     ensurePath.ensure(client.getZookeeperClient());
 
-                    String      ourPath = client.create().withProtectedEphemeralSequential().forPath(path, new byte[0]);
+                    String      ourPath = client.create().withProtectedEphemeralSequential().forPath(path, lockNodeBytes);
                     boolean     hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
                     return new PathAndFlag(hasTheLock, ourPath);
                 }
@@ -184,7 +203,7 @@ class LockInternals<T>
         {
             while ( client.isStarted() && !haveTheLock )
             {
-                List<String>    children = getSortedChildren(basePath);
+                List<String>    children = getSortedChildren();
                 String          sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
                 int             ourIndex = children.indexOf(sequenceNodeName);
                 if ( ourIndex < 0 )
@@ -279,24 +298,5 @@ class LockInternals<T>
             return index <= str.length() ? str.substring(index) : "";
         }
         return str;
-    }
-
-    private List<String> getSortedChildren(String path) throws Exception
-    {
-        List<String> children = client.getChildren().forPath(path);
-        List<String> sortedList = Lists.newArrayList(children);
-        Collections.sort
-        (
-            sortedList,
-            new Comparator<String>()
-            {
-                @Override
-                public int compare(String lhs, String rhs)
-                {
-                    return fixForSorting(lhs).compareTo(fixForSorting(rhs));
-                }
-            }
-        );
-        return sortedList;
     }
 }

@@ -18,11 +18,15 @@
 package com.netflix.curator.framework.recipes.leader;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.ClientClosingListener;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.zookeeper.KeeperException;
 import java.io.Closeable;
+import java.io.UnsupportedEncodingException;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -39,11 +43,12 @@ public class LeaderSelector implements Closeable
 {
     private final CuratorFramework          client;
     private final LeaderSelectorListener    listener;
-    private final String                    mutexPath;
     private final ExecutorService           executorService;
     private final Executor                  executor;
+    private final InterProcessMutex         mutex;
 
     private volatile boolean                hasLeadership;
+    private volatile String                 id = "";
 
     /**
      * @param client the client
@@ -70,11 +75,49 @@ public class LeaderSelector implements Closeable
 
         this.client = client;
         this.listener = listener;
-        this.mutexPath = mutexPath;
         this.executor = executor;
         hasLeadership = false;
 
         executorService = Executors.newFixedThreadPool(1, threadFactory);
+        mutex = new InterProcessMutex(client, mutexPath, makeClientClosingListener(listener))
+        {
+            @Override
+            protected byte[] getLockNodeBytes()
+            {
+                try
+                {
+                    return id.getBytes("UTF-8");
+                }
+                catch ( UnsupportedEncodingException e )
+                {
+                    throw new Error(e); // this should never happen
+                }
+            }
+        };
+    }
+
+    /**
+     * Sets the ID to store for this leader. Will be the value returned
+     * when {@link #getParticipants()} is called. IMPORTANT: must be called
+     * prior to {@link #start()} to have effect.
+     *
+     * @param id ID
+     */
+    public void     setId(String id)
+    {
+        Preconditions.checkNotNull(id);
+        
+        this.id = id;
+    }
+
+    /**
+     * Return the ID that was set via {@link #setId(String)}
+     *
+     * @return id
+     */
+    public String getId()
+    {
+        return id;
     }
 
     /**
@@ -95,7 +138,7 @@ public class LeaderSelector implements Closeable
                 public Object call() throws Exception
                 {
                     Thread.currentThread().setName("LeaderSelector " + Thread.currentThread().getName());
-                    runLoop();
+                    doWork();
                     return null;
                 }
             }
@@ -113,6 +156,36 @@ public class LeaderSelector implements Closeable
     }
 
     /**
+     * Returns the set of current participants in the leader selection
+     *
+     * @return participants
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Collection<Participant>  getParticipants() throws Exception
+    {
+        ImmutableList.Builder<Participant> builder = ImmutableList.builder();
+
+        boolean         isLeader = true;
+        for ( String path : mutex.getParticipantNodes() )
+        {
+            try
+            {
+                byte[]      bytes = client.getData().forPath(path);
+                String      thisId = new String(bytes, "UTF-8");
+                builder.add(new Participant(thisId, isLeader));
+            }
+            catch ( KeeperException.NoNodeException ignore )
+            {
+                // ignore
+            }
+
+            isLeader = false;   // by definition the first node is the leader
+        }
+
+        return builder.build();
+    }
+
+    /**
      * Return true if leadership is currently held by this instance
      *
      * @return true/false
@@ -122,9 +195,9 @@ public class LeaderSelector implements Closeable
         return hasLeadership;
     }
 
-    private void runLoop() throws Exception
+    private ClientClosingListener<InterProcessMutex> makeClientClosingListener(final LeaderSelectorListener listener)
     {
-        ClientClosingListener<InterProcessMutex>   clientClosingListener = new ClientClosingListener<InterProcessMutex>()
+        return new ClientClosingListener<InterProcessMutex>()
         {
             @Override
             public void notifyClientClosing(InterProcessMutex lock, final CuratorFramework client)
@@ -158,7 +231,10 @@ public class LeaderSelector implements Closeable
                 );
             }
         };
-        InterProcessMutex       mutex = new InterProcessMutex(client, mutexPath, clientClosingListener);
+    }
+
+    private void doWork() throws Exception
+    {
         hasLeadership = false;
         try
         {
