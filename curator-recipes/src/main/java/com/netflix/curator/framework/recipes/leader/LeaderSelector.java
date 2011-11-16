@@ -156,7 +156,15 @@ public class LeaderSelector implements Closeable
     }
 
     /**
-     * Returns the set of current participants in the leader selection
+     * <p>
+     *     Returns the set of current participants in the leader selection
+     * </p>
+     *
+     * <p>
+     *     <B>NOTE</B> - this method polls the ZK server. Therefore it can possibly
+     *     return a value that does not match {@link #hasLeadership()} as hasLeadership
+     *     uses a local field of the class.
+     * </p>
      *
      * @return participants
      * @throws Exception ZK errors, interruptions, etc.
@@ -170,9 +178,8 @@ public class LeaderSelector implements Closeable
         {
             try
             {
-                byte[]      bytes = client.getData().forPath(path);
-                String      thisId = new String(bytes, "UTF-8");
-                builder.add(new Participant(thisId, isLeader));
+                Participant     participant = participantForPath(path, isLeader);
+                builder.add(participant);
             }
             catch ( KeeperException.NoNodeException ignore )
             {
@@ -186,6 +193,31 @@ public class LeaderSelector implements Closeable
     }
 
     /**
+     * <p>
+     *     Return the id for the current leader. If for some reason there is no
+     *     current leader, a dummy participant is returned.
+     * </p>
+     *
+     * <p>
+     *     <B>NOTE</B> - this method polls the ZK server. Therefore it can possibly
+     *     return a value that does not match {@link #hasLeadership()} as hasLeadership
+     *     uses a local field of the class.
+     * </p>
+     *
+     * @return leader
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Participant      getLeader() throws Exception
+    {
+        Collection<String>      participantNodes = mutex.getParticipantNodes();
+        if ( participantNodes.size() > 0 )
+        {
+            return participantForPath(participantNodes.iterator().next(), true);
+        }
+        return new Participant();
+    }
+
+    /**
      * Return true if leadership is currently held by this instance
      *
      * @return true/false
@@ -193,6 +225,13 @@ public class LeaderSelector implements Closeable
     public boolean hasLeadership()
     {
         return hasLeadership;
+    }
+
+    private Participant participantForPath(String path, boolean markAsLeader) throws Exception
+    {
+        byte[]      bytes = client.getData().forPath(path);
+        String      thisId = new String(bytes, "UTF-8");
+        return new Participant(thisId, markAsLeader);
     }
 
     private ClientClosingListener<InterProcessMutex> makeClientClosingListener(final LeaderSelectorListener listener)

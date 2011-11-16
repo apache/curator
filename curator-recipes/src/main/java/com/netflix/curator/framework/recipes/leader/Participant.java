@@ -37,6 +37,11 @@ public class Participant
         isLeader = leader;
     }
 
+    Participant()
+    {
+        this("", false);
+    }
+
     /**
      * Returns the ID set via {@link LeaderSelector#setId(String)}
      *

@@ -70,6 +70,10 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
 
+            Participant leader = selector.getLeader();
+            Assert.assertTrue(leader.isLeader());
+            Assert.assertEquals(leader.getId(), "A is A");
+
             Collection<Participant>     participants = selector.getParticipants();
             Assert.assertEquals(participants.size(), 1);
             Assert.assertEquals(participants.iterator().next().getId(), "A is A");
@@ -93,8 +97,8 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
         {
             client.start();
 
-            final CountDownLatch        latch = new CountDownLatch(1);
-            LeaderSelectorListener      listener = new LeaderSelectorListener()
+            final CountDownLatch            latch = new CountDownLatch(1);
+            LeaderSelectorListener          listener = new LeaderSelectorListener()
             {
                 @Override
                 public void takeLeadership(CuratorFramework client) throws Exception
