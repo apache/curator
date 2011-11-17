@@ -1,3 +1,23 @@
+0.5.3 - TBD
+=====================
+* Added new methods to LeaderSelector to identify/get all Participants
+
+* Moved to ZooKeeper 3.3.3
+
+* Made the TestingCluster not throw an assertion error due to internal JMX registrations
+in ZK. This is done with Javaassist ugliness.
+
+* Refactored listeners in Curator to a common methodology
+
+* Major changes to error handling. Adding a ConnectionStateManager that allows users to
+listen for connection changes. Connection loss is first treated as a recoverable Suspension.
+If the connection is not re-established, the state changes to connection loss. Any recipes
+that are affected by this have been updated.
+
+* PathChildrenCache now handles connection state changes much better.
+
+* All Curator created threads now have a meaningful name.
+
 0.5.2 - Nov. 14, 2011
 =====================
 * Jérémie Bordier posted on the ZK mailing list about a split brain issue with the Leader Selector.

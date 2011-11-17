@@ -17,9 +17,6 @@
  */
 package com.netflix.curator.framework.listen;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import java.util.Collection;
 import java.util.concurrent.Executor;
 
 /**
