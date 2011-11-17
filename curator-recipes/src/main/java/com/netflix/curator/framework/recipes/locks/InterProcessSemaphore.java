@@ -23,6 +23,7 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.shared.SharedCountListener;
 import com.netflix.curator.framework.recipes.shared.SharedCountReader;
+import com.netflix.curator.framework.state.ConnectionState;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -95,6 +96,12 @@ public class InterProcessSemaphore
                     public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception
                     {
                         internals.setMaxLeases(newCount);
+                    }
+
+                    @Override
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                    {
+                        // no need to handle this here - clients should set their own connection state listener
                     }
                 }
             );

@@ -21,7 +21,9 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
+import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
@@ -42,7 +44,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         {
             final int minItemsBeforeRefresh = 3;
 
-            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class));
             queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(minItemsBeforeRefresh);
             queue.start();
 
@@ -76,7 +78,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         client.start();
         try
         {
-            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class));
             queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(0);
             queue.start();
 
@@ -123,7 +125,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                     return super.deserialize(bytes);
                 }
             };
-            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class));
             queue = QueueBuilder.builder(client, consumer, serializer, "/test").buildPriorityQueue(1);
             queue.start();
 
@@ -156,7 +158,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         client.start();
         try
         {
-            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>();
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class));
             queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(0);
             queue.start();
 

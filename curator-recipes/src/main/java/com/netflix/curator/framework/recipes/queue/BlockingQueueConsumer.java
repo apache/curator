@@ -18,6 +18,9 @@
 package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.collect.ImmutableList;
+import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -30,31 +33,36 @@ import java.util.concurrent.TimeUnit;
  */
 public class BlockingQueueConsumer<T> implements QueueConsumer<T>
 {
-    private final BlockingQueue<T>      items;
+    private final ConnectionStateListener   connectionStateListener;
+    private final BlockingQueue<T>          items;
 
     /**
      * Creates with capacity of {@link Integer#MAX_VALUE}
+     * @param connectionStateListener listener for connection state changes
      */
-    public BlockingQueueConsumer()
+    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener)
     {
-        this(new LinkedBlockingQueue<T>());
+        this(connectionStateListener, new LinkedBlockingQueue<T>());
     }
 
     /**
      * @param capacity max capacity (i.e. puts block if full)
+     * @param connectionStateListener listener for connection state changes
      */
-    public BlockingQueueConsumer(int capacity)
+    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener, int capacity)
     {
-        this(new ArrayBlockingQueue<T>(capacity));
+        this(connectionStateListener, new ArrayBlockingQueue<T>(capacity));
     }
 
     /**
      * Wrap the given blocking queue
      *
      * @param queue queue to use
+     * @param connectionStateListener listener for connection state changes
      */
-    public BlockingQueueConsumer(BlockingQueue<T> queue)
+    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener, BlockingQueue<T> queue)
     {
+        this.connectionStateListener = connectionStateListener;
         this.items = queue;
     }
 
@@ -135,5 +143,11 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
     public int drainTo(Collection<? super T> c)
     {
         return items.drainTo(c);
+    }
+
+    @Override
+    public void stateChanged(CuratorFramework client, ConnectionState newState)
+    {
+        connectionStateListener.stateChanged(client, newState);
     }
 }

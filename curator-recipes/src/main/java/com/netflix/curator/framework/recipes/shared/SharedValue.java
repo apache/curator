@@ -22,6 +22,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -42,6 +44,7 @@ public class SharedValue implements Closeable, SharedValueReader
     private final String                    path;
     private final byte[]                    seedValue;
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
+
     private final Watcher                   watcher = new Watcher()
     {
         @Override
@@ -59,6 +62,15 @@ public class SharedValue implements Closeable, SharedValueReader
             {
                 client.getZookeeperClient().getLog().error("From SharedValue process event", e);
             }
+        }
+    };
+
+    private final ConnectionStateListener   connectionStateListener = new ConnectionStateListener()
+    {
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            notifyListenerOfStateChanged(newState);
         }
     };
 
@@ -157,6 +169,7 @@ public class SharedValue implements Closeable, SharedValueReader
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
 
+        client.getConnectionStateListenable().addListener(connectionStateListener);
         try
         {
             client.create().creatingParentsIfNeeded().forPath(path, seedValue);
@@ -172,6 +185,7 @@ public class SharedValue implements Closeable, SharedValueReader
     @Override
     public void close() throws IOException
     {
+        client.getConnectionStateListenable().removeListener(connectionStateListener);
         state.set(State.CLOSED);
         listeners.clear();
     }
@@ -201,6 +215,22 @@ public class SharedValue implements Closeable, SharedValueReader
                     {
                         client.getZookeeperClient().getLog().error("From SharedValue listener", e);
                     }
+                    return null;
+                }
+            }
+        );
+    }
+
+    private void notifyListenerOfStateChanged(final ConnectionState newState)
+    {
+        listeners.forEach
+        (
+            new Function<SharedValueListener, Void>()
+            {
+                @Override
+                public Void apply(SharedValueListener listener)
+                {
+                    listener.stateChanged(client, newState);
                     return null;
                 }
             }

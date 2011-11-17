@@ -18,10 +18,12 @@
 
 package com.netflix.curator.framework.recipes.queue;
 
+import com.netflix.curator.framework.state.ConnectionStateListener;
+
 /**
  * Message Consumer
  */
-public interface QueueConsumer<T>
+public interface QueueConsumer<T> extends ConnectionStateListener
 {
     /**
      * Process a message from the queue

@@ -18,10 +18,12 @@
 
 package com.netflix.curator.framework.recipes.shared;
 
+import com.netflix.curator.framework.state.ConnectionStateListener;
+
 /**
  * Listener for changes to a shared value
  */
-public interface SharedValueListener
+public interface SharedValueListener extends ConnectionStateListener
 {
     /**
      * Called when the shared value has changed

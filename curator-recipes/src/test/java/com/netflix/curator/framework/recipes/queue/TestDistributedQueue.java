@@ -25,8 +25,11 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
 import junit.framework.Assert;
+import org.mockito.Mockito;
 import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Set;
@@ -64,6 +67,11 @@ public class TestDistributedQueue extends BaseClassForTests
                         throw new Exception();
                     }
                     latch.get().countDown();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
                 }
             };
             DistributedQueue<TestQueueItem> queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).lockPath("/locks").buildQueue();
@@ -152,6 +160,11 @@ public class TestDistributedQueue extends BaseClassForTests
                         consumedMessages.add(message.str);
                     }
                     latch.countDown();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
                 }
             };
 
@@ -244,6 +257,11 @@ public class TestDistributedQueue extends BaseClassForTests
 
                         Thread.sleep((long)(Math.random() * 5));
                     }
+
+                    @Override
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                    {
+                    }
                 };
                 consumerQueue1 = QueueBuilder.builder(consumerClient1, ourQueue, serializer, QUEUE_PATH).
                     lockPath("/a/locks").
@@ -264,6 +282,11 @@ public class TestDistributedQueue extends BaseClassForTests
                             takenItemsForConsumer2.add(message);
                         }
                         Thread.sleep((long)(Math.random() * 5));
+                    }
+
+                    @Override
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                    {
                     }
                 };
                 consumerQueue2 = QueueBuilder.builder(consumerClient2, ourQueue, serializer, QUEUE_PATH).
@@ -324,7 +347,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            final BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>();
+            final BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).
                 lockPath("/a/locks").
                 buildQueue();
@@ -372,7 +395,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>();
+            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
 
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).buildQueue();
             queue.start();
@@ -417,7 +440,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>();
+            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
 
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).buildQueue();
             queue.start();
@@ -500,7 +523,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>();
+            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
 
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).buildQueue();
             queue.start();

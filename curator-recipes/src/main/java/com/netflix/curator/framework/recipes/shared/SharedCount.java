@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.Listenable;
+import com.netflix.curator.framework.state.ConnectionState;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -95,6 +96,12 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
             public void valueHasChanged(SharedValueReader sharedValue, byte[] newValue) throws Exception
             {
                 listener.countHasChanged(SharedCount.this, fromBytes(newValue));
+            }
+
+            @Override
+            public void stateChanged(CuratorFramework client, ConnectionState newState)
+            {
+                listener.stateChanged(client, newState);
             }
         };
         sharedValue.getListenable().addListener(valueListener, executor);

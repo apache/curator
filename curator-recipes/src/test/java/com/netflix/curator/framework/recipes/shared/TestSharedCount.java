@@ -23,6 +23,7 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -85,6 +86,11 @@ public class TestSharedCount extends BaseClassForTests
                                         }
 
                                         semaphore.release();
+                                    }
+
+                                    @Override
+                                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                                    {
                                     }
                                 }
                             );
