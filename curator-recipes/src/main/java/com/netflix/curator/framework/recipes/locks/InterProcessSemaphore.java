@@ -58,7 +58,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class InterProcessSemaphore
 {
-    private final LockInternals<?>  internals;
+    private final LockInternals internals;
 
     private static final String     LOCK_NAME = "lock-";
 
@@ -69,7 +69,7 @@ public class InterProcessSemaphore
      */
     public InterProcessSemaphore(CuratorFramework client, String path, int maxLeases)
     {
-        this(client, path, null, maxLeases, null);
+        this(client, path, maxLeases, null);
     }
 
     /**
@@ -79,34 +79,12 @@ public class InterProcessSemaphore
      */
     public InterProcessSemaphore(CuratorFramework client, String path, SharedCountReader count)
     {
-        this(client, path, null, 0, count);
+        this(client, path, 0, count);
     }
 
-    /**
-     * @param client the client
-     * @param path path for the semaphore
-     * @param clientClosingListener if not null, will get called if client connection unexpectedly closes
-     * @param maxLeases the max number of leases to allow for this instance
-     */
-    public InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener, int maxLeases)
+    private InterProcessSemaphore(CuratorFramework client, String path, int maxLeases, SharedCountReader count)
     {
-        this(client, path, clientClosingListener, maxLeases, null);
-    }
-
-    /**
-     * @param client the client
-     * @param path path for the semaphore
-     * @param clientClosingListener if not null, will get called if client connection unexpectedly closes
-     * @param count the shared count to use for the max leases
-     */
-    public InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener, SharedCountReader count)
-    {
-        this(client, path, clientClosingListener, 0, count);
-    }
-
-    private InterProcessSemaphore(CuratorFramework client, String path, ClientClosingListener<InterProcessSemaphore> clientClosingListener, int maxLeases, SharedCountReader count)
-    {
-        internals = new LockInternals<InterProcessSemaphore>(client, path, LOCK_NAME, this, clientClosingListener, (count != null) ? count.getCount() : maxLeases);
+        internals = new LockInternals(client, path, LOCK_NAME, (count != null) ? count.getCount() : maxLeases);
         if ( count != null )
         {
             count.addListener

@@ -46,7 +46,7 @@ public class TestMultiClient extends BaseClassForTests
             client2.start();
 
             final CountDownLatch        latch = new CountDownLatch(1);
-            client1.addListener
+            client1.getCuratorListenable().addListener
             (
                 new CuratorListener()
                 {
@@ -64,18 +64,13 @@ public class TestMultiClient extends BaseClassForTests
                             }
                         }
                     }
-
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
-                    }
                 }
             );
 
             client1.create().forPath("/test", new byte[]{1, 2, 3});
             client1.checkExists().watched().forPath("/test");
 
-            client2.addListener
+            client2.getCuratorListenable().addListener
             (
                 new CuratorListener()
                 {
@@ -86,11 +81,6 @@ public class TestMultiClient extends BaseClassForTests
                         {
                             client.setData().forPath("/test", new byte[]{10, 20});
                         }
-                    }
-
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
                     }
                 }
             );

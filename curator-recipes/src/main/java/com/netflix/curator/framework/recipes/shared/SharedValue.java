@@ -18,11 +18,10 @@
 
 package com.netflix.curator.framework.recipes.shared;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.imps.ListenerEntry;
+import com.netflix.curator.framework.listen.ListenerContainer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -30,8 +29,6 @@ import org.apache.zookeeper.data.Stat;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -40,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class SharedValue implements Closeable, SharedValueReader
 {
-    private final Map<SharedValueListener, ListenerEntry<SharedValueListener>> listeners = Maps.newConcurrentMap();
+    private final ListenerContainer<SharedValueListener>    listeners = new ListenerContainer<SharedValueListener>();
     private final CuratorFramework          client;
     private final String                    path;
     private final byte[]                    seedValue;
@@ -140,24 +137,14 @@ public class SharedValue implements Closeable, SharedValueReader
         return false;
     }
 
-    @Override
-    public void addListener(SharedValueListener listener)
+    /**
+     * Returns the listenable
+     *
+     * @return listenable
+     */
+    public ListenerContainer<SharedValueListener> getListenable()
     {
-        addListener(listener, MoreExecutors.sameThreadExecutor());
-    }
-
-    @Override
-    public void addListener(SharedValueListener listener, Executor executor)
-    {
-        Preconditions.checkState(state.get() == State.STARTED);
-
-        listeners.put(listener, new ListenerEntry<SharedValueListener>(listener, executor));
-    }
-
-    @Override
-    public void removeListener(SharedValueListener listener)
-    {
-        listeners.remove(listener);
+        return listeners;
     }
 
     /**
@@ -199,26 +186,24 @@ public class SharedValue implements Closeable, SharedValueReader
 
     private void notifyListeners()
     {
-        for ( final ListenerEntry<SharedValueListener> entry : listeners.values() )
-        {
-            entry.executor.execute
-            (
-                new Runnable()
+        listeners.forEach
+        (
+            new Function<SharedValueListener, Void>()
+            {
+                @Override
+                public Void apply(SharedValueListener listener)
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            entry.listener.valueHasChanged(SharedValue.this, value);
-                        }
-                        catch ( Exception e )
-                        {
-                            client.getZookeeperClient().getLog().error("From SharedValue listener", e);
-                        }
+                        listener.valueHasChanged(SharedValue.this, value);
                     }
+                    catch ( Exception e )
+                    {
+                        client.getZookeeperClient().getLog().error("From SharedValue listener", e);
+                    }
+                    return null;
                 }
-            );
-        }
+            }
+        );
     }
 }

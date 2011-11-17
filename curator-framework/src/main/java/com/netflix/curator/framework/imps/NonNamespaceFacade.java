@@ -17,20 +17,14 @@
  */
 package com.netflix.curator.framework.imps;
 
-import com.netflix.curator.RetryLoop;
 import com.netflix.curator.CuratorZookeeperClient;
+import com.netflix.curator.RetryLoop;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.CreateBuilder;
-import com.netflix.curator.framework.api.ExistsBuilder;
-import com.netflix.curator.framework.api.GetChildrenBuilder;
-import com.netflix.curator.framework.api.GetDataBuilder;
-import com.netflix.curator.framework.api.CuratorListener;
-import com.netflix.curator.framework.api.DeleteBuilder;
-import com.netflix.curator.framework.api.CuratorEvent;
-import com.netflix.curator.framework.api.SetDataBuilder;
+import com.netflix.curator.framework.api.*;
+import com.netflix.curator.framework.listen.Listenable;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
-import java.util.concurrent.Executor;
 
 public class NonNamespaceFacade extends CuratorFrameworkImpl
 {
@@ -97,21 +91,39 @@ public class NonNamespaceFacade extends CuratorFrameworkImpl
     }
 
     @Override
-    public void addListener(CuratorListener listener)
+    public boolean isStarted()
     {
-        client.addListener(listener);
+        return client.isStarted();
     }
 
     @Override
-    public void addListener(CuratorListener listener, Executor executor)
+    public GetACLBuilder getACL()
     {
-        client.addListener(listener, executor);
+        return client.getACL();
     }
 
     @Override
-    public void removeListener(CuratorListener listener)
+    public SetACLBuilder setACL()
     {
-        client.removeListener(listener);
+        return client.setACL();
+    }
+
+    @Override
+    public Listenable<ConnectionStateListener> getConnectionStateListenable()
+    {
+        return client.getConnectionStateListenable();
+    }
+
+    @Override
+    public Listenable<CuratorListener> getCuratorListenable()
+    {
+        return client.getCuratorListenable();
+    }
+
+    @Override
+    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
+    {
+        return client.getUnhandledErrorListenable();
     }
 
     @Override
@@ -145,9 +157,9 @@ public class NonNamespaceFacade extends CuratorFrameworkImpl
     }
 
     @Override
-    void notifyError(String reason, Throwable e)
+    void logError(String reason, Throwable e)
     {
-        client.notifyError(reason, e);
+        client.logError(reason, e);
     }
 
     @Override

@@ -456,7 +456,7 @@ public class TestDistributedQueue extends BaseClassForTests
         client.start();
         try
         {
-            client.addListener
+            client.getCuratorListenable().addListener
             (
                 new CuratorListener()
                 {
@@ -465,11 +465,6 @@ public class TestDistributedQueue extends BaseClassForTests
                     {
                         // this listener should get called before the queue's listener
                         latch.await();
-                    }
-
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
                     }
                 }
             );

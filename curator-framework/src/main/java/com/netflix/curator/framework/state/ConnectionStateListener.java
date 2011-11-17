@@ -15,22 +15,18 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.framework.api;
+
+package com.netflix.curator.framework.state;
 
 import com.netflix.curator.framework.CuratorFramework;
 
-/**
- * Receives notifications about errors and background events
- */
-public interface CuratorUnhandledErrorListener
+public interface ConnectionStateListener
 {
     /**
-     * Called when all retries have failed. The connection will still be active but one or more
-     * operations may have failed. It is up to the client how to handle this. The safest thing to
-     * do is to close the client and create a new client, etc.
+     * Called when there is a state change in the connection
      *
-     * @param client client
-     * @param e the exception that caused the issue
+     * @param client the client
+     * @param newState the new state
      */
-    public void         unhandledError(CuratorFramework client, Throwable e);
+    public void stateChanged(CuratorFramework client, ConnectionState newState);
 }

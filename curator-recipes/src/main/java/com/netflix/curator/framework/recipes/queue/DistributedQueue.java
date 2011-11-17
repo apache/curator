@@ -93,12 +93,6 @@ public class DistributedQueue<T> implements Closeable
                 }
             }
         }
-
-        @Override
-        public void unhandledError(CuratorFramework client, Throwable e)
-        {
-            // nop
-        }
     };
 
     private enum State
@@ -173,7 +167,7 @@ public class DistributedQueue<T> implements Closeable
             }
         }
 
-        client.addListener(listener, executor);
+        client.getCuratorListenable().addListener(listener, executor);
 
         if ( !isProducerOnly )
         {
@@ -184,8 +178,6 @@ public class DistributedQueue<T> implements Closeable
                     @Override
                     public Object call()
                     {
-                        Thread.currentThread().setName("Curator-DistributedQueue");
-
                         runLoop();
                         return null;
                     }
@@ -246,7 +238,7 @@ public class DistributedQueue<T> implements Closeable
             throw new IllegalStateException();
         }
 
-        client.removeListener(listener);
+        client.getCuratorListenable().removeListener(listener);
         service.shutdownNow();
     }
 

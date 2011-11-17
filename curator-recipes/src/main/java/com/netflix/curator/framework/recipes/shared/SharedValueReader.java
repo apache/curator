@@ -18,7 +18,7 @@
 
 package com.netflix.curator.framework.recipes.shared;
 
-import java.util.concurrent.Executor;
+import com.netflix.curator.framework.listen.ListenerContainer;
 
 /**
  * Abstracts a shared value and allows listening for changes to the value
@@ -30,27 +30,12 @@ public interface SharedValueReader
      *
      * @return count
      */
-    byte[]   getValue();
+    public byte[]   getValue();
 
     /**
-     * Add a listener for changes to the count
+     * Returns the listenable
      *
-     * @param listener the listener
+     * @return listenable
      */
-    void     addListener(SharedValueListener listener);
-
-    /**
-     * Add a listener for changes to the count
-     *
-     * @param listener the listener
-     * @param executor executor to use when notifying the listener
-     */
-    void     addListener(SharedValueListener listener, Executor executor);
-
-    /**
-     * Remove the listener
-     *
-     * @param listener the listener
-     */
-    void     removeListener(SharedValueListener listener);
+    public ListenerContainer<SharedValueListener> getListenable();
 }

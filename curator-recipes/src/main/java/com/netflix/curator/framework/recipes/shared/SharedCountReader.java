@@ -18,12 +18,12 @@
 
 package com.netflix.curator.framework.recipes.shared;
 
-import java.util.concurrent.Executor;
+import com.netflix.curator.framework.listen.Listenable;
 
 /**
  * Abstracts a shared integer and allows listening for changes to its value
  */
-public interface SharedCountReader
+public interface SharedCountReader extends Listenable<SharedCountListener>
 {
     /**
      * Return the current value of the count
@@ -31,26 +31,4 @@ public interface SharedCountReader
      * @return count
      */
     int      getCount();
-
-    /**
-     * Add a listener for changes to the count
-     *
-     * @param listener the listener
-     */
-    void     addListener(SharedCountListener listener);
-
-    /**
-     * Add a listener for changes to the count
-     *
-     * @param listener the listener
-     * @param executor executor to use when notifying the listener
-     */
-    void     addListener(SharedCountListener listener, Executor executor);
-
-    /**
-     * Remove the listener
-     *
-     * @param listener the listener
-     */
-    void     removeListener(SharedCountListener listener);
 }

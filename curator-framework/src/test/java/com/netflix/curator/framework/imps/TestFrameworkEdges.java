@@ -24,6 +24,9 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
+import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
 import com.netflix.curator.utils.ZKPaths;
@@ -99,7 +102,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         client.start();
         try
         {
-            client.addListener
+            client.getCuratorListenable().addListener
             (
                 new CuratorListener()
                 {
@@ -117,11 +120,6 @@ public class TestFrameworkEdges extends BaseClassForTests
                         {
                             ((CountDownLatch)event.getContext()).countDown();
                         }
-                    }
-
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
                     }
                 }
             );
@@ -144,19 +142,17 @@ public class TestFrameworkEdges extends BaseClassForTests
         try
         {
             final CountDownLatch        latch = new CountDownLatch(1);
-            client.addListener
+            client.getConnectionStateListenable().addListener
             (
-                new CuratorListener()
+                new ConnectionStateListener()
                 {
                     @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
                     {
-                    }
-
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
-                        latch.countDown();
+                        if ( newState == ConnectionState.LOST )
+                        {
+                            latch.countDown();
+                        }
                     }
                 }
             );
@@ -205,7 +201,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     {
         final int       serverPort = server.getPort();
 
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(1));
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new ExponentialBackoffRetry(10, 3));
         client.start();
         try
         {

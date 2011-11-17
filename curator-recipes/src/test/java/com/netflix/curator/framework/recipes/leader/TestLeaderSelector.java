@@ -23,17 +23,15 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.recipes.KillSession;
+import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
-import com.netflix.curator.utils.TestingServer;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.internal.annotations.Sets;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -62,14 +60,12 @@ public class TestLeaderSelector extends BaseClassForTests
                 }
 
                 @Override
-                public void notifyClientClosing(CuratorFramework client)
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
-                }
-
-                @Override
-                public void unhandledError(CuratorFramework client, Throwable e)
-                {
-                    semaphore.release();
+                    if ( newState == ConnectionState.LOST )
+                    {
+                        semaphore.release();
+                    }
                 }
             };
             selector = new LeaderSelector(client, "/leader", listener);
@@ -103,11 +99,6 @@ public class TestLeaderSelector extends BaseClassForTests
                 private volatile Thread     ourThread;
 
                 @Override
-                public void unhandledError(CuratorFramework client, Throwable exception)
-                {
-                }
-
-                @Override
                 public void takeLeadership(CuratorFramework client) throws Exception
                 {
                     leaderCount.incrementAndGet();
@@ -132,9 +123,9 @@ public class TestLeaderSelector extends BaseClassForTests
                 }
 
                 @Override
-                public void notifyClientClosing(CuratorFramework client)
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
-                    if ( ourThread != null )
+                    if ( (newState == ConnectionState.LOST) && (ourThread != null) )
                     {
                         ourThread.interrupt();
                     }
@@ -174,7 +165,7 @@ public class TestLeaderSelector extends BaseClassForTests
             LeaderSelector leaderSelector1 = new LeaderSelector(client, PATH_NAME, new LeaderSelectorListener()
             {
                 @Override
-                public void unhandledError(CuratorFramework client, Throwable exception)
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
                 }
 
@@ -182,18 +173,13 @@ public class TestLeaderSelector extends BaseClassForTests
                 public void takeLeadership(CuratorFramework client) throws Exception
                 {
                     latch.await();
-                }
-
-                @Override
-                public void notifyClientClosing(CuratorFramework client)
-                {
                 }
             });
 
             LeaderSelector      leaderSelector2 = new LeaderSelector(client, PATH_NAME, new LeaderSelectorListener()
             {
                 @Override
-                public void unhandledError(CuratorFramework client, Throwable exception)
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
                 }
 
@@ -201,11 +187,6 @@ public class TestLeaderSelector extends BaseClassForTests
                 public void takeLeadership(CuratorFramework client) throws Exception
                 {
                     latch.await();
-                }
-
-                @Override
-                public void notifyClientClosing(CuratorFramework client)
-                {
                 }
             });
 
@@ -266,11 +247,6 @@ public class TestLeaderSelector extends BaseClassForTests
                 LeaderSelector      leaderSelector = new LeaderSelector(client, PATH_NAME, new LeaderSelectorListener()
                 {
                     @Override
-                    public void unhandledError(CuratorFramework client, Throwable exception)
-                    {
-                    }
-
-                    @Override
                     public void takeLeadership(CuratorFramework client) throws Exception
                     {
                         Thread.sleep(500);
@@ -278,7 +254,7 @@ public class TestLeaderSelector extends BaseClassForTests
                     }
 
                     @Override
-                    public void notifyClientClosing(CuratorFramework client)
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
                     {
                     }
                 });

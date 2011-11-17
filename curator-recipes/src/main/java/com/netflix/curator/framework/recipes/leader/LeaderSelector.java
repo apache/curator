@@ -20,8 +20,8 @@ package com.netflix.curator.framework.recipes.leader;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.recipes.locks.ClientClosingListener;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.zookeeper.KeeperException;
 import java.io.Closeable;
@@ -50,6 +50,8 @@ public class LeaderSelector implements Closeable
     private volatile boolean                hasLeadership;
     private volatile String                 id = "";
 
+    private static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("LeaderSelector-%d").build();
+
     /**
      * @param client the client
      * @param mutexPath the path for this leadership group
@@ -57,7 +59,7 @@ public class LeaderSelector implements Closeable
      */
     public LeaderSelector(CuratorFramework client, String mutexPath, LeaderSelectorListener listener)
     {
-        this(client, mutexPath, Executors.defaultThreadFactory(), MoreExecutors.sameThreadExecutor(), listener);
+        this(client, mutexPath, defaultThreadFactory, MoreExecutors.sameThreadExecutor(), listener);
     }
 
     /**
@@ -79,7 +81,7 @@ public class LeaderSelector implements Closeable
         hasLeadership = false;
 
         executorService = Executors.newFixedThreadPool(1, threadFactory);
-        mutex = new InterProcessMutex(client, mutexPath, makeClientClosingListener(listener))
+        mutex = new InterProcessMutex(client, mutexPath)
         {
             @Override
             protected byte[] getLockNodeBytes()
@@ -130,6 +132,7 @@ public class LeaderSelector implements Closeable
         Preconditions.checkArgument(!executorService.isShutdown());
         Preconditions.checkArgument(!hasLeadership);
 
+        client.getConnectionStateListenable().addListener(listener);
         executorService.submit
         (
             new Callable<Object>()
@@ -137,7 +140,6 @@ public class LeaderSelector implements Closeable
                 @Override
                 public Object call() throws Exception
                 {
-                    Thread.currentThread().setName("LeaderSelector " + Thread.currentThread().getName());
                     doWork();
                     return null;
                 }
@@ -152,6 +154,7 @@ public class LeaderSelector implements Closeable
     {
         Preconditions.checkArgument(!executorService.isShutdown());
 
+        client.getConnectionStateListenable().removeListener(listener);
         executorService.shutdownNow();
     }
 
@@ -234,44 +237,6 @@ public class LeaderSelector implements Closeable
         return new Participant(thisId, markAsLeader);
     }
 
-    private ClientClosingListener<InterProcessMutex> makeClientClosingListener(final LeaderSelectorListener listener)
-    {
-        return new ClientClosingListener<InterProcessMutex>()
-        {
-            @Override
-            public void notifyClientClosing(InterProcessMutex lock, final CuratorFramework client)
-            {
-                executor.execute
-                (
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            listener.notifyClientClosing(client);
-                        }
-                    }
-                );
-            }
-
-            @Override
-            public void unhandledError(CuratorFramework client, final Throwable e)
-            {
-                executor.execute
-                (
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            listener.unhandledError(LeaderSelector.this.client, e);
-                        }
-                    }
-                );
-            }
-        };
-    }
-
     private void doWork() throws Exception
     {
         hasLeadership = false;
@@ -294,11 +259,10 @@ public class LeaderSelector implements Closeable
                         catch ( InterruptedException e )
                         {
                             Thread.currentThread().interrupt();
-                            listener.unhandledError(client, e);
                         }
                         catch ( Exception e )
                         {
-                            listener.unhandledError(client, e);
+                            client.getZookeeperClient().getLog().error("The leader threw an exception", e);
                         }
                     }
                 }

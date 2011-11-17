@@ -23,6 +23,7 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -55,12 +56,7 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
                 }
 
                 @Override
-                public void notifyClientClosing(CuratorFramework client)
-                {
-                }
-
-                @Override
-                public void unhandledError(CuratorFramework client, Throwable e)
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
                 }
             };
@@ -108,12 +104,7 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
                 }
 
                 @Override
-                public void notifyClientClosing(CuratorFramework client)
-                {
-                }
-
-                @Override
-                public void unhandledError(CuratorFramework client, Throwable e)
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
                 }
             };

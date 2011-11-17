@@ -17,16 +17,19 @@
  */
 package com.netflix.curator.framework.recipes.cache;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.listen.ListenerContainer;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.ZKPaths;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -36,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -60,8 +62,8 @@ public class PathChildrenCache implements Closeable
 
     private static final ChildData          existingDataMarker = new ChildData(null, null, null);
 
-    private final BlockingQueue<EventEntry>                         listenerEvents = new LinkedBlockingQueue<EventEntry>();
-    private final Map<PathChildrenCacheListener, ListenerEntry>     listeners = Maps.newConcurrentMap();
+    private final BlockingQueue<PathChildrenCacheEvent>             listenerEvents = new LinkedBlockingQueue<PathChildrenCacheEvent>();
+    private final ListenerContainer<PathChildrenCacheListener>      listeners = new ListenerContainer<PathChildrenCacheListener>();
     private final Map<String, ChildData>                            currentData = Maps.newConcurrentMap();
     private final Map<String, ChildData>                            incomingData = Maps.newConcurrentMap();
     private final Watcher                                           watcher = new Watcher()
@@ -75,7 +77,7 @@ public class PathChildrenCache implements Closeable
             }
             catch ( Exception e )
             {
-                listenerEvents.offer(new EventEntry(e));
+                handleException(e);
             }
         }
     };
@@ -87,43 +89,17 @@ public class PathChildrenCache implements Closeable
         {
             processEvent(event);
         }
-
-        @Override
-        public void unhandledError(CuratorFramework client, Throwable e)
-        {
-            listenerEvents.offer(new EventEntry(e));
-        }
     };
 
-    private static class ListenerEntry
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
-        final PathChildrenCacheListener     listener;
-        final Executor                      executor;
-
-        private ListenerEntry(PathChildrenCacheListener listener, Executor executor)
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
-            this.listener = listener;
-            this.executor = executor;
+            handleStateChange(newState);
         }
-    }
-
-    private static class EventEntry
-    {
-        final PathChildrenCacheEvent  event;
-        final Throwable               exception;
-
-        private EventEntry(PathChildrenCacheEvent event)
-        {
-            this.event = event;
-            this.exception = null;
-        }
-
-        private EventEntry(Throwable exception)
-        {
-            this.event = null;
-            this.exception = exception;
-        }
-    }
+    };
+    private static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("PathChildrenCache-%d").build();
 
     /**
      * @param client the client
@@ -132,7 +108,7 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode)
     {
-        this(client, path, mode, Executors.defaultThreadFactory());
+        this(client, path, mode, defaultThreadFactory);
     }
 
     /**
@@ -158,7 +134,8 @@ public class PathChildrenCache implements Closeable
     {
         Preconditions.checkArgument(!executorService.isShutdown());
 
-        client.addListener(curatorListener, MoreExecutors.sameThreadExecutor());
+        client.getCuratorListenable().addListener(curatorListener);
+        client.getConnectionStateListenable().addListener(connectionStateListener);
         executorService.submit
         (
             new Callable<Object>()
@@ -166,7 +143,6 @@ public class PathChildrenCache implements Closeable
                 @Override
                 public Object call() throws Exception
                 {
-                    Thread.currentThread().setName("PathChildrenCache " + Thread.currentThread().getName());
                     listenerLoop();
                     return null;
                 }
@@ -186,39 +162,19 @@ public class PathChildrenCache implements Closeable
     {
         Preconditions.checkArgument(!executorService.isShutdown());
 
-        client.removeListener(curatorListener);
+        client.getCuratorListenable().removeListener(curatorListener);
+        client.getConnectionStateListenable().removeListener(connectionStateListener);
         executorService.shutdownNow();
     }
 
     /**
-     * Add a change listener
+     * Return the cache listenable
      *
-     * @param listener the listener
+     * @return listenable
      */
-    public void addListener(PathChildrenCacheListener listener)
+    public ListenerContainer<PathChildrenCacheListener> getListenable()
     {
-        addListener(listener, MoreExecutors.sameThreadExecutor());
-    }
-
-    /**
-     * Add a change listener
-     *
-     * @param listener the listener
-     * @param executor executor to use when calling the listener
-     */
-    public void addListener(PathChildrenCacheListener listener, Executor executor)
-    {
-        listeners.put(listener, new ListenerEntry(listener, executor));
-    }
-
-    /**
-     * Remove the given listener
-     *
-     * @param listener listener to remove
-     */
-    public void removeListener(PathChildrenCacheListener listener)
-    {
-        listeners.remove(listener);
+        return listeners;
     }
 
     /**
@@ -256,11 +212,48 @@ public class PathChildrenCache implements Closeable
         refresh();
     }
 
+    /**
+     * Default behavior is just to log the exception
+     *
+     * @param e the exception
+     */
+    protected void      handleException(Throwable e)
+    {
+        client.getZookeeperClient().getLog().error(e);
+    }
+
+    private void handleStateChange(ConnectionState newState)
+    {
+        switch ( newState )
+        {
+            case SUSPENDED:
+            {
+                currentData.clear();
+                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.RESET, null));
+                break;
+            }
+
+            case LOST:
+            case RECONNECTED:
+            {
+                try
+                {
+                    clearAndRefresh();
+                    listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.RESET, null));
+                }
+                catch ( Exception e )
+                {
+                    handleException(e);
+                }
+                break;
+            }
+        }
+    }
+
     private void refresh() throws Exception
     {
         incomingData.clear();
         client.getChildren().usingWatcher(watcher).inBackground().forPath(path);
-        listenerEvents.offer(new EventEntry(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.RESET, null)));
     }
 
     private void listenerLoop()
@@ -269,7 +262,7 @@ public class PathChildrenCache implements Closeable
         {
             try
             {
-                EventEntry event = listenerEvents.take();
+                PathChildrenCacheEvent event = listenerEvents.take();
                 callListeners(event);
             }
             catch ( InterruptedException e )
@@ -280,36 +273,27 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private void callListeners(final EventEntry event)
+    private void callListeners(final PathChildrenCacheEvent event)
     {
-        for ( final ListenerEntry listener : listeners.values() )
-        {
-            listener.executor.execute
-            (
-                new Runnable()
+        listeners.forEach
+        (
+            new Function<PathChildrenCacheListener, Void>()
+            {
+                @Override
+                public Void apply(PathChildrenCacheListener listener)
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            if ( event.event != null )
-                            {
-                                listener.listener.childEvent(client, event.event);
-                            }
-                            else
-                            {
-                                listener.listener.unhandledError(client, event.exception);
-                            }
-                        }
-                        catch ( Exception e )
-                        {
-                            listenerEvents.offer(new EventEntry(e));
-                        }
+                        listener.childEvent(client, event);
                     }
+                    catch ( Exception e )
+                    {
+                        handleException(e);
+                    }
+                    return null;
                 }
-            );
-        }
+            }
+        );
     }
 
     private void processEvent(CuratorEvent event) throws Exception
@@ -340,12 +324,6 @@ public class PathChildrenCache implements Closeable
                 break;
             }
 
-            case CLOSING:
-            {
-                listenerEvents.offer(new EventEntry(new KeeperException.ConnectionLossException()));
-                break;
-            }
-
             default:
             {
                 // do nothing
@@ -360,7 +338,13 @@ public class PathChildrenCache implements Closeable
         {
             case NodeDataChanged:
             {
-                processDataChanged(watchedEvent.getPath());
+                addIncomingPath(watchedEvent.getPath());
+                break;
+            }
+
+            case None:
+            {
+                // ignore
                 break;
             }
 
@@ -370,11 +354,6 @@ public class PathChildrenCache implements Closeable
                 break;
             }
         }
-    }
-
-    private void processDataChanged(String path) throws Exception
-    {
-        addIncomingPath(path);
     }
 
     private void        checkSetCurrent()
@@ -389,14 +368,14 @@ public class PathChildrenCache implements Closeable
                 boolean     isNew = (currentData.put(data.getPath(), data) == null);
                 incomingData.remove(path);
 
-                listenerEvents.offer(new EventEntry(new PathChildrenCacheEvent(isNew ? PathChildrenCacheEvent.Type.CHILD_ADDED : PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
+                listenerEvents.offer(new PathChildrenCacheEvent(isNew ? PathChildrenCacheEvent.Type.CHILD_ADDED : PathChildrenCacheEvent.Type.CHILD_UPDATED, data));
             }
             else if ( isTheExistingDataMarker(data) )
             {
                 ChildData       removedData = currentData.remove(path);
                 incomingData.remove(path);
 
-                listenerEvents.offer(new EventEntry(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, removedData)));
+                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, removedData));
             }
         }
     }

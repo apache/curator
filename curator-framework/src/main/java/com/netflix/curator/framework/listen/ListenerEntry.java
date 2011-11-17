@@ -15,12 +15,15 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.framework.imps;
+package com.netflix.curator.framework.listen;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import java.util.Collection;
 import java.util.concurrent.Executor;
 
 /**
- * Generic hold for a listener and its executor
+ * Generic holder POJO for a listener and its executor
  * @param <T> the listener type
  */
 public class ListenerEntry<T>

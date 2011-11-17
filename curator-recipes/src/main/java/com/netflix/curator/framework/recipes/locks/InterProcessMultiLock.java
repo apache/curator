@@ -38,12 +38,12 @@ public class InterProcessMultiLock implements InterProcessLock
     /**
      * Creates a multi lock of {@link InterProcessMutex}s
      *
-     * @param client client
+     * @param client the client
      * @param paths list of paths to manage in the order that they are to be locked
      */
     public InterProcessMultiLock(CuratorFramework client, List<String> paths)
     {
-        this(client, paths, null);
+        this(makeLocks(client, paths));
     }
 
     /**
@@ -56,24 +56,12 @@ public class InterProcessMultiLock implements InterProcessLock
         this.locks = ImmutableList.copyOf(locks);
     }
 
-    /**
-     * Creates a multi lock of {@link InterProcessMutex}s
-     *
-     * @param client client
-     * @param paths list of paths to manage in the order that they are to be locked
-     * @param clientClosingListener if not null, will get called if client connection unexpectedly closes
-     */
-    public InterProcessMultiLock(CuratorFramework client, List<String> paths, ClientClosingListener<InterProcessMutex> clientClosingListener)
-    {
-        this(makeLocks(client, paths, clientClosingListener));
-    }
-
-    private static List<InterProcessLock> makeLocks(CuratorFramework client, List<String> paths, ClientClosingListener<InterProcessMutex> clientClosingListener)
+    private static List<InterProcessLock> makeLocks(CuratorFramework client, List<String> paths)
     {
         ImmutableList.Builder<InterProcessLock> builder = ImmutableList.builder();
         for ( String path : paths )
         {
-            InterProcessLock        lock = new InterProcessMutex(client, path, clientClosingListener);
+            InterProcessLock        lock = new InterProcessMutex(client, path);
             builder.add(lock);
         }
         return builder.build();

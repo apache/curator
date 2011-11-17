@@ -96,7 +96,7 @@ class Backgrounding
                             }
                             catch ( Exception e )
                             {
-                                client.notifyError("Background operation result handling threw exception", e);
+                                client.logError("Background operation result handling threw exception", e);
                             }
                         }
                     }

@@ -21,6 +21,7 @@ package com.netflix.curator.framework.recipes.shared;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.listen.Listenable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,7 +32,7 @@ import java.util.concurrent.Executor;
  * Manages a shared integer. All clients watching the same path will have the up-to-date
  * value of the shared integer (considering ZK's normal consistency guarantees).
  */
-public class SharedCount implements Closeable, SharedCountReader
+public class SharedCount implements Closeable, SharedCountReader, Listenable<SharedCountListener>
 {
     private final Map<SharedCountListener, SharedValueListener> listeners = Maps.newConcurrentMap();
     private final SharedValue           sharedValue;
@@ -96,7 +97,7 @@ public class SharedCount implements Closeable, SharedCountReader
                 listener.countHasChanged(SharedCount.this, fromBytes(newValue));
             }
         };
-        sharedValue.addListener(valueListener, executor);
+        sharedValue.getListenable().addListener(valueListener, executor);
         listeners.put(listener, valueListener);
     }
 

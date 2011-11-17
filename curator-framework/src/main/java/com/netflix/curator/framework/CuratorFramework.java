@@ -18,15 +18,9 @@
 package com.netflix.curator.framework;
 
 import com.netflix.curator.CuratorZookeeperClient;
-import com.netflix.curator.framework.api.CreateBuilder;
-import com.netflix.curator.framework.api.CuratorListener;
-import com.netflix.curator.framework.api.DeleteBuilder;
-import com.netflix.curator.framework.api.ExistsBuilder;
-import com.netflix.curator.framework.api.GetACLBuilder;
-import com.netflix.curator.framework.api.GetChildrenBuilder;
-import com.netflix.curator.framework.api.GetDataBuilder;
-import com.netflix.curator.framework.api.SetACLBuilder;
-import com.netflix.curator.framework.api.SetDataBuilder;
+import com.netflix.curator.framework.api.*;
+import com.netflix.curator.framework.listen.Listenable;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
 import java.io.Closeable;
 import java.util.concurrent.Executor;
@@ -118,26 +112,25 @@ public interface CuratorFramework extends Closeable
     public void     sync(String path, Object backgroundContextObject);
 
     /**
-     * Add an event listener
+     * Returns the listenable interface for the Connect State
      *
-     * @param listener the listener
+     * @return listenable
      */
-    public void     addListener(CuratorListener listener);
+    public Listenable<ConnectionStateListener> getConnectionStateListenable();
 
     /**
-     * Add an event listener
+     * Returns the listenable interface for events
      *
-     * @param listener the listener
-     * @param executor executor within which to submit events
+     * @return listenable
      */
-    public void     addListener(CuratorListener listener, Executor executor);
+    public Listenable<CuratorListener>         getCuratorListenable();
 
     /**
-     * Remove the given listener
+     * Returns the listenable interface for unhandled errors
      *
-     * @param listener listener to remove
+     * @return listenable
      */
-    public void     removeListener(CuratorListener listener);
+    public Listenable<UnhandledErrorListener>  getUnhandledErrorListenable();
 
     /**
      * Returns a facade of the current instance that does _not_ automatically

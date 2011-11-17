@@ -59,21 +59,16 @@ public class TestFramework extends BaseClassForTests
                         queue.put(event.getPath());
                     }
                 }
-
-                @Override
-                public void unhandledError(CuratorFramework client, Throwable e)
-                {
-                }
             };
 
-            client.addListener(listener);
+            client.getCuratorListenable().addListener(listener);
             client.create().forPath("/base", new byte[0]);
             client.checkExists().inBackground().forPath("/base");
 
             String      path = queue.poll(10, TimeUnit.SECONDS);
             Assert.assertEquals(path, "/base");
 
-            client.removeListener(listener);
+            client.getCuratorListenable().removeListener(listener);
 
             BackgroundCallback      callback = new BackgroundCallback()
             {
@@ -277,7 +272,7 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.addListener
+            client.getCuratorListenable().addListener
             (
                 new CuratorListener()
                 {
@@ -289,11 +284,6 @@ public class TestFramework extends BaseClassForTests
                             Assert.assertEquals(event.getPath(), "/head");
                             ((CountDownLatch)event.getContext()).countDown();
                         }
-                    }
-
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
                     }
                 }
             );
@@ -318,7 +308,7 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.addListener
+            client.getCuratorListenable().addListener
             (
                 new CuratorListener()
                 {
@@ -330,11 +320,6 @@ public class TestFramework extends BaseClassForTests
                             Assert.assertEquals(event.getPath(), "/head");
                             ((CountDownLatch)event.getContext()).countDown();
                         }
-                    }
-
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
                     }
                 }
             );
@@ -405,15 +390,10 @@ public class TestFramework extends BaseClassForTests
         try
         {
             final CountDownLatch          watchedLatch = new CountDownLatch(1);
-            client.addListener
+            client.getCuratorListenable().addListener
             (
                 new CuratorListener()
                 {
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
-                    }
-
                     @Override
                     public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
                     {
@@ -459,15 +439,10 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.addListener
+            client.getCuratorListenable().addListener
             (
                 new CuratorListener()
                 {
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
-                    }
-
                     @Override
                     public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
                     {

@@ -20,6 +20,7 @@ package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -39,6 +40,8 @@ public class QueueBuilder<T>
     private ThreadFactory factory;
     private Executor executor;
     private String lockPath;
+
+    private static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
 
     /**
      * Allocate a new builder
@@ -163,7 +166,7 @@ public class QueueBuilder<T>
         this.serializer = serializer;
         this.queuePath = queuePath;
 
-        factory = Executors.defaultThreadFactory();
+        factory = defaultThreadFactory;
         executor = MoreExecutors.sameThreadExecutor();
     }
 }

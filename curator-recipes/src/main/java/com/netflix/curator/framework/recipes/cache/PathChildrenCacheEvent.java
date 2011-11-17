@@ -51,7 +51,11 @@ public class PathChildrenCacheEvent
         RESET
     }
 
-    PathChildrenCacheEvent(Type type, ChildData data)
+    /**
+     * @param type event type
+     * @param data event data or null
+     */
+    public PathChildrenCacheEvent(Type type, ChildData data)
     {
         this.type = type;
         this.data = data;

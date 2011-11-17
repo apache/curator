@@ -21,8 +21,8 @@ package com.netflix.curator.framework.imps;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.framework.api.CuratorEvent;
-import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingCluster;
 import org.testng.Assert;
@@ -43,20 +43,18 @@ public class TestWithCluster
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1));
             client.start();
 
-            final CountDownLatch        latch = new CountDownLatch(1);
-            client.addListener
+            final CountDownLatch        latch = new CountDownLatch(2);
+            client.getConnectionStateListenable().addListener
             (
-                new CuratorListener()
+                new ConnectionStateListener()
                 {
                     @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
                     {
-                    }
-
-                    @Override
-                    public void unhandledError(CuratorFramework client, Throwable e)
-                    {
-                        latch.countDown();
+                        if ( (newState == ConnectionState.SUSPENDED) || (newState == ConnectionState.LOST) )
+                        {
+                            latch.countDown();
+                        }
                     }
                 }
             );

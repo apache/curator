@@ -204,7 +204,6 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     {
         mutex.acquire();
         Assert.assertTrue(mutex.isAcquiredInThisProcess());
-        System.out.println("test");
         mutex.release();
         Assert.assertTrue(mutex.isAcquiredInThisProcess());
     }
@@ -292,7 +291,6 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
             if ( mutexForClient1.isAcquiredInThisProcess() )
             {
-                System.out.println("Mutex 1");
                 latchForClient1.countDown();
                 if ( !mutexForClient2.isAcquiredInThisProcess() )
                 {
@@ -302,7 +300,6 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
             }
             else
             {
-                System.out.println("Mutex 2");
                 latchForClient2.countDown();
                 if ( !mutexForClient1.isAcquiredInThisProcess() )
                 {

@@ -22,7 +22,7 @@ import com.netflix.curator.framework.CuratorFramework;
 /**
  * Receives notifications about errors and background events
  */
-public interface CuratorListener extends CuratorUnhandledErrorListener
+public interface CuratorListener
 {
     /**
      * Called when a background task has completed or a watch has triggered

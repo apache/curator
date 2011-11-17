@@ -37,17 +37,15 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-class LockInternals<T>
+class LockInternals
 {
     private final CuratorFramework          client;
     private final String                    path;
     private final String                    basePath;
-    private final ClientClosingListener<T>  clientClosingListener;
     private final CuratorListener           listener;
     private final EnsurePath                ensurePath;
     private final Watcher                   watcher;
     private final String                    lockName;
-    private final T                         parent;
 
     private volatile int    maxLeases;
 
@@ -72,17 +70,15 @@ class LockInternals<T>
         }
     }
 
-    LockInternals(CuratorFramework client, String path, String lockName, T parent, ClientClosingListener<T> clientClosingListener, int maxLeases)
+    LockInternals(CuratorFramework client, String path, String lockName, int maxLeases)
     {
         this.lockName = lockName;
-        this.parent = parent;
         this.maxLeases = maxLeases;
         PathUtils.validatePath(path);
 
         this.client = client;
         this.basePath = path;
         this.path = ZKPaths.makePath(path, lockName);
-        this.clientClosingListener = clientClosingListener;
 
         ensurePath = client.newNamespaceAwareEnsurePath(basePath);
 
@@ -100,23 +96,13 @@ class LockInternals<T>
             @Override
             public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if ( event.getType() == CuratorEventType.CLOSING )
-                {
-                    notifyListener(null);
-                }
-                else if ( event.getType() == CuratorEventType.WATCHED )
+                if ( event.getType() == CuratorEventType.WATCHED )
                 {
                     if ( event.getWatchedEvent().getState() != Watcher.Event.KeeperState.SyncConnected )
                     {
                         notifyFromWatcher();
                     }
                 }
-            }
-
-            @Override
-            public void unhandledError(CuratorFramework client, Throwable e)
-            {
-                notifyListener(e);
             }
         };
     }
@@ -129,7 +115,7 @@ class LockInternals<T>
 
     void releaseLock(String lockPath) throws Exception
     {
-        client.removeListener(listener);
+        client.getCuratorListenable().removeListener(listener);
         client.delete().forPath(lockPath);
     }
 
@@ -176,7 +162,7 @@ class LockInternals<T>
 
         if ( pathAndFlag.hasTheLock )
         {
-            client.addListener(listener);
+            client.getCuratorListenable().addListener(listener);
             return pathAndFlag.path;
         }
 
@@ -208,8 +194,7 @@ class LockInternals<T>
                 int             ourIndex = children.indexOf(sequenceNodeName);
                 if ( ourIndex < 0 )
                 {
-                    client.getZookeeperClient().getLog().warn("Sequential path not found: " + ourPath);
-                    notifyListener(null);
+                    client.getZookeeperClient().getLog().error("Sequential path not found: " + ourPath);
                     throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
                 }
 
@@ -266,22 +251,6 @@ class LockInternals<T>
             }
         }
         return haveTheLock;
-    }
-
-    private void notifyListener(Throwable e)
-    {
-        if ( clientClosingListener != null )
-        {
-            if ( e != null )
-            {
-                clientClosingListener.unhandledError(client, e);
-            }
-            else
-            {
-                clientClosingListener.notifyClientClosing(parent, client);
-            }
-        }
-        notifyFromWatcher();
     }
 
     private synchronized void notifyFromWatcher()

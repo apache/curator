@@ -18,12 +18,11 @@
 package com.netflix.curator.framework.recipes.cache;
 
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.CuratorUnhandledErrorListener;
 
 /**
  * Listener for PathChildrenCache changes
  */
-public interface PathChildrenCacheListener extends CuratorUnhandledErrorListener
+public interface PathChildrenCacheListener
 {
     /**
      * Called when a change has occurred

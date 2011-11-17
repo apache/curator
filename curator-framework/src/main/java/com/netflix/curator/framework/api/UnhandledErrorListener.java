@@ -15,19 +15,21 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.framework.recipes.locks;
 
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.CuratorUnhandledErrorListener;
+package com.netflix.curator.framework.api;
 
-public interface ClientClosingListener<T> extends CuratorUnhandledErrorListener
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
+
+public interface UnhandledErrorListener
 {
     /**
-     * Called if the client is closed for some reason. If this is called, the lock that was held
-     * is no longer held.
+     * Called when an exception is caught in a background thread, handler, etc. Before this
+     * listener is called, the error will have been logged and a {@link ConnectionState#LOST}
+     * event will have been queued for any {@link ConnectionStateListener}s.
      *
-     * @param lock the lock that was previously held (it is no longer valid)
-     * @param client the client
+     * @param message Source message
+     * @param e exception
      */
-    public void     notifyClientClosing(T lock, CuratorFramework client);
+    public void     unhandledError(String message, Throwable e);
 }

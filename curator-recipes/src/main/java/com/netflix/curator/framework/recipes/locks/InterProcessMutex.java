@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ZKPaths;
-import org.apache.zookeeper.ZooKeeper;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -35,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class InterProcessMutex implements InterProcessLock
 {
-    private final LockInternals<?>  internals;
+    private final LockInternals internals;
     private final String            basePath;
 
     private volatile LockData       lockData;
@@ -55,18 +54,8 @@ public class InterProcessMutex implements InterProcessLock
      */
     public InterProcessMutex(CuratorFramework client, String path)
     {
-        this(client, path, null);
-    }
-
-    /**
-     * @param client client
-     * @param path the path to lock
-     * @param clientClosingListener if not null, will get called if client connection unexpectedly closes
-     */
-    public InterProcessMutex(CuratorFramework client, String path, ClientClosingListener<InterProcessMutex> clientClosingListener)
-    {
         basePath = path;
-        internals = new LockInternals<InterProcessMutex>(client, path, LOCK_NAME, this, clientClosingListener, 1);
+        internals = new LockInternals(client, path, LOCK_NAME, 1);
     }
 
     /**

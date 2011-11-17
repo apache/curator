@@ -17,11 +17,11 @@
  */
 package com.netflix.curator.framework;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.imps.CuratorFrameworkImpl;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -79,11 +79,13 @@ public class CuratorFrameworkFactory
 
     public static class Builder
     {
+        private static final ThreadFactory      defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("CuratorFramework-%d").build();
+
         private String          connectString;
         private int             sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
         private int             connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
         private RetryPolicy     retryPolicy;
-        private ThreadFactory   threadFactory = Executors.defaultThreadFactory();
+        private ThreadFactory   threadFactory = defaultThreadFactory;
         private String          namespace;
         private String          authScheme = null;
         private byte[]          authValue = null;
