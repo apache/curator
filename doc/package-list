@@ -3,11 +3,13 @@ com.netflix.curator.drivers
 com.netflix.curator.framework
 com.netflix.curator.framework.api
 com.netflix.curator.framework.imps
+com.netflix.curator.framework.listen
 com.netflix.curator.framework.recipes.atomic
 com.netflix.curator.framework.recipes.cache
 com.netflix.curator.framework.recipes.leader
 com.netflix.curator.framework.recipes.locks
 com.netflix.curator.framework.recipes.queue
 com.netflix.curator.framework.recipes.shared
+com.netflix.curator.framework.state
 com.netflix.curator.retry
 com.netflix.curator.utils
