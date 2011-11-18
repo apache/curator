@@ -201,7 +201,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     {
         final int       serverPort = server.getPort();
 
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new ExponentialBackoffRetry(10, 3));
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(10));
         client.start();
         try
         {
@@ -227,7 +227,6 @@ public class TestFrameworkEdges extends BaseClassForTests
                         retries.incrementAndGet();
                         if ( (retryCount + 1) == 5 )
                         {
-                            semaphore.release();
                             try
                             {
                                 server = new TestingServer(serverPort, Files.createTempDir());
@@ -238,6 +237,10 @@ public class TestFrameworkEdges extends BaseClassForTests
                             catch ( Exception e )
                             {
                                 Assert.fail("", e);
+                            }
+                            finally
+                            {
+                                semaphore.release();
                             }
                         }
                         return true;
