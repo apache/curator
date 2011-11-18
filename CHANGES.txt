@@ -1,4 +1,4 @@
-0.5.3 - TBD
+0.6.1 - Nov. 18, 2011
 =====================
 * Added new methods to LeaderSelector to identify/get all Participants
 

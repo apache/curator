@@ -18,15 +18,53 @@
 
 package com.netflix.curator;
 
+import com.netflix.curator.retry.ExponentialBackoffRetry;
+import com.netflix.curator.utils.TestingCluster;
+import com.netflix.curator.utils.TestingServer;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.testng.Assert;
+import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-class KillSession
+public class KillSession
 {
+    @Test
+    public void     foo() throws Exception
+    {
+        TestingCluster      cluster = new TestingCluster(3);
+        try
+        {
+            cluster.start();
+
+            final CountDownLatch    latch = new CountDownLatch(1);
+            Watcher                 watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    latch.countDown();
+                    System.out.println(event);
+                }
+            };
+
+            new ZooKeeper(cluster.getConnectString(), 1000, watcher);
+
+            latch.await();
+            Thread.sleep(5000);
+
+            cluster.close();
+
+            Thread.currentThread().join();
+        }
+        finally
+        {
+            //cluster.close();
+        }
+    }
+
     static void     kill(String connectString, long sessionId, byte[] sessionPassword) throws Exception
     {
         final CountDownLatch zkLatch = new CountDownLatch(1);
