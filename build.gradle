@@ -17,9 +17,7 @@ subprojects
     dependencies 
     {
         compile     'org.apache.zookeeper:zookeeper:3.3.1'
-        compile     'com.google.guava:guava:r09'
-        compile     'javassist:javassist:3.12.1.GA'
-        testCompile 'org.testng:testng:6.1.1'
+        compile     'com.google.guava:guava:10.0.1'
         testCompile 'org.testng:testng:6.1.1'
     }
 
@@ -45,6 +43,7 @@ project(':curator-client')
 {
     dependencies
     {
+        compile     'javassist:javassist:3.12.1.GA'
         testCompile 'org.mockito:mockito-core:1.8.5'
     }
 }
