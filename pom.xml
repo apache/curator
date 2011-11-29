@@ -42,7 +42,7 @@
     <modules>
         <module>curator-client</module>
         <module>curator-framework</module>
-        <module>curator-recipes</module>
+        <module>curator-recipes</module><module>curator-x-discovery</module>
     </modules>
 
     <scm>
@@ -82,6 +82,7 @@
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>6.1.1</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
