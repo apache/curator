@@ -95,6 +95,8 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
             }
         );
         listenerContainer.clear();
+
+        discovery.cacheClosed(this);
     }
 
     @Override

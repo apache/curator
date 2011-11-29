@@ -20,6 +20,9 @@ package com.netflix.curator.x.discovery;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -40,6 +43,7 @@ public class ServiceDiscovery<T> implements Closeable
     private final String basePath;
     private final InstanceSerializer<T> serializer;
     private final ServiceInstance<T> thisInstance;
+    private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
 
     /**
      * @param client the client
@@ -85,6 +89,11 @@ public class ServiceDiscovery<T> implements Closeable
     @Override
     public void close() throws IOException
     {
+        for ( ServiceCache<T> cache : Lists.newArrayList(caches) )
+        {
+            Closeables.closeQuietly(cache);
+        }
+
         if ( thisInstance != null )
         {
             try
@@ -146,7 +155,9 @@ public class ServiceDiscovery<T> implements Closeable
      */
     public ServiceCache<T> newServiceCache(String forName)
     {
-        return new ServiceCache<T>(this, forName);
+        ServiceCache<T> cache = new ServiceCache<T>(this, forName);
+        caches.add(cache);
+        return cache;
     }
 
     /**
@@ -194,6 +205,11 @@ public class ServiceDiscovery<T> implements Closeable
             // ignore
         }
         return null;
+    }
+
+    void    cacheClosed(ServiceCache<T> cache)
+    {
+        caches.remove(cache);
     }
 
     CuratorFramework getClient()
