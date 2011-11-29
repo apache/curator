@@ -18,7 +18,7 @@
 package com.netflix.curator.x.discovery;
 
 /**
- * Pluggable serializer for service instances
+ * Injectable serializer for service instances
  */
 public interface InstanceSerializer<T>
 {

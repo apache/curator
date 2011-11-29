@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
@@ -110,7 +111,7 @@ public class ServiceDiscovery<T> implements Closeable
 
         try
         {
-            client.create().creatingParentsIfNeeded().forPath(path, bytes);
+            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, bytes);
         }
         catch ( KeeperException.NodeExistsException e )
         {
@@ -244,7 +245,14 @@ public class ServiceDiscovery<T> implements Closeable
         {
             if ( recurse )
             {
-                client.create().creatingParentsIfNeeded().forPath(path, new byte[0]);
+                try
+                {
+                    client.create().creatingParentsIfNeeded().forPath(path, new byte[0]);
+                }
+                catch ( KeeperException.NodeExistsException ignore )
+                {
+                    // ignore
+                }
                 instanceIds = getChildrenWatched(path, watcher, false);
             }
             else

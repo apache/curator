@@ -39,8 +39,8 @@ public class TestServiceDiscovery
     @Test
     public void         testBasic() throws Exception
     {
-        List<Closeable>             closeables = Lists.newArrayList();
-        TestingServer server = new TestingServer();
+        List<Closeable>     closeables = Lists.newArrayList();
+        TestingServer       server = new TestingServer();
         closeables.add(server);
         try
         {

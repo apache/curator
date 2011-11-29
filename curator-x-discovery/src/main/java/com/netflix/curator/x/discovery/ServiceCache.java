@@ -50,7 +50,6 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
 
     ServiceCache(ServiceDiscovery<T> discovery, String name)
     {
-
         this.discovery = discovery;
         this.name = name;
     }

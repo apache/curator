@@ -59,7 +59,7 @@ public class ServiceInstance<T>
      * @param address address of this instance
      * @param port the port for this instance or null
      * @param sslPort the SSL port for this instance or null
-     * @param payload the payload for this instance of null
+     * @param payload the payload for this instance or null
      */
     public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload)
     {
