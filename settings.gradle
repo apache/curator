@@ -1,2 +1,1 @@
-include 'curator-client','curator-framework','curator-recipes'
-
+include 'curator-client','curator-framework','curator-recipes','curator-x-discovery'
