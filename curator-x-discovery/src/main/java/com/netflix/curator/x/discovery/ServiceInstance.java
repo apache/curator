@@ -61,7 +61,7 @@ public class ServiceInstance<T>
      * @param sslPort the SSL port for this instance or null
      * @param payload the payload for this instance or null
      */
-    public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload)
+    ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload)
     {
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(id);
@@ -77,7 +77,7 @@ public class ServiceInstance<T>
     /**
      * Inits to default values. Only exists for deserialization
      */
-    public ServiceInstance()
+    ServiceInstance()
     {
         this("", "", null, null, null, null);
     }
@@ -127,11 +127,27 @@ public class ServiceInstance<T>
 
         ServiceInstance that = (ServiceInstance)o;
 
-        if ( !id.equals(that.id) )
+        if ( address != null ? !address.equals(that.address) : that.address != null )
         {
             return false;
         }
-        if ( !name.equals(that.name) )
+        if ( id != null ? !id.equals(that.id) : that.id != null )
+        {
+            return false;
+        }
+        if ( name != null ? !name.equals(that.name) : that.name != null )
+        {
+            return false;
+        }
+        if ( payload != null ? !payload.equals(that.payload) : that.payload != null )
+        {
+            return false;
+        }
+        if ( port != null ? !port.equals(that.port) : that.port != null )
+        {
+            return false;
+        }
+        if ( sslPort != null ? !sslPort.equals(that.sslPort) : that.sslPort != null )
         {
             return false;
         }
@@ -142,8 +158,12 @@ public class ServiceInstance<T>
     @Override
     public int hashCode()
     {
-        int result = name.hashCode();
-        result = 31 * result + id.hashCode();
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (id != null ? id.hashCode() : 0);
+        result = 31 * result + (address != null ? address.hashCode() : 0);
+        result = 31 * result + (port != null ? port.hashCode() : 0);
+        result = 31 * result + (sslPort != null ? sslPort.hashCode() : 0);
+        result = 31 * result + (payload != null ? payload.hashCode() : 0);
         return result;
     }
 

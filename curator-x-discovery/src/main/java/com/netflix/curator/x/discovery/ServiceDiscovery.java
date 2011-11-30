@@ -17,12 +17,14 @@
  */
 package com.netflix.curator.x.discovery;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -33,6 +35,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A mechanism to register and query service instances using ZooKeeper
@@ -42,8 +45,10 @@ public class ServiceDiscovery<T> implements Closeable
     private final CuratorFramework client;
     private final String basePath;
     private final InstanceSerializer<T> serializer;
-    private final ServiceInstance<T> thisInstance;
+    private final Optional<ServiceInstance<T>> thisInstance;
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
+
+    private static final int DEFAULT_REFRESH_PADDING = (int)TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS);
 
     /**
      * @param client the client
@@ -63,14 +68,10 @@ public class ServiceDiscovery<T> implements Closeable
      */
     public ServiceDiscovery(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance)
     {
-        Preconditions.checkNotNull(client);
-        Preconditions.checkNotNull(basePath);
-        Preconditions.checkNotNull(serializer);
-
-        this.client = client;
-        this.basePath = basePath;
-        this.serializer = serializer;
-        this.thisInstance = thisInstance;
+        this.client = Preconditions.checkNotNull(client);
+        this.basePath = Preconditions.checkNotNull(basePath);
+        this.serializer = Preconditions.checkNotNull(serializer);
+        this.thisInstance = Optional.fromNullable(thisInstance);
     }
 
     /**
@@ -80,9 +81,9 @@ public class ServiceDiscovery<T> implements Closeable
      */
     public void start() throws Exception
     {
-        if ( thisInstance != null )
+        if ( thisInstance.isPresent() )
         {
-            registerService(thisInstance);
+            registerService(thisInstance.get());
         }
     }
 
@@ -94,11 +95,11 @@ public class ServiceDiscovery<T> implements Closeable
             Closeables.closeQuietly(cache);
         }
 
-        if ( thisInstance != null )
+        if ( thisInstance.isPresent() )
         {
             try
             {
-                unregisterService(thisInstance);
+                unregisterService(thisInstance.get());
             }
             catch ( Exception e )
             {
@@ -148,16 +149,15 @@ public class ServiceDiscovery<T> implements Closeable
     }
 
     /**
-     * Allocate a new service cache for services of the given name
+     * Allocate a new service cache builder. The refresh padding is defaulted to 1 second.
      *
-     * @param forName name of the service to cache
-     * @return new cache
+     * @return new cache builder
      */
-    public ServiceCache<T> newServiceCache(String forName)
+    public ServiceCacheBuilder<T> serviceCacheBuilder()
     {
-        ServiceCache<T> cache = new ServiceCache<T>(this, forName);
-        caches.add(cache);
-        return cache;
+        return new ServiceCacheBuilder<T>(this)
+            .threadFactory(new ThreadFactoryBuilder().setNameFormat("ServiceCache-%d").build())
+            .refreshPaddingMs(DEFAULT_REFRESH_PADDING);
     }
 
     /**

@@ -19,6 +19,7 @@
 package com.netflix.curator.x.discovery;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.JavaType;
 import java.io.ByteArrayOutputStream;
 
 /**
@@ -28,7 +29,8 @@ import java.io.ByteArrayOutputStream;
 public class JsonInstanceSerializer<T> implements InstanceSerializer<T>
 {
     private final ObjectMapper      mapper;
-    private final Class<T> payloadClass;
+    private final Class<T>          payloadClass;
+    private final JavaType          type;
 
     /**
      * @param payloadClass used to validate payloads when deserializing
@@ -37,13 +39,14 @@ public class JsonInstanceSerializer<T> implements InstanceSerializer<T>
     {
         this.payloadClass = payloadClass;
         mapper = new ObjectMapper();
+        type = mapper.getTypeFactory().constructType(ServiceInstance.class);
     }
 
     @SuppressWarnings({"unchecked"})
     @Override
     public ServiceInstance<T> deserialize(byte[] bytes) throws Exception
     {
-        ServiceInstance rawServiceInstance = mapper.readValue(bytes, ServiceInstance.class);
+        ServiceInstance rawServiceInstance = mapper.readValue(bytes, type);
         payloadClass.cast(rawServiceInstance.getPayload()); // just to verify that it's the correct type
         return (ServiceInstance<T>)rawServiceInstance;
     }

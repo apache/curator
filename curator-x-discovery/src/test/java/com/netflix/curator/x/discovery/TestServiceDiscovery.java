@@ -19,23 +19,107 @@
 package com.netflix.curator.x.discovery;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 public class TestServiceDiscovery
 {
+    @Test
+    public void         testCrashedInstance() throws Exception
+    {
+        List<Closeable>     closeables = Lists.newArrayList();
+        TestingServer       server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String>    discovery = new ServiceDiscovery<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance);
+            closeables.add(discovery);
+            discovery.start();
+
+            Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
+
+            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+
+            Assert.assertEquals(discovery.queryForInstances("test").size(), 0);
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                Closeables.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
+    public void         testMultipleInstances() throws Exception
+    {
+        final String        SERVICE_ONE = "one";
+        final String        SERVICE_TWO = "two";
+
+        List<Closeable>     closeables = Lists.newArrayList();
+        TestingServer       server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<Void>       s1_i1 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
+            ServiceInstance<Void>       s1_i2 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
+            ServiceInstance<Void>       s2_i1 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
+            ServiceInstance<Void>       s2_i2 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
+
+            ServiceDiscovery<Void>      discovery = new ServiceDiscovery<Void>(client, "/test", new JsonInstanceSerializer<Void>(Void.class));
+            closeables.add(discovery);
+            discovery.start();
+
+            discovery.registerService(s1_i1);
+            discovery.registerService(s1_i2);
+            discovery.registerService(s2_i1);
+            discovery.registerService(s2_i2);
+
+            Assert.assertEquals(Sets.newHashSet(discovery.queryForNames()), Sets.newHashSet(SERVICE_ONE, SERVICE_TWO));
+
+            Collection<ServiceInstance<Void>> list = Sets.newHashSet();
+            list.add(s1_i1);
+            list.add(s1_i2);
+            Assert.assertEquals(Sets.<ServiceInstance<Void>>newHashSet(discovery.queryForInstances(SERVICE_ONE)), list);
+
+            list.clear();
+
+            list.add(s2_i1);
+            list.add(s2_i2);
+            Assert.assertEquals(Sets.<ServiceInstance<Void>>newHashSet(discovery.queryForInstances(SERVICE_TWO)), list);
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                Closeables.closeQuietly(c);
+            }
+        }
+    }
+
     @Test
     public void         testBasic() throws Exception
     {
@@ -58,63 +142,6 @@ public class TestServiceDiscovery
             List<ServiceInstance<String>> list = Lists.newArrayList();
             list.add(instance);
             Assert.assertEquals(discovery.queryForInstances("test"), list);
-        }
-        finally
-        {
-            Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
-                Closeables.closeQuietly(c);
-            }
-        }
-    }
-
-    @Test
-    public void testCache() throws Exception
-    {
-        List<Closeable>     closeables = Lists.newArrayList();
-        TestingServer       server = new TestingServer();
-        closeables.add(server);
-        try
-        {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            closeables.add(client);
-            client.start();
-
-            ServiceDiscovery<String>    discovery = new ServiceDiscovery<String>(client, "/discovery", new JsonInstanceSerializer<String>(String.class));
-            closeables.add(discovery);
-            discovery.start();
-
-            ServiceCache<String> cache = discovery.newServiceCache("test");
-            closeables.add(cache);
-            cache.start();
-
-            final Semaphore         semaphore = new Semaphore(0);
-            ServiceCacheListener    listener = new ServiceCacheListener()
-            {
-                @Override
-                public void cacheChanged()
-                {
-                    semaphore.release();
-                }
-
-                @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                }
-            };
-            cache.addListener(listener);
-
-            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            discovery.registerService(instance);
-            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
-
-            discovery.registerService(instance);
-            Assert.assertFalse(semaphore.tryAcquire(3, TimeUnit.SECONDS));  // should not get called for a re-registration
-
-            instance = ServiceInstance.<String>builder().payload("thing").name("another").port(10064).build();
-            discovery.registerService(instance);
-            Assert.assertFalse(semaphore.tryAcquire(3, TimeUnit.SECONDS));  // should not get called for a different service
         }
         finally
         {

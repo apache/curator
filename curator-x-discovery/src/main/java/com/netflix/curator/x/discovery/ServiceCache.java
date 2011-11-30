@@ -18,6 +18,7 @@
 package com.netflix.curator.x.discovery;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.listen.ListenerContainer;
@@ -26,7 +27,11 @@ import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -37,21 +42,37 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
     private final ListenerContainer<ServiceCacheListener>           listenerContainer = new ListenerContainer<ServiceCacheListener>();
     private final ServiceDiscovery<T>                               discovery;
     private final String                                            name;
-    private final AtomicReference<Exception>                        lastException = new AtomicReference<Exception>(null);
+    private final int                                               refreshPaddingMs;
+    private final ExecutorService                                   executorService;
+    private final Latch                                             refreshLatch = new Latch();
+    private final AtomicReference<State>                            state = new AtomicReference<State>(State.LATENT);
     private final AtomicReference<Collection<ServiceInstance<T>>>   instances = new AtomicReference<Collection<ServiceInstance<T>>>(ImmutableList.<ServiceInstance<T>>of());
     private final Watcher                                           watcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
         {
-            refresh(true);
+            refreshLatch.set();
         }
     };
 
-    ServiceCache(ServiceDiscovery<T> discovery, String name)
+    private enum State
     {
+        LATENT,
+        STARTED,
+        STOPPED
+    }
+
+    ServiceCache(ServiceDiscovery<T> discovery, String name, ThreadFactory threadFactory, int refreshPaddingMs)
+    {
+        Preconditions.checkNotNull(threadFactory);
+        Preconditions.checkArgument(refreshPaddingMs >= 0);
+
         this.discovery = discovery;
         this.name = name;
+        this.refreshPaddingMs = refreshPaddingMs;
+
+        executorService = Executors.newSingleThreadExecutor(threadFactory);
     }
 
     /**
@@ -60,11 +81,9 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
      * so it should be fresh within a window of a second or two.
      *
      * @return the list
-     * @throws Exception errors
      */
-    public Collection<ServiceInstance<T>>       getInstances() throws Exception
+    public Collection<ServiceInstance<T>>       getInstances()
     {
-        checkLastException();
         return instances.get();
     }
 
@@ -75,25 +94,41 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
      */
     public void start() throws Exception
     {
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
+
+        executorService.submit
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    doWork();
+                    return null;
+                }
+            }
+        );
+
         refresh(false);
-        checkLastException();
     }
 
     @Override
     public void close() throws IOException
     {
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.STOPPED));
+
         listenerContainer.forEach
-        (
-            new Function<ServiceCacheListener, Void>()
-            {
-                @Override
-                public Void apply(ServiceCacheListener listener)
+            (
+                new Function<ServiceCacheListener, Void>()
                 {
-                    discovery.getClient().getConnectionStateListenable().removeListener(listener);
-                    return null;
+                    @Override
+                    public Void apply(ServiceCacheListener listener)
+                    {
+                        discovery.getClient().getConnectionStateListenable().removeListener(listener);
+                        return null;
+                    }
                 }
-            }
-        );
+            );
         listenerContainer.clear();
 
         discovery.cacheClosed(this);
@@ -118,6 +153,28 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
     {
         listenerContainer.removeListener(listener);
         discovery.getClient().getConnectionStateListenable().removeListener(listener);
+    }
+
+    private void doWork()
+    {
+        while ( !Thread.currentThread().isInterrupted() )
+        {
+            try
+            {
+                if ( refreshPaddingMs > 0 )
+                {
+                    Thread.sleep(refreshPaddingMs);
+                }
+                
+                refreshLatch.await();
+                refresh(true);
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
     }
 
     private void refresh(boolean notifyListeners)
@@ -146,16 +203,6 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
         catch ( Exception e )
         {
             discovery.getClient().getZookeeperClient().getLog().error("ServiceCache.refresh()", e);
-            lastException.set(e);
-        }
-    }
-
-    private void checkLastException() throws Exception
-    {
-        Exception exception = lastException.getAndSet(null);
-        if ( exception != null )
-        {
-            throw exception;
         }
     }
 }
