@@ -13,3 +13,4 @@ com.netflix.curator.framework.recipes.shared
 com.netflix.curator.framework.state
 com.netflix.curator.retry
 com.netflix.curator.utils
+com.netflix.curator.x.discovery
