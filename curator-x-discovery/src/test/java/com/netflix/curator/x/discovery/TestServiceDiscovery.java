@@ -23,9 +23,12 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
+import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
 import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
+import com.netflix.curator.x.discovery.details.ServiceCache;
+import com.netflix.curator.x.discovery.details.ServiceCacheListener;
 import com.netflix.curator.x.discovery.details.ServiceDiscoveryImpl;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
@@ -34,9 +37,62 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class TestServiceDiscovery
 {
+    @Test
+    public void     testUpdate() throws Exception
+    {
+        List<Closeable>     closeables = Lists.newArrayList();
+        TestingServer       server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            final CountDownLatch        latch = new CountDownLatch(1);
+            ServiceCache<String>        cache = discovery.serviceCacheBuilder().name("test").build();
+            closeables.add(cache);
+            ServiceCacheListener        listener = new ServiceCacheListener()
+            {
+                @Override
+                public void cacheChanged()
+                {
+                    latch.countDown();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+            cache.addListener(listener);
+            cache.start();
+
+            instance = ServiceInstance.<String>builder().payload("changed").name("test").port(10064).id(instance.getId()).build();
+            discovery.registerService(instance);
+
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                Closeables.closeQuietly(c);
+            }
+        }
+    }
+
     @Test
     public void         testCrashedInstance() throws Exception
     {

@@ -112,13 +112,19 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         byte[]          bytes = serializer.serialize(service);
         String          path = pathForInstance(service.getName(), service.getId());
 
-        try
+        final int       MAX_TRIES = 2;
+        boolean         isDone = false;
+        for ( int i = 0; !isDone && (i < MAX_TRIES); ++i )
         {
-            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, bytes);
-        }
-        catch ( KeeperException.NodeExistsException e )
-        {
-            client.setData().forPath(path, bytes);
+            try
+            {
+                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, bytes);
+                isDone = true;
+            }
+            catch ( KeeperException.NodeExistsException e )
+            {
+                client.delete().forPath(path);  // must delete then re-create so that watchers fire
+            }
         }
     }
 
