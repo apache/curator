@@ -25,6 +25,8 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
+import com.netflix.curator.x.discovery.details.ServiceCache;
+import com.netflix.curator.x.discovery.details.ServiceCacheListener;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
@@ -47,7 +49,7 @@ public class TestServiceCache
             closeables.add(client);
             client.start();
 
-            ServiceDiscovery<String>    discovery = new ServiceDiscovery<String>(client, "/discovery", new JsonInstanceSerializer<String>(String.class));
+            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
             closeables.add(discovery);
             discovery.start();
 

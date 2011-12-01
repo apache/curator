@@ -15,17 +15,23 @@
  *     limitations under the License.
  *
  */
+
 package com.netflix.curator.x.discovery;
 
-import com.netflix.curator.framework.state.ConnectionStateListener;
+import com.netflix.curator.x.discovery.details.InstanceProvider;
 
 /**
- * Listener for changes to a service cache
+ * A strategy for picking one from a set of instances
  */
-public interface ServiceCacheListener extends ConnectionStateListener
+public interface ProviderStrategy<T>
 {
     /**
-     * Called when the cache has changed (instances added/deleted, etc.)
+     * Given a source of instances, return one of them for a single use. <b>IMPORTANT: </b> users
+     * should not hold on to the instance returned. They should always get a fresh instance.
+     *
+     * @param instanceProvider the instance provider
+     * @return the instance to use
+     * @throws Exception any errors
      */
-    public void cacheChanged();
+    public ServiceInstance<T>       getInstance(InstanceProvider<T> instanceProvider) throws Exception;
 }

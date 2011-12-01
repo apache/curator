@@ -16,7 +16,7 @@
  *
  */
 
-package com.netflix.curator.x.discovery;
+package com.netflix.curator.x.discovery.details;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -25,12 +25,12 @@ import java.util.concurrent.ThreadFactory;
  */
 public class ServiceCacheBuilder<T>
 {
-    private ServiceDiscovery<T> discovery;
+    private ServiceDiscoveryImpl<T> discovery;
     private String name;
     private ThreadFactory threadFactory;
     private int refreshPaddingMs;
     
-    ServiceCacheBuilder(ServiceDiscovery<T> discovery)
+    ServiceCacheBuilder(ServiceDiscoveryImpl<T> discovery)
     {
         this.discovery = discovery;
     }

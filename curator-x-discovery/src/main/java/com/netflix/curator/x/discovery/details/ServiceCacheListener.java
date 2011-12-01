@@ -15,25 +15,17 @@
  *     limitations under the License.
  *
  */
+package com.netflix.curator.x.discovery.details;
 
-package com.netflix.curator.x.discovery;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 
-class Latch
+/**
+ * Listener for changes to a service cache
+ */
+public interface ServiceCacheListener extends ConnectionStateListener
 {
-    private volatile boolean        laden = false;
-
-    synchronized void        set()
-    {
-        laden = true;
-        notifyAll();
-    }
-
-    synchronized void       await() throws InterruptedException
-    {
-        while ( !laden )
-        {
-            wait();
-        }
-        laden = false;
-    }
+    /**
+     * Called when the cache has changed (instances added/deleted, etc.)
+     */
+    public void cacheChanged();
 }

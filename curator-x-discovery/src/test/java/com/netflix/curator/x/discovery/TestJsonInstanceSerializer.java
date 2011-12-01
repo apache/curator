@@ -18,6 +18,7 @@
 
 package com.netflix.curator.x.discovery;
 
+import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
 
@@ -26,7 +27,7 @@ public class TestJsonInstanceSerializer
     @Test
     public void     testBasic() throws Exception
     {
-        JsonInstanceSerializer<String>  serializer = new JsonInstanceSerializer<String>(String.class);
+        JsonInstanceSerializer<String> serializer = new JsonInstanceSerializer<String>(String.class);
         ServiceInstance<String>         instance = new ServiceInstance<String>("name", "id", "address", 10, 20, "payload");
         byte[]                          bytes = serializer.serialize(instance);
 

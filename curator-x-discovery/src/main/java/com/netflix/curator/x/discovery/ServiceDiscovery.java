@@ -15,98 +15,21 @@
  *     limitations under the License.
  *
  */
+
 package com.netflix.curator.x.discovery;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.io.Closeables;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.utils.ZKPaths;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
+import com.netflix.curator.x.discovery.details.ServiceCacheBuilder;
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-/**
- * A mechanism to register and query service instances using ZooKeeper
- */
-public class ServiceDiscovery<T> implements Closeable
+public interface ServiceDiscovery<T> extends Closeable
 {
-    private final CuratorFramework client;
-    private final String basePath;
-    private final InstanceSerializer<T> serializer;
-    private final Optional<ServiceInstance<T>> thisInstance;
-    private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
-
-    private static final int DEFAULT_REFRESH_PADDING = (int)TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS);
-
-    /**
-     * @param client the client
-     * @param basePath base path to store data
-     * @param serializer serializer for instances (e.g. {@link JsonInstanceSerializer})
-     */
-    public ServiceDiscovery(CuratorFramework client, String basePath, InstanceSerializer<T> serializer)
-    {
-        this(client, basePath, serializer, null);
-    }
-
-    /**
-     * @param client the client
-     * @param basePath base path to store data
-     * @param serializer serializer for instances (e.g. {@link JsonInstanceSerializer})
-     * @param thisInstance instance that represents the service that is running. The instance will get auto-registered
-     */
-    public ServiceDiscovery(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance)
-    {
-        this.client = Preconditions.checkNotNull(client);
-        this.basePath = Preconditions.checkNotNull(basePath);
-        this.serializer = Preconditions.checkNotNull(serializer);
-        this.thisInstance = Optional.fromNullable(thisInstance);
-    }
-
     /**
      * The discovery must be started before use
      *
      * @throws Exception errors
      */
-    public void start() throws Exception
-    {
-        if ( thisInstance.isPresent() )
-        {
-            registerService(thisInstance.get());
-        }
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        for ( ServiceCache<T> cache : Lists.newArrayList(caches) )
-        {
-            Closeables.closeQuietly(cache);
-        }
-
-        if ( thisInstance.isPresent() )
-        {
-            try
-            {
-                unregisterService(thisInstance.get());
-            }
-            catch ( Exception e )
-            {
-                client.getZookeeperClient().getLog().error("Could not unregiter this instance", e);
-            }
-        }
-    }
+    public void start() throws Exception;
 
     /**
      * Register/re-register/update a service instance
@@ -114,20 +37,7 @@ public class ServiceDiscovery<T> implements Closeable
      * @param service service to add
      * @throws Exception errors
      */
-    public void     registerService(ServiceInstance<T> service) throws Exception
-    {
-        byte[]          bytes = serializer.serialize(service);
-        String          path = pathForInstance(service.getName(), service.getId());
-
-        try
-        {
-            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, bytes);
-        }
-        catch ( KeeperException.NodeExistsException e )
-        {
-            client.setData().forPath(path, bytes);
-        }
-    }
+    public void     registerService(ServiceInstance<T> service) throws Exception;
 
     /**
      * Unregister/remove a service instance
@@ -135,30 +45,16 @@ public class ServiceDiscovery<T> implements Closeable
      * @param service the service
      * @throws Exception errors
      */
-    public void     unregisterService(ServiceInstance<T> service) throws Exception
-    {
-        String          path = pathForInstance(service.getName(), service.getId());
-        try
-        {
-            client.delete().forPath(path);
-        }
-        catch ( KeeperException.NoNodeException ignore )
-        {
-            // ignore
-        }
-    }
+    public void     unregisterService(ServiceInstance<T> service) throws Exception;
+
+    
 
     /**
      * Allocate a new service cache builder. The refresh padding is defaulted to 1 second.
      *
      * @return new cache builder
      */
-    public ServiceCacheBuilder<T> serviceCacheBuilder()
-    {
-        return new ServiceCacheBuilder<T>(this)
-            .threadFactory(new ThreadFactoryBuilder().setNameFormat("ServiceCache-%d").build())
-            .refreshPaddingMs(DEFAULT_REFRESH_PADDING);
-    }
+    public ServiceCacheBuilder<T> serviceCacheBuilder();
 
     /**
      * Return the names of all known services
@@ -166,11 +62,7 @@ public class ServiceDiscovery<T> implements Closeable
      * @return list of service names
      * @throws Exception errors
      */
-    public Collection<String>   queryForNames() throws Exception
-    {
-        List<String>        names = client.getChildren().forPath(basePath);
-        return ImmutableList.copyOf(names);
-    }
+    public Collection<String> queryForNames() throws Exception;
 
     /**
      * Return all known instances for the given service
@@ -179,10 +71,7 @@ public class ServiceDiscovery<T> implements Closeable
      * @return list of instances (or an empty list)
      * @throws Exception errors
      */
-    public Collection<ServiceInstance<T>>  queryForInstances(String name) throws Exception
-    {
-        return queryForInstances(name, null);
-    }
+    public Collection<ServiceInstance<T>>  queryForInstances(String name) throws Exception;
 
     /**
      * Return a service instance POJO
@@ -192,100 +81,5 @@ public class ServiceDiscovery<T> implements Closeable
      * @return the instance or <code>null</code> if not found
      * @throws Exception errors
      */
-    public ServiceInstance<T> queryForInstance(String name, String id) throws Exception
-    {
-        String          path = pathForInstance(name, id);
-        try
-        {
-            byte[]          bytes = client.getData().forPath(path);
-            return serializer.deserialize(bytes);
-        }
-        catch ( KeeperException.NoNodeException ignore )
-        {
-            // ignore
-        }
-        return null;
-    }
-
-    void    cacheClosed(ServiceCache<T> cache)
-    {
-        caches.remove(cache);
-    }
-
-    CuratorFramework getClient()
-    {
-        return client;
-    }
-
-    Collection<ServiceInstance<T>>  queryForInstances(String name, Watcher watcher) throws Exception
-    {
-        ImmutableList.Builder<ServiceInstance<T>>   builder = ImmutableList.builder();
-        String                  path = pathForName(name);
-        List<String>            instanceIds;
-
-        if ( watcher != null )
-        {
-            instanceIds = getChildrenWatched(path, watcher, true);
-        }
-        else
-        {
-            try
-            {
-                instanceIds = client.getChildren().forPath(path);
-            }
-            catch ( KeeperException.NoNodeException e )
-            {
-                instanceIds = Lists.newArrayList();
-            }
-        }
-
-        for ( String id : instanceIds )
-        {
-            ServiceInstance<T> instance = queryForInstance(name, id);
-            if ( instance != null )
-            {
-                builder.add(instance);
-            }
-        }
-        return builder.build();
-    }
-
-    private List<String> getChildrenWatched(String path, Watcher watcher, boolean recurse) throws Exception
-    {
-        List<String>    instanceIds;
-        try
-        {
-            instanceIds = client.getChildren().usingWatcher(watcher).forPath(path);
-        }
-        catch ( KeeperException.NoNodeException e )
-        {
-            if ( recurse )
-            {
-                try
-                {
-                    client.create().creatingParentsIfNeeded().forPath(path, new byte[0]);
-                }
-                catch ( KeeperException.NodeExistsException ignore )
-                {
-                    // ignore
-                }
-                instanceIds = getChildrenWatched(path, watcher, false);
-            }
-            else
-            {
-                throw e;
-            }
-        }
-        return instanceIds;
-    }
-
-    private String  pathForInstance(String name, String id) throws UnsupportedEncodingException
-    {
-        return ZKPaths.makePath(pathForName(name), id);
-    }
-
-    private String  pathForName(String name) throws UnsupportedEncodingException
-    {
-        return ZKPaths.makePath(basePath, name);
-    }
+    public ServiceInstance<T> queryForInstance(String name, String id) throws Exception;
 }

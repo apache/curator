@@ -25,6 +25,8 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
+import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
+import com.netflix.curator.x.discovery.details.ServiceDiscoveryImpl;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
@@ -48,7 +50,7 @@ public class TestServiceDiscovery
             client.start();
 
             ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String>    discovery = new ServiceDiscovery<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance);
+            ServiceDiscovery<String>    discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance);
             closeables.add(discovery);
             discovery.start();
 
@@ -88,7 +90,7 @@ public class TestServiceDiscovery
             ServiceInstance<Void>       s2_i1 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
             ServiceInstance<Void>       s2_i2 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
 
-            ServiceDiscovery<Void>      discovery = new ServiceDiscovery<Void>(client, "/test", new JsonInstanceSerializer<Void>(Void.class));
+            ServiceDiscovery<Void>      discovery = ServiceDiscoveryBuilder.builder(Void.class).client(client).basePath("/test").build();
             closeables.add(discovery);
             discovery.start();
 
@@ -133,7 +135,7 @@ public class TestServiceDiscovery
             client.start();
             
             ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String>    discovery = new ServiceDiscovery<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance);
+            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
             closeables.add(discovery);
             discovery.start();
 

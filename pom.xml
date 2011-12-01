@@ -42,7 +42,8 @@
     <modules>
         <module>curator-client</module>
         <module>curator-framework</module>
-        <module>curator-recipes</module><module>curator-x-discovery</module>
+        <module>curator-recipes</module>
+        <module>curator-x-discovery</module>
     </modules>
 
     <scm>

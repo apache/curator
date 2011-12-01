@@ -15,7 +15,9 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.x.discovery;
+package com.netflix.curator.x.discovery.details;
+
+import com.netflix.curator.x.discovery.ServiceInstance;
 
 /**
  * Injectable serializer for service instances

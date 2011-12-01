@@ -16,8 +16,9 @@
  *
  */
 
-package com.netflix.curator.x.discovery;
+package com.netflix.curator.x.discovery.details;
 
+import com.netflix.curator.x.discovery.ServiceInstance;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.JavaType;
 import java.io.ByteArrayOutputStream;

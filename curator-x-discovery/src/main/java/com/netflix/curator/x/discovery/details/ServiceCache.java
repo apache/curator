@@ -15,18 +15,19 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.x.discovery;
+package com.netflix.curator.x.discovery.details;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.listen.ListenerContainer;
+import com.netflix.curator.x.discovery.ServiceInstance;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -37,16 +38,16 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Maintains a cache of instances for a given named service
  */
-public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListener>
+public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListener>, InstanceProvider<T>
 {
     private final ListenerContainer<ServiceCacheListener>           listenerContainer = new ListenerContainer<ServiceCacheListener>();
-    private final ServiceDiscovery<T>                               discovery;
+    private final ServiceDiscoveryImpl<T>                           discovery;
     private final String                                            name;
     private final int                                               refreshPaddingMs;
     private final ExecutorService                                   executorService;
     private final Latch                                             refreshLatch = new Latch();
     private final AtomicReference<State>                            state = new AtomicReference<State>(State.LATENT);
-    private final AtomicReference<Collection<ServiceInstance<T>>>   instances = new AtomicReference<Collection<ServiceInstance<T>>>(ImmutableList.<ServiceInstance<T>>of());
+    private final AtomicReference<List<ServiceInstance<T>>>         instances = new AtomicReference<List<ServiceInstance<T>>>(ImmutableList.<ServiceInstance<T>>of());
     private final Watcher                                           watcher = new Watcher()
     {
         @Override
@@ -63,7 +64,7 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
         STOPPED
     }
 
-    ServiceCache(ServiceDiscovery<T> discovery, String name, ThreadFactory threadFactory, int refreshPaddingMs)
+    ServiceCache(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory, int refreshPaddingMs)
     {
         Preconditions.checkNotNull(threadFactory);
         Preconditions.checkArgument(refreshPaddingMs >= 0);
@@ -82,7 +83,7 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
      *
      * @return the list
      */
-    public Collection<ServiceInstance<T>>       getInstances()
+    public List<ServiceInstance<T>> getInstances()
     {
         return instances.get();
     }
@@ -97,17 +98,17 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
 
         executorService.submit
-        (
-            new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            (
+                new Callable<Void>()
                 {
-                    doWork();
-                    return null;
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        doWork();
+                        return null;
+                    }
                 }
-            }
-        );
+            );
 
         refresh(false);
     }
@@ -181,7 +182,7 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
     {
         try
         {
-            Collection<ServiceInstance<T>> theInstances = discovery.queryForInstances(name, watcher);
+            List<ServiceInstance<T>> theInstances = discovery.queryForInstances(name, watcher);
             instances.set(theInstances);
 
             if ( notifyListeners )
