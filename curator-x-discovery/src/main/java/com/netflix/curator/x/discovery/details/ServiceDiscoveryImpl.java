@@ -163,6 +163,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      *
      * @return the builder
      */
+    @Override
     public ServiceProviderBuilder<T> serviceProviderBuilder()
     {
         return new ServiceProviderBuilderImpl<T>(this)

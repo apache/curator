@@ -18,6 +18,7 @@
 
 package com.netflix.curator.x.discovery;
 
+import com.netflix.curator.x.discovery.strategies.RoundRobinStrategy;
 import java.io.Closeable;
 import java.util.Collection;
 
@@ -79,4 +80,12 @@ public interface ServiceDiscovery<T> extends Closeable
      * @throws Exception errors
      */
     public ServiceInstance<T> queryForInstance(String name, String id) throws Exception;
+
+    /**
+     * Allocate a new builder. {@link ServiceProviderBuilder#providerStrategy} is set to {@link RoundRobinStrategy}
+     * and {@link ServiceProviderBuilder#refreshPaddingMs} is set to 1 second.
+     *
+     * @return the builder
+     */
+    public ServiceProviderBuilder<T> serviceProviderBuilder();
 }

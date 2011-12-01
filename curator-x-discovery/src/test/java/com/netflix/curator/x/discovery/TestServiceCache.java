@@ -39,6 +39,49 @@ import java.util.concurrent.TimeUnit;
 public class TestServiceCache
 {
     @Test
+    public void     testViaProvider() throws Exception
+    {
+        List<Closeable> closeables = Lists.newArrayList();
+        TestingServer server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            ServiceProvider<String>     serviceProvider = discovery.serviceProviderBuilder().serviceName("test").build();
+            closeables.add(serviceProvider);
+            serviceProvider.start();
+
+            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            discovery.registerService(instance);
+
+            int                         count = 0;
+            ServiceInstance<String>     foundInstance = null;
+            while ( foundInstance == null )
+            {
+                Assert.assertTrue(count++ < 5);
+                foundInstance = serviceProvider.getInstance();
+                Thread.sleep(1000);
+            }
+            Assert.assertEquals(foundInstance, instance);
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                Closeables.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
     public void     testUpdate() throws Exception
     {
         List<Closeable>     closeables = Lists.newArrayList();
