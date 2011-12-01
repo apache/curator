@@ -16,19 +16,40 @@
  *
  */
 
-package com.netflix.curator.x.discovery;
+package com.netflix.curator.x.discovery.details;
 
+import com.netflix.curator.x.discovery.ProviderStrategy;
+import com.netflix.curator.x.discovery.ServiceProvider;
+import com.netflix.curator.x.discovery.ServiceProviderBuilder;
 import com.netflix.curator.x.discovery.strategies.RoundRobinStrategy;
 import java.util.concurrent.ThreadFactory;
 
-public interface ServiceProviderBuilder<T>
+/**
+ * Builder for service providers
+ */
+class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
 {
+    private ServiceDiscoveryImpl<T> discovery;
+    private String serviceName;
+    private ProviderStrategy<T> providerStrategy;
+    private ThreadFactory threadFactory;
+    private int refreshPaddingMs;
+
     /**
      * Allocate a new service provider based on the current builder settings
      *
      * @return provider
      */
-    public ServiceProvider<T> build();
+    @Override
+    public ServiceProvider<T> build()
+    {
+        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, refreshPaddingMs);
+    }
+
+    ServiceProviderBuilderImpl(ServiceDiscoveryImpl<T> discovery)
+    {
+        this.discovery = discovery;
+    }
 
     /**
      * required - set the name of the service to be provided
@@ -36,7 +57,12 @@ public interface ServiceProviderBuilder<T>
      * @param serviceName the name of the service
      * @return this
      */
-    public ServiceProviderBuilder<T> serviceName(String serviceName);
+    @Override
+    public ServiceProviderBuilder<T> serviceName(String serviceName)
+    {
+        this.serviceName = serviceName;
+        return this;
+    }
 
     /**
      * optional - set the provider strategy. The default is {@link RoundRobinStrategy}
@@ -44,7 +70,12 @@ public interface ServiceProviderBuilder<T>
      * @param providerStrategy strategy to use
      * @return this
      */
-    public ServiceProviderBuilder<T> providerStrategy(ProviderStrategy<T> providerStrategy);
+    @Override
+    public ServiceProviderBuilder<T> providerStrategy(ProviderStrategy<T> providerStrategy)
+    {
+        this.providerStrategy = providerStrategy;
+        return this;
+    }
 
     /**
      * optional - the thread factory to use for creating internal threads
@@ -52,7 +83,12 @@ public interface ServiceProviderBuilder<T>
      * @param threadFactory factory to use
      * @return this
      */
-    public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory);
+    @Override
+    public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory)
+    {
+        this.threadFactory = threadFactory;
+        return this;
+    }
 
     /**
      * optional To avoid herding in noisy scenarios, the cache should be padded to only update 1 per period.
@@ -62,5 +98,10 @@ public interface ServiceProviderBuilder<T>
      * @param refreshPaddingMs padding in milliseconds
      * @return this
      */
-    public ServiceProviderBuilder<T> refreshPaddingMs(int refreshPaddingMs);
+    @Override
+    public ServiceProviderBuilder<T> refreshPaddingMs(int refreshPaddingMs)
+    {
+        this.refreshPaddingMs = refreshPaddingMs;
+        return this;
+    }
 }

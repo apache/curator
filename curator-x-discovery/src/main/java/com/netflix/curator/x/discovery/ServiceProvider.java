@@ -18,44 +18,21 @@
 
 package com.netflix.curator.x.discovery;
 
-import com.netflix.curator.x.discovery.details.ServiceCache;
+import com.netflix.curator.x.discovery.details.InstanceProvider;
 import java.io.Closeable;
-import java.io.IOException;
-import java.util.concurrent.ThreadFactory;
 
 /**
- * The main interface for Service Discovery. Encapsulates the discovery service for a particular
- * named service along with a provider strategy. 
+ * The main API for Discovery. This class is essentially a facade over a {@link ProviderStrategy}
+ * paired with an {@link InstanceProvider}
  */
-public class ServiceProvider<T> implements Closeable
+public interface ServiceProvider<T> extends Closeable
 {
-    private final ServiceCache<T> cache;
-    private final ProviderStrategy<T> providerStrategy;
-
-    ServiceProvider(ServiceDiscovery<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, int refreshPaddingMs)
-    {
-        this.providerStrategy = providerStrategy;
-        cache = discovery.serviceCacheBuilder().name(serviceName).refreshPaddingMs(refreshPaddingMs).threadFactory(threadFactory).build();
-    }
-
     /**
      * The provider must be started before use
      *
      * @throws Exception any errors
      */
-    public void start() throws Exception
-    {
-        cache.start();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() throws IOException
-    {
-        cache.close();
-    }
+    public void start() throws Exception;
 
     /**
      * Return an instance for a single use. <b>IMPORTANT: </b> users
@@ -64,8 +41,5 @@ public class ServiceProvider<T> implements Closeable
      * @return the instance to use
      * @throws Exception any errors
      */
-    public ServiceInstance<T>       getInstance() throws Exception
-    {
-        return providerStrategy.getInstance(cache);
-    }
+    public ServiceInstance<T>       getInstance() throws Exception;
 }

@@ -25,12 +25,20 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * This strategy uses a master strategy to pick the initial instance. Once picked,
+ * that instance is always returned. If, however, the currently selected instance
+ * is no longer in the list, the master strategy is used to pick a new instance.
+ */
 public class StickyStrategy<T> implements ProviderStrategy<T>
 {
     private final ProviderStrategy<T>                   masterStrategy;
     private final AtomicReference<ServiceInstance<T>>   ourInstance = new AtomicReference<ServiceInstance<T>>(null);
     private final AtomicInteger                         instanceNumber = new AtomicInteger(-1);
 
+    /**
+     * @param masterStrategy the strategy to use for picking the sticky instance
+     */
     public StickyStrategy(ProviderStrategy<T> masterStrategy)
     {
         this.masterStrategy = masterStrategy;
@@ -70,6 +78,13 @@ public class StickyStrategy<T> implements ProviderStrategy<T>
         return ourInstance.get();
     }
 
+    /**
+     * Each time a new instance is picked, an internal counter is incremented. This way you
+     * can track when/if the instance changes. The instance can change when the selected instance
+     * is not in the current list of instances returned by the instance provider
+     *
+     * @return instance number
+     */
     public int getInstanceNumber()
     {
         return instanceNumber.get();

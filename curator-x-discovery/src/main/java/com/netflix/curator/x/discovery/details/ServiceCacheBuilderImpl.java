@@ -18,19 +18,20 @@
 
 package com.netflix.curator.x.discovery.details;
 
+import com.netflix.curator.x.discovery.ServiceCacheBuilder;
 import java.util.concurrent.ThreadFactory;
 
 /**
  * Builder for a service cache
  */
-public class ServiceCacheBuilder<T>
+class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
 {
     private ServiceDiscoveryImpl<T> discovery;
     private String name;
     private ThreadFactory threadFactory;
     private int refreshPaddingMs;
     
-    ServiceCacheBuilder(ServiceDiscoveryImpl<T> discovery)
+    ServiceCacheBuilderImpl(ServiceDiscoveryImpl<T> discovery)
     {
         this.discovery = discovery;
     }
@@ -40,6 +41,7 @@ public class ServiceCacheBuilder<T>
      *
      * @return service cache
      */
+    @Override
     public ServiceCache<T>  build()
     {
         return new ServiceCache<T>(discovery, name, threadFactory, refreshPaddingMs);
@@ -51,6 +53,7 @@ public class ServiceCacheBuilder<T>
      * @param name service name
      * @return this
      */
+    @Override
     public ServiceCacheBuilder<T> name(String name)
     {
         this.name = name;
@@ -63,6 +66,7 @@ public class ServiceCacheBuilder<T>
      * @param threadFactory factory
      * @return this
      */
+    @Override
     public ServiceCacheBuilder<T> threadFactory(ThreadFactory threadFactory)
     {
         this.threadFactory = threadFactory;
@@ -76,6 +80,7 @@ public class ServiceCacheBuilder<T>
      * @param refreshPaddingMs padding in milliseconds
      * @return this
      */
+    @Override
     public ServiceCacheBuilder<T> refreshPaddingMs(int refreshPaddingMs)
     {
         this.refreshPaddingMs = refreshPaddingMs;

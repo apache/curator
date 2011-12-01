@@ -26,8 +26,7 @@ import com.netflix.curator.x.discovery.details.InstanceProvider;
 public interface ProviderStrategy<T>
 {
     /**
-     * Given a source of instances, return one of them for a single use. <b>IMPORTANT: </b> users
-     * should not hold on to the instance returned. They should always get a fresh instance.
+     * Given a source of instances, return one of them for a single use.
      *
      * @param instanceProvider the instance provider
      * @return the instance to use

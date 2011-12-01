@@ -27,8 +27,12 @@ import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ZKPaths;
+import com.netflix.curator.x.discovery.ServiceCacheBuilder;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
+import com.netflix.curator.x.discovery.ServiceProvider;
+import com.netflix.curator.x.discovery.ServiceProviderBuilder;
+import com.netflix.curator.x.discovery.strategies.RoundRobinStrategy;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -48,6 +52,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final InstanceSerializer<T> serializer;
     private final Optional<ServiceInstance<T>> thisInstance;
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
+    private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
 
     public static final int DEFAULT_REFRESH_PADDING = (int)TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS);
 
@@ -85,6 +90,10 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         for ( ServiceCache<T> cache : Lists.newArrayList(caches) )
         {
             Closeables.closeQuietly(cache);
+        }
+        for ( ServiceProvider<T> provider : Lists.newArrayList(providers) )
+        {
+            Closeables.closeQuietly(provider);
         }
 
         if ( thisInstance.isPresent() )
@@ -149,6 +158,20 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     }
 
     /**
+     * Allocate a new builder. {@link ServiceProviderBuilder#providerStrategy} is set to {@link RoundRobinStrategy}
+     * and {@link ServiceProviderBuilder#refreshPaddingMs} is set to 1 second.
+     *
+     * @return the builder
+     */
+    public ServiceProviderBuilder<T> serviceProviderBuilder()
+    {
+        return new ServiceProviderBuilderImpl<T>(this)
+            .providerStrategy(new RoundRobinStrategy<T>())
+            .threadFactory(new ThreadFactoryBuilder().setNameFormat("ServiceProvider-%d").build())
+            .refreshPaddingMs(ServiceDiscoveryImpl.DEFAULT_REFRESH_PADDING);
+    }
+
+    /**
      * Allocate a new service cache builder. The refresh padding is defaulted to 1 second.
      *
      * @return new cache builder
@@ -156,7 +179,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public ServiceCacheBuilder<T> serviceCacheBuilder()
     {
-        return new ServiceCacheBuilder<T>(this)
+        return new ServiceCacheBuilderImpl<T>(this)
             .threadFactory(new ThreadFactoryBuilder().setNameFormat("ServiceCache-%d").build())
             .refreshPaddingMs(DEFAULT_REFRESH_PADDING);
     }
@@ -211,9 +234,24 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         return null;
     }
 
+    void    cacheOpened(ServiceCache<T> cache)
+    {
+        caches.add(cache);
+    }
+
     void    cacheClosed(ServiceCache<T> cache)
     {
         caches.remove(cache);
+    }
+
+    void    providerOpened(ServiceProvider<T> provider)
+    {
+        providers.add(provider);
+    }
+
+    void    providerClosed(ServiceProvider<T> cache)
+    {
+        providers.remove(cache);
     }
 
     CuratorFramework getClient()

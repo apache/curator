@@ -18,7 +18,6 @@
 
 package com.netflix.curator.x.discovery;
 
-import com.netflix.curator.x.discovery.details.ServiceCacheBuilder;
 import java.io.Closeable;
 import java.util.Collection;
 
@@ -46,8 +45,6 @@ public interface ServiceDiscovery<T> extends Closeable
      * @throws Exception errors
      */
     public void     unregisterService(ServiceInstance<T> service) throws Exception;
-
-    
 
     /**
      * Allocate a new service cache builder. The refresh padding is defaulted to 1 second.

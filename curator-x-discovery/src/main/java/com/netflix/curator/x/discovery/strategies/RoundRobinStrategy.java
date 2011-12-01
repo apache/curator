@@ -24,6 +24,9 @@ import com.netflix.curator.x.discovery.ServiceInstance;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * This strategy rotates sequentially through the list of instances
+ */
 public class RoundRobinStrategy<T> implements ProviderStrategy<T>
 {
     private final AtomicInteger         index = new AtomicInteger(0);

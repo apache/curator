@@ -24,6 +24,9 @@ import com.netflix.curator.x.discovery.ServiceInstance;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * This strategy always picks a random instance from the list
+ */
 public class RandomStrategy<T> implements ProviderStrategy<T>
 {
     private final Random            random = new Random();

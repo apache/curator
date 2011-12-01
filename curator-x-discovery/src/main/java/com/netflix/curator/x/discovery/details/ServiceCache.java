@@ -98,19 +98,21 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
 
         executorService.submit
-            (
-                new Callable<Void>()
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
                 {
-                    @Override
-                    public Void call() throws Exception
-                    {
-                        doWork();
-                        return null;
-                    }
+                    doWork();
+                    return null;
                 }
-            );
+            }
+        );
 
         refresh(false);
+        
+        discovery.cacheOpened(this);
     }
 
     @Override
