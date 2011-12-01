@@ -43,57 +43,6 @@ import java.util.concurrent.TimeUnit;
 public class TestServiceDiscovery
 {
     @Test
-    public void     testUpdate() throws Exception
-    {
-        List<Closeable>     closeables = Lists.newArrayList();
-        TestingServer       server = new TestingServer();
-        closeables.add(server);
-        try
-        {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            closeables.add(client);
-            client.start();
-
-            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
-            closeables.add(discovery);
-            discovery.start();
-
-            final CountDownLatch        latch = new CountDownLatch(1);
-            ServiceCache<String>        cache = discovery.serviceCacheBuilder().name("test").build();
-            closeables.add(cache);
-            ServiceCacheListener        listener = new ServiceCacheListener()
-            {
-                @Override
-                public void cacheChanged()
-                {
-                    latch.countDown();
-                }
-
-                @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                }
-            };
-            cache.addListener(listener);
-            cache.start();
-
-            instance = ServiceInstance.<String>builder().payload("changed").name("test").port(10064).id(instance.getId()).build();
-            discovery.registerService(instance);
-
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-        }
-        finally
-        {
-            Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
-                Closeables.closeQuietly(c);
-            }
-        }
-    }
-
-    @Test
     public void         testCrashedInstance() throws Exception
     {
         List<Closeable>     closeables = Lists.newArrayList();
