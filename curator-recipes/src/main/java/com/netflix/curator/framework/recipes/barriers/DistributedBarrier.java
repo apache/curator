@@ -57,7 +57,7 @@ public class DistributedBarrier
     {
         try
         {
-            client.create().creatingParentsIfNeeded().forPath(barrierPath, new byte[0]);
+            client.create().creatingParentsIfNeeded().forPath(barrierPath);
         }
         catch ( KeeperException.NodeExistsException ignore )
         {

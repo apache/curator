@@ -37,6 +37,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -55,6 +56,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final EnsurePath                                            ensurePath;
     private final ConnectionStateManager                                connectionStateManager;
     private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
+    private final byte[]                                                defaultData;
 
     private enum State
     {
@@ -118,6 +120,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
         executorService = Executors.newFixedThreadPool(2, builder.getThreadFactory());  // 1 for listeners, 1 for background ops
         connectionStateManager = new ConnectionStateManager(this);
 
+        byte[]      builderDefaultData = builder.getDefaultData();
+        defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
+
         if ( builder.getAuthScheme() != null )
         {
             authInfo.set(new AuthInfo(builder.getAuthScheme(), builder.getAuthValue()));
@@ -132,6 +137,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         executorService = parent.executorService;
         backgroundOperations = parent.backgroundOperations;
         connectionStateManager = parent.connectionStateManager;
+        defaultData = parent.defaultData;
         namespace = null;
         ensurePath = null;
     }
@@ -445,6 +451,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
             return "";
         }
         return ZKPaths.fixForNamespace(namespace, path);
+    }
+
+    byte[] getDefaultData()
+    {
+        return defaultData;
     }
 
     private boolean ensurePath()

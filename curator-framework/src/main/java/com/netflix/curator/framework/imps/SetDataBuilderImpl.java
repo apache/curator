@@ -103,6 +103,12 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
     }
 
     @Override
+    public Stat forPath(String path) throws Exception
+    {
+        return forPath(path, client.getDefaultData());
+    }
+
+    @Override
     public Stat forPath(String path, byte[] data) throws Exception
     {
         path = client.fixForNamespace(path);

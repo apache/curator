@@ -45,7 +45,7 @@ public class TestPathChildrenCacheInCluster
 
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), BASE_TIMEOUT, BASE_TIMEOUT, new ExponentialBackoffRetry(BASE_TIMEOUT / 2, 3));
             client.start();
-            client.create().creatingParentsIfNeeded().forPath("/test", new byte[0]);
+            client.create().creatingParentsIfNeeded().forPath("/test");
 
             cache = new PathChildrenCache(client, "/test", PathChildrenCacheMode.CACHE_PATHS_ONLY);
             cache.start();
@@ -66,9 +66,9 @@ public class TestPathChildrenCacheInCluster
                 }
             );
 
-            client.create().forPath("/test/one", new byte[0]);
-            client.create().forPath("/test/two", new byte[0]);
-            client.create().forPath("/test/three", new byte[0]);
+            client.create().forPath("/test/one");
+            client.create().forPath("/test/two");
+            client.create().forPath("/test/three");
 
             Assert.assertTrue(latch.get().await(10, TimeUnit.SECONDS));
 

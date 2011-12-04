@@ -149,7 +149,7 @@ public class DistributedQueue<T> implements Closeable
 
         try
         {
-            client.create().creatingParentsIfNeeded().forPath(queuePath, new byte[0]);
+            client.create().creatingParentsIfNeeded().forPath(queuePath);
         }
         catch ( KeeperException.NodeExistsException ignore )
         {
@@ -159,7 +159,7 @@ public class DistributedQueue<T> implements Closeable
         {
             try
             {
-                client.create().creatingParentsIfNeeded().forPath(lockPath, new byte[0]);
+                client.create().creatingParentsIfNeeded().forPath(lockPath);
             }
             catch ( KeeperException.NodeExistsException ignore )
             {
@@ -453,7 +453,7 @@ public class DistributedQueue<T> implements Closeable
         boolean     lockCreated = false;
         try
         {
-            client.create().withMode(CreateMode.EPHEMERAL).forPath(lockNodePath, new byte[0]);
+            client.create().withMode(CreateMode.EPHEMERAL).forPath(lockNodePath);
             lockCreated = true;
 
             String  itemPath = ZKPaths.makePath(queuePath, itemNode);

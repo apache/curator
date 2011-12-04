@@ -62,7 +62,7 @@ public class TestFramework extends BaseClassForTests
             };
 
             client.getCuratorListenable().addListener(listener);
-            client.create().forPath("/base", new byte[0]);
+            client.create().forPath("/base");
             client.checkExists().inBackground().forPath("/base");
 
             String      path = queue.poll(10, TimeUnit.SECONDS);
@@ -112,9 +112,9 @@ public class TestFramework extends BaseClassForTests
                     }
                 }
             };
-            client.create().forPath("/base", new byte[0]);
+            client.create().forPath("/base");
             client.getChildren().usingWatcher(watcher).forPath("/base");
-            client.create().forPath("/base/child", new byte[0]);
+            client.create().forPath("/base/child");
 
             String      path = queue.take();
             Assert.assertEquals(path, "/base");
@@ -133,7 +133,7 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.create().withACL(ZooDefs.Ids.CREATOR_ALL_ACL).forPath("/test", new byte[0]);
+            client.create().withACL(ZooDefs.Ids.CREATOR_ALL_ACL).forPath("/test");
 
             client.setData().forPath("/test", "test".getBytes());
 
@@ -212,12 +212,12 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            String      actualPath = client.create().forPath("/test", new byte[0]);
+            String      actualPath = client.create().forPath("/test");
             Assert.assertEquals(actualPath, "/test");
             Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/" + namespace + "/test", false));
             Assert.assertNull(client.getZookeeperClient().getZooKeeper().exists("/test", false));
 
-            actualPath = client.nonNamespaceView().create().forPath("/non", new byte[0]);
+            actualPath = client.nonNamespaceView().create().forPath("/non");
             Assert.assertEquals(actualPath, "/non");
             Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/non", false));
 
@@ -256,7 +256,7 @@ public class TestFramework extends BaseClassForTests
                     }
                 }
             };
-            client.create().inBackground(callback).forPath("/head", new byte[0]);
+            client.create().inBackground(callback).forPath("/head");
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
         finally
@@ -288,7 +288,7 @@ public class TestFramework extends BaseClassForTests
                 }
             );
 
-            client.create().forPath("/head", new byte[0]);
+            client.create().forPath("/head");
             Assert.assertNotNull(client.checkExists().forPath("/head"));
 
             CountDownLatch      latch = new CountDownLatch(1);
@@ -324,7 +324,7 @@ public class TestFramework extends BaseClassForTests
                 }
             );
 
-            client.create().forPath("/head", new byte[0]);
+            client.create().forPath("/head");
             Assert.assertNotNull(client.checkExists().forPath("/head"));
 
             CountDownLatch      latch = new CountDownLatch(1);
@@ -345,7 +345,7 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.create().forPath("/head", new byte[0]);
+            client.create().forPath("/head");
             Assert.assertNotNull(client.checkExists().forPath("/head"));
             client.delete().forPath("/head");
             Assert.assertNull(client.checkExists().forPath("/head"));
@@ -363,11 +363,11 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            client.create().forPath("/head", new byte[0]);
+            client.create().forPath("/head");
 
             for ( int i = 0; i < 10; ++i )
             {
-                client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/head/child", new byte[0]);
+                client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/head/child");
             }
 
             List<String>        children = client.getChildren().forPath("/head");

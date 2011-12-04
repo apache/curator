@@ -26,7 +26,6 @@ import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
-import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
 import com.netflix.curator.utils.ZKPaths;
@@ -53,7 +52,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         {
             CreateBuilderImpl               createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.failNextCreateForTesting = true;
-            String                          ourPath = createBuilder.withProtectedEphemeralSequential().forPath("/", new byte[0]);
+            String                          ourPath = createBuilder.withProtectedEphemeralSequential().forPath("/");
             Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
             Assert.assertFalse(createBuilder.failNextCreateForTesting);
         }
@@ -70,7 +69,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         client.start();
         try
         {
-            client.create().forPath("/sessionTest", new byte[0]);
+            client.create().forPath("/sessionTest");
 
             final AtomicBoolean     sessionDied = new AtomicBoolean(false);
             Watcher         watcher = new Watcher()
@@ -114,7 +113,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                             Stat    stat = client.checkExists().forPath("/yo/yo/yo");
                             Assert.assertNull(stat);
 
-                            client.create().inBackground(event.getContext()).forPath("/what", new byte[0]);
+                            client.create().inBackground(event.getContext()).forPath("/what");
                         }
                         else if ( event.getType() == CuratorEventType.CREATE )
                         {

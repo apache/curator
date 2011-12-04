@@ -22,9 +22,7 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.recipes.KillSession;
-import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
-import com.netflix.curator.utils.TestingCluster;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.BlockingQueue;
@@ -32,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class TestPathChildrenCache extends BaseClassForTests
 {
@@ -45,7 +42,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         {
             client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client1.start();
-            client1.create().forPath("/test", new byte[0]);
+            client1.create().forPath("/test");
 
             PathChildrenCache       cache = new PathChildrenCache(client1, "/test", PathChildrenCacheMode.CACHE_DATA_AND_STAT);
             cache.start();
@@ -89,7 +86,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         client.start();
         try
         {
-            client.create().forPath("/test", new byte[0]);
+            client.create().forPath("/test");
 
             for ( PathChildrenCacheMode mode : PathChildrenCacheMode.values() )
             {
@@ -167,7 +164,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         client.start();
         try
         {
-            client.create().forPath("/test", new byte[0]);
+            client.create().forPath("/test");
 
             final BlockingQueue<PathChildrenCacheEvent.Type>        events = new LinkedBlockingQueue<PathChildrenCacheEvent.Type>();
             PathChildrenCache       cache = new PathChildrenCache(client, "/test", PathChildrenCacheMode.CACHE_DATA_AND_STAT);

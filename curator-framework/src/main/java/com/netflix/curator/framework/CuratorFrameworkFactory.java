@@ -19,6 +19,7 @@ package com.netflix.curator.framework;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.RetryPolicy;
+import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.imps.CuratorFrameworkImpl;
 import java.io.IOException;
 import java.util.Arrays;
@@ -89,6 +90,7 @@ public class CuratorFrameworkFactory
         private String          namespace;
         private String          authScheme = null;
         private byte[]          authValue = null;
+        private byte[]          defaultData = new byte[0];
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -122,6 +124,20 @@ public class CuratorFrameworkFactory
         public Builder connectString(String connectString)
         {
             this.connectString = connectString;
+            return this;
+        }
+
+        /**
+         * Sets the data to use when {@link PathAndBytesable#forPath(String)} is used.
+         * This is useful for debugging purposes. For example, you could set this to be the IP of the
+         * client.
+         *
+         * @param defaultData new default data to use
+         * @return this
+         */
+        public Builder defaultData(byte[] defaultData)
+        {
+            this.defaultData = (defaultData != null) ? Arrays.copyOf(defaultData, defaultData.length) : null;
             return this;
         }
 
@@ -217,6 +233,11 @@ public class CuratorFrameworkFactory
         public byte[] getAuthValue()
         {
             return (authValue != null) ? Arrays.copyOf(authValue, authValue.length) : null;
+        }
+
+        public byte[] getDefaultData()
+        {
+            return defaultData;
         }
 
         private Builder()

@@ -306,7 +306,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             {
                 try
                 {
-                    client.create().creatingParentsIfNeeded().forPath(path, new byte[0]);
+                    client.create().creatingParentsIfNeeded().forPath(path);
                 }
                 catch ( KeeperException.NodeExistsException ignore )
                 {

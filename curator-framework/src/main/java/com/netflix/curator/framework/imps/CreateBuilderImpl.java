@@ -102,6 +102,12 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             {
                 return CreateBuilderImpl.this.forPath(path, data);
             }
+
+            @Override
+            public String forPath(String path) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path);
+            }
         };
     }
 
@@ -134,6 +140,12 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     {
                         return CreateBuilderImpl.this.forPath(path, data);
                     }
+
+                    @Override
+                    public String forPath(String path) throws Exception
+                    {
+                        return CreateBuilderImpl.this.forPath(path);
+                    }
                 };
             }
 
@@ -141,6 +153,12 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             public String forPath(String path, byte[] data) throws Exception
             {
                 return CreateBuilderImpl.this.forPath(path, data);
+            }
+
+            @Override
+            public String forPath(String path) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path);
             }
         };
     }
@@ -164,6 +182,12 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             public String forPath(String path, byte[] data) throws Exception
             {
                 return CreateBuilderImpl.this.forPath(path, data);
+            }
+
+            @Override
+            public String forPath(String path) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path);
             }
         };
     }
@@ -201,6 +225,12 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     {
         backgrounding = new Backgrounding(context);
         return this;
+    }
+
+    @Override
+    public String forPath(String path) throws Exception
+    {
+        return forPath(path, client.getDefaultData());
     }
 
     @Override

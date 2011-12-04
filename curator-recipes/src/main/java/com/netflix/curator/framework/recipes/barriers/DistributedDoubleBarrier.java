@@ -98,7 +98,7 @@ public class DistributedDoubleBarrier
         ensurePath.ensure(client.getZookeeperClient());
 
         client.checkExists().usingWatcher(watcher).forPath(readyPath);
-        client.create().withMode(CreateMode.EPHEMERAL).forPath(ourPath, new byte[0]);
+        client.create().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
 
         boolean         result;
         client.getConnectionStateListenable().addListener(connectionStateListener);
@@ -264,7 +264,7 @@ public class DistributedDoubleBarrier
             {
                 try
                 {
-                    client.create().forPath(readyPath, new byte[0]);
+                    client.create().forPath(readyPath);
                 }
                 catch ( KeeperException.NodeExistsException ignore )
                 {
