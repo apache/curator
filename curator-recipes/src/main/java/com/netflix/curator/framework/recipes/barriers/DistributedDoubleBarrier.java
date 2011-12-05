@@ -39,6 +39,18 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * <p>
+ *     A double barrier as described in the ZK recipes. Quoting the recipe:
+ * </p>
+ * 
+ * <blockquote>
+ *     Double barriers enable
+ *     clients to synchronize the beginning and the end of a computation. When enough processes
+ *     have joined the barrier, processes start their computation and leave the barrier
+ *     once they have finished.
+ * </blockquote>
+ */
 public class DistributedDoubleBarrier
 {
     private final CuratorFramework client;
@@ -72,6 +84,15 @@ public class DistributedDoubleBarrier
 
     private static final String     READY_NODE = "ready";
 
+    /**
+     * Creates the barrier abstraction. <code>memberQty</code> is the number of members in the
+     * barrier. When {@link #enter()} is called, it blocks until all members have entered. When
+     * {@link #leave()} is called, it blocks until all members have left.
+     *
+     * @param client the client
+     * @param barrierPath path to use
+     * @param memberQty the number of members in the barrier
+     */
     public DistributedDoubleBarrier(CuratorFramework client, String barrierPath, int memberQty)
     {
         Preconditions.checkArgument(memberQty > 0);
@@ -84,11 +105,25 @@ public class DistributedDoubleBarrier
         ensurePath = client.newNamespaceAwareEnsurePath(barrierPath);
     }
 
+    /**
+     * Enter the barrier and block until all members have entered
+     *
+     * @throws Exception interruptions, errors, etc.
+     */
     public void     enter() throws Exception
     {
         enter(-1, null);
     }
 
+    /**
+     * Enter the barrier and block until all members have entered or the timeout has
+     * elapsed
+     *
+     * @param maxWait max time to block
+     * @param unit time unit
+     * @return true if the entry was successful, false if the timeout elapsed first
+     * @throws Exception interruptions, errors, etc.
+     */
     public boolean     enter(long maxWait, TimeUnit unit) throws Exception
     {
         long            startMs = System.currentTimeMillis();
@@ -119,11 +154,25 @@ public class DistributedDoubleBarrier
         return result;
     }
 
+    /**
+     * Leave the barrier and block until all members have left
+     *
+     * @throws Exception interruptions, errors, etc.
+     */
     public synchronized void     leave() throws Exception
     {
         leave(-1, null);
     }
 
+    /**
+     * Leave the barrier and block until all members have left or the timeout has
+     * elapsed
+     *
+     * @param maxWait max time to block
+     * @param unit time unit
+     * @return true if leaving was successful, false if the timeout elapsed first
+     * @throws Exception interruptions, errors, etc.
+     */
     public synchronized boolean     leave(long maxWait, TimeUnit unit) throws Exception
     {
         long            startMs = System.currentTimeMillis();

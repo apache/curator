@@ -26,6 +26,16 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <p>
+ *     A barrier as described in the ZK recipes. Quoting the recipe:
+ * </p>
+ *
+ * <blockquote>
+ *     Distributed systems use barriers to block processing of a set of nodes
+ *     until a condition is met at which time all the nodes are allowed to proceed
+ * </blockquote>
+ */
 public class DistributedBarrier
 {
     private final CuratorFramework client;
@@ -47,12 +57,21 @@ public class DistributedBarrier
         }
     };
 
+    /**
+     * @param client client
+     * @param barrierPath path to use as the barrier
+     */
     public DistributedBarrier(CuratorFramework client, String barrierPath)
     {
         this.client = client;
         this.barrierPath = barrierPath;
     }
 
+    /**
+     * Utility to set the barrier node
+     *
+     * @throws Exception errors
+     */
     public synchronized void         setBarrier() throws Exception
     {
         try
@@ -65,6 +84,11 @@ public class DistributedBarrier
         }
     }
 
+    /**
+     * Utility to remove the barrier node
+     *
+     * @throws Exception errors
+     */
     public synchronized void      removeBarrier() throws Exception
     {
         try
@@ -77,11 +101,24 @@ public class DistributedBarrier
         }
     }
 
+    /**
+     * Blocks until the barrier node comes into existence
+     *
+     * @throws Exception errors
+     */
     public synchronized void      waitOnBarrier() throws Exception
     {
         waitOnBarrier(-1, null);
     }
 
+    /**
+     * Blocks until the barrier node comes into existence or the timeout elapses
+     *
+     * @param maxWait max time to block
+     * @param unit time unit
+     * @return true if the wait was successful, false if the timeout elapsed first
+     * @throws Exception errors
+     */
     public synchronized boolean      waitOnBarrier(long maxWait, TimeUnit unit) throws Exception
     {
         long            startMs = System.currentTimeMillis();
