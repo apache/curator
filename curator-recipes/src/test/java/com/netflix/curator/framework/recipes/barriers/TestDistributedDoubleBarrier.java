@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -37,36 +38,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestDistributedDoubleBarrier extends BaseClassForTests
 {
+    private static final int           QTY = 5;
+
     @Test
-    public void     testBasic() throws Exception
+    public void     testMultiClient() throws Exception
     {
-        final int           QTY = 5;
-
-        final List<Closeable>     closeables = Lists.newArrayList();
-        final CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
+        final CountDownLatch    postEnterLatch = new CountDownLatch(QTY);
+        final CountDownLatch    postLeaveLatch = new CountDownLatch(QTY);
+        final AtomicInteger     count = new AtomicInteger(0);
+        final AtomicInteger     max = new AtomicInteger(0);
+        List<Future<Void>>      futures = Lists.newArrayList();
+        ExecutorService         service = Executors.newCachedThreadPool();
+        for ( int i = 0; i < QTY; ++i )
         {
-            closeables.add(client);
-            client.start();
-
-            final AtomicInteger count = new AtomicInteger(0);
-            final AtomicInteger max = new AtomicInteger(0);
-            List<Future<Void>>  futures = Lists.newArrayList();
-            ExecutorService     service = Executors.newCachedThreadPool();
-            for ( int i = 0; i < QTY; ++i )
-            {
-                Future<Void>    future = service.submit
-                (
-                    new Callable<Void>()
+            Future<Void>    future = service.submit
+            (
+                new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
                     {
-                        @Override
-                        public Void call() throws Exception
+                        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+                        try
                         {
+                            client.start();
                             DistributedDoubleBarrier        barrier = new DistributedDoubleBarrier(client, "/barrier", QTY);
-                            if ( !barrier.enter(10, TimeUnit.SECONDS) )
-                            {
-                                throw new Error("Timeout on enter");
-                            }
+
+                            Assert.assertTrue(barrier.enter(10, TimeUnit.SECONDS));
 
                             synchronized(TestDistributedDoubleBarrier.this)
                             {
@@ -77,21 +75,86 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
                                 }
                             }
 
-                            try
+                            postEnterLatch.countDown();
+                            Assert.assertTrue(postEnterLatch.await(10, TimeUnit.SECONDS));
+
+                            Assert.assertEquals(count.get(), QTY);
+
+                            Assert.assertTrue(barrier.leave(10, TimeUnit.SECONDS));
+                            count.decrementAndGet();
+
+                            postLeaveLatch.countDown();
+                            Assert.assertTrue(postLeaveLatch.await(10, TimeUnit.SECONDS));
+                        }
+                        finally
+                        {
+                            Closeables.closeQuietly(client);
+                        }
+
+                        return null;
+                    }
+                }
+            );
+            futures.add(future);
+        }
+
+        for ( Future<Void> f : futures )
+        {
+            f.get();
+        }
+        Assert.assertEquals(count.get(), 0);
+        Assert.assertEquals(max.get(), QTY);
+    }
+
+    @Test
+    public void     testBasic() throws Exception
+    {
+        final List<Closeable>     closeables = Lists.newArrayList();
+        final CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            closeables.add(client);
+            client.start();
+
+            final CountDownLatch    postEnterLatch = new CountDownLatch(QTY);
+            final CountDownLatch    postLeaveLatch = new CountDownLatch(QTY);
+            final AtomicInteger     count = new AtomicInteger(0);
+            final AtomicInteger     max = new AtomicInteger(0);
+            List<Future<Void>>      futures = Lists.newArrayList();
+            ExecutorService         service = Executors.newCachedThreadPool();
+            for ( int i = 0; i < QTY; ++i )
+            {
+                Future<Void>    future = service.submit
+                (
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            DistributedDoubleBarrier        barrier = new DistributedDoubleBarrier(client, "/barrier", QTY);
+
+                            Assert.assertTrue(barrier.enter(10, TimeUnit.SECONDS));
+
+                            synchronized(TestDistributedDoubleBarrier.this)
                             {
-                                Thread.sleep(2000);
-                                if ( !barrier.leave(10, TimeUnit.SECONDS) )
+                                int     thisCount = count.incrementAndGet();
+                                if ( thisCount > max.get() )
                                 {
-                                    throw new Error("Timeout on leave");
+                                    max.set(thisCount);
                                 }
                             }
-                            finally
-                            {
-                                synchronized(TestDistributedDoubleBarrier.this)
-                                {
-                                    count.decrementAndGet();
-                                }
-                            }
+
+                            postEnterLatch.countDown();
+                            Assert.assertTrue(postEnterLatch.await(10, TimeUnit.SECONDS));
+
+                            Assert.assertEquals(count.get(), QTY);
+
+                            Assert.assertTrue(barrier.leave(10, TimeUnit.SECONDS));
+                            count.decrementAndGet();
+
+                            postLeaveLatch.countDown();
+                            Assert.assertTrue(postLeaveLatch.await(10, TimeUnit.SECONDS));
+
                             return null;
                         }
                     }

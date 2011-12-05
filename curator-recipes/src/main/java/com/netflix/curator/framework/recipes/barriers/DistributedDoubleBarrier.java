@@ -97,14 +97,14 @@ public class DistributedDoubleBarrier
 
         ensurePath.ensure(client.getZookeeperClient());
 
-        client.checkExists().usingWatcher(watcher).forPath(readyPath);
+        boolean         readyPathExists = (client.checkExists().usingWatcher(watcher).forPath(readyPath) != null);
         client.create().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
 
         boolean         result;
         client.getConnectionStateListenable().addListener(connectionStateListener);
         try
         {
-            result = internalEnter(startMs, hasMaxWait, maxWaitMs);
+            result = readyPathExists || internalEnter(startMs, hasMaxWait, maxWaitMs);
         }
         finally
         {
@@ -169,7 +169,7 @@ public class DistributedDoubleBarrier
     private boolean internalLeave(long startMs, boolean hasMaxWait, long maxWaitMs) throws Exception
     {
         String          ourPathName = ZKPaths.getNodeFromPath(ourPath);
-        boolean         shouldExist = true;
+        boolean         ourNodeShouldExist = true;
         boolean         result = true;
         for(;;)
         {
@@ -179,30 +179,16 @@ public class DistributedDoubleBarrier
             }
 
             List<String> children = client.getChildren().forPath(barrierPath);
+            children = filterAndSortChildren(children);
             if ( (children == null) || (children.size() == 0) )
             {
                 break;
             }
-            children = filterAndSortChildren(children);
 
             int                 ourIndex = children.indexOf(ourPathName);
-            if ( (ourIndex < 0) && shouldExist )
+            if ( (ourIndex < 0) && ourNodeShouldExist )
             {
                 throw new IllegalStateException(String.format("Our path (%s) is missing", ourPathName));
-            }
-
-            boolean IsLowestNode = (ourIndex == 0);
-            if ( IsLowestNode )
-            {
-                // lowest node is responsible for deleting ready node
-                try
-                {
-                    client.delete().forPath(readyPath);
-                }
-                catch ( KeeperException.NoNodeException ignore )
-                {
-                    // ignore
-                }
             }
 
             if ( children.size() == 1 )
@@ -211,12 +197,12 @@ public class DistributedDoubleBarrier
                 {
                     throw new IllegalStateException(String.format("Last path (%s) is not ours (%s)", children.get(0), ourPathName));
                 }
-                client.delete().forPath(ourPath);
-                shouldExist = false;
+                checkDeleteOurPath(ourNodeShouldExist);
                 break;
             }
 
-            Stat stat;
+            Stat            stat;
+            boolean         IsLowestNode = (ourIndex == 0);
             if ( IsLowestNode )
             {
                 String  highestNodePath = ZKPaths.makePath(barrierPath, children.get(children.size() - 1));
@@ -224,11 +210,11 @@ public class DistributedDoubleBarrier
             }
             else
             {
-                client.delete().forPath(ourPath);
-                shouldExist = false;
-
                 String  lowestNodePath = ZKPaths.makePath(barrierPath, children.get(0));
                 stat = client.checkExists().usingWatcher(watcher).forPath(lowestNodePath);
+
+                checkDeleteOurPath(ourNodeShouldExist);
+                ourNodeShouldExist = false;
             }
 
             if ( stat != null )
@@ -250,7 +236,25 @@ public class DistributedDoubleBarrier
                 }
             }
         }
+
+        try
+        {
+            client.delete().forPath(readyPath);
+        }
+        catch ( KeeperException.NoNodeException ignore )
+        {
+            // ignore
+        }
+
         return result;
+    }
+
+    private void checkDeleteOurPath(boolean shouldExist) throws Exception
+    {
+        if ( shouldExist )
+        {
+            client.delete().forPath(ourPath);
+        }
     }
 
     private synchronized boolean internalEnter(long startMs, boolean hasMaxWait, long maxWaitMs) throws Exception
@@ -278,7 +282,7 @@ public class DistributedDoubleBarrier
                 throw new IllegalStateException(String.format("Count (%d) is greater than memberQty (%d)", count, memberQty));
             }
 
-            if ( hasMaxWait )
+            if ( hasMaxWait && !hasBeenNotified.get() )
             {
                 long        elapsed = System.currentTimeMillis() - startMs;
                 long        thisWaitMs = maxWaitMs - elapsed;
