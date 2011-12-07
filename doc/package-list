@@ -5,6 +5,7 @@ com.netflix.curator.framework.api
 com.netflix.curator.framework.imps
 com.netflix.curator.framework.listen
 com.netflix.curator.framework.recipes.atomic
+com.netflix.curator.framework.recipes.barriers
 com.netflix.curator.framework.recipes.cache
 com.netflix.curator.framework.recipes.leader
 com.netflix.curator.framework.recipes.locks
@@ -14,3 +15,5 @@ com.netflix.curator.framework.state
 com.netflix.curator.retry
 com.netflix.curator.utils
 com.netflix.curator.x.discovery
+com.netflix.curator.x.discovery.details
+com.netflix.curator.x.discovery.strategies
