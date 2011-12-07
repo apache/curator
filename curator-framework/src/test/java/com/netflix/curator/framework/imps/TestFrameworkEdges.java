@@ -198,9 +198,10 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void         testRetry() throws Exception
     {
+        final int       MAX_RETRIES = 3;
         final int       serverPort = server.getPort();
 
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(10));
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 1000, 1000, new RetryOneTime(10));
         client.start();
         try
         {
@@ -213,33 +214,16 @@ public class TestFrameworkEdges extends BaseClassForTests
                     @Override
                     public boolean allowRetry(int retryCount, long elapsedTimeMs)
                     {
-                        try
-                        {
-                            Thread.sleep(100);
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                            return false;
-                        }
-
-                        retries.incrementAndGet();
-                        if ( (retryCount + 1) == 5 )
+                        semaphore.release();
+                        if ( retries.incrementAndGet() >= MAX_RETRIES )
                         {
                             try
                             {
-                                server = new TestingServer(serverPort, Files.createTempDir());
-                                client.getZookeeperClient().setRetryPolicy(new RetryOneTime(10));
-                                client.checkExists().forPath("/foo");   // get the connection again
-                                client.getZookeeperClient().setRetryPolicy(this);
+                                server = new TestingServer(serverPort);
                             }
                             catch ( Exception e )
                             {
-                                Assert.fail("", e);
-                            }
-                            finally
-                            {
-                                semaphore.release();
+                                throw new Error(e);
                             }
                         }
                         return true;
@@ -251,16 +235,16 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             // test foreground retry
             client.checkExists().forPath("/hey");
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
-            Assert.assertTrue(retries.get() >= 5);  // there may be more tries due to internal code trying to reconnect
+            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, 10, TimeUnit.SECONDS));
+
+            semaphore.drainPermits();
+            retries.set(0);
 
             server.stop();
 
             // test background retry
-            retries.set(0);
             client.checkExists().inBackground().forPath("/hey");
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
-            Assert.assertTrue(retries.get() >= 5);  // there may be more tries due to internal code trying to reconnect
+            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, 10, TimeUnit.SECONDS));
         }
         finally
         {
