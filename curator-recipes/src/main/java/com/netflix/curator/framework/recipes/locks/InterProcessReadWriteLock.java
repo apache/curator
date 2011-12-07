@@ -39,7 +39,7 @@ import java.util.List;
  *    <b>Reentrancy</b><br/>
  *    This lock allows both readers and writers to reacquire read or write locks in the style of a
  *    re-entrant lock. Non-re-entrant readers are not allowed until all write locks held by the
- *    writing thread have been released. Additionally, a writer can acquire the read lock, but not
+ *    writing thread/process have been released. Additionally, a writer can acquire the read lock, but not
  *    vice-versa. If a reader tries to acquire the write lock it will never succeed.<br/><br/>
  *    
  *    <b>Lock downgrading</b><br/>
