@@ -17,7 +17,6 @@
  */
 package com.netflix.curator.framework.imps;
 
-import com.google.common.io.Files;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
@@ -205,6 +204,19 @@ public class TestFrameworkEdges extends BaseClassForTests
         client.start();
         try
         {
+/*
+            client.getUnhandledErrorListenable().addListener
+            (
+                new UnhandledErrorListener()
+                {
+                    @Override
+                    public void unhandledError(String message, Throwable e)
+                    {
+                    }
+                }
+            );
+*/
+
             final AtomicInteger     retries = new AtomicInteger(0);
             final Semaphore         semaphore = new Semaphore(0);
             client.getZookeeperClient().setRetryPolicy
@@ -215,7 +227,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                     public boolean allowRetry(int retryCount, long elapsedTimeMs)
                     {
                         semaphore.release();
-                        if ( retries.incrementAndGet() >= MAX_RETRIES )
+                        if ( retries.incrementAndGet() == MAX_RETRIES )
                         {
                             try
                             {
@@ -245,6 +257,10 @@ public class TestFrameworkEdges extends BaseClassForTests
             // test background retry
             client.checkExists().inBackground().forPath("/hey");
             Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, 10, TimeUnit.SECONDS));
+        }
+        catch ( Throwable e )
+        {
+            Assert.fail("Error", e);
         }
         finally
         {

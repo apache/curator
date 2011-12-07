@@ -35,6 +35,13 @@ public class BaseClassForTests
     @AfterMethod
     public void     teardown() throws InterruptedException
     {
-        server.close();
+        try
+        {
+            server.close();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
     }
 }

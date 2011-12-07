@@ -23,7 +23,6 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
-import com.netflix.curator.framework.recipes.KillSession;
 import com.netflix.curator.retry.RetryOneTime;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
@@ -38,9 +37,9 @@ import java.util.concurrent.TimeUnit;
 public class TestDistributedBarrier extends BaseClassForTests
 {
     @Test
-    public void     testKilledSession() throws Exception
+    public void     testServerCrash() throws Exception
     {
-        final int                         TIMEOUT = 2000;
+        final int                         TIMEOUT = 1000;
 
         final CuratorFramework            client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).connectionTimeoutMs(TIMEOUT).retryPolicy(new RetryOneTime(1)).build();
         try
@@ -59,7 +58,7 @@ public class TestDistributedBarrier extends BaseClassForTests
                     public Object call() throws Exception
                     {
                         Thread.sleep(TIMEOUT / 2);
-                        KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+                        server.stop();
                         return null;
                     }
                 }
