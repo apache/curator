@@ -23,8 +23,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.state.ConnectionState;
-import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -66,19 +64,8 @@ public class DistributedDoubleBarrier
         @Override
         public void process(WatchedEvent event)
         {
+            connectionLost.set(event.getState() != Event.KeeperState.SyncConnected);
             notifyFromWatcher();
-        }
-    };
-    private final ConnectionStateListener   connectionStateListener = new ConnectionStateListener()
-    {
-        @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
-            if ( newState == ConnectionState.LOST )
-            {
-                connectionLost.set(true);
-                notifyFromWatcher();
-            }
         }
     };
 
@@ -135,17 +122,7 @@ public class DistributedDoubleBarrier
         boolean         readyPathExists = (client.checkExists().usingWatcher(watcher).forPath(readyPath) != null);
         client.create().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
 
-        boolean         result;
-        client.getConnectionStateListenable().addListener(connectionStateListener);
-        try
-        {
-            result = readyPathExists || internalEnter(startMs, hasMaxWait, maxWaitMs);
-        }
-        finally
-        {
-            client.getConnectionStateListenable().removeListener(connectionStateListener);
-        }
-
+        boolean         result = (readyPathExists || internalEnter(startMs, hasMaxWait, maxWaitMs));
         if ( connectionLost.get() )
         {
             throw new KeeperException.ConnectionLossException();
@@ -181,18 +158,7 @@ public class DistributedDoubleBarrier
 
         ensurePath.ensure(client.getZookeeperClient());
 
-        boolean         result;
-        client.getConnectionStateListenable().addListener(connectionStateListener);
-        try
-        {
-            result = internalLeave(startMs, hasMaxWait, maxWaitMs);
-        }
-        finally
-        {
-            client.getConnectionStateListenable().removeListener(connectionStateListener);
-        }
-
-        return result;
+        return internalLeave(startMs, hasMaxWait, maxWaitMs);
     }
 
     private List<String> filterAndSortChildren(List<String> children)
