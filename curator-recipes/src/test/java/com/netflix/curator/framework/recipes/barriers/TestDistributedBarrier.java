@@ -23,7 +23,9 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.KillSession;
 import com.netflix.curator.retry.RetryOneTime;
+import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -35,6 +37,48 @@ import java.util.concurrent.TimeUnit;
 
 public class TestDistributedBarrier extends BaseClassForTests
 {
+    @Test
+    public void     testKilledSession() throws Exception
+    {
+        final int                         TIMEOUT = 2000;
+
+        final CuratorFramework            client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).connectionTimeoutMs(TIMEOUT).retryPolicy(new RetryOneTime(1)).build();
+        try
+        {
+            client.start();
+
+            final DistributedBarrier      barrier = new DistributedBarrier(client, "/barrier");
+            barrier.setBarrier();
+
+            final ExecutorService        service = Executors.newSingleThreadExecutor();
+            Future<Object>               future = service.submit
+            (
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        Thread.sleep(TIMEOUT / 2);
+                        KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+                        return null;
+                    }
+                }
+            );
+
+            barrier.waitOnBarrier(TIMEOUT * 2, TimeUnit.SECONDS);
+            future.get();
+            Assert.fail();
+        }
+        catch ( KeeperException.ConnectionLossException expected )
+        {
+            // expected
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void     testMultiClient() throws Exception
     {
