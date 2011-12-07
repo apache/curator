@@ -29,6 +29,25 @@
                 </repository>
             </distributionManagement>
         </profile>
+
+        <profile>
+            <id>release</id>
+            <activation>
+            <property>
+                <name>performRelease</name>
+            </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <licenses>
