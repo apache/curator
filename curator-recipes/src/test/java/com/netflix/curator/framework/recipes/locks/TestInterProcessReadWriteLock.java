@@ -26,6 +26,7 @@ import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -38,6 +39,68 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestInterProcessReadWriteLock extends BaseClassForTests
 {
+    @Test
+    public void     testGetParticipantNodes() throws Exception
+    {
+        final int               READERS = 20;
+        final int               WRITERS = 8;
+
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            final CountDownLatch              latch = new CountDownLatch(READERS + WRITERS);
+            final InterProcessReadWriteLock   lock = new InterProcessReadWriteLock(client, "/lock");
+            ExecutorService                   service = Executors.newCachedThreadPool();
+            for ( int i = 0; i < READERS; ++i )
+            {
+                service.submit
+                (
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            latch.countDown();
+                            lock.readLock().acquire();
+                            return null;
+                        }
+                    }
+                );
+            }
+            for ( int i = 0; i < WRITERS; ++i )
+            {
+                service.submit
+                (
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            latch.countDown();
+                            lock.writeLock().acquire();
+                            return null;
+                        }
+                    }
+                );
+            }
+
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            Thread.sleep(1000);
+
+            Collection<String> readers = lock.readLock().getParticipantNodes();
+            Collection<String> writers = lock.writeLock().getParticipantNodes();
+
+            Assert.assertEquals(readers.size(), READERS);
+            Assert.assertEquals(writers.size(), WRITERS);
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void     testThatUpgradingIsDisallowed() throws Exception
     {

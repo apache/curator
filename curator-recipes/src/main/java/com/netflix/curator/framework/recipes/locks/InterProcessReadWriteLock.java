@@ -18,8 +18,11 @@
 
 package com.netflix.curator.framework.recipes.locks;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.netflix.curator.framework.CuratorFramework;
-import org.apache.zookeeper.KeeperException;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -68,14 +71,59 @@ public class InterProcessReadWriteLock
         }
     }
 
+    private static class InternalInterProcessMutex extends InterProcessMutex
+    {
+        private final String lockName;
+
+        InternalInterProcessMutex(CuratorFramework client, String path, String lockName, int maxLeases, LockInternalsDriver driver)
+        {
+            super(client, path, lockName, maxLeases, driver);
+            this.lockName = lockName;
+        }
+
+        @Override
+        public Collection<String> getParticipantNodes() throws Exception
+        {
+            Collection<String>  nodes = super.getParticipantNodes();
+            Iterable<String>    filtered = Iterables.filter
+            (
+                nodes,
+                new Predicate<String>()
+                {
+                    @Override
+                    public boolean apply(String node)
+                    {
+                        return node.contains(lockName);
+                    }
+                }
+            );
+            return ImmutableList.copyOf(filtered);
+        }
+    }
+
     /**
      * @param client the client
      * @param basePath path to use for locking
      */
     public InterProcessReadWriteLock(CuratorFramework client, String basePath)
     {
-        writeMutex = new InterProcessMutex(client, basePath, WRITE_LOCK_NAME, 1, new SortingLockInternalsDriver());
-        readMutex = new InterProcessMutex
+        writeMutex = new InternalInterProcessMutex
+        (
+            client,
+            basePath,
+            WRITE_LOCK_NAME,
+            1,
+            new SortingLockInternalsDriver()
+            {
+                @Override
+                public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception
+                {
+                    return super.getsTheLock(client, children, sequenceNodeName, maxLeases);
+                }
+            }
+        );
+
+        readMutex = new InternalInterProcessMutex
         (
             client,
             basePath,
@@ -97,7 +145,7 @@ public class InterProcessReadWriteLock
      *
      * @return read lock
      */
-    public InterProcessLock     readLock()
+    public InterProcessMutex     readLock()
     {
         return readMutex;
     }
@@ -107,12 +155,12 @@ public class InterProcessReadWriteLock
      *
      * @return write lock
      */
-    public InterProcessLock     writeLock()
+    public InterProcessMutex     writeLock()
     {
         return writeMutex;
     }
 
-    private PredicateResults readLockPredicate(CuratorFramework client, List<String> children, String sequenceNodeName) throws KeeperException.ConnectionLossException
+    private PredicateResults readLockPredicate(CuratorFramework client, List<String> children, String sequenceNodeName) throws Exception
     {
         if ( writeMutex.isOwnedByCurrentThread() )
         {

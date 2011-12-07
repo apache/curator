@@ -31,24 +31,47 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.common.PathUtils;
 import org.apache.zookeeper.data.Stat;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 class LockInternals
 {
-    private final CuratorFramework          client;
-    private final String                    path;
-    private final String                    basePath;
-    private final CuratorListener           listener;
-    private final EnsurePath                ensurePath;
-    private final Watcher                   watcher;
-    private final LockInternalsDriver driver;
-    private final String                    lockName;
+    private final CuratorFramework                  client;
+    private final String                            path;
+    private final String                            basePath;
+    private final CuratorListener                   listener;
+    private final EnsurePath                        ensurePath;
+    private final Watcher                           watcher;
+    private final LockInternalsDriver               driver;
+    private final String                            lockName;
+    private final AtomicReference<RevocationSpec>   revocable = new AtomicReference<RevocationSpec>(null);
+    private final Watcher                           revocableWatcher = new Watcher()
+    {
+        @Override
+        public void process(WatchedEvent event)
+        {
+            if ( event.getType() == Event.EventType.NodeDataChanged )
+            {
+                try
+                {
+                    checkRevocableWatcher(event.getPath());
+                }
+                catch ( Exception e )
+                {
+                    client.getZookeeperClient().getLog().error("From RevocableWatcher check", e);
+                }
+            }
+        }
+    };
 
     private volatile int    maxLeases;
+
+    static final byte[]             REVOKE_MESSAGE = "__REVOKE__".getBytes();
 
     /**
      * Attempt to delete the lock node so that sequence numbers get reset
@@ -115,8 +138,14 @@ class LockInternals
         notifyAll();
     }
 
+    void makeRevocable(RevocationSpec entry)
+    {
+        revocable.set(entry);
+    }
+
     void releaseLock(String lockPath) throws Exception
     {
+        revocable.set(null);
         client.getCuratorListenable().removeListener(listener);
         client.delete().forPath(lockPath);
     }
@@ -140,10 +169,11 @@ class LockInternals
         return sortedList;
     }
 
-    String attemptLock(long time, TimeUnit unit, final byte[] lockNodeBytes) throws Exception
+    String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Exception
     {
-        final long startMillis = System.currentTimeMillis();
-        final Long millisToWait = (unit != null) ? unit.toMillis(time) : null;
+        final long      startMillis = System.currentTimeMillis();
+        final Long      millisToWait = (unit != null) ? unit.toMillis(time) : null;
+        final byte[]    localLockNodeBytes = (revocable.get() != null) ? new byte[0] : lockNodeBytes;
 
         PathAndFlag     pathAndFlag = RetryLoop.callWithRetry
         (
@@ -156,9 +186,9 @@ class LockInternals
                     ensurePath.ensure(client.getZookeeperClient());
 
                     String      ourPath;
-                    if ( lockNodeBytes != null )
+                    if ( localLockNodeBytes != null )
                     {
-                        ourPath = client.create().withProtectedEphemeralSequential().forPath(path, lockNodeBytes);
+                        ourPath = client.create().withProtectedEphemeralSequential().forPath(path, localLockNodeBytes);
                     }
                     else
                     {
@@ -191,8 +221,33 @@ class LockInternals
         }
     }
 
+    private void checkRevocableWatcher(String path) throws Exception
+    {
+        RevocationSpec  entry = revocable.get();
+        if ( entry != null )
+        {
+            try
+            {
+                byte[]      bytes = client.getData().usingWatcher(revocableWatcher).forPath(path);
+                if ( Arrays.equals(bytes, REVOKE_MESSAGE) )
+                {
+                    entry.getExecutor().execute(entry.getRunnable());
+                }
+            }
+            catch ( KeeperException.NoNodeException ignore )
+            {
+                // ignore
+            }
+        }
+    }
+
     private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception
     {
+        if ( revocable.get() != null )
+        {
+            client.getData().usingWatcher(revocableWatcher).forPath(ourPath);
+        }
+
         boolean     haveTheLock = false;
         boolean     doDelete = false;
         try

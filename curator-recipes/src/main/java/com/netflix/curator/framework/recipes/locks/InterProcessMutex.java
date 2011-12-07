@@ -20,11 +20,13 @@ package com.netflix.curator.framework.recipes.locks;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ZKPaths;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  * use the same lock path will achieve an inter-process critical section. Further, this mutex is
  * "fair" - each user will get the mutex in the order requested (from ZK's point of view)
  */
-public class InterProcessMutex implements InterProcessLock
+public class InterProcessMutex implements InterProcessLock, Revocable<InterProcessMutex>
 {
     private final LockInternals internals;
     private final String        basePath;
@@ -150,6 +152,32 @@ public class InterProcessMutex implements InterProcessLock
             }
         );
         return ImmutableList.copyOf(transformed);
+    }
+
+    @Override
+    public void makeRevocable(RevocationListener<InterProcessMutex> listener)
+    {
+        makeRevocable(listener, MoreExecutors.sameThreadExecutor());
+    }
+
+    @Override
+    public void makeRevocable(final RevocationListener<InterProcessMutex> listener, Executor executor)
+    {
+        internals.makeRevocable
+        (
+            new RevocationSpec
+            (
+                executor,
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        listener.revocationRequested(InterProcessMutex.this);
+                    }
+                }
+            )
+        );
     }
 
     InterProcessMutex(CuratorFramework client, String path, String lockName, int maxLeases, LockInternalsDriver driver)
