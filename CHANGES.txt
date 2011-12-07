@@ -1,3 +1,17 @@
+0.6.3 - Dec. 7, 2011
+=====================
+* Added Barrier
+
+* Added Double Barrier
+
+* Added Read/Write lock
+
+* Added revocation to InterProcessMutex
+
+* Fixed (hopefully) intermittent failures with testRetry()
+
+* Updates/enhancements to Discovery based on suggestions from Eishay Smith
+
 0.6.3 - Nov. 30, 2011
 =====================
 * Added Service Discovery
