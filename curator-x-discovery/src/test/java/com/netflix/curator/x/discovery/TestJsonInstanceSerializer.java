@@ -19,7 +19,7 @@
 package com.netflix.curator.x.discovery;
 
 import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
-import junit.framework.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class TestJsonInstanceSerializer

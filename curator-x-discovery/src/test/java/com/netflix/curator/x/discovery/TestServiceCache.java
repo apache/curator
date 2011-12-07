@@ -27,7 +27,7 @@ import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.TestingServer;
 import com.netflix.curator.x.discovery.details.ServiceCache;
 import com.netflix.curator.x.discovery.details.ServiceCacheListener;
-import junit.framework.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.util.Collections;

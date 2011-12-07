@@ -23,7 +23,7 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.recipes.KillSession;
 import com.netflix.curator.retry.RetryOneTime;
-import junit.framework.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;

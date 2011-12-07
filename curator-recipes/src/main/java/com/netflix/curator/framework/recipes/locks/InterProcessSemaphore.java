@@ -85,7 +85,7 @@ public class InterProcessSemaphore
 
     private InterProcessSemaphore(CuratorFramework client, String path, int maxLeases, SharedCountReader count)
     {
-        internals = new LockInternals(client, path, LOCK_NAME, (count != null) ? count.getCount() : maxLeases);
+        internals = new LockInternals(client, new StandardLockInternalsDriver(), path, LOCK_NAME, (count != null) ? count.getCount() : maxLeases);
         if ( count != null )
         {
             count.addListener

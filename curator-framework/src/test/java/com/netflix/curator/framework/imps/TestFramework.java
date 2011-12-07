@@ -41,6 +41,27 @@ import java.util.concurrent.TimeUnit;
 public class TestFramework extends BaseClassForTests
 {
     @Test
+    public void     testIt() throws Exception
+    {
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+
+        Watcher                 watcher = new Watcher()
+        {
+            @Override
+            public void process(WatchedEvent event)
+            {
+                System.out.println("yep");
+            }
+        };
+        client.checkExists().usingWatcher(watcher).forPath("/hey");
+
+        server.close();
+
+        Thread.sleep(10000);
+    }
+
+    @Test
     public void     testNamespaceInBackground() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();

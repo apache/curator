@@ -23,8 +23,8 @@ import com.netflix.curator.x.discovery.details.InstanceProvider;
 import com.netflix.curator.x.discovery.strategies.RandomStrategy;
 import com.netflix.curator.x.discovery.strategies.RoundRobinStrategy;
 import com.netflix.curator.x.discovery.strategies.StickyStrategy;
-import junit.framework.Assert;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
 
@@ -78,7 +78,7 @@ public class TestStrategies
         {
             statistic.addValue(counts[i]);
         }
-        Assert.assertTrue("" + statistic.getStandardDeviation(), statistic.getStandardDeviation() <= (QTY * 2)); // meager check for even distribution
+        Assert.assertTrue(statistic.getStandardDeviation() <= (QTY * 2), "" + statistic.getStandardDeviation()); // meager check for even distribution
     }
 
     @Test

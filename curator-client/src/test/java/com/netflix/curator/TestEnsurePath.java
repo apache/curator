@@ -19,12 +19,12 @@
 package com.netflix.curator;
 
 import com.netflix.curator.utils.EnsurePath;
-import junit.framework.Assert;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;

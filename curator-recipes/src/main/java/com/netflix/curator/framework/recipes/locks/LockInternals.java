@@ -45,6 +45,7 @@ class LockInternals
     private final CuratorListener           listener;
     private final EnsurePath                ensurePath;
     private final Watcher                   watcher;
+    private final LockInternalsDriver driver;
     private final String                    lockName;
 
     private volatile int    maxLeases;
@@ -70,8 +71,9 @@ class LockInternals
         }
     }
 
-    LockInternals(CuratorFramework client, String path, String lockName, int maxLeases)
+    LockInternals(CuratorFramework client, LockInternalsDriver driver, String path, String lockName, int maxLeases)
     {
+        this.driver = driver;
         this.lockName = lockName;
         this.maxLeases = maxLeases;
         PathUtils.validatePath(path);
@@ -131,7 +133,7 @@ class LockInternals
                 @Override
                 public int compare(String lhs, String rhs)
                 {
-                    return fixForSorting(lhs).compareTo(fixForSorting(rhs));
+                    return driver.fixForSorting(lhs, lockName).compareTo(driver.fixForSorting(rhs, lockName));
                 }
             }
         );
@@ -153,7 +155,15 @@ class LockInternals
                 {
                     ensurePath.ensure(client.getZookeeperClient());
 
-                    String      ourPath = client.create().withProtectedEphemeralSequential().forPath(path, lockNodeBytes);
+                    String      ourPath;
+                    if ( lockNodeBytes != null )
+                    {
+                        ourPath = client.create().withProtectedEphemeralSequential().forPath(path, lockNodeBytes);
+                    }
+                    else
+                    {
+                        ourPath = client.create().withProtectedEphemeralSequential().forPath(path);
+                    }
                     boolean     hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
                     return new PathAndFlag(hasTheLock, ourPath);
                 }
@@ -189,23 +199,17 @@ class LockInternals
         {
             while ( client.isStarted() && !haveTheLock )
             {
-                List<String>    children = getSortedChildren();
-                String          sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
-                int             ourIndex = children.indexOf(sequenceNodeName);
-                if ( ourIndex < 0 )
-                {
-                    client.getZookeeperClient().getLog().error("Sequential path not found: " + ourPath);
-                    throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
-                }
+                List<String>        children = getSortedChildren();
+                String              sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
 
-                if ( ourIndex < maxLeases )
+                PredicateResults    predicateResults = driver.getsTheLock(client, children, sequenceNodeName, maxLeases);
+                if ( predicateResults.getsTheLock() )
                 {
                     haveTheLock = true;
                 }
                 else
                 {
-                    String previousSequenceNodeName = children.get(ourIndex - 1);
-                    String previousSequencePath = basePath + "/" + previousSequenceNodeName;
+                    String  previousSequencePath = basePath + "/" + predicateResults.getPathToWatch();
                     synchronized(this)
                     {
                         Stat stat = client.checkExists().usingWatcher(watcher).forPath(previousSequencePath);
@@ -256,16 +260,5 @@ class LockInternals
     private synchronized void notifyFromWatcher()
     {
         notifyAll();
-    }
-
-    private String   fixForSorting(String str)
-    {
-        int index = str.lastIndexOf(lockName);
-        if ( index >= 0 )
-        {
-            index += lockName.length();
-            return index <= str.length() ? str.substring(index) : "";
-        }
-        return str;
     }
 }

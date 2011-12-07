@@ -28,8 +28,8 @@ import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
-import junit.framework.Assert;
 import org.mockito.Mockito;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Set;
@@ -185,7 +185,7 @@ public class TestDistributedQueue extends BaseClassForTests
             }
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-            Assert.assertTrue(duplicateMessages.toString(), duplicateMessages.size() == 0);
+            Assert.assertTrue(duplicateMessages.size() == 0, duplicateMessages.toString());
         }
         finally
         {

@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 public class InterProcessMutex implements InterProcessLock
 {
     private final LockInternals internals;
-    private final String            basePath;
+    private final String        basePath;
 
     private volatile LockData       lockData;
 
@@ -54,8 +54,7 @@ public class InterProcessMutex implements InterProcessLock
      */
     public InterProcessMutex(CuratorFramework client, String path)
     {
-        basePath = path;
-        internals = new LockInternals(client, path, LOCK_NAME, 1);
+        this(client, path, LOCK_NAME, 1, new StandardLockInternalsDriver());
     }
 
     /**
@@ -153,9 +152,15 @@ public class InterProcessMutex implements InterProcessLock
         return ImmutableList.copyOf(transformed);
     }
 
+    InterProcessMutex(CuratorFramework client, String path, String lockName, int maxLeases, LockInternalsDriver driver)
+    {
+        basePath = path;
+        internals = new LockInternals(client, driver, path, lockName, maxLeases);
+    }
+
     protected byte[]        getLockNodeBytes()
     {
-        return new byte[0];
+        return null;
     }
 
     private boolean internalLock(long time, TimeUnit unit) throws Exception
