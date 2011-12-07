@@ -208,7 +208,7 @@ public class DistributedDoubleBarrier
 
             if ( children.size() == 1 )
             {
-                if ( !children.get(0).equals(ourPathName) )
+                if ( ourNodeShouldExist && !children.get(0).equals(ourPathName) )
                 {
                     throw new IllegalStateException(String.format("Last path (%s) is not ours (%s)", children.get(0), ourPathName));
                 }
