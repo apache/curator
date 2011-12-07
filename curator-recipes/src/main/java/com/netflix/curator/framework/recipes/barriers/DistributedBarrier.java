@@ -19,8 +19,6 @@
 package com.netflix.curator.framework.recipes.barriers;
 
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.state.ConnectionState;
-import com.netflix.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -44,14 +42,6 @@ public class DistributedBarrier
     {
         @Override
         public void process(WatchedEvent event)
-        {
-            notifyFromWatcher();
-        }
-    };
-    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
-    {
-        @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
             notifyFromWatcher();
         }
@@ -126,36 +116,28 @@ public class DistributedBarrier
         long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
         boolean         result;
-        client.getConnectionStateListenable().addListener(connectionStateListener);
-        try
+        for(;;)
         {
-            for(;;)
+            result = (client.checkExists().usingWatcher(watcher).forPath(barrierPath) == null);
+            if ( result )
             {
-                result = (client.checkExists().usingWatcher(watcher).forPath(barrierPath) == null);
-                if ( result )
+                break;
+            }
+
+            if ( hasMaxWait )
+            {
+                long        elapsed = System.currentTimeMillis() - startMs;
+                long        thisWaitMs = maxWaitMs - elapsed;
+                if ( thisWaitMs <= 0 )
                 {
                     break;
                 }
-
-                if ( hasMaxWait )
-                {
-                    long        elapsed = System.currentTimeMillis() - startMs;
-                    long        thisWaitMs = maxWaitMs - elapsed;
-                    if ( thisWaitMs <= 0 )
-                    {
-                        break;
-                    }
-                    wait(thisWaitMs);
-                }
-                else
-                {
-                    wait();
-                }
+                wait(thisWaitMs);
             }
-        }
-        finally
-        {
-            client.getConnectionStateListenable().removeListener(connectionStateListener);
+            else
+            {
+                wait();
+            }
         }
         return result;
     }
