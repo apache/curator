@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -38,32 +39,123 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestInterProcessReadWriteLock extends BaseClassForTests
 {
     @Test
+    public void     testThatUpgradingIsDisallowed() throws Exception
+    {
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            InterProcessReadWriteLock   lock = new InterProcessReadWriteLock(client, "/lock");
+            lock.readLock().acquire();
+            Assert.assertFalse(lock.writeLock().acquire(5, TimeUnit.SECONDS));
+
+            lock.readLock().release();
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void     testThatDowngradingRespectsThreads() throws Exception
+    {
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            final InterProcessReadWriteLock   lock = new InterProcessReadWriteLock(client, "/lock");
+            ExecutorService                   t1 = Executors.newSingleThreadExecutor();
+            ExecutorService                   t2 = Executors.newSingleThreadExecutor();
+
+            final CountDownLatch              latch = new CountDownLatch(1);
+
+            Future<Object>                    f1 = t1.submit
+            (
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        lock.writeLock().acquire();
+                        latch.countDown();
+                        return null;
+                    }
+                }
+            );
+
+            Future<Object>                    f2 = t2.submit
+            (
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+                        Assert.assertFalse(lock.readLock().acquire(5, TimeUnit.SECONDS));
+                        return null;
+                    }
+                }
+            );
+
+            f1.get();
+            f2.get();
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void     testDowngrading() throws Exception
+    {
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            InterProcessReadWriteLock   lock = new InterProcessReadWriteLock(client, "/lock");
+            lock.writeLock().acquire();
+            Assert.assertTrue(lock.readLock().acquire(5, TimeUnit.SECONDS));
+            lock.writeLock().release();
+
+            lock.readLock().release();
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void     testBasic() throws Exception
     {
         final int               CONCURRENCY = 8;
         final int               ITERATIONS = 100;
 
-        final CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
+        final Random            random = new Random();
+        final AtomicInteger     concurrentCount = new AtomicInteger(0);
+        final AtomicInteger     maxConcurrentCount = new AtomicInteger(0);
+        final AtomicInteger     writeCount = new AtomicInteger(0);
+        final AtomicInteger     readCount = new AtomicInteger(0);
+
+        List<Future<Void>>  futures = Lists.newArrayList();
+        ExecutorService     service = Executors.newCachedThreadPool();
+        for ( int i = 0; i < CONCURRENCY; ++i )
         {
-            client.start();
-
-            final Random            random = new Random();
-            final AtomicInteger     concurrentCount = new AtomicInteger(0);
-            final AtomicInteger     maxConcurrentCount = new AtomicInteger(0);
-            final AtomicInteger     writeCount = new AtomicInteger(0);
-            final AtomicInteger     readCount = new AtomicInteger(0);
-
-            List<Future<Void>>  futures = Lists.newArrayList();
-            ExecutorService     service = Executors.newCachedThreadPool();
-            for ( int i = 0; i < CONCURRENCY; ++i )
-            {
-                Future<Void>    future = service.submit
-                (
-                    new Callable<Void>()
+            Future<Void>    future = service.submit
+            (
+                new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
                     {
-                        @Override
-                        public Void call() throws Exception
+                        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+                        client.start();
+                        try
                         {
                             InterProcessReadWriteLock   lock = new InterProcessReadWriteLock(client, "/lock");
                             for ( int i = 0; i < ITERATIONS; ++i )
@@ -79,28 +171,28 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                                     readCount.incrementAndGet();
                                 }
                             }
-                            return null;
                         }
+                        finally
+                        {
+                            Closeables.closeQuietly(client);
+                        }
+                        return null;
                     }
-                );
-                futures.add(future);
-            }
-
-            for ( Future<Void> future : futures )
-            {
-                future.get();
-            }
-
-            System.out.println("Writes: " + writeCount.get() + " - Reads: " + readCount.get() + " - Max Reads: " + maxConcurrentCount.get());
-
-            Assert.assertTrue(writeCount.get() > 0);
-            Assert.assertTrue(readCount.get() > 0);
-            Assert.assertTrue(maxConcurrentCount.get() > 1);
+                }
+            );
+            futures.add(future);
         }
-        finally
+
+        for ( Future<Void> future : futures )
         {
-            Closeables.closeQuietly(client);
+            future.get();
         }
+
+        System.out.println("Writes: " + writeCount.get() + " - Reads: " + readCount.get() + " - Max Reads: " + maxConcurrentCount.get());
+
+        Assert.assertTrue(writeCount.get() > 0);
+        Assert.assertTrue(readCount.get() > 0);
+        Assert.assertTrue(maxConcurrentCount.get() > 1);
     }
 
     private void doLocking(InterProcessLock lock, AtomicInteger concurrentCount, AtomicInteger maxConcurrentCount, Random random, int maxAllowed) throws Exception

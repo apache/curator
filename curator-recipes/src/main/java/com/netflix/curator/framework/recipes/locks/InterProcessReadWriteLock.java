@@ -39,8 +39,7 @@ import java.util.List;
  *    <b>Reentrancy</b><br/>
  *    This lock allows both readers and writers to reacquire read or write locks in the style of a
  *    re-entrant lock. Non-re-entrant readers are not allowed until all write locks held by the
- *    writing thread have been released. Additionally, a writer can acquire the read lock,
- *    (via lock downgrading) but not
+ *    writing thread have been released. Additionally, a writer can acquire the read lock, but not
  *    vice-versa. If a reader tries to acquire the write lock it will never succeed.<br/><br/>
  *    
  *    <b>Lock downgrading</b><br/>
@@ -115,6 +114,11 @@ public class InterProcessReadWriteLock
 
     private PredicateResults readLockPredicate(CuratorFramework client, List<String> children, String sequenceNodeName) throws KeeperException.ConnectionLossException
     {
+        if ( writeMutex.isOwnedByCurrentThread() )
+        {
+            return new PredicateResults(null, true);
+        }
+
         int         index = 0;
         int         firstWriteIndex = Integer.MAX_VALUE;
         int         ourIndex = Integer.MAX_VALUE;

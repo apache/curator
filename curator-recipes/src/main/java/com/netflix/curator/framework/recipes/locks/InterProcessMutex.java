@@ -158,6 +158,13 @@ public class InterProcessMutex implements InterProcessLock
         internals = new LockInternals(client, driver, path, lockName, maxLeases);
     }
 
+    boolean      isOwnedByCurrentThread()
+    {
+        LockData    localData = lockData;
+        Thread      owningThread = (localData != null) ? localData.owningThread : null;
+        return (Thread.currentThread() == owningThread);
+    }
+
     protected byte[]        getLockNodeBytes()
     {
         return null;
