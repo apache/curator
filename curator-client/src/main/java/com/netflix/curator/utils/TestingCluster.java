@@ -63,6 +63,7 @@ public class TestingCluster implements Closeable
         try
         {
             CtClass cc = pool.get("org.apache.zookeeper.server.quorum.LearnerZooKeeperServer");
+            pool.appendClassPath(new javassist.LoaderClassPath(TestingCluster.class.getClassLoader()));     // re: https://github.com/Netflix/curator/issues/11
             for ( CtMethod method : cc.getMethods() )
             {
                 if ( method.getName().equals("registerJMX") || method.getName().equals("unregisterJMX") )
