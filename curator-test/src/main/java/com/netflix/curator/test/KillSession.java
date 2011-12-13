@@ -16,7 +16,7 @@
  *
  */
 
-package com.netflix.curator.framework.imps;
+package com.netflix.curator.test;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -25,9 +25,20 @@ import org.testng.Assert;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-class KillSession
+/**
+ * Utility to simulate a ZK session dying
+ */
+public class KillSession
 {
-    static void     kill(String connectString, long sessionId, byte[] sessionPassword) throws Exception
+    /**
+     * Kill the given ZK sesison
+     *
+     * @param connectString server connection string
+     * @param sessionId ID of the session
+     * @param sessionPassword session password
+     * @throws Exception errors
+     */
+    public static void     kill(String connectString, long sessionId, byte[] sessionPassword) throws Exception
     {
         final CountDownLatch zkLatch = new CountDownLatch(1);
         Watcher zkWatcher = new Watcher()

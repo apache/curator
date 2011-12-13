@@ -15,7 +15,7 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator.utils;
+package com.netflix.curator.test;
 
 import com.google.common.io.Files;
 import org.apache.zookeeper.server.NIOServerCnxn;
@@ -161,7 +161,7 @@ public class TestingServer implements Closeable
         {
             try
             {
-                Files.deleteRecursively(tempDirectory);
+                DirectoryUtils.deleteRecursively(tempDirectory);
             }
             catch ( IOException e )
             {

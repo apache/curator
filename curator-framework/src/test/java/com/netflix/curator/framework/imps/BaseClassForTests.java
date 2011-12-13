@@ -18,7 +18,7 @@
 
 package com.netflix.curator.framework.imps;
 
-import com.netflix.curator.utils.TestingServer;
+import com.netflix.curator.test.TestingServer;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 

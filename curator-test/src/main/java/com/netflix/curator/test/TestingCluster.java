@@ -16,7 +16,7 @@
  *
  */
 
-package com.netflix.curator.utils;
+package com.netflix.curator.test;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -423,7 +423,7 @@ public class TestingCluster implements Closeable
         {
             if ( entry.instanceSpec.deleteDataDirectoryOnClose )
             {
-                Files.deleteRecursively(entry.instanceSpec.dataDirectory);
+                DirectoryUtils.deleteRecursively(entry.instanceSpec.dataDirectory);
             }
         }
         catch ( IOException e )

@@ -24,7 +24,7 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
-import com.netflix.curator.utils.TestingCluster;
+import com.netflix.curator.test.TestingCluster;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
@@ -36,7 +36,7 @@ public class TestWithCluster
     public void     testSplitBrain() throws Exception
     {
         CuratorFramework    client = null;
-        TestingCluster      cluster = new TestingCluster(3);
+        TestingCluster cluster = new TestingCluster(3);
         cluster.start();
         try
         {

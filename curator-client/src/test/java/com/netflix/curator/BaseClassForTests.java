@@ -17,7 +17,7 @@
  */
 package com.netflix.curator;
 
-import com.netflix.curator.utils.TestingServer;
+import com.netflix.curator.test.TestingServer;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
