@@ -15,5 +15,12 @@
             <version>1.8.5</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.netflix.curator</groupId>
+            <artifactId>curator-test</artifactId>
+            <version>0.6.5-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
