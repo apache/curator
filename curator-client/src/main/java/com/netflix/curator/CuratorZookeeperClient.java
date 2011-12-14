@@ -20,7 +20,7 @@ package com.netflix.curator;
 import com.google.common.base.Preconditions;
 import com.netflix.curator.drivers.LoggingDriver;
 import com.netflix.curator.drivers.TracerDriver;
-import com.netflix.curator.utils.NullLoggingDriver;
+import com.netflix.curator.utils.DefaultLoggingDriver;
 import com.netflix.curator.utils.NullTracerDriver;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -41,7 +41,7 @@ public class CuratorZookeeperClient implements Closeable
     private final AtomicReference<RetryPolicy>      retryPolicy = new AtomicReference<RetryPolicy>();
     private final int                               connectionTimeoutMs;
     private final AtomicBoolean                     started = new AtomicBoolean(false);
-    private final AtomicReference<LoggingDriver>    log = new AtomicReference<LoggingDriver>(new NullLoggingDriver());
+    private final AtomicReference<LoggingDriver>    log = new AtomicReference<LoggingDriver>(new DefaultLoggingDriver());
     private final AtomicReference<TracerDriver>     tracer = new AtomicReference<TracerDriver>(new NullTracerDriver());
 
     /**

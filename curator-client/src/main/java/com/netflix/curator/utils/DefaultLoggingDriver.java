@@ -15,73 +15,94 @@
  *     limitations under the License.
  *
  */
+
 package com.netflix.curator.utils;
 
 import com.netflix.curator.drivers.LoggingDriver;
-import com.netflix.curator.drivers.LoggingDriver;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Default logging driver that does nothing
+ * A logging driver that use standard JDK logging
  */
-public class NullLoggingDriver implements LoggingDriver
+public class DefaultLoggingDriver implements LoggingDriver
 {
+    private final Logger log;
+
+    public DefaultLoggingDriver()
+    {
+        log = Logger.getLogger("curator");
+    }
+
     @Override
     public void debug(String message)
     {
+        log.log(Level.FINE, message);
     }
 
     @Override
-    public void debug(Throwable theThrowable)
+    public void debug(Throwable e)
     {
+        log.log(Level.FINE, "", e);
     }
 
     @Override
-    public void debug(String message, Throwable theThrowable)
+    public void debug(String message, Throwable e)
     {
+        log.log(Level.FINE, message, e);
     }
 
     @Override
     public void info(String message)
     {
+        log.log(Level.INFO, message);
     }
 
     @Override
-    public void info(Throwable theThrowable)
+    public void info(Throwable e)
     {
+        log.log(Level.INFO, "", e);
     }
 
     @Override
-    public void info(String message, Throwable theThrowable)
+    public void info(String message, Throwable e)
     {
+        log.log(Level.INFO, message, e);
     }
 
     @Override
     public void warn(String message)
     {
+        log.log(Level.WARNING, message);
     }
 
     @Override
-    public void warn(Throwable theThrowable)
+    public void warn(Throwable e)
     {
+        log.log(Level.WARNING, "", e);
     }
 
     @Override
-    public void warn(String message, Throwable theThrowable)
+    public void warn(String message, Throwable e)
     {
+        log.log(Level.WARNING, message, e);
     }
 
     @Override
     public void error(String message)
     {
+        log.log(Level.SEVERE, message);
     }
 
     @Override
-    public void error(Throwable theThrowable)
+    public void error(Throwable e)
     {
+        log.log(Level.SEVERE, "", e);
     }
 
     @Override
-    public void error(String message, Throwable theThrowable)
+    public void error(String message, Throwable e)
     {
+        log.log(Level.SEVERE, message, e);
     }
 }
