@@ -37,6 +37,7 @@ public class ServiceInstanceBuilder<T>
     private Integer port;
     private Integer sslPort;
     private String id;
+    private long registrationTimeUTC;
 
     ServiceInstanceBuilder()
     {
@@ -49,7 +50,7 @@ public class ServiceInstanceBuilder<T>
      */
     public ServiceInstance<T> build()
     {
-        return new ServiceInstance<T>(name, id, address, port, sslPort, payload);
+        return new ServiceInstance<T>(name, id, address, port, sslPort, payload, registrationTimeUTC);
     }
 
     public ServiceInstanceBuilder<T> name(String name)
@@ -85,6 +86,12 @@ public class ServiceInstanceBuilder<T>
     public ServiceInstanceBuilder<T> payload(T payload)
     {
         this.payload = payload;
+        return this;
+    }
+
+    public ServiceInstanceBuilder<T> registrationTimeUTC(long registrationTimeUTC)
+    {
+        this.registrationTimeUTC = registrationTimeUTC;
         return this;
     }
 

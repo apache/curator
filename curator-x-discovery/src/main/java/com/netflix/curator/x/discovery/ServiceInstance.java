@@ -33,6 +33,7 @@ public class ServiceInstance<T>
     private final Integer       port;
     private final Integer       sslPort;
     private final T             payload;
+    private final long          registrationTimeUTC;
 
     /**
      * Return a new builder. The {@link #address} is set to the ip of the first
@@ -49,8 +50,10 @@ public class ServiceInstance<T>
         {
             address = ips.iterator().next().getHostAddress();   // default to the first address
         }
+
         String                  id = UUID.randomUUID().toString();
-        return new ServiceInstanceBuilder<T>().address(address).id(id);
+
+        return new ServiceInstanceBuilder<T>().address(address).id(id).registrationTimeUTC(System.currentTimeMillis());
     }
 
     /**
@@ -60,8 +63,9 @@ public class ServiceInstance<T>
      * @param port the port for this instance or null
      * @param sslPort the SSL port for this instance or null
      * @param payload the payload for this instance or null
+     * @param registrationTimeUTC the time (in UTC) of the registration
      */
-    ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload)
+    ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC)
     {
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(id);
@@ -72,6 +76,7 @@ public class ServiceInstance<T>
         this.port = port;
         this.sslPort = sslPort;
         this.payload = payload;
+        this.registrationTimeUTC = registrationTimeUTC;
     }
 
     /**
@@ -79,7 +84,7 @@ public class ServiceInstance<T>
      */
     ServiceInstance()
     {
-        this("", "", null, null, null, null);
+        this("", "", null, null, null, null, 0);
     }
 
     public String getName()
@@ -112,7 +117,12 @@ public class ServiceInstance<T>
         return payload;
     }
 
-    @SuppressWarnings({"RedundantIfStatement"})
+    public long getRegistrationTimeUTC()
+    {
+        return registrationTimeUTC;
+    }
+
+    @SuppressWarnings("RedundantIfStatement")
     @Override
     public boolean equals(Object o)
     {
@@ -127,6 +137,10 @@ public class ServiceInstance<T>
 
         ServiceInstance that = (ServiceInstance)o;
 
+        if ( registrationTimeUTC != that.registrationTimeUTC )
+        {
+            return false;
+        }
         if ( address != null ? !address.equals(that.address) : that.address != null )
         {
             return false;
@@ -164,6 +178,7 @@ public class ServiceInstance<T>
         result = 31 * result + (port != null ? port.hashCode() : 0);
         result = 31 * result + (sslPort != null ? sslPort.hashCode() : 0);
         result = 31 * result + (payload != null ? payload.hashCode() : 0);
+        result = 31 * result + (int)(registrationTimeUTC ^ (registrationTimeUTC >>> 32));
         return result;
     }
 
@@ -177,6 +192,7 @@ public class ServiceInstance<T>
             ", port=" + port +
             ", sslPort=" + sslPort +
             ", payload=" + payload +
+            ", registrationTimeUTC=" + registrationTimeUTC +
             '}';
     }
 }
