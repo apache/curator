@@ -28,6 +28,8 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -57,6 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DistributedQueue<T> implements Closeable
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final QueueSerializer<T> serializer;
     private final String queuePath;
@@ -342,7 +345,7 @@ public class DistributedQueue<T> implements Closeable
         }
         catch ( Exception e )
         {
-            client.getZookeeperClient().getLog().error("Exception caught in background handler", e);
+            log.error("Exception caught in background handler", e);
         }
     }
 
@@ -361,7 +364,7 @@ public class DistributedQueue<T> implements Closeable
 
             if ( !itemNode.startsWith(QUEUE_ITEM_NAME) )
             {
-                client.getZookeeperClient().getLog().warn("Foreign node in queue path: " + itemNode);
+                log.warn("Foreign node in queue path: " + itemNode);
                 continue;
             }
 
@@ -393,7 +396,7 @@ public class DistributedQueue<T> implements Closeable
         }
         catch ( Exception e )
         {
-            client.getZookeeperClient().getLog().error("Corrupted queue item: " + itemNode, e);
+            log.error("Corrupted queue item: " + itemNode, e);
             return false;
         }
 
@@ -412,7 +415,7 @@ public class DistributedQueue<T> implements Closeable
             }
             catch ( Exception e )
             {
-                client.getZookeeperClient().getLog().error("Exception processing queue item: " + itemNode, e);
+                log.error("Exception processing queue item: " + itemNode, e);
                 if ( errorMode.get() == ErrorMode.REQUEUE )
                 {
                     removeItem = false;

@@ -36,6 +36,8 @@ import com.netflix.curator.x.discovery.strategies.RoundRobinStrategy;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
@@ -47,6 +49,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final String basePath;
     private final InstanceSerializer<T> serializer;
@@ -104,7 +107,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
             catch ( Exception e )
             {
-                client.getZookeeperClient().getLog().error("Could not unregiter this instance", e);
+                log.error("Could not unregiter this instance", e);
             }
         }
     }

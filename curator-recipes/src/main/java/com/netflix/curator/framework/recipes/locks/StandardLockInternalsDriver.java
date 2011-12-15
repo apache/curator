@@ -20,15 +20,19 @@ package com.netflix.curator.framework.recipes.locks;
 
 import com.netflix.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 
 class StandardLockInternalsDriver implements LockInternalsDriver
 {
+    static private final Logger log = LoggerFactory.getLogger(StandardLockInternalsDriver.class);
+
     @Override
     public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception
     {
         int             ourIndex = children.indexOf(sequenceNodeName);
-        validateOurIndex(client, sequenceNodeName, ourIndex);
+        validateOurIndex(sequenceNodeName, ourIndex);
 
         boolean         getsTheLock = ourIndex < maxLeases;
         String          pathToWatch = getsTheLock ? null : children.get(ourIndex - 1);
@@ -48,11 +52,11 @@ class StandardLockInternalsDriver implements LockInternalsDriver
         return str;
     }
 
-    static void validateOurIndex(CuratorFramework client, String sequenceNodeName, int ourIndex) throws KeeperException.ConnectionLossException
+    static void validateOurIndex(String sequenceNodeName, int ourIndex) throws KeeperException.ConnectionLossException
     {
         if ( ourIndex < 0 )
         {
-            client.getZookeeperClient().getLog().error("Sequential path not found: " + sequenceNodeName);
+            log.error("Sequential path not found: " + sequenceNodeName);
             throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
         }
     }

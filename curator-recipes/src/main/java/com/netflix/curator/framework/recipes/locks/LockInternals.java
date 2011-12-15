@@ -31,6 +31,8 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.common.PathUtils;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 class LockInternals
 {
+    private final Logger                            log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework                  client;
     private final String                            path;
     private final String                            basePath;
@@ -63,7 +66,7 @@ class LockInternals
                 }
                 catch ( Exception e )
                 {
-                    client.getZookeeperClient().getLog().error("From RevocableWatcher check", e);
+                    log.error("From RevocableWatcher check", e);
                 }
             }
         }

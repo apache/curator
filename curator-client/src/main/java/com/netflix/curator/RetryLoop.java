@@ -17,9 +17,10 @@
  */
 package com.netflix.curator;
 
-import com.netflix.curator.drivers.LoggingDriver;
 import com.netflix.curator.drivers.TracerDriver;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -57,9 +58,9 @@ public class RetryLoop
     private boolean         isDone = false;
     private int             retryCount = 0;
 
+    private final Logger            log = LoggerFactory.getLogger(getClass());
     private final long              startTimeMs = System.currentTimeMillis();
     private final RetryPolicy       retryPolicy;
-    private final AtomicReference<LoggingDriver>    log;
     private final AtomicReference<TracerDriver>     tracer;
 
     /**
@@ -92,10 +93,9 @@ public class RetryLoop
         return result;
     }
 
-    RetryLoop(RetryPolicy retryPolicy, AtomicReference<LoggingDriver> log, AtomicReference<TracerDriver> tracer)
+    RetryLoop(RetryPolicy retryPolicy, AtomicReference<TracerDriver> tracer)
     {
         this.retryPolicy = retryPolicy;
-        this.log = log;
         this.tracer = tracer;
     }
 
@@ -158,17 +158,17 @@ public class RetryLoop
         boolean     rethrow = true;
         if ( isRetryException(exception) )
         {
-            log.get().debug("Retry-able exception received", exception);
+            log.debug("Retry-able exception received", exception);
             if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs) )
             {
                 tracer.get().addCount("retries-disallowed", 1);
-                log.get().debug("Retry policy not allowing retry");
+                log.debug("Retry policy not allowing retry");
                 rethrow = false;
             }
             else
             {
                 tracer.get().addCount("retries-allowed", 1);
-                log.get().debug("Retrying operation");
+                log.debug("Retrying operation");
             }
         }
 

@@ -24,6 +24,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
@@ -41,6 +43,7 @@ import java.util.concurrent.ThreadFactory;
  */
 public class LeaderSelector implements Closeable
 {
+    private final Logger                    log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework          client;
     private final LeaderSelectorListener    listener;
     private final ExecutorService           executorService;
@@ -262,7 +265,7 @@ public class LeaderSelector implements Closeable
                         }
                         catch ( Exception e )
                         {
-                            client.getZookeeperClient().getLog().error("The leader threw an exception", e);
+                            log.error("The leader threw an exception", e);
                         }
                     }
                 }

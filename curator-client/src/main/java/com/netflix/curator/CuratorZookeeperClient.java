@@ -18,13 +18,13 @@
 package com.netflix.curator;
 
 import com.google.common.base.Preconditions;
-import com.netflix.curator.drivers.LoggingDriver;
 import com.netflix.curator.drivers.TracerDriver;
-import com.netflix.curator.utils.DefaultLoggingDriver;
 import com.netflix.curator.utils.NullTracerDriver;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -37,11 +37,11 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class CuratorZookeeperClient implements Closeable
 {
+    private final Logger                            log = LoggerFactory.getLogger(getClass());
     private final ConnectionState                   state;
     private final AtomicReference<RetryPolicy>      retryPolicy = new AtomicReference<RetryPolicy>();
     private final int                               connectionTimeoutMs;
     private final AtomicBoolean                     started = new AtomicBoolean(false);
-    private final AtomicReference<LoggingDriver>    log = new AtomicReference<LoggingDriver>(new DefaultLoggingDriver());
     private final AtomicReference<TracerDriver>     tracer = new AtomicReference<TracerDriver>(new NullTracerDriver());
 
     /**
@@ -59,7 +59,7 @@ public class CuratorZookeeperClient implements Closeable
         Preconditions.checkNotNull(retryPolicy);
 
         this.connectionTimeoutMs = connectionTimeoutMs;
-        state = new ConnectionState(connectString, sessionTimeoutMs, connectionTimeoutMs, watcher, log, tracer);
+        state = new ConnectionState(connectString, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer);
         setRetryPolicy(retryPolicy);
     }
 
@@ -81,7 +81,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public RetryLoop newRetryLoop()
     {
-        return new RetryLoop(retryPolicy.get(), log, tracer);
+        return new RetryLoop(retryPolicy.get(), tracer);
     }
 
     /**
@@ -105,7 +105,7 @@ public class CuratorZookeeperClient implements Closeable
     {
         Preconditions.checkArgument(started.get());
 
-        log.get().debug("blockUntilConnectedOrTimedOut() start");
+        log.debug("blockUntilConnectedOrTimedOut() start");
         TimeTrace       trace = startTracer("blockUntilConnectedOrTimedOut");
 
         internalBlockUntilConnectedOrTimedOut();
@@ -113,7 +113,7 @@ public class CuratorZookeeperClient implements Closeable
         trace.commit();
 
         boolean localIsConnected = state.isConnected();
-        log.get().debug("blockUntilConnectedOrTimedOut() end. isConnected: " + localIsConnected);
+        log.debug("blockUntilConnectedOrTimedOut() end. isConnected: " + localIsConnected);
 
         return localIsConnected;
     }
@@ -125,12 +125,12 @@ public class CuratorZookeeperClient implements Closeable
      */
     public void     start() throws Exception
     {
-        log.get().debug("Starting");
+        log.debug("Starting");
 
         if ( !started.compareAndSet(false, true) )
         {
             IllegalStateException error = new IllegalStateException();
-            log.get().error("Already started", error);
+            log.error("Already started", error);
             throw error;
         }
 
@@ -142,7 +142,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public void     close()
     {
-        log.get().debug("Closing");
+        log.debug("Closing");
 
         started.set(false);
         try
@@ -151,7 +151,7 @@ public class CuratorZookeeperClient implements Closeable
         }
         catch ( IOException e )
         {
-            getLog().error(e);
+            log.error("", e);
         }
     }
 
@@ -175,26 +175,6 @@ public class CuratorZookeeperClient implements Closeable
     public RetryPolicy getRetryPolicy()
     {
         return retryPolicy.get();
-    }
-
-    /**
-     * Returns the current logging driver
-     *
-     * @return log
-     */
-    public LoggingDriver      getLog()
-    {
-        return log.get();
-    }
-
-    /**
-     * Change the logging driver
-     *
-     * @param log new logger
-     */
-    public void               setLog(LoggingDriver log)
-    {
-        this.log.set(log);
     }
 
     /**

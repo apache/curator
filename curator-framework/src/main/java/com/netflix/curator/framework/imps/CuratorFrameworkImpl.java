@@ -36,6 +36,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
@@ -47,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorFrameworkImpl implements CuratorFramework
 {
+    private final Logger                                                log = LoggerFactory.getLogger(getClass());
     private final CuratorZookeeperClient                                client;
     private final ListenerContainer<CuratorListener>                    listeners;
     private final ListenerContainer<UnhandledErrorListener>             unhandledErrorListeners;
@@ -151,11 +154,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public void     start()
     {
-        client.getLog().info("Starting");
+        log.info("Starting");
         if ( !state.compareAndSet(State.LATENT, State.STARTED) )
         {
             IllegalStateException error = new IllegalStateException();
-            client.getLog().error("Already started", error);
+            log.error("Already started", error);
             throw error;
         }
 
@@ -186,11 +189,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public void     close()
     {
-        client.getLog().debug("Closing");
+        log.debug("Closing");
         if ( !state.compareAndSet(State.STARTED, State.STOPPED) )
         {
             IllegalStateException error = new IllegalStateException();
-            client.getLog().error("Already closed", error);
+            log.error("Already closed", error);
             throw error;
         }
 
@@ -208,7 +211,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     }
                     catch ( Exception e )
                     {
-                        client.getLog().error("Exception while sending Closing event", e);
+                        log.error("Exception while sending Closing event", e);
                     }
                     return null;
                 }
@@ -410,7 +413,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             reason = "n/a";
         }
 
-        client.getLog().error(reason, e);
+        log.error(reason, e);
         if ( e instanceof KeeperException.ConnectionLossException )
         {
             connectionStateManager.addStateChange(ConnectionState.LOST);
@@ -493,16 +496,16 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             if ( (operationAndData != null) && RetryLoop.isRetryException(e) )
             {
-                client.getLog().debug("Retry-able exception received", e);
+                log.debug("Retry-able exception received", e);
                 if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs()) )
                 {
-                    client.getLog().debug("Retrying operation");
+                    log.debug("Retrying operation");
                     backgroundOperations.offer(operationAndData);
                     break;
                 }
                 else
                 {
-                    client.getLog().debug("Retry policy did not allow retry");
+                    log.debug("Retry policy did not allow retry");
                 }
             }
 

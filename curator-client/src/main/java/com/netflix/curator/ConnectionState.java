@@ -17,12 +17,13 @@
  */
 package com.netflix.curator;
 
-import com.netflix.curator.drivers.LoggingDriver;
 import com.netflix.curator.drivers.TracerDriver;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Queue;
@@ -34,20 +35,19 @@ class ConnectionState implements Watcher, Closeable
 {
     private volatile long connectionStartMs = 0;
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final HandleHolder zooKeeper;
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
     private final int connectionTimeoutMs;
-    private final AtomicReference<LoggingDriver> log;
     private final AtomicReference<TracerDriver> tracer;
     private final AtomicReference<Watcher> parentWatcher = new AtomicReference<Watcher>(null);
     private final Queue<Exception> backgroundExceptions = new ConcurrentLinkedQueue<Exception>();
 
     private static final int        MAX_BACKGROUND_EXCEPTIONS = 10;
 
-    ConnectionState(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<LoggingDriver> log, AtomicReference<TracerDriver> tracer) throws IOException
+    ConnectionState(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer) throws IOException
     {
         this.connectionTimeoutMs = connectionTimeoutMs;
-        this.log = log;
         this.tracer = tracer;
         this.parentWatcher.set(parentWatcher);
         zooKeeper = new HandleHolder(this, connectString, sessionTimeoutMs);
@@ -58,7 +58,7 @@ class ConnectionState implements Watcher, Closeable
         Exception exception = backgroundExceptions.poll();
         if ( exception != null )
         {
-            log.get().error("Background exception caught", exception);
+            log.error("Background exception caught", exception);
             tracer.get().addCount("background-exceptions", 1);
             throw exception;
         }
@@ -70,7 +70,7 @@ class ConnectionState implements Watcher, Closeable
             if ( elapsed >= connectionTimeoutMs )
             {
                 KeeperException.ConnectionLossException connectionLossException = new KeeperException.ConnectionLossException();
-                log.get().error("Connection timed out", connectionLossException);
+                log.error("Connection timed out", connectionLossException);
                 tracer.get().addCount("connections-timed-out", 1);
                 throw connectionLossException;
             }
@@ -91,14 +91,14 @@ class ConnectionState implements Watcher, Closeable
 
     void        start() throws Exception
     {
-        log.get().debug("Starting");
+        log.debug("Starting");
         reset();
     }
 
     @Override
     public void        close() throws IOException
     {
-        log.get().debug("Closing");
+        log.debug("Closing");
 
         try
         {
@@ -153,7 +153,7 @@ class ConnectionState implements Watcher, Closeable
 
     private void handleExpiredSession()
     {
-        log.get().warn("Session expired event received");
+        log.warn("Session expired event received");
         tracer.get().addCount("session-expired", 1);
 
         try

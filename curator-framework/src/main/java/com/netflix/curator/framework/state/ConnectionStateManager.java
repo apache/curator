@@ -23,6 +23,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -55,6 +57,7 @@ public class ConnectionStateManager implements Closeable
         QUEUE_SIZE = size;
     }
 
+    private final Logger                                        log = LoggerFactory.getLogger(getClass());
     private final BlockingQueue<ConnectionState>                eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
     private final CuratorFramework                              client;
     private final ExecutorService                               service;
@@ -125,11 +128,11 @@ public class ConnectionStateManager implements Closeable
             return;
         }
 
-        client.getZookeeperClient().getLog().info("State change: " + newState);
+        log.info("State change: " + newState);
         while ( !eventQueue.offer(newState) )
         {
             eventQueue.poll();
-            client.getZookeeperClient().getLog().warn("ConnectionStateManager queue full - dropping events to make room");
+            log.warn("ConnectionStateManager queue full - dropping events to make room");
         }
     }
 
@@ -143,7 +146,7 @@ public class ConnectionStateManager implements Closeable
 
                 if ( listeners.size() == 0 )
                 {
-                    client.getZookeeperClient().getLog().warn("There are no ConnectionStateListeners registered.");
+                    log.warn("There are no ConnectionStateListeners registered.");
                 }
 
                 listeners.forEach

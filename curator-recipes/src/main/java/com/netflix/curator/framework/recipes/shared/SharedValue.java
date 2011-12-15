@@ -28,6 +28,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
@@ -39,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class SharedValue implements Closeable, SharedValueReader
 {
+    private final Logger                    log = LoggerFactory.getLogger(getClass());
     private final ListenerContainer<SharedValueListener>    listeners = new ListenerContainer<SharedValueListener>();
     private final CuratorFramework          client;
     private final String                    path;
@@ -60,7 +63,7 @@ public class SharedValue implements Closeable, SharedValueReader
             }
             catch ( Exception e )
             {
-                client.getZookeeperClient().getLog().error("From SharedValue process event", e);
+                log.error("From SharedValue process event", e);
             }
         }
     };
@@ -213,7 +216,7 @@ public class SharedValue implements Closeable, SharedValueReader
                     }
                     catch ( Exception e )
                     {
-                        client.getZookeeperClient().getLog().error("From SharedValue listener", e);
+                        log.error("From SharedValue listener", e);
                     }
                     return null;
                 }

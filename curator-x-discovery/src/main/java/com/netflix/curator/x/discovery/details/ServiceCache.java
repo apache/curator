@@ -25,6 +25,8 @@ import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
@@ -40,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListener>, InstanceProvider<T>
 {
+    private final Logger                                            log = LoggerFactory.getLogger(getClass());
     private final ListenerContainer<ServiceCacheListener>           listenerContainer = new ListenerContainer<ServiceCacheListener>();
     private final ServiceDiscoveryImpl<T>                           discovery;
     private final String                                            name;
@@ -205,7 +208,7 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
         }
         catch ( Exception e )
         {
-            discovery.getClient().getZookeeperClient().getLog().error("ServiceCache.refresh()", e);
+            log.error("ServiceCache.refresh()", e);
         }
     }
 }

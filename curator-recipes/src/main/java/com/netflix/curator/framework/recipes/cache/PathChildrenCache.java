@@ -33,6 +33,8 @@ import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
@@ -55,6 +57,7 @@ import java.util.concurrent.ThreadFactory;
  */
 public class PathChildrenCache implements Closeable
 {
+    private final Logger                    log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework          client;
     private final String                    path;
     private final PathChildrenCacheMode     mode;
@@ -219,7 +222,7 @@ public class PathChildrenCache implements Closeable
      */
     protected void      handleException(Throwable e)
     {
-        client.getZookeeperClient().getLog().error(e);
+        log.error("", e);
     }
 
     private void handleStateChange(ConnectionState newState)

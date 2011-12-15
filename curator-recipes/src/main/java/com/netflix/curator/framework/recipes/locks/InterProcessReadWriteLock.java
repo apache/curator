@@ -184,7 +184,7 @@ public class InterProcessReadWriteLock
 
             ++index;
         }
-        StandardLockInternalsDriver.validateOurIndex(client, sequenceNodeName, ourIndex);
+        StandardLockInternalsDriver.validateOurIndex(sequenceNodeName, ourIndex);
 
         boolean     getsTheLock = (ourIndex < firstWriteIndex);
         String      pathToWatch = getsTheLock ? null : children.get(firstWriteIndex);
