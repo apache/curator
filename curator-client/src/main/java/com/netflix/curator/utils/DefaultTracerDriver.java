@@ -18,20 +18,26 @@
 package com.netflix.curator.utils;
 
 import com.netflix.curator.drivers.TracerDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Default tracer driver that does nothing
+ * Default tracer driver
  */
-public class NullTracerDriver implements TracerDriver
+public class DefaultTracerDriver implements TracerDriver
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
     @Override
     public void addTrace(String name, long time, TimeUnit unit)
     {
+        log.debug("Trace: " + TimeUnit.MILLISECONDS.convert(time, unit) + " ms");
     }
 
     @Override
     public void addCount(String name, int increment)
     {
+        log.debug("Counter " + name + ": " + increment);
     }
 }
