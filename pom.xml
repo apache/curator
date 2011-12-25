@@ -45,6 +45,7 @@
         <module>curator-recipes</module>
         <module>curator-test</module>
         <module>curator-x-discovery</module>
+        <module>curator-x-discovery-server</module>
     </modules>
 
     <scm>

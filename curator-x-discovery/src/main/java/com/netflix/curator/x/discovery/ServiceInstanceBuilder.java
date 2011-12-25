@@ -38,6 +38,7 @@ public class ServiceInstanceBuilder<T>
     private Integer sslPort;
     private String id;
     private long registrationTimeUTC;
+    private ServiceType serviceType = ServiceType.DYNAMIC;
 
     ServiceInstanceBuilder()
     {
@@ -50,7 +51,7 @@ public class ServiceInstanceBuilder<T>
      */
     public ServiceInstance<T> build()
     {
-        return new ServiceInstance<T>(name, id, address, port, sslPort, payload, registrationTimeUTC);
+        return new ServiceInstance<T>(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType);
     }
 
     public ServiceInstanceBuilder<T> name(String name)
@@ -86,6 +87,12 @@ public class ServiceInstanceBuilder<T>
     public ServiceInstanceBuilder<T> payload(T payload)
     {
         this.payload = payload;
+        return this;
+    }
+
+    public ServiceInstanceBuilder<T> serviceType(ServiceType serviceType)
+    {
+        this.serviceType = serviceType;
         return this;
     }
 

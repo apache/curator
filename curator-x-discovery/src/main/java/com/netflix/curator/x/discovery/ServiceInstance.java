@@ -34,6 +34,7 @@ public class ServiceInstance<T>
     private final Integer       sslPort;
     private final T             payload;
     private final long          registrationTimeUTC;
+    private final ServiceType   serviceType;
 
     /**
      * Return a new builder. The {@link #address} is set to the ip of the first
@@ -64,9 +65,11 @@ public class ServiceInstance<T>
      * @param sslPort the SSL port for this instance or null
      * @param payload the payload for this instance or null
      * @param registrationTimeUTC the time (in UTC) of the registration
+     * @param serviceType type of the service
      */
-    ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC)
+    ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType)
     {
+        this.serviceType = serviceType;
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(id);
 
@@ -84,7 +87,28 @@ public class ServiceInstance<T>
      */
     ServiceInstance()
     {
-        this("", "", null, null, null, null, 0);
+        this("", "", null, null, null, null, 0, ServiceType.DYNAMIC);
+    }
+
+    /**
+     * Return a copy of this instance using the given service type
+     *
+     * @param newServiceType new type
+     * @return copy with new type set
+     */
+    public ServiceInstance<T> changeType(ServiceType newServiceType)
+    {
+        return new ServiceInstance<T>
+        (
+            name,
+            id,
+            address,
+            port,
+            sslPort,
+            payload,
+            registrationTimeUTC,
+            newServiceType
+        );
     }
 
     public String getName()
@@ -120,6 +144,11 @@ public class ServiceInstance<T>
     public long getRegistrationTimeUTC()
     {
         return registrationTimeUTC;
+    }
+
+    public ServiceType getServiceType()
+    {
+        return serviceType;
     }
 
     @SuppressWarnings("RedundantIfStatement")
@@ -161,6 +190,10 @@ public class ServiceInstance<T>
         {
             return false;
         }
+        if ( serviceType != that.serviceType )
+        {
+            return false;
+        }
         if ( sslPort != null ? !sslPort.equals(that.sslPort) : that.sslPort != null )
         {
             return false;
@@ -179,6 +212,7 @@ public class ServiceInstance<T>
         result = 31 * result + (sslPort != null ? sslPort.hashCode() : 0);
         result = 31 * result + (payload != null ? payload.hashCode() : 0);
         result = 31 * result + (int)(registrationTimeUTC ^ (registrationTimeUTC >>> 32));
+        result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
         return result;
     }
 
@@ -193,6 +227,7 @@ public class ServiceInstance<T>
             ", sslPort=" + sslPort +
             ", payload=" + payload +
             ", registrationTimeUTC=" + registrationTimeUTC +
+            ", serviceType=" + serviceType +
             '}';
     }
 }

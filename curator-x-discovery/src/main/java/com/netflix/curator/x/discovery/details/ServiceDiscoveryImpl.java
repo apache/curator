@@ -32,6 +32,7 @@ import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.ServiceProvider;
 import com.netflix.curator.x.discovery.ServiceProviderBuilder;
+import com.netflix.curator.x.discovery.ServiceType;
 import com.netflix.curator.x.discovery.strategies.RoundRobinStrategy;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -130,7 +131,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             try
             {
-                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, bytes);
+                CreateMode      mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
+                client.create().creatingParentsIfNeeded().withMode(mode).forPath(path, bytes);
                 isDone = true;
             }
             catch ( KeeperException.NodeExistsException e )
