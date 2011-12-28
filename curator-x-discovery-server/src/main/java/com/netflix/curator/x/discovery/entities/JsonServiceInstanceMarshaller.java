@@ -25,20 +25,33 @@ import com.netflix.curator.x.discovery.config.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-public abstract class JsonServiceInstanceMarshaller<T> implements MessageBodyReader<ServiceInstance<T>>, MessageBodyWriter<ServiceInstance<T>>
+@Provider
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public class JsonServiceInstanceMarshaller<T> implements MessageBodyReader<ServiceInstance<T>>, MessageBodyWriter<ServiceInstance<T>>
 {
-    protected abstract DiscoveryContext<T>   getContext();
+    private final DiscoveryContext<T> context;
+
+    public JsonServiceInstanceMarshaller(DiscoveryContext<T> context)
+    {
+        this.context = context;
+    }
 
     static<T> ServiceInstance<T> readInstance(JsonNode node, DiscoveryContext<T> context) throws Exception
     {
@@ -126,7 +139,7 @@ public abstract class JsonServiceInstanceMarshaller<T> implements MessageBodyRea
         {
             ObjectMapper                mapper = new ObjectMapper();
             JsonNode                    node = mapper.reader().readTree(entityStream);
-            return readInstance(node, getContext());
+            return readInstance(node, context);
         }
         catch ( Exception e )
         {
@@ -138,7 +151,7 @@ public abstract class JsonServiceInstanceMarshaller<T> implements MessageBodyRea
     public void writeTo(ServiceInstance<T> serviceInstance, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException
     {
         ObjectMapper    mapper = new ObjectMapper();
-        ObjectNode      node = writeInstance(mapper, serviceInstance, getContext());
+        ObjectNode      node = writeInstance(mapper, serviceInstance, context);
         mapper.writer().writeValue(entityStream, node);
     }
 }

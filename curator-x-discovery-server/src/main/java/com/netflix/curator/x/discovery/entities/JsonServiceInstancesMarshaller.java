@@ -25,11 +25,15 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,9 +41,17 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
 
-public abstract class JsonServiceInstancesMarshaller<T> implements MessageBodyReader<ServiceInstances<T>>, MessageBodyWriter<ServiceInstances<T>>
+@Provider
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public class JsonServiceInstancesMarshaller<T> implements MessageBodyReader<ServiceInstances<T>>, MessageBodyWriter<ServiceInstances<T>>
 {
-    protected abstract DiscoveryContext<T>   getContext();
+    private final DiscoveryContext<T> context;
+
+    public JsonServiceInstancesMarshaller(DiscoveryContext<T> context)
+    {
+        this.context = context;
+    }
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
@@ -70,7 +82,7 @@ public abstract class JsonServiceInstancesMarshaller<T> implements MessageBodyRe
             for ( int i = 0; i < tree.size(); ++i )
             {
                 JsonNode                    node = tree.get(i);
-                ServiceInstance<T> instance = JsonServiceInstanceMarshaller.readInstance(node, getContext());
+                ServiceInstance<T> instance = JsonServiceInstanceMarshaller.readInstance(node, context);
                 instances.add(instance);
             }
             return new ServiceInstances<T>(instances);
@@ -89,7 +101,7 @@ public abstract class JsonServiceInstancesMarshaller<T> implements MessageBodyRe
         List<? extends ServiceInstance<T>> instanceList = serviceInstances.getServices();
         for ( ServiceInstance<T> instance : instanceList )
         {
-            ObjectNode node = JsonServiceInstanceMarshaller.writeInstance(mapper, instance, getContext());
+            ObjectNode node = JsonServiceInstanceMarshaller.writeInstance(mapper, instance, context);
             arrayNode.add(node);
         }
         mapper.writer().writeValue(entityStream, arrayNode);

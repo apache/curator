@@ -16,16 +16,39 @@
  *
  */
 
-package com.netflix.curator.x.discovery.payloads.string;
+package com.netflix.curator.x.discovery.typed_contexts;
 
+import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
+import com.netflix.curator.x.discovery.config.DiscoveryConfig;
 import com.netflix.curator.x.discovery.config.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.ext.ContextResolver;
 
-public abstract class StringDiscoveryContext implements DiscoveryContext<String>, ContextResolver<DiscoveryContext<String>>
+public class StringDiscoveryContext implements DiscoveryContext<String>, ContextResolver<DiscoveryContext<String>>
 {
+    private final ServiceDiscovery<String> serviceDiscovery;
+    private final DiscoveryConfig discoveryConfig;
+
+    public StringDiscoveryContext(ServiceDiscovery<String> serviceDiscovery, DiscoveryConfig discoveryConfig)
+    {
+        this.serviceDiscovery = serviceDiscovery;
+        this.discoveryConfig = discoveryConfig;
+    }
+
+    @Override
+    public DiscoveryConfig getDiscoveryConfig()
+    {
+        return discoveryConfig;
+    }
+
+    @Override
+    public ServiceDiscovery<String> getServiceDiscovery()
+    {
+        return serviceDiscovery;
+    }
+
     @Override
     public void marshallJson(ObjectNode node, String fieldName, ServiceInstance<String> serviceInstance) throws Exception
     {

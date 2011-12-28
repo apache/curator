@@ -16,10 +16,12 @@
  *  
  */
 
-package com.netflix.curator.x.discovery.payloads.map;
+package com.netflix.curator.x.discovery.typed_contexts;
 
 import com.google.common.collect.Maps;
+import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
+import com.netflix.curator.x.discovery.config.DiscoveryConfig;
 import com.netflix.curator.x.discovery.config.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -27,8 +29,29 @@ import javax.ws.rs.ext.ContextResolver;
 import java.util.Iterator;
 import java.util.Map;
 
-public abstract class MapDiscoveryContext implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
+public class MapDiscoveryContext implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
 {
+    private final ServiceDiscovery<Map<String, String>> serviceDiscovery;
+    private final DiscoveryConfig discoveryConfig;
+
+    public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, DiscoveryConfig discoveryConfig)
+    {
+        this.serviceDiscovery = serviceDiscovery;
+        this.discoveryConfig = discoveryConfig;
+    }
+
+    @Override
+    public DiscoveryConfig getDiscoveryConfig()
+    {
+        return discoveryConfig;
+    }
+
+    @Override
+    public ServiceDiscovery<Map<String, String>> getServiceDiscovery()
+    {
+        return serviceDiscovery;
+    }
+
     @Override
     public void marshallJson(ObjectNode node, String fieldName, ServiceInstance<Map<String, String>> serviceInstance) throws Exception
     {
@@ -48,7 +71,7 @@ public abstract class MapDiscoveryContext implements DiscoveryContext<Map<String
     public Map<String, String> unMarshallJson(JsonNode node) throws Exception
     {
         Map<String, String>                     map = Maps.newHashMap();
-        Iterator<Map.Entry<String,JsonNode>>    fields = node.getFields();
+        Iterator<Map.Entry<String,JsonNode>> fields = node.getFields();
         while ( fields.hasNext() )
         {
             Map.Entry<String, JsonNode> entry = fields.next();

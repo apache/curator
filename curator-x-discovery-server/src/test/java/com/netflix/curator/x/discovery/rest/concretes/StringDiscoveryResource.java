@@ -16,22 +16,19 @@
  *
  */
 
-package com.netflix.curator.x.discovery.payloads.string;
+package com.netflix.curator.x.discovery.rest.concretes;
 
 import com.netflix.curator.x.discovery.config.DiscoveryContext;
-import com.netflix.curator.x.discovery.entities.JsonServiceInstancesMarshaller;
+import com.netflix.curator.x.discovery.rest.DiscoveryResource;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
 
-@Provider
-public class StringJsonServiceInstancesMarshaller extends JsonServiceInstancesMarshaller<String>
+@Path("/")
+public class StringDiscoveryResource extends DiscoveryResource<String>
 {
-    @Context private ContextResolver<DiscoveryContext<String>> resolver;
-
-    @Override
-    protected DiscoveryContext<String> getContext()
+    public StringDiscoveryResource(@Context ContextResolver<DiscoveryContext<String>> resolver)
     {
-        return resolver.getContext(DiscoveryContext.class);
+        super(resolver.getContext(DiscoveryContext.class));
     }
 }

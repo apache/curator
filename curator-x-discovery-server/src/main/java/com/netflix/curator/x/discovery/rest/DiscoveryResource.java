@@ -39,27 +39,38 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class DiscoveryResource<T>
+public class DiscoveryResource<T>
 {
     private static final Logger     log = LoggerFactory.getLogger(DiscoveryResource.class);
 
-    protected abstract DiscoveryContext<T>   getContext();
+    private final DiscoveryContext<T> context;
+
+    public DiscoveryResource(DiscoveryContext<T> context)
+    {
+        this.context = context;
+    }
 
     @PUT
-    @Path("{name}/{id}")
+    @Path("v1/service/{name}/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response     putService(ServiceInstance<T> instance, @PathParam("name") String name, @PathParam("id") String id)
     {
         if ( !instance.getId().equals(id) || !instance.getName().equals(name) )
         {
+            log.info("Request where path id and/or name doesn't match entity");
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         
-        ServiceInstance<T>      copy = instance.changeType(ServiceType.STATIC);
+        if ( instance.getServiceType() == ServiceType.DYNAMIC )
+        {
+            log.info("Service type cannot be dynamic");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
         try
         {
-            getContext().getServiceDiscovery().registerService(copy);
+            context.getServiceDiscovery().registerService(instance);
         }
         catch ( Exception e )
         {
@@ -71,16 +82,16 @@ public abstract class DiscoveryResource<T>
     }
 
     @DELETE
-    @Path("{name}/{id}")
+    @Path("v1/service/{name}/{id}")
     public Response     removeService(@PathParam("name") String name, @PathParam("id") String id)
     {
         try
         {
-            ServiceInstance<T> instance = getContext().getServiceDiscovery().queryForInstance(name, id);
+            ServiceInstance<T> instance = context.getServiceDiscovery().queryForInstance(name, id);
             if ( instance != null )
             {
                 //noinspection unchecked
-                getContext().getServiceDiscovery().unregisterService(instance);
+                context.getServiceDiscovery().unregisterService(instance);
             }
         }
         catch ( Exception e )
@@ -98,7 +109,7 @@ public abstract class DiscoveryResource<T>
     {
         try
         {
-            ServiceInstance<T> instance = getContext().getServiceDiscovery().queryForInstance(name, id);
+            ServiceInstance<T> instance = context.getServiceDiscovery().queryForInstance(name, id);
             if ( instance == null )
             {
                 return Response.status(Response.Status.NOT_FOUND).build();
@@ -113,12 +124,13 @@ public abstract class DiscoveryResource<T>
     }
 
     @GET
+    @Path("v1/service")
     @Produces(MediaType.APPLICATION_JSON)
     public Response     getAllNames()
     {
         try
         {
-            List<String> instances = Lists.newArrayList(getContext().getServiceDiscovery().queryForNames());
+            List<String> instances = Lists.newArrayList(context.getServiceDiscovery().queryForNames());
             Collections.sort(instances);
             return Response.ok(new ServiceNames(instances)).build();
         }
@@ -130,13 +142,13 @@ public abstract class DiscoveryResource<T>
     }
 
     @GET
-    @Path("{name}")
+    @Path("v1/service/{name}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response     getAll(@PathParam("name") String name)
     {
         try
         {
-            Collection<ServiceInstance<T>>  instances = getContext().getServiceDiscovery().queryForInstances(name);
+            Collection<ServiceInstance<T>>  instances = context.getServiceDiscovery().queryForInstances(name);
             return Response.ok(new ServiceInstances<T>(instances)).build();
         }
         catch ( Exception e )
@@ -147,13 +159,13 @@ public abstract class DiscoveryResource<T>
     }
 
     @GET
-    @Path("any/{name}")
+    @Path("v1/service/any/{name}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response     getAny(@PathParam("name") String name)
     {
         try
         {
-            List<ServiceInstance<T>>   instances = Lists.newArrayList(getContext().getServiceDiscovery().queryForInstances(name));
+            List<ServiceInstance<T>>   instances = Lists.newArrayList(context.getServiceDiscovery().queryForInstances(name));
             Collections.shuffle(instances);
             ServiceInstance<?>         randomInstance = (instances.size() > 0) ? instances.get(0) : null;
             if ( randomInstance == null )

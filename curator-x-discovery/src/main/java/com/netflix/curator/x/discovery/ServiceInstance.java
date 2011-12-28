@@ -90,27 +90,6 @@ public class ServiceInstance<T>
         this("", "", null, null, null, null, 0, ServiceType.DYNAMIC);
     }
 
-    /**
-     * Return a copy of this instance using the given service type
-     *
-     * @param newServiceType new type
-     * @return copy with new type set
-     */
-    public ServiceInstance<T> changeType(ServiceType newServiceType)
-    {
-        return new ServiceInstance<T>
-        (
-            name,
-            id,
-            address,
-            port,
-            sslPort,
-            payload,
-            registrationTimeUTC,
-            newServiceType
-        );
-    }
-
     public String getName()
     {
         return name;
