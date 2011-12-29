@@ -185,7 +185,7 @@ public abstract class DiscoveryResource<T>
     }
 
     @GET
-    @Path("v1/service/any/{name}")
+    @Path("v1/anyservice/{name}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response     getAny(@PathParam("name") String name)
     {
