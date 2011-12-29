@@ -38,7 +38,34 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-public class DiscoveryResource<T>
+/**
+ * <p>
+ * The JAX-RS web service. Due to how most JAX-RS implementations are written, you must
+ * create a concrete class that extends this using your payload type. The concrete class should
+ * have the base path that you'd like to use.
+ * </p>
+ *
+ * <p>
+ * Because the JAX-RS implementation can create a new instance of the resource for every request,
+ * your concrete class must use a context resolver to access the DiscoveryContext. Or, if you
+ * are using an IoC framework, you can access it that way.
+ * </p>
+ *
+ * <p>
+ * Here's a version that has no payload (i.e.
+ * a Void payload):
+ * </p>
+ * <code><pre>
+ * &#64;Path("/")
+ * public class MyResource extends DiscoveryResource&lt;Void&gt; {
+ *     public MyResource(@Context ContextResolver&lt;DiscoveryContext&lt;Void&gt;&gt; resolver) {
+ *         // note: this may not work with all JAX-RS implementations
+ *         super(resolver.getContext(DiscoveryContext.class));
+ *     }
+ * }
+ * </pre></code>
+ */
+public abstract class DiscoveryResource<T>
 {
     private static final Logger     log = LoggerFactory.getLogger(DiscoveryResource.class);
 

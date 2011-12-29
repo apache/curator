@@ -25,10 +25,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Collection;
 import java.util.List;
 
-@XmlRootElement
+/**
+ * Raw generic lists don't work well in JAX-RS. Thus, this wrapper is needed.
+ */
 public class ServiceNames
 {
-    @XmlElement(name = "names")
     private final List<String> names;
 
     public ServiceNames()

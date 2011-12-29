@@ -16,11 +16,10 @@
  *  
  */
 
-package com.netflix.curator.x.discovery.typed_contexts;
+package com.netflix.curator.x.discovery.contexts;
 
 import com.google.common.collect.Maps;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
-import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -28,6 +27,10 @@ import javax.ws.rs.ext.ContextResolver;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * For convenience, a version of {@link DiscoveryContext} that uses a String-to-String map as the
+ * payload
+ */
 public class MapDiscoveryContext implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
 {
     private final ServiceDiscovery<Map<String, String>> serviceDiscovery;
@@ -52,9 +55,8 @@ public class MapDiscoveryContext implements DiscoveryContext<Map<String, String>
     }
 
     @Override
-    public void marshallJson(ObjectNode node, String fieldName, ServiceInstance<Map<String, String>> serviceInstance) throws Exception
+    public void marshallJson(ObjectNode node, String fieldName, Map<String, String> map) throws Exception
     {
-        Map<String, String>     map = serviceInstance.getPayload();
         if ( map == null )
         {
             map = Maps.newHashMap();

@@ -23,8 +23,11 @@ import com.netflix.curator.x.discovery.entity.JsonServiceInstanceMarshaller;
 import com.netflix.curator.x.discovery.entity.JsonServiceInstancesMarshaller;
 import com.netflix.curator.x.discovery.entity.JsonServiceNamesMarshaller;
 import com.netflix.curator.x.discovery.rest.mocks.MockServiceDiscovery;
-import com.netflix.curator.x.discovery.typed_contexts.StringDiscoveryContext;
+import com.netflix.curator.x.discovery.contexts.StringDiscoveryContext;
 
+/**
+ * For testing purposes only. You will inject these however is appropriate for your application
+ */
 public class RestEasySingletons
 {
     public final ServiceDiscovery<String> serviceDiscoverySingleton = new MockServiceDiscovery<String>();

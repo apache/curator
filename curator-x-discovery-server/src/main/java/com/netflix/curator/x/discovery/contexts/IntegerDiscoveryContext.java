@@ -13,24 +13,27 @@
  *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *     See the License for the specific language governing permissions and
  *     limitations under the License.
- *
+ *  
  */
 
-package com.netflix.curator.x.discovery.typed_contexts;
+package com.netflix.curator.x.discovery.contexts;
 
 import com.netflix.curator.x.discovery.ServiceDiscovery;
-import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.ext.ContextResolver;
 
-public class StringDiscoveryContext implements DiscoveryContext<String>, ContextResolver<DiscoveryContext<String>>
+/**
+ * For convenience, a version of {@link DiscoveryContext} that uses an int as the
+ * payload
+ */
+public class IntegerDiscoveryContext implements DiscoveryContext<Integer>, ContextResolver<DiscoveryContext<Integer>>
 {
-    private final ServiceDiscovery<String> serviceDiscovery;
+    private final ServiceDiscovery<Integer> serviceDiscovery;
     private final int instanceRefreshMs;
 
-    public StringDiscoveryContext(ServiceDiscovery<String> serviceDiscovery, int instanceRefreshMs)
+    public IntegerDiscoveryContext(ServiceDiscovery<Integer> serviceDiscovery, int instanceRefreshMs)
     {
         this.serviceDiscovery = serviceDiscovery;
         this.instanceRefreshMs = instanceRefreshMs;
@@ -43,28 +46,32 @@ public class StringDiscoveryContext implements DiscoveryContext<String>, Context
     }
 
     @Override
-    public ServiceDiscovery<String> getServiceDiscovery()
+    public ServiceDiscovery<Integer> getServiceDiscovery()
     {
         return serviceDiscovery;
     }
 
     @Override
-    public void marshallJson(ObjectNode node, String fieldName, ServiceInstance<String> serviceInstance) throws Exception
+    public void marshallJson(ObjectNode node, String fieldName, Integer payload) throws Exception
     {
-        if ( serviceInstance.getPayload() != null )
+        if ( payload != null )
         {
-            node.put(fieldName, serviceInstance.getPayload());
+            node.put(fieldName, payload.toString());
         }
     }
 
     @Override
-    public String unMarshallJson(JsonNode node) throws Exception
+    public Integer unMarshallJson(JsonNode node) throws Exception
     {
-        return (node != null) ? node.asText() : null;
+        if ( node != null )
+        {
+            return Integer.parseInt(node.asText());
+        }
+        return null;
     }
 
     @Override
-    public DiscoveryContext<String> getContext(Class<?> type)
+    public DiscoveryContext<Integer> getContext(Class<?> type)
     {
         return this;
     }

@@ -16,7 +16,7 @@
  *  
  */
 
-package com.netflix.curator.x.discovery.rest.concretes;
+package com.netflix.curator.x.discovery.rest.jetty_jersey;
 
 import com.netflix.curator.x.discovery.rest.DiscoveryContext;
 import com.netflix.curator.x.discovery.rest.DiscoveryResource;

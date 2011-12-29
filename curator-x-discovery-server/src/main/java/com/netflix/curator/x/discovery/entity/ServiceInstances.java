@@ -24,6 +24,9 @@ import com.netflix.curator.x.discovery.ServiceInstance;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Raw generic lists don't work well in JAX-RS. Thus, this wrapper is needed.
+ */
 public class ServiceInstances<T>
 {
     private final List<ServiceInstance<T>> services;

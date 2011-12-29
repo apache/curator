@@ -40,6 +40,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
 
+/**
+ * Message body reader/writer. Inject this as appropriate for the JAX-RS implementation you are using
+ */
 @Provider
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)

@@ -28,7 +28,7 @@ import com.netflix.curator.x.discovery.entity.JsonServiceNamesMarshaller;
 import com.netflix.curator.x.discovery.entity.ServiceInstances;
 import com.netflix.curator.x.discovery.entity.ServiceNames;
 import com.netflix.curator.x.discovery.rest.mocks.MockServiceDiscovery;
-import com.netflix.curator.x.discovery.typed_contexts.StringDiscoveryContext;
+import com.netflix.curator.x.discovery.contexts.StringDiscoveryContext;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.WebResource;

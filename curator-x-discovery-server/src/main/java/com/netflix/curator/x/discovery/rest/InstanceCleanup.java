@@ -31,6 +31,11 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * A background task that purges stale registrations. You should allocate a singleton
+ * of this class, call {@link #start()} and then call {@link #close()} when your application
+ * is shutting down.
+ */
 public class InstanceCleanup implements Closeable
 {
     private static final Logger         log = LoggerFactory.getLogger(InstanceCleanup.class);
@@ -39,12 +44,20 @@ public class InstanceCleanup implements Closeable
     private final int                       instanceRefreshMs;
     private final ExecutorService           service = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(true).setNameFormat("InstanceCleanup-%d").build());
 
-    public InstanceCleanup(ServiceDiscovery<Object> discovery, int instanceRefreshMs)
+    /**
+     * @param discovery the service being monitored
+     * @param instanceRefreshMs time in milliseconds to consider a registration stale
+     */
+    public InstanceCleanup(ServiceDiscovery<?> discovery, int instanceRefreshMs)
     {
-        this.discovery = discovery;
+        //noinspection unchecked
+        this.discovery = (ServiceDiscovery<Object>)discovery;   // this cast is safe - this class never accesses the payload
         this.instanceRefreshMs = instanceRefreshMs;
     }
 
+    /**
+     * Start the task
+     */
     public void     start()
     {
         Preconditions.checkArgument(!service.isShutdown());

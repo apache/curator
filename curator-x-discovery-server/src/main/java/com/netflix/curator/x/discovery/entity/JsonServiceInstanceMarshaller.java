@@ -39,6 +39,9 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+/**
+ * Message body reader/writer. Inject this as appropriate for the JAX-RS implementation you are using
+ */
 @Provider
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -88,7 +91,7 @@ public class JsonServiceInstanceMarshaller<T> implements MessageBodyReader<Servi
         node.put("serviceType", instance.getServiceType().name());
         try
         {
-            context.marshallJson(node, "payload", instance);
+            context.marshallJson(node, "payload", instance.getPayload());
         }
         catch ( Exception e )
         {

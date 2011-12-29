@@ -19,17 +19,44 @@
 package com.netflix.curator.x.discovery.rest;
 
 import com.netflix.curator.x.discovery.ServiceDiscovery;
-import com.netflix.curator.x.discovery.ServiceInstance;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 
+/**
+ * Bridge between the specifics of your needs and the generic implementation
+ */
 public interface DiscoveryContext<T>
 {
+    /**
+     * Return the threshold in milliseconds to consider a registration stale
+     *
+     * @return number of milliseconds
+     */
     public int                      getInstanceRefreshMs();
 
+    /**
+     * Return the service singleton
+     *
+     * @return service
+     */
     public ServiceDiscovery<T>      getServiceDiscovery();
 
-    public void                     marshallJson(ObjectNode node, String fieldName, ServiceInstance<T> instance) throws Exception;
+    /**
+     * Serialize your payload
+     *
+     * @param node the node to serialize into
+     * @param fieldName field name to use
+     * @param payload the payload value (can be null)
+     * @throws Exception any errors
+     */
+    public void                     marshallJson(ObjectNode node, String fieldName, T payload) throws Exception;
 
+    /**
+     * Deserialize your payload
+     *
+     * @param node the node that has the payload
+     * @return the payload or null
+     * @throws Exception any errors
+     */
     public T                        unMarshallJson(JsonNode node) throws Exception;
 }
