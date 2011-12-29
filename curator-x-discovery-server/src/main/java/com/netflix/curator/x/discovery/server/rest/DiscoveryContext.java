@@ -16,8 +16,9 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest;
+package com.netflix.curator.x.discovery.server.rest;
 
+import com.netflix.curator.x.discovery.ProviderStrategy;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -59,4 +60,11 @@ public interface DiscoveryContext<T>
      * @throws Exception any errors
      */
     public T                        unMarshallJson(JsonNode node) throws Exception;
+
+    /**
+     * Return the provider strategy to use for {@link DiscoveryResource#getAny(String)}
+     *
+     * @return strategy
+     */
+    public ProviderStrategy<T>      getProviderStrategy();
 }

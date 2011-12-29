@@ -16,11 +16,11 @@
  *
  */
 
-package com.netflix.curator.x.discovery.entity;
+package com.netflix.curator.x.discovery.server.entity;
 
 import com.google.common.collect.Lists;
 import com.netflix.curator.x.discovery.ServiceInstance;
-import com.netflix.curator.x.discovery.rest.DiscoveryContext;
+import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;

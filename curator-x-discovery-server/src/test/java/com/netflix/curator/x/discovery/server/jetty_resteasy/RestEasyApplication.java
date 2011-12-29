@@ -16,10 +16,9 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest.jetty_resteasy;
+package com.netflix.curator.x.discovery.server.jetty_resteasy;
 
 import com.google.common.collect.Sets;
-import com.netflix.curator.x.discovery.contexts.StringDiscoveryContext;
 import javax.ws.rs.core.Application;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;

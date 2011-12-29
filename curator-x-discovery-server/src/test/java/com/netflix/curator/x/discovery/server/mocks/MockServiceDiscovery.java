@@ -16,7 +16,7 @@
  *  
  */
 
-package com.netflix.curator.x.discovery.rest.mocks;
+package com.netflix.curator.x.discovery.server.mocks;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;

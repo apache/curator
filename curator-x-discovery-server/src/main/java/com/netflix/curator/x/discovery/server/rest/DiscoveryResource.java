@@ -16,13 +16,14 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest;
+package com.netflix.curator.x.discovery.server.rest;
 
 import com.google.common.collect.Lists;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.ServiceType;
-import com.netflix.curator.x.discovery.entity.ServiceInstances;
-import com.netflix.curator.x.discovery.entity.ServiceNames;
+import com.netflix.curator.x.discovery.details.InstanceProvider;
+import com.netflix.curator.x.discovery.server.entity.ServiceInstances;
+import com.netflix.curator.x.discovery.server.entity.ServiceNames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.ws.rs.Consumes;
@@ -191,9 +192,18 @@ public abstract class DiscoveryResource<T>
     {
         try
         {
-            List<ServiceInstance<T>>   instances = Lists.newArrayList(context.getServiceDiscovery().queryForInstances(name));
-            Collections.shuffle(instances);
-            ServiceInstance<?>         randomInstance = (instances.size() > 0) ? instances.get(0) : null;
+            final List<ServiceInstance<T>>   instances = Lists.newArrayList(context.getServiceDiscovery().queryForInstances(name));
+            ServiceInstance<?>               randomInstance = context.getProviderStrategy().getInstance
+                (
+                    new InstanceProvider<T>()
+                    {
+                        @Override
+                        public List<ServiceInstance<T>> getInstances() throws Exception
+                        {
+                            return instances;
+                        }
+                    }
+                );
             if ( randomInstance == null )
             {
                 return Response.status(Response.Status.NOT_FOUND).build();

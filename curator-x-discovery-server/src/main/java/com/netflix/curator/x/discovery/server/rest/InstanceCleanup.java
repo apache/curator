@@ -16,7 +16,7 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest;
+package com.netflix.curator.x.discovery.server.rest;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;

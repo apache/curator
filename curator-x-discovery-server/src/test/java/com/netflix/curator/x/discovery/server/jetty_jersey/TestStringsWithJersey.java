@@ -16,20 +16,20 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest.jetty_jersey;
+package com.netflix.curator.x.discovery.server.jetty_jersey;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.ServiceType;
-import com.netflix.curator.x.discovery.entity.JsonServiceInstanceMarshaller;
-import com.netflix.curator.x.discovery.entity.JsonServiceInstancesMarshaller;
-import com.netflix.curator.x.discovery.entity.JsonServiceNamesMarshaller;
-import com.netflix.curator.x.discovery.entity.ServiceInstances;
-import com.netflix.curator.x.discovery.entity.ServiceNames;
-import com.netflix.curator.x.discovery.rest.mocks.MockServiceDiscovery;
-import com.netflix.curator.x.discovery.contexts.MapDiscoveryContext;
+import com.netflix.curator.x.discovery.server.entity.JsonServiceInstanceMarshaller;
+import com.netflix.curator.x.discovery.server.entity.JsonServiceInstancesMarshaller;
+import com.netflix.curator.x.discovery.server.entity.JsonServiceNamesMarshaller;
+import com.netflix.curator.x.discovery.server.entity.ServiceInstances;
+import com.netflix.curator.x.discovery.server.entity.ServiceNames;
+import com.netflix.curator.x.discovery.server.mocks.MockServiceDiscovery;
+import com.netflix.curator.x.discovery.server.contexts.StringDiscoveryContext;
+import com.netflix.curator.x.discovery.strategies.RandomStrategy;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.WebResource;
@@ -46,24 +46,23 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
-import java.util.Map;
 import java.util.Set;
 
-public class TestMapsWithJersey
+public class TestStringsWithJersey
 {
     private Server server;
     private JsonServiceNamesMarshaller serviceNamesMarshaller;
-    private JsonServiceInstanceMarshaller<Map<String, String>> serviceInstanceMarshaller;
-    private JsonServiceInstancesMarshaller<Map<String, String>> serviceInstancesMarshaller;
-    private MapDiscoveryContext context;
+    private JsonServiceInstanceMarshaller<String> serviceInstanceMarshaller;
+    private JsonServiceInstancesMarshaller<String> serviceInstancesMarshaller;
+    private StringDiscoveryContext context;
 
     @Before
     public void         setup() throws Exception
     {
-        context = new MapDiscoveryContext(new MockServiceDiscovery<Map<String, String>>(), 1000);
+        context = new StringDiscoveryContext(new MockServiceDiscovery<String>(), new RandomStrategy<String>(), 1000);
         serviceNamesMarshaller = new JsonServiceNamesMarshaller();
-        serviceInstanceMarshaller = new JsonServiceInstanceMarshaller<Map<String, String>>(context);
-        serviceInstancesMarshaller = new JsonServiceInstancesMarshaller<Map<String, String>>(context);
+        serviceInstanceMarshaller = new JsonServiceInstanceMarshaller<String>(context);
+        serviceInstancesMarshaller = new JsonServiceInstancesMarshaller<String>(context);
 
         Application                                     application = new DefaultResourceConfig()
         {
@@ -71,7 +70,7 @@ public class TestMapsWithJersey
             public Set<Class<?>> getClasses()
             {
                 Set<Class<?>>       classes = Sets.newHashSet();
-                classes.add(MapDiscoveryResource.class);
+                classes.add(StringDiscoveryResource.class);
                 return classes;
             }
 
@@ -104,13 +103,9 @@ public class TestMapsWithJersey
     @Test
     public void     testRegisterService() throws Exception
     {
-        Map<String, String>         payload = Maps.newHashMap();
-        payload.put("one", "1");
-        payload.put("two", "2");
-        payload.put("three", "3");
-        ServiceInstance<Map<String, String>> service = ServiceInstance.<Map<String, String>>builder()
+        ServiceInstance<String> service = ServiceInstance.<String>builder()
             .name("test")
-            .payload(payload)
+            .payload("From Test")
             .serviceType(ServiceType.STATIC)
             .build();
 
@@ -134,10 +129,31 @@ public class TestMapsWithJersey
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
         Assert.assertEquals(names.getNames(), Lists.newArrayList("test"));
 
-        GenericType<ServiceInstances<Map<String, String>>> type = new GenericType<ServiceInstances<Map<String, String>>>(){};
-        ServiceInstances<Map<String, String>>    instances = resource.path("/v1/service/test").get(type);
+        GenericType<ServiceInstances<String>> type = new GenericType<ServiceInstances<String>>(){};
+        ServiceInstances<String> instances = resource.path("/v1/service/test").get(type);
         Assert.assertEquals(instances.getServices().size(), 1);
         Assert.assertEquals(instances.getServices().get(0), service);
-        Assert.assertEquals(instances.getServices().get(0).getPayload(), payload);
+    }
+
+    @Test
+    public void     testEmptyServiceNames()
+    {
+        ClientConfig    config = new DefaultClientConfig()
+        {
+            @Override
+            public Set<Object> getSingletons()
+            {
+                Set<Object>     singletons = Sets.newHashSet();
+                singletons.add(context);
+                singletons.add(serviceNamesMarshaller);
+                singletons.add(serviceInstanceMarshaller);
+                singletons.add(serviceInstancesMarshaller);
+                return singletons;
+            }
+        };
+        Client          client = Client.create(config);
+        WebResource     resource = client.resource("http://localhost:8080");
+        ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
+        Assert.assertEquals(names.getNames(), Lists.<String>newArrayList());
     }
 }

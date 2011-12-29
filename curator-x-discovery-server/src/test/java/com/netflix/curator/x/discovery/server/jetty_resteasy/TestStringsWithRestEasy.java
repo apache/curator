@@ -16,15 +16,15 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest.jetty_resteasy;
+package com.netflix.curator.x.discovery.server.jetty_resteasy;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.ServiceType;
-import com.netflix.curator.x.discovery.entity.ServiceInstances;
-import com.netflix.curator.x.discovery.entity.ServiceNames;
+import com.netflix.curator.x.discovery.server.entity.ServiceInstances;
+import com.netflix.curator.x.discovery.server.entity.ServiceNames;
 import junit.framework.Assert;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
@@ -92,7 +92,7 @@ public class TestStringsWithRestEasy
         getJson("http://localhost:8080/v1/service/test/" + service.getId(), new String(out.toByteArray()));
 
         String json = getJson("http://localhost:8080/v1/service", null);
-        ServiceNames    names = restEasySingletons.serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
+        ServiceNames names = restEasySingletons.serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
         Assert.assertEquals(names.getNames(), Lists.newArrayList("test"));
 
         json = getJson("http://localhost:8080/v1/service/test", null);

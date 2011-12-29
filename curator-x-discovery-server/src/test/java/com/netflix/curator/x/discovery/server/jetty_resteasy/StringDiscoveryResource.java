@@ -16,10 +16,10 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest.jetty_resteasy;
+package com.netflix.curator.x.discovery.server.jetty_resteasy;
 
-import com.netflix.curator.x.discovery.rest.DiscoveryContext;
-import com.netflix.curator.x.discovery.rest.DiscoveryResource;
+import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
+import com.netflix.curator.x.discovery.server.rest.DiscoveryResource;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;

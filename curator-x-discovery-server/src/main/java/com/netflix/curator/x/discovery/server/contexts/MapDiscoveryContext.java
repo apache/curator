@@ -16,11 +16,12 @@
  *  
  */
 
-package com.netflix.curator.x.discovery.contexts;
+package com.netflix.curator.x.discovery.server.contexts;
 
 import com.google.common.collect.Maps;
+import com.netflix.curator.x.discovery.ProviderStrategy;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
-import com.netflix.curator.x.discovery.rest.DiscoveryContext;
+import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.ext.ContextResolver;
@@ -36,12 +37,20 @@ import java.util.Map;
 public class MapDiscoveryContext implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
 {
     private final ServiceDiscovery<Map<String, String>> serviceDiscovery;
+    private final ProviderStrategy<Map<String, String>> providerStrategy;
     private final int instanceRefreshMs;
 
-    public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, int instanceRefreshMs)
+    public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, ProviderStrategy<Map<String, String>> providerStrategy, int instanceRefreshMs)
     {
         this.serviceDiscovery = serviceDiscovery;
+        this.providerStrategy = providerStrategy;
         this.instanceRefreshMs = instanceRefreshMs;
+    }
+
+    @Override
+    public ProviderStrategy<Map<String, String>> getProviderStrategy()
+    {
+        return providerStrategy;
     }
 
     @Override

@@ -16,14 +16,15 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest.jetty_resteasy;
+package com.netflix.curator.x.discovery.server.jetty_resteasy;
 
 import com.netflix.curator.x.discovery.ServiceDiscovery;
-import com.netflix.curator.x.discovery.entity.JsonServiceInstanceMarshaller;
-import com.netflix.curator.x.discovery.entity.JsonServiceInstancesMarshaller;
-import com.netflix.curator.x.discovery.entity.JsonServiceNamesMarshaller;
-import com.netflix.curator.x.discovery.rest.mocks.MockServiceDiscovery;
-import com.netflix.curator.x.discovery.contexts.StringDiscoveryContext;
+import com.netflix.curator.x.discovery.server.entity.JsonServiceInstanceMarshaller;
+import com.netflix.curator.x.discovery.server.entity.JsonServiceInstancesMarshaller;
+import com.netflix.curator.x.discovery.server.entity.JsonServiceNamesMarshaller;
+import com.netflix.curator.x.discovery.server.mocks.MockServiceDiscovery;
+import com.netflix.curator.x.discovery.server.contexts.StringDiscoveryContext;
+import com.netflix.curator.x.discovery.strategies.RandomStrategy;
 
 /**
  * For testing purposes only. You will inject these however is appropriate for your application
@@ -31,7 +32,7 @@ import com.netflix.curator.x.discovery.contexts.StringDiscoveryContext;
 public class RestEasySingletons
 {
     public final ServiceDiscovery<String> serviceDiscoverySingleton = new MockServiceDiscovery<String>();
-    public final StringDiscoveryContext contextSingleton = new StringDiscoveryContext(serviceDiscoverySingleton, 1000);
+    public final StringDiscoveryContext contextSingleton = new StringDiscoveryContext(serviceDiscoverySingleton, new RandomStrategy<String>(), 1000);
     public final JsonServiceInstanceMarshaller<String> serviceInstanceMarshallerSingleton = new JsonServiceInstanceMarshaller<String>(contextSingleton);
     public final JsonServiceInstancesMarshaller<String> serviceInstancesMarshallerSingleton = new JsonServiceInstancesMarshaller<String>(contextSingleton);
     public final JsonServiceNamesMarshaller serviceNamesMarshallerSingleton = new JsonServiceNamesMarshaller();

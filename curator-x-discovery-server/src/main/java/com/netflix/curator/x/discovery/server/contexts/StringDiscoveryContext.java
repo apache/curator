@@ -16,10 +16,11 @@
  *
  */
 
-package com.netflix.curator.x.discovery.contexts;
+package com.netflix.curator.x.discovery.server.contexts;
 
+import com.netflix.curator.x.discovery.ProviderStrategy;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
-import com.netflix.curator.x.discovery.rest.DiscoveryContext;
+import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.ext.ContextResolver;
@@ -33,12 +34,20 @@ import javax.ws.rs.ext.Provider;
 public class StringDiscoveryContext implements DiscoveryContext<String>, ContextResolver<DiscoveryContext<String>>
 {
     private final ServiceDiscovery<String> serviceDiscovery;
+    private final ProviderStrategy<String> providerStrategy;
     private final int instanceRefreshMs;
 
-    public StringDiscoveryContext(ServiceDiscovery<String> serviceDiscovery, int instanceRefreshMs)
+    public StringDiscoveryContext(ServiceDiscovery<String> serviceDiscovery, ProviderStrategy<String> providerStrategy, int instanceRefreshMs)
     {
         this.serviceDiscovery = serviceDiscovery;
+        this.providerStrategy = providerStrategy;
         this.instanceRefreshMs = instanceRefreshMs;
+    }
+
+    @Override
+    public ProviderStrategy<String> getProviderStrategy()
+    {
+        return providerStrategy;
     }
 
     @Override
