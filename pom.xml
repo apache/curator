@@ -4,7 +4,7 @@
 
     <groupId>com.netflix.curator</groupId>
     <artifactId>curator</artifactId>
-    <version>0.6.5-SNAPSHOT</version>
+    <version>0.100.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <parent>
