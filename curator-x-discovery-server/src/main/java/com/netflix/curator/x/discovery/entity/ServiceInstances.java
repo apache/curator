@@ -16,19 +16,30 @@
  *
  */
 
-package com.netflix.curator.x.discovery.rest.concretes;
+package com.netflix.curator.x.discovery.entity;
 
-import com.netflix.curator.x.discovery.config.DiscoveryContext;
-import com.netflix.curator.x.discovery.rest.DiscoveryResource;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.ext.ContextResolver;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.netflix.curator.x.discovery.ServiceInstance;
+import java.util.Collection;
+import java.util.List;
 
-@Path("/")
-public class StringDiscoveryResource extends DiscoveryResource<String>
+public class ServiceInstances<T>
 {
-    public StringDiscoveryResource(@Context ContextResolver<DiscoveryContext<String>> resolver)
+    private final List<ServiceInstance<T>> services;
+
+    public ServiceInstances()
     {
-        super(resolver.getContext(DiscoveryContext.class));
+        services = Lists.newArrayList();
+    }
+
+    public ServiceInstances(Collection<? extends ServiceInstance<T>> c)
+    {
+        services = Lists.newArrayList(c);
+    }
+
+    public List<ServiceInstance<T>> getServices()
+    {
+        return ImmutableList.copyOf(services);
     }
 }

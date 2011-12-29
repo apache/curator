@@ -58,6 +58,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.geronimo.bundles</groupId>
+            <artifactId>scannotation</artifactId>
+            <version>1.0.2_1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
             <version>6.1.9</version>

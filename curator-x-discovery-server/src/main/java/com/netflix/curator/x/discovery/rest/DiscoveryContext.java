@@ -16,7 +16,7 @@
  *
  */
 
-package com.netflix.curator.x.discovery.config;
+package com.netflix.curator.x.discovery.rest;
 
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
@@ -25,7 +25,7 @@ import org.codehaus.jackson.node.ObjectNode;
 
 public interface DiscoveryContext<T>
 {
-    public DiscoveryConfig          getDiscoveryConfig();
+    public int                      getInstanceRefreshMs();
 
     public ServiceDiscovery<T>      getServiceDiscovery();
 

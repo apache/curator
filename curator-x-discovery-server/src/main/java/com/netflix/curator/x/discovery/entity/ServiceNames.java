@@ -16,32 +16,33 @@
  *
  */
 
-package com.netflix.curator.x.discovery.entities;
+package com.netflix.curator.x.discovery.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.netflix.curator.x.discovery.ServiceInstance;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Collection;
 import java.util.List;
 
-public class ServiceInstances<T>
+@XmlRootElement
+public class ServiceNames
 {
-    private final List<ServiceInstance<T>> services;
+    @XmlElement(name = "names")
+    private final List<String> names;
 
-    public ServiceInstances()
+    public ServiceNames()
     {
-        services = Lists.newArrayList();
+        names = Lists.newArrayList();
     }
 
-    public ServiceInstances(Collection<? extends ServiceInstance<T>> c)
+    public ServiceNames(Collection<? extends String> c)
     {
-        services = Lists.newArrayList(c);
+        names = Lists.newArrayList(c);
     }
 
-    public List<ServiceInstance<T>> getServices()
+    public List<String> getNames()
     {
-        return ImmutableList.copyOf(services);
+        return ImmutableList.copyOf(names);
     }
 }

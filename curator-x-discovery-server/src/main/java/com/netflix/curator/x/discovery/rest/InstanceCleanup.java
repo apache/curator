@@ -16,14 +16,13 @@
  *
  */
 
-package com.netflix.curator.x.discovery.gc;
+package com.netflix.curator.x.discovery.rest;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.ServiceType;
-import com.netflix.curator.x.discovery.config.DiscoveryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
@@ -37,13 +36,13 @@ public class InstanceCleanup implements Closeable
     private static final Logger         log = LoggerFactory.getLogger(InstanceCleanup.class);
 
     private final ServiceDiscovery<Object>  discovery;
-    private final DiscoveryConfig           config;
+    private final int                       instanceRefreshMs;
     private final ExecutorService           service = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(true).setNameFormat("InstanceCleanup-%d").build());
 
-    public InstanceCleanup(ServiceDiscovery<Object> discovery, DiscoveryConfig config)
+    public InstanceCleanup(ServiceDiscovery<Object> discovery, int instanceRefreshMs)
     {
         this.discovery = discovery;
-        this.config = config;
+        this.instanceRefreshMs = instanceRefreshMs;
     }
 
     public void     start()
@@ -76,7 +75,7 @@ public class InstanceCleanup implements Closeable
         {
             try
             {
-                Thread.sleep(config.getInstanceRefreshMs());
+                Thread.sleep(instanceRefreshMs);
             }
             catch ( InterruptedException e )
             {
@@ -107,7 +106,7 @@ public class InstanceCleanup implements Closeable
             {
                 if ( instance.getServiceType() != ServiceType.PERMANENT )
                 {
-                    if ( (System.currentTimeMillis() - instance.getRegistrationTimeUTC()) > config.getInstanceRefreshMs() )
+                    if ( (System.currentTimeMillis() - instance.getRegistrationTimeUTC()) > instanceRefreshMs )
                     {
                         discovery.unregisterService(instance);
                     }

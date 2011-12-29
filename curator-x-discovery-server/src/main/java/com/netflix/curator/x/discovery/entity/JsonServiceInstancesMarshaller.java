@@ -16,11 +16,11 @@
  *
  */
 
-package com.netflix.curator.x.discovery.entities;
+package com.netflix.curator.x.discovery.entity;
 
 import com.google.common.collect.Lists;
 import com.netflix.curator.x.discovery.ServiceInstance;
-import com.netflix.curator.x.discovery.config.DiscoveryContext;
+import com.netflix.curator.x.discovery.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
@@ -30,7 +30,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;

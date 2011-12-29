@@ -16,9 +16,19 @@
  *
  */
 
-package com.netflix.curator.x.discovery.config;
+package com.netflix.curator.x.discovery.rest.jetty_jersey;
 
-public interface DiscoveryConfig
+import com.netflix.curator.x.discovery.rest.DiscoveryContext;
+import com.netflix.curator.x.discovery.rest.DiscoveryResource;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.ext.ContextResolver;
+
+@Path("/")
+public class StringDiscoveryResource extends DiscoveryResource<String>
 {
-    public int  getInstanceRefreshMs();
+    public StringDiscoveryResource(@Context ContextResolver<DiscoveryContext<String>> resolver)
+    {
+        super(resolver.getContext(DiscoveryContext.class));
+    }
 }

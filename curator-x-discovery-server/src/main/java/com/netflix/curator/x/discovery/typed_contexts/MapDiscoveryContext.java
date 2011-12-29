@@ -21,8 +21,7 @@ package com.netflix.curator.x.discovery.typed_contexts;
 import com.google.common.collect.Maps;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
-import com.netflix.curator.x.discovery.config.DiscoveryConfig;
-import com.netflix.curator.x.discovery.config.DiscoveryContext;
+import com.netflix.curator.x.discovery.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.ext.ContextResolver;
@@ -32,18 +31,18 @@ import java.util.Map;
 public class MapDiscoveryContext implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
 {
     private final ServiceDiscovery<Map<String, String>> serviceDiscovery;
-    private final DiscoveryConfig discoveryConfig;
+    private final int instanceRefreshMs;
 
-    public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, DiscoveryConfig discoveryConfig)
+    public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, int instanceRefreshMs)
     {
         this.serviceDiscovery = serviceDiscovery;
-        this.discoveryConfig = discoveryConfig;
+        this.instanceRefreshMs = instanceRefreshMs;
     }
 
     @Override
-    public DiscoveryConfig getDiscoveryConfig()
+    public int getInstanceRefreshMs()
     {
-        return discoveryConfig;
+        return instanceRefreshMs;
     }
 
     @Override

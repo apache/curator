@@ -13,23 +13,31 @@
  *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *     See the License for the specific language governing permissions and
  *     limitations under the License.
- *  
+ *
  */
 
-package com.netflix.curator.x.discovery.rest.concretes;
+package com.netflix.curator.x.discovery.rest.jetty_resteasy;
 
 import com.netflix.curator.x.discovery.rest.DiscoveryContext;
 import com.netflix.curator.x.discovery.rest.DiscoveryResource;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
-import java.util.Map;
+import javax.ws.rs.ext.Providers;
 
 @Path("/")
-public class MapDiscoveryResource extends DiscoveryResource<Map<String, String>>
+public class StringDiscoveryResource extends DiscoveryResource<String>
 {
-    public MapDiscoveryResource(@Context ContextResolver<DiscoveryContext<Map<String, String>>> resolver)
+    public StringDiscoveryResource(@Context Providers providers)
     {
-        super(resolver.getContext(DiscoveryContext.class));
+        super(getContextFromProvider(providers));
+    }
+
+    private static DiscoveryContext<String> getContextFromProvider(Providers providers)
+    {
+        ContextResolver<DiscoveryContext> contextResolver = providers.getContextResolver(DiscoveryContext.class, MediaType.WILDCARD_TYPE);
+        //noinspection unchecked
+        return contextResolver.getContext(DiscoveryContext.class);
     }
 }

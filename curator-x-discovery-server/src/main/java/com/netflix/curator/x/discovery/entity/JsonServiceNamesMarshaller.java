@@ -16,7 +16,7 @@
  *
  */
 
-package com.netflix.curator.x.discovery.entities;
+package com.netflix.curator.x.discovery.entity;
 
 import com.google.common.collect.Lists;
 import org.codehaus.jackson.JsonNode;
