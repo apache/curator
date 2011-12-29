@@ -12,6 +12,10 @@ subprojects
     repositories
     {
         mavenCentral()
+        maven
+        {
+            url "https://repository.jboss.org/nexus/content/groups/public/"
+        }
     }
 
     dependencies 
@@ -42,6 +46,7 @@ project(':curator-client')
 {
     dependencies
     {
+        compile 'org.slf4j:slf4j-api:1.6.3'
         testCompile 'org.mockito:mockito-core:1.8.5'
         testCompile project(':curator-test')
     }
@@ -83,5 +88,21 @@ project(':curator-x-discovery')
         compile project(':curator-framework')
         compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.2'
         testCompile project(':curator-test')
+    }
+}
+
+project(':curator-x-discovery-server')
+{
+    dependencies
+    {
+        compile project(':curator-x-discovery')
+        compile 'javax.ws.rs:jsr311-api:1.1.1'
+        testCompile 'junit:junit:4.10'
+        testCompile 'com.sun.jersey:jersey-server:1.11'
+        testCompile 'com.sun.jersey:jersey-servlet:1.11'
+        testCompile 'com.sun.jersey:jersey-client:1.11'
+        testCompile 'com.sun.jersey:jersey-core:1.11'
+        testCompile 'org.jboss.resteasy:resteasy-jaxrs:2.3.0.GA'
+        testCompile 'org.mortbay.jetty:jetty:6.1.9'
     }
 }
