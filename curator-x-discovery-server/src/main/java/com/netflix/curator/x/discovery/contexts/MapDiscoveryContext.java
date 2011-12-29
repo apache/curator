@@ -24,6 +24,7 @@ import com.netflix.curator.x.discovery.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -31,6 +32,7 @@ import java.util.Map;
  * For convenience, a version of {@link DiscoveryContext} that uses a String-to-String map as the
  * payload
  */
+@Provider
 public class MapDiscoveryContext implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
 {
     private final ServiceDiscovery<Map<String, String>> serviceDiscovery;

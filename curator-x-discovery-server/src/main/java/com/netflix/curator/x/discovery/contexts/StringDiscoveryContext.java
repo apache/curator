@@ -23,11 +23,13 @@ import com.netflix.curator.x.discovery.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
 
 /**
  * For convenience, a version of {@link DiscoveryContext} that uses a string as the
  * payload
  */
+@Provider
 public class StringDiscoveryContext implements DiscoveryContext<String>, ContextResolver<DiscoveryContext<String>>
 {
     private final ServiceDiscovery<String> serviceDiscovery;

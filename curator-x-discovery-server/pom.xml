@@ -52,15 +52,8 @@
 
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxrs-dist</artifactId>
-            <version>1.0.2.GA</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.geronimo.bundles</groupId>
-            <artifactId>scannotation</artifactId>
-            <version>1.0.2_1</version>
+            <artifactId>resteasy-jaxrs</artifactId>
+            <version>2.3.0.GA</version>
             <scope>test</scope>
         </dependency>
 
