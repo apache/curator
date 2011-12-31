@@ -1,3 +1,10 @@
+1.0.0 - Dec. 31, 2011
+=====================
+* Added a REST server for Service Discovery
+* Switched to slf4j for logging
+* Moved to 1.0 version
+* Curator is now feature complete
+
 0.6.4 - Dec. 7, 2011
 =====================
 * Added Barrier
