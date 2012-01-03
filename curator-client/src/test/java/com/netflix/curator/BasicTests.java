@@ -24,6 +24,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.ZooKeeper;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.File;
@@ -59,7 +60,9 @@ public class BasicTests extends BaseClassForTests
             KillSession.kill(server.getConnectString(), client.getZooKeeper().getSessionId(), client.getZooKeeper().getSessionPasswd());
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-            Assert.assertNotNull(client.getZooKeeper().exists("/foo", false));
+            ZooKeeper zooKeeper = client.getZooKeeper();
+            client.blockUntilConnectedOrTimedOut();
+            Assert.assertNotNull(zooKeeper.exists("/foo", false));
         }
         finally
         {
