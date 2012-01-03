@@ -27,9 +27,11 @@ import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.apache.zookeeper.server.ZKDatabase;
+import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
-import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import java.io.Closeable;
@@ -41,8 +43,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * manages an internally running ensemble of ZooKeeper servers. FOR TESTING PURPOSES ONLY
@@ -163,21 +167,12 @@ public class TestingCluster implements Closeable
 
     private static class QuorumPeerEntry
     {
-        private final TestQuorumPeerMain  quorumPeerMain;
+        private volatile QuorumPeer       quorumPeer;
         private final InstanceSpec        instanceSpec;
 
-        private QuorumPeerEntry(TestQuorumPeerMain quorumPeerMain, InstanceSpec instanceSpec)
+        private QuorumPeerEntry(InstanceSpec instanceSpec)
         {
-            this.quorumPeerMain = quorumPeerMain;
             this.instanceSpec = instanceSpec;
-        }
-    }
-
-    private static class TestQuorumPeerMain extends QuorumPeerMain
-    {
-        public QuorumPeer       getQuorumPeer()
-        {
-            return quorumPeer;
         }
     }
 
@@ -202,7 +197,7 @@ public class TestingCluster implements Closeable
         ImmutableList.Builder<QuorumPeerEntry>      builder = ImmutableList.builder();
         for ( InstanceSpec spec : specs )
         {
-            builder.add(new QuorumPeerEntry(new TestQuorumPeerMain(), spec));
+            builder.add(new QuorumPeerEntry(spec));
         }
 
         entries = builder.build();
@@ -267,6 +262,7 @@ public class TestingCluster implements Closeable
             testingServers.put(serverId, quorumServer);
         }
 
+        final CountDownLatch        startupLatch = new CountDownLatch(entries.size());
         final QuorumVerifier        testingQuorumVerifier = new QuorumMaj(testingServers.size());
         for ( final QuorumPeerEntry entry : entries )
         {
@@ -345,7 +341,33 @@ public class TestingCluster implements Closeable
                     {
                         try
                         {
-                            entry.quorumPeerMain.runFromConfig(config);
+                            ServerCnxnFactory cnxnFactory = ServerCnxnFactory.createFactory();
+                            cnxnFactory.configure(config.getClientPortAddress(),
+                                config.getMaxClientCnxns());
+
+                            // copied from QuorumPeerMain.runFromConfig
+                            entry.quorumPeer = new QuorumPeer();
+                            entry.quorumPeer.setClientPortAddress(config.getClientPortAddress());
+                            entry.quorumPeer.setTxnFactory(new FileTxnSnapLog(
+                                new File(config.getDataLogDir()),
+                                new File(config.getDataDir())));
+                            entry.quorumPeer.setQuorumPeers(config.getServers());
+                            entry.quorumPeer.setElectionType(config.getElectionAlg());
+                            entry.quorumPeer.setMyid(config.getServerId());
+                            entry.quorumPeer.setTickTime(config.getTickTime());
+                            entry.quorumPeer.setMinSessionTimeout(config.getMinSessionTimeout());
+                            entry.quorumPeer.setMaxSessionTimeout(config.getMaxSessionTimeout());
+                            entry.quorumPeer.setInitLimit(config.getInitLimit());
+                            entry.quorumPeer.setSyncLimit(config.getSyncLimit());
+                            entry.quorumPeer.setQuorumVerifier(config.getQuorumVerifier());
+                            entry.quorumPeer.setCnxnFactory(cnxnFactory);
+                            entry.quorumPeer.setZKDatabase(new ZKDatabase(entry.quorumPeer.getTxnFactory()));
+                            entry.quorumPeer.setLearnerType(config.getPeerType());
+
+                            entry.quorumPeer.start();
+
+                            startupLatch.countDown();
+                            entry.quorumPeer.join();
                         }
                         catch ( Throwable e )
                         {
@@ -356,6 +378,11 @@ public class TestingCluster implements Closeable
                     }
                 }
             );
+        }
+
+        if ( !startupLatch.await(5, TimeUnit.SECONDS) )
+        {
+            throw new Exception("Servers didn't start");
         }
     }
 
@@ -381,17 +408,22 @@ public class TestingCluster implements Closeable
      *
      * @param instance server to kill
      * @throws Exception errors
+     * @return true if the instance was found
      */
-    public void killServer(InstanceSpec instance) throws Exception
+    public boolean killServer(InstanceSpec instance) throws Exception
     {
+        boolean     found = false;
         for ( QuorumPeerEntry entry : entries )
         {
             if ( entry.instanceSpec.port == instance.port )
             {
                 closeEntry(entry);
+                found = true;
                 break;
             }
         }
+
+        return found;
     }
 
     /**
@@ -418,7 +450,7 @@ public class TestingCluster implements Closeable
 
     private void closeEntry(QuorumPeerEntry entry)
     {
-        entry.quorumPeerMain.getQuorumPeer().shutdown();
+        entry.quorumPeer.shutdown();
         try
         {
             if ( entry.instanceSpec.deleteDataDirectoryOnClose )
