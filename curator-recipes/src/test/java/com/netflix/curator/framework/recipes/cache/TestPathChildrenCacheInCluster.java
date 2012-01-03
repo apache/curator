@@ -34,7 +34,7 @@ public class TestPathChildrenCacheInCluster
     @Test
     public void     testServerLoss() throws Exception
     {
-        final int               BASE_TIMEOUT = 1000;
+        final int               BASE_TIMEOUT = 5000;
 
         CuratorFramework client = null;
         PathChildrenCache       cache = null;
@@ -76,7 +76,7 @@ public class TestPathChildrenCacheInCluster
             TestingCluster.InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(latch.get().await(10, TimeUnit.SECONDS)); // the cache should reset itself
+            Assert.assertTrue(latch.get().await(BASE_TIMEOUT * 2, TimeUnit.SECONDS)); // the cache should reset itself
         }
         finally
         {
