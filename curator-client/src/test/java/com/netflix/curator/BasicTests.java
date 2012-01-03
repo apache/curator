@@ -104,6 +104,7 @@ public class BasicTests extends BaseClassForTests
         client.start();
         try
         {
+            client.blockUntilConnectedOrTimedOut();
             String              path = client.getZooKeeper().create("/test", new byte[]{1,2,3}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             Assert.assertEquals(path, "/test");
         }
