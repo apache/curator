@@ -116,7 +116,9 @@ public class BasicTests extends BaseClassForTests
     @Test
     public void     testBackgroundConnect() throws Exception
     {
-        CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, 4000, null, new RetryOneTime(1));
+        final int CONNECTION_TIMEOUT_MS = 4000;
+
+        CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, CONNECTION_TIMEOUT_MS, null, new RetryOneTime(1));
         client.start();
         try
         {
@@ -124,14 +126,14 @@ public class BasicTests extends BaseClassForTests
 
             outer: do
             {
-                for ( int i = 0; i < 5; ++i )
+                for ( int i = 0; i < (CONNECTION_TIMEOUT_MS / 1000); ++i )
                 {
                     if ( client.isConnected() )
                     {
                         break outer;
                     }
 
-                    Thread.sleep(1000);
+                    Thread.sleep(CONNECTION_TIMEOUT_MS);
                 }
 
                 Assert.fail();
