@@ -80,6 +80,8 @@ public class BasicTests extends BaseClassForTests
         client.start();
         try
         {
+            client.blockUntilConnectedOrTimedOut();
+
             byte[]      writtenData = {1, 2, 3};
             client.getZooKeeper().create("/test", writtenData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             Thread.sleep(1000);
