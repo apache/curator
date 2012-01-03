@@ -72,6 +72,7 @@ public class TestRetryLoop extends BaseClassForTests
 
                 try
                 {
+                    client.blockUntilConnectedOrTimedOut();
                     client.getZooKeeper().create("/test", new byte[]{1,2,3}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                     retryLoop.markComplete();
                 }
