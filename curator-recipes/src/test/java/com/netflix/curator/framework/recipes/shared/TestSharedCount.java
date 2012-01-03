@@ -20,6 +20,7 @@ package com.netflix.curator.framework.recipes.shared;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
@@ -49,8 +50,9 @@ public class TestSharedCount extends BaseClassForTests
         final List<CuratorFramework>    clients = new CopyOnWriteArrayList<CuratorFramework>();
         try
         {
-            final Semaphore     semaphore = new Semaphore(0);
-            ExecutorService     service = Executors.newCachedThreadPool();
+            final CountDownLatch    startLatch = new CountDownLatch(CLIENT_QTY);
+            final Semaphore         semaphore = new Semaphore(0);
+            ExecutorService         service = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("Test-%d").build());
             for ( int i = 0; i < CLIENT_QTY; ++i )
             {
                 Future<List<Integer>> future = service.submit
@@ -66,7 +68,6 @@ public class TestSharedCount extends BaseClassForTests
                             client.start();
 
                             SharedCount count = new SharedCount(client, "/count", 10);
-                            count.start();
 
                             final CountDownLatch        latch = new CountDownLatch(1);
                             count.addListener
@@ -94,6 +95,8 @@ public class TestSharedCount extends BaseClassForTests
                                     }
                                 }
                             );
+                            count.start();
+                            startLatch.countDown();
                             latch.await();
                             return countList;
                         }
@@ -105,6 +108,8 @@ public class TestSharedCount extends BaseClassForTests
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             clients.add(client);
             client.start();
+            
+            Assert.assertTrue(startLatch.await(10, TimeUnit.SECONDS));
 
             SharedCount count = new SharedCount(client, "/count", 10);
             count.start();
