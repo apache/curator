@@ -51,7 +51,9 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
             client.start();
 
             final CountDownLatch              latch = new CountDownLatch(READERS + WRITERS);
+            final CountDownLatch              readLatch = new CountDownLatch(READERS);
             final InterProcessReadWriteLock   lock = new InterProcessReadWriteLock(client, "/lock");
+
             ExecutorService                   service = Executors.newCachedThreadPool();
             for ( int i = 0; i < READERS; ++i )
             {
@@ -62,8 +64,9 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                         @Override
                         public Void call() throws Exception
                         {
-                            latch.countDown();
                             lock.readLock().acquire();
+                            latch.countDown();
+                            readLatch.countDown();
                             return null;
                         }
                     }
@@ -78,7 +81,8 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                         @Override
                         public Void call() throws Exception
                         {
-                            latch.countDown();
+                            Assert.assertTrue(readLatch.await(10, TimeUnit.SECONDS));
+                            latch.countDown();  // must be before as there can only be one writer
                             lock.writeLock().acquire();
                             return null;
                         }
@@ -87,7 +91,6 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
             }
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-            Thread.sleep(1000);
 
             Collection<String> readers = lock.readLock().getParticipantNodes();
             Collection<String> writers = lock.writeLock().getParticipantNodes();
