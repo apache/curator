@@ -1,3 +1,7 @@
+1.0.1 - Jan. 4, 2012
+=====================
+* Updated and tested against ZooKeeper 3.4.2
+
 1.0.0 - Dec. 31, 2011
 =====================
 * Added a REST server for Service Discovery
