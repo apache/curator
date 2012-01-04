@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -319,17 +320,22 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             final Random          random = new Random();
             final Counter         counter = new Counter();
             ExecutorService       service = Executors.newCachedThreadPool();
+            ExecutorCompletionService<Object>   completionService = new ExecutorCompletionService<Object>(service);
             for ( int i = 0; i < THREADS; ++i )
             {
-                service.submit
+                completionService.submit
                 (
                     new Callable<Object>()
                     {
                         @Override
                         public Object call() throws Exception
                         {
-                            InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
-                            Lease lease = semaphore.acquire();
+                            InterProcessSemaphore semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+                            Lease lease = semaphore.acquire(10, TimeUnit.SECONDS);
+                            if ( lease == null )
+                            {
+                                throw new Exception("timed out");
+                            }
                             try
                             {
                                 synchronized(counter)
@@ -339,6 +345,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                                     {
                                         counter.maxCount = counter.currentCount;
                                     }
+                                    counter.notifyAll();
                                 }
 
                                 latch.await();
@@ -365,7 +372,11 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                 remaining -= times;
                 Thread.sleep(random.nextInt(100) + 1);
             }
-            Thread.sleep(1000);
+            
+            for ( int i = 0; i < THREADS; ++i )
+            {
+                completionService.take();
+            }
 
             synchronized(counter)
             {
