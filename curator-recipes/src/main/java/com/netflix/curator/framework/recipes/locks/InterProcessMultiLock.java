@@ -175,6 +175,9 @@ public class InterProcessMultiLock implements InterProcessLock
     @Override
     public synchronized boolean isAcquiredInThisProcess()
     {
+        // it's subjective what the correct meaning is here - I choose to return true
+        // only if all of the locks are acquired
+
         for ( InterProcessLock lock : locks )
         {
             if ( !lock.isAcquiredInThisProcess() )
