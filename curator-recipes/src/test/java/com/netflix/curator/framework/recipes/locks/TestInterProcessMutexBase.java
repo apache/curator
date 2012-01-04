@@ -21,8 +21,8 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.KillSessionAndWait;
 import com.netflix.curator.retry.RetryOneTime;
-import com.netflix.curator.test.KillSession;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.Callable;
@@ -83,7 +83,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
             );
 
             Assert.assertTrue(acquireSemaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
-            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+            KillSessionAndWait.kill(client, server.getConnectString());
             Assert.assertTrue(acquireSemaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
         }
         finally

@@ -22,9 +22,9 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.KillSessionAndWait;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
-import com.netflix.curator.test.KillSession;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.internal.annotations.Sets;
@@ -139,7 +139,7 @@ public class TestLeaderSelector extends BaseClassForTests
 
             Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
 
-            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+            KillSessionAndWait.kill(client, server.getConnectString());
 
             Assert.assertTrue(interruptedLatch.await(10, TimeUnit.SECONDS));
             Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));

@@ -21,8 +21,8 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.KillSessionAndWait;
 import com.netflix.curator.retry.RetryOneTime;
-import com.netflix.curator.test.KillSession;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.BlockingQueue;
@@ -68,7 +68,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             client2.create().forPath("/test/me", "data".getBytes());
             Assert.assertTrue(childAddedLatch.tryAcquire(1, 10, TimeUnit.SECONDS));
 
-            KillSession.kill(server.getConnectString(), client1.getZookeeperClient().getZooKeeper().getSessionId(), client1.getZookeeperClient().getZooKeeper().getSessionPasswd());
+            KillSessionAndWait.kill(client1, server.getConnectString());
 
             Assert.assertTrue(childAddedLatch.tryAcquire(1, 10, TimeUnit.SECONDS));
         }

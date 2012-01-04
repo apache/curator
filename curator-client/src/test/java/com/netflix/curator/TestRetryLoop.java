@@ -33,7 +33,7 @@ public class TestRetryLoop extends BaseClassForTests
         int                 serverPort = server.getPort();
         File                tempDirectory = server.getTempDirectory();
 
-        CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 3000, 3000, null, new RetryOneTime(1));
+        CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 5000, 5000, null, new RetryOneTime(1));
         client.start();
         try
         {

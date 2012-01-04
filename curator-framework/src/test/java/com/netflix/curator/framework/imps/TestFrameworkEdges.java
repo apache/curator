@@ -84,7 +84,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             client.checkExists().usingWatcher(watcher).forPath("/sessionTest");
-            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+            KillSessionAndWait.kill(client, server.getConnectString());
             Assert.assertNotNull(client.checkExists().forPath("/sessionTest"));
             Assert.assertTrue(sessionDied.get());
         }
@@ -281,6 +281,10 @@ public class TestFrameworkEdges extends BaseClassForTests
         catch ( Exception e )
         {
             // correct
+        }
+        catch ( Throwable e )
+        {
+            Assert.fail("", e);
         }
     }
 
