@@ -19,11 +19,11 @@ package com.netflix.curator.framework;
 
 import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.framework.api.*;
+import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
 import java.io.Closeable;
-import java.util.concurrent.Executor;
 
 /**
  * Zookeeper framework-style client
@@ -102,6 +102,8 @@ public interface CuratorFramework extends Closeable
      * @return builder object
      */
     public SetACLBuilder setACL();
+
+    public CuratorTransaction transactional();
 
         /**
      * Perform a sync on the given path - syncs are always in the background

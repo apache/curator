@@ -19,13 +19,18 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
+import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.api.*;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.DeleteBuilder;
+import com.netflix.curator.framework.api.transaction.OperationType;
+import com.netflix.curator.framework.api.transaction.TransactionDeleteBuilder;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.MultiTransactionRecord;
+import org.apache.zookeeper.Op;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
@@ -40,6 +45,27 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         this.client = client;
         version = -1;
         backgrounding = new Backgrounding();
+    }
+
+    TransactionDeleteBuilder    asTransactionDeleteBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
+    {
+        return new TransactionDeleteBuilder()
+        {
+            @Override
+            public CuratorTransaction forPath(String path) throws Exception
+            {
+                path = client.fixForNamespace(path);
+                transaction.add(Op.delete(path, version), OperationType.DELETE, path);
+                return curatorTransaction;
+            }
+
+            @Override
+            public Pathable<CuratorTransaction> withVersion(int version)
+            {
+                DeleteBuilderImpl.this.withVersion(version);
+                return this;
+            }
+        };
     }
 
     @Override
@@ -113,6 +139,11 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
             pathInForeground(path);
         }
         return null;
+    }
+
+    protected int getVersion()
+    {
+        return version;
     }
 
     private void pathInForeground(final String path) throws Exception
