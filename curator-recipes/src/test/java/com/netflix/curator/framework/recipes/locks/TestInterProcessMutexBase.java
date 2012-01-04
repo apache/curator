@@ -225,6 +225,8 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
             final CountDownLatch              latchForClient1 = new CountDownLatch(1);
             final CountDownLatch              latchForClient2 = new CountDownLatch(1);
+            final CountDownLatch              acquiredLatchForClient1 = new CountDownLatch(1);
+            final CountDownLatch              acquiredLatchForClient2 = new CountDownLatch(1);
 
             final AtomicReference<Exception>  exceptionRef = new AtomicReference<Exception>();
 
@@ -239,6 +241,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                         try
                         {
                             mutexForClient1.acquire();
+                            acquiredLatchForClient1.countDown();
                             latchForClient1.await();
                             mutexForClient1.release();
                         }
@@ -260,6 +263,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                         try
                         {
                             mutexForClient2.acquire();
+                            acquiredLatchForClient2.countDown();
                             latchForClient2.await();
                             mutexForClient2.release();
                         }
@@ -292,19 +296,13 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
             if ( mutexForClient1.isAcquiredInThisProcess() )
             {
                 latchForClient1.countDown();
-                if ( !mutexForClient2.isAcquiredInThisProcess() )
-                {
-                    Thread.sleep(1000);
-                }
+                Assert.assertTrue(acquiredLatchForClient2.await(10, TimeUnit.SECONDS));
                 Assert.assertTrue(mutexForClient2.isAcquiredInThisProcess());
             }
             else
             {
                 latchForClient2.countDown();
-                if ( !mutexForClient1.isAcquiredInThisProcess() )
-                {
-                    Thread.sleep(1000);
-                }
+                Assert.assertTrue(acquiredLatchForClient1.await(10, TimeUnit.SECONDS));
                 Assert.assertTrue(mutexForClient1.isAcquiredInThisProcess());
             }
         }
