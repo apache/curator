@@ -375,6 +375,10 @@ public class TestingCluster implements Closeable
                             startupLatch.countDown();
                             entry.quorumPeer.join();
                         }
+                        catch ( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
+                        }
                         catch ( Throwable e )
                         {
                             e.printStackTrace();
