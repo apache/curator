@@ -120,7 +120,6 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
             {
                 selector.start();
             }
-            Thread.sleep(1000); // give some time to get going
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
 
