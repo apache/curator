@@ -27,7 +27,6 @@ import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
@@ -341,9 +340,7 @@ public class TestingCluster implements Closeable
                     {
                         try
                         {
-                            ServerCnxnFactory cnxnFactory = ServerCnxnFactory.createFactory();
-                            cnxnFactory.configure(config.getClientPortAddress(),
-                                config.getMaxClientCnxns());
+                            Object      factory = ServerHelper.makeFactory(null, config.getClientPortAddress().getPort());
 
                             // copied from QuorumPeerMain.runFromConfig
                             entry.quorumPeer = new QuorumPeer();
@@ -360,9 +357,18 @@ public class TestingCluster implements Closeable
                             entry.quorumPeer.setInitLimit(config.getInitLimit());
                             entry.quorumPeer.setSyncLimit(config.getSyncLimit());
                             entry.quorumPeer.setQuorumVerifier(config.getQuorumVerifier());
-                            entry.quorumPeer.setCnxnFactory(cnxnFactory);
                             entry.quorumPeer.setZKDatabase(new ZKDatabase(entry.quorumPeer.getTxnFactory()));
                             entry.quorumPeer.setLearnerType(config.getPeerType());
+
+                            for ( Method m : QuorumPeer.class.getMethods() )
+                            {
+                                if ( m.getName().equals("setCnxnFactory") )
+                                {
+                                    // same as entry.quorumPeer.setCnxnFactory(factory);
+                                    m.invoke(entry.quorumPeer, factory);
+                                    break;
+                                }
+                            }
 
                             entry.quorumPeer.start();
 

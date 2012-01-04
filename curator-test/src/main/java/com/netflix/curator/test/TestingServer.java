@@ -18,8 +18,7 @@
 package com.netflix.curator.test;
 
 import com.google.common.io.Files;
-import org.apache.zookeeper.server.NIOServerCnxnFactory;
-import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import java.io.Closeable;
@@ -35,7 +34,7 @@ public class TestingServer implements Closeable
 {
     private final ZooKeeperServer server;
     private final int port;
-    private final ServerCnxnFactory factory;
+    private final Object factory;
     private final File tempDirectory;
 
     private static final int TIME_IN_MS = 2000;
@@ -105,9 +104,7 @@ public class TestingServer implements Closeable
         File dataDir = new File(tempDirectory, "testData");
 
         server = new ZooKeeperServer(dataDir, logDir, TIME_IN_MS);
-        factory = new NIOServerCnxnFactory();
-        factory.configure(new InetSocketAddress(port), 100);
-        factory.startup(server);
+        factory = ServerHelper.makeFactory(server, port);
     }
 
     /**
@@ -146,7 +143,7 @@ public class TestingServer implements Closeable
             e.printStackTrace();
         }
         server.shutdown();
-        factory.shutdown();
+        ServerHelper.shutdownFactory(factory);
     }
 
     /**
