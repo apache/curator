@@ -35,12 +35,14 @@ public class TestWithCluster
     @Test
     public void     testSplitBrain() throws Exception
     {
+        final int           TIMEOUT_SECONDS = 5;
+        
         CuratorFramework    client = null;
         TestingCluster cluster = new TestingCluster(3);
         cluster.start();
         try
         {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1));
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
             client.start();
 
             final CountDownLatch        latch = new CountDownLatch(2);
@@ -65,11 +67,11 @@ public class TestWithCluster
             {
                 if ( !instanceSpec.equals(cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper())) )
                 {
-                    cluster.killServer(instanceSpec);
+                    Assert.assertTrue(cluster.killServer(instanceSpec));
                 }
             }
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
         }
         finally
         {
