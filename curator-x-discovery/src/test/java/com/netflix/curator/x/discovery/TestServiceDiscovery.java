@@ -23,6 +23,8 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.TestingServer;
@@ -35,6 +37,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class TestServiceDiscovery
 {
@@ -56,9 +60,22 @@ public class TestServiceDiscovery
             discovery.start();
 
             Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
-
+            
+            final CountDownLatch        latch = new CountDownLatch(1);
+            client.getConnectionStateListenable().addListener
+            (
+                new ConnectionStateListener()
+                {
+                    @Override
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                    {
+                        latch.countDown();
+                    }
+                }
+            );
             KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
 
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
             Assert.assertEquals(discovery.queryForInstances("test").size(), 0);
         }
         finally
