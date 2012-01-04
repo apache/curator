@@ -29,6 +29,7 @@ class Stepper
             wait();
         }
         --available;
+        notifyAll();
     }
 
     synchronized void       countDown(int qty)
