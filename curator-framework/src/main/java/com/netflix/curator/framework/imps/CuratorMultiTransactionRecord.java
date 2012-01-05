@@ -27,7 +27,7 @@ import java.util.List;
 class CuratorMultiTransactionRecord extends MultiTransactionRecord
 {
     private final List<TypeAndPath>     metadata = Lists.newArrayList();
-    
+
     static class TypeAndPath
     {
         final OperationType type;

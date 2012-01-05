@@ -21,9 +21,13 @@ package com.netflix.curator.framework.imps;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.netflix.curator.RetryLoop;
+import com.netflix.curator.framework.api.Pathable;
 import com.netflix.curator.framework.api.transaction.CuratorTransaction;
+import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
+import com.netflix.curator.framework.api.transaction.CuratorTransactionFinal;
 import com.netflix.curator.framework.api.transaction.CuratorTransactionResult;
 import com.netflix.curator.framework.api.transaction.OperationType;
+import com.netflix.curator.framework.api.transaction.TransactionCheckBuilder;
 import com.netflix.curator.framework.api.transaction.TransactionCreateBuilder;
 import com.netflix.curator.framework.api.transaction.TransactionDeleteBuilder;
 import com.netflix.curator.framework.api.transaction.TransactionSetDataBuilder;
@@ -35,8 +39,9 @@ import org.apache.zookeeper.data.Stat;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-class CuratorTransactionImpl implements CuratorTransaction
+class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBridge, CuratorTransactionFinal
 {
     private final CuratorFrameworkImpl              client;
     private final CuratorMultiTransactionRecord     transaction;
@@ -47,6 +52,12 @@ class CuratorTransactionImpl implements CuratorTransaction
     {
         this.client = client;
         transaction = new CuratorMultiTransactionRecord();
+    }
+
+    @Override
+    public CuratorTransactionFinal and()
+    {
+        return this;
     }
 
     @Override
@@ -74,12 +85,30 @@ class CuratorTransactionImpl implements CuratorTransaction
     }
 
     @Override
-    public void check(String path, int version)
+    public TransactionCheckBuilder check()
     {
         Preconditions.checkArgument(!isCommitted);
 
-        path = client.fixForNamespace(path);
-        transaction.add(Op.check(path, version), OperationType.CHECK, path);
+        return new TransactionCheckBuilder()
+        {
+            private int         version = -1;
+
+            @Override
+            public CuratorTransactionBridge forPath(String path) throws Exception
+            {
+                String      fixedPath = client.fixForNamespace(path);
+                transaction.add(Op.check(fixedPath, version), OperationType.CHECK, path);
+
+                return CuratorTransactionImpl.this;
+            }
+
+            @Override
+            public Pathable<CuratorTransactionBridge> withVersion(int version)
+            {
+                this.version = version;
+                return this;
+            }
+        };
     }
 
     @Override
@@ -88,6 +117,7 @@ class CuratorTransactionImpl implements CuratorTransaction
         Preconditions.checkArgument(!isCommitted);
         isCommitted = true;
 
+        final AtomicBoolean firstTime = new AtomicBoolean(true);
         List<OpResult>      resultList = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
@@ -96,7 +126,7 @@ class CuratorTransactionImpl implements CuratorTransaction
                 @Override
                 public List<OpResult> call() throws Exception
                 {
-                    return doOperation();
+                    return doOperation(firstTime);
                 }
             }
         );
@@ -118,8 +148,14 @@ class CuratorTransactionImpl implements CuratorTransaction
         return builder.build();
     }
 
-    private List<OpResult> doOperation() throws Exception
+    private List<OpResult> doOperation(AtomicBoolean firstTime) throws Exception
     {
+        boolean         localFirstTime = firstTime.getAndSet(false);
+        if ( !localFirstTime )
+        {
+
+        }
+
         List<OpResult>  opResults = client.getZooKeeper().multi(transaction);
         if ( opResults.size() > 0 )
         {
@@ -153,7 +189,7 @@ class CuratorTransactionImpl implements CuratorTransaction
             case ZooDefs.OpCode.create:
             {
                 OpResult.CreateResult       createResult = (OpResult.CreateResult)opResult;
-                resultPath = createResult.getPath();
+                resultPath = client.unfixForNamespace(createResult.getPath());
                 break;
             }
 

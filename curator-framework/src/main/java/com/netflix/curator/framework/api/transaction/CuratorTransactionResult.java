@@ -18,6 +18,7 @@
 
 package com.netflix.curator.framework.api.transaction;
 
+import com.google.common.base.Predicate;
 import org.apache.zookeeper.data.Stat;
 
 public class CuratorTransactionResult
@@ -26,6 +27,18 @@ public class CuratorTransactionResult
     private final String        forPath;
     private final String        resultPath;
     private final Stat          resultStat;
+    
+    public static Predicate<CuratorTransactionResult>       ofTypeAndPath(final OperationType type, final String forPath)
+    {
+        return new Predicate<CuratorTransactionResult>()
+        {
+            @Override
+            public boolean apply(CuratorTransactionResult result)
+            {
+                return (result.getType() == type) && result.getForPath().equals(forPath);
+            }
+        };
+    }
 
     public CuratorTransactionResult(OperationType type, String forPath, String resultPath, Stat resultStat)
     {

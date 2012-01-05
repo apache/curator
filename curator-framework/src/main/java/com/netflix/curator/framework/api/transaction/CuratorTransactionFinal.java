@@ -15,13 +15,12 @@
  *     limitations under the License.
  *
  */
+
 package com.netflix.curator.framework.api.transaction;
 
-import com.netflix.curator.framework.api.Pathable;
-import com.netflix.curator.framework.api.Versionable;
+import java.util.Collection;
 
-public interface TransactionDeleteBuilder extends
-    Pathable<CuratorTransactionBridge>,
-    Versionable<Pathable<CuratorTransactionBridge>>
+public interface CuratorTransactionFinal extends CuratorTransaction
 {
+    public Collection<CuratorTransactionResult> commit() throws Exception;
 }

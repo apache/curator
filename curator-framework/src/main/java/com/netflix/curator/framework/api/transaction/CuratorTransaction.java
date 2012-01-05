@@ -18,8 +18,6 @@
 
 package com.netflix.curator.framework.api.transaction;
 
-import java.util.Collection;
-
 public interface CuratorTransaction
 {
     public TransactionCreateBuilder create();
@@ -28,7 +26,5 @@ public interface CuratorTransaction
 
     public TransactionSetDataBuilder setData();
 
-    public void check(String path, int version);
-
-    public Collection<CuratorTransactionResult> commit() throws Exception;
+    public TransactionCheckBuilder check();
 }

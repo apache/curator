@@ -299,7 +299,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
-    public CuratorTransaction transactional()
+    public CuratorTransaction inTransaction()
     {
         Preconditions.checkState(state.get() == State.STARTED);
 

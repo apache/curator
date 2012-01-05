@@ -103,7 +103,7 @@ public interface CuratorFramework extends Closeable
      */
     public SetACLBuilder setACL();
 
-    public CuratorTransaction transactional();
+    public CuratorTransaction inTransaction();
 
         /**
      * Perform a sync on the given path - syncs are always in the background

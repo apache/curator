@@ -19,17 +19,16 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.BackgroundPathAndBytesable;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.api.SetDataBuilder;
+import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
 import com.netflix.curator.framework.api.transaction.OperationType;
 import com.netflix.curator.framework.api.transaction.TransactionSetDataBuilder;
 import org.apache.zookeeper.AsyncCallback;
-import org.apache.zookeeper.MultiTransactionRecord;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
@@ -53,21 +52,21 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
         return new TransactionSetDataBuilder()
         {
             @Override
-            public CuratorTransaction forPath(String path, byte[] data) throws Exception
+            public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception
             {
-                path = client.fixForNamespace(path);
-                transaction.add(Op.setData(path, data, version), OperationType.SET_DATA, path);
+                String      fixedPath = client.fixForNamespace(path);
+                transaction.add(Op.setData(fixedPath, data, version), OperationType.SET_DATA, path);
                 return curatorTransaction;
             }
 
             @Override
-            public CuratorTransaction forPath(String path) throws Exception
+            public CuratorTransactionBridge forPath(String path) throws Exception
             {
                 return forPath(path, client.getDefaultData());
             }
 
             @Override
-            public PathAndBytesable<CuratorTransaction> withVersion(int version)
+            public PathAndBytesable<CuratorTransactionBridge> withVersion(int version)
             {
                 SetDataBuilderImpl.this.withVersion(version);
                 return this;

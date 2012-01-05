@@ -19,17 +19,16 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.framework.api.transaction.CuratorTransaction;
-import com.netflix.curator.framework.api.*;
 import com.netflix.curator.framework.api.BackgroundCallback;
-import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.DeleteBuilder;
+import com.netflix.curator.framework.api.Pathable;
+import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
 import com.netflix.curator.framework.api.transaction.OperationType;
 import com.netflix.curator.framework.api.transaction.TransactionDeleteBuilder;
 import org.apache.zookeeper.AsyncCallback;
-import org.apache.zookeeper.MultiTransactionRecord;
 import org.apache.zookeeper.Op;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -52,15 +51,15 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         return new TransactionDeleteBuilder()
         {
             @Override
-            public CuratorTransaction forPath(String path) throws Exception
+            public CuratorTransactionBridge forPath(String path) throws Exception
             {
-                path = client.fixForNamespace(path);
-                transaction.add(Op.delete(path, version), OperationType.DELETE, path);
+                String      fixedPath = client.fixForNamespace(path);
+                transaction.add(Op.delete(fixedPath, version), OperationType.DELETE, path);
                 return curatorTransaction;
             }
 
             @Override
-            public Pathable<CuratorTransaction> withVersion(int version)
+            public Pathable<CuratorTransactionBridge> withVersion(int version)
             {
                 DeleteBuilderImpl.this.withVersion(version);
                 return this;

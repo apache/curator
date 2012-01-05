@@ -21,7 +21,7 @@ import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.api.Versionable;
 
 public interface TransactionSetDataBuilder extends
-    PathAndBytesable<CuratorTransaction>,
-    Versionable<PathAndBytesable<CuratorTransaction>>
+    PathAndBytesable<CuratorTransactionBridge>,
+    Versionable<PathAndBytesable<CuratorTransactionBridge>>
 {
 }
