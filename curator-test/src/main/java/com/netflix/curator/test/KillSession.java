@@ -21,12 +21,13 @@ package com.netflix.curator.test;
 import org.apache.zookeeper.ZooKeeper;
 
 /**
- * Utility to simulate a ZK session dying
+ * Utility to simulate a ZK session dying. See:
+ * <a href="http://wiki.apache.org/hadoop/ZooKeeper/FAQ#A4">ZooKeeper FAQ</a>
  */
 public class KillSession
 {
     /**
-     * Kill the given ZK sesison
+     * Kill the given ZK session
      *
      * @param client the client to kill
      * @param connectString server connection string
@@ -38,7 +39,7 @@ public class KillSession
     }
 
     /**
-     * Kill the given ZK sesison
+     * Kill the given ZK session
      *
      * @param client the client to kill
      * @param connectString server connection string
