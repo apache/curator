@@ -93,13 +93,14 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
         {
             client.start();
 
-            final CountDownLatch            latch = new CountDownLatch(1);
+            final CountDownLatch            leaderLatch = new CountDownLatch(1);
+            final CountDownLatch            workingLatch = new CountDownLatch(SELECTOR_QTY);
             LeaderSelectorListener          listener = new LeaderSelectorListener()
             {
                 @Override
                 public void takeLeadership(CuratorFramework client) throws Exception
                 {
-                    latch.countDown();
+                    leaderLatch.countDown();
                     Thread.currentThread().join();
                 }
 
@@ -111,7 +112,15 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
 
             for ( int i = 0; i < SELECTOR_QTY; ++i )
             {
-                LeaderSelector      selector = new LeaderSelector(client, "/ls", listener);
+                LeaderSelector      selector = new LeaderSelector(client, "/ls", listener)
+                {
+                    @Override
+                    void doWork() throws Exception
+                    {
+                        workingLatch.countDown();
+                        super.doWork();
+                    }
+                };
                 selector.setId(Integer.toString(i));
                 selectors.add(selector);
             }
@@ -121,7 +130,10 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
                 selector.start();
             }
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(leaderLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(workingLatch.await(10, TimeUnit.SECONDS));
+            
+            Thread.sleep(1000); // some time for locks to acquire
 
             Collection<Participant>     participants = selectors.get(0).getParticipants();
             for ( int i = 1; i < selectors.size(); ++i )
