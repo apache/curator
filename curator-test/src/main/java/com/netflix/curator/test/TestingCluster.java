@@ -463,6 +463,7 @@ public class TestingCluster implements Closeable
         entry.quorumPeer.shutdown();
         try
         {
+            entry.quorumPeer.join();
             if ( entry.instanceSpec.deleteDataDirectoryOnClose )
             {
                 DirectoryUtils.deleteRecursively(entry.instanceSpec.dataDirectory);
@@ -471,6 +472,10 @@ public class TestingCluster implements Closeable
         catch ( IOException e )
         {
             // ignore
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
         }
     }
 
