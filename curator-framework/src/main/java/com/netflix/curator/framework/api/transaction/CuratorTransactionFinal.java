@@ -20,7 +20,19 @@ package com.netflix.curator.framework.api.transaction;
 
 import java.util.Collection;
 
+/**
+ * Adds commit to the transaction interface
+ */
 public interface CuratorTransactionFinal extends CuratorTransaction
 {
+    /**
+     * Commit all added operations as an atomic unit and return results
+     * for the operations. One result is returned for each operation added.
+     * Further, the ordering of the results matches the ordering that the
+     * operations were added.
+     *
+     * @return operation results
+     * @throws Exception errors
+     */
     public Collection<CuratorTransactionResult> commit() throws Exception;
 }

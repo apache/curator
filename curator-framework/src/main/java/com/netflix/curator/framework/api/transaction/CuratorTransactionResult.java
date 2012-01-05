@@ -21,13 +21,26 @@ package com.netflix.curator.framework.api.transaction;
 import com.google.common.base.Predicate;
 import org.apache.zookeeper.data.Stat;
 
+/**
+ * Holds the result of one transactional operation
+ */
 public class CuratorTransactionResult
 {
     private final OperationType type;
     private final String        forPath;
     private final String        resultPath;
     private final Stat          resultStat;
-    
+
+    /**
+     * Utility that can be passed to Google Guava to find a particular result. E.g.
+     * <code><pre>
+     * Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, path))
+     * </pre></code>
+     *
+     * @param type operation type
+     * @param forPath path
+     * @return predicate
+     */
     public static Predicate<CuratorTransactionResult>       ofTypeAndPath(final OperationType type, final String forPath)
     {
         return new Predicate<CuratorTransactionResult>()
@@ -48,21 +61,43 @@ public class CuratorTransactionResult
         this.type = type;
     }
 
+    /**
+     * Returns the operation type
+     *
+     * @return operation type
+     */
     public OperationType getType()
     {
         return type;
     }
 
+    /**
+     * Returns the path that was passed to the operation when added
+     * 
+     * @return operation input path
+     */
     public String getForPath()
     {
         return forPath;
     }
 
+    /**
+     * Returns the operation generated path or <code>null</code>. i.e. {@link CuratorTransaction#create()}
+     * using an EPHEMERAL mode generates the created path plus its sequence number.
+     *
+     * @return generated path or null
+     */
     public String getResultPath()
     {
         return resultPath;
     }
 
+    /**
+     * Returns the operation generated stat or <code>null</code>. i.e. {@link CuratorTransaction#setData()}
+     * generates a stat object.
+     *
+     * @return generated stat or null
+     */
     public Stat getResultStat()
     {
         return resultStat;

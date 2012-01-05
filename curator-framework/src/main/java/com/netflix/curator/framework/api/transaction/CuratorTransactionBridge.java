@@ -20,5 +20,10 @@ package com.netflix.curator.framework.api.transaction;
 
 public interface CuratorTransactionBridge
 {
+    /**
+     * Syntactic sugar to make the fluent interface more readable
+     *
+     * @return transaction continuation
+     */
     public CuratorTransactionFinal and();
 }
