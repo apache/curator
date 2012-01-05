@@ -46,7 +46,10 @@ public class KillSession
             @Override
             public void process(WatchedEvent event)
             {
-                zkLatch.countDown();
+                if ( event.getState() == Event.KeeperState.SyncConnected )
+                {
+                    zkLatch.countDown();
+                }
             }
         };
         ZooKeeper zk = new ZooKeeper(connectString, 10000, zkWatcher, sessionId, sessionPassword);

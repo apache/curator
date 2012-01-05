@@ -44,7 +44,9 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     @Test
     public void     testKilledSession() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        final int TIMEOUT_SECONDS = 5000;
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
         client.start();
         try
         {
@@ -82,9 +84,9 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                 }
             );
 
-            Assert.assertTrue(acquireSemaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(acquireSemaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
             KillSessionAndWait.kill(client, server.getConnectString());
-            Assert.assertTrue(acquireSemaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(acquireSemaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
         }
         finally
         {

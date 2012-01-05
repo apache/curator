@@ -50,7 +50,8 @@ public class BasicTests extends BaseClassForTests
                 }
             }
         };
-        final CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, 10000, watcher, new RetryOneTime(2));
+        final int TIMEOUT_SECONDS = 5;
+        final CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, watcher, new RetryOneTime(2));
         client.start();
         try
         {
@@ -59,7 +60,7 @@ public class BasicTests extends BaseClassForTests
 
             KillSession.kill(server.getConnectString(), client.getZooKeeper().getSessionId(), client.getZooKeeper().getSessionPasswd());
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
             ZooKeeper zooKeeper = client.getZooKeeper();
             client.blockUntilConnectedOrTimedOut();
             Assert.assertNotNull(zooKeeper.exists("/foo", false));

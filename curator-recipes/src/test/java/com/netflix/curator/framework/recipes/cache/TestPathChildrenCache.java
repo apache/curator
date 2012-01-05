@@ -36,11 +36,13 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void     testKilledSession() throws Exception
     {
+        final int           TIMEOUT_SECONDS = 5;
+        
         CuratorFramework    client1 = null;
         CuratorFramework    client2 = null;
         try
         {
-            client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
             client1.start();
             client1.create().forPath("/test");
 
@@ -66,11 +68,11 @@ public class TestPathChildrenCache extends BaseClassForTests
             client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client2.start();
             client2.create().forPath("/test/me", "data".getBytes());
-            Assert.assertTrue(childAddedLatch.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(childAddedLatch.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
 
             KillSessionAndWait.kill(client1, server.getConnectString());
 
-            Assert.assertTrue(childAddedLatch.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(childAddedLatch.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
         }
         finally
         {

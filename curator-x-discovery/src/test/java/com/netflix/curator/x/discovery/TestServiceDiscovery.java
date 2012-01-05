@@ -50,7 +50,9 @@ public class TestServiceDiscovery
         closeables.add(server);
         try
         {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            final int TIMEOUT_SECONDS = 5;
+
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
@@ -61,21 +63,8 @@ public class TestServiceDiscovery
 
             Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
             
-            final CountDownLatch        latch = new CountDownLatch(1);
-            client.getConnectionStateListenable().addListener
-            (
-                new ConnectionStateListener()
-                {
-                    @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
-                    {
-                        latch.countDown();
-                    }
-                }
-            );
-            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+            KillSessionAndWait.kill(client, server.getConnectString());
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
             Assert.assertEquals(discovery.queryForInstances("test").size(), 0);
         }
         finally
