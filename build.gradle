@@ -7,7 +7,7 @@ subprojects
     apply plugin: 'java'
 
     group = 'com.netflix.curator'
-    version = "1.0.1"
+    version = "1.1.0"
 
     repositories
     {
@@ -20,7 +20,7 @@ subprojects
 
     dependencies 
     {
-        compile     'org.apache.zookeeper:zookeeper:3.3.3'
+        compile     'org.apache.zookeeper:zookeeper:3.4.2'
         compile     'com.google.guava:guava:10.0.1'
     }
 
