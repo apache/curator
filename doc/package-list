@@ -2,6 +2,7 @@ com.netflix.curator
 com.netflix.curator.drivers
 com.netflix.curator.framework
 com.netflix.curator.framework.api
+com.netflix.curator.framework.api.transaction
 com.netflix.curator.framework.imps
 com.netflix.curator.framework.listen
 com.netflix.curator.framework.recipes.atomic
@@ -16,8 +17,8 @@ com.netflix.curator.retry
 com.netflix.curator.test
 com.netflix.curator.utils
 com.netflix.curator.x.discovery
-com.netflix.curator.x.discovery.contexts
 com.netflix.curator.x.discovery.details
-com.netflix.curator.x.discovery.entity
-com.netflix.curator.x.discovery.rest
+com.netflix.curator.x.discovery.server.contexts
+com.netflix.curator.x.discovery.server.entity
+com.netflix.curator.x.discovery.server.rest
 com.netflix.curator.x.discovery.strategies
