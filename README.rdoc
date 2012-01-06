@@ -10,8 +10,8 @@ Please see the doc at https://github.com/Netflix/curator/wiki
 == VERSIONS
 
 There are currently two version paths:
-Curator 1.0.x will stay compatible with ZooKeeper 3.3.x
-Curator 1.1.x+ will require ZooKeeper 3.4.x+
+* Curator 1.0.x will stay compatible with ZooKeeper 3.3.x
+* Curator 1.1.x+ will require ZooKeeper 3.4.x+
 
 == MAVEN
 
