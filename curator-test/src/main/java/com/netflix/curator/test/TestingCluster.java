@@ -128,6 +128,11 @@ public class TestingCluster implements Closeable
         {
             return quorumPort;
         }
+        
+        public String getConnectString()
+        {
+            return "localhost:" + port;
+        }
 
         @Override
         public String toString()

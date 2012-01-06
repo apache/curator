@@ -42,6 +42,16 @@ public class TestWithCluster
         cluster.start();
         try
         {
+            // make sure all instances are up
+            for ( TestingCluster.InstanceSpec instanceSpec : cluster.getInstances() )
+            {
+                client = CuratorFrameworkFactory.newClient(instanceSpec.getConnectString(), new RetryOneTime(1));
+                client.start();
+                client.checkExists().forPath("/");
+                client.close();
+                client = null;
+            }
+
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
             client.start();
 
@@ -71,7 +81,7 @@ public class TestWithCluster
                 }
             }
 
-            Assert.assertTrue(latch.await(TIMEOUT_SECONDS * 3, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
         }
         finally
         {
