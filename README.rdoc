@@ -17,21 +17,7 @@ There are currently two version paths:
 
 Curator binaries are published to Maven Central. The dependency specs are:
 
-Curator Client:
-    <dependency>
-        <groupId>com.netflix.curator</groupId>
-        <artifactId>curator-client</artifactId>
-        <version>version-number</version>
-    </dependency>
-
-Curator Framework:
-    <dependency>
-        <groupId>com.netflix.curator</groupId>
-        <artifactId>curator-framework</artifactId>
-        <version>version-number</version>
-    </dependency>
-
-Curator Recipes:
+Curator Recipes (pulls in all other Curator JARs):
     <dependency>
         <groupId>com.netflix.curator</groupId>
         <artifactId>curator-recipes</artifactId>
