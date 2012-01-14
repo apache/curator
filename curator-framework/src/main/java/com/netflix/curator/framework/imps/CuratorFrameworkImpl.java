@@ -19,6 +19,7 @@ package com.netflix.curator.framework.imps;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
@@ -46,6 +47,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorFrameworkImpl implements CuratorFramework
@@ -84,8 +86,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder) throws IOException
     {
-        Preconditions.checkNotNull(builder.getThreadFactory());
-
         this.client = new CuratorZookeeperClient
         (
             builder.getConnectString(),
@@ -121,8 +121,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         backgroundOperations = new LinkedBlockingQueue<OperationAndData<?>>();
         namespace = builder.getNamespace();
         ensurePath = (namespace != null) ? new EnsurePath(ZKPaths.makePath("/", namespace)) : null;
-        executorService = Executors.newFixedThreadPool(2, builder.getThreadFactory());  // 1 for listeners, 1 for background ops
-        connectionStateManager = new ConnectionStateManager(this);
+        executorService = Executors.newFixedThreadPool(2, getThreadFactory(builder));  // 1 for listeners, 1 for background ops
+        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
 
         byte[]      builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -131,6 +131,16 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             authInfo.set(new AuthInfo(builder.getAuthScheme(), builder.getAuthValue()));
         }
+    }
+
+    private ThreadFactory getThreadFactory(CuratorFrameworkFactory.Builder builder)
+    {
+        ThreadFactory threadFactory = builder.getThreadFactory();
+        if ( threadFactory == null )
+        {
+            threadFactory = new ThreadFactoryBuilder().setNameFormat("CuratorFramework-%d").build();
+        }
+        return threadFactory;
     }
 
     protected CuratorFrameworkImpl(CuratorFrameworkImpl parent)

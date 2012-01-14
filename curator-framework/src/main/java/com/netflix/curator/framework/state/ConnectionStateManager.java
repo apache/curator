@@ -31,6 +31,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -66,11 +67,16 @@ public class ConnectionStateManager implements Closeable
 
     /**
      * @param client the client
+     * @param threadFactory thread factory to use or null for a default
      */
-    public ConnectionStateManager(CuratorFramework client)
+    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory)
     {
         this.client = client;
-        service = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("ConnectionStateManager-%d").build());
+        if ( threadFactory == null )
+        {
+            threadFactory = new ThreadFactoryBuilder().setNameFormat("ConnectionStateManager-%d").build();
+        }
+        service = Executors.newSingleThreadExecutor(threadFactory);
     }
 
     /**
