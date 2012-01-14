@@ -15,14 +15,7 @@ There are currently two version paths:
 
 == MAVEN
 
-Curator binaries are published to Maven Central. The dependency specs are:
-
-Curator Recipes (pulls in all other Curator JARs):
-    <dependency>
-        <groupId>com.netflix.curator</groupId>
-        <artifactId>curator-recipes</artifactId>
-        <version>version-number</version>
-    </dependency>
+Curator binaries are published to Maven Central. Please see the docs for details.
 
 == AUTHOR
 
