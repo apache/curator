@@ -137,6 +137,9 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
             );
         listenerContainer.clear();
 
+        // Interrupt our own worker thread and shutdown thread pool
+        executorService.shutdownNow();
+
         discovery.cacheClosed(this);
     }
 
