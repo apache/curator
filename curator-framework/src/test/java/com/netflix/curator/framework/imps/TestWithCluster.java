@@ -71,7 +71,7 @@ public class TestWithCluster
                 }
             }
 
-            Assert.assertTrue(latch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(TIMEOUT_SECONDS * 3, TimeUnit.SECONDS));
         }
         finally
         {
