@@ -1,3 +1,9 @@
+1.1.2/1.0.2 - Jan. 21, 2012
+===========================
+* Issue 22: Make ServiceCache close itself down properly.
+* Issue 21: Move TestNG to the top-level pom and define its scope as test
+* Issue 17: ConnectionStateManager should use the builder's thread factory if present
+
 1.1.0 - Jan. 5, 2012
 =====================
 * 1.1.x marks a separate branch of Curator:
