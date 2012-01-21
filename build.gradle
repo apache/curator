@@ -7,7 +7,7 @@ subprojects
     apply plugin: 'java'
 
     group = 'com.netflix.curator'
-    version = "1.1.0"
+    version = "1.1.2"
 
     repositories
     {
