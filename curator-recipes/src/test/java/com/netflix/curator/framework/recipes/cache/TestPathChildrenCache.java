@@ -36,7 +36,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void     testKilledSession() throws Exception
     {
-        final int           TIMEOUT_SECONDS = 5;
+        final int           TIMEOUT_SECONDS = 10;
         
         CuratorFramework    client1 = null;
         CuratorFramework    client2 = null;
