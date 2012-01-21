@@ -18,41 +18,57 @@
 
 package com.netflix.curator.test;
 
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.testng.Assert;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Utility to simulate a ZK session dying
+ * Utility to simulate a ZK session dying. See:
+ * <a href="http://wiki.apache.org/hadoop/ZooKeeper/FAQ#A4">ZooKeeper FAQ</a>
  */
 public class KillSession
 {
     /**
-     * Kill the given ZK sesison
+     * Kill the given ZK session
      *
+     * @param client the client to kill
      * @param connectString server connection string
-     * @param sessionId ID of the session
-     * @param sessionPassword session password
      * @throws Exception errors
      */
-    public static void     kill(String connectString, long sessionId, byte[] sessionPassword) throws Exception
+    public static void     kill(ZooKeeper client, String connectString) throws Exception
     {
-        final CountDownLatch zkLatch = new CountDownLatch(1);
-        Watcher zkWatcher = new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent event)
-            {
-                zkLatch.countDown();
-            }
-        };
-        ZooKeeper zk = new ZooKeeper(connectString, 10000, zkWatcher, sessionId, sessionPassword);
+        kill(client, connectString, 10000);
+    }
+
+    /**
+     * Kill the given ZK session
+     *
+     * @param client the client to kill
+     * @param connectString server connection string
+     * @param maxMs max time ms to wait for kill
+     * @throws Exception errors
+     */
+    public static void     kill(ZooKeeper client, String connectString, int maxMs) throws Exception
+    {
+        long        startTicks = System.currentTimeMillis();
+
+        ZooKeeper zk = new ZooKeeper(connectString, maxMs, null, client.getSessionId(), client.getSessionPasswd());
         try
         {
-            Assert.assertTrue(zkLatch.await(10, TimeUnit.SECONDS));
+            try
+            {
+                while ( (System.currentTimeMillis() - startTicks) < maxMs )
+                {
+                    client.exists("/foo", false);
+                    Thread.sleep(10);
+                }
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+            }
+            catch ( Exception expected )
+            {
+                // this is what we want - the client to drop
+            }
         }
         finally
         {

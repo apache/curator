@@ -22,9 +22,9 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
-import com.netflix.curator.framework.recipes.KillSessionAndWait;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.KillSession;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.internal.annotations.Sets;
@@ -87,7 +87,9 @@ public class TestLeaderSelector extends BaseClassForTests
     @Test
     public void     testKillSession() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        final int TIMEOUT_SECONDS = 5000;
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
         client.start();
         try
         {
@@ -137,12 +139,12 @@ public class TestLeaderSelector extends BaseClassForTests
             leaderSelector1.start();
             leaderSelector2.start();
 
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
 
-            KillSessionAndWait.kill(client, server.getConnectString());
+            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
 
-            Assert.assertTrue(interruptedLatch.await(10, TimeUnit.SECONDS));
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(interruptedLatch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
             Assert.assertEquals(leaderCount.get(), 1);
 
             leaderSelector1.close();

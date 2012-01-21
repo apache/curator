@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.framework.recipes.leader;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -240,7 +241,8 @@ public class LeaderSelector implements Closeable
         return new Participant(thisId, markAsLeader);
     }
 
-    private void doWork() throws Exception
+    @VisibleForTesting
+    void doWork() throws Exception
     {
         hasLeadership = false;
         try

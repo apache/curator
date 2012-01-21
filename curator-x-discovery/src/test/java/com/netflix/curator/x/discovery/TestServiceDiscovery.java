@@ -23,8 +23,6 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.framework.state.ConnectionState;
-import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.TestingServer;
@@ -37,8 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class TestServiceDiscovery
 {
@@ -50,7 +46,9 @@ public class TestServiceDiscovery
         closeables.add(server);
         try
         {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            final int TIMEOUT_SECONDS = 5;
+
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
@@ -61,21 +59,8 @@ public class TestServiceDiscovery
 
             Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
             
-            final CountDownLatch        latch = new CountDownLatch(1);
-            client.getConnectionStateListenable().addListener
-            (
-                new ConnectionStateListener()
-                {
-                    @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
-                    {
-                        latch.countDown();
-                    }
-                }
-            );
-            KillSession.kill(server.getConnectString(), client.getZookeeperClient().getZooKeeper().getSessionId(), client.getZookeeperClient().getZooKeeper().getSessionPasswd());
+            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
             Assert.assertEquals(discovery.queryForInstances("test").size(), 0);
         }
         finally

@@ -21,8 +21,8 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
-import com.netflix.curator.framework.recipes.KillSessionAndWait;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.KillSession;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.Callable;
@@ -44,7 +44,9 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     @Test
     public void     testKilledSession() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        final int TIMEOUT_SECONDS = 5000;
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
         client.start();
         try
         {
@@ -82,9 +84,9 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                 }
             );
 
-            Assert.assertTrue(acquireSemaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
-            KillSessionAndWait.kill(client, server.getConnectString());
-            Assert.assertTrue(acquireSemaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(acquireSemaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            Assert.assertTrue(acquireSemaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
         }
         finally
         {

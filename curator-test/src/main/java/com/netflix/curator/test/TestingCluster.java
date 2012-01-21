@@ -128,6 +128,11 @@ public class TestingCluster implements Closeable
         {
             return quorumPort;
         }
+        
+        public String getConnectString()
+        {
+            return "localhost:" + port;
+        }
 
         @Override
         public String toString()
@@ -463,6 +468,7 @@ public class TestingCluster implements Closeable
         entry.quorumPeer.shutdown();
         try
         {
+            entry.quorumPeer.join(10000);
             if ( entry.instanceSpec.deleteDataDirectoryOnClose )
             {
                 DirectoryUtils.deleteRecursively(entry.instanceSpec.dataDirectory);
@@ -471,6 +477,10 @@ public class TestingCluster implements Closeable
         catch ( IOException e )
         {
             // ignore
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
         }
     }
 
