@@ -49,6 +49,64 @@ public class TestDistributedQueue extends BaseClassForTests
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
 
     @Test
+    public void     testPutListener() throws Exception
+    {
+        final int                   itemQty = 10;
+
+        DistributedQueue<TestQueueItem>  queue = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            BlockingQueueConsumer<TestQueueItem> consumer = new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
+
+            queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).buildQueue();
+            queue.start();
+
+            QueueTestProducer   producer = new QueueTestProducer(queue, itemQty, 0);
+
+            final AtomicInteger     listenerCalls = new AtomicInteger(0);
+            QueuePutListener<TestQueueItem> listener = new QueuePutListener<TestQueueItem>()
+            {
+                @Override
+                public void putCompleted(TestQueueItem item)
+                {
+                    listenerCalls.incrementAndGet();
+                }
+
+                @Override
+                public void putMultiCompleted(MultiItem<TestQueueItem> items)
+                {
+                }
+            };
+            queue.getPutListenerContainer().addListener(listener);
+
+            ExecutorService     service = Executors.newCachedThreadPool();
+            service.submit(producer);
+
+            int                 iteration = 0;
+            while ( consumer.size() < itemQty )
+            {
+                Assert.assertTrue(++iteration < 10);
+                Thread.sleep(1000);
+            }
+
+            int                 i = 0;
+            for ( TestQueueItem item : consumer.getItems() )
+            {
+                Assert.assertEquals(item.str, Integer.toString(i++));
+            }
+            
+            Assert.assertEquals(listenerCalls.get(), itemQty);
+        }
+        finally
+        {
+            Closeables.closeQuietly(queue);
+            Closeables.closeQuietly(client);
+        }
+    }
+    
+    @Test
     public void     testErrorMode() throws Exception
     {
         CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -552,5 +610,4 @@ public class TestDistributedQueue extends BaseClassForTests
             Closeables.closeQuietly(client);
         }
     }
-
 }
