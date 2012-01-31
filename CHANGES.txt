@@ -1,3 +1,7 @@
+1.1.2/1.0.3 - XXXXXXXXXXXXX
+===========================
+* Added listener to Queues to listen for put completion
+
 1.1.1/1.0.2 - Jan. 21, 2012
 ===========================
 * Issue 22: Make ServiceCache close itself down properly.
