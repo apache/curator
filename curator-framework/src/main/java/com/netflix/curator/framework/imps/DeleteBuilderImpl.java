@@ -19,27 +19,38 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.framework.api.*;
 import com.netflix.curator.framework.api.BackgroundCallback;
-import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.DeleteBuilder;
+import com.netflix.curator.framework.api.DeleteBuilderBase;
+import com.netflix.curator.framework.api.Pathable;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
 {
-    private final CuratorFrameworkImpl client;
-    private int                                     version;
-    private Backgrounding backgrounding;
+    private final CuratorFrameworkImpl  client;
+    private int                         version;
+    private Backgrounding               backgrounding;
+    private boolean                     guaranteed;
 
     DeleteBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
         version = -1;
         backgrounding = new Backgrounding();
+        guaranteed = false;
+    }
+
+    @Override
+    public DeleteBuilderBase guaranteed()
+    {
+        guaranteed = true;
+        return this;
     }
 
     @Override
@@ -82,21 +93,21 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
     {
         final TimeTrace   trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Background");
         client.getZooKeeper().delete
-        (
-            operationAndData.getData(),
-            version,
-            new AsyncCallback.VoidCallback()
-            {
-                @Override
-                public void processResult(int rc, String path, Object ctx)
+            (
+                operationAndData.getData(),
+                version,
+                new AsyncCallback.VoidCallback()
                 {
-                    trace.commit();
-                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null);
-                    client.processBackgroundOperation(operationAndData, event);
-                }
-            },
-            backgrounding.getContext()
-        );
+                    @Override
+                    public void processResult(int rc, String path, Object ctx)
+                    {
+                        trace.commit();
+                        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null);
+                        client.processBackgroundOperation(operationAndData, event);
+                    }
+                },
+                backgrounding.getContext()
+            );
     }
 
     @Override
@@ -106,7 +117,19 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
 
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback()), null);
+            OperationAndData.ErrorCallback<String>  errorCallback = null;
+            if ( guaranteed )
+            {
+                errorCallback = new OperationAndData.ErrorCallback<String>()
+                {
+                    @Override
+                    public void retriesExhausted(OperationAndData<String> operationAndData)
+                    {
+                        client.getFailedDeleteManager().addFailedDelete(operationAndData.getData());
+                    }
+                };
+            }
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), errorCallback), null);
         }
         else
         {
@@ -115,22 +138,42 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         return null;
     }
 
+    protected int getVersion()
+    {
+        return version;
+    }
+
     private void pathInForeground(final String path) throws Exception
     {
         TimeTrace       trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
-        RetryLoop.callWithRetry
-        (
-            client.getZookeeperClient(),
-            new Callable<Void>()
+        try
+        {
+            RetryLoop.callWithRetry
+                (
+                    client.getZookeeperClient(),
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            client.getZooKeeper().delete(path, version);
+                            return null;
+                        }
+                    }
+                );
+        }
+        catch ( KeeperException.NodeExistsException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            if ( guaranteed )
             {
-                @Override
-                public Void call() throws Exception
-                {
-                    client.getZooKeeper().delete(path, version);
-                    return null;
-                }
+                client.getFailedDeleteManager().addFailedDelete(path);
             }
-        );
+            throw e;
+        }
         trace.commit();
     }
 }
