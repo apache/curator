@@ -24,7 +24,6 @@ import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
-import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.recipes.leader.LeaderSelector;
 import com.netflix.curator.utils.ZKPaths;
@@ -91,14 +90,6 @@ public class DistributedQueue<T> implements Closeable
                 if ( event.getWatchedEvent().getType() == Watcher.Event.EventType.NodeChildrenChanged )
                 {
                     internalNotify();
-                }
-            }
-            else if ( event.getType() == CuratorEventType.CREATE )
-            {
-                synchronized(putCount)
-                {
-                    putCount.decrementAndGet();
-                    putCount.notifyAll();
                 }
             }
         }
@@ -326,25 +317,34 @@ public class DistributedQueue<T> implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
+                if ( event.getType() == CuratorEventType.CREATE )
+                {
+                    synchronized(putCount)
+                    {
+                        putCount.decrementAndGet();
+                        putCount.notifyAll();
+                    }
+                }
+
                 putListenerContainer.forEach
-                    (
-                        new Function<QueuePutListener<T>, Void>()
+                (
+                    new Function<QueuePutListener<T>, Void>()
+                    {
+                        @Override
+                        public Void apply(QueuePutListener<T> listener)
                         {
-                            @Override
-                            public Void apply(QueuePutListener<T> listener)
+                            if ( item != null )
                             {
-                                if ( item != null )
-                                {
-                                    listener.putCompleted(item);
-                                }
-                                else
-                                {
-                                    listener.putMultiCompleted(givenMultiItem);
-                                }
-                                return null;
+                                listener.putCompleted(item);
                             }
+                            else
+                            {
+                                listener.putMultiCompleted(givenMultiItem);
+                            }
+                            return null;
                         }
-                    );
+                    }
+                );
             }
         };
         client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).inBackground(callback).forPath(path, bytes);
