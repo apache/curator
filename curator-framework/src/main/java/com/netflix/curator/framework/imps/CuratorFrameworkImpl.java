@@ -25,8 +25,8 @@ import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.api.*;
+import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.state.ConnectionState;
@@ -63,6 +63,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ConnectionStateManager                                connectionStateManager;
     private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
     private final byte[]                                                defaultData;
+    private final FailedDeleteManager                                   failedDeleteManager;
 
     private enum State
     {
@@ -131,6 +132,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             authInfo.set(new AuthInfo(builder.getAuthScheme(), builder.getAuthValue()));
         }
+
+        failedDeleteManager = new FailedDeleteManager(this);
     }
 
     private ThreadFactory getThreadFactory(CuratorFrameworkFactory.Builder builder)
@@ -152,6 +155,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         backgroundOperations = parent.backgroundOperations;
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
+        failedDeleteManager = parent.failedDeleteManager;
         namespace = null;
         ensurePath = null;
     }
@@ -347,7 +351,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
-        backgroundOperations.offer(new OperationAndData<String>(operation, path, null));
+        backgroundOperations.offer(new OperationAndData<String>(operation, path, null, null));
     }
 
     @Override
@@ -360,6 +364,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
         return new EnsurePath(fixForNamespace(path));
+    }
+
+    FailedDeleteManager getFailedDeleteManager()
+    {
+        return failedDeleteManager;
     }
 
     RetryLoop newRetryLoop()
@@ -392,6 +401,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
                 else
                 {
+                    if ( operationAndData.getErrorCallback() != null )
+                    {
+                        operationAndData.getErrorCallback().retriesExhausted(operationAndData);
+                    }
+
                     KeeperException.Code    code = KeeperException.Code.get(event.getResultCode());
                     Exception               e = null;
                     try
@@ -509,7 +523,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    private void handleBackgroundOperationException(OperationAndData<?> operationAndData, Throwable e)
+    private<DATA_TYPE> void handleBackgroundOperationException(OperationAndData<DATA_TYPE> operationAndData, Throwable e)
     {
         do
         {
@@ -525,6 +539,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 else
                 {
                     log.debug("Retry policy did not allow retry");
+                    if ( operationAndData.getErrorCallback() != null )
+                    {
+                        operationAndData.getErrorCallback().retriesExhausted(operationAndData);
+                    }
                 }
             }
 

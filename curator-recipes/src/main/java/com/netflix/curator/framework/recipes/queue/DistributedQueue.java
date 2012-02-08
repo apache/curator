@@ -538,7 +538,7 @@ public class DistributedQueue<T> implements Closeable
         {
             if ( lockCreated )
             {
-                client.delete().forPath(lockNodePath);
+                client.delete().guaranteed().forPath(lockNodePath);
             }
         }
     }

@@ -150,7 +150,7 @@ class LockInternals
     {
         revocable.set(null);
         client.getCuratorListenable().removeListener(listener);
-        client.delete().forPath(lockPath);
+        client.delete().guaranteed().forPath(lockPath);
     }
 
     List<String> getSortedChildren() throws Exception
@@ -309,7 +309,7 @@ class LockInternals
         {
             if ( doDelete )
             {
-                client.delete().forPath(ourPath);
+                client.delete().guaranteed().forPath(ourPath);
             }
         }
         return haveTheLock;

@@ -149,7 +149,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
         byte[]      responseData = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback()), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null), null);
         }
         else
         {

@@ -2,10 +2,19 @@
 ===========================
 * Added listener to Queues to listen for put completion
 
+* Issue 24: If InterProcesMutex.release() fails to delete the node (due to connection errors, etc.)
+the instance was left in an inconsistent state that would cause a future call to acquire() to
+succeed without actually creating the lock. There is no good solution to this so I've taken the
+only way out - ignore the fact that the lock may not have been removed and clear the internal state.
+This retains lock safety but forces the next locker to possibly wait for session timeout to clear
+the original lock node. IMPORTANT: THERE IS AN EDGE CASE THAT CAN CAUSE A DEADLOCK.
+
 1.1.1/1.0.2 - Jan. 21, 2012
 ===========================
 * Issue 22: Make ServiceCache close itself down properly.
+
 * Issue 21: Move TestNG to the top-level pom and define its scope as test
+
 * Issue 17: ConnectionStateManager should use the builder's thread factory if present
 
 1.1.0 - Jan. 5, 2012

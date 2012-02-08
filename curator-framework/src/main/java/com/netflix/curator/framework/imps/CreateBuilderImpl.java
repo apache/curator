@@ -287,7 +287,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         String  returnPath = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback()), null);
+            client.processBackgroundOperation(new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null), null);
         }
         else
         {

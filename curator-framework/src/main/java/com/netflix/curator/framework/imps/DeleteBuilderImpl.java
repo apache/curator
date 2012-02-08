@@ -24,26 +24,30 @@ import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.DeleteBuilder;
+import com.netflix.curator.framework.api.DeleteBuilderBase;
 import com.netflix.curator.framework.api.Pathable;
 import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
 import com.netflix.curator.framework.api.transaction.OperationType;
 import com.netflix.curator.framework.api.transaction.TransactionDeleteBuilder;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
 {
-    private final CuratorFrameworkImpl client;
-    private int                                     version;
-    private Backgrounding backgrounding;
+    private final CuratorFrameworkImpl  client;
+    private int                         version;
+    private Backgrounding               backgrounding;
+    private boolean                     guaranteed;
 
     DeleteBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
         version = -1;
         backgrounding = new Backgrounding();
+        guaranteed = false;
     }
 
     TransactionDeleteBuilder    asTransactionDeleteBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
@@ -65,6 +69,13 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                 return this;
             }
         };
+    }
+
+    @Override
+    public DeleteBuilderBase guaranteed()
+    {
+        guaranteed = true;
+        return this;
     }
 
     @Override
@@ -131,7 +142,19 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
 
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback()), null);
+            OperationAndData.ErrorCallback<String>  errorCallback = null;
+            if ( guaranteed )
+            {
+                errorCallback = new OperationAndData.ErrorCallback<String>()
+                {
+                    @Override
+                    public void retriesExhausted(OperationAndData<String> operationAndData)
+                    {
+                        client.getFailedDeleteManager().addFailedDelete(operationAndData.getData());
+                    }
+                };
+            }
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), errorCallback), null);
         }
         else
         {
@@ -148,19 +171,34 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
     private void pathInForeground(final String path) throws Exception
     {
         TimeTrace       trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
-        RetryLoop.callWithRetry
-        (
-            client.getZookeeperClient(),
-            new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+        try
+        {
+            RetryLoop.callWithRetry
+            (
+                client.getZookeeperClient(),
+                new Callable<Void>()
                 {
-                    client.getZooKeeper().delete(path, version);
-                    return null;
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        client.getZooKeeper().delete(path, version);
+                        return null;
+                    }
                 }
+            );
+        }
+        catch ( KeeperException.NodeExistsException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            if ( guaranteed )
+            {
+                client.getFailedDeleteManager().addFailedDelete(path);
             }
-        );
+            throw e;
+        }
         trace.commit();
     }
 }
