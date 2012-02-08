@@ -20,6 +20,7 @@ package com.netflix.curator.framework.recipes.leader;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
+import com.netflix.curator.framework.api.UnhandledErrorListener;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.TestingCluster;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -48,6 +50,19 @@ public class TestLeaderSelectorCluster
         {
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
             client.start();
+
+            final AtomicInteger     errors = new AtomicInteger(0);
+            client.getUnhandledErrorListenable().addListener
+            (
+                new UnhandledErrorListener()
+                {
+                    @Override
+                    public void unhandledError(String message, Throwable e)
+                    {
+                        errors.incrementAndGet();
+                    }
+                }
+            );
             
             final Semaphore             semaphore = new Semaphore(0);
             final CountDownLatch        reconnectedLatch = new CountDownLatch(1);
@@ -72,14 +87,16 @@ public class TestLeaderSelectorCluster
             };
             LeaderSelector      selector = new LeaderSelector(client, "/leader", listener);
             selector.start();
-            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(TIMEOUT_SECONDS * 4, TimeUnit.SECONDS));
 
             TestingCluster.InstanceSpec     connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(reconnectedLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(reconnectedLatch.await(TIMEOUT_SECONDS * 4, TimeUnit.SECONDS));
             selector.start();
-            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(TIMEOUT_SECONDS * 4, TimeUnit.SECONDS));
+            
+            Assert.assertEquals(errors.get(), 0);
         }
         finally
         {

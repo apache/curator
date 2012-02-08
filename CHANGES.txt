@@ -2,12 +2,16 @@
 ===========================
 * Added listener to Queues to listen for put completion
 
-* Issue 24: If InterProcesMutex.release() fails to delete the node (due to connection errors, etc.)
+* Issue 24: If InterProcesMutex.release() failed to delete the node (due to connection errors, etc.)
 the instance was left in an inconsistent state that would cause a future call to acquire() to
-succeed without actually creating the lock. There is no good solution to this so I've taken the
-only way out - ignore the fact that the lock may not have been removed and clear the internal state.
-This retains lock safety but forces the next locker to possibly wait for session timeout to clear
-the original lock node. IMPORTANT: THERE IS AN EDGE CASE THAT CAN CAUSE A DEADLOCK.
+succeed without actually creating the lock. A new feature (see next bullet) was added to solve this
+problem: guaranteed deletes. The various lock-based recipes now use this feature.
+
+* New feature: guaranteed deletes. The delete builder now has a method that will record failed node
+deletions and attempt to delete them in the background until successful. NOTE: you will still get
+an exception when the deletion fails. But, you can be assured that as long as the CuratorFramework
+instance is open attempts will be made to delete the node:
+    client.delete().guaranteed() ...
 
 1.1.1/1.0.2 - Jan. 21, 2012
 ===========================
