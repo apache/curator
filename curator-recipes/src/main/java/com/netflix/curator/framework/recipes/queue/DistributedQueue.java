@@ -17,11 +17,15 @@
  */
 package com.netflix.curator.framework.recipes.queue;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.listen.Listenable;
+import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.recipes.leader.LeaderSelector;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -73,6 +77,8 @@ public class DistributedQueue<T> implements Closeable
     private final AtomicBoolean refreshOnWatchSignaled = new AtomicBoolean(false);
     private final String lockPath;
     private final AtomicReference<ErrorMode> errorMode = new AtomicReference<ErrorMode>(ErrorMode.REQUEUE);
+    private final ListenerContainer<QueuePutListener<T>> putListenerContainer = new ListenerContainer<QueuePutListener<T>>();
+    private final AtomicInteger lastChildCount = new AtomicInteger(0);
 
     private final AtomicInteger     putCount = new AtomicInteger(0);
     private final CuratorListener   listener = new CuratorListener()
@@ -189,6 +195,29 @@ public class DistributedQueue<T> implements Closeable
         }
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        if ( !state.compareAndSet(State.STARTED, State.STOPPED) )
+        {
+            throw new IllegalStateException();
+        }
+
+        putListenerContainer.clear();
+        client.getCuratorListenable().removeListener(listener);
+        service.shutdownNow();
+    }
+
+    /**
+     * Return the manager for put listeners
+     *
+     * @return put listener container
+     */
+    public ListenerContainer<QueuePutListener<T>> getPutListenerContainer()
+    {
+        return putListenerContainer;
+    }
+
     /**
      * Used when the queue is created with a {@link QueueBuilder#lockPath(String)}. Determines
      * the behavior when the queue consumer throws an exception
@@ -233,18 +262,6 @@ public class DistributedQueue<T> implements Closeable
         return true;
     }
 
-    @Override
-    public void close() throws IOException
-    {
-        if ( !state.compareAndSet(State.STARTED, State.STOPPED) )
-        {
-            throw new IllegalStateException();
-        }
-
-        client.getCuratorListenable().removeListener(listener);
-        service.shutdownNow();
-    }
-
     /**
      * Add an item into the queue. Adding is done in the background - thus, this method will
      * return quickly.
@@ -275,8 +292,20 @@ public class DistributedQueue<T> implements Closeable
         internalPut(null, items, path);
     }
 
-    void internalPut(T item, MultiItem<T> multiItem, String path) throws Exception
+    /**
+     * Return the most recent message count from the queue. This is useful for debugging/information
+     * purposes only.
+     *
+     * @return count (can be 0)
+     */
+    public int getLastMessageCount()
     {
+        return lastChildCount.get();
+    }
+
+    void internalPut(final T item, MultiItem<T> multiItem, String path) throws Exception
+    {
+        final MultiItem<T> givenMultiItem = multiItem;
         if ( item != null )
         {
             final AtomicReference<T>    ref = new AtomicReference<T>(item);
@@ -291,8 +320,34 @@ public class DistributedQueue<T> implements Closeable
         }
 
         putCount.incrementAndGet();
-        byte[]      bytes = ItemSerializer.serialize(multiItem, serializer);
-        client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).inBackground().forPath(path, bytes);
+        byte[]              bytes = ItemSerializer.serialize(multiItem, serializer);
+        BackgroundCallback  callback = new BackgroundCallback()
+        {
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                putListenerContainer.forEach
+                    (
+                        new Function<QueuePutListener<T>, Void>()
+                        {
+                            @Override
+                            public Void apply(QueuePutListener<T> listener)
+                            {
+                                if ( item != null )
+                                {
+                                    listener.putCompleted(item);
+                                }
+                                else
+                                {
+                                    listener.putMultiCompleted(givenMultiItem);
+                                }
+                                return null;
+                            }
+                        }
+                    );
+            }
+        };
+        client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).inBackground(callback).forPath(path, bytes);
     }
 
     void checkState() throws Exception
@@ -329,6 +384,7 @@ public class DistributedQueue<T> implements Closeable
                     do
                     {
                         children = client.getChildren().watched().forPath(queuePath);
+                        lastChildCount.set(children.size());
                         if ( children.size() == 0 )
                         {
                             wait();

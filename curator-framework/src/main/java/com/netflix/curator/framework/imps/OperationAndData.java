@@ -23,16 +23,23 @@ class OperationAndData<T>
 {
     private final BackgroundOperation<T>    operation;
     private final T                         data;
-    private final BackgroundCallback callback;
+    private final BackgroundCallback        callback;
     private final long                      startTimeMs = System.currentTimeMillis();
+    private final ErrorCallback<T>          errorCallback;
 
     private int     retryCount = 0;
 
-    OperationAndData(BackgroundOperation<T> operation, T data, BackgroundCallback callback)
+    interface ErrorCallback<T>
+    {
+        void retriesExhausted(OperationAndData<T> operationAndData);
+    }
+
+    OperationAndData(BackgroundOperation<T> operation, T data, BackgroundCallback callback, ErrorCallback<T> errorCallback)
     {
         this.operation = operation;
         this.data = data;
         this.callback = callback;
+        this.errorCallback = errorCallback;
     }
 
     void callPerformBackgroundOperation() throws Exception
@@ -58,5 +65,10 @@ class OperationAndData<T>
     BackgroundCallback getCallback()
     {
         return callback;
+    }
+
+    ErrorCallback<T> getErrorCallback()
+    {
+        return errorCallback;
     }
 }

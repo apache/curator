@@ -126,8 +126,14 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
             throw new IllegalMonitorStateException("Lock count has gone negative for lock: " + basePath);
         }
 
-        internals.releaseLock(localData.lockPath);
-        lockData = null;
+        try
+        {
+            internals.releaseLock(localData.lockPath);
+        }
+        finally
+        {
+            lockData = null;
+        }
     }
 
     /**

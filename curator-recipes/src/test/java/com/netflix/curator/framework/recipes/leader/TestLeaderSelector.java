@@ -25,6 +25,7 @@ import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
+import com.netflix.curator.test.TestingCluster;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.internal.annotations.Sets;
@@ -87,7 +88,7 @@ public class TestLeaderSelector extends BaseClassForTests
     @Test
     public void     testKillSession() throws Exception
     {
-        final int TIMEOUT_SECONDS = 5000;
+        final int TIMEOUT_SECONDS = 5;
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
         client.start();

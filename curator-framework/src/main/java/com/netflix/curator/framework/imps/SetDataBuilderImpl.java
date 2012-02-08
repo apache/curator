@@ -116,7 +116,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
         Stat        resultStat = null;
         if ( backgrounding.inBackground()  )
         {
-            client.processBackgroundOperation(new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback()), null);
+            client.processBackgroundOperation(new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null), null);
         }
         else
         {

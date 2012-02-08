@@ -19,6 +19,8 @@ package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.listen.Listenable;
+import com.netflix.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Executor;
@@ -108,6 +110,27 @@ public class DistributedPriorityQueue<T> implements Closeable
 
         String      priorityHex = priorityToString(priority);
         queue.internalPut(null, items, queue.makeItemPath() + priorityHex);
+    }
+
+    /**
+     * Return the manager for put listeners
+     *
+     * @return put listener container
+     */
+    public ListenerContainer<QueuePutListener<T>> getPutListenerContainer()
+    {
+        return queue.getPutListenerContainer();
+    }
+
+    /**
+     * Return the most recent message count from the queue. This is useful for debugging/information
+     * purposes only.
+     *
+     * @return count (can be 0)
+     */
+    public int getLastMessageCount()
+    {
+        return queue.getLastMessageCount();
     }
 
     /**

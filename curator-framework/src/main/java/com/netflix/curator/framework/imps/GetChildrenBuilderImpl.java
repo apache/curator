@@ -154,7 +154,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
         List<String>        children = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback()), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null), null);
         }
         else
         {
