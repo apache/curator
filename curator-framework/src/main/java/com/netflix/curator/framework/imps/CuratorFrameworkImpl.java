@@ -62,6 +62,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ConnectionStateManager                                connectionStateManager;
     private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
     private final byte[]                                                defaultData;
+    private final FailedDeleteManager                                   failedDeleteManager;
 
     private enum State
     {
@@ -122,6 +123,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         ensurePath = (namespace != null) ? new EnsurePath(ZKPaths.makePath("/", namespace)) : null;
         executorService = Executors.newFixedThreadPool(2, getThreadFactory(builder));  // 1 for listeners, 1 for background ops
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
+        failedDeleteManager = new FailedDeleteManager(this);
 
         byte[]      builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -151,6 +153,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         backgroundOperations = parent.backgroundOperations;
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
+        failedDeleteManager = parent.failedDeleteManager;
         namespace = null;
         ensurePath = null;
     }
@@ -353,6 +356,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return new EnsurePath(fixForNamespace(path));
     }
 
+    FailedDeleteManager getFailedDeleteManager()
+    {
+        return failedDeleteManager;
+    }
+  
     RetryLoop newRetryLoop()
     {
         return client.newRetryLoop();
