@@ -1,3 +1,10 @@
+1.1.3/1.0.4 - xxxxxxxxxxxx
+==========================
+* Issue 27: This bug exposed major problems with the PathChildrenCache. I ended up completely
+rewriting it. The original version was very inefficient and prone to herding. This new version
+is as efficient as possible and adds some nice new features. The major new feature is that when
+calling start(), you can have the cache load an initial working set of data.
+
 1.1.2/1.0.3 - Feb. 8, 2012
 ==========================
 * Added listener to Queues to listen for put completion
