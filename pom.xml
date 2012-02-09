@@ -29,6 +29,13 @@
                 </repository>
             </distributionManagement>
         </profile>
+
+        <profile>
+            <id>no-tests</id>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+        </profile>
     </profiles>
 
     <licenses>
