@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.netflix.curator</groupId>
         <artifactId>curator</artifactId>
-        <version>1.1.2-SNAPSHOT</version>
+        <version>1.1.2</version>
     </parent>
     <artifactId>curator-recipes</artifactId>
 
@@ -12,7 +12,7 @@
         <dependency>
             <groupId>com.netflix.curator</groupId>
             <artifactId>curator-framework</artifactId>
-            <version>1.1.2-SNAPSHOT</version>
+            <version>1.1.2</version>
         </dependency>
 
         <dependency>
@@ -25,7 +25,7 @@
         <dependency>
             <groupId>com.netflix.curator</groupId>
             <artifactId>curator-test</artifactId>
-            <version>1.1.2-SNAPSHOT</version>
+            <version>1.1.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
