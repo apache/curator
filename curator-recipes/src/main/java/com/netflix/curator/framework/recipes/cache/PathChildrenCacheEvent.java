@@ -76,4 +76,13 @@ public class PathChildrenCacheEvent
     {
         return data;
     }
+
+    @Override
+    public String toString()
+    {
+        return "PathChildrenCacheEvent{" +
+            "type=" + type +
+            ", data=" + data +
+            '}';
+    }
 }

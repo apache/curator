@@ -37,7 +37,7 @@ public class TestPathChildrenCacheInCluster
         final int               BASE_TIMEOUT = 5000;
 
         CuratorFramework client = null;
-        PathChildrenCache       cache = null;
+        PathChildrenCache cache = null;
         TestingCluster cluster = new TestingCluster(3);
         try
         {
@@ -47,7 +47,7 @@ public class TestPathChildrenCacheInCluster
             client.start();
             client.create().creatingParentsIfNeeded().forPath("/test");
 
-            cache = new PathChildrenCache(client, "/test", PathChildrenCacheMode.CACHE_PATHS_ONLY);
+            cache = new PathChildrenCache(client, "/test", false);
             cache.start();
 
             final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(3));
