@@ -134,7 +134,7 @@ public class InterProcessReadWriteLock
                 @Override
                 public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception
                 {
-                    return readLockPredicate(client, children, sequenceNodeName);
+                    return readLockPredicate(children, sequenceNodeName);
                 }
             }
         );
@@ -160,7 +160,7 @@ public class InterProcessReadWriteLock
         return writeMutex;
     }
 
-    private PredicateResults readLockPredicate(CuratorFramework client, List<String> children, String sequenceNodeName) throws Exception
+    private PredicateResults readLockPredicate(List<String> children, String sequenceNodeName) throws Exception
     {
         if ( writeMutex.isOwnedByCurrentThread() )
         {
