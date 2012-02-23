@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.framework.recipes.locks;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
@@ -25,6 +26,7 @@ import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class TestInterProcessMutexBase extends BaseClassForTests
@@ -61,7 +64,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                     @Override
                     public Object call() throws Exception
                     {
-                        mutex1.acquire();
+                        mutex1.acquire(10, TimeUnit.SECONDS);
                         acquireSemaphore.release();
                         Thread.sleep(1000000);
                         return null;
@@ -76,7 +79,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                     @Override
                     public Object call() throws Exception
                     {
-                        mutex2.acquire();
+                        mutex2.acquire(10, TimeUnit.SECONDS);
                         acquireSemaphore.release();
                         Thread.sleep(1000000);
                         return null;
@@ -106,9 +109,75 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         try
         {
             InterProcessLock mutex = makeLock(client);
-            mutex.acquire();
+            mutex.acquire(10, TimeUnit.SECONDS);
             Thread.sleep(100);
             mutex.release();
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void     testReentrantSingleLock() throws Exception
+    {
+        final int           THREAD_QTY = 10;
+        
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final AtomicBoolean     hasLock = new AtomicBoolean(false);
+            final AtomicBoolean     isFirst = new AtomicBoolean(true);
+            final Semaphore         semaphore = new Semaphore(1);
+            final InterProcessLock  mutex = makeLock(client);
+
+            List<Future<Object>>    threads = Lists.newArrayList();
+            ExecutorService         service = Executors.newCachedThreadPool();            
+            for ( int i = 0; i < THREAD_QTY; ++i )
+            {
+                Future<Object>          t = service.submit
+                (
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            semaphore.acquire();
+                            mutex.acquire();
+                            Assert.assertTrue(hasLock.compareAndSet(false, true));
+                            try
+                            {
+                                if ( isFirst.compareAndSet(true, false) )
+                                {
+                                    semaphore.release(THREAD_QTY - 1);
+                                    while ( semaphore.availablePermits() > 0 )
+                                    {
+                                        Thread.sleep(100);
+                                    }
+                                }
+                                else
+                                {
+                                    Thread.sleep(100);
+                                }
+                            }
+                            finally
+                            {
+                                mutex.release();
+                                hasLock.set(false);
+                            }
+                            return null;
+                        }
+                    }
+                );
+                threads.add(t);
+            }
+
+            for ( Future<Object> t : threads )
+            {
+                t.get();
+            }
         }
         finally
         {
@@ -137,7 +206,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                         Assert.assertTrue(countLatchForBar.await(10, TimeUnit.SECONDS));
                         try
                         {
-                            mutex.acquire();
+                            mutex.acquire(10, TimeUnit.SECONDS);
                             Assert.fail();
                         }
                         catch ( Exception e )
@@ -181,7 +250,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
     private void        foo(InterProcessLock mutex) throws Exception
     {
-        mutex.acquire();
+        mutex.acquire(10, TimeUnit.SECONDS);
         Assert.assertTrue(mutex.isAcquiredInThisProcess());
         bar(mutex);
         Assert.assertTrue(mutex.isAcquiredInThisProcess());
@@ -190,12 +259,12 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
     private void        bar(InterProcessLock mutex) throws Exception
     {
-        mutex.acquire();
+        mutex.acquire(10, TimeUnit.SECONDS);
         Assert.assertTrue(mutex.isAcquiredInThisProcess());
         if ( countLatchForBar != null )
         {
             countLatchForBar.countDown();
-            waitLatchForBar.await();
+            waitLatchForBar.await(10, TimeUnit.SECONDS);
         }
         snafu(mutex);
         Assert.assertTrue(mutex.isAcquiredInThisProcess());
@@ -204,7 +273,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
     private void        snafu(InterProcessLock mutex) throws Exception
     {
-        mutex.acquire();
+        mutex.acquire(10, TimeUnit.SECONDS);
         Assert.assertTrue(mutex.isAcquiredInThisProcess());
         mutex.release();
         Assert.assertTrue(mutex.isAcquiredInThisProcess());
@@ -242,9 +311,9 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                     {
                         try
                         {
-                            mutexForClient1.acquire();
+                            mutexForClient1.acquire(10, TimeUnit.SECONDS);
                             acquiredLatchForClient1.countDown();
-                            latchForClient1.await();
+                            latchForClient1.await(10, TimeUnit.SECONDS);
                             mutexForClient1.release();
                         }
                         catch ( Exception e )
@@ -264,9 +333,9 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                     {
                         try
                         {
-                            mutexForClient2.acquire();
+                            mutexForClient2.acquire(10, TimeUnit.SECONDS);
                             acquiredLatchForClient2.countDown();
-                            latchForClient2.await();
+                            latchForClient2.await(10, TimeUnit.SECONDS);
                             mutexForClient2.release();
                         }
                         catch ( Exception e )
