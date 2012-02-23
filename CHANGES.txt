@@ -5,6 +5,11 @@ rewriting it. The original version was very inefficient and prone to herding. Th
 is as efficient as possible and adds some nice new features. The major new feature is that when
 calling start(), you can have the cache load an initial working set of data.
 
+* Issue 31: It turns out an instance of InterProcessMutex could not be shared in multiple threads. My
+assumption was that users would create a new InterProcessMutex per thread. But, this restriction is
+arbitrary. For comparison, the JDK Lock doesn't have this requirement. I've fixed this however it
+was a significant change internally. I'm counting on my tests to prove correctness.
+
 1.1.2/1.0.3 - Feb. 8, 2012
 ==========================
 * Added listener to Queues to listen for put completion
