@@ -20,16 +20,17 @@ package com.netflix.curator.framework.recipes.locks;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ZKPaths;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
@@ -41,20 +42,18 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
     private final LockInternals         internals;
     private final String                basePath;
 
-    // guarded by synchronization
-    private final LinkedList<LockData>  dataStack = Lists.newLinkedList();
+    private final ConcurrentMap<Thread, LockData>   threadData = Maps.newConcurrentMap();
 
     private static class LockData
     {
-        final Thread     owningThread;
-        final String     lockPath;
-        final int        lockCount;
+        final Thread        owningThread;
+        final String        lockPath;
+        final AtomicInteger lockCount = new AtomicInteger(1);
 
-        private LockData(Thread owningThread, String lockPath, int lockCount)
+        private LockData(Thread owningThread, String lockPath)
         {
             this.owningThread = owningThread;
             this.lockPath = lockPath;
-            this.lockCount = lockCount;
         }
     }
 
@@ -107,9 +106,9 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @return true/false
      */
     @Override
-    public synchronized boolean isAcquiredInThisProcess()
+    public boolean isAcquiredInThisProcess()
     {
-        return (dataStack.size() > 0);
+        return (threadData.size() > 0);
     }
 
     /**
@@ -119,19 +118,37 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @throws Exception ZK errors, interruptions, current thread does not own the lock
      */
     @Override
-    public synchronized void release() throws Exception
+    public void release() throws Exception
     {
-        LockData    localData = dataStack.pop();
-        if ( (localData == null) || (localData.owningThread != Thread.currentThread()) )
+        /*
+            Note on concurrency: a given lockData instance
+            can be only acted on by a single thread so locking isn't necessary
+         */
+
+        Thread      currentThread = Thread.currentThread();
+        LockData    lockData = threadData.get(currentThread);
+        if ( lockData == null )
         {
             throw new IllegalMonitorStateException("You do not own the lock: " + basePath);
         }
 
-        if ( localData.lockCount > 1 )
+        int newLockCount = lockData.lockCount.decrementAndGet();
+        if ( newLockCount > 0 )
         {
             return;
         }
-        internals.releaseLock(localData.lockPath);
+        if ( newLockCount < 0 )
+        {
+            throw new IllegalMonitorStateException("Lock count has gone negative for lock: " + basePath);
+        }
+        try
+        {
+            internals.releaseLock(lockData.lockPath);
+        }
+        finally
+        {
+            threadData.remove(currentThread);
+        }
     }
 
     /**
@@ -190,11 +207,10 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         internals = new LockInternals(client, driver, path, lockName, maxLeases);
     }
 
-    synchronized boolean      isOwnedByCurrentThread()
+    boolean      isOwnedByCurrentThread()
     {
-        LockData    localData = dataStack.peek();
-        Thread      owningThread = (localData != null) ? localData.owningThread : null;
-        return (Thread.currentThread() == owningThread);
+        LockData    lockData = threadData.get(Thread.currentThread());
+        return (lockData != null) && (lockData.lockCount.get() > 0);
     }
 
     protected byte[]        getLockNodeBytes()
@@ -204,27 +220,26 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
 
     private boolean internalLock(long time, TimeUnit unit) throws Exception
     {
-        Thread      currentThread = Thread.currentThread();
-        synchronized(this)
+        /*
+           Note on concurrency: a given lockData instance
+           can be only acted on by a single thread so locking isn't necessary
+        */
+
+        Thread          currentThread = Thread.currentThread();
+
+        LockData        lockData = threadData.get(currentThread);
+        if ( lockData != null )
         {
-            LockData    localData = dataStack.peek();
-            boolean     re_entering = (localData != null) && (localData.owningThread == currentThread);
-            if ( re_entering )
-            {
-                LockData        localLockData = new LockData(currentThread, localData.lockPath, localData.lockCount + 1);
-                dataStack.push(localLockData);
-                return true;
-            }
+            // re-entering
+            lockData.lockCount.incrementAndGet();
+            return true;
         }
 
         String lockPath = internals.attemptLock(time, unit, getLockNodeBytes());
         if ( lockPath != null )
         {
-            synchronized(this)
-            {
-                LockData        localLockData = new LockData(currentThread, lockPath, 1);
-                dataStack.push(localLockData);
-            }
+            LockData        newLockData = new LockData(currentThread, lockPath);
+            threadData.put(currentThread, newLockData);
             return true;
         }
 
