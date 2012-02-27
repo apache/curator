@@ -22,8 +22,10 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.UnhandledErrorListener;
 import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.TestingCluster;
+import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.ZKPaths;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -31,7 +33,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,14 +42,14 @@ public class TestLeaderSelectorCluster
     @Test
     public void     testRestart() throws Exception
     {
-        final int TIMEOUT_SECONDS = 5;
+        final Timing        timing = new Timing();
 
         CuratorFramework    client = null;
         TestingCluster      cluster = new TestingCluster(3);
         cluster.start();
         try
         {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
 
             final AtomicInteger     errors = new AtomicInteger(0);
@@ -87,14 +88,14 @@ public class TestLeaderSelectorCluster
             };
             LeaderSelector      selector = new LeaderSelector(client, "/leader", listener);
             selector.start();
-            Assert.assertTrue(semaphore.tryAcquire(TIMEOUT_SECONDS * 4, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
 
             TestingCluster.InstanceSpec     connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(reconnectedLatch.await(TIMEOUT_SECONDS * 4, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
             selector.start();
-            Assert.assertTrue(semaphore.tryAcquire(TIMEOUT_SECONDS * 4, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
             
             Assert.assertEquals(errors.get(), 0);
         }
@@ -108,15 +109,16 @@ public class TestLeaderSelectorCluster
     @Test
     public void     testLostRestart() throws Exception
     {
-        final int TIMEOUT_SECONDS = 5;
+        final Timing        timing = new Timing();
 
         CuratorFramework    client = null;
         TestingCluster      cluster = new TestingCluster(3);
         cluster.start();
         try
         {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(10, 3));
             client.start();
+            client.sync("/", null);
 
             final AtomicReference<AssertionError>   error = new AtomicReference<AssertionError>(null);
             final AtomicReference<String>           lockNode = new AtomicReference<String>(null);
@@ -135,7 +137,7 @@ public class TestLeaderSelectorCluster
                         lockNode.set(names.get(0));
 
                         semaphore.release();
-                        Assert.assertTrue(internalLostLatch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+                        Assert.assertTrue(timing.awaitLatch(internalLostLatch));
                         lostLatch.countDown();
                     }
                     catch ( AssertionError e )
@@ -157,7 +159,7 @@ public class TestLeaderSelectorCluster
             };
             LeaderSelector      selector = new LeaderSelector(client, "/leader", listener);
             selector.start();
-            Assert.assertTrue(semaphore.tryAcquire(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
             if ( error.get() != null )
             {
                 throw new AssertionError(error.get());
@@ -167,7 +169,7 @@ public class TestLeaderSelectorCluster
             cluster.close();
             cluster = null;
 
-            Assert.assertTrue(lostLatch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.awaitLatch(lostLatch));
 
             Assert.assertNotNull(lockNode.get());
             
@@ -184,7 +186,7 @@ public class TestLeaderSelectorCluster
             }
 
             selector.start();
-            Assert.assertTrue(semaphore.tryAcquire(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
             if ( error.get() != null )
             {
                 throw new AssertionError(error.get());

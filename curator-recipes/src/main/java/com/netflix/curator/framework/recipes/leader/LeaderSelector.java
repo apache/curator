@@ -54,6 +54,9 @@ public class LeaderSelector implements Closeable
     private volatile boolean                hasLeadership;
     private volatile String                 id = "";
 
+    // guarded by synchronization
+    private boolean                isQueued = false;
+
     private static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("LeaderSelector-%d").build();
 
     /**
@@ -128,8 +131,7 @@ public class LeaderSelector implements Closeable
 
     /**
      * Attempt leadership. This attempt is done in the background - i.e. this method returns
-     * immediately. Once you've been assigned leadership you can release it and call this method
-     * again to re-obtain leadership
+     * immediately.
      */
     public void     start()
     {
@@ -137,18 +139,37 @@ public class LeaderSelector implements Closeable
         Preconditions.checkArgument(!hasLeadership);
 
         client.getConnectionStateListenable().addListener(listener);
-        executorService.submit
-        (
-            new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
+        requeue();
+    }
+
+    /**
+     * Re-queue an attempt for leadership. If this instance is already queued, nothing
+     * happens and false is returned. If the instance was not queued, it is re-qeued and true
+     * is returned
+     *
+     * @return true if re-queue is successful
+     */
+    public synchronized boolean     requeue()
+    {
+        if ( !isQueued )
+        {
+            isQueued = true;
+            executorService.submit
+            (
+                new Callable<Object>()
                 {
-                    doWork();
-                    return null;
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        doWork();
+                        return null;
+                    }
                 }
-            }
-        );
+            );
+
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -269,9 +290,18 @@ public class LeaderSelector implements Closeable
                         {
                             log.error("The leader threw an exception", e);
                         }
+                        finally
+                        {
+                            clearIsQueued();
+                        }
                     }
                 }
             );
+        }
+        catch ( Exception e )
+        {
+            log.error("mutex.acquire() threw an exception", e);
+            throw e;
         }
         finally
         {
@@ -285,5 +315,10 @@ public class LeaderSelector implements Closeable
                 // ignore errors - this is just a safety
             }
         }
+    }
+
+    private synchronized void clearIsQueued()
+    {
+        isQueued = false;
     }
 }

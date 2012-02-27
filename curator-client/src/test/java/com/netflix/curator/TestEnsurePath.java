@@ -18,6 +18,7 @@
 
 package com.netflix.curator;
 
+import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
@@ -44,7 +45,12 @@ public class TestEnsurePath
     {
         ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
         CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
+        RetryPolicy             retryPolicy = new RetryOneTime(1);
+        RetryLoop               retryLoop = new RetryLoop(retryPolicy, null);
         when(curator.getZooKeeper()).thenReturn(client);
+        when(curator.getRetryPolicy()).thenReturn(retryPolicy);
+        when(curator.newRetryLoop()).thenReturn(retryLoop);
+
         Stat                    fakeStat = mock(Stat.class);
         when(client.exists(Mockito.<String>any(), anyBoolean())).thenReturn(fakeStat);
         
@@ -63,8 +69,12 @@ public class TestEnsurePath
     public void    testSimultaneous() throws Exception
     {
         ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
+        RetryPolicy             retryPolicy = new RetryOneTime(1);
+        RetryLoop               retryLoop = new RetryLoop(retryPolicy, null);
         final CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
         when(curator.getZooKeeper()).thenReturn(client);
+        when(curator.getRetryPolicy()).thenReturn(retryPolicy);
+        when(curator.newRetryLoop()).thenReturn(retryLoop);
 
         final Stat              fakeStat = mock(Stat.class);
         final CountDownLatch    startedLatch = new CountDownLatch(2);

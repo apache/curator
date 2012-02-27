@@ -138,8 +138,8 @@ public class TestDistributedAtomicLong extends BaseClassForTests
     @Test
     public void     testSimulation() throws Exception
     {
-        final int           threadQty = 200;
-        final int           executionQty = 100;
+        final int           threadQty = 20;
+        final int           executionQty = 50;
 
         final AtomicInteger optimisticTries = new AtomicInteger();
         final AtomicInteger promotedLockTries = new AtomicInteger();

@@ -24,11 +24,13 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
+import com.netflix.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,49 +49,50 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     @Test
     public void     testKilledSession() throws Exception
     {
-        final int TIMEOUT_SECONDS = 5000;
+        final Timing        timing = new Timing();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
             final InterProcessLock mutex1 = makeLock(client);
             final InterProcessLock mutex2 = makeLock(client);
 
-            final Semaphore acquireSemaphore = new Semaphore(0);
-            Executors.newSingleThreadExecutor().submit
+            final Semaphore semaphore = new Semaphore(0);
+            ExecutorCompletionService<Object> service = new ExecutorCompletionService<Object>(Executors.newFixedThreadPool(2));
+            service.submit
             (
                 new Callable<Object>()
                 {
                     @Override
                     public Object call() throws Exception
                     {
-                        mutex1.acquire(10, TimeUnit.SECONDS);
-                        acquireSemaphore.release();
+                        mutex1.acquire();
+                        semaphore.release();
                         Thread.sleep(1000000);
                         return null;
                     }
                 }
             );
 
-            Executors.newSingleThreadExecutor().submit
+            service.submit
             (
                 new Callable<Object>()
                 {
                     @Override
                     public Object call() throws Exception
                     {
-                        mutex2.acquire(10, TimeUnit.SECONDS);
-                        acquireSemaphore.release();
+                        mutex2.acquire();
+                        semaphore.release();
                         Thread.sleep(1000000);
                         return null;
                     }
                 }
             );
 
-            Assert.assertTrue(acquireSemaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
-            Assert.assertTrue(acquireSemaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
         }
         finally
         {

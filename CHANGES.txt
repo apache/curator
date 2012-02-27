@@ -10,6 +10,13 @@ assumption was that users would create a new InterProcessMutex per thread. But, 
 arbitrary. For comparison, the JDK Lock doesn't have this requirement. I've fixed this however it
 was a significant change internally. I'm counting on my tests to prove correctness.
 
+* EnsurePath wasn't doing its work in a RetryLoop.
+
+* Added a new class to the Test module, Timing, that is used to better coordinate timings in tests
+
+* LockInternals had a retry loop for all failures when it was only needed if the session expired
+and the lock node was lost. So, I refined the code to handle this specific case.
+
 1.1.2/1.0.3 - Feb. 8, 2012
 ==========================
 * Added listener to Queues to listen for put completion

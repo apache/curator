@@ -20,6 +20,7 @@ package com.netflix.curator;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.TestingServer;
+import com.netflix.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -28,8 +29,8 @@ import org.apache.zookeeper.ZooKeeper;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.File;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class BasicTests extends BaseClassForTests
 {
@@ -37,6 +38,8 @@ public class BasicTests extends BaseClassForTests
     public void     testExpiredSession() throws Exception
     {
         // see http://wiki.apache.org/hadoop/ZooKeeper/FAQ#A4
+
+        final Timing                  timing = new Timing();
 
         final CountDownLatch    latch = new CountDownLatch(1);
         Watcher                 watcher = new Watcher()
@@ -50,20 +53,31 @@ public class BasicTests extends BaseClassForTests
                 }
             }
         };
-        final int TIMEOUT_SECONDS = 5;
-        final CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, watcher, new RetryOneTime(2));
+
+        final CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), watcher, new RetryOneTime(2));
         client.start();
         try
         {
-            client.blockUntilConnectedOrTimedOut();
-            client.getZooKeeper().create("/foo", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            RetryLoop.callWithRetry
+            (
+                client,
+                new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        client.getZooKeeper().create("/foo", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
-            KillSession.kill(client.getZooKeeper(), server.getConnectString());
+                        KillSession.kill(client.getZooKeeper(), server.getConnectString());
 
-            Assert.assertTrue(latch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
-            ZooKeeper zooKeeper = client.getZooKeeper();
-            client.blockUntilConnectedOrTimedOut();
-            Assert.assertNotNull(zooKeeper.exists("/foo", false));
+                        Assert.assertTrue(timing.awaitLatch(latch));
+                        ZooKeeper zooKeeper = client.getZooKeeper();
+                        client.blockUntilConnectedOrTimedOut();
+                        Assert.assertNotNull(zooKeeper.exists("/foo", false));
+                        return null;
+                    }
+                }
+            );
         }
         finally
         {
