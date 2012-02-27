@@ -31,6 +31,7 @@ import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
+import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -67,6 +68,7 @@ public class PathChildrenCache implements Closeable
     private final String                    path;
     private final ExecutorService           executorService;
     private final boolean                   cacheData;
+    private final EnsurePath                ensurePath;
 
     private final BlockingQueue<PathChildrenCacheEvent>         listenerEvents = new LinkedBlockingQueue<PathChildrenCacheEvent>();
     private final ListenerContainer<PathChildrenCacheListener>  listeners = new ListenerContainer<PathChildrenCacheListener>();
@@ -134,6 +136,7 @@ public class PathChildrenCache implements Closeable
         this.path = path;
         this.cacheData = cacheData;
         executorService = Executors.newFixedThreadPool(1, threadFactory);
+        ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 
     /**
@@ -190,6 +193,8 @@ public class PathChildrenCache implements Closeable
     public void     rebuild() throws Exception
     {
         Preconditions.checkArgument(!executorService.isShutdown());
+
+        ensurePath.ensure(client.getZookeeperClient());
 
         List<String>            children = client.getChildren().forPath(path);
         for ( String child : children )
@@ -326,6 +331,8 @@ public class PathChildrenCache implements Closeable
 
     private void refresh(final boolean forceGetDataAndStat) throws Exception
     {
+        ensurePath.ensure(client.getZookeeperClient());
+
         final BackgroundCallback  callback = new BackgroundCallback()
         {
             @Override

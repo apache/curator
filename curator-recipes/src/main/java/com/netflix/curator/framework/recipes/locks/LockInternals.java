@@ -19,7 +19,6 @@
 package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
-import com.netflix.curator.RetryLoop;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
@@ -37,7 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -49,7 +47,6 @@ class LockInternals
     private final String                            basePath;
     private final CuratorListener                   listener;
     private final EnsurePath                        ensurePath;
-    private final Watcher                           watcher;
     private final LockInternalsDriver               driver;
     private final String                            lockName;
     private final AtomicReference<RevocationSpec>   revocable = new AtomicReference<RevocationSpec>(null);
@@ -110,15 +107,6 @@ class LockInternals
 
         ensurePath = client.newNamespaceAwareEnsurePath(basePath);
 
-        watcher = new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent watchedEvent)
-            {
-                notifyFromWatcher();
-            }
-        };
-
         listener = new CuratorListener()
         {
             @Override
@@ -177,51 +165,54 @@ class LockInternals
         final long      startMillis = System.currentTimeMillis();
         final Long      millisToWait = (unit != null) ? unit.toMillis(time) : null;
         final byte[]    localLockNodeBytes = (revocable.get() != null) ? new byte[0] : lockNodeBytes;
+        int             retryCount = 0;
 
-        PathAndFlag     pathAndFlag = RetryLoop.callWithRetry
-        (
-            client.getZookeeperClient(),
-            new Callable<PathAndFlag>()
+        ensurePath.ensure(client.getZookeeperClient());
+
+        String          ourPath = null;
+        boolean         hasTheLock = false;
+        boolean         isDone = false;
+        while ( !isDone )
+        {
+            isDone = true;
+            try
             {
-                @Override
-                public PathAndFlag call() throws Exception
+                if ( localLockNodeBytes != null )
                 {
-                    ensurePath.ensure(client.getZookeeperClient());
-
-                    String      ourPath;
-                    if ( localLockNodeBytes != null )
+                    ourPath = client.create().withProtectedEphemeralSequential().forPath(path, localLockNodeBytes);
+                }
+                else
+                {
+                    ourPath = client.create().withProtectedEphemeralSequential().forPath(path);
+                }
+                hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
+            }
+            catch ( KeeperException.NoNodeException e )
+            {
+                // gets thrown by StandardLockInternalsDriver when it can't find the lock node
+                // this can happen when the session expires, etc. So, if the retry allows, just try it all again
+                if ( client.getZookeeperClient().getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMillis) )
+                {
+                    isDone = false;
+                    if ( ourPath != null )
                     {
-                        ourPath = client.create().withProtectedEphemeralSequential().forPath(path, localLockNodeBytes);
+                        client.delete().inBackground().forPath(ourPath);    // just in case
                     }
-                    else
-                    {
-                        ourPath = client.create().withProtectedEphemeralSequential().forPath(path);
-                    }
-                    boolean     hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
-                    return new PathAndFlag(hasTheLock, ourPath);
+                }
+                else
+                {
+                    throw e;
                 }
             }
-        );
+        }
 
-        if ( pathAndFlag.hasTheLock )
+        if ( hasTheLock )
         {
             client.getCuratorListenable().addListener(listener);
-            return pathAndFlag.path;
+            return ourPath;
         }
 
         return null;
-    }
-
-    private static class PathAndFlag
-    {
-        final boolean       hasTheLock;
-        final String        path;
-
-        private PathAndFlag(boolean hasTheLock, String path)
-        {
-            this.hasTheLock = hasTheLock;
-            this.path = path;
-        }
     }
 
     private void checkRevocableWatcher(String path) throws Exception
@@ -268,6 +259,15 @@ class LockInternals
                 else
                 {
                     String  previousSequencePath = basePath + "/" + predicateResults.getPathToWatch();
+                    Watcher watcher = new Watcher()
+                    {
+                        @Override
+                        public void process(WatchedEvent event)
+                        {
+                            notifyFromWatcher();
+                        }
+                    };
+
                     synchronized(this)
                     {
                         Stat stat = client.checkExists().usingWatcher(watcher).forPath(previousSequencePath);

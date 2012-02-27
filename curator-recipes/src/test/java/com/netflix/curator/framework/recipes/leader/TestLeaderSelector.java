@@ -25,7 +25,7 @@ import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
-import com.netflix.curator.test.TestingCluster;
+import com.netflix.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.internal.annotations.Sets;
@@ -88,9 +88,9 @@ public class TestLeaderSelector extends BaseClassForTests
     @Test
     public void     testKillSession() throws Exception
     {
-        final int TIMEOUT_SECONDS = 5;
+        final Timing        timing = new Timing();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -140,12 +140,17 @@ public class TestLeaderSelector extends BaseClassForTests
             leaderSelector1.start();
             leaderSelector2.start();
 
-            Assert.assertTrue(semaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
 
-            Assert.assertTrue(interruptedLatch.await(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
-            Assert.assertTrue(semaphore.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.awaitLatch(interruptedLatch));
+            timing.sleepABit();
+
+            leaderSelector1.requeue();
+            leaderSelector2.requeue();
+
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
             Assert.assertEquals(leaderCount.get(), 1);
 
             leaderSelector1.close();
@@ -175,7 +180,7 @@ public class TestLeaderSelector extends BaseClassForTests
                 @Override
                 public void takeLeadership(CuratorFramework client) throws Exception
                 {
-                    latch.await();
+                    latch.await(10, TimeUnit.SECONDS);
                 }
             });
 
@@ -189,7 +194,7 @@ public class TestLeaderSelector extends BaseClassForTests
                 @Override
                 public void takeLeadership(CuratorFramework client) throws Exception
                 {
-                    latch.await();
+                    latch.await(10, TimeUnit.SECONDS);
                 }
             });
 

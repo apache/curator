@@ -52,12 +52,12 @@ class StandardLockInternalsDriver implements LockInternalsDriver
         return str;
     }
 
-    static void validateOurIndex(String sequenceNodeName, int ourIndex) throws KeeperException.ConnectionLossException
+    static void validateOurIndex(String sequenceNodeName, int ourIndex) throws KeeperException
     {
         if ( ourIndex < 0 )
         {
             log.error("Sequential path not found: " + sequenceNodeName);
-            throw new KeeperException.ConnectionLossException(); // treat it as a kind of disconnection and just try again according to the retry policy
+            throw new KeeperException.NoNodeException("Sequential path not found: " + sequenceNodeName);
         }
     }
 }

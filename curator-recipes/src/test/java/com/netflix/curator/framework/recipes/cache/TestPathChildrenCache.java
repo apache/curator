@@ -25,6 +25,8 @@ import com.netflix.curator.framework.api.UnhandledErrorListener;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
+import com.netflix.curator.test.Timing;
+import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -33,6 +35,34 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestPathChildrenCache extends BaseClassForTests
 {
+    @Test
+    public void     testEnsurePath() throws Exception
+    {
+        Timing              timing = new Timing();
+
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            PathChildrenCache       cache = new PathChildrenCache(client, "/one/two/three", false);
+            cache.start();
+            timing.sleepABit();
+
+            try
+            {
+                client.create().forPath("/one/two/three/four");
+            }
+            catch ( KeeperException.NoNodeException e )
+            {
+                Assert.fail("Path should exist", e);
+            }
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void     testDeleteThenCreate() throws Exception
     {
