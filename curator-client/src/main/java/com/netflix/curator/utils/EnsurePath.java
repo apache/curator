@@ -19,7 +19,9 @@
 package com.netflix.curator.utils;
 
 import com.netflix.curator.CuratorZookeeperClient;
+import com.netflix.curator.RetryLoop;
 import org.apache.zookeeper.ZooKeeper;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -93,15 +95,25 @@ public class EnsurePath
         private boolean         isSet = false;  // guarded by synchronization
 
         @Override
-        public synchronized void ensure(CuratorZookeeperClient client, String path) throws Exception
+        public synchronized void ensure(final CuratorZookeeperClient client, final String path) throws Exception
         {
             if ( !isSet )
             {
-                client.blockUntilConnectedOrTimedOut();
-                ZKPaths.mkdirs(client.getZooKeeper(), path, true);
-                helper.set(doNothingHelper);
-
-                isSet = true;
+                RetryLoop.callWithRetry
+                (
+                    client,
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            ZKPaths.mkdirs(client.getZooKeeper(), path, true);
+                            helper.set(doNothingHelper);
+                            isSet = true;
+                            return null;
+                        }
+                    }
+                );
             }
         }
     }
