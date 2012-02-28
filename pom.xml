@@ -61,6 +61,10 @@
         <developerConnection>scm:git:git@github.com:Netflix/curator.git</developerConnection>
     </scm>
 
+    <properties>
+        <slf4j.version>1.6.3</slf4j.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
@@ -79,6 +83,11 @@
                      <groupId>javax.jms</groupId>
                      <artifactId>jms</artifactId>
                  </exclusion>
+                <!--JLine pulls this in as a compile dependency, they have fixed it in future versions -->
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
              </exclusions>
         </dependency>
 
@@ -95,6 +104,22 @@
             <scope>test</scope> 
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+        </dependencies>
+
+    </dependencyManagement>
 
     <build>
         <plugins>
