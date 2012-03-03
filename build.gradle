@@ -33,6 +33,9 @@ subprojects
             exclude group: 'com.sun.jmx', module: 'jmxri'
             exclude group: 'com.sun.jdmk', module: 'jmxtools'
             exclude group: 'javax.jms', module: 'jms'
+
+            // JLine pulls this in as a compile dependency, they have fixed it in future versions
+            exclude group: 'junit', module: 'junit'
         }
         compile     'com.google.guava:guava:10.0.1'
         compile     'org.testng:testng:6.1.1'
