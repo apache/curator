@@ -1,5 +1,5 @@
 Curator
-Copyright 2011 Netlix, Inc.
+Copyright 2011 Netflix, Inc.
 
 This product includes software developed by The Apache Software
 Foundation (http://www.apache.org/).
