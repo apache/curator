@@ -1,0 +1,13 @@
+# IDE Files  #
+##############
+.idea
+*.iml
+*.ipr
+
+# Gradle Temp Files #
+#####################
+.gradle
+
+# Editor Temp Files #
+#####################
+*~
