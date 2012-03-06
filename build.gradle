@@ -26,7 +26,7 @@ subprojects
         }
     }
 
-    dependencies 
+    dependencies
     {
         compile('org.apache.zookeeper:zookeeper:3.4.2')
         {
@@ -42,13 +42,13 @@ subprojects
     }
 
     task sourcesJar(type: Jar, dependsOn:classes) {
-        classifier = 'sources' 
-        from sourceSets.main.allSource 
-    } 
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
 
-    task javadocJar(type: Jar, dependsOn:javadoc) { 
-        classifier = 'javadoc' 
-        from javadoc.destinationDir 
+    task javadocJar(type: Jar, dependsOn:javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
     }
 
     artifacts {
@@ -62,6 +62,7 @@ subprojects
     apply plugin: 'signing'
 
     signing {
+        required performingRelease
         sign configurations.archives
     }
 
@@ -71,42 +72,44 @@ subprojects
     task uploadMavenCentral(type:Upload) {
         configuration = configurations.archives
         dependsOn signArchives
-        repositories.mavenDeployer {
-            beforeDeployment { org.gradle.api.artifacts.maven.MavenDeployment deployment -> signing.signPom(deployment) }
+        doFirst {
+            repositories.mavenDeployer {
+                beforeDeployment { org.gradle.api.artifacts.maven.MavenDeployment deployment -> signing.signPom(deployment) }
 
-            // To test deployment locally, use the following instead of oss.sonatype.org
-            //repository(url: "file://localhost/${rootProject.rootDir}/repo")
+                // To test deployment locally, use the following instead of oss.sonatype.org
+                //repository(url: "file://localhost/${rootProject.rootDir}/repo")
 
-            repository(url: 'http://oss.sonatype.org/services/local/staging/deply/maven2/') {
-                authentication(userName: rootProject.sonatypeUsername, password: rootProject.sonatypePassword)
-            }
-
-            // Prevent datastamp from being appending to artifacts during deployment
-            uniqueVersion = false
-
-            // Closure to configure all the POM with extra info, common to all projects
-            pom.project {
-                parent {
-                    groupId 'org.sonatype.oss'
-                    artifactId 'oss-parent'
-                    version '7'
+                repository(url: 'http://oss.sonatype.org/services/local/staging/deply/maven2/') {
+                    authentication(userName: rootProject.sonatypeUsername, password: rootProject.sonatypePassword)
                 }
-                url 'https://github.com/Netflix/curator'
-                licenses {
-                    license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution 'repo'
+
+                // Prevent datastamp from being appending to artifacts during deployment
+                uniqueVersion = false
+
+                // Closure to configure all the POM with extra info, common to all projects
+                pom.project {
+                    parent {
+                        groupId 'org.sonatype.oss'
+                        artifactId 'oss-parent'
+                        version '7'
                     }
-                }
-                scm {
-                    connection 'scm:git:git@github.com:Netflix/curator.git'
-                    url 'scm:git:git@github.com:Netflix/curator.git'
-                    developerConnection 'scm:git:git@github.com:Netflix/curator.git'
-                }
-                issueManagement {
-                    system 'github'
-                    url 'https://github.com/Netflix/curator/issues'
+                    url 'https://github.com/Netflix/curator'
+                    licenses {
+                        license {
+                            name 'The Apache Software License, Version 2.0'
+                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                            distribution 'repo'
+                        }
+                    }
+                    scm {
+                        connection 'scm:git:git@github.com:Netflix/curator.git'
+                        url 'scm:git:git@github.com:Netflix/curator.git'
+                        developerConnection 'scm:git:git@github.com:Netflix/curator.git'
+                    }
+                    issueManagement {
+                        system 'github'
+                        url 'https://github.com/Netflix/curator/issues'
+                    }
                 }
             }
         }
@@ -115,8 +118,8 @@ subprojects
 
 task aggregateJavadoc(type: Javadoc) {
     description = 'Aggregate all subproject docs into a single docs directory'
-    source subprojects.collect {project -> project.sourceSets.main.allJava } 
-    classpath = files(subprojects.collect {project -> project.sourceSets.main.compileClasspath}) 
+    source subprojects.collect {project -> project.sourceSets.main.allJava }
+    classpath = files(subprojects.collect {project -> project.sourceSets.main.compileClasspath})
     destinationDir = new File(projectDir, 'doc')
 }
 
