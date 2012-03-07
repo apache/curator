@@ -23,7 +23,6 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.UnhandledErrorListener;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
-import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.TestingCluster;
 import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.ZKPaths;
@@ -49,7 +48,7 @@ public class TestLeaderSelectorCluster
         cluster.start();
         try
         {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
             client.start();
 
             final AtomicInteger     errors = new AtomicInteger(0);
