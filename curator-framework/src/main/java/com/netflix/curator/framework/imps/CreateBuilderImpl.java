@@ -31,14 +31,10 @@ import com.netflix.curator.framework.api.CreateBuilder;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.PathAndBytesable;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
-import com.netflix.curator.framework.api.transaction.OperationType;
-import com.netflix.curator.framework.api.transaction.TransactionCreateBuilder;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.UUID;
@@ -71,40 +67,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         createParentsIfNeeded = false;
         doProtectedEphemeralSequential = false;
         protectedEphemeralSequentialId = null;
-    }
-
-    TransactionCreateBuilder        asTransactionCreateBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
-    {
-        return new TransactionCreateBuilder()
-        {
-            @Override
-            public PathAndBytesable<CuratorTransactionBridge> withACL(List<ACL> aclList)
-            {
-                CreateBuilderImpl.this.withACL(aclList);
-                return this;
-            }
-
-            @Override
-            public ACLPathAndBytesable<CuratorTransactionBridge> withMode(CreateMode mode)
-            {
-                CreateBuilderImpl.this.withMode(mode);
-                return this;
-            }
-
-            @Override
-            public CuratorTransactionBridge forPath(String path) throws Exception
-            {
-                return forPath(path, client.getDefaultData());
-            }
-
-            @Override
-            public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception
-            {
-                String      fixedPath = client.fixForNamespace(path);
-                transaction.add(Op.create(fixedPath, data, acling.getAclList(), createMode), OperationType.CREATE, path);
-                return curatorTransaction;
-            }
-        };
     }
 
     @Override

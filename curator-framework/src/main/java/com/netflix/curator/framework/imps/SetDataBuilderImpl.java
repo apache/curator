@@ -25,11 +25,7 @@ import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.api.SetDataBuilder;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
-import com.netflix.curator.framework.api.transaction.OperationType;
-import com.netflix.curator.framework.api.transaction.TransactionSetDataBuilder;
 import org.apache.zookeeper.AsyncCallback;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -45,33 +41,6 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
         this.client = client;
         backgrounding = new Backgrounding();
         version = -1;
-    }
-
-    TransactionSetDataBuilder   asTransactionSetDataBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
-    {
-        return new TransactionSetDataBuilder()
-        {
-            @Override
-            public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception
-            {
-                String      fixedPath = client.fixForNamespace(path);
-                transaction.add(Op.setData(fixedPath, data, version), OperationType.SET_DATA, path);
-                return curatorTransaction;
-            }
-
-            @Override
-            public CuratorTransactionBridge forPath(String path) throws Exception
-            {
-                return forPath(path, client.getDefaultData());
-            }
-
-            @Override
-            public PathAndBytesable<CuratorTransactionBridge> withVersion(int version)
-            {
-                SetDataBuilderImpl.this.withVersion(version);
-                return this;
-            }
-        };
     }
 
     @Override

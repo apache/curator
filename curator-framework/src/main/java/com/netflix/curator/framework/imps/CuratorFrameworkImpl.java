@@ -313,14 +313,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
-    public CuratorTransaction inTransaction()
-    {
-        Preconditions.checkState(state.get() == State.STARTED);
-
-        return new CuratorTransactionImpl(this);
-    }
-
-    @Override
     public Listenable<ConnectionStateListener> getConnectionStateListenable()
     {
         return connectionStateManager.getListenable();
