@@ -402,17 +402,20 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private void applyNewData(String fullPath, Stat stat, byte[] bytes)
+    private void applyNewData(String fullPath, int resultCode, Stat stat, byte[] bytes)
     {
-        ChildData       data = new ChildData(fullPath, stat, bytes);
-        ChildData       previousData = currentData.put(fullPath, data);
-        if ( previousData == null ) // i.e. new
+        if ( resultCode == KeeperException.Code.OK.intValue() ) // otherwise - node must have dropped or something - we should be getting another event
         {
-            listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data));
-        }
-        else if ( previousData.getStat().getVersion() != stat.getVersion() )
-        {
-            listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data));
+            ChildData       data = new ChildData(fullPath, stat, bytes);
+            ChildData       previousData = currentData.put(fullPath, data);
+            if ( previousData == null ) // i.e. new
+            {
+                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data));
+            }
+            else if ( previousData.getStat().getVersion() != stat.getVersion() )
+            {
+                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data));
+            }
         }
     }
 
@@ -423,7 +426,7 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                applyNewData(fullPath, event.getStat(), null);
+                applyNewData(fullPath, event.getResultCode(), event.getStat(), null);
             }
         };
 
@@ -432,7 +435,7 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                applyNewData(fullPath, event.getStat(), event.getData());
+                applyNewData(fullPath, event.getResultCode(), event.getStat(), event.getData());
             }
         };
 
