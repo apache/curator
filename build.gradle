@@ -37,7 +37,7 @@ subprojects
             // JLine pulls this in as a compile dependency, they have fixed it in future versions
             exclude group: 'junit', module: 'junit'
         }
-        compile     'com.google.guava:guava:10.0.1'
+        compile     'com.google.guava:guava:11.0.1'
         compile     'org.testng:testng:6.1.1'
     }
 
