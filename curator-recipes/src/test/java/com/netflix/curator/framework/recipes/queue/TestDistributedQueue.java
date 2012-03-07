@@ -27,7 +27,9 @@ import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
+import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.Timing;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -171,7 +173,9 @@ public class TestDistributedQueue extends BaseClassForTests
         final int                 itemQty = 1000;
         final int                 consumerQty = 4;
 
-        CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing                    timing = new Timing();
+
+        CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
         client.start();
         try
         {
@@ -184,7 +188,7 @@ public class TestDistributedQueue extends BaseClassForTests
                     TestQueueItem       item = new TestQueueItem(Integer.toString(i));
                     producerQueue.put(item);
                 }
-                producerQueue.flushPuts(10, TimeUnit.SECONDS);
+                producerQueue.flushPuts(timing.multiple(2).seconds(), TimeUnit.SECONDS);
             }
             finally
             {
@@ -242,7 +246,7 @@ public class TestDistributedQueue extends BaseClassForTests
                 consumer.start();
             }
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            timing.awaitLatch(latch);
             Assert.assertTrue(duplicateMessages.size() == 0, duplicateMessages.toString());
         }
         finally
