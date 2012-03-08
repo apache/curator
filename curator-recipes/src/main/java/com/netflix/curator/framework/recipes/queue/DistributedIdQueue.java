@@ -185,7 +185,8 @@ public class DistributedIdQueue<T> implements QueueBase<T>
 
     private static String   fixId(String id)
     {
-        return id.replace('/', '_');
+        String fixed = id.replace('/', '_');
+        return fixed.replace(SEPARATOR, '_');
     }
 
     private Parts parseId(String name)
