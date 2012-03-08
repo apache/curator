@@ -33,7 +33,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -60,7 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * a {@link QueueBuilder#lockPath(String)}</li>
  * </p>
  */
-public class DistributedQueue<T> implements Closeable
+public class DistributedQueue<T> implements QueueBase<T>
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
@@ -102,6 +101,12 @@ public class DistributedQueue<T> implements Closeable
         STOPPED
     }
 
+    private enum ProcessType
+    {
+        NORMAL,
+        REMOVE
+    }
+
     private static final String     QUEUE_ITEM_NAME = "queue-";
 
     DistributedQueue
@@ -140,6 +145,7 @@ public class DistributedQueue<T> implements Closeable
      *
      * @throws Exception startup errors
      */
+    @Override
     public void     start() throws Exception
     {
         if ( !state.compareAndSet(State.LATENT, State.STARTED) )
@@ -204,6 +210,7 @@ public class DistributedQueue<T> implements Closeable
      *
      * @return put listener container
      */
+    @Override
     public ListenerContainer<QueuePutListener<T>> getPutListenerContainer()
     {
         return putListenerContainer;
@@ -215,6 +222,7 @@ public class DistributedQueue<T> implements Closeable
      *
      * @param newErrorMode the new error mode (the default is {@link ErrorMode#REQUEUE}
      */
+    @Override
     public void     setErrorMode(ErrorMode newErrorMode)
     {
         Preconditions.checkNotNull(lockPath);
@@ -230,6 +238,7 @@ public class DistributedQueue<T> implements Closeable
      * @return true if the flush was successful, false if it timed out first
      * @throws InterruptedException if thread was interrupted
      */
+    @Override
     public boolean flushPuts(long waitTime, TimeUnit timeUnit) throws InterruptedException
     {
         long    msWaitRemaining = TimeUnit.MILLISECONDS.convert(waitTime, timeUnit);
@@ -289,6 +298,7 @@ public class DistributedQueue<T> implements Closeable
      *
      * @return count (can be 0)
      */
+    @Override
     public int getLastMessageCount()
     {
         return lastChildCount.get();
@@ -363,6 +373,27 @@ public class DistributedQueue<T> implements Closeable
         return ZKPaths.makePath(queuePath, QUEUE_ITEM_NAME);
     }
 
+    protected void sortChildren(List<String> children)
+    {
+        Collections.sort(children);
+    }
+
+    protected List<String> getChildren() throws Exception
+    {
+        return client.getChildren().watched().forPath(queuePath);
+    }
+    
+    protected boolean tryRemove(String itemNode) throws Exception
+    {
+        boolean     isUsingLockSafety = (lockPath != null);
+        if ( isUsingLockSafety )
+        {
+            return processWithLockSafety(itemNode, ProcessType.REMOVE);
+        }
+
+        return processNormally(itemNode, ProcessType.REMOVE);
+    }
+
     private synchronized void internalNotify()
     {
         if ( refreshOnWatch )
@@ -383,7 +414,7 @@ public class DistributedQueue<T> implements Closeable
                 {
                     do
                     {
-                        children = client.getChildren().watched().forPath(queuePath);
+                        children = getChildren();
                         lastChildCount.set(children.size());
                         if ( children.size() == 0 )
                         {
@@ -407,7 +438,7 @@ public class DistributedQueue<T> implements Closeable
 
     private void processChildren(List<String> children) throws Exception
     {
-        Collections.sort(children); // makes sure items are processed in the order they were added
+        sortChildren(children); // makes sure items are processed in the order they were added
 
         boolean     isUsingLockSafety = (lockPath != null);
         int         min = minItemsBeforeRefresh;
@@ -434,11 +465,11 @@ public class DistributedQueue<T> implements Closeable
 
             if ( isUsingLockSafety )
             {
-                processWithLockSafety(itemNode);
+                processWithLockSafety(itemNode, ProcessType.NORMAL);
             }
             else
             {
-                processNormally(itemNode);
+                processNormally(itemNode, ProcessType.NORMAL);
             }
         }
     }
@@ -482,15 +513,26 @@ public class DistributedQueue<T> implements Closeable
         return removeItem;
     }
 
-    private void processNormally(String itemNode) throws Exception
+    private boolean processNormally(String itemNode, ProcessType type) throws Exception
     {
         try
         {
             String  itemPath = ZKPaths.makePath(queuePath, itemNode);
             Stat    stat = new Stat();
-            byte[]  bytes = client.getData().storingStatIn(stat).forPath(itemPath);
+
+            byte[]  bytes = null;
+            if ( type == ProcessType.NORMAL )
+            {
+                bytes = client.getData().storingStatIn(stat).forPath(itemPath);
+            }
             client.delete().withVersion(stat.getVersion()).forPath(itemPath);
-            processMessageBytes(itemNode, bytes);
+
+            if ( type == ProcessType.NORMAL )
+            {
+                processMessageBytes(itemNode, bytes);
+            }
+
+            return true;
         }
         catch ( KeeperException.NodeExistsException ignore )
         {
@@ -504,9 +546,11 @@ public class DistributedQueue<T> implements Closeable
         {
             // another process got it
         }
+
+        return false;
     }
 
-    private void processWithLockSafety(String itemNode) throws Exception
+    private boolean processWithLockSafety(String itemNode, ProcessType type) throws Exception
     {
         String      lockNodePath = ZKPaths.makePath(lockPath, itemNode);
         boolean     lockCreated = false;
@@ -516,11 +560,23 @@ public class DistributedQueue<T> implements Closeable
             lockCreated = true;
 
             String  itemPath = ZKPaths.makePath(queuePath, itemNode);
-            byte[]  bytes = client.getData().forPath(itemPath);
-            if ( processMessageBytes(itemNode, bytes) )
+            boolean doDelete = false;
+            if ( type == ProcessType.NORMAL )
+            {
+                byte[]  bytes = client.getData().forPath(itemPath);
+                doDelete = processMessageBytes(itemNode, bytes);
+            }
+            else if ( type == ProcessType.REMOVE )
+            {
+                doDelete = true;
+            }
+
+            if ( doDelete )
             {
                 client.delete().forPath(itemPath);
             }
+
+            return true;
         }
         catch ( KeeperException.NodeExistsException ignore )
         {
@@ -541,5 +597,7 @@ public class DistributedQueue<T> implements Closeable
                 client.delete().guaranteed().forPath(lockNodePath);
             }
         }
+
+        return false;
     }
 }

@@ -19,12 +19,12 @@ package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>An implementation of the Distributed Priority Queue ZK recipe.</p>
@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadFactory;
  * <p>IMPORTANT NOTE: The priority queue will perform far worse than a standard queue. Every time an
  * item is added to/removed from the queue, every watcher must re-get all the nodes</p>
 s */
-public class DistributedPriorityQueue<T> implements Closeable
+public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
 {
     private final DistributedQueue<T>      queue;
 
@@ -69,6 +69,7 @@ public class DistributedPriorityQueue<T> implements Closeable
      *
      * @throws Exception startup errors
      */
+    @Override
     public void     start() throws Exception
     {
         queue.start();
@@ -112,11 +113,24 @@ public class DistributedPriorityQueue<T> implements Closeable
         queue.internalPut(null, items, queue.makeItemPath() + priorityHex);
     }
 
+    @Override
+    public void setErrorMode(ErrorMode newErrorMode)
+    {
+        queue.setErrorMode(newErrorMode);
+    }
+
+    @Override
+    public boolean flushPuts(long waitTime, TimeUnit timeUnit) throws InterruptedException
+    {
+        return queue.flushPuts(waitTime, timeUnit);
+    }
+
     /**
      * Return the manager for put listeners
      *
      * @return put listener container
      */
+    @Override
     public ListenerContainer<QueuePutListener<T>> getPutListenerContainer()
     {
         return queue.getPutListenerContainer();
@@ -128,6 +142,7 @@ public class DistributedPriorityQueue<T> implements Closeable
      *
      * @return count (can be 0)
      */
+    @Override
     public int getLastMessageCount()
     {
         return queue.getLastMessageCount();

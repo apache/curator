@@ -1,5 +1,9 @@
 1.1.4/1.0.5 - xxxxxxxxxxxxx
 ===========================
+* Introduced a parent interface for Queues so that they can have some common methods
+
+* Added new Recipe: DistributedIdQueue - a version of DistributedQueue that allows IDs to be
+associated with queue items. Items can then be removed from the queue if needed.
 
 1.1.3/1.0.4 - March 7, 2012
 ===========================

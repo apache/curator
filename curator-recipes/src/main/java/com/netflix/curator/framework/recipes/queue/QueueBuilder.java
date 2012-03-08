@@ -80,6 +80,27 @@ public class QueueBuilder<T>
     }
 
     /**
+     * Build a {@link DistributedIdQueue} from the current builder values
+     *
+     * @return distributed id queue
+     */
+    public DistributedIdQueue<T>      buildIdQueue()
+    {
+        return new DistributedIdQueue<T>
+        (
+            client,
+            consumer,
+            serializer,
+            queuePath,
+            factory,
+            executor,
+            Integer.MAX_VALUE,
+            false,
+            lockPath
+        );
+    }
+
+    /**
      * <p>Build a {@link DistributedPriorityQueue} from the current builder values.</p>
      *
      * <p>When the priority
