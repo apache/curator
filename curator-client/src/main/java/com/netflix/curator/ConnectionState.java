@@ -17,7 +17,9 @@
  */
 package com.netflix.curator;
 
+import com.google.common.io.Closeables;
 import com.netflix.curator.drivers.TracerDriver;
+import com.netflix.curator.ensemble.EnsembleProvider;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -38,6 +40,7 @@ class ConnectionState implements Watcher, Closeable
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final HandleHolder zooKeeper;
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
+    private final EnsembleProvider ensembleProvider;
     private final int connectionTimeoutMs;
     private final AtomicReference<TracerDriver> tracer;
     private final AtomicReference<Watcher> parentWatcher = new AtomicReference<Watcher>(null);
@@ -45,12 +48,13 @@ class ConnectionState implements Watcher, Closeable
 
     private static final int        MAX_BACKGROUND_EXCEPTIONS = 10;
 
-    ConnectionState(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer) throws IOException
+    ConnectionState(EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer) throws IOException
     {
+        this.ensembleProvider = ensembleProvider;
         this.connectionTimeoutMs = connectionTimeoutMs;
         this.tracer = tracer;
         this.parentWatcher.set(parentWatcher);
-        zooKeeper = new HandleHolder(this, connectString, sessionTimeoutMs);
+        zooKeeper = new HandleHolder(this, ensembleProvider, sessionTimeoutMs);
     }
 
     ZooKeeper getZooKeeper() throws Exception
@@ -69,10 +73,17 @@ class ConnectionState implements Watcher, Closeable
             long        elapsed = System.currentTimeMillis() - connectionStartMs;
             if ( elapsed >= connectionTimeoutMs )
             {
-                KeeperException.ConnectionLossException connectionLossException = new KeeperException.ConnectionLossException();
-                log.error("Connection timed out", connectionLossException);
-                tracer.get().addCount("connections-timed-out", 1);
-                throw connectionLossException;
+                if ( zooKeeper.hasNewConnectionString() )
+                {
+                    handleNewConnectionString();
+                }
+                else
+                {
+                    KeeperException.ConnectionLossException connectionLossException = new KeeperException.ConnectionLossException();
+                    log.error("Connection timed out", connectionLossException);
+                    tracer.get().addCount("connections-timed-out", 1);
+                    throw connectionLossException;
+                }
             }
         }
 
@@ -92,6 +103,7 @@ class ConnectionState implements Watcher, Closeable
     void        start() throws Exception
     {
         log.debug("Starting");
+        ensembleProvider.start();
         reset();
     }
 
@@ -100,6 +112,7 @@ class ConnectionState implements Watcher, Closeable
     {
         log.debug("Closing");
 
+        Closeables.closeQuietly(ensembleProvider);
         try
         {
             zooKeeper.closeAndClear();
@@ -134,6 +147,10 @@ class ConnectionState implements Watcher, Closeable
             {
                 handleExpiredSession();
             }
+            else if ( zooKeeper.hasNewConnectionString() )
+            {
+                handleNewConnectionString();
+            }
         }
 
         if ( newIsConnected != wasConnected )
@@ -148,6 +165,21 @@ class ConnectionState implements Watcher, Closeable
             TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.get());
             localParentWatcher.process(event);
             timeTrace.commit();
+        }
+    }
+
+    private void handleNewConnectionString()
+    {
+        log.info("Connection string changed");
+        tracer.get().addCount("connection-string-changed", 1);
+
+        try
+        {
+            reset();
+        }
+        catch ( Exception e )
+        {
+            queueBackgroundException(e);
         }
     }
 

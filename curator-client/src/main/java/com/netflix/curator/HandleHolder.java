@@ -18,13 +18,14 @@
 
 package com.netflix.curator;
 
+import com.netflix.curator.ensemble.EnsembleProvider;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
 class HandleHolder
 {
     private final Watcher watcher;
-    private final String connectString;
+    private final EnsembleProvider ensembleProvider;
     private final int sessionTimeout;
 
     private volatile Helper helper;
@@ -32,18 +33,26 @@ class HandleHolder
     private interface Helper
     {
         ZooKeeper getZooKeeper() throws Exception;
+        
+        String getConnectionString();
     }
 
-    HandleHolder(final Watcher watcher, final String connectString, final int sessionTimeout)
+    HandleHolder(Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout)
     {
         this.watcher = watcher;
-        this.connectString = connectString;
+        this.ensembleProvider = ensembleProvider;
         this.sessionTimeout = sessionTimeout;
     }
 
     ZooKeeper getZooKeeper() throws Exception
     {
         return helper.getZooKeeper();
+    }
+
+    boolean hasNewConnectionString() 
+    {
+        String helperConnectionString = helper.getConnectionString();
+        return (helperConnectionString != null) && !ensembleProvider.getConnectionString().equals(helperConnectionString);
     }
 
     void closeAndClear() throws Exception
@@ -61,6 +70,7 @@ class HandleHolder
         helper = new Helper()
         {
             private volatile ZooKeeper zooKeeperHandle = null;
+            private volatile String connectionString = null;
 
             @Override
             public ZooKeeper getZooKeeper() throws Exception
@@ -69,7 +79,8 @@ class HandleHolder
                 {
                     if ( zooKeeperHandle == null )
                     {
-                        zooKeeperHandle = new ZooKeeper(connectString, sessionTimeout, watcher);
+                        connectionString = ensembleProvider.getConnectionString();
+                        zooKeeperHandle = new ZooKeeper(connectionString, sessionTimeout, watcher);
                     }
 
                     helper = new Helper()
@@ -79,10 +90,22 @@ class HandleHolder
                         {
                             return zooKeeperHandle;
                         }
+
+                        @Override
+                        public String getConnectionString()
+                        {
+                            return connectionString;
+                        }
                     };
 
                     return zooKeeperHandle;
                 }
+            }
+
+            @Override
+            public String getConnectionString()
+            {
+                return connectionString;
             }
         };
     }

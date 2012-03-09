@@ -18,6 +18,8 @@
 package com.netflix.curator.framework;
 
 import com.netflix.curator.RetryPolicy;
+import com.netflix.curator.ensemble.EnsembleProvider;
+import com.netflix.curator.ensemble.fixed.FixedEnsembleProvider;
 import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.imps.CuratorFrameworkImpl;
 import java.io.IOException;
@@ -79,15 +81,15 @@ public class CuratorFrameworkFactory
 
     public static class Builder
     {
-        private String          connectString;
-        private int             sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
-        private int             connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
-        private RetryPolicy     retryPolicy;
-        private ThreadFactory   threadFactory = null;
-        private String          namespace;
-        private String          authScheme = null;
-        private byte[]          authValue = null;
-        private byte[]          defaultData = new byte[0];
+        private EnsembleProvider    ensembleProvider;
+        private int                 sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
+        private int                 connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
+        private RetryPolicy         retryPolicy;
+        private ThreadFactory       threadFactory = null;
+        private String              namespace;
+        private String              authScheme = null;
+        private byte[]              authValue = null;
+        private byte[]              defaultData = new byte[0];
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -120,7 +122,17 @@ public class CuratorFrameworkFactory
          */
         public Builder connectString(String connectString)
         {
-            this.connectString = connectString;
+            ensembleProvider = new FixedEnsembleProvider(connectString);
+            return this;
+        }
+
+        /**
+         * @param ensembleProvider the ensemble provider to use
+         * @return this
+         */
+        public Builder ensembleProvider(EnsembleProvider ensembleProvider)
+        {
+            this.ensembleProvider = ensembleProvider;
             return this;
         }
 
@@ -197,9 +209,9 @@ public class CuratorFrameworkFactory
             return threadFactory;
         }
 
-        public String getConnectString()
+        public EnsembleProvider getEnsembleProvider()
         {
-            return connectString;
+            return ensembleProvider;
         }
 
         public int getSessionTimeoutMs()

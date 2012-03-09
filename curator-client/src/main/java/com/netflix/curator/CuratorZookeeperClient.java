@@ -19,6 +19,8 @@ package com.netflix.curator;
 
 import com.google.common.base.Preconditions;
 import com.netflix.curator.drivers.TracerDriver;
+import com.netflix.curator.ensemble.EnsembleProvider;
+import com.netflix.curator.ensemble.fixed.FixedEnsembleProvider;
 import com.netflix.curator.utils.DefaultTracerDriver;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -55,11 +57,16 @@ public class CuratorZookeeperClient implements Closeable
      */
     public CuratorZookeeperClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
     {
-        Preconditions.checkNotNull(connectString);
-        Preconditions.checkNotNull(retryPolicy);
+        this(new FixedEnsembleProvider(connectString), sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy);
+    }
+
+    public CuratorZookeeperClient(EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
+    {
+        retryPolicy = Preconditions.checkNotNull(retryPolicy);
+        ensembleProvider = Preconditions.checkNotNull(ensembleProvider);
 
         this.connectionTimeoutMs = connectionTimeoutMs;
-        state = new ConnectionState(connectString, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer);
+        state = new ConnectionState(ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer);
         setRetryPolicy(retryPolicy);
     }
 

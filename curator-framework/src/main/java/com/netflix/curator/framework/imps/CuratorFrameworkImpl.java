@@ -89,7 +89,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         this.client = new CuratorZookeeperClient
         (
-            builder.getConnectString(),
+            builder.getEnsembleProvider(),
             builder.getSessionTimeoutMs(),
             builder.getConnectionTimeoutMs(),
             new Watcher()
