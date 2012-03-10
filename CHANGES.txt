@@ -5,6 +5,10 @@
 * Added new Recipe: DistributedIdQueue - a version of DistributedQueue that allows IDs to be
 associated with queue items. Items can then be removed from the queue if needed.
 
+* Curator can now be configured to poll a cluster of Exhibitor (https://github.com/Netflix/exhibitor)
+instances to get the connection string to use with the ZooKeeper client. Should the connection
+string change, any new connections will use the new connection string.
+
 1.1.3/1.0.4 - March 7, 2012
 ===========================
 * Issue 27: This bug exposed major problems with the PathChildrenCache. I ended up completely
