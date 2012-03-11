@@ -63,7 +63,7 @@ public class ConnectionStateManager implements Closeable
     private final CuratorFramework                              client;
     private final ExecutorService                               service;
     private final ListenerContainer<ConnectionStateListener>    listeners = new ListenerContainer<ConnectionStateListener>();
-    private final AtomicReference<ConnectionState>              currentState = new AtomicReference<ConnectionState>(ConnectionState.RECONNECTED);
+    private final AtomicReference<ConnectionState>              currentState = new AtomicReference<ConnectionState>();
 
     /**
      * @param client the client
@@ -129,13 +129,15 @@ public class ConnectionStateManager implements Closeable
     {
         Preconditions.checkState(!service.isShutdown());
 
-        if ( currentState.getAndSet(newState) == newState )
+        ConnectionState     previousState = currentState.getAndSet(newState);
+        if ( previousState == newState )
         {
             return;
         }
 
-        log.info("State change: " + newState);
-        while ( !eventQueue.offer(newState) )
+        ConnectionState     localState = (previousState == null) ? ConnectionState.CONNECTED : newState;
+        log.info("State change: " + localState);
+        while ( !eventQueue.offer(localState) )
         {
             eventQueue.poll();
             log.warn("ConnectionStateManager queue full - dropping events to make room");

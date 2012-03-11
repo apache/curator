@@ -24,6 +24,12 @@ package com.netflix.curator.framework.state;
 public enum ConnectionState
 {
     /**
+     * Sent for the first successful connection to the server. NOTE: You will only
+     * get one of these messages for any CuratorFramework instance.
+     */
+    CONNECTED,
+
+    /**
      * There has been a loss of connection. Leaders, locks, etc. should suspend
      * until the connection is re-established. If the connection times-out you will
      * receive a {@link #LOST} notice

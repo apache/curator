@@ -17,13 +17,17 @@
  */
 package com.netflix.curator.framework.imps;
 
+import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -40,6 +44,36 @@ import java.util.concurrent.TimeUnit;
 
 public class TestFramework extends BaseClassForTests
 {
+    @Test
+    public void     testConnectionState() throws Exception
+    {
+        Timing                  timing = new Timing();
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            final SynchronousQueue<ConnectionState>     queue = new SynchronousQueue<ConnectionState>();
+            ConnectionStateListener                     listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    queue.add(newState);
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
+
+            client.start();
+            Assert.assertEquals(queue.poll(timing.seconds(), TimeUnit.SECONDS), ConnectionState.CONNECTED);
+            server.stop();
+            Assert.assertEquals(queue.poll(timing.multiple(2).seconds(), TimeUnit.SECONDS), ConnectionState.SUSPENDED);
+            Assert.assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.LOST);
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+    
     @Test
     public void     testIt() throws Exception
     {
