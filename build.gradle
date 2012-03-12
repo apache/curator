@@ -1,6 +1,6 @@
 // Establish version and status
 def performingRelease = project.hasProperty('release') && Boolean.parseBoolean(project.release)
-def releaseVersion = '1.1.3'
+def releaseVersion = '1.1.4'
 def versionPostfix = performingRelease?'':'-SNAPSHOT'
 version = "${releaseVersion}${versionPostfix}"
 status = performingRelease?'release':'snapshot'
@@ -79,7 +79,7 @@ subprojects
                 // To test deployment locally, use the following instead of oss.sonatype.org
                 //repository(url: "file://localhost/${rootProject.rootDir}/repo")
 
-                repository(url: 'http://oss.sonatype.org/services/local/staging/deply/maven2/') {
+                repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
                     authentication(userName: rootProject.sonatypeUsername, password: rootProject.sonatypePassword)
                 }
 
