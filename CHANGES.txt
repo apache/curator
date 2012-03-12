@@ -1,5 +1,5 @@
-1.1.4/1.0.5 - xxxxxxxxxxxxx
-===========================
+1.1.4/1.0.5 - March 12, 2012
+============================
 * Introduced a parent interface for Queues so that they can have some common methods
 
 * Added new Recipe: DistributedIdQueue - a version of DistributedQueue that allows IDs to be
