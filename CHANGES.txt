@@ -1,3 +1,7 @@
+1.1.5/1.0.6 - xxxxxxxxxxxxxx
+============================
+* Moving to Gradle as the build system.
+
 1.1.4/1.0.5 - March 12, 2012
 ============================
 * Introduced a parent interface for Queues so that they can have some common methods
