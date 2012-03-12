@@ -15,10 +15,10 @@ There are currently two version paths:
 
 == BUILDING
 
-Curator is built via Gradle (http://www.gradle.org/). To build from the command line:
+Curator is built via Gradle (http://www.gradle.org). To build from the command line:
     ./gradlew build
 
-== MAVEN
+== ARTIFACTS
 
 Curator binaries are published to Maven Central. Please see the docs for details.
 
