@@ -18,14 +18,13 @@
 package com.netflix.curator.test;
 
 import com.google.common.io.Files;
-import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * manages an internally running ZooKeeper server. FOR TESTING PURPOSES ONLY
@@ -36,6 +35,7 @@ public class TestingServer implements Closeable
     private final int port;
     private final Object factory;
     private final File tempDirectory;
+    private final AtomicBoolean isStopped = new AtomicBoolean(false);
 
     private static final int TIME_IN_MS = 2000;
 
@@ -132,18 +132,31 @@ public class TestingServer implements Closeable
      */
     public void stop()
     {
+        if ( !isStopped.compareAndSet(false, true) )
+        {
+            return;
+        }
+        
         ZKDatabase zkDb = server.getZKDatabase();
         try
         {
             zkDb.close();
         }
-        catch ( IOException e )
+        catch ( Throwable e )
         {
             System.err.println("Error closing logs");
             e.printStackTrace();
         }
-        server.shutdown();
-        ServerHelper.shutdownFactory(factory);
+        try
+        {
+            server.shutdown();
+            ServerHelper.shutdownFactory(factory);
+        }
+        catch ( Throwable e )
+        {
+            System.err.println("Error shutting down server");
+            e.printStackTrace();
+        }
     }
 
     /**
