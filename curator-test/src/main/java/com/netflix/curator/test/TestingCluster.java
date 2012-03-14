@@ -46,6 +46,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * manages an internally running ensemble of ZooKeeper servers. FOR TESTING PURPOSES ONLY
@@ -54,6 +55,7 @@ public class TestingCluster implements Closeable
 {
     private final List<QuorumPeerEntry>     entries;
     private final ExecutorService           executorService;
+    private final AtomicBoolean             isClosed = new AtomicBoolean(false);
 
     static
     {
@@ -410,6 +412,11 @@ public class TestingCluster implements Closeable
     @Override
     public void close() throws IOException
     {
+        if ( !isClosed.compareAndSet(false, true) )
+        {
+            return;
+        }
+
         for ( QuorumPeerEntry entry : entries )
         {
             closeEntry(entry);
