@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 // copied from Google Guava as these methods are now deprecated
+// NOTE: removed the line of code documented: Symbolic links will have different canonical and absolute paths
 public class DirectoryUtils
 {
     public static void deleteRecursively(File file) throws IOException
@@ -39,10 +40,6 @@ public class DirectoryUtils
         throws IOException {
         Preconditions.checkArgument(directory.isDirectory(),
             "Not a directory: %s", directory);
-        // Symbolic links will have different canonical and absolute paths
-        if (!directory.getCanonicalPath().equals(directory.getAbsolutePath())) {
-            return;
-        }
         File[] files = directory.listFiles();
         if (files == null) {
             throw new IOException("Error listing files for " + directory);
