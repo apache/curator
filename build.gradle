@@ -5,9 +5,12 @@ def versionPostfix = performingRelease?'':'-SNAPSHOT'
 version = "${releaseVersion}${versionPostfix}"
 status = performingRelease?'release':'snapshot'
 
+apply plugin: 'idea'
+
 subprojects
 {
     apply plugin: 'java'
+    apply plugin: 'idea'
 
     group = 'com.netflix.curator'
     version = rootProject.version

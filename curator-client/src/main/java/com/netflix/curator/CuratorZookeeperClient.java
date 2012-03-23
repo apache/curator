@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * A wrapper around Zookeeper that takes care of some low-level housekeeping
  */
+@SuppressWarnings("UnusedDeclaration")
 public class CuratorZookeeperClient implements Closeable
 {
     private final Logger                            log = LoggerFactory.getLogger(getClass());
@@ -60,6 +61,14 @@ public class CuratorZookeeperClient implements Closeable
         this(new FixedEnsembleProvider(connectString), sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy);
     }
 
+    /**
+     * @param ensembleProvider the ensemble provider
+     * @param sessionTimeoutMs session timeout
+     * @param connectionTimeoutMs connection timeout
+     * @param watcher default watcher or null
+     * @param retryPolicy the retry policy to use
+     * @throws IOException ZooKeeper creation errors
+     */
     public CuratorZookeeperClient(EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
     {
         retryPolicy = Preconditions.checkNotNull(retryPolicy);

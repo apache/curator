@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 
+@SuppressWarnings("UnusedDeclaration")
 public class DefaultExhibitorRestClient implements ExhibitorRestClient
 {
     private final boolean useSsl;

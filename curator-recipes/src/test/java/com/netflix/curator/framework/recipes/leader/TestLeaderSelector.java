@@ -43,6 +43,43 @@ public class TestLeaderSelector extends BaseClassForTests
     private static final String     PATH_NAME = "/one/two/me";
 
     @Test
+    public void     testAutoRequeue() throws Exception
+    {
+        LeaderSelector      selector = null;
+        CuratorFramework    client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).sessionTimeoutMs(1000).build();
+        try
+        {
+            client.start();
+
+            final Semaphore             semaphore = new Semaphore(0);
+            LeaderSelectorListener      listener = new LeaderSelectorListener()
+            {
+                @Override
+                public void takeLeadership(CuratorFramework client) throws Exception
+                {
+                    Thread.sleep(10);
+                    semaphore.release();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+            selector = new LeaderSelector(client, "/leader", listener);
+            selector.autoRequeue();
+            selector.start();
+            
+            Assert.assertTrue(semaphore.tryAcquire(2, 10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            Closeables.closeQuietly(selector);
+            Closeables.closeQuietly(client);
+        }
+    }
+    
+    @Test
     public void     testServerDying() throws Exception
     {
         LeaderSelector      selector = null;
@@ -274,7 +311,14 @@ public class TestLeaderSelector extends BaseClassForTests
             {
                 for ( LeaderSelector leaderSelector : selectors )
                 {
-                    leaderSelector.start();
+                    if ( i > 1 )
+                    {
+                        leaderSelector.requeue();
+                    }
+                    else
+                    {
+                        leaderSelector.start();
+                    }
                 }
 
                 while ( localLeaderList.size() != (i * selectors.size()) )

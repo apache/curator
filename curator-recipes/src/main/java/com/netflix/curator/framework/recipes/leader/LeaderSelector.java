@@ -35,6 +35,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Abstraction to select a "leader" amongst multiple contenders in a group of JMVs connected
@@ -50,9 +52,18 @@ public class LeaderSelector implements Closeable
     private final ExecutorService           executorService;
     private final Executor                  executor;
     private final InterProcessMutex         mutex;
+    private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
+    private final AtomicBoolean             autoRequeue = new AtomicBoolean(false);
 
     private volatile boolean                hasLeadership;
     private volatile String                 id = "";
+
+    private enum State
+    {
+        LATENT,
+        STARTED,
+        CLOSED
+    }
 
     // guarded by synchronization
     private boolean                isQueued = false;
@@ -106,6 +117,16 @@ public class LeaderSelector implements Closeable
     }
 
     /**
+     * By default, when {@link LeaderSelectorListener#takeLeadership(CuratorFramework)} returns, this
+     * instance is not requeued. Calling this method puts the leader selector into a mode where it
+     * will always requeue itself.
+     */
+    public void autoRequeue()
+    {
+        autoRequeue.set(true);
+    }
+
+    /**
      * Sets the ID to store for this leader. Will be the value returned
      * when {@link #getParticipants()} is called. IMPORTANT: must be called
      * prior to {@link #start()} to have effect.
@@ -131,10 +152,14 @@ public class LeaderSelector implements Closeable
 
     /**
      * Attempt leadership. This attempt is done in the background - i.e. this method returns
-     * immediately.
+     * immediately.<br/><br/>
+     * <b>IMPORTANT: </b> previous versions allowed this method to be called multiple times. This
+     * is no longer supported. Use {@link #requeue()} for this purpose.
      */
     public void     start()
     {
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
+
         Preconditions.checkArgument(!executorService.isShutdown());
         Preconditions.checkArgument(!hasLeadership);
 
@@ -151,6 +176,8 @@ public class LeaderSelector implements Closeable
      */
     public synchronized boolean     requeue()
     {
+        Preconditions.checkState(state.get() == State.STARTED, "close() has already been called");
+
         if ( !isQueued )
         {
             isQueued = true;
@@ -161,7 +188,7 @@ public class LeaderSelector implements Closeable
                     @Override
                     public Object call() throws Exception
                     {
-                        doWork();
+                        doWorkLoop();
                         return null;
                     }
                 }
@@ -177,7 +204,7 @@ public class LeaderSelector implements Closeable
      */
     public void     close()
     {
-        Preconditions.checkArgument(!executorService.isShutdown());
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed");
 
         client.getConnectionStateListenable().removeListener(listener);
         executorService.shutdownNow();
@@ -286,7 +313,7 @@ public class LeaderSelector implements Closeable
                         {
                             Thread.currentThread().interrupt();
                         }
-                        catch ( Exception e )
+                        catch ( Throwable e )
                         {
                             log.error("The leader threw an exception", e);
                         }
@@ -297,6 +324,10 @@ public class LeaderSelector implements Closeable
                     }
                 }
             );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
         }
         catch ( Exception e )
         {
@@ -315,6 +346,14 @@ public class LeaderSelector implements Closeable
                 // ignore errors - this is just a safety
             }
         }
+    }
+
+    private void doWorkLoop() throws Exception
+    {
+        do
+        {
+            doWork();
+        } while ( autoRequeue.get() && (state.get() == State.STARTED) && !Thread.currentThread().isInterrupted() );
     }
 
     private synchronized void clearIsQueued()

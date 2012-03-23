@@ -107,27 +107,27 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
 
         service.submit
-            (
-                new Runnable()
+        (
+            new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
+                        while ( !Thread.currentThread().isInterrupted() )
                         {
-                            while ( !Thread.currentThread().isInterrupted() )
-                            {
-                                poll();
-                                Thread.sleep(pollingMs);
-                            }
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
+                            poll();
+                            Thread.sleep(pollingMs);
                         }
                     }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
                 }
-            );
+            }
+        );
     }
 
     @Override
@@ -188,6 +188,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
 
                     int                     port = Integer.parseInt(values.get("port"));
                     StringBuilder           newConnectionString = new StringBuilder();
+                    List<String>            newHostnames = Lists.newArrayList();
                     for ( int i = 0; i < Integer.parseInt(values.get("count")); ++i )
                     {
                         if ( newConnectionString.length() > 0 )
@@ -196,9 +197,11 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                         }
                         String      server = values.get("server" + i);
                         newConnectionString.append(server).append(":").append(port);
+                        newHostnames.add(server);
                     }
 
                     connectionString.set(newConnectionString.toString());
+                    exhibitors.set(new Exhibitors(newHostnames, localExhibitors.getRestPort(), localExhibitors.getBackupConnectionString()));
                     done = true;
                 }
                 catch ( Throwable e )

@@ -1,6 +1,17 @@
 1.1.5/1.0.6 - xxxxxxxxxxxxxx
 ============================
-* Moving to Gradle as the build system.
+* Moved to Gradle as the build system.
+
+* Added SimpleDistributedQueue, a drop-in replacement for the DistributedQueue that comes with the
+ZK distribution.
+
+* IMPORTANT CHANGE TO LeaderSelector. Previous versions of Curator overloaded the start() method
+to allow re-queueing. THIS IS NO LONGER SUPPORTED. Instead, there is a new method, requeue(), that
+does this. Calling start() more than once will now throw an exception.
+
+* LeaderSelector now supports auto re-queueing. In previous versions, it wasn't trivial to requeue
+the instance. Now, make a call to autoRequeue() to put the instance in a mode where it will requeue
+itself when the leader selector listener returns.
 
 1.1.4/1.0.5 - March 12, 2012
 ============================

@@ -20,5 +20,15 @@ package com.netflix.curator.ensemble.exhibitor;
 
 public interface ExhibitorRestClient
 {
+    /**
+     * Connect to the given Exhibitor and return the raw result
+     *
+     * @param hostname host to connect to
+     * @param port connect port
+     * @param uriPath path
+     * @param mimeType Accept mime type
+     * @return raw result
+     * @throws Exception errors
+     */
     public String getRaw(String hostname, int port, String uriPath, String mimeType) throws Exception;
 }

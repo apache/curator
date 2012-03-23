@@ -20,6 +20,7 @@ package com.netflix.curator;
 import com.google.common.io.Closeables;
 import com.netflix.curator.drivers.TracerDriver;
 import com.netflix.curator.ensemble.EnsembleProvider;
+import com.netflix.curator.utils.DebugUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -138,6 +140,11 @@ class ConnectionState implements Watcher, Closeable
     @Override
     public void process(WatchedEvent event)
     {
+        if ( Boolean.getBoolean(DebugUtils.PROPERTY_LOG_EVENTS) )
+        {
+            log.debug("ConnectState watcher: " + event);
+        }
+        
         boolean wasConnected = isConnected.get();
         boolean newIsConnected = wasConnected;
         if ( event.getType() == Watcher.Event.EventType.None )
