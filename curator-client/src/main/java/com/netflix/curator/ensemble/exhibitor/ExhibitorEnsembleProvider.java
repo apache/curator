@@ -189,19 +189,24 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                     int                     port = Integer.parseInt(values.get("port"));
                     StringBuilder           newConnectionString = new StringBuilder();
                     List<String>            newHostnames = Lists.newArrayList();
-                    for ( int i = 0; i < Integer.parseInt(values.get("count")); ++i )
+                    int                     count = Integer.parseInt(values.get("count"));
+                    if ( count > 0 )
                     {
-                        if ( newConnectionString.length() > 0 )
+                        for ( int i = 0; i < count; ++i )
                         {
-                            newConnectionString.append(",");
+                            if ( newConnectionString.length() > 0 )
+                            {
+                                newConnectionString.append(",");
+                            }
+                            String      server = values.get("server" + i);
+                            newConnectionString.append(server).append(":").append(port);
+                            newHostnames.add(server);
                         }
-                        String      server = values.get("server" + i);
-                        newConnectionString.append(server).append(":").append(port);
-                        newHostnames.add(server);
-                    }
 
-                    connectionString.set(newConnectionString.toString());
-                    exhibitors.set(new Exhibitors(newHostnames, localExhibitors.getRestPort(), localExhibitors.getBackupConnectionString()));
+                        connectionString.set(newConnectionString.toString());
+                        exhibitors.set(new Exhibitors(newHostnames, localExhibitors.getRestPort(), localExhibitors.getBackupConnectionString()));
+                    }
+                    // else - don't allow a situation where there are no known servers
                     done = true;
                 }
                 catch ( Throwable e )
