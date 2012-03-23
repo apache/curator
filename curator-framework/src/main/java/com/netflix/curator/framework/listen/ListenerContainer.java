@@ -21,6 +21,8 @@ package com.netflix.curator.framework.listen;
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -29,6 +31,7 @@ import java.util.concurrent.Executor;
  */
 public class ListenerContainer<T> implements Listenable<T>
 {
+    private final Logger                        log = LoggerFactory.getLogger(getClass());
     private final Map<T, ListenerEntry<T>>      listeners = Maps.newConcurrentMap();
 
     @Override
@@ -77,7 +80,14 @@ public class ListenerContainer<T> implements Listenable<T>
     {
         for ( final ListenerEntry<T> entry : listeners.values() )
         {
-            function.apply(entry.listener);
+            try
+            {
+                function.apply(entry.listener);
+            }
+            catch ( Throwable e )
+            {
+                log.error(String.format("Listener (%s) threw an exception", entry.listener), e);
+            }
         }
     }
 }
