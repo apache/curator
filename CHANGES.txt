@@ -13,6 +13,12 @@ does this. Calling start() more than once will now throw an exception.
 the instance. Now, make a call to autoRequeue() to put the instance in a mode where it will requeue
 itself when the leader selector listener returns.
 
+* The mechanism that calls any kind of Curator listener wasn't protected against exceptions. Thus,
+an exception in a listener could break the listener event thread.
+
+* deleteDirectoryContents() no longer checks for sym links. This was a major issue in the Guava
+version and possibly one of the reasons they removed the method altogether.
+
 1.1.4/1.0.5 - March 12, 2012
 ============================
 * Introduced a parent interface for Queues so that they can have some common methods
