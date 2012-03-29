@@ -17,6 +17,8 @@ subprojects
 
     sourceCompatibility = 1.6
 
+    tasks.test.useTestNG()
+
     // GRADLE-2087 workaround, perform after java plugin
     status = rootProject.status
 
