@@ -196,10 +196,6 @@ public class TestLeaderSelectorCluster
 
             selector.requeue();
             Assert.assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
-            if ( error.get() != null )
-            {
-                throw new AssertionError(error.get());
-            }
         }
         finally
         {

@@ -49,6 +49,11 @@ class HandleHolder
         return helper.getZooKeeper();
     }
 
+    String  getConnectionString()
+    {
+        return (helper != null) ? helper.getConnectionString() : null;
+    }
+
     boolean hasNewConnectionString() 
     {
         String helperConnectionString = (helper != null) ? helper.getConnectionString() : null;

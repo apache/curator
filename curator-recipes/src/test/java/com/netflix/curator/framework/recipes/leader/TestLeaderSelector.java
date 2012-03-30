@@ -82,8 +82,9 @@ public class TestLeaderSelector extends BaseClassForTests
     @Test
     public void     testServerDying() throws Exception
     {
+        Timing              timing = new Timing();
         LeaderSelector      selector = null;
-        CuratorFramework    client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).sessionTimeoutMs(1000).build();
+        CuratorFramework    client = CuratorFrameworkFactory.builder().connectionTimeoutMs(timing.connection()).connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).sessionTimeoutMs(timing.session()).build();
         client.start();
         try
         {
@@ -109,11 +110,11 @@ public class TestLeaderSelector extends BaseClassForTests
             selector = new LeaderSelector(client, "/leader", listener);
             selector.start();
 
-            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
+            timing.acquireSemaphore(semaphore);
 
             server.close();
 
-            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
+            timing.acquireSemaphore(semaphore);
         }
         finally
         {

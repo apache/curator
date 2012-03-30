@@ -23,6 +23,7 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.BaseClassForTests;
 import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.RetryLoop;
+import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
@@ -126,8 +127,8 @@ public class TestExhibitorEnsembleProvider extends BaseClassForTests
         ExhibitorEnsembleProvider   provider = new ExhibitorEnsembleProvider(exhibitors, mockRestClient, "/foo", 10, new RetryOneTime(1));
         provider.pollForInitialEnsemble();
 
-        Timing                      timing = new Timing();
-        CuratorZookeeperClient      client = new CuratorZookeeperClient(provider, timing.session(), timing.connection(), null, new RetryOneTime(2));
+        Timing                      timing = new Timing(4);
+        CuratorZookeeperClient      client = new CuratorZookeeperClient(provider, timing.session(), timing.connection(), null, new ExponentialBackoffRetry(timing.milliseconds(), 3));
         client.start();
         try
         {
@@ -136,6 +137,8 @@ public class TestExhibitorEnsembleProvider extends BaseClassForTests
         }
         catch ( Exception e )
         {
+            System.out.println("provider.getConnectionString(): " + provider.getConnectionString() + " server.getPort(): " + server.getPort());
+            e.printStackTrace();
             Assert.fail();
             throw e;
         }

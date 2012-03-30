@@ -63,9 +63,9 @@ public class TestFramework extends BaseClassForTests
             client.getConnectionStateListenable().addListener(listener);
 
             client.start();
-            Assert.assertEquals(queue.poll(timing.seconds(), TimeUnit.SECONDS), ConnectionState.CONNECTED);
+            Assert.assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.CONNECTED);
             server.stop();
-            Assert.assertEquals(queue.poll(timing.multiple(2).seconds(), TimeUnit.SECONDS), ConnectionState.SUSPENDED);
+            Assert.assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.SUSPENDED);
             Assert.assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.LOST);
         }
         finally

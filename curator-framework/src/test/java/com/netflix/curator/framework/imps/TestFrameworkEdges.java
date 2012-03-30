@@ -28,6 +28,7 @@ import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.TestingServer;
+import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -136,7 +137,8 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void         testBackgroundFailure() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 10000, 10000, new RetryOneTime(1));
+        Timing              timing = new Timing();
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -162,7 +164,7 @@ public class TestFrameworkEdges extends BaseClassForTests
             server.stop();
 
             client.checkExists().inBackground().forPath("/hey");
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.awaitLatch(latch));
         }
         finally
         {

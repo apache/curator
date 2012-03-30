@@ -22,6 +22,8 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.TestingServer;
+import com.netflix.curator.test.Timing;
+import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.File;
@@ -33,8 +35,9 @@ public class TestFailedDeleteManager extends BaseClassForTests
     {
         final String PATH = "/one/two/three";
 
+        Timing                          timing = new Timing();
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
-        builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).connectionTimeoutMs(5000).sessionTimeoutMs(100000);
+        builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).connectionTimeoutMs(timing.connection()).sessionTimeoutMs(timing.session());
         CuratorFrameworkImpl            client = new CuratorFrameworkImpl(builder);
         client.start();
         try
@@ -45,14 +48,14 @@ public class TestFailedDeleteManager extends BaseClassForTests
             File    serverDir = server.getTempDirectory();
             int     serverPort = server.getPort();
 
-            server.close(); // cause the next delete to fail
+            server.stop(); // cause the next delete to fail
             server = null;
             try
             {
                 client.delete().forPath(PATH);
                 Assert.fail();
             }
-            catch ( Exception expected )
+            catch ( KeeperException.ConnectionLossException e )
             {
                 // expected
             }
@@ -60,14 +63,14 @@ public class TestFailedDeleteManager extends BaseClassForTests
             server = new TestingServer(serverPort, serverDir);
             Assert.assertNotNull(client.checkExists().forPath(PATH));
 
-            server.close(); // cause the next delete to fail
+            server.stop(); // cause the next delete to fail
             server = null;
             try
             {
                 client.delete().guaranteed().forPath(PATH);
                 Assert.fail();
             }
-            catch ( Exception expected )
+            catch ( KeeperException.ConnectionLossException e )
             {
                 // expected
             }
@@ -79,7 +82,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
             {
                 if ( client.checkExists().forPath(PATH) != null )
                 {
-                    Thread.sleep(500 * i);
+                    timing.sleepABit();
                 }
             }
             Assert.assertNull(client.checkExists().forPath(PATH));
