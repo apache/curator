@@ -352,7 +352,17 @@ public class LeaderSelector implements Closeable
     {
         do
         {
-            doWork();
+            try
+            {
+                doWork();
+            }
+            catch ( KeeperException.ConnectionLossException e )
+            {
+                if ( !autoRequeue.get() )   // autoRequeue should ignore connection loss and just keep trying
+                {
+                    throw e;
+                }
+            }
         } while ( autoRequeue.get() && (state.get() == State.STARTED) && !Thread.currentThread().isInterrupted() );
     }
 
