@@ -140,6 +140,7 @@ public class TestingServer implements Closeable
         ZKDatabase zkDb = server.getZKDatabase();
         try
         {
+            zkDb.commit();
             zkDb.close();
         }
         catch ( Throwable e )
