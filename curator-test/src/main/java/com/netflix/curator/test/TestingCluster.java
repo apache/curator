@@ -404,6 +404,14 @@ public class TestingCluster implements Closeable
     }
 
     /**
+     * Shutdown the ensemble WITHOUT freeing resources, etc.
+     */
+    public void stop()
+    {
+        internalClose(false);
+    }
+
+    /**
      * Shutdown the ensemble, free resources, etc. If temp directories were used, they
      * are deleted. You should call this in a <code>finally</code> block.
      *
@@ -412,17 +420,13 @@ public class TestingCluster implements Closeable
     @Override
     public void close() throws IOException
     {
-        if ( !isClosed.compareAndSet(false, true) )
+        if ( !internalClose(true) )
         {
-            return;
+            for ( QuorumPeerEntry entry : entries )
+            {
+                deleteEntry(entry, true);
+            }
         }
-
-        for ( QuorumPeerEntry entry : entries )
-        {
-            closeEntry(entry);
-        }
-
-        executorService.shutdownNow();
     }
 
     /**
@@ -439,7 +443,7 @@ public class TestingCluster implements Closeable
         {
             if ( entry.instanceSpec.port == instance.port )
             {
-                closeEntry(entry);
+                closeEntry(entry, true);
                 found = true;
                 break;
             }
@@ -470,16 +474,29 @@ public class TestingCluster implements Closeable
         return null;
     }
 
-    private void closeEntry(QuorumPeerEntry entry)
+    private boolean internalClose(boolean deleteDataDirectory)
+    {
+        if ( !isClosed.compareAndSet(false, true) )
+        {
+            return false;
+        }
+
+        for ( QuorumPeerEntry entry : entries )
+        {
+            closeEntry(entry, deleteDataDirectory);
+        }
+
+        executorService.shutdownNow();
+        return true;
+    }
+
+    private void closeEntry(QuorumPeerEntry entry, boolean deleteDataDirectory)
     {
         entry.quorumPeer.shutdown();
         try
         {
             entry.quorumPeer.join(10000);
-            if ( entry.instanceSpec.deleteDataDirectoryOnClose )
-            {
-                DirectoryUtils.deleteRecursively(entry.instanceSpec.dataDirectory);
-            }
+            deleteEntry(entry, deleteDataDirectory);
         }
         catch ( IOException e )
         {
@@ -488,6 +505,14 @@ public class TestingCluster implements Closeable
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private void deleteEntry(QuorumPeerEntry entry, boolean deleteDataDirectory) throws IOException
+    {
+        if ( deleteDataDirectory && entry.instanceSpec.deleteDataDirectoryOnClose )
+        {
+            DirectoryUtils.deleteRecursively(entry.instanceSpec.dataDirectory);
         }
     }
 
