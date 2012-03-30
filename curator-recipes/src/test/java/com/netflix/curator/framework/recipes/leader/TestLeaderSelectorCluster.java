@@ -93,7 +93,7 @@ public class TestLeaderSelectorCluster
             cluster.killServer(connectionInstance);
 
             Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
-            selector.start();
+            selector.requeue();
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
             
             Assert.assertEquals(errors.get(), 0);
@@ -115,11 +115,11 @@ public class TestLeaderSelectorCluster
         cluster.start();
         try
         {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(10, 3));
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.milliseconds(), 3));
             client.start();
             client.sync("/", null);
 
-            final AtomicReference<AssertionError>   error = new AtomicReference<AssertionError>(null);
+            final AtomicReference<Exception>        error = new AtomicReference<Exception>(null);
             final AtomicReference<String>           lockNode = new AtomicReference<String>(null);
             final Semaphore                         semaphore = new Semaphore(0);
             final CountDownLatch                    lostLatch = new CountDownLatch(1);
@@ -132,17 +132,23 @@ public class TestLeaderSelectorCluster
                     try
                     {
                         List<String>        names = client.getChildren().forPath("/leader");
-                        Assert.assertEquals(names.size(), 1);
+                        if ( names.size() != 1 )
+                        {
+                            semaphore.release();
+                            Exception exception = new Exception("Names size isn't 1: " + names.size());
+                            error.set(exception);
+                            return;
+                        }
                         lockNode.set(names.get(0));
 
                         semaphore.release();
-                        Assert.assertTrue(timing.awaitLatch(internalLostLatch));
-                        lostLatch.countDown();
+                        if ( !timing.multiple(4).awaitLatch(internalLostLatch) )
+                        {
+                            error.set(new Exception("internalLostLatch await failed"));
+                        }
                     }
-                    catch ( AssertionError e )
+                    finally
                     {
-                        error.set(e);
-                        semaphore.release();
                         lostLatch.countDown();
                     }
                 }
@@ -165,10 +171,11 @@ public class TestLeaderSelectorCluster
             }
 
             Collection<TestingCluster.InstanceSpec>    instances = cluster.getInstances();
-            cluster.close();
-            cluster = null;
+            cluster.stop();
 
-            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            Assert.assertTrue(timing.multiple(4).awaitLatch(lostLatch));
+            timing.sleepABit();
+            Assert.assertFalse(selector.hasLeadership());
 
             Assert.assertNotNull(lockNode.get());
             
@@ -177,15 +184,18 @@ public class TestLeaderSelectorCluster
 
             try
             {
-                client.delete().forPath(ZKPaths.makePath("/leader", lockNode.get()));   // simulate the lock deleting due to session exipration
+                client.delete().forPath(ZKPaths.makePath("/leader", lockNode.get()));   // simulate the lock deleting due to session expiration
             }
             catch ( Exception ignore )
             {
                 // ignore
             }
 
-            selector.start();
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            Assert.assertTrue(semaphore.availablePermits() == 0);
+            Assert.assertFalse(selector.hasLeadership());
+
+            selector.requeue();
+            Assert.assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
             if ( error.get() != null )
             {
                 throw new AssertionError(error.get());
