@@ -205,19 +205,6 @@ public class TestFrameworkEdges extends BaseClassForTests
         client.start();
         try
         {
-/*
-            client.getUnhandledErrorListenable().addListener
-            (
-                new UnhandledErrorListener()
-                {
-                    @Override
-                    public void unhandledError(String message, Throwable e)
-                    {
-                    }
-                }
-            );
-*/
-
             final AtomicInteger     retries = new AtomicInteger(0);
             final Semaphore         semaphore = new Semaphore(0);
             client.getZookeeperClient().setRetryPolicy
