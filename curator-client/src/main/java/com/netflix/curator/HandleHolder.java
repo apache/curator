@@ -51,7 +51,7 @@ class HandleHolder
 
     boolean hasNewConnectionString() 
     {
-        String helperConnectionString = helper.getConnectionString();
+        String helperConnectionString = (helper != null) ? helper.getConnectionString() : null;
         return (helperConnectionString != null) && !ensembleProvider.getConnectionString().equals(helperConnectionString);
     }
 
