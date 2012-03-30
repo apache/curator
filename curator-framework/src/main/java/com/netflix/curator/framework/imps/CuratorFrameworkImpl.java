@@ -581,7 +581,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
             try
             {
-                client.blockUntilConnectedOrTimedOut();
                 operationAndData.callPerformBackgroundOperation();
             }
             catch ( Throwable e )
