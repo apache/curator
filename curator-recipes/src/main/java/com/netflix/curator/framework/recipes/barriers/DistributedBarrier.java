@@ -102,7 +102,7 @@ public class DistributedBarrier
     }
 
     /**
-     * Blocks until the barrier node comes into existence or the timeout elapses
+     * Blocks until the barrier no longer exists or the timeout elapses
      *
      * @param maxWait max time to block
      * @param unit time unit
