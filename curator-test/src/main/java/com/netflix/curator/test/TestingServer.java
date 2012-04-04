@@ -17,27 +17,18 @@
  */
 package com.netflix.curator.test;
 
-import com.google.common.io.Files;
-import org.apache.zookeeper.server.ZKDatabase;
-import org.apache.zookeeper.server.ZooKeeperServer;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * manages an internally running ZooKeeper server. FOR TESTING PURPOSES ONLY
  */
 public class TestingServer implements Closeable
 {
-    private final ZooKeeperServer server;
-    private final int port;
-    private final Object factory;
-    private final File tempDirectory;
-    private final AtomicBoolean isStopped = new AtomicBoolean(false);
-
-    private static final int TIME_IN_MS = 2000;
+    private final TestingZooKeeperServer testingZooKeeperServer;
+    private final InstanceSpec spec;
 
     static int getRandomPort()
     {
@@ -74,7 +65,7 @@ public class TestingServer implements Closeable
      */
     public TestingServer() throws Exception
     {
-        this(getRandomPort(), Files.createTempDir());
+        this(-1, null);
     }
 
     /**
@@ -85,7 +76,7 @@ public class TestingServer implements Closeable
      */
     public TestingServer(int port) throws Exception
     {
-        this(port, Files.createTempDir());
+        this(port, null);
     }
 
     /**
@@ -97,14 +88,14 @@ public class TestingServer implements Closeable
      */
     public TestingServer(int port, File tempDirectory) throws Exception
     {
-        this.port = port;
-        this.tempDirectory = tempDirectory;
+        this(new InstanceSpec(tempDirectory, port, -1, -1, true, -1));
+    }
 
-        File logDir = new File(tempDirectory, "testLog");
-        File dataDir = new File(tempDirectory, "testData");
-
-        server = new ZooKeeperServer(dataDir, logDir, TIME_IN_MS);
-        factory = ServerHelper.makeFactory(server, port);
+    public TestingServer(InstanceSpec spec) throws Exception
+    {
+        this.spec = spec;
+        testingZooKeeperServer = new TestingZooKeeperServer(new QuorumConfigBuilder(spec));
+        testingZooKeeperServer.start();
     }
 
     /**
@@ -114,7 +105,7 @@ public class TestingServer implements Closeable
      */
     public int getPort()
     {
-        return port;
+        return spec.getPort();
     }
 
     /**
@@ -124,63 +115,24 @@ public class TestingServer implements Closeable
      */
     public File getTempDirectory()
     {
-        return tempDirectory;
+        return spec.getDataDirectory();
     }
 
     /**
      * Stop the server without deleting the temp directory
      */
-    public void stop()
+    public void stop() throws IOException
     {
-        if ( !isStopped.compareAndSet(false, true) )
-        {
-            return;
-        }
-        
-        ZKDatabase zkDb = server.getZKDatabase();
-        try
-        {
-            zkDb.commit();
-            zkDb.close();
-        }
-        catch ( Throwable e )
-        {
-            System.err.println("Error closing logs");
-            e.printStackTrace();
-        }
-        try
-        {
-            server.shutdown();
-            ServerHelper.shutdownFactory(factory);
-        }
-        catch ( Throwable e )
-        {
-            System.err.println("Error shutting down server");
-            e.printStackTrace();
-        }
+        testingZooKeeperServer.stop();
     }
 
     /**
      * Close the server and any open clients and delete the temp directory
      */
     @Override
-    public void close()
+    public void close() throws IOException
     {
-        try
-        {
-            stop();
-        }
-        finally
-        {
-            try
-            {
-                DirectoryUtils.deleteRecursively(tempDirectory);
-            }
-            catch ( IOException e )
-            {
-                // ignore
-            }
-        }
+        testingZooKeeperServer.close();
     }
 
     /**
@@ -190,6 +142,6 @@ public class TestingServer implements Closeable
      */
     public String getConnectString()
     {
-        return "localhost:" + port;
+        return spec.getConnectString();
     }
 }

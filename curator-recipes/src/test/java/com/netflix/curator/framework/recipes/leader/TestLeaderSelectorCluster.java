@@ -20,9 +20,9 @@ package com.netflix.curator.framework.recipes.leader;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.framework.api.UnhandledErrorListener;
 import com.netflix.curator.framework.state.ConnectionState;
-import com.netflix.curator.retry.ExponentialBackoffRetry;
+import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.InstanceSpec;
 import com.netflix.curator.test.TestingCluster;
 import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.ZKPaths;
@@ -32,7 +32,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -48,24 +47,10 @@ public class TestLeaderSelectorCluster
         cluster.start();
         try
         {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
 
-            final AtomicInteger     errors = new AtomicInteger(0);
-            client.getUnhandledErrorListenable().addListener
-            (
-                new UnhandledErrorListener()
-                {
-                    @Override
-                    public void unhandledError(String message, Throwable e)
-                    {
-                        errors.incrementAndGet();
-                    }
-                }
-            );
-            
             final Semaphore             semaphore = new Semaphore(0);
-            final CountDownLatch        reconnectedLatch = new CountDownLatch(1);
             LeaderSelectorListener      listener = new LeaderSelectorListener()
             {
                 @Override
@@ -79,24 +64,17 @@ public class TestLeaderSelectorCluster
                 @Override
                 public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
-                    if ( newState == ConnectionState.RECONNECTED )
-                    {
-                        reconnectedLatch.countDown();
-                    }
                 }
             };
             LeaderSelector      selector = new LeaderSelector(client, "/leader", listener);
+            selector.autoRequeue();
             selector.start();
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
 
-            TestingCluster.InstanceSpec     connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
+            InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
-            selector.requeue();
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            
-            Assert.assertEquals(errors.get(), 0);
         }
         finally
         {
@@ -115,7 +93,7 @@ public class TestLeaderSelectorCluster
         cluster.start();
         try
         {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.milliseconds(), 3));
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
             client.sync("/", null);
 
@@ -170,7 +148,7 @@ public class TestLeaderSelectorCluster
                 throw new AssertionError(error.get());
             }
 
-            Collection<TestingCluster.InstanceSpec>    instances = cluster.getInstances();
+            Collection<InstanceSpec>    instances = cluster.getInstances();
             cluster.stop();
 
             Assert.assertTrue(timing.multiple(4).awaitLatch(lostLatch));
@@ -179,7 +157,7 @@ public class TestLeaderSelectorCluster
 
             Assert.assertNotNull(lockNode.get());
             
-            cluster = new TestingCluster(instances.toArray(new TestingCluster.InstanceSpec[instances.size()]));
+            cluster = new TestingCluster(instances.toArray(new InstanceSpec[instances.size()]));
             cluster.start();
 
             try

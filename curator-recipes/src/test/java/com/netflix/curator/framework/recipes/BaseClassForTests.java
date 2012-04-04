@@ -33,7 +33,7 @@ public class BaseClassForTests
     }
 
     @AfterMethod
-    public void     teardown() throws InterruptedException
+    public void     teardown() throws Exception
     {
         server.close();
     }

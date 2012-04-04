@@ -21,8 +21,10 @@ package com.netflix.curator.framework.recipes.cache;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.retry.ExponentialBackoffRetry;
+import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.InstanceSpec;
 import com.netflix.curator.test.TestingCluster;
+import com.netflix.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
@@ -34,7 +36,7 @@ public class TestPathChildrenCacheInCluster
     @Test
     public void     testServerLoss() throws Exception
     {
-        final int               BASE_TIMEOUT = 5000;
+        Timing                  timing = new Timing();
 
         CuratorFramework client = null;
         PathChildrenCache cache = null;
@@ -43,14 +45,15 @@ public class TestPathChildrenCacheInCluster
         {
             cluster.start();
 
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), BASE_TIMEOUT, BASE_TIMEOUT, new ExponentialBackoffRetry(BASE_TIMEOUT / 2, 3));
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
             client.create().creatingParentsIfNeeded().forPath("/test");
 
             cache = new PathChildrenCache(client, "/test", false);
             cache.start();
 
-            final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(3));
+            final CountDownLatch                    resetLatch = new CountDownLatch(1);
+            final AtomicReference<CountDownLatch>   latch = new AtomicReference<CountDownLatch>(new CountDownLatch(3));
             cache.getListenable().addListener
             (
                 new PathChildrenCacheListener()
@@ -58,7 +61,11 @@ public class TestPathChildrenCacheInCluster
                     @Override
                     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
                     {
-                        if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                        if ( event.getType() == PathChildrenCacheEvent.Type.RESET )
+                        {
+                            resetLatch.countDown();
+                        }
+                        else if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
                         {
                             latch.get().countDown();
                         }
@@ -73,10 +80,11 @@ public class TestPathChildrenCacheInCluster
             Assert.assertTrue(latch.get().await(10, TimeUnit.SECONDS));
 
             latch.set(new CountDownLatch(3));
-            TestingCluster.InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
+            InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(latch.get().await(BASE_TIMEOUT * 2, TimeUnit.SECONDS)); // the cache should reset itself
+            Assert.assertTrue(timing.awaitLatch(resetLatch));
+            Assert.assertTrue(timing.awaitLatch(latch.get())); // the cache should reset itself
         }
         finally
         {

@@ -127,7 +127,10 @@ public class ConnectionStateManager implements Closeable
      */
     public void addStateChange(ConnectionState newState)
     {
-        Preconditions.checkState(!service.isShutdown());
+        if ( service.isShutdown() )
+        {
+            return;
+        }
 
         ConnectionState     previousState = currentState.getAndSet(newState);
         if ( previousState == newState )

@@ -30,15 +30,15 @@ public class Timing
     private final long      value;
     private final TimeUnit  unit;
 
-    private static final int DEFAULT_SECONDS = 5;
+    private static final int DEFAULT_SECONDS = 10;
+    private static final double SESSION_MULTIPLE = .25;
 
     /**
      * Use the default base time
      */
     public Timing()
     {
-        value = DEFAULT_SECONDS;
-        unit = TimeUnit.SECONDS;
+        this(Integer.getInteger("timing-multiple", 1));
     }
 
     /**
@@ -46,9 +46,9 @@ public class Timing
      *
      * @param multiple the multiple
      */
-    public Timing(int multiple)
+    public Timing(double multiple)
     {
-        value = DEFAULT_SECONDS * multiple;
+        value = (int)(DEFAULT_SECONDS * multiple);
         unit = TimeUnit.SECONDS;
     }
 
@@ -90,7 +90,7 @@ public class Timing
      */
     public boolean awaitLatch(CountDownLatch latch)
     {
-        Timing m = waitingMultiple();
+        Timing m = forWaiting();
         try
         {
             return latch.await(m.value, m.unit);
@@ -110,7 +110,7 @@ public class Timing
      */
     public boolean acquireSemaphore(Semaphore semaphore)
     {
-        Timing m = waitingMultiple();
+        Timing m = forWaiting();
         try
         {
             return semaphore.tryAcquire(m.value, m.unit);
@@ -131,7 +131,7 @@ public class Timing
      */
     public boolean acquireSemaphore(Semaphore semaphore, int n)
     {
-        Timing m = waitingMultiple();
+        Timing m = forWaiting();
         try
         {
             return semaphore.tryAcquire(n, m.value, m.unit);
@@ -149,9 +149,9 @@ public class Timing
      * @param n the multiple
      * @return this timing times the multiple
      */
-    public Timing   multiple(int n)
+    public Timing   multiple(double n)
     {
-        return new Timing(value * n, unit);
+        return new Timing((int)(value * n), unit);
     }
 
     /**
@@ -159,9 +159,10 @@ public class Timing
      *
      * @return this timing multiplied
      */
-    public Timing   waitingMultiple()
+    @SuppressWarnings("PointlessArithmeticExpression")
+    public Timing forWaiting()
     {
-        return multiple(4);
+        return multiple(5);
     }
 
     /**
@@ -180,7 +181,7 @@ public class Timing
      */
     public int  session()
     {
-        return multiple(10).milliseconds();
+        return multiple(SESSION_MULTIPLE).milliseconds();
     }
 
     /**
