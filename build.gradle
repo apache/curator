@@ -43,7 +43,7 @@ subprojects
             exclude group: 'junit', module: 'junit'
         }
         compile     'com.google.guava:guava:11.0.1'
-        compile     'org.testng:testng:6.1.1'
+        testCompile 'org.testng:testng:6.1.1'
     }
 
     task sourcesJar(type: Jar, dependsOn:classes) {
