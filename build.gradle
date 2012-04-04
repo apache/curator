@@ -33,7 +33,7 @@ subprojects
 
     dependencies
     {
-        compile('org.apache.zookeeper:zookeeper:3.4.2')
+        compile('org.apache.zookeeper:zookeeper:3.4.3')
         {
             exclude group: 'com.sun.jmx', module: 'jmxri'
             exclude group: 'com.sun.jdmk', module: 'jmxtools'
