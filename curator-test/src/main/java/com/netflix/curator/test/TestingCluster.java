@@ -19,6 +19,9 @@
 package com.netflix.curator.test;
 
 import com.google.common.collect.ImmutableList;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
 import org.apache.zookeeper.ZooKeeper;
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,6 +35,33 @@ import java.util.List;
  */
 public class TestingCluster implements Closeable
 {
+    static
+    {
+        /*
+            This ugliness is necessary. There is no way to tell ZK to not register JMX beans. Something
+            in the shutdown of a QuorumPeer causes the state of the MBeanRegistry to get confused and
+            generates an assert Exception.
+         */
+        ClassPool pool = ClassPool.getDefault();
+        try
+        {
+            CtClass cc = pool.get("org.apache.zookeeper.server.quorum.LearnerZooKeeperServer");
+            pool.appendClassPath(new javassist.LoaderClassPath(TestingCluster.class.getClassLoader()));     // re: https://github.com/Netflix/curator/issues/11
+            for ( CtMethod method : cc.getMethods() )
+            {
+                if ( method.getName().equals("registerJMX") || method.getName().equals("unregisterJMX") )
+                {
+                    method.setBody(null);
+                }
+            }
+            cc.toClass();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
+    }
+
     private final QuorumConfigBuilder           builder;
     private final List<TestingZooKeeperServer>  servers;
 
