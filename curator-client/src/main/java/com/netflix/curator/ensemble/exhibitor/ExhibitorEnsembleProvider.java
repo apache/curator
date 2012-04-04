@@ -46,6 +46,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final AtomicReference<Exhibitors> exhibitors = new AtomicReference<Exhibitors>();
+    private final AtomicReference<Exhibitors> masterExhibitors = new AtomicReference<Exhibitors>();
     private final ExhibitorRestClient restClient;
     private final String restUriPath;
     private final int pollingMs;
@@ -74,6 +75,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     public ExhibitorEnsembleProvider(Exhibitors exhibitors, ExhibitorRestClient restClient, String restUriPath, int pollingMs, RetryPolicy retryPolicy)
     {
         this.exhibitors.set(exhibitors);
+        this.masterExhibitors.set(exhibitors);
         this.restClient = restClient;
         this.restUriPath = restUriPath;
         this.pollingMs = pollingMs;
@@ -88,6 +90,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     public void     setExhibitors(Exhibitors newExhibitors)
     {
         exhibitors.set(newExhibitors);
+        masterExhibitors.set(newExhibitors);
     }
 
     /**
@@ -203,8 +206,21 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                             newHostnames.add(server);
                         }
 
-                        connectionString.set(newConnectionString.toString());
-                        exhibitors.set(new Exhibitors(newHostnames, localExhibitors.getRestPort(), localExhibitors.getBackupConnectionString()));
+                        String newConnectionStringValue = newConnectionString.toString();
+                        if ( !newConnectionStringValue.equals(connectionString.get()) )
+                        {
+                            log.info("Connection string has changed. Old value (%s), new value (%s)", connectionString.get(), newConnectionStringValue);
+                        }
+                        Exhibitors newExhibitors = new Exhibitors(newHostnames, localExhibitors.getRestPort())
+                        {
+                            @Override
+                            public String getBackupConnectionString()
+                            {
+                                return masterExhibitors.get().getBackupConnectionString();  // this may be overloaded by clients. Make sure there is always a method call to get the value.
+                            }
+                        };
+                        connectionString.set(newConnectionStringValue);
+                        exhibitors.set(newExhibitors);
                     }
                     // else - don't allow a situation where there are no known servers
                     done = true;
