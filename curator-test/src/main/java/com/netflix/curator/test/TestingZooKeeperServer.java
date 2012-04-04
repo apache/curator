@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Thanks to Jérémie BORDIER (ahfeel) for this code
+ * Thanks to Jeremie BORDIER (ahfeel) for this code
  */
 public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
 {
