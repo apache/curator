@@ -31,8 +31,6 @@ subprojects
         }
     }
 
-    test.testLogging.showStandardStreams = true
-
     dependencies
     {
         compile('org.apache.zookeeper:zookeeper:3.4.3')
