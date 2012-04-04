@@ -31,6 +31,8 @@ subprojects
         }
     }
 
+    test.testLogging.showStandardStreams = true
+
     dependencies
     {
         compile('org.apache.zookeeper:zookeeper:3.4.3')
@@ -44,6 +46,7 @@ subprojects
         }
         compile     'com.google.guava:guava:11.0.1'
         testCompile 'org.testng:testng:6.1.1'
+        testCompile 'log4j:log4j:1.2.16'
     }
 
     task sourcesJar(type: Jar, dependsOn:classes) {
@@ -183,6 +186,7 @@ project(':curator-x-discovery-server')
     {
         compile project(':curator-x-discovery')
         compile 'javax.ws.rs:jsr311-api:1.1.1'
+        testCompile project(':curator-test')
         testCompile 'junit:junit-dep:4.10'
         testCompile 'com.sun.jersey:jersey-server:1.11'
         testCompile 'com.sun.jersey:jersey-servlet:1.11'

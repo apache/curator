@@ -144,7 +144,7 @@ class ConnectionState implements Watcher, Closeable
         {
             log.debug("ConnectState watcher: " + event);
         }
-        
+
         boolean wasConnected = isConnected.get();
         boolean newIsConnected = wasConnected;
         if ( event.getType() == Watcher.Event.EventType.None )

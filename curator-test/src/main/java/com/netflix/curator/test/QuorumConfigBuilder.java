@@ -12,6 +12,7 @@ import java.util.Properties;
 public class QuorumConfigBuilder
 {
     private final ImmutableList<InstanceSpec> instanceSpecs;
+    private final boolean fromRandom;
 
     public QuorumConfigBuilder(Collection<InstanceSpec> specs)
     {
@@ -20,7 +21,13 @@ public class QuorumConfigBuilder
 
     public QuorumConfigBuilder(InstanceSpec... specs)
     {
-        instanceSpecs = ((specs != null) && specs.length > 0) ? ImmutableList.copyOf(specs) : ImmutableList.of(InstanceSpec.newInstanceSpec());
+        fromRandom = (specs == null) || (specs.length == 0);
+        instanceSpecs = fromRandom ? ImmutableList.of(InstanceSpec.newInstanceSpec()) : ImmutableList.copyOf(specs);
+    }
+
+    public boolean isFromRandom()
+    {
+        return fromRandom;
     }
 
     public QuorumPeerConfig buildConfig() throws Exception

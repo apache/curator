@@ -94,7 +94,7 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
                     }
                     catch ( Exception e )
                     {
-                        logger.error("From testing server", e);
+                        logger.error("From testing server (random state: %s)", String.valueOf(configBuilder.isFromRandom()), e);
                     }
                 }
             }
