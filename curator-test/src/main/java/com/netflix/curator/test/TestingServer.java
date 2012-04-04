@@ -30,34 +30,6 @@ public class TestingServer implements Closeable
     private final TestingZooKeeperServer testingZooKeeperServer;
     private final InstanceSpec spec;
 
-    static int getRandomPort()
-    {
-        ServerSocket server = null;
-        try
-        {
-            server = new ServerSocket(0);
-            return server.getLocalPort();
-        }
-        catch ( IOException e )
-        {
-            throw new Error(e);
-        }
-        finally
-        {
-            if ( server != null )
-            {
-                try
-                {
-                    server.close();
-                }
-                catch ( IOException ignore )
-                {
-                    // ignore
-                }
-            }
-        }
-    }
-
     /**
      * Create the server using a random port
      *

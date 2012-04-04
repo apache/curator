@@ -8,6 +8,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Thanks to Jérémie BORDIER (ahfeel) for this code
+ */
 public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
 {
     private static final Logger logger = LoggerFactory.getLogger(TestingZooKeeperServer.class);
