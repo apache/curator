@@ -31,6 +31,8 @@ subprojects
         }
     }
 
+    test.testLogging.showStandardStreams = project.hasProperty('log')
+
     dependencies
     {
         compile('org.apache.zookeeper:zookeeper:3.4.3')

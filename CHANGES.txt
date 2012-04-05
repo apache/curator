@@ -1,3 +1,11 @@
+1.1.6/1.0.7 - XXXXXXXXXXXXXX
+============================
+* Accepted a change so that testng is testCompile in Gradle
+
+* Rewrote TestingServer and TestingCluster based on work by Jeremie BORDIER (ahfeel)
+
+* Rewrote the log4j property files
+
 1.1.5/1.0.6 - March 23, 2012
 ============================
 * Moved to Gradle as the build system.
