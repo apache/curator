@@ -137,10 +137,10 @@ public class BasicTests extends BaseClassForTests
         final int CONNECTION_TIMEOUT_MS = 4000;
 
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, CONNECTION_TIMEOUT_MS, null, new RetryOneTime(1));
-        client.start();
         try
         {
             Assert.assertFalse(client.isConnected());
+            client.start();
 
             outer: do
             {
