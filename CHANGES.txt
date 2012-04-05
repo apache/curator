@@ -6,6 +6,10 @@
 
 * Rewrote the log4j property files
 
+* Moved to ZK 3.4.3
+
+* More work on the Exhibitor integration
+
 1.1.5/1.0.6 - March 23, 2012
 ============================
 * Moved to Gradle as the build system.

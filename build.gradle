@@ -199,5 +199,5 @@ project(':curator-x-discovery-server')
 
 // Generate wrapper, which is distributed as part of source to alleviate the need of installing gradle
 task createWrapper(type: Wrapper) {
-    gradleVersion = '1.0-milestone-8a'
+    gradleVersion = '1.0-milestone-9'
 }
