@@ -38,7 +38,9 @@ import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -51,7 +53,7 @@ public class TestFramework extends BaseClassForTests
         CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
-            final SynchronousQueue<ConnectionState>     queue = new SynchronousQueue<ConnectionState>();
+            final BlockingQueue<ConnectionState>        queue = new LinkedBlockingQueue<ConnectionState>();
             ConnectionStateListener                     listener = new ConnectionStateListener()
             {
                 @Override
