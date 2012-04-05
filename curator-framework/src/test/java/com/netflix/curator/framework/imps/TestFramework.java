@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 public class TestFramework extends BaseClassForTests
@@ -105,7 +104,7 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            final SynchronousQueue<String>  queue = new SynchronousQueue<String>();
+            final BlockingQueue<String>     queue = new LinkedBlockingQueue<String>();
             CuratorListener                 listener = new CuratorListener()
             {
                 @Override
@@ -153,7 +152,7 @@ public class TestFramework extends BaseClassForTests
         client.start();
         try
         {
-            final SynchronousQueue<String>  queue = new SynchronousQueue<String>();
+            final BlockingQueue<String>     queue = new LinkedBlockingQueue<String>();
             Watcher                         watcher = new Watcher()
             {
                 @Override
