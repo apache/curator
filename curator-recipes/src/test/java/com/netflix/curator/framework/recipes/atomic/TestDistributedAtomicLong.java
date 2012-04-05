@@ -179,9 +179,6 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         System.out.println("Min time: " + timingStats.getMin());
         System.out.println("Qty: " + timingStats.getN());
 
-        double             failurePercentage = (double)failures.get() / (double)(executionQty * threadQty);
-
-        Assert.assertTrue(failurePercentage <= 0.02);   // this is more of a hope than a hard fact
         Assert.assertEquals(errors.get(), 0);
         Assert.assertTrue(optimisticTries.get() > 0);
         Assert.assertTrue(promotedLockTries.get() > 0);
