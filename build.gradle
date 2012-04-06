@@ -122,6 +122,20 @@ subprojects
             }
         }
     }
+
+    // Checkstyle
+    apply plugin: 'checkstyle'
+    tasks.withType(Checkstyle) { ignoreFailures = true }
+    checkstyle {
+        configFile = rootProject.file('codequality/checkstyle.xml')
+    }
+
+    // FindBugs
+    apply plugin: 'findbugs'
+
+    // PMD
+    apply plugin: 'pmd'
+
 }
 
 task aggregateJavadoc(type: Javadoc) {
