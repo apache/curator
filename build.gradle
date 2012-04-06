@@ -1,6 +1,6 @@
 // Establish version and status
 def performingRelease = project.hasProperty('release') && Boolean.parseBoolean(project.release)
-def releaseVersion = '1.1.6'
+def releaseVersion = '1.1.7'
 def versionPostfix = performingRelease?'':'-SNAPSHOT'
 version = "${releaseVersion}${versionPostfix}"
 status = performingRelease?'release':'snapshot'

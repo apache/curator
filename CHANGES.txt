@@ -1,5 +1,5 @@
-1.1.6/1.0.7 - XXXXXXXXXXXXXX
-============================
+1.1.7/1.0.8 - April 6, 2012
+===========================
 * Accepted a change so that testng is testCompile in Gradle
 
 * Rewrote TestingServer and TestingCluster based on work by Jeremie BORDIER (ahfeel)
