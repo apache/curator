@@ -1,3 +1,9 @@
+1.1.8/1.0.9 - xxxxxxxxxxxxx
+===========================
+* Added methods to compress data via create() and setData() and to decompress data via getData(). The
+compression is GZIP by default. You can change this via the CuratorFrameworkFactory by specifying
+a CompressionProvider.
+
 1.1.7/1.0.8 - April 6, 2012
 ===========================
 * Accepted a change so that testng is testCompile in Gradle
