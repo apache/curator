@@ -17,11 +17,10 @@
  */
 package com.netflix.curator.framework.api;
 
-public interface CreateBuilder extends
+public interface CreateBackgroundModeACLable extends
     BackgroundPathAndBytesable<String>,
     CreateModable<ACLBackgroundPathAndBytesable<String>>,
-    ACLCreateModeBackgroundPathAndBytesable<String>,
-    Compressible<CreateBackgroundModeACLable>
+    ACLCreateModeBackgroundPathAndBytesable<String>
 {
     /**
      * Causes any parent nodes to get created if they haven't already been

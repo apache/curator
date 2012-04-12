@@ -24,6 +24,7 @@ import com.netflix.curator.framework.api.BackgroundPathAndBytesable;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.PathAndBytesable;
+import com.netflix.curator.framework.api.SetDataBackgroundVersionable;
 import com.netflix.curator.framework.api.SetDataBuilder;
 import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
 import com.netflix.curator.framework.api.transaction.OperationType;
@@ -36,15 +37,17 @@ import java.util.concurrent.Executor;
 
 class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndBytes>
 {
-    private final CuratorFrameworkImpl client;
-    private Backgrounding backgrounding;
-    private int                                     version;
+    private final CuratorFrameworkImpl      client;
+    private Backgrounding                   backgrounding;
+    private int                             version;
+    private boolean                         compress;
 
     SetDataBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
         backgrounding = new Backgrounding();
         version = -1;
+        compress = false;
     }
 
     TransactionSetDataBuilder   asTransactionSetDataBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
@@ -70,6 +73,56 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
             {
                 SetDataBuilderImpl.this.withVersion(version);
                 return this;
+            }
+        };
+    }
+
+    @Override
+    public SetDataBackgroundVersionable compressed()
+    {
+        compress = true;
+        return new SetDataBackgroundVersionable()
+        {
+            @Override
+            public PathAndBytesable<Stat> inBackground()
+            {
+                return SetDataBuilderImpl.this.inBackground();
+            }
+
+            @Override
+            public PathAndBytesable<Stat> inBackground(Object context)
+            {
+                return SetDataBuilderImpl.this.inBackground(context);
+            }
+
+            @Override
+            public PathAndBytesable<Stat> inBackground(BackgroundCallback callback)
+            {
+                return SetDataBuilderImpl.this.inBackground(callback);
+            }
+
+            @Override
+            public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Executor executor)
+            {
+                return SetDataBuilderImpl.this.inBackground(callback, executor);
+            }
+
+            @Override
+            public Stat forPath(String path, byte[] data) throws Exception
+            {
+                return SetDataBuilderImpl.this.forPath(path, data);
+            }
+
+            @Override
+            public Stat forPath(String path) throws Exception
+            {
+                return SetDataBuilderImpl.this.forPath(path);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<Stat> withVersion(int version)
+            {
+                return SetDataBuilderImpl.this.withVersion(version);
             }
         };
     }
@@ -142,6 +195,11 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
     @Override
     public Stat forPath(String path, byte[] data) throws Exception
     {
+        if ( compress )
+        {
+            data = client.getCompressionProvider().compress(path, data);
+        }
+
         path = client.fixForNamespace(path);
 
         Stat        resultStat = null;

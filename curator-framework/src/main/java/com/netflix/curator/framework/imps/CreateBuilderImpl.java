@@ -22,15 +22,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
-import com.netflix.curator.framework.api.ACLBackgroundPathAndBytesable;
-import com.netflix.curator.framework.api.ACLCreateModePathAndBytesable;
-import com.netflix.curator.framework.api.ACLPathAndBytesable;
-import com.netflix.curator.framework.api.BackgroundCallback;
-import com.netflix.curator.framework.api.BackgroundPathAndBytesable;
-import com.netflix.curator.framework.api.CreateBuilder;
-import com.netflix.curator.framework.api.CuratorEvent;
-import com.netflix.curator.framework.api.CuratorEventType;
-import com.netflix.curator.framework.api.PathAndBytesable;
+import com.netflix.curator.framework.api.*;
 import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
 import com.netflix.curator.framework.api.transaction.OperationType;
 import com.netflix.curator.framework.api.transaction.TransactionCreateBuilder;
@@ -53,6 +45,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     private Backgrounding                   backgrounding;
     private boolean                         createParentsIfNeeded;
     private boolean                         doProtectedEphemeralSequential;
+    private boolean                         compress;
     private String                          protectedEphemeralSequentialId;
     private ACLing                          acling;
 
@@ -69,6 +62,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         backgrounding = new Backgrounding();
         acling = new ACLing();
         createParentsIfNeeded = false;
+        compress = false;
         doProtectedEphemeralSequential = false;
         protectedEphemeralSequentialId = null;
     }
@@ -103,6 +97,74 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 String      fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.create(fixedPath, data, acling.getAclList(), createMode), OperationType.CREATE, path);
                 return curatorTransaction;
+            }
+        };
+    }
+
+    @Override
+    public CreateBackgroundModeACLable compressed()
+    {
+        compress = true;
+        return new CreateBackgroundModeACLable()
+        {
+            @Override
+            public ACLCreateModePathAndBytesable<String> creatingParentsIfNeeded()
+            {
+                return CreateBuilderImpl.this.creatingParentsIfNeeded();
+            }
+
+            @Override
+            public ACLPathAndBytesable<String> withProtectedEphemeralSequential()
+            {
+                return CreateBuilderImpl.this.withProtectedEphemeralSequential();
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
+            {
+                return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground()
+            {
+                return CreateBuilderImpl.this.inBackground();
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(Object context)
+            {
+                return CreateBuilderImpl.this.inBackground(context);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback)
+            {
+                return CreateBuilderImpl.this.inBackground(callback);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
+            {
+                return CreateBuilderImpl.this.inBackground(callback, executor);
+            }
+
+            @Override
+            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode)
+            {
+                return CreateBuilderImpl.this.withMode(mode);
+            }
+
+            @Override
+            public String forPath(String path, byte[] data) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path, data);
+            }
+
+            @Override
+            public String forPath(String path) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path);
             }
         };
     }
@@ -282,6 +344,11 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     @Override
     public String forPath(String path, byte[] data) throws Exception
     {
+        if ( compress )
+        {
+            data = client.getCompressionProvider().compress(path, data);
+        }
+
         path = client.fixForNamespace(path);
 
         String  returnPath = null;

@@ -24,20 +24,26 @@ import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.GetDataBuilder;
+import com.netflix.curator.framework.api.GetDataWatchBackgroundStatable;
 import com.netflix.curator.framework.api.Pathable;
 import com.netflix.curator.framework.api.WatchPathable;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
 {
-    private final CuratorFrameworkImpl client;
-    private Stat                                      responseStat;
-    private Watching watching;
-    private Backgrounding backgrounding;
+    private final Logger                log = LoggerFactory.getLogger(getClass());
+    private final CuratorFrameworkImpl  client;
+    private Stat                        responseStat;
+    private Watching                    watching;
+    private Backgrounding               backgrounding;
+    private boolean                     decompress;
 
     GetDataBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -45,6 +51,63 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
         responseStat = null;
         watching = new Watching();
         backgrounding = new Backgrounding();
+        decompress = false;
+    }
+
+    @Override
+    public GetDataWatchBackgroundStatable decompressed()
+    {
+        decompress = true;
+        return new GetDataWatchBackgroundStatable()
+        {
+            @Override
+            public Pathable<byte[]> inBackground()
+            {
+                return GetDataBuilderImpl.this.inBackground();
+            }
+
+            @Override
+            public Pathable<byte[]> inBackground(Object context)
+            {
+                return GetDataBuilderImpl.this.inBackground(context);
+            }
+
+            @Override
+            public Pathable<byte[]> inBackground(BackgroundCallback callback)
+            {
+                return GetDataBuilderImpl.this.inBackground(callback);
+            }
+
+            @Override
+            public Pathable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
+            {
+                return GetDataBuilderImpl.this.inBackground(callback, executor);
+            }
+
+            @Override
+            public byte[] forPath(String path) throws Exception
+            {
+                return GetDataBuilderImpl.this.forPath(path);
+            }
+
+            @Override
+            public WatchPathable<byte[]> storingStatIn(Stat stat)
+            {
+                return GetDataBuilderImpl.this.storingStatIn(stat);
+            }
+
+            @Override
+            public BackgroundPathable<byte[]> watched()
+            {
+                return GetDataBuilderImpl.this.watched();
+            }
+
+            @Override
+            public BackgroundPathable<byte[]> usingWatcher(Watcher watcher)
+            {
+                return GetDataBuilderImpl.this.usingWatcher(watcher);
+            }
+        };
     }
 
     @Override
@@ -127,6 +190,18 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
             {
                 trace.commit();
+                if ( decompress )
+                {
+                    try
+                    {
+                        data = client.getCompressionProvider().decompress(path, data);
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error("Decompressing for path: " + path, e);
+                        rc = KeeperException.Code.DATAINCONSISTENCY.intValue();
+                    }
+                }
                 CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
@@ -183,6 +258,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
             }
         );
         trace.commit();
-        return responseData;
+
+        return decompress ? client.getCompressionProvider().decompress(path, responseData) : responseData;
     }
 }

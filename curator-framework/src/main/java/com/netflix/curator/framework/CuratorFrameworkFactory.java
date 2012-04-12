@@ -20,8 +20,10 @@ package com.netflix.curator.framework;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.ensemble.EnsembleProvider;
 import com.netflix.curator.ensemble.fixed.FixedEnsembleProvider;
+import com.netflix.curator.framework.api.CompressionProvider;
 import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.imps.CuratorFrameworkImpl;
+import com.netflix.curator.framework.imps.GzipCompressionProvider;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ThreadFactory;
@@ -33,6 +35,8 @@ public class CuratorFrameworkFactory
 {
     private static final int        DEFAULT_SESSION_TIMEOUT_MS = 15 * 1000;     // TODO make configurable
     private static final int        DEFAULT_CONNECTION_TIMEOUT_MS = 10 * 1000;  // TODO make configurable
+
+    private static final CompressionProvider        DEFAULT_COMPRESSION_PROVIDER = new GzipCompressionProvider();
 
     /**
      * Return a new builder that builds a CuratorFramework
@@ -90,6 +94,7 @@ public class CuratorFrameworkFactory
         private String              authScheme = null;
         private byte[]              authValue = null;
         private byte[]              defaultData = new byte[0];
+        private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -202,6 +207,21 @@ public class CuratorFrameworkFactory
         {
             this.threadFactory = threadFactory;
             return this;
+        }
+
+        /**
+         * @param compressionProvider the compression provider
+         * @return this
+         */
+        public Builder compressionProvider(CompressionProvider compressionProvider)
+        {
+            this.compressionProvider = compressionProvider;
+            return this;
+        }
+
+        public CompressionProvider getCompressionProvider()
+        {
+            return compressionProvider;
         }
 
         public ThreadFactory getThreadFactory()

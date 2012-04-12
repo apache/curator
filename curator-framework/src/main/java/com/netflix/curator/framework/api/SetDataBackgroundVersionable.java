@@ -17,10 +17,10 @@
  */
 package com.netflix.curator.framework.api;
 
-public interface GetDataBuilder extends
-    Watchable<BackgroundPathable<byte[]>>,
-    BackgroundPathable<byte[]>,
-    Statable<WatchPathable<byte[]>>,
-    Decompressible<GetDataWatchBackgroundStatable>
+import org.apache.zookeeper.data.Stat;
+
+public interface SetDataBackgroundVersionable extends
+    BackgroundPathAndBytesable<Stat>,
+    Versionable<BackgroundPathAndBytesable<Stat>>
 {
 }

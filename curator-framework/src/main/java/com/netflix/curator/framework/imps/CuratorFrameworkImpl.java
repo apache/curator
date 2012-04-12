@@ -64,6 +64,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
     private final byte[]                                                defaultData;
     private final FailedDeleteManager                                   failedDeleteManager;
+    private final CompressionProvider                                   compressionProvider;
 
     private enum State
     {
@@ -124,6 +125,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         ensurePath = (namespace != null) ? new EnsurePath(ZKPaths.makePath("/", namespace)) : null;
         executorService = Executors.newFixedThreadPool(2, getThreadFactory(builder));  // 1 for listeners, 1 for background ops
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
+        compressionProvider = builder.getCompressionProvider();
 
         byte[]      builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -156,6 +158,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
         failedDeleteManager = parent.failedDeleteManager;
+        compressionProvider = parent.compressionProvider;
         namespace = null;
         ensurePath = null;
     }
@@ -379,6 +382,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     ZooKeeper getZooKeeper() throws Exception
     {
         return client.getZooKeeper();
+    }
+
+    CompressionProvider getCompressionProvider()
+    {
+        return compressionProvider;
     }
 
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
