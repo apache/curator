@@ -4,6 +4,8 @@
 compression is GZIP by default. You can change this via the CuratorFrameworkFactory by specifying
 a CompressionProvider.
 
+* Added ZookeeperFactory to the client as a testing aid.
+
 1.1.7/1.0.8 - April 6, 2012
 ===========================
 * Accepted a change so that testng is testCompile in Gradle
