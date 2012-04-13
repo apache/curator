@@ -21,6 +21,8 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.drivers.TracerDriver;
 import com.netflix.curator.ensemble.EnsembleProvider;
 import com.netflix.curator.utils.DebugUtils;
+import com.netflix.curator.utils.DefaultZookeeperFactory;
+import com.netflix.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -29,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Properties;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,13 +51,13 @@ class ConnectionState implements Watcher, Closeable
 
     private static final int        MAX_BACKGROUND_EXCEPTIONS = 10;
 
-    ConnectionState(EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer) throws IOException
+    ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer) throws IOException
     {
         this.ensembleProvider = ensembleProvider;
         this.connectionTimeoutMs = connectionTimeoutMs;
         this.tracer = tracer;
         this.parentWatcher.set(parentWatcher);
-        zooKeeper = new HandleHolder(this, ensembleProvider, sessionTimeoutMs);
+        zooKeeper = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs);
     }
 
     ZooKeeper getZooKeeper() throws Exception

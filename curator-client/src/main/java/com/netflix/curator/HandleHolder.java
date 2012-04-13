@@ -19,11 +19,13 @@
 package com.netflix.curator;
 
 import com.netflix.curator.ensemble.EnsembleProvider;
+import com.netflix.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
 class HandleHolder
 {
+    private final ZookeeperFactory zookeeperFactory;
     private final Watcher watcher;
     private final EnsembleProvider ensembleProvider;
     private final int sessionTimeout;
@@ -37,8 +39,9 @@ class HandleHolder
         String getConnectionString();
     }
 
-    HandleHolder(Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout)
+    HandleHolder(ZookeeperFactory zookeeperFactory, Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout)
     {
+        this.zookeeperFactory = zookeeperFactory;
         this.watcher = watcher;
         this.ensembleProvider = ensembleProvider;
         this.sessionTimeout = sessionTimeout;
@@ -85,7 +88,7 @@ class HandleHolder
                     if ( zooKeeperHandle == null )
                     {
                         connectionString = ensembleProvider.getConnectionString();
-                        zooKeeperHandle = new ZooKeeper(connectionString, sessionTimeout, watcher);
+                        zooKeeperHandle = zookeeperFactory.newZooKeeper(connectionString, sessionTimeout, watcher);
                     }
 
                     helper = new Helper()

@@ -24,6 +24,8 @@ import com.netflix.curator.framework.api.CompressionProvider;
 import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.imps.CuratorFrameworkImpl;
 import com.netflix.curator.framework.imps.GzipCompressionProvider;
+import com.netflix.curator.utils.DefaultZookeeperFactory;
+import com.netflix.curator.utils.ZookeeperFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ThreadFactory;
@@ -37,6 +39,7 @@ public class CuratorFrameworkFactory
     private static final int        DEFAULT_CONNECTION_TIMEOUT_MS = 10 * 1000;  // TODO make configurable
 
     private static final CompressionProvider        DEFAULT_COMPRESSION_PROVIDER = new GzipCompressionProvider();
+    private static final DefaultZookeeperFactory    DEFAULT_ZOOKEEPER_FACTORY = new DefaultZookeeperFactory();
 
     /**
      * Return a new builder that builds a CuratorFramework
@@ -95,6 +98,7 @@ public class CuratorFrameworkFactory
         private byte[]              authValue = null;
         private byte[]              defaultData = new byte[0];
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
+        private ZookeeperFactory    zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -217,6 +221,21 @@ public class CuratorFrameworkFactory
         {
             this.compressionProvider = compressionProvider;
             return this;
+        }
+
+        /**
+         * @param zookeeperFactory the zookeeper factory to use
+         * @return this
+         */
+        public Builder zookeeperFactory(ZookeeperFactory zookeeperFactory)
+        {
+            this.zookeeperFactory = zookeeperFactory;
+            return this;
+        }
+
+        public ZookeeperFactory getZookeeperFactory()
+        {
+            return zookeeperFactory;
         }
 
         public CompressionProvider getCompressionProvider()

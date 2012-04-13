@@ -22,6 +22,8 @@ import com.netflix.curator.drivers.TracerDriver;
 import com.netflix.curator.ensemble.EnsembleProvider;
 import com.netflix.curator.ensemble.fixed.FixedEnsembleProvider;
 import com.netflix.curator.utils.DefaultTracerDriver;
+import com.netflix.curator.utils.DefaultZookeeperFactory;
+import com.netflix.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -58,7 +60,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public CuratorZookeeperClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
     {
-        this(new FixedEnsembleProvider(connectString), sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy);
+        this(new DefaultZookeeperFactory(), new FixedEnsembleProvider(connectString), sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy);
     }
 
     /**
@@ -71,11 +73,25 @@ public class CuratorZookeeperClient implements Closeable
      */
     public CuratorZookeeperClient(EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
     {
+        this(new DefaultZookeeperFactory(), ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy);
+    }
+
+    /**
+     * @param zookeeperFactory factory for creating {@link ZooKeeper} instances
+     * @param ensembleProvider the ensemble provider
+     * @param sessionTimeoutMs session timeout
+     * @param connectionTimeoutMs connection timeout
+     * @param watcher default watcher or null
+     * @param retryPolicy the retry policy to use
+     * @throws IOException ZooKeeper creation errors
+     */
+    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
+    {
         retryPolicy = Preconditions.checkNotNull(retryPolicy);
         ensembleProvider = Preconditions.checkNotNull(ensembleProvider);
 
         this.connectionTimeoutMs = connectionTimeoutMs;
-        state = new ConnectionState(ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer);
+        state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer);
         setRetryPolicy(retryPolicy);
     }
 

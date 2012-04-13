@@ -17,15 +17,18 @@
  */
 package com.netflix.curator;
 
+import com.netflix.curator.ensemble.fixed.FixedEnsembleProvider;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
+import com.netflix.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.File;
@@ -34,6 +37,23 @@ import java.util.concurrent.CountDownLatch;
 
 public class BasicTests extends BaseClassForTests
 {
+    @Test
+    public void     testFactory() throws Exception
+    {
+        final ZooKeeper         mockZookeeper = Mockito.mock(ZooKeeper.class);
+        ZookeeperFactory        zookeeperFactory = new ZookeeperFactory()
+        {
+            @Override
+            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher) throws Exception
+            {
+                return mockZookeeper;
+            }
+        };
+        CuratorZookeeperClient  client = new CuratorZookeeperClient(zookeeperFactory, new FixedEnsembleProvider(server.getConnectString()), 10000, 10000, null, new RetryOneTime(1));
+        client.start();
+        Assert.assertEquals(client.getZooKeeper(), mockZookeeper);
+    }
+
     @Test
     public void     testExpiredSession() throws Exception
     {
