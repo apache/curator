@@ -22,6 +22,10 @@ Curator is built via Gradle (http://www.gradle.org). To build from the command l
 
 Curator binaries are published to Maven Central. Please see the docs for details.
 
+== MAILING LIST
+
+There is a Curator mailing list. Subscribe here: https://listserv.netflix.com/mailman/listinfo/curator-users
+
 == AUTHOR
 
 Jordan Zimmerman (mailto:jzimmerman@netflix.com)
