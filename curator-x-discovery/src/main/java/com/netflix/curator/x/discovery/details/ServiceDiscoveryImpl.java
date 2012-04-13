@@ -108,7 +108,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
             catch ( Exception e )
             {
-                log.error("Could not unregiter this instance", e);
+                log.error("Could not unregister this instance", e);
             }
         }
     }
