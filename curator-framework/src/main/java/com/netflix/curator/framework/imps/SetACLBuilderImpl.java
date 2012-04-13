@@ -43,14 +43,14 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
     {
         this.client = client;
         backgrounding = new Backgrounding();
-        acling = new ACLing();
+        acling = new ACLing(client.getAclProvider());
         version = -1;
     }
 
     @Override
     public BackgroundPathable<Stat> withACL(List<ACL> aclList)
     {
-        acling = new ACLing(aclList);
+        acling = new ACLing(client.getAclProvider(), aclList);
         return this;
     }
 
@@ -109,11 +109,12 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
     @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
-        final TimeTrace   trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Background");
+        final TimeTrace     trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Background");
+        String              path = operationAndData.getData();
         client.getZooKeeper().setACL
         (
-            operationAndData.getData(),
-            acling.getAclList(),
+            path,
+            acling.getAclList(path),
             version,
             new AsyncCallback.StatCallback()
             {
@@ -141,7 +142,7 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
                 @Override
                 public Stat call() throws Exception
                 {
-                    return client.getZooKeeper().setACL(path, acling.getAclList(), version);
+                    return client.getZooKeeper().setACL(path, acling.getAclList(path), version);
                 }
             }
         );

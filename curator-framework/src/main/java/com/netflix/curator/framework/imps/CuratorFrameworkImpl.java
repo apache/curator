@@ -65,6 +65,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final byte[]                                                defaultData;
     private final FailedDeleteManager                                   failedDeleteManager;
     private final CompressionProvider                                   compressionProvider;
+    private final ACLProvider                                           aclProvider;
 
     private enum State
     {
@@ -127,6 +128,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         executorService = Executors.newFixedThreadPool(2, getThreadFactory(builder));  // 1 for listeners, 1 for background ops
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
         compressionProvider = builder.getCompressionProvider();
+        aclProvider = builder.getAclProvider();
 
         byte[]      builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -160,6 +162,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         defaultData = parent.defaultData;
         failedDeleteManager = parent.failedDeleteManager;
         compressionProvider = parent.compressionProvider;
+        aclProvider = parent.aclProvider;
         namespace = null;
         ensurePath = null;
     }
@@ -368,6 +371,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
         return new EnsurePath(fixForNamespace(path));
+    }
+
+    ACLProvider getAclProvider()
+    {
+        return aclProvider;
     }
 
     FailedDeleteManager getFailedDeleteManager()

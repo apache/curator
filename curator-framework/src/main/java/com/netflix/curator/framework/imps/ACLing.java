@@ -18,26 +18,47 @@
 package com.netflix.curator.framework.imps;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.zookeeper.ZooDefs;
+import com.netflix.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
 
 class ACLing
 {
     private final List<ACL>     aclList;
+    private final ACLProvider   aclProvider;
 
-    ACLing()
+    ACLing(ACLProvider aclProvider)
     {
-        this(null);
+        this(aclProvider, null);
     }
 
-    ACLing(List<ACL> aclList)
+    ACLing(ACLProvider aclProvider, List<ACL> aclList)
     {
-        this.aclList = (aclList != null) ? ImmutableList.copyOf(aclList) : ZooDefs.Ids.OPEN_ACL_UNSAFE;
+        this.aclProvider = aclProvider;
+        this.aclList = (aclList != null) ? ImmutableList.copyOf(aclList) : null;
     }
 
-    List<ACL> getAclList()
+    List<ACL> getAclList(String path)
     {
-        return aclList;
+        List<ACL> localAclList = aclList;
+        do
+        {
+            if ( localAclList != null )
+            {
+                break;
+            }
+
+            if ( path != null )
+            {
+                localAclList = aclProvider.getAclForPath(path);
+                if ( localAclList != null )
+                {
+                    break;
+                }
+            }
+
+            localAclList = aclProvider.getDefaultAcl();
+        } while ( false );
+        return localAclList;
     }
 }

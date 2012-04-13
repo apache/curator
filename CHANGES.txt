@@ -6,6 +6,9 @@ a CompressionProvider.
 
 * Added ZookeeperFactory to the client as a testing aid.
 
+* Added ACLProvider to make it easier to use ACLs and recipes. It can be set via the
+CuratorFrameworkFactory builder.
+
 1.1.7/1.0.8 - April 6, 2012
 ===========================
 * Accepted a change so that testng is testCompile in Gradle

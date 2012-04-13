@@ -20,9 +20,11 @@ package com.netflix.curator.framework;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.ensemble.EnsembleProvider;
 import com.netflix.curator.ensemble.fixed.FixedEnsembleProvider;
+import com.netflix.curator.framework.api.ACLProvider;
 import com.netflix.curator.framework.api.CompressionProvider;
 import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.imps.CuratorFrameworkImpl;
+import com.netflix.curator.framework.imps.DefaultACLProvider;
 import com.netflix.curator.framework.imps.GzipCompressionProvider;
 import com.netflix.curator.utils.DefaultZookeeperFactory;
 import com.netflix.curator.utils.ZookeeperFactory;
@@ -40,6 +42,7 @@ public class CuratorFrameworkFactory
 
     private static final CompressionProvider        DEFAULT_COMPRESSION_PROVIDER = new GzipCompressionProvider();
     private static final DefaultZookeeperFactory    DEFAULT_ZOOKEEPER_FACTORY = new DefaultZookeeperFactory();
+    private static final DefaultACLProvider         DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
 
     /**
      * Return a new builder that builds a CuratorFramework
@@ -99,6 +102,7 @@ public class CuratorFrameworkFactory
         private byte[]              defaultData = new byte[0];
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
         private ZookeeperFactory    zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
+        private ACLProvider         aclProvider = DEFAULT_ACL_PROVIDER;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -231,6 +235,21 @@ public class CuratorFrameworkFactory
         {
             this.zookeeperFactory = zookeeperFactory;
             return this;
+        }
+
+        /**
+         * @param aclProvider a provider for ACLs
+         * @return this
+         */
+        public Builder aclProvider(ACLProvider aclProvider)
+        {
+            this.aclProvider = aclProvider;
+            return this;
+        }
+
+        public ACLProvider getAclProvider()
+        {
+            return aclProvider;
         }
 
         public ZookeeperFactory getZookeeperFactory()

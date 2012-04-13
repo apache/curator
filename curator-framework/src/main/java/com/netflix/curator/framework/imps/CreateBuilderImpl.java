@@ -60,7 +60,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         this.client = client;
         createMode = CreateMode.PERSISTENT;
         backgrounding = new Backgrounding();
-        acling = new ACLing();
+        acling = new ACLing(client.getAclProvider());
         createParentsIfNeeded = false;
         compress = false;
         doProtectedEphemeralSequential = false;
@@ -95,7 +95,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception
             {
                 String      fixedPath = client.fixForNamespace(path);
-                transaction.add(Op.create(fixedPath, data, acling.getAclList(), createMode), OperationType.CREATE, path);
+                transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
                 return curatorTransaction;
             }
         };
@@ -172,7 +172,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     @Override
     public ACLBackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
     {
-        acling = new ACLing(aclList);
+        acling = new ACLing(client.getAclProvider(), aclList);
         return new ACLBackgroundPathAndBytesable<String>()
         {
             @Override
@@ -372,7 +372,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         (
             operationAndData.getData().getPath(),
             operationAndData.getData().getData(),
-            acling.getAclList(),
+            acling.getAclList(operationAndData.getData().getPath()),
             createMode,
             new AsyncCallback.StringCallback()
             {
@@ -420,7 +420,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
                     if ( createdPath == null )
                     {
-                        createdPath = client.getZooKeeper().create(localPath, data, acling.getAclList(), createMode);
+                        createdPath = client.getZooKeeper().create(localPath, data, acling.getAclList(localPath), createMode);
                     }
 
                     if ( failNextCreateForTesting )
