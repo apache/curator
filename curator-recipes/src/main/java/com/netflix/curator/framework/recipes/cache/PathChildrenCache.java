@@ -68,6 +68,7 @@ public class PathChildrenCache implements Closeable
     private final String                    path;
     private final ExecutorService           executorService;
     private final boolean                   cacheData;
+    private final boolean                   dataIsCompressed;
     private final EnsurePath                ensurePath;
 
     private final BlockingQueue<PathChildrenCacheEvent>         listenerEvents = new LinkedBlockingQueue<PathChildrenCacheEvent>();
@@ -97,7 +98,7 @@ public class PathChildrenCache implements Closeable
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode)
     {
-        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, defaultThreadFactory);
+        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, defaultThreadFactory);
     }
 
     /**
@@ -111,7 +112,7 @@ public class PathChildrenCache implements Closeable
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode, ThreadFactory threadFactory)
     {
-        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, threadFactory);
+        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, threadFactory);
     }
 
     /**
@@ -121,7 +122,7 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData)
     {
-        this(client, path, cacheData, defaultThreadFactory);
+        this(client, path, cacheData, false, defaultThreadFactory);
     }
 
     /**
@@ -132,9 +133,22 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, ThreadFactory threadFactory)
     {
+        this(client, path, cacheData, false, threadFactory);
+    }
+
+    /**
+     * @param client the client
+     * @param path path to watch
+     * @param cacheData if true, node contents are cached in addition to the stat
+     * @param dataIsCompressed if true, data in the path is compressed
+     * @param threadFactory factory to use when creating internal threads
+     */
+    public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, ThreadFactory threadFactory)
+    {
         this.client = client;
         this.path = path;
         this.cacheData = cacheData;
+        this.dataIsCompressed = dataIsCompressed;
         executorService = Executors.newFixedThreadPool(1, threadFactory);
         ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
@@ -205,7 +219,7 @@ public class PathChildrenCache implements Closeable
                 try
                 {
                     Stat        stat = new Stat();
-                    byte[]      bytes = client.getData().storingStatIn(stat).forPath(fullPath);
+                    byte[]      bytes = dataIsCompressed ? client.getData().decompressed().storingStatIn(stat).forPath(fullPath) : client.getData().storingStatIn(stat).forPath(fullPath);
                     currentData.put(fullPath, new ChildData(fullPath, stat, bytes));
                 }
                 catch ( KeeperException.NoNodeException ignore )
@@ -463,7 +477,14 @@ public class PathChildrenCache implements Closeable
                     }
                 }
             };
-            client.getData().usingWatcher(watcher).inBackground(getDataCallback).forPath(fullPath);
+            if ( dataIsCompressed )
+            {
+                client.getData().decompressed().usingWatcher(watcher).inBackground(getDataCallback).forPath(fullPath);
+            }
+            else
+            {
+                client.getData().usingWatcher(watcher).inBackground(getDataCallback).forPath(fullPath);
+            }
         }
         else
         {
