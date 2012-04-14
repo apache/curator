@@ -122,7 +122,7 @@ public class CuratorFrameworkFactory
          * @param auth the auth bytes
          * @return this
          */
-        public Builder  authorization(String scheme, byte auth[])
+        public Builder  authorization(String scheme, byte[] auth)
         {
             this.authScheme = scheme;
             this.authValue = (auth != null) ? Arrays.copyOf(auth, auth.length) : null;
