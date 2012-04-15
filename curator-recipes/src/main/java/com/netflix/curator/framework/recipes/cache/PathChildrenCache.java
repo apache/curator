@@ -71,6 +71,45 @@ public class PathChildrenCache implements Closeable
     private final boolean                   dataIsCompressed;
     private final EnsurePath                ensurePath;
 
+    private final Watcher     childrenWatcher = new Watcher()
+    {
+        @Override
+        public void process(WatchedEvent event)
+        {
+            try
+            {
+                refresh(false);
+            }
+            catch ( Exception e )
+            {
+                handleException(e);
+            }
+        }
+    };
+
+    private final Watcher     dataWatcher = new Watcher()
+    {
+        @Override
+        public void process(WatchedEvent event)
+        {
+            try
+            {
+                if ( event.getType() == Event.EventType.NodeDeleted )
+                {
+                    remove(event.getPath());
+                }
+                else if ( event.getType() == Event.EventType.NodeDataChanged )
+                {
+                    getDataAndStat(event.getPath());
+                }
+            }
+            catch ( Exception e )
+            {
+                handleException(e);
+            }
+        }
+    };
+
     private final BlockingQueue<PathChildrenCacheEvent>         listenerEvents = new LinkedBlockingQueue<PathChildrenCacheEvent>();
     private final ListenerContainer<PathChildrenCacheListener>  listeners = new ListenerContainer<PathChildrenCacheListener>();
     private final ConcurrentMap<String, ChildData>              currentData = Maps.newConcurrentMap();
@@ -356,23 +395,7 @@ public class PathChildrenCache implements Closeable
             }
         };
 
-        Watcher         watcher = new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent event)
-            {
-                try
-                {
-                    refresh(false);
-                }
-                catch ( Exception e )
-                {
-                    handleException(e);
-                }
-            }
-        };
-
-        client.getChildren().usingWatcher(watcher).inBackground(callback).forPath(path);
+        client.getChildren().usingWatcher(childrenWatcher).inBackground(callback).forPath(path);
     }
 
     private void processChildren(List<String> children, boolean forceGetDataAndStat) throws Exception
@@ -455,35 +478,13 @@ public class PathChildrenCache implements Closeable
 
         if ( cacheData )
         {
-            Watcher     watcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
-                {
-                    try
-                    {
-                        if ( event.getType() == Event.EventType.NodeDeleted )
-                        {
-                            remove(fullPath);
-                        }
-                        else
-                        {
-                            getDataAndStat(fullPath);
-                        }
-                    }
-                    catch ( Exception e )
-                    {
-                        handleException(e);
-                    }
-                }
-            };
             if ( dataIsCompressed )
             {
-                client.getData().decompressed().usingWatcher(watcher).inBackground(getDataCallback).forPath(fullPath);
+                client.getData().decompressed().usingWatcher(dataWatcher).inBackground(getDataCallback).forPath(fullPath);
             }
             else
             {
-                client.getData().usingWatcher(watcher).inBackground(getDataCallback).forPath(fullPath);
+                client.getData().usingWatcher(dataWatcher).inBackground(getDataCallback).forPath(fullPath);
             }
         }
         else

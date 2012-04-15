@@ -22,8 +22,11 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
+import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -45,6 +48,81 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     private volatile CountDownLatch         countLatchForBar = null;
 
     protected abstract InterProcessLock      makeLock(CuratorFramework client);
+
+    @Test
+    public void     testWaitingProcessKilledServer() throws Exception
+    {
+        final Timing            timing = new Timing();
+        final CuratorFramework  client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            final CountDownLatch            latch = new CountDownLatch(1);
+            ConnectionStateListener         listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.LOST )
+                    {
+                        latch.countDown();
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
+
+            final AtomicBoolean                 isFirst = new AtomicBoolean(true);
+            ExecutorCompletionService<Object>   service = new ExecutorCompletionService<Object>(Executors.newFixedThreadPool(2));
+            for ( int i = 0; i < 2; ++i )
+            {
+                service.submit
+                (
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            InterProcessLock lock = makeLock(client);
+                            lock.acquire();
+                            try
+                            {
+                                if ( isFirst.compareAndSet(true, false) )
+                                {
+                                    timing.sleepABit();
+
+                                    server.stop();
+                                    Assert.assertTrue(timing.awaitLatch(latch));
+                                    server = new TestingServer(server.getPort(), server.getTempDirectory());
+                                }
+                            }
+                            finally
+                            {
+                                try
+                                {
+                                    lock.release();
+                                }
+                                catch ( Exception e )
+                                {
+                                    // ignore
+                                }
+                            }
+                            return null;
+                        }
+                    }
+                );
+            }
+
+            for ( int i = 0; i < 2; ++i )
+            {
+                service.take().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+            }
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
 
     @Test
     public void     testKilledSession() throws Exception

@@ -69,6 +69,15 @@ class LockInternals
         }
     };
 
+    private final Watcher watcher = new Watcher()
+    {
+        @Override
+        public void process(WatchedEvent event)
+        {
+            notifyFromWatcher();
+        }
+    };
+
     private volatile int    maxLeases;
 
     static final byte[]             REVOKE_MESSAGE = "__REVOKE__".getBytes();
@@ -259,14 +268,6 @@ class LockInternals
                 else
                 {
                     String  previousSequencePath = basePath + "/" + predicateResults.getPathToWatch();
-                    Watcher watcher = new Watcher()
-                    {
-                        @Override
-                        public void process(WatchedEvent event)
-                        {
-                            notifyFromWatcher();
-                        }
-                    };
 
                     synchronized(this)
                     {
