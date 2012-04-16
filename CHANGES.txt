@@ -9,6 +9,13 @@ a CompressionProvider.
 * Added ACLProvider to make it easier to use ACLs and recipes. It can be set via the
 CuratorFrameworkFactory builder.
 
+* Several of the recipes were creating new watcher objects each time they were needed when the watcher(s)
+can be created once in the constructor.
+
+* Accepted a pull request that fixes a bug in RetryUntilElapsed.
+
+* Issue 62: DistributedQueue wasn't handling getting interrupted very well. It was logging an error.
+
 1.1.7/1.0.8 - April 6, 2012
 ===========================
 * Accepted a change so that testng is testCompile in Gradle
