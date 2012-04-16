@@ -430,6 +430,10 @@ public class DistributedQueue<T> implements QueueBase<T>
                 }
             }
         }
+        catch ( InterruptedException ignore )
+        {
+            Thread.currentThread().interrupt();
+        }
         catch ( Exception e )
         {
             log.error("Exception caught in background handler", e);

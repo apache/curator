@@ -363,6 +363,11 @@ public class LeaderSelector implements Closeable
                     throw e;
                 }
             }
+            catch ( InterruptedException ignore )
+            {
+                Thread.currentThread().interrupt();
+                break;
+            }
         } while ( autoRequeue.get() && (state.get() == State.STARTED) && !Thread.currentThread().isInterrupted() );
     }
 
