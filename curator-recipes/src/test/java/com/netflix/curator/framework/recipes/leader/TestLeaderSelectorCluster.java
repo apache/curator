@@ -74,7 +74,7 @@ public class TestLeaderSelectorCluster
             InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            Assert.assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
         }
         finally
         {
