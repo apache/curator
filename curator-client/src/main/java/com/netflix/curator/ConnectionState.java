@@ -21,7 +21,6 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.drivers.TracerDriver;
 import com.netflix.curator.ensemble.EnsembleProvider;
 import com.netflix.curator.utils.DebugUtils;
-import com.netflix.curator.utils.DefaultZookeeperFactory;
 import com.netflix.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -50,6 +49,7 @@ class ConnectionState implements Watcher, Closeable
     private final Queue<Exception> backgroundExceptions = new ConcurrentLinkedQueue<Exception>();
 
     private static final int        MAX_BACKGROUND_EXCEPTIONS = 10;
+    private static final boolean    LOG_EVENTS = Boolean.getBoolean(DebugUtils.PROPERTY_LOG_EVENTS);
 
     ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer) throws IOException
     {
@@ -141,7 +141,7 @@ class ConnectionState implements Watcher, Closeable
     @Override
     public void process(WatchedEvent event)
     {
-        if ( Boolean.getBoolean(DebugUtils.PROPERTY_LOG_EVENTS) )
+        if ( LOG_EVENTS )
         {
             log.debug("ConnectState watcher: " + event);
         }
@@ -150,15 +150,7 @@ class ConnectionState implements Watcher, Closeable
         boolean newIsConnected = wasConnected;
         if ( event.getType() == Watcher.Event.EventType.None )
         {
-            newIsConnected = (event.getState() == Event.KeeperState.SyncConnected);
-            if ( event.getState() == Event.KeeperState.Expired )
-            {
-                handleExpiredSession();
-            }
-            else if ( zooKeeper.hasNewConnectionString() )
-            {
-                handleNewConnectionString();
-            }
+            newIsConnected = checkState(event.getState(), wasConnected);
         }
 
         if ( newIsConnected != wasConnected )
@@ -174,6 +166,56 @@ class ConnectionState implements Watcher, Closeable
             localParentWatcher.process(event);
             timeTrace.commit();
         }
+    }
+
+    private boolean checkState(Event.KeeperState state, boolean wasConnected)
+    {
+        boolean     isConnected = wasConnected;
+        boolean     checkNewConnectionString = true;
+        switch ( state )
+        {
+            default:
+            case Disconnected:
+            {
+                isConnected = false;
+                break;
+            }
+
+            case SyncConnected:
+            case ConnectedReadOnly:
+            {
+                isConnected = true;
+                break;
+            }
+
+            case AuthFailed:
+            {
+                isConnected = false;
+                log.error("Authentication failed");
+                break;
+            }
+
+            case Expired:
+            {
+                isConnected = false;
+                checkNewConnectionString = false;
+                handleExpiredSession();
+                break;
+            }
+
+            case SaslAuthenticated:
+            {
+                // NOP
+                break;
+            }
+        }
+
+        if ( checkNewConnectionString && zooKeeper.hasNewConnectionString() )
+        {
+            handleNewConnectionString();
+        }
+
+        return isConnected;
     }
 
     private void handleNewConnectionString()
