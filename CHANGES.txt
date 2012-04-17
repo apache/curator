@@ -12,9 +12,13 @@ CuratorFrameworkFactory builder.
 * Several of the recipes were creating new watcher objects each time they were needed when the watcher(s)
 can be created once in the constructor.
 
-* Accepted a pull request that fixes a bug in RetryUntilElapsed.
-
 * Issue 62: DistributedQueue wasn't handling getting interrupted very well. It was logging an error.
+
+* Issue 64: wasn't handling SASL events. Any non-SysConnected event was being treated as a disconnection.
+
+* Issue 65: Accepted a pull request that fixes a bug in RetryUntilElapsed.
+
+* Issue 66: Bad log string - needed String.format()
 
 1.1.7/1.0.8 - April 6, 2012
 ===========================
