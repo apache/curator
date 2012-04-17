@@ -1,5 +1,5 @@
-1.1.8/1.0.9 - xxxxxxxxxxxxx
-===========================
+1.1.8/1.0.9 - April 17, 2012
+============================
 * Added methods to compress data via create() and setData() and to decompress data via getData(). The
 compression is GZIP by default. You can change this via the CuratorFrameworkFactory by specifying
 a CompressionProvider.
