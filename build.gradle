@@ -35,7 +35,7 @@ subprojects
 
     dependencies
     {
-        compile('org.apache.zookeeper:zookeeper:3.4.3')
+        compile('org.apache.zookeeper:zookeeper:3.3.4')
         {
             exclude group: 'com.sun.jmx', module: 'jmxri'
             exclude group: 'com.sun.jdmk', module: 'jmxtools'
@@ -152,6 +152,7 @@ project(':curator-test')
 {
     dependencies
     {
+        compile 'org.slf4j:slf4j-api:1.6.3'
         compile 'org.javassist:javassist:3.15.0-GA'
         compile 'org.apache.commons:commons-math:2.2'
     }

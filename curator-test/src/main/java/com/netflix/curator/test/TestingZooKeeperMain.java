@@ -1,6 +1,6 @@
 package com.netflix.curator.test;
 
-import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
@@ -18,10 +18,10 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     {
         try
         {
-            Field               cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
+            Field                   cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
             cnxnFactoryField.setAccessible(true);
-            ServerCnxnFactory   cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
-            cnxnFactory.closeAll();
+            NIOServerCnxn.Factory   cnxnFactory = (NIOServerCnxn.Factory)cnxnFactoryField.get(this);
+            cnxnFactory.shutdown();
 
             Field               ssField = cnxnFactory.getClass().getDeclaredField("ss");
             ssField.setAccessible(true);
