@@ -83,8 +83,8 @@ public class TestPathChildrenCacheInCluster
             InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(timing.awaitLatch(resetLatch));
-            Assert.assertTrue(timing.awaitLatch(latch.get())); // the cache should reset itself
+            Assert.assertTrue(timing.multiple(4).awaitLatch(resetLatch));
+            Assert.assertTrue(timing.multiple(4).awaitLatch(latch.get())); // the cache should reset itself
         }
         finally
         {
