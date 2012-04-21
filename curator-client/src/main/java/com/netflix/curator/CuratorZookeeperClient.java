@@ -117,6 +117,18 @@ public class CuratorZookeeperClient implements Closeable
     }
 
     /**
+     * Return a new "session fail" retry loop. See {@link SessionFailRetryLoop} for details
+     * on when to use it.
+     *
+     * @param mode failure mode
+     * @return new retry loop
+     */
+    public SessionFailRetryLoop newSessionFailRetryLoop(SessionFailRetryLoop.Mode mode)
+    {
+        return new SessionFailRetryLoop(this, mode);
+    }
+
+    /**
      * Returns true if the client is current connected
      *
      * @return true/false
@@ -237,6 +249,11 @@ public class CuratorZookeeperClient implements Closeable
     public void               setTracerDriver(TracerDriver tracer)
     {
         this.tracer.set(tracer);
+    }
+
+    Watcher substituteParentWatcher(Watcher newWatcher)
+    {
+        return state.substituteParentWatcher(newWatcher);
     }
 
     void internalBlockUntilConnectedOrTimedOut() throws InterruptedException

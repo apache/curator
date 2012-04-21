@@ -62,6 +62,11 @@ class ConnectionState implements Watcher, Closeable
 
     ZooKeeper getZooKeeper() throws Exception
     {
+        if ( Thread.currentThread().isInterrupted() )
+        {
+            throw new InterruptedException();
+        }
+
         Exception exception = backgroundExceptions.poll();
         if ( exception != null )
         {

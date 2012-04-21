@@ -156,7 +156,11 @@ public class RetryLoop
     public void         takeException(Exception exception) throws Exception
     {
         boolean     rethrow = true;
-        if ( isRetryException(exception) )
+        if ( exception instanceof InterruptedException )
+        {
+            Thread.currentThread().interrupt();
+        }
+        else if ( isRetryException(exception) )
         {
             log.debug("Retry-able exception received", exception);
             if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs) )
