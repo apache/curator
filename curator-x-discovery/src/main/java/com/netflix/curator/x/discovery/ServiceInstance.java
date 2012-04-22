@@ -18,8 +18,10 @@
 package com.netflix.curator.x.discovery;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -35,6 +37,7 @@ public class ServiceInstance<T>
     private final T             payload;
     private final long          registrationTimeUTC;
     private final ServiceType   serviceType;
+    private final UriSpec       uriSpec;
 
     /**
      * Return a new builder. The {@link #address} is set to the ip of the first
@@ -66,13 +69,15 @@ public class ServiceInstance<T>
      * @param payload the payload for this instance or null
      * @param registrationTimeUTC the time (in UTC) of the registration
      * @param serviceType type of the service
+     * @param uriSpec the uri spec or null
      */
-    ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType)
+    ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec)
     {
-        this.serviceType = serviceType;
-        Preconditions.checkNotNull(name);
-        Preconditions.checkNotNull(id);
+        name = Preconditions.checkNotNull(name);
+        id = Preconditions.checkNotNull(id);
 
+        this.serviceType = serviceType;
+        this.uriSpec = uriSpec;
         this.name = name;
         this.id = id;
         this.address = address;
@@ -87,7 +92,7 @@ public class ServiceInstance<T>
      */
     ServiceInstance()
     {
-        this("", "", null, null, null, null, 0, ServiceType.DYNAMIC);
+        this("", "", null, null, null, null, 0, ServiceType.DYNAMIC, null);
     }
 
     public String getName()
@@ -128,6 +133,21 @@ public class ServiceInstance<T>
     public ServiceType getServiceType()
     {
         return serviceType;
+    }
+
+    public UriSpec getUriSpec()
+    {
+        return uriSpec;
+    }
+
+    public String buildUriSpec()
+    {
+        return buildUriSpec(Maps.<String, Object>newHashMap());
+    }
+
+    public String buildUriSpec(Map<String, Object> variables)
+    {
+        return (uriSpec != null) ? uriSpec.build(this, variables) : "";
     }
 
     @SuppressWarnings("RedundantIfStatement")
@@ -177,6 +197,10 @@ public class ServiceInstance<T>
         {
             return false;
         }
+        if ( uriSpec != null ? !uriSpec.equals(that.uriSpec) : that.uriSpec != null )
+        {
+            return false;
+        }
 
         return true;
     }
@@ -192,6 +216,7 @@ public class ServiceInstance<T>
         result = 31 * result + (payload != null ? payload.hashCode() : 0);
         result = 31 * result + (int)(registrationTimeUTC ^ (registrationTimeUTC >>> 32));
         result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
+        result = 31 * result + (uriSpec != null ? uriSpec.hashCode() : 0);
         return result;
     }
 
@@ -207,6 +232,7 @@ public class ServiceInstance<T>
             ", payload=" + payload +
             ", registrationTimeUTC=" + registrationTimeUTC +
             ", serviceType=" + serviceType +
+            ", uriSpec=" + uriSpec +
             '}';
     }
 }

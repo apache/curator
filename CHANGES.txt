@@ -1,3 +1,8 @@
+1.1.9/1.0.10 - xxxxxxxxxxxxx
+============================
+* Based on suggestion in Issue 67: Added new concept of UriSpec to the ServiceInstance in the
+Service Discovery Curator extension.
+
 1.1.8/1.0.9 - April 17, 2012
 ============================
 * Added methods to compress data via create() and setData() and to decompress data via getData(). The
