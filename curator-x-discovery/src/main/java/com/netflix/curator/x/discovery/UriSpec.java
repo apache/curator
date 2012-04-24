@@ -86,7 +86,7 @@ public class UriSpec implements Iterable<UriSpec.Part>
     public static class Part
     {
         private final String        value;
-        private final boolean       isVariable;
+        private final boolean       variable;
 
         /**
          * @param value the token value
@@ -95,7 +95,13 @@ public class UriSpec implements Iterable<UriSpec.Part>
         public Part(String value, boolean isVariable)
         {
             this.value = value;
-            this.isVariable = isVariable;
+            this.variable = isVariable;
+        }
+
+        public Part()
+        {
+            value = "";
+            variable = false;
         }
 
         public String getValue()
@@ -105,7 +111,7 @@ public class UriSpec implements Iterable<UriSpec.Part>
 
         public boolean isVariable()
         {
-            return isVariable;
+            return variable;
         }
 
         @SuppressWarnings("RedundantIfStatement")
@@ -123,7 +129,7 @@ public class UriSpec implements Iterable<UriSpec.Part>
 
             Part part = (Part)o;
 
-            if ( isVariable != part.isVariable )
+            if ( variable != part.variable )
             {
                 return false;
             }
@@ -139,7 +145,7 @@ public class UriSpec implements Iterable<UriSpec.Part>
         public int hashCode()
         {
             int result = value.hashCode();
-            result = 31 * result + (isVariable ? 1 : 0);
+            result = 31 * result + (variable ? 1 : 0);
             return result;
         }
     }
