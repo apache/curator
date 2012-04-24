@@ -39,6 +39,7 @@ public class ServiceInstanceBuilder<T>
     private String id;
     private long registrationTimeUTC;
     private ServiceType serviceType = ServiceType.DYNAMIC;
+    private UriSpec uriSpec;
 
     ServiceInstanceBuilder()
     {
@@ -51,7 +52,7 @@ public class ServiceInstanceBuilder<T>
      */
     public ServiceInstance<T> build()
     {
-        return new ServiceInstance<T>(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType);
+        return new ServiceInstance<T>(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType, uriSpec);
     }
 
     public ServiceInstanceBuilder<T> name(String name)
@@ -99,6 +100,12 @@ public class ServiceInstanceBuilder<T>
     public ServiceInstanceBuilder<T> registrationTimeUTC(long registrationTimeUTC)
     {
         this.registrationTimeUTC = registrationTimeUTC;
+        return this;
+    }
+
+    public ServiceInstanceBuilder<T> uriSpec(UriSpec uriSpec)
+    {
+        this.uriSpec = uriSpec;
         return this;
     }
 
