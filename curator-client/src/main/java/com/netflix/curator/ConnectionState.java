@@ -146,6 +146,14 @@ class ConnectionState implements Watcher, Closeable
             log.debug("ConnectState watcher: " + event);
         }
 
+        Watcher localParentWatcher = parentWatcher.get();
+        if ( localParentWatcher != null )
+        {
+            TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.get());
+            localParentWatcher.process(event);
+            timeTrace.commit();
+        }
+
         boolean wasConnected = isConnected.get();
         boolean newIsConnected = wasConnected;
         if ( event.getType() == Watcher.Event.EventType.None )
@@ -157,14 +165,6 @@ class ConnectionState implements Watcher, Closeable
         {
             isConnected.set(newIsConnected);
             connectionStartMs = System.currentTimeMillis();
-        }
-
-        Watcher localParentWatcher = parentWatcher.get();
-        if ( localParentWatcher != null )
-        {
-            TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.get());
-            localParentWatcher.process(event);
-            timeTrace.commit();
         }
     }
 
