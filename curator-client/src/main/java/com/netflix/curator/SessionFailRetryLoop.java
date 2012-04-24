@@ -1,10 +1,13 @@
 package com.netflix.curator;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,8 +42,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>
  *     The SessionFailRetryLoop prevents this type of scenario. When a session failure is detected,
- *     the thread is interrupted which will cause all future Curator operations to fail. The
- *     SessionFailRetryLoop will then catch the InterruptedException and either retry the entire
+ *     the thread is marked as failed which will cause all future Curator operations to fail. The
+ *     SessionFailRetryLoop will then either retry the entire
  *     set of operations or fail (depending on {@link SessionFailRetryLoop.Mode})
  * </p>
  *
@@ -77,6 +80,12 @@ public class SessionFailRetryLoop implements Closeable
     private final AtomicBoolean             isDone = new AtomicBoolean(false);
     private final AtomicReference<Watcher>  previousParentWatcher = new AtomicReference<Watcher>();
     private final RetryLoop                 retryLoop;
+
+    private static final Set<Thread>        failedSessionThreads = Sets.newSetFromMap(Maps.<Thread, Boolean>newConcurrentMap());
+
+    public static class SessionFailedException extends Exception
+    {
+    }
 
     public enum Mode
     {
@@ -136,6 +145,11 @@ public class SessionFailRetryLoop implements Closeable
         retryLoop = client.newRetryLoop();
     }
 
+    static boolean sessionForThreadHasFailed()
+    {
+        return (failedSessionThreads.size() > 0) && failedSessionThreads.contains(Thread.currentThread());
+    }
+
     /**
      * SessionFailRetryLoop must be started
      */
@@ -152,7 +166,7 @@ public class SessionFailRetryLoop implements Closeable
                 if ( event.getState() == Event.KeeperState.Expired )
                 {
                     sessionHasFailed.set(true);
-                    ourThread.interrupt();
+                    failedSessionThreads.add(ourThread);
                 }
                 if ( previousParentWatcher.get() != null )
                 {
@@ -168,13 +182,8 @@ public class SessionFailRetryLoop implements Closeable
      *
      * @return true/false
      */
-    public boolean      shouldContinue() throws KeeperException.SessionExpiredException
+    public boolean      shouldContinue()
     {
-        if ( sessionHasFailed.compareAndSet(true, false) )
-        {
-            throw new KeeperException.SessionExpiredException();
-        }
-
         boolean     localIsDone = isDone.getAndSet(true);
         return !localIsDone;
     }
@@ -186,16 +195,12 @@ public class SessionFailRetryLoop implements Closeable
     public void close()
     {
         Preconditions.checkState(Thread.currentThread().equals(ourThread), "Not in the correct thread");
+        failedSessionThreads.remove(ourThread);
 
         Watcher previous = previousParentWatcher.getAndSet(null);
         if ( previous != null )
         {
             client.substituteParentWatcher(previous);
-        }
-
-        if ( sessionHasFailed.get() )
-        {
-            Thread.interrupted();   // clear the state
         }
     }
 
@@ -209,11 +214,6 @@ public class SessionFailRetryLoop implements Closeable
     {
         Preconditions.checkState(Thread.currentThread().equals(ourThread), "Not in the correct thread");
 
-        if ( (exception instanceof InterruptedException) && sessionHasFailed.get() )
-        {
-            Thread.interrupted();   // clear the state
-        }
-
         boolean     passUp = true;
         if ( sessionHasFailed.get() )
         {
@@ -222,9 +222,9 @@ public class SessionFailRetryLoop implements Closeable
                 case RETRY:
                 {
                     sessionHasFailed.set(false);
-                    if ( (exception instanceof InterruptedException) || (exception instanceof KeeperException.SessionExpiredException) )
+                    failedSessionThreads.remove(ourThread);
+                    if ( exception instanceof SessionFailedException )
                     {
-                        Thread.interrupted();   // clear the state
                         isDone.set(false);
                         passUp = false;
                     }
@@ -233,7 +233,6 @@ public class SessionFailRetryLoop implements Closeable
 
                 case FAIL:
                 {
-                    passUp = false;
                     break;
                 }
             }

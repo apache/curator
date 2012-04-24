@@ -196,7 +196,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
 
                 Assert.fail();
             }
-            catch ( KeeperException.SessionExpiredException dummy )
+            catch ( SessionFailRetryLoop.SessionFailedException dummy )
             {
                 // correct
             }
@@ -252,7 +252,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                     }
                 );
             }
-            catch ( KeeperException.SessionExpiredException dummy )
+            catch ( SessionFailRetryLoop.SessionFailedException dummy )
             {
                 // correct
             }
