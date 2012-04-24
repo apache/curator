@@ -20,16 +20,18 @@ package com.netflix.curator.framework.recipes.queue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.framework.api.CuratorEvent;
-import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.Timing;
+import org.apache.zookeeper.CreateMode;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -40,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -535,33 +538,49 @@ public class TestDistributedQueue extends BaseClassForTests
     @Test
     public void     testFlush() throws Exception
     {
+        final Timing                      timing = new Timing();
         final CountDownLatch              latch = new CountDownLatch(1);
         DistributedQueue<TestQueueItem>   queue = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        final CuratorFramework            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
-            client.getCuratorListenable().addListener
-            (
-                new CuratorListener()
+            final AtomicBoolean     firstTime = new AtomicBoolean(true);
+            queue = new DistributedQueue<TestQueueItem>(client, null, serializer, "/test", new ThreadFactoryBuilder().build(), MoreExecutors.sameThreadExecutor(), 10, true, null)
+            {
+                @Override
+                void internalCreateNode(final String path, final byte[] bytes, final BackgroundCallback callback) throws Exception
                 {
-                    @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                    if ( firstTime.compareAndSet(true, false) )
                     {
-                        // this listener should get called before the queue's listener
-                        latch.await();
+                        Executors.newSingleThreadExecutor().submit
+                        (
+                            new Callable<Object>()
+                            {
+                                @Override
+                                public Object call() throws Exception
+                                {
+                                    latch.await();
+                                    timing.sleepABit();
+                                    client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).inBackground(callback).forPath(path, bytes);
+                                    return null;
+                                }
+                            }
+                        );
+                    }
+                    else
+                    {
+                        super.internalCreateNode(path, bytes, callback);
                     }
                 }
-            );
-
-            queue = QueueBuilder.builder(client, null, serializer, "/test").buildQueue();
+            };
             queue.start();
 
             queue.put(new TestQueueItem("1"));
-            Assert.assertFalse(queue.flushPuts(3, TimeUnit.SECONDS));
+            Assert.assertFalse(queue.flushPuts(timing.forWaiting().seconds(), TimeUnit.SECONDS));
             latch.countDown();
 
-            Assert.assertTrue(queue.flushPuts(10, TimeUnit.SECONDS));
+            Assert.assertTrue(queue.flushPuts(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
