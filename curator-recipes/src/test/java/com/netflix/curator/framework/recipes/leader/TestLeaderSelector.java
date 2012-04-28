@@ -281,7 +281,8 @@ public class TestLeaderSelector extends BaseClassForTests
         final int               LEADER_QTY = 5;
         final int               REPEAT_QTY = 3;
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        final Timing        timing = new Timing();
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -295,7 +296,7 @@ public class TestLeaderSelector extends BaseClassForTests
                     @Override
                     public void takeLeadership(CuratorFramework client) throws Exception
                     {
-                        Thread.sleep(500);
+                        timing.sleepABit();
                         leaderList.add(ourIndex);
                     }
 
@@ -328,7 +329,7 @@ public class TestLeaderSelector extends BaseClassForTests
                     Assert.assertNotNull(polledIndex);
                     localLeaderList.add(polledIndex);
                 }
-                Thread.sleep(500);
+                timing.sleepABit();
             }
 
             for ( LeaderSelector leaderSelector : selectors )

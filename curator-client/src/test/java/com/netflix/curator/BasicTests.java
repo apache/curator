@@ -24,6 +24,7 @@ import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
@@ -34,6 +35,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BasicTests extends BaseClassForTests
 {
@@ -78,6 +80,7 @@ public class BasicTests extends BaseClassForTests
         client.start();
         try
         {
+            final AtomicBoolean     firstTime = new AtomicBoolean(true);
             RetryLoop.callWithRetry
             (
                 client,
@@ -86,11 +89,21 @@ public class BasicTests extends BaseClassForTests
                     @Override
                     public Object call() throws Exception
                     {
-                        client.getZooKeeper().create("/foo", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                        if ( firstTime.compareAndSet(true, false) )
+                        {
+                            try
+                            {
+                                client.getZooKeeper().create("/foo", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                            }
+                            catch ( KeeperException.NodeExistsException ignore )
+                            {
+                                // ignore
+                            }
 
-                        KillSession.kill(client.getZooKeeper(), server.getConnectString());
+                            KillSession.kill(client.getZooKeeper(), server.getConnectString());
 
-                        Assert.assertTrue(timing.awaitLatch(latch));
+                            Assert.assertTrue(timing.awaitLatch(latch));
+                        }
                         ZooKeeper zooKeeper = client.getZooKeeper();
                         client.blockUntilConnectedOrTimedOut();
                         Assert.assertNotNull(zooKeeper.exists("/foo", false));

@@ -3,6 +3,10 @@
 * Based on suggestion in Issue 67: Added new concept of UriSpec to the ServiceInstance in the
 Service Discovery Curator extension.
 
+* User "Pierre-Luc Bertrand" pointed out a potential race condition that would cause a SysConnected
+to get sent before an Expired. So, now I push the event to the parent watcher before resetting
+the connection in ConnectionState.process(WatchedEvent)
+
 1.1.8/1.0.9 - April 17, 2012
 ============================
 * Added methods to compress data via create() and setData() and to decompress data via getData(). The
