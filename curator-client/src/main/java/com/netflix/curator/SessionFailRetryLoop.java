@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *     {
  *         try
  *         {
- *             // do worK
+ *             // do work
  *         }
  *         catch ( Exception e )
  *         {
