@@ -168,9 +168,10 @@ public class SessionFailRetryLoop implements Closeable
                     sessionHasFailed.set(true);
                     failedSessionThreads.add(ourThread);
                 }
-                if ( previousParentWatcher.get() != null )
+                Watcher localPreviousParentWatcher = previousParentWatcher.get();
+                if ( localPreviousParentWatcher != null )
                 {
-                    previousParentWatcher.get().process(event);
+                    localPreviousParentWatcher.process(event);
                 }
             }
         };
