@@ -34,7 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *         <li>You attempt to create a node assuming that the lock/marker still exists</li>
  *         <ul>
  *             <li>Curator will notice the session failure and try to reconnect</li>
- *             <li>In most cases, the reconnect will succeed and, thus, the node creation will succeed</li>
+ *             <li>In most cases, the reconnect will succeed and, thus, the node creation will succeed
+ *             even though the ephemeral node will have been deleted by ZooKeeper.</li>
  *         </ul>
  *     </ul>
  * </p>
