@@ -10,7 +10,6 @@ import java.io.Closeable;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
@@ -78,8 +77,20 @@ public class SessionFailRetryLoop implements Closeable
     private final Thread                    ourThread = Thread.currentThread();
     private final AtomicBoolean             sessionHasFailed = new AtomicBoolean(false);
     private final AtomicBoolean             isDone = new AtomicBoolean(false);
-    private final AtomicReference<Watcher>  previousParentWatcher = new AtomicReference<Watcher>();
     private final RetryLoop                 retryLoop;
+
+    private final Watcher         watcher = new Watcher()
+    {
+        @Override
+        public void process(WatchedEvent event)
+        {
+            if ( event.getState() == Event.KeeperState.Expired )
+            {
+                sessionHasFailed.set(true);
+                failedSessionThreads.add(ourThread);
+            }
+        }
+    };
 
     private static final Set<Thread>        failedSessionThreads = Sets.newSetFromMap(Maps.<Thread, Boolean>newConcurrentMap());
 
@@ -156,26 +167,8 @@ public class SessionFailRetryLoop implements Closeable
     public void     start()
     {
         Preconditions.checkState(Thread.currentThread().equals(ourThread), "Not in the correct thread");
-        Preconditions.checkState(previousParentWatcher.get() == null, "start() has already been called");
 
-        Watcher         watcher = new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent event)
-            {
-                if ( event.getState() == Event.KeeperState.Expired )
-                {
-                    sessionHasFailed.set(true);
-                    failedSessionThreads.add(ourThread);
-                }
-                Watcher localPreviousParentWatcher = previousParentWatcher.get();
-                if ( localPreviousParentWatcher != null )
-                {
-                    localPreviousParentWatcher.process(event);
-                }
-            }
-        };
-        previousParentWatcher.set(client.substituteParentWatcher(watcher));
+        client.addParentWatcher(watcher);
     }
 
     /**
@@ -198,11 +191,7 @@ public class SessionFailRetryLoop implements Closeable
         Preconditions.checkState(Thread.currentThread().equals(ourThread), "Not in the correct thread");
         failedSessionThreads.remove(ourThread);
 
-        Watcher previous = previousParentWatcher.getAndSet(null);
-        if ( previous != null )
-        {
-            client.substituteParentWatcher(previous);
-        }
+        client.removeParentWatcher(watcher);
     }
 
     /**

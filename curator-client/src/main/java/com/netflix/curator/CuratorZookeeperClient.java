@@ -251,9 +251,14 @@ public class CuratorZookeeperClient implements Closeable
         this.tracer.set(tracer);
     }
 
-    Watcher substituteParentWatcher(Watcher newWatcher)
+    void        addParentWatcher(Watcher watcher)
     {
-        return state.substituteParentWatcher(newWatcher);
+        state.addParentWatcher(watcher);
+    }
+
+    void        removeParentWatcher(Watcher watcher)
+    {
+        state.removeParentWatcher(watcher);
     }
 
     void internalBlockUntilConnectedOrTimedOut() throws InterruptedException
