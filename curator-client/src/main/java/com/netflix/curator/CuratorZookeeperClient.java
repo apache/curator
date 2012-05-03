@@ -244,23 +244,17 @@ public class CuratorZookeeperClient implements Closeable
         long            waitTimeMs = connectionTimeoutMs;
         while ( !state.isConnected() && (waitTimeMs > 0) )
         {
-            final AtomicReference<Watcher>  previousWatcher = new AtomicReference<Watcher>(null);
             final CountDownLatch            latch = new CountDownLatch(1);
             Watcher tempWatcher = new Watcher()
             {
                 @Override
                 public void process(WatchedEvent event)
                 {
-                    Watcher localPreviousWatcher = previousWatcher.get();
-                    if ( localPreviousWatcher != null )
-                    {
-                        localPreviousWatcher.process(event);
-                    }
                     latch.countDown();
                 }
             };
             
-            previousWatcher.set(state.substituteParentWatcher(tempWatcher));
+            state.addParentWatcher(tempWatcher);
             long        startTimeMs = System.currentTimeMillis();
             try
             {
@@ -268,7 +262,7 @@ public class CuratorZookeeperClient implements Closeable
             }
             finally
             {
-                state.substituteParentWatcher(previousWatcher.get());
+                state.removeParentWatcher(tempWatcher);
             }
             long        elapsed = Math.max(1, System.currentTimeMillis() - startTimeMs);
             waitTimeMs -= elapsed;

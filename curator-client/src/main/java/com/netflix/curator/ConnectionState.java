@@ -39,14 +39,14 @@ class ConnectionState implements Watcher, Closeable
 {
     private volatile long connectionStartMs = 0;
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-    private final HandleHolder zooKeeper;
-    private final AtomicBoolean isConnected = new AtomicBoolean(false);
-    private final EnsembleProvider ensembleProvider;
-    private final int connectionTimeoutMs;
+    private final Logger                        log = LoggerFactory.getLogger(getClass());
+    private final HandleHolder                  zooKeeper;
+    private final AtomicBoolean                 isConnected = new AtomicBoolean(false);
+    private final EnsembleProvider              ensembleProvider;
+    private final int                           connectionTimeoutMs;
     private final AtomicReference<TracerDriver> tracer;
-    private final AtomicReference<Watcher> parentWatcher = new AtomicReference<Watcher>(null);
-    private final Queue<Exception> backgroundExceptions = new ConcurrentLinkedQueue<Exception>();
+    private final Queue<Exception>              backgroundExceptions = new ConcurrentLinkedQueue<Exception>();
+    private final Queue<Watcher>                parentWatchers = new ConcurrentLinkedQueue<Watcher>();
 
     private static final int        MAX_BACKGROUND_EXCEPTIONS = 10;
     private static final boolean    LOG_EVENTS = Boolean.getBoolean(DebugUtils.PROPERTY_LOG_EVENTS);
@@ -56,7 +56,11 @@ class ConnectionState implements Watcher, Closeable
         this.ensembleProvider = ensembleProvider;
         this.connectionTimeoutMs = connectionTimeoutMs;
         this.tracer = tracer;
-        this.parentWatcher.set(parentWatcher);
+        if ( parentWatcher != null )
+        {
+            parentWatchers.offer(parentWatcher);
+        }
+
         zooKeeper = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs);
     }
 
@@ -98,11 +102,6 @@ class ConnectionState implements Watcher, Closeable
         return isConnected.get();
     }
 
-    Watcher substituteParentWatcher(Watcher newWatcher)
-    {
-        return parentWatcher.getAndSet(newWatcher);
-    }
-
     void        start() throws Exception
     {
         log.debug("Starting");
@@ -130,6 +129,16 @@ class ConnectionState implements Watcher, Closeable
         }
     }
 
+    void        addParentWatcher(Watcher watcher)
+    {
+        parentWatchers.offer(watcher);
+    }
+
+    void        removeParentWatcher(Watcher watcher)
+    {
+        parentWatchers.remove(watcher);
+    }
+
     private void reset() throws Exception
     {
         isConnected.set(false);
@@ -146,11 +155,10 @@ class ConnectionState implements Watcher, Closeable
             log.debug("ConnectState watcher: " + event);
         }
 
-        Watcher localParentWatcher = parentWatcher.get();
-        if ( localParentWatcher != null )
+        for ( Watcher parentWatcher : parentWatchers )
         {
             TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.get());
-            localParentWatcher.process(event);
+            parentWatcher.process(event);
             timeTrace.commit();
         }
 
