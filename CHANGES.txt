@@ -7,7 +7,7 @@ Service Discovery Curator extension.
 to get sent before an Expired. So, now I push the event to the parent watcher before resetting
 the connection in ConnectionState.process(WatchedEvent)
 
-* New Feature: SessionFailRetryLoop. Huge thanks to Pierre-Luc Bertrand for his help on this.
+* New Feature: SessionFailRetryLoop. Huge thanks to Pierre-Luc Bertrand for his work on this.
 SessionFailRetryLoop is a special type of retry loop that causes all Curator methods in a thread to
 fail when a session failure is detected. This enables sets of Curator operations that must be tied
 to a single ZooKeeper session. See Tech Note 3 for details: https://github.com/Netflix/curator/wiki/Tech-Note-3
