@@ -2,6 +2,8 @@ package com.netflix.curator.test;
 
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
+import org.apache.zookeeper.server.ZKDatabase;
+import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.IOException;
@@ -56,5 +58,29 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     public void close() throws IOException
     {
         shutdown();
+
+        try
+        {
+            Field               cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
+            cnxnFactoryField.setAccessible(true);
+            ServerCnxnFactory   cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
+
+            Field               zkServerField = ServerCnxnFactory.class.getDeclaredField("zkServer");
+            zkServerField.setAccessible(true);
+            ZooKeeperServer     zkServer = (ZooKeeperServer)zkServerField.get(cnxnFactory);
+            if ( zkServer != null ) 
+            {
+                ZKDatabase      zkDb = zkServer.getZKDatabase();
+                if ( zkDb != null )
+                {
+                    // make ZK server close its log files
+                    zkDb.close();
+                }
+            }
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
     }
 }
