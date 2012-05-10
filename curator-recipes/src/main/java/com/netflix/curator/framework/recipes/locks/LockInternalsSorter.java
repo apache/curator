@@ -18,10 +18,7 @@
 
 package com.netflix.curator.framework.recipes.locks;
 
-import com.netflix.curator.framework.CuratorFramework;
-import java.util.List;
-
-interface LockInternalsDriver extends LockInternalsSorter
+public interface LockInternalsSorter
 {
-    public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception;
+    public String           fixForSorting(String str, String lockName);
 }

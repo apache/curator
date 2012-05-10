@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 
-class StandardLockInternalsDriver implements LockInternalsDriver
+public class StandardLockInternalsDriver implements LockInternalsDriver
 {
     static private final Logger log = LoggerFactory.getLogger(StandardLockInternalsDriver.class);
 
@@ -42,6 +42,11 @@ class StandardLockInternalsDriver implements LockInternalsDriver
 
     @Override
     public String fixForSorting(String str, String lockName)
+    {
+        return standardFixForSorting(str, lockName);
+    }
+
+    public static String standardFixForSorting(String str, String lockName)
     {
         int index = str.lastIndexOf(lockName);
         if ( index >= 0 )
