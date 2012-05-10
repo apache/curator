@@ -1,5 +1,5 @@
-1.1.9/1.0.10 - xxxxxxxxxxxxx
-============================
+1.1.9/1.0.10 - May, 10 2012
+===========================
 * Based on suggestion in Issue 67: Added new concept of UriSpec to the ServiceInstance in the
 Service Discovery Curator extension.
 
