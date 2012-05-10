@@ -61,13 +61,11 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
 
         try
         {
-            Field               cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
+            Field                   cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
             cnxnFactoryField.setAccessible(true);
-            ServerCnxnFactory   cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
+            NIOServerCnxn.Factory   cnxnFactory = (NIOServerCnxn.Factory)cnxnFactoryField.get(this);
 
-            Field               zkServerField = ServerCnxnFactory.class.getDeclaredField("zkServer");
-            zkServerField.setAccessible(true);
-            ZooKeeperServer     zkServer = (ZooKeeperServer)zkServerField.get(cnxnFactory);
+            ZooKeeperServer     zkServer = cnxnFactory.getZooKeeperServer();
             if ( zkServer != null ) 
             {
                 ZKDatabase      zkDb = zkServer.getZKDatabase();
