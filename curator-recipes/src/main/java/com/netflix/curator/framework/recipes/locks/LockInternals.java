@@ -18,6 +18,9 @@
 
 package com.netflix.curator.framework.recipes.locks;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
@@ -33,13 +36,14 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-class LockInternals
+public class LockInternals
 {
     private final Logger                            log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework                  client;
@@ -150,7 +154,30 @@ class LockInternals
         client.delete().guaranteed().forPath(lockPath);
     }
 
-    List<String> getSortedChildren() throws Exception
+    CuratorFramework getClient()
+    {
+        return client;
+    }
+
+    public static Collection<String> getParticipantNodes(CuratorFramework client, final String basePath, String lockName, LockInternalsSorter sorter) throws Exception
+    {
+        List<String>        names = getSortedChildren(client, basePath, lockName, sorter);
+        Iterable<String>    transformed = Iterables.transform
+        (
+            names,
+            new Function<String, String>()
+            {
+                @Override
+                public String apply(String name)
+                {
+                    return ZKPaths.makePath(basePath, name);
+                }
+            }
+        );
+        return ImmutableList.copyOf(transformed);
+    }
+
+    public static List<String> getSortedChildren(CuratorFramework client, String basePath, final String lockName, final LockInternalsSorter sorter) throws Exception
     {
         List<String> children = client.getChildren().forPath(basePath);
         List<String> sortedList = Lists.newArrayList(children);
@@ -162,11 +189,26 @@ class LockInternals
                 @Override
                 public int compare(String lhs, String rhs)
                 {
-                    return driver.fixForSorting(lhs, lockName).compareTo(driver.fixForSorting(rhs, lockName));
+                    return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
                 }
             }
         );
         return sortedList;
+    }
+
+    List<String> getSortedChildren() throws Exception
+    {
+        return getSortedChildren(client, basePath, lockName, driver);
+    }
+
+    String getLockName()
+    {
+        return lockName;
+    }
+
+    LockInternalsDriver getDriver()
+    {
+        return driver;
     }
 
     String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Exception

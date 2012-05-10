@@ -72,25 +72,25 @@ public class LeaderSelector implements Closeable
 
     /**
      * @param client the client
-     * @param mutexPath the path for this leadership group
+     * @param leaderPath the path for this leadership group
      * @param listener listener
      */
-    public LeaderSelector(CuratorFramework client, String mutexPath, LeaderSelectorListener listener)
+    public LeaderSelector(CuratorFramework client, String leaderPath, LeaderSelectorListener listener)
     {
-        this(client, mutexPath, defaultThreadFactory, MoreExecutors.sameThreadExecutor(), listener);
+        this(client, leaderPath, defaultThreadFactory, MoreExecutors.sameThreadExecutor(), listener);
     }
 
     /**
      * @param client the client
-     * @param mutexPath the path for this leadership group
+     * @param leaderPath the path for this leadership group
      * @param threadFactory factory to use for making internal threads
      * @param executor the executor to run in
      * @param listener listener
      */
-    public LeaderSelector(CuratorFramework client, String mutexPath, ThreadFactory threadFactory, Executor executor, LeaderSelectorListener listener)
+    public LeaderSelector(CuratorFramework client, String leaderPath, ThreadFactory threadFactory, Executor executor, LeaderSelectorListener listener)
     {
         Preconditions.checkNotNull(client);
-        Preconditions.checkNotNull(mutexPath);
+        Preconditions.checkNotNull(leaderPath);
         Preconditions.checkNotNull(listener);
 
         this.client = client;
@@ -99,21 +99,26 @@ public class LeaderSelector implements Closeable
         hasLeadership = false;
 
         executorService = Executors.newFixedThreadPool(1, threadFactory);
-        mutex = new InterProcessMutex(client, mutexPath)
+        mutex = new InterProcessMutex(client, leaderPath)
         {
             @Override
             protected byte[] getLockNodeBytes()
             {
-                try
-                {
-                    return id.getBytes("UTF-8");
-                }
-                catch ( UnsupportedEncodingException e )
-                {
-                    throw new Error(e); // this should never happen
-                }
+                return getIdBytes(id);
             }
         };
+    }
+
+    static byte[] getIdBytes(String id)
+    {
+        try
+        {
+            return id.getBytes("UTF-8");
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new Error(e); // this should never happen
+        }
     }
 
     /**
@@ -226,14 +231,21 @@ public class LeaderSelector implements Closeable
      */
     public Collection<Participant>  getParticipants() throws Exception
     {
+        Collection<String> participantNodes = mutex.getParticipantNodes();
+
+        return getParticipants(client, participantNodes);
+    }
+
+    static Collection<Participant> getParticipants(CuratorFramework client, Collection<String> participantNodes) throws Exception
+    {
         ImmutableList.Builder<Participant> builder = ImmutableList.builder();
 
         boolean         isLeader = true;
-        for ( String path : mutex.getParticipantNodes() )
+        for ( String path : participantNodes )
         {
             try
             {
-                Participant     participant = participantForPath(path, isLeader);
+                Participant     participant = participantForPath(client, path, isLeader);
                 builder.add(participant);
             }
             catch ( KeeperException.NoNodeException ignore )
@@ -265,9 +277,14 @@ public class LeaderSelector implements Closeable
     public Participant      getLeader() throws Exception
     {
         Collection<String>      participantNodes = mutex.getParticipantNodes();
+        return getLeader(client, participantNodes);
+    }
+
+    static Participant getLeader(CuratorFramework client, Collection<String> participantNodes) throws Exception
+    {
         if ( participantNodes.size() > 0 )
         {
-            return participantForPath(participantNodes.iterator().next(), true);
+            return participantForPath(client, participantNodes.iterator().next(), true);
         }
         return new Participant();
     }
@@ -282,7 +299,7 @@ public class LeaderSelector implements Closeable
         return hasLeadership;
     }
 
-    private Participant participantForPath(String path, boolean markAsLeader) throws Exception
+    private static Participant participantForPath(CuratorFramework client, String path, boolean markAsLeader) throws Exception
     {
         byte[]      bytes = client.getData().forPath(path);
         String      thisId = new String(bytes, "UTF-8");
