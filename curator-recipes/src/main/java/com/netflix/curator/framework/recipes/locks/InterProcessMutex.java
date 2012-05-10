@@ -17,16 +17,11 @@
  */
 package com.netflix.curator.framework.recipes.locks;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.utils.ZKPaths;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -159,20 +154,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      */
     public Collection<String>   getParticipantNodes() throws Exception
     {
-        List<String>        names = internals.getSortedChildren();
-        Iterable<String>    transformed = Iterables.transform
-        (
-            names,
-            new Function<String, String>()
-            {
-                @Override
-                public String apply(String name)
-                {
-                    return ZKPaths.makePath(basePath, name);
-                }
-            }
-        );
-        return ImmutableList.copyOf(transformed);
+        return LockInternals.getParticipantNodes(internals.getClient(), basePath, internals.getLockName(), internals.getDriver());
     }
 
     @Override

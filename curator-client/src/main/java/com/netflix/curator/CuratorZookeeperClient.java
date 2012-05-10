@@ -117,6 +117,18 @@ public class CuratorZookeeperClient implements Closeable
     }
 
     /**
+     * Return a new "session fail" retry loop. See {@link SessionFailRetryLoop} for details
+     * on when to use it.
+     *
+     * @param mode failure mode
+     * @return new retry loop
+     */
+    public SessionFailRetryLoop newSessionFailRetryLoop(SessionFailRetryLoop.Mode mode)
+    {
+        return new SessionFailRetryLoop(this, mode);
+    }
+
+    /**
      * Returns true if the client is current connected
      *
      * @return true/false
@@ -239,28 +251,32 @@ public class CuratorZookeeperClient implements Closeable
         this.tracer.set(tracer);
     }
 
+    void        addParentWatcher(Watcher watcher)
+    {
+        state.addParentWatcher(watcher);
+    }
+
+    void        removeParentWatcher(Watcher watcher)
+    {
+        state.removeParentWatcher(watcher);
+    }
+
     void internalBlockUntilConnectedOrTimedOut() throws InterruptedException
     {
         long            waitTimeMs = connectionTimeoutMs;
         while ( !state.isConnected() && (waitTimeMs > 0) )
         {
-            final AtomicReference<Watcher>  previousWatcher = new AtomicReference<Watcher>(null);
             final CountDownLatch            latch = new CountDownLatch(1);
             Watcher tempWatcher = new Watcher()
             {
                 @Override
                 public void process(WatchedEvent event)
                 {
-                    Watcher localPreviousWatcher = previousWatcher.get();
-                    if ( localPreviousWatcher != null )
-                    {
-                        localPreviousWatcher.process(event);
-                    }
                     latch.countDown();
                 }
             };
             
-            previousWatcher.set(state.substituteParentWatcher(tempWatcher));
+            state.addParentWatcher(tempWatcher);
             long        startTimeMs = System.currentTimeMillis();
             try
             {
@@ -268,7 +284,7 @@ public class CuratorZookeeperClient implements Closeable
             }
             finally
             {
-                state.substituteParentWatcher(previousWatcher.get());
+                state.removeParentWatcher(tempWatcher);
             }
             long        elapsed = Math.max(1, System.currentTimeMillis() - startTimeMs);
             waitTimeMs -= elapsed;

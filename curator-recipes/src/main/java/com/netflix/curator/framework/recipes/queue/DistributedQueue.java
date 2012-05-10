@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.framework.recipes.queue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
@@ -357,6 +358,13 @@ public class DistributedQueue<T> implements QueueBase<T>
                 );
             }
         };
+        internalCreateNode(path, bytes, callback);
+    }
+
+
+    @VisibleForTesting
+    void internalCreateNode(String path, byte[] bytes, BackgroundCallback callback) throws Exception
+    {
         client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).inBackground(callback).forPath(path, bytes);
     }
 
