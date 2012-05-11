@@ -211,7 +211,7 @@ public class PathChildrenCache implements Closeable
      */
     public void     start(boolean buildInitial) throws Exception
     {
-        Preconditions.checkArgument(!executorService.isShutdown());
+        Preconditions.checkState(!executorService.isShutdown(), "already started");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         executorService.submit
@@ -245,7 +245,7 @@ public class PathChildrenCache implements Closeable
      */
     public void     rebuild() throws Exception
     {
-        Preconditions.checkArgument(!executorService.isShutdown());
+        Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
 
         ensurePath.ensure(client.getZookeeperClient());
 
@@ -293,7 +293,7 @@ public class PathChildrenCache implements Closeable
     @Override
     public void close() throws IOException
     {
-        Preconditions.checkArgument(!executorService.isShutdown());
+        Preconditions.checkState(!executorService.isShutdown(), "has not been started");
 
         client.getConnectionStateListenable().removeListener(connectionStateListener);
         executorService.shutdownNow();

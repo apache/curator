@@ -143,7 +143,7 @@ public class DistributedIdQueue<T> implements QueueBase<T>
      */
     public int remove(String id) throws Exception
     {
-        id = Preconditions.checkNotNull(id);
+        id = Preconditions.checkNotNull(id, "id cannot be null");
 
         queue.checkState();
 

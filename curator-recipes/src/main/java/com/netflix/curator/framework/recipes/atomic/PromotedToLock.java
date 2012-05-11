@@ -54,8 +54,8 @@ public class PromotedToLock
          */
         public PromotedToLock       build()
         {
-            Preconditions.checkNotNull(instance.path);
-            Preconditions.checkNotNull(instance.retryPolicy);
+            Preconditions.checkNotNull(instance.path, "path cannot be null");
+            Preconditions.checkNotNull(instance.retryPolicy, "retryPolicy cannot be null");
 
             return new PromotedToLock(instance.path, instance.maxLockTime, instance.maxLockTimeUnit, instance.retryPolicy);
         }

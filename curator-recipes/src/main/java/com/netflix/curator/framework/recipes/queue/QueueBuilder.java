@@ -142,7 +142,7 @@ public class QueueBuilder<T>
      */
     public QueueBuilder<T>  threadFactory(ThreadFactory factory)
     {
-        Preconditions.checkNotNull(factory);
+        Preconditions.checkNotNull(factory, "factory cannot be null");
 
         this.factory = factory;
         return this;
@@ -156,7 +156,7 @@ public class QueueBuilder<T>
      */
     public QueueBuilder<T>  executor(Executor executor)
     {
-        Preconditions.checkNotNull(executor);
+        Preconditions.checkNotNull(executor, "executor cannot be null");
 
         this.executor = executor;
         return this;

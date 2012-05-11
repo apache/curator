@@ -63,7 +63,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     @Override
     public TransactionCreateBuilder create()
     {
-        Preconditions.checkArgument(!isCommitted);
+        Preconditions.checkState(!isCommitted, "transaction already committed");
 
         return new CreateBuilderImpl(client).asTransactionCreateBuilder(this, transaction);
     }
@@ -71,7 +71,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     @Override
     public TransactionDeleteBuilder delete()
     {
-        Preconditions.checkArgument(!isCommitted);
+        Preconditions.checkState(!isCommitted, "transaction already committed");
 
         return new DeleteBuilderImpl(client).asTransactionDeleteBuilder(this, transaction);
     }
@@ -79,7 +79,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     @Override
     public TransactionSetDataBuilder setData()
     {
-        Preconditions.checkArgument(!isCommitted);
+        Preconditions.checkState(!isCommitted, "transaction already committed");
 
         return new SetDataBuilderImpl(client).asTransactionSetDataBuilder(this, transaction);
     }
@@ -87,7 +87,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     @Override
     public TransactionCheckBuilder check()
     {
-        Preconditions.checkArgument(!isCommitted);
+        Preconditions.checkState(!isCommitted, "transaction already committed");
 
         return new TransactionCheckBuilder()
         {
@@ -114,7 +114,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     @Override
     public Collection<CuratorTransactionResult> commit() throws Exception
     {
-        Preconditions.checkArgument(!isCommitted);
+        Preconditions.checkState(!isCommitted, "transaction already committed");
         isCommitted = true;
 
         final AtomicBoolean firstTime = new AtomicBoolean(true);

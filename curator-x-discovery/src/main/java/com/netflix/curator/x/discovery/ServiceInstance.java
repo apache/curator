@@ -73,8 +73,8 @@ public class ServiceInstance<T>
      */
     ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec)
     {
-        name = Preconditions.checkNotNull(name);
-        id = Preconditions.checkNotNull(id);
+        name = Preconditions.checkNotNull(name, "name cannot be null");
+        id = Preconditions.checkNotNull(id, "id cannot be null");
 
         this.serviceType = serviceType;
         this.uriSpec = uriSpec;

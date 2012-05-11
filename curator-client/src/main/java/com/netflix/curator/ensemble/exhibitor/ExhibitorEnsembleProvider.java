@@ -100,14 +100,14 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
      */
     public void     pollForInitialEnsemble() throws Exception
     {
-        Preconditions.checkState(state.get() == State.LATENT);
+        Preconditions.checkState(state.get() == State.LATENT, "Cannot be called after start()");
         poll();
     }
 
     @Override
     public void start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
         service.submit
         (
@@ -136,7 +136,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     @Override
     public void close() throws IOException
     {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED));
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed");
 
         service.shutdownNow();
     }

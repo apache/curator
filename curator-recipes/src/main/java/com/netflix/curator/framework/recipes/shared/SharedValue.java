@@ -114,7 +114,7 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public void setValue(byte[] newValue) throws Exception
     {
-        Preconditions.checkState(state.get() == State.STARTED);
+        Preconditions.checkState(state.get() == State.STARTED, "not started");
 
         client.setData().forPath(path, newValue);
         stat.setVersion(stat.getVersion() + 1);
@@ -134,7 +134,7 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public boolean trySetValue(byte[] newValue) throws Exception
     {
-        Preconditions.checkState(state.get() == State.STARTED);
+        Preconditions.checkState(state.get() == State.STARTED, "not started");
 
         try
         {
@@ -170,7 +170,7 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public void     start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         try

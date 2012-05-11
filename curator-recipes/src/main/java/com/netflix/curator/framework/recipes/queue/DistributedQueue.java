@@ -123,11 +123,11 @@ public class DistributedQueue<T> implements QueueBase<T>
             String lockPath
         )
     {
-        Preconditions.checkNotNull(client);
-        Preconditions.checkNotNull(serializer);
-        Preconditions.checkNotNull(queuePath);
-        Preconditions.checkNotNull(threadFactory);
-        Preconditions.checkNotNull(executor);
+        Preconditions.checkNotNull(client, "client cannot be null");
+        Preconditions.checkNotNull(serializer, "serializer cannot be null");
+        Preconditions.checkNotNull(queuePath, "queuePath cannot be null");
+        Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
+        Preconditions.checkNotNull(executor, "executor cannot be null");
 
         isProducerOnly = (consumer == null);
         this.lockPath = lockPath;
@@ -226,7 +226,7 @@ public class DistributedQueue<T> implements QueueBase<T>
     @Override
     public void     setErrorMode(ErrorMode newErrorMode)
     {
-        Preconditions.checkNotNull(lockPath);
+        Preconditions.checkNotNull(lockPath, "lockPath cannot be null");
 
         errorMode.set(newErrorMode);
     }

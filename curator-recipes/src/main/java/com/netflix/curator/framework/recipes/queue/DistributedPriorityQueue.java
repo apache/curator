@@ -48,7 +48,7 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             int minItemsBeforeRefresh,
             String lockPath)
     {
-        Preconditions.checkArgument(minItemsBeforeRefresh >= 0);
+        Preconditions.checkArgument(minItemsBeforeRefresh >= 0, "minItemsBeforeRefresh cannot be negative");
 
         queue = new DistributedQueue<T>
         (

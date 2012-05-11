@@ -69,8 +69,8 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
 
     ServiceCache(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory, int refreshPaddingMs)
     {
-        Preconditions.checkNotNull(threadFactory);
-        Preconditions.checkArgument(refreshPaddingMs >= 0);
+        Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
+        Preconditions.checkArgument(refreshPaddingMs >= 0, "refreshPaddingMs cannot be negative");
 
         this.discovery = discovery;
         this.name = name;
@@ -98,7 +98,7 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
      */
     public void start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
 
         executorService.submit
         (
@@ -121,7 +121,7 @@ public class ServiceCache<T> implements Closeable, Listenable<ServiceCacheListen
     @Override
     public void close() throws IOException
     {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.STOPPED));
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.STOPPED), "not started");
 
         listenerContainer.forEach
             (

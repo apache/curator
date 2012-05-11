@@ -82,7 +82,7 @@ public class DistributedDoubleBarrier
      */
     public DistributedDoubleBarrier(CuratorFramework client, String barrierPath, int memberQty)
     {
-        Preconditions.checkArgument(memberQty > 0);
+        Preconditions.checkState(memberQty > 0, "memberQty cannot be 0");
 
         this.client = client;
         this.barrierPath = barrierPath;

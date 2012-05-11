@@ -36,7 +36,7 @@ public class FixedEnsembleProvider implements EnsembleProvider
      */
     public FixedEnsembleProvider(String connectionString)
     {
-        this.connectionString = Preconditions.checkNotNull(connectionString);
+        this.connectionString = Preconditions.checkNotNull(connectionString, "connectionString cannot be null");
     }
 
     @Override

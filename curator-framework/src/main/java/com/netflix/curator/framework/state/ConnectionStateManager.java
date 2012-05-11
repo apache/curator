@@ -84,7 +84,7 @@ public class ConnectionStateManager implements Closeable
      */
     public void     start()
     {
-        Preconditions.checkState(!service.isShutdown());
+        Preconditions.checkState(!service.isShutdown(), "already started");
 
         service.submit
         (
@@ -103,7 +103,7 @@ public class ConnectionStateManager implements Closeable
     @Override
     public void close()
     {
-        Preconditions.checkState(!service.isShutdown());
+        Preconditions.checkState(!service.isShutdown(), "not started");
 
         service.shutdownNow();
         listeners.clear();

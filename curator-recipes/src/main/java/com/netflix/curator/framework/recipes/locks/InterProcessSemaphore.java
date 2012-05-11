@@ -161,7 +161,7 @@ public class InterProcessSemaphore
      */
     public Collection<Lease> acquire(int qty) throws Exception
     {
-        Preconditions.checkArgument(qty > 0);
+        Preconditions.checkArgument(qty > 0, "qty cannot be 0");
 
         ImmutableList.Builder<Lease>    builder = ImmutableList.builder();
         try
@@ -220,7 +220,7 @@ public class InterProcessSemaphore
         long                startMs = System.currentTimeMillis();
         long                waitMs = TimeUnit.MILLISECONDS.convert(time, unit);
 
-        Preconditions.checkArgument(qty > 0);
+        Preconditions.checkArgument(qty > 0, "qty cannot be 0");
 
         ImmutableList.Builder<Lease>    builder = ImmutableList.builder();
         try

@@ -68,9 +68,9 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      */
     public ServiceDiscoveryImpl(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance)
     {
-        this.client = Preconditions.checkNotNull(client);
-        this.basePath = Preconditions.checkNotNull(basePath);
-        this.serializer = Preconditions.checkNotNull(serializer);
+        this.client = Preconditions.checkNotNull(client, "client cannot be null");
+        this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
+        this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
         this.thisInstance = Optional.fromNullable(thisInstance);
     }
 

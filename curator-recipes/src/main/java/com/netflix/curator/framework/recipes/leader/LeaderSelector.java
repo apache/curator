@@ -89,9 +89,9 @@ public class LeaderSelector implements Closeable
      */
     public LeaderSelector(CuratorFramework client, String leaderPath, ThreadFactory threadFactory, Executor executor, LeaderSelectorListener listener)
     {
-        Preconditions.checkNotNull(client);
-        Preconditions.checkNotNull(leaderPath);
-        Preconditions.checkNotNull(listener);
+        Preconditions.checkNotNull(client, "client cannot be null");
+        Preconditions.checkNotNull(leaderPath, "leaderPath cannot be null");
+        Preconditions.checkNotNull(listener, "listener cannot be null");
 
         this.client = client;
         this.listener = listener;
@@ -140,7 +140,7 @@ public class LeaderSelector implements Closeable
      */
     public void     setId(String id)
     {
-        Preconditions.checkNotNull(id);
+        Preconditions.checkNotNull(id, "id cannot be null");
         
         this.id = id;
     }
@@ -165,8 +165,8 @@ public class LeaderSelector implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
-        Preconditions.checkArgument(!executorService.isShutdown());
-        Preconditions.checkArgument(!hasLeadership);
+        Preconditions.checkState(!executorService.isShutdown(), "Already started");
+        Preconditions.checkState(!hasLeadership, "Already has leadership");
 
         client.getConnectionStateListenable().addListener(listener);
         requeue();
