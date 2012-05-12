@@ -44,9 +44,9 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     private CreateMode                      createMode;
     private Backgrounding                   backgrounding;
     private boolean                         createParentsIfNeeded;
-    private boolean                         doProtectedEphemeralSequential;
+    private boolean                         doProtected;
     private boolean                         compress;
-    private String                          protectedEphemeralSequentialId;
+    private String                          protectedId;
     private ACLing                          acling;
 
     @VisibleForTesting
@@ -63,8 +63,8 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         acling = new ACLing(client.getAclProvider());
         createParentsIfNeeded = false;
         compress = false;
-        doProtectedEphemeralSequential = false;
-        protectedEphemeralSequentialId = null;
+        doProtected = false;
+        protectedId = null;
     }
 
     TransactionCreateBuilder        asTransactionCreateBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
@@ -223,59 +223,20 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     public ACLCreateModePathAndBytesable<String> creatingParentsIfNeeded()
     {
         createParentsIfNeeded = true;
-        return new ACLCreateModePathAndBytesable<String>()
-        {
-            @Override
-            public PathAndBytesable<String> withACL(List<ACL> aclList)
-            {
-                return CreateBuilderImpl.this.withACL(aclList);
-            }
+        return asACLCreateModePathAndBytesable();
+    }
 
-            @Override
-            public ACLPathAndBytesable<String> withMode(CreateMode mode)
-            {
-                createMode = mode;
-                return new ACLPathAndBytesable<String>()
-                {
-                    @Override
-                    public PathAndBytesable<String> withACL(List<ACL> aclList)
-                    {
-                        return CreateBuilderImpl.this.withACL(aclList);
-                    }
-
-                    @Override
-                    public String forPath(String path, byte[] data) throws Exception
-                    {
-                        return CreateBuilderImpl.this.forPath(path, data);
-                    }
-
-                    @Override
-                    public String forPath(String path) throws Exception
-                    {
-                        return CreateBuilderImpl.this.forPath(path);
-                    }
-                };
-            }
-
-            @Override
-            public String forPath(String path, byte[] data) throws Exception
-            {
-                return CreateBuilderImpl.this.forPath(path, data);
-            }
-
-            @Override
-            public String forPath(String path) throws Exception
-            {
-                return CreateBuilderImpl.this.forPath(path);
-            }
-        };
+    @Override
+    public ACLCreateModePathAndBytesable<String> withProtection()
+    {
+        setProtected();
+        return asACLCreateModePathAndBytesable();
     }
 
     @Override
     public ACLPathAndBytesable<String> withProtectedEphemeralSequential()
     {
-        doProtectedEphemeralSequential = true;
-        protectedEphemeralSequentialId = UUID.randomUUID().toString();
+        setProtected();
         createMode = CreateMode.EPHEMERAL_SEQUENTIAL;
 
         return new ACLPathAndBytesable<String>()
@@ -391,6 +352,62 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         );
     }
 
+    private void setProtected()
+    {
+        doProtected = true;
+        protectedId = UUID.randomUUID().toString();
+    }
+
+    private ACLCreateModePathAndBytesable<String> asACLCreateModePathAndBytesable()
+    {
+        return new ACLCreateModePathAndBytesable<String>()
+        {
+            @Override
+            public PathAndBytesable<String> withACL(List<ACL> aclList)
+            {
+                return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public ACLPathAndBytesable<String> withMode(CreateMode mode)
+            {
+                createMode = mode;
+                return new ACLPathAndBytesable<String>()
+                {
+                    @Override
+                    public PathAndBytesable<String> withACL(List<ACL> aclList)
+                    {
+                        return CreateBuilderImpl.this.withACL(aclList);
+                    }
+
+                    @Override
+                    public String forPath(String path, byte[] data) throws Exception
+                    {
+                        return CreateBuilderImpl.this.forPath(path, data);
+                    }
+
+                    @Override
+                    public String forPath(String path) throws Exception
+                    {
+                        return CreateBuilderImpl.this.forPath(path);
+                    }
+                };
+            }
+
+            @Override
+            public String forPath(String path, byte[] data) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path, data);
+            }
+
+            @Override
+            public String forPath(String path) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path);
+            }
+        };
+    }
+
     private String pathInForeground(final String path, final byte[] data) throws Exception
     {
         TimeTrace               trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
@@ -413,7 +430,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     }
 
                     String  createdPath = null;
-                    if ( !localFirstTime && doProtectedEphemeralSequential )
+                    if ( !localFirstTime && doProtected )
                     {
                         createdPath = findProtectedNodeInForeground(localPath);
                     }
@@ -489,7 +506,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
     private String  adjustPath(String path) throws Exception
     {
-        if ( doProtectedEphemeralSequential )
+        if ( doProtected )
         {
             ZKPaths.PathAndNode     pathAndNode = ZKPaths.getPathAndNode(path);
             String                  name = getProtectedPrefix() + pathAndNode.getNode();
@@ -500,6 +517,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
     private String getProtectedPrefix() throws Exception
     {
-        return PROTECTED_PREFIX + protectedEphemeralSequentialId + "-";
+        return PROTECTED_PREFIX + protectedId + "-";
     }
 }
