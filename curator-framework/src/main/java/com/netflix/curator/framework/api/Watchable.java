@@ -35,4 +35,12 @@ public interface Watchable<T>
      * @return this
      */
     public T usingWatcher(Watcher watcher);
+
+    /**
+     * Set a watcher for the operation
+     *
+     * @param watcher the watcher
+     * @return this
+     */
+    public T usingWatcher(CuratorWatcher watcher);
 }

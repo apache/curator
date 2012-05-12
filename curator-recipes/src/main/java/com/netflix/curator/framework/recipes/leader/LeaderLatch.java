@@ -8,6 +8,7 @@ import com.netflix.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
@@ -298,7 +299,7 @@ public class LeaderLatch implements Closeable
         {
             client.delete().guaranteed().inBackground().forPath(ourPath);
         }
-        ourPath = client.create().withProtectedEphemeralSequential().forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
+        ourPath = client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
 
         List<String> sortedChildren = LockInternals.getSortedChildren(client, latchPath, LOCK_NAME, sorter);
         if ( sortedChildren.size() == 0 )

@@ -18,6 +18,7 @@
 
 package com.netflix.curator.framework.imps;
 
+import com.netflix.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 
@@ -25,16 +26,39 @@ class NamespaceWatcher implements Watcher
 {
     private final CuratorFrameworkImpl client;
     private final Watcher actualWatcher;
+    private final CuratorWatcher curatorWatcher;
 
     NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher)
     {
         this.client = client;
         this.actualWatcher = actualWatcher;
+        this.curatorWatcher = null;
+    }
+
+    NamespaceWatcher(CuratorFrameworkImpl client, CuratorWatcher curatorWatcher)
+    {
+        this.client = client;
+        this.actualWatcher = null;
+        this.curatorWatcher = curatorWatcher;
     }
 
     @Override
     public void process(WatchedEvent event)
     {
-        actualWatcher.process(new NamespaceWatchedEvent(client, event));
+        if ( actualWatcher != null )
+        {
+            actualWatcher.process(new NamespaceWatchedEvent(client, event));
+        }
+        else if ( curatorWatcher != null )
+        {
+            try
+            {
+                curatorWatcher.process(new NamespaceWatchedEvent(client, event));
+            }
+            catch ( Exception e )
+            {
+                client.logError("Watcher exception", e);
+            }
+        }
     }
 }

@@ -23,6 +23,7 @@ import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.framework.api.ExistsBuilder;
 import com.netflix.curator.framework.api.Pathable;
 import org.apache.zookeeper.AsyncCallback;
@@ -53,6 +54,13 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
 
     @Override
     public BackgroundPathable<Stat> usingWatcher(Watcher watcher)
+    {
+        watching = new Watching(client, watcher);
+        return this;
+    }
+
+    @Override
+    public BackgroundPathable<Stat> usingWatcher(CuratorWatcher watcher)
     {
         watching = new Watching(client, watcher);
         return this;
