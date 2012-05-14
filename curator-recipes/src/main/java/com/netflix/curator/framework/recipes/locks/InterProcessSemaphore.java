@@ -143,7 +143,7 @@ public class InterProcessSemaphore
      */
     public Lease acquire() throws Exception
     {
-        String      path = internals.attemptLock(-1, null, new byte[0]);
+        String      path = internals.attemptLock(-1, null, null);
         return makeLease(path);
     }
 
@@ -168,7 +168,7 @@ public class InterProcessSemaphore
         {
             while ( qty-- > 0 )
             {
-                String      path = internals.attemptLock(-1, null, new byte[0]);
+                String      path = internals.attemptLock(-1, null, null);
                 builder.add(makeLease(path));
             }
         }
@@ -195,7 +195,7 @@ public class InterProcessSemaphore
      */
     public Lease acquire(long time, TimeUnit unit) throws Exception
     {
-        String      path = internals.attemptLock(time, unit, new byte[0]);
+        String      path = internals.attemptLock(time, unit, null);
         return (path != null) ? makeLease(path) : null;
     }
 
@@ -230,7 +230,7 @@ public class InterProcessSemaphore
                 long        elapsedMs = System.currentTimeMillis() - startMs;
                 long        thisWaitMs = waitMs - elapsedMs;
 
-                String      path = (thisWaitMs > 0) ? internals.attemptLock(thisWaitMs, TimeUnit.MILLISECONDS, new byte[0]) : null;
+                String      path = (thisWaitMs > 0) ? internals.attemptLock(thisWaitMs, TimeUnit.MILLISECONDS, null) : null;
                 if ( path == null )
                 {
                     returnAll(builder.build());

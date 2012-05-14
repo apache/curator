@@ -104,7 +104,7 @@ public class LeaderSelector implements Closeable
             @Override
             protected byte[] getLockNodeBytes()
             {
-                return getIdBytes(id);
+                return (id.length() > 0) ? getIdBytes(id) : null;
             }
         };
     }
