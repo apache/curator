@@ -29,6 +29,8 @@ import com.netflix.curator.framework.imps.GzipCompressionProvider;
 import com.netflix.curator.utils.DefaultZookeeperFactory;
 import com.netflix.curator.utils.ZookeeperFactory;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.ThreadFactory;
 
@@ -39,6 +41,8 @@ public class CuratorFrameworkFactory
 {
     private static final int        DEFAULT_SESSION_TIMEOUT_MS = 15 * 1000;     // TODO make configurable
     private static final int        DEFAULT_CONNECTION_TIMEOUT_MS = 10 * 1000;  // TODO make configurable
+
+    private static final byte[]     LOCAL_ADDRESS = getLocalAddress();
 
     private static final CompressionProvider        DEFAULT_COMPRESSION_PROVIDER = new GzipCompressionProvider();
     private static final DefaultZookeeperFactory    DEFAULT_ZOOKEEPER_FACTORY = new DefaultZookeeperFactory();
@@ -99,7 +103,7 @@ public class CuratorFrameworkFactory
         private String              namespace;
         private String              authScheme = null;
         private byte[]              authValue = null;
-        private byte[]              defaultData = new byte[0];
+        private byte[]              defaultData = LOCAL_ADDRESS;
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
         private ZookeeperFactory    zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
         private ACLProvider         aclProvider = DEFAULT_ACL_PROVIDER;
@@ -310,6 +314,19 @@ public class CuratorFrameworkFactory
         private Builder()
         {
         }
+    }
+
+    private static byte[] getLocalAddress()
+    {
+        try
+        {
+            return InetAddress.getLocalHost().getHostAddress().getBytes();
+        }
+        catch ( UnknownHostException ignore )
+        {
+            // ignore
+        }
+        return new byte[0];
     }
 
     private CuratorFrameworkFactory()
