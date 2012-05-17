@@ -25,7 +25,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests
         try
         {
             BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
-            queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test").buildDelayQueue(0);
+            queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test").buildDelayQueue();
             queue.start();
 
             queue.put(1L, System.currentTimeMillis() + Integer.MAX_VALUE);  // never come out
@@ -56,7 +56,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests
         try
         {
             BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
-            queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test").buildDelayQueue(0);
+            queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test").buildDelayQueue();
             queue.start();
 
             queue.put(1L, System.currentTimeMillis() + 1000);
@@ -85,7 +85,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests
         try
         {
             BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
-            queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test").buildDelayQueue(0);
+            queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test").buildDelayQueue();
             queue.start();
 
             Random random = new Random();
