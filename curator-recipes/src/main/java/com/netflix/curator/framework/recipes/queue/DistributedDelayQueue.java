@@ -23,7 +23,6 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -68,14 +67,10 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
             lockPath
         )
         {
-            protected long getDelay(List<String> children)
+            protected long getDelay(String itemNode)
             {
-                if ( children.size() > 0 )
-                {
-                    long epoch = getEpoch(children.get(0));
-                    return epoch - System.currentTimeMillis();
-                }
-                return 0;
+                long epoch = getEpoch(itemNode);
+                return epoch - System.currentTimeMillis();
             }
         };
     }

@@ -391,7 +391,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         return client.getChildren().watched().forPath(queuePath);
     }
 
-    protected long getDelay(List<String> children)
+    protected long getDelay(String itemNode)
     {
         return 0;
     }
@@ -431,7 +431,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                         lastChildCount.set(children.size());
                         sortChildren(children); // makes sure items are processed in the correct order
 
-                        long        waitMs = getDelay(children);
+                        long        waitMs = (children.size() > 0) ? getDelay(children.get(0)) : 0;
                         if ( waitMs > 0 )
                         {
                             wait(waitMs);
@@ -487,6 +487,11 @@ public class DistributedQueue<T> implements QueueBase<T>
                 {
                     break;
                 }
+            }
+
+            if ( getDelay(itemNode) > 0 )
+            {
+                continue;
             }
 
             if ( isUsingLockSafety )
