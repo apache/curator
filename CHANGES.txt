@@ -1,5 +1,5 @@
-1.1.10/1.0.11 - xxxxxxxxxxx
-===========================
+1.1.10/1.0.11 - May 17, 2012
+============================
 * Generalized the ProtectedEphemeralSequential so that it works with any create mode.
 withProtectedEphemeralSequential() is deprecated in favor of the new method withProtection().
 
@@ -15,7 +15,7 @@ the deadlock analysis in Exhibitor.
 
 * New recipe added: DistributedDelayQueue
 
-1.1.9/1.0.10 - May, 10 2012
+1.1.9/1.0.10 - May 10, 2012
 ===========================
 * Based on suggestion in Issue 67: Added new concept of UriSpec to the ServiceInstance in the
 Service Discovery Curator extension.

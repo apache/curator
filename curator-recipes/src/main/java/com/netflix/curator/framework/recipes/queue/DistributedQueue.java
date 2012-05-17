@@ -429,7 +429,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                     {
                         children = getChildren();
                         lastChildCount.set(children.size());
-                        sortChildren(children); // makes sure items are processed in the order they were added
+                        sortChildren(children); // makes sure items are processed in the correct order
 
                         long        waitMs = getDelay(children);
                         if ( waitMs > 0 )
