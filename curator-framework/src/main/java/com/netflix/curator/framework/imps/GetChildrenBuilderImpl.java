@@ -23,6 +23,7 @@ import com.netflix.curator.TimeTrace;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.framework.api.GetChildrenBuilder;
 import com.netflix.curator.framework.api.Pathable;
 import com.netflix.curator.framework.api.WatchPathable;
@@ -73,6 +74,13 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                 GetChildrenBuilderImpl.this.usingWatcher(watcher);
                 return GetChildrenBuilderImpl.this;
             }
+
+            @Override
+            public Pathable<List<String>> usingWatcher(CuratorWatcher watcher)
+            {
+                GetChildrenBuilderImpl.this.usingWatcher(watcher);
+                return GetChildrenBuilderImpl.this;
+            }
         };
     }
 
@@ -113,6 +121,13 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
 
     @Override
     public BackgroundPathable<List<String>> usingWatcher(Watcher watcher)
+    {
+        watching = new Watching(client, watcher);
+        return this;
+    }
+
+    @Override
+    public BackgroundPathable<List<String>> usingWatcher(CuratorWatcher watcher)
     {
         watching = new Watching(client, watcher);
         return this;

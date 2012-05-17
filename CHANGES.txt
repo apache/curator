@@ -1,4 +1,21 @@
-1.1.9/1.0.10 - May, 10 2012
+1.1.10/1.0.11 - May 17, 2012
+============================
+* Generalized the ProtectedEphemeralSequential so that it works with any create mode.
+withProtectedEphemeralSequential() is deprecated in favor of the new method withProtection().
+
+* Update all uses of Preconditions to make sure they print a reasonable diagnostic message.
+
+* Added a new wrapped Watcher type that can throw exceptions as a convenience. The various
+usingWatcher() methods now can take CuratorWatcher instances.
+
+* InterProcessSemaphore and LeaderSelector weren't respecting the default bytes feature.
+
+* Make the default data for nodes be the local IP address. This helps in debugging and enables
+the deadlock analysis in Exhibitor.
+
+* New recipe added: DistributedDelayQueue
+
+1.1.9/1.0.10 - May 10, 2012
 ===========================
 * Based on suggestion in Issue 67: Added new concept of UriSpec to the ServiceInstance in the
 Service Discovery Curator extension.

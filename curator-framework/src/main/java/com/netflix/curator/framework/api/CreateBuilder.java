@@ -31,6 +31,15 @@ public interface CreateBuilder extends
     public ACLCreateModePathAndBytesable<String>    creatingParentsIfNeeded();
 
     /**
+     * @deprecated this has been generalized to support all create modes. Instead, use:
+     * <code><pre>
+     *     client.create().withProtection().withMode(CreateMode.PERSISTENT_SEQUENTIAL)...
+     * </pre></code>
+     * @return this
+     */
+    public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();
+
+    /**
      * <p>
      *     Hat-tip to https://github.com/sbridges for pointing this out
      * </p>
@@ -44,7 +53,12 @@ public interface CreateBuilder extends
      * </p>
      *
      * <p>
-     *     Putting the create builder into protected-ephemeral-sequential mode works around this.
+     *     Even without sequential-ephemeral, however, the create can succeed on the sever
+     *     but the client (for various reasons) will not know it.
+     * </p>
+     *
+     * <p>
+     *     Putting the create builder into protection mode works around this.
      *     The name of the node that is created is prefixed with a GUID. If node creation fails
      *     the normal retry mechanism will occur. On the retry, the parent path is first searched
      *     for a node that has the GUID in it. If that node is found, it is assumed to be the lost
@@ -53,5 +67,5 @@ public interface CreateBuilder extends
      *
      * @return this
      */
-    public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();
+    public ACLCreateModePathAndBytesable<String>    withProtection();
 }

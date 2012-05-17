@@ -23,6 +23,7 @@ import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.BackgroundPathable;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
+import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.framework.api.GetDataBuilder;
 import com.netflix.curator.framework.api.GetDataWatchBackgroundStatable;
 import com.netflix.curator.framework.api.Pathable;
@@ -107,6 +108,12 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
             {
                 return GetDataBuilderImpl.this.usingWatcher(watcher);
             }
+
+            @Override
+            public BackgroundPathable<byte[]> usingWatcher(CuratorWatcher watcher)
+            {
+                return GetDataBuilderImpl.this.usingWatcher(watcher);
+            }
         };
     }
 
@@ -131,6 +138,13 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
 
             @Override
             public Pathable<byte[]> usingWatcher(Watcher watcher)
+            {
+                GetDataBuilderImpl.this.usingWatcher(watcher);
+                return GetDataBuilderImpl.this;
+            }
+
+            @Override
+            public Pathable<byte[]> usingWatcher(CuratorWatcher watcher)
             {
                 GetDataBuilderImpl.this.usingWatcher(watcher);
                 return GetDataBuilderImpl.this;
@@ -175,6 +189,13 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
 
     @Override
     public BackgroundPathable<byte[]> usingWatcher(Watcher watcher)
+    {
+        watching = new Watching(client, watcher);
+        return this;
+    }
+
+    @Override
+    public BackgroundPathable<byte[]> usingWatcher(CuratorWatcher watcher)
     {
         watching = new Watching(client, watcher);
         return this;

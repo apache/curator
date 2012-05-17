@@ -26,15 +26,15 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
+import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.common.PathUtils;
 import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class LockInternals
 {
-    private final Logger                            log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework                  client;
     private final String                            path;
     private final String                            basePath;
@@ -54,21 +53,14 @@ public class LockInternals
     private final LockInternalsDriver               driver;
     private final String                            lockName;
     private final AtomicReference<RevocationSpec>   revocable = new AtomicReference<RevocationSpec>(null);
-    private final Watcher                           revocableWatcher = new Watcher()
+    private final CuratorWatcher                    revocableWatcher = new CuratorWatcher()
     {
         @Override
-        public void process(WatchedEvent event)
+        public void process(WatchedEvent event) throws Exception
         {
-            if ( event.getType() == Event.EventType.NodeDataChanged )
+            if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
             {
-                try
-                {
-                    checkRevocableWatcher(event.getPath());
-                }
-                catch ( Exception e )
-                {
-                    log.error("From RevocableWatcher check", e);
-                }
+                checkRevocableWatcher(event.getPath());
             }
         }
     };
@@ -230,11 +222,11 @@ public class LockInternals
             {
                 if ( localLockNodeBytes != null )
                 {
-                    ourPath = client.create().withProtectedEphemeralSequential().forPath(path, localLockNodeBytes);
+                    ourPath = client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, localLockNodeBytes);
                 }
                 else
                 {
-                    ourPath = client.create().withProtectedEphemeralSequential().forPath(path);
+                    ourPath = client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path);
                 }
                 hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
             }

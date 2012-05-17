@@ -87,8 +87,8 @@ public class CuratorZookeeperClient implements Closeable
      */
     public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
     {
-        retryPolicy = Preconditions.checkNotNull(retryPolicy);
-        ensembleProvider = Preconditions.checkNotNull(ensembleProvider);
+        retryPolicy = Preconditions.checkNotNull(retryPolicy, "retryPolicy cannot be null");
+        ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
 
         this.connectionTimeoutMs = connectionTimeoutMs;
         state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer);
@@ -147,7 +147,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public boolean blockUntilConnectedOrTimedOut() throws InterruptedException
     {
-        Preconditions.checkArgument(started.get());
+        Preconditions.checkState(started.get(), "Client is not started");
 
         log.debug("blockUntilConnectedOrTimedOut() start");
         TimeTrace       trace = startTracer("blockUntilConnectedOrTimedOut");
@@ -206,7 +206,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public void     setRetryPolicy(RetryPolicy policy)
     {
-        Preconditions.checkNotNull(policy);
+        Preconditions.checkNotNull(policy, "policy cannot be null");
 
         retryPolicy.set(policy);
     }

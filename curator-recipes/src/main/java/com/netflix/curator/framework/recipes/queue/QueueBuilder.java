@@ -135,6 +135,26 @@ public class QueueBuilder<T>
     }
 
     /**
+     * <p>Build a {@link DistributedDelayQueue} from the current builder values.</p>
+     *
+     * @return distributed delay queue
+     */
+    public DistributedDelayQueue<T>      buildDelayQueue()
+    {
+        return new DistributedDelayQueue<T>
+        (
+            client,
+            consumer,
+            serializer,
+            queuePath,
+            factory,
+            executor,
+            Integer.MAX_VALUE,
+            lockPath
+        );
+    }
+
+    /**
      * Change the thread factory used. The default is {@link Executors#defaultThreadFactory()}
      *
      * @param factory new thread factory to use
@@ -142,7 +162,7 @@ public class QueueBuilder<T>
      */
     public QueueBuilder<T>  threadFactory(ThreadFactory factory)
     {
-        Preconditions.checkNotNull(factory);
+        Preconditions.checkNotNull(factory, "factory cannot be null");
 
         this.factory = factory;
         return this;
@@ -156,7 +176,7 @@ public class QueueBuilder<T>
      */
     public QueueBuilder<T>  executor(Executor executor)
     {
-        Preconditions.checkNotNull(executor);
+        Preconditions.checkNotNull(executor, "executor cannot be null");
 
         this.executor = executor;
         return this;

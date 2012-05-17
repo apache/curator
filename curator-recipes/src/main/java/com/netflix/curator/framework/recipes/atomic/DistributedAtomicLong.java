@@ -145,7 +145,7 @@ public class DistributedAtomicLong implements DistributedAtomicNumber<Long>
     @VisibleForTesting
     byte[] valueToBytes(Long newValue)
     {
-        Preconditions.checkNotNull(newValue);
+        Preconditions.checkNotNull(newValue, "newValue cannot be null");
 
         byte[]                      newData = new byte[8];
         ByteBuffer wrapper = ByteBuffer.wrap(newData);
@@ -166,7 +166,7 @@ public class DistributedAtomicLong implements DistributedAtomicNumber<Long>
 
     private AtomicValue<Long>   worker(final Long addAmount) throws Exception
     {
-        Preconditions.checkNotNull(addAmount);
+        Preconditions.checkNotNull(addAmount, "addAmount cannot be null");
 
         MakeValue               makeValue = new MakeValue()
         {

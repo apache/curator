@@ -21,12 +21,12 @@ package com.netflix.curator.framework.recipes.shared;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,22 +48,15 @@ public class SharedValue implements Closeable, SharedValueReader
     private final byte[]                    seedValue;
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
 
-    private final Watcher                   watcher = new Watcher()
+    private final CuratorWatcher            watcher = new CuratorWatcher()
     {
         @Override
-        public void process(WatchedEvent event)
+        public void process(WatchedEvent event) throws Exception
         {
-            try
+            if ( state.get() == State.STARTED )
             {
-                if ( state.get() == State.STARTED )
-                {
-                    readValue();
-                    notifyListeners();
-                }
-            }
-            catch ( Exception e )
-            {
-                log.error("From SharedValue process event", e);
+                readValue();
+                notifyListeners();
             }
         }
     };
@@ -114,7 +107,7 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public void setValue(byte[] newValue) throws Exception
     {
-        Preconditions.checkState(state.get() == State.STARTED);
+        Preconditions.checkState(state.get() == State.STARTED, "not started");
 
         client.setData().forPath(path, newValue);
         stat.setVersion(stat.getVersion() + 1);
@@ -134,7 +127,7 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public boolean trySetValue(byte[] newValue) throws Exception
     {
-        Preconditions.checkState(state.get() == State.STARTED);
+        Preconditions.checkState(state.get() == State.STARTED, "not started");
 
         try
         {
@@ -170,7 +163,7 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public void     start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED));
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         try

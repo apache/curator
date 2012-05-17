@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.framework.imps;
 
+import com.netflix.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.Watcher;
 
 class Watching
@@ -31,6 +32,12 @@ class Watching
     }
 
     Watching(CuratorFrameworkImpl client, Watcher watcher)
+    {
+        this.watcher = new NamespaceWatcher(client, watcher);
+        this.watched = false;
+    }
+
+    Watching(CuratorFrameworkImpl client, CuratorWatcher watcher)
     {
         this.watcher = new NamespaceWatcher(client, watcher);
         this.watched = false;

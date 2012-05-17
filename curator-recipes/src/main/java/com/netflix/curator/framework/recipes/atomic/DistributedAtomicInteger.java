@@ -145,7 +145,7 @@ public class DistributedAtomicInteger implements DistributedAtomicNumber<Integer
     @VisibleForTesting
     byte[] valueToBytes(Integer newValue)
     {
-        Preconditions.checkNotNull(newValue);
+        Preconditions.checkNotNull(newValue, "newValue cannot be null");
 
         byte[]                      newData = new byte[4];
         ByteBuffer wrapper = ByteBuffer.wrap(newData);
@@ -166,7 +166,7 @@ public class DistributedAtomicInteger implements DistributedAtomicNumber<Integer
 
     private AtomicValue<Integer>   worker(final Integer addAmount) throws Exception
     {
-        Preconditions.checkNotNull(addAmount);
+        Preconditions.checkNotNull(addAmount, "addAmount cannot be null");
 
         MakeValue               makeValue = new MakeValue()
         {

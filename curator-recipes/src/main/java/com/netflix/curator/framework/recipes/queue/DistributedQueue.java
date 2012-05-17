@@ -123,11 +123,11 @@ public class DistributedQueue<T> implements QueueBase<T>
             String lockPath
         )
     {
-        Preconditions.checkNotNull(client);
-        Preconditions.checkNotNull(serializer);
-        Preconditions.checkNotNull(queuePath);
-        Preconditions.checkNotNull(threadFactory);
-        Preconditions.checkNotNull(executor);
+        Preconditions.checkNotNull(client, "client cannot be null");
+        Preconditions.checkNotNull(serializer, "serializer cannot be null");
+        Preconditions.checkNotNull(queuePath, "queuePath cannot be null");
+        Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
+        Preconditions.checkNotNull(executor, "executor cannot be null");
 
         isProducerOnly = (consumer == null);
         this.lockPath = lockPath;
@@ -226,7 +226,7 @@ public class DistributedQueue<T> implements QueueBase<T>
     @Override
     public void     setErrorMode(ErrorMode newErrorMode)
     {
-        Preconditions.checkNotNull(lockPath);
+        Preconditions.checkNotNull(lockPath, "lockPath cannot be null");
 
         errorMode.set(newErrorMode);
     }
@@ -390,7 +390,12 @@ public class DistributedQueue<T> implements QueueBase<T>
     {
         return client.getChildren().watched().forPath(queuePath);
     }
-    
+
+    protected long getDelay(String itemNode)
+    {
+        return 0;
+    }
+
     protected boolean tryRemove(String itemNode) throws Exception
     {
         boolean     isUsingLockSafety = (lockPath != null);
@@ -420,15 +425,26 @@ public class DistributedQueue<T> implements QueueBase<T>
                 List<String>        children;
                 synchronized(this)
                 {
-                    do
+                    for(;;)
                     {
                         children = getChildren();
                         lastChildCount.set(children.size());
-                        if ( children.size() == 0 )
+                        sortChildren(children); // makes sure items are processed in the correct order
+
+                        long        waitMs = (children.size() > 0) ? getDelay(children.get(0)) : 0;
+                        if ( waitMs > 0 )
+                        {
+                            wait(waitMs);
+                        }
+                        else if ( children.size() == 0 )
                         {
                             wait();
                         }
-                    } while ( children.size() == 0 );
+                        else
+                        {
+                            break;
+                        }
+                    }
 
                     refreshOnWatchSignaled.set(false);
                 }
@@ -450,8 +466,6 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     private void processChildren(List<String> children) throws Exception
     {
-        sortChildren(children); // makes sure items are processed in the order they were added
-
         boolean     isUsingLockSafety = (lockPath != null);
         int         min = minItemsBeforeRefresh;
         for ( String itemNode : children )
@@ -473,6 +487,11 @@ public class DistributedQueue<T> implements QueueBase<T>
                 {
                     break;
                 }
+            }
+
+            if ( getDelay(itemNode) > 0 )
+            {
+                continue;
             }
 
             if ( isUsingLockSafety )

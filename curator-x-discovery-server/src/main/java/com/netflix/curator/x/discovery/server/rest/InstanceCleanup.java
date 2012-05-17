@@ -60,7 +60,7 @@ public class InstanceCleanup implements Closeable
      */
     public void     start()
     {
-        Preconditions.checkArgument(!service.isShutdown());
+        Preconditions.checkArgument(!service.isShutdown(), "already started");
 
         service.submit
         (
@@ -78,7 +78,7 @@ public class InstanceCleanup implements Closeable
     @Override
     public void close() throws IOException
     {
-        Preconditions.checkArgument(!service.isShutdown());
+        Preconditions.checkArgument(!service.isShutdown(), "not started");
         service.shutdownNow();
     }
 

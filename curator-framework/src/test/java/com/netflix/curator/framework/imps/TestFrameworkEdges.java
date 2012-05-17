@@ -30,6 +30,7 @@ import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -53,7 +54,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         {
             CreateBuilderImpl               createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.failNextCreateForTesting = true;
-            String                          ourPath = createBuilder.withProtectedEphemeralSequential().forPath("/");
+            String                          ourPath = createBuilder.withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/");
             Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
             Assert.assertFalse(createBuilder.failNextCreateForTesting);
         }
