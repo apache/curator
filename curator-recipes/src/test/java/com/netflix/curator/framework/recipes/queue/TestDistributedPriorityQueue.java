@@ -180,7 +180,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
             StringBuilder   message = new StringBuilder(e.getMessage());
             for ( int i : nums )
             {
-                message.append(i).append("\t").append(DistributedPriorityQueue.defaultPriorityToString(i)).append("\n");
+                message.append(i).append("\t").append(DistributedPriorityQueue.priorityToString(i)).append("\n");
             }
             Assert.fail(message.toString());
         }
@@ -200,7 +200,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
             Assert.assertNotNull(value);
             if ( i > 0 )
             {
-                Assert.assertTrue(value >= previous, String.format("Value: (%d:%s) Previous: (%d:%s)", value, DistributedPriorityQueue.defaultPriorityToString(value), previous, DistributedPriorityQueue.defaultPriorityToString(previous)));
+                Assert.assertTrue(value >= previous, String.format("Value: (%d:%s) Previous: (%d:%s)", value, DistributedPriorityQueue.priorityToString(value), previous, DistributedPriorityQueue.priorityToString(previous)));
             }
             previous = value;
         }

@@ -390,7 +390,12 @@ public class DistributedQueue<T> implements QueueBase<T>
     {
         return client.getChildren().watched().forPath(queuePath);
     }
-    
+
+    protected long getDelay(List<String> children)
+    {
+        return 0;
+    }
+
     protected boolean tryRemove(String itemNode) throws Exception
     {
         boolean     isUsingLockSafety = (lockPath != null);
@@ -420,15 +425,26 @@ public class DistributedQueue<T> implements QueueBase<T>
                 List<String>        children;
                 synchronized(this)
                 {
-                    do
+                    for(;;)
                     {
                         children = getChildren();
                         lastChildCount.set(children.size());
-                        if ( children.size() == 0 )
+                        sortChildren(children); // makes sure items are processed in the order they were added
+
+                        long        waitMs = getDelay(children);
+                        if ( waitMs > 0 )
+                        {
+                            wait(waitMs);
+                        }
+                        else if ( children.size() == 0 )
                         {
                             wait();
                         }
-                    } while ( children.size() == 0 );
+                        else
+                        {
+                            break;
+                        }
+                    }
 
                     refreshOnWatchSignaled.set(false);
                 }
@@ -450,8 +466,6 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     private void processChildren(List<String> children) throws Exception
     {
-        sortChildren(children); // makes sure items are processed in the order they were added
-
         boolean     isUsingLockSafety = (lockPath != null);
         int         min = minItemsBeforeRefresh;
         for ( String itemNode : children )

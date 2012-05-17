@@ -13,6 +13,8 @@ usingWatcher() methods now can take CuratorWatcher instances.
 * Make the default data for nodes be the local IP address. This helps in debugging and enables
 the deadlock analysis in Exhibitor.
 
+* New recipe added: DistributedDelayQueue
+
 1.1.9/1.0.10 - May, 10 2012
 ===========================
 * Based on suggestion in Issue 67: Added new concept of UriSpec to the ServiceInstance in the

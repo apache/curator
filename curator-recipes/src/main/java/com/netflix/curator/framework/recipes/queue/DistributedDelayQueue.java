@@ -23,22 +23,25 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <p>An implementation of the Distributed Priority Queue ZK recipe.</p>
- * <p>Internally, this uses a {@link DistributedQueue}. The only difference is that you specify a
- * priority when putting into the queue.</p>
- * <p>IMPORTANT NOTE: The priority queue will perform far worse than a standard queue. Every time an
- * item is added to/removed from the queue, every watcher must re-get all the nodes</p>
-s */
-public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
+ * <p>
+ *     A variation of the DistributedPriorityQueue that uses time as the priority. When items
+ *     are added to the queue, a delay value is given. The item will not be sent to a consumer
+ *     until the time elapses.
+ * </p>
+ */
+public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
 {
     private final DistributedQueue<T>      queue;
 
-    DistributedPriorityQueue
+    private static final String            SEPARATOR = "|";
+
+    DistributedDelayQueue
         (
             CuratorFramework client,
             QueueConsumer<T> consumer,
@@ -47,7 +50,8 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             ThreadFactory threadFactory,
             Executor executor,
             int minItemsBeforeRefresh,
-            String lockPath)
+            String lockPath
+        )
     {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0, "minItemsBeforeRefresh cannot be negative");
 
@@ -62,7 +66,18 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             minItemsBeforeRefresh,
             true,
             lockPath
-        );
+        )
+        {
+            protected long getDelay(List<String> children)
+            {
+                if ( children.size() > 0 )
+                {
+                    long epoch = getEpoch(children.get(0));
+                    return epoch - System.currentTimeMillis();
+                }
+                return 0;
+            }
+        };
     }
 
     /**
@@ -87,15 +102,16 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * return quickly.
      *
      * @param item item to add
-     * @param priority item's priority - lower numbers come out of the queue first
+     * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
      * @throws Exception connection issues
      */
-    public void     put(T item, int priority) throws Exception
+    public void     put(T item, long delayUntilEpoch) throws Exception
     {
+        Preconditions.checkArgument(delayUntilEpoch > 0, "delayUntilEpoch cannot be negative");
+
         queue.checkState();
 
-        String      priorityHex = priorityToString(priority);
-        queue.internalPut(item, null, queue.makeItemPath() + priorityHex);
+        queue.internalPut(item, null, queue.makeItemPath() + epochToString(delayUntilEpoch));
     }
 
     /**
@@ -103,15 +119,16 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * return quickly.
      *
      * @param items items to add
-     * @param priority item priority - lower numbers come out of the queue first
+     * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
      * @throws Exception connection issues
      */
-    public void     putMulti(MultiItem<T> items, int priority) throws Exception
+    public void     putMulti(MultiItem<T> items, long delayUntilEpoch) throws Exception
     {
+        Preconditions.checkArgument(delayUntilEpoch > 0, "delayUntilEpoch cannot be negative");
+
         queue.checkState();
 
-        String      priorityHex = priorityToString(priority);
-        queue.internalPut(null, items, queue.makeItemPath() + priorityHex);
+        queue.internalPut(null, items, queue.makeItemPath() + epochToString(delayUntilEpoch));
     }
 
     @Override
@@ -150,11 +167,27 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
     }
 
     @VisibleForTesting
-    static String priorityToString(int priority)
+    static String epochToString(long epoch)
     {
-        // the padded hex val of the number prefixed with a 0 for negative numbers
-        // and a 1 for positive (so that it sorts correctly)
-        long        l = (long)priority & 0xFFFFFFFFL;
-        return String.format("%s%08X", (priority >= 0) ? "1" : "0", l);
+        return SEPARATOR + String.format("%08X", epoch) + SEPARATOR;
+    }
+
+    private long getEpoch(String itemNode)
+    {
+        int     index2 = itemNode.lastIndexOf(SEPARATOR);
+        int     index1 = (index2 > 0) ? itemNode.lastIndexOf(SEPARATOR, index2 - 1) : -1;
+        if ( (index1 > 0) && (index2 > (index1 + 1)) )
+        {
+            try
+            {
+                String  epochStr = itemNode.substring(index1 + 1, index2);
+                return Long.parseLong(epochStr, 16);
+            }
+            catch ( NumberFormatException ignore )
+            {
+                // ignore
+            }
+        }
+        return 0;
     }
 }
