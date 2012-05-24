@@ -126,6 +126,18 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             }
 
             @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
+            {
+                return CreateBuilderImpl.this.inBackground(callback, context);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            {
+                return CreateBuilderImpl.this.inBackground(callback, context, executor);
+            }
+
+            @Override
             public PathAndBytesable<String> inBackground()
             {
                 return CreateBuilderImpl.this.inBackground();
@@ -185,6 +197,18 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             public PathAndBytesable<String> inBackground()
             {
                 return CreateBuilderImpl.this.inBackground();
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
+            {
+                return CreateBuilderImpl.this.inBackground(callback, context);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            {
+                return CreateBuilderImpl.this.inBackground(callback, context, executor);
             }
 
             @Override
@@ -265,6 +289,20 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode)
     {
         createMode = mode;
+        return this;
+    }
+
+    @Override
+    public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
+    {
+        backgrounding = new Backgrounding(callback, context);
+        return this;
+    }
+
+    @Override
+    public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    {
+        backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 

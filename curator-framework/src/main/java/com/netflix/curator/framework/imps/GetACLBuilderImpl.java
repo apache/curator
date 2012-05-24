@@ -45,6 +45,20 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>
     }
 
     @Override
+    public Pathable<List<ACL>> inBackground(BackgroundCallback callback, Object context)
+    {
+        backgrounding = new Backgrounding(callback, context);
+        return this;
+    }
+
+    @Override
+    public Pathable<List<ACL>> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    {
+        backgrounding = new Backgrounding(client, callback, context, executor);
+        return this;
+    }
+
+    @Override
     public Pathable<List<ACL>> inBackground()
     {
         backgrounding = new Backgrounding(true);
