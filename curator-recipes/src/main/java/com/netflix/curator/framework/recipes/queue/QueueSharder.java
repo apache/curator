@@ -164,7 +164,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     {
         Preconditions.checkState(state.get() == State.STARTED, "Not started");
 
-        int         index = nextIndex.incrementAndGet();
+        int         index = Math.abs(nextIndex.incrementAndGet());
         return queues.get(index % queues.size());
     }
 
