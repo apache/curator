@@ -155,7 +155,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     }
 
     /**
-     * Return one of the managed queues - the selection method cannot be relied one. It should
+     * Return one of the managed queues - the selection method cannot be relied on. It should
      * be considered a random managed queue.
      *
      * @return a queue
