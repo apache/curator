@@ -1,3 +1,12 @@
+1.1.11/1.0.12 - xxxxxxxxxxxx
+============================
+* Added some missing combinations in the backgrounding API
+
+* Added QueueSharder utility. Due to limitations in ZooKeeper's transport layer, a single queue
+will break if it has more than 10K-ish items in it. This class provides a facade over multiple
+distributed queues. It monitors the queues and if any one of them goes over a threshold, a new
+queue is added. Puts are distributed amongst the queues.
+
 1.1.10/1.0.11 - May 17, 2012
 ============================
 * Generalized the ProtectedEphemeralSequential so that it works with any create mode.

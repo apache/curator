@@ -41,7 +41,7 @@ public class QueueBuilder<T>
     private Executor executor;
     private String lockPath;
 
-    private static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
+    static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
 
     /**
      * Allocate a new builder
