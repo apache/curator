@@ -466,9 +466,9 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     private void processChildren(List<String> children) throws Exception
     {
-        boolean     isUsingLockSafety = (lockPath != null);
-        int         min = minItemsBeforeRefresh;
-        for ( String itemNode : children )
+        final boolean   isUsingLockSafety = (lockPath != null);
+        int             min = minItemsBeforeRefresh;
+        for ( final String itemNode : children )
         {
             if ( Thread.currentThread().isInterrupted() )
             {
@@ -494,14 +494,31 @@ public class DistributedQueue<T> implements QueueBase<T>
                 continue;
             }
 
-            if ( isUsingLockSafety )
-            {
-                processWithLockSafety(itemNode, ProcessType.NORMAL);
-            }
-            else
-            {
-                processNormally(itemNode, ProcessType.NORMAL);
-            }
+            executor.execute
+            (
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            if ( isUsingLockSafety )
+                            {
+                                processWithLockSafety(itemNode, ProcessType.NORMAL);
+                            }
+                            else
+                            {
+                                processNormally(itemNode, ProcessType.NORMAL);
+                            }
+                        }
+                        catch ( Exception e )
+                        {
+                            log.error("Error processing message at " + itemNode, e);
+                        }
+                    }
+                }
+            );
         }
     }
 
