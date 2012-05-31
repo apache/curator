@@ -1,21 +1,33 @@
 package com.netflix.curator.framework.recipes.queue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.framework.recipes.leader.LeaderSelector;
 import com.netflix.curator.framework.recipes.leader.LeaderSelectorListener;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -43,12 +55,24 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     private final CuratorFramework          client;
     private final QueueAllocator<U, T>      queueAllocator;
     private final String                    queuePath;
-    private final int                       newQueueThreshold;
-    private final int                       thresholdCheckMs;
-    private final List<T>                   queues = new CopyOnWriteArrayList<T>();
-    private final AtomicInteger             nextIndex = new AtomicInteger();
+    private final QueueSharderPolicies      policies;
+    private final ConcurrentMap<String, T>  queues = Maps.newConcurrentMap();
+    private final Set<String>               preferredQueues = Sets.newSetFromMap(Maps.<String, Boolean>newConcurrentMap());
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final LeaderSelector            leaderSelector;
+    private final AtomicBoolean             isLeader = new AtomicBoolean(false);
+    private final Random                    random = new Random();
+    private final ExecutorService           service;
+
+    private final CuratorWatcher            watcher = new CuratorWatcher()
+    {
+        @Override
+        public void process(WatchedEvent event) throws Exception
+        {
+            updateQueues();
+        }
+    };
+
     @SuppressWarnings("FieldCanBeLocal")
     private final LeaderSelectorListener    listener = new LeaderSelectorListener()
     {
@@ -57,15 +81,16 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         {
             try
             {
-                while ( !Thread.currentThread().isInterrupted() )
-                {
-                    Thread.sleep(thresholdCheckMs);
-                    checkThreshold();
-                }
+                isLeader.set(true);
+                Thread.currentThread().join();
             }
             catch ( InterruptedException e )
             {
                 Thread.currentThread().interrupt();
+            }
+            finally
+            {
+                isLeader.set(false);
             }
         }
 
@@ -77,8 +102,6 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
 
     private static final String         QUEUE_PREFIX = "queue-";
 
-    private static final int            DEFAULT_THRESHOLD_CHECK_MS = 60000;
-
     private enum State
     {
         LATENT,
@@ -87,35 +110,20 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     }
 
     /**
-     * @param client the client
-     * @param queueAllocator used to allocate new queues
-     * @param queuePath the path to use to hold the queues
-     * @param leaderPath a path for a leader selector - used to monitor the threshold
-     * @param newQueueThreshold the threshold at which to add new queues. i.e. if any queue gets
-     *                          to this number of items, a new queue will be added
+     * @param client client
+     * @param queueAllocator allocator for new queues
+     * @param queuePath path for the queues
+     * @param leaderPath path for the leader that monitors queue sizes (must be different than queuePath)
+     * @param policies sharding policies
      */
-    public QueueSharder(CuratorFramework client, QueueAllocator<U, T> queueAllocator, String queuePath, String leaderPath, int newQueueThreshold)
-    {
-        this(client, queueAllocator, queuePath, leaderPath, newQueueThreshold, DEFAULT_THRESHOLD_CHECK_MS);
-    }
-
-    /**
-     * @param client the client
-     * @param queueAllocator used to allocate new queues
-     * @param queuePath the path to use to hold the queues
-     * @param leaderPath a path for a leader selector - used to monitor the threshold
-     * @param newQueueThreshold the threshold at which to add new queues. i.e. if any queue gets
-     *                          to this number of items, a new queue will be added
-     * @param thresholdCheckMs how often to monitor for thresholds
-     */
-    public QueueSharder(CuratorFramework client, QueueAllocator<U, T> queueAllocator, String queuePath, String leaderPath, int newQueueThreshold, int thresholdCheckMs)
+    public QueueSharder(CuratorFramework client, QueueAllocator<U, T> queueAllocator, String queuePath, String leaderPath, QueueSharderPolicies policies)
     {
         this.client = client;
         this.queueAllocator = queueAllocator;
         this.queuePath = queuePath;
-        this.newQueueThreshold = newQueueThreshold;
-        this.thresholdCheckMs = thresholdCheckMs;
+        this.policies = policies;
         leaderSelector = new LeaderSelector(client, leaderPath, listener);
+        service = Executors.newSingleThreadExecutor(policies.getThreadFactory());
     }
 
     /**
@@ -129,8 +137,32 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
 
         client.newNamespaceAwareEnsurePath(queuePath).ensure(client.getZookeeperClient());
 
-        loadExistingQueues();
+        updateQueues();
         leaderSelector.start();
+
+        service.submit
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    try
+                    {
+                        while ( !Thread.currentThread().isInterrupted() )
+                        {
+                            Thread.sleep(policies.getThresholdCheckMs());
+                            checkThreshold();
+                        }
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                    return null;
+                }
+            }
+        );
     }
 
     @Override
@@ -138,9 +170,10 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
+            service.shutdownNow();
             Closeables.closeQuietly(leaderSelector);
 
-            for ( T queue : queues )
+            for ( T queue : queues.values() )
             {
                 try
                 {
@@ -164,8 +197,16 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     {
         Preconditions.checkState(state.get() == State.STARTED, "Not started");
 
-        int         index = Math.abs(nextIndex.incrementAndGet());
-        return queues.get(index % queues.size());
+        List<String>    localPreferredQueues = Lists.newArrayList(preferredQueues);
+        if ( localPreferredQueues.size() > 0 )
+        {
+            String      key = localPreferredQueues.get(random.nextInt(localPreferredQueues.size()));
+            return queues.get(key);
+        }
+
+        List<String>    keys = Lists.newArrayList(queues.keySet());
+        String          key = keys.get(random.nextInt(keys.size()));
+        return queues.get(key);
     }
 
     /**
@@ -178,30 +219,39 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         return queues.size();
     }
 
-    private void loadExistingQueues() throws Exception
+    @VisibleForTesting
+    Collection<String>  getQueuePaths()
     {
-        List<String>        children = client.getChildren().forPath(queuePath);
+        return queues.keySet();
+    }
+
+    private void updateQueues() throws Exception
+    {
+        List<String>        children = client.getChildren().usingWatcher(watcher).forPath(queuePath);
         for ( String child : children )
         {
             String              queuePath = ZKPaths.makePath(this.queuePath, child);
-            addNewQueue(queuePath);
+            addNewQueueIfNeeded(queuePath);
         }
 
         if ( children.size() == 0 )
         {
-            addNewQueue(null);
+            addNewQueueIfNeeded(null);
         }
     }
 
-    private void addNewQueue(String newQueuePath) throws Exception
+    private void addNewQueueIfNeeded(String newQueuePath) throws Exception
     {
         if ( newQueuePath == null )
         {
             newQueuePath = ZKPaths.makePath(queuePath, QUEUE_PREFIX + UUID.randomUUID().toString());
         }
         T                   queue = queueAllocator.allocateQueue(client, newQueuePath);
-        queues.add(queue);
-        queue.start();
+        if ( queues.putIfAbsent(newQueuePath, queue) == null )
+        {
+            queue.start();
+            preferredQueues.add(newQueuePath);
+        }
     }
 
     private void checkThreshold()
@@ -215,19 +265,33 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
             {
                 String  queuePath = ZKPaths.makePath(this.queuePath, child);
                 Stat    stat = client.checkExists().forPath(queuePath);
-                if ( stat.getNumChildren() >= newQueueThreshold )
+                if ( stat.getNumChildren() >= policies.getNewQueueThreshold() )
                 {
-                    size = stat.getNumChildren();
-                    addAQueue = true;
-                    break;
+                    if ( preferredQueues.contains(queuePath) )  // otherwise a queue has already been added for this
+                    {
+                        size = stat.getNumChildren();
+                        addAQueue = true;
+                        preferredQueues.remove(queuePath);
+                    }
+                }
+                else if ( stat.getNumChildren() <= (policies.getNewQueueThreshold() / 2) )
+                {
+                    preferredQueues.add(queuePath);
                 }
             }
 
-            if ( addAQueue )
+            if ( addAQueue && isLeader.get() )
             {
-                log.info(String.format("Adding a queue due to exceeded threshold. Queue Size: %d - Threshold: %d", size, newQueueThreshold));
+                if ( queues.size() < policies.getMaxQueues() )
+                {
+                    log.info(String.format("Adding a queue due to exceeded threshold. Queue Size: %d - Threshold: %d", size, policies.getNewQueueThreshold()));
 
-                addNewQueue(null);
+                    addNewQueueIfNeeded(null);
+                }
+                else
+                {
+                    log.warn(String.format("Max number of queues (%d) reached. Consider increasing the max.", policies.getMaxQueues()));
+                }
             }
         }
         catch ( Exception e )
