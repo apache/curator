@@ -7,10 +7,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.framework.recipes.leader.LeaderLatch;
 import com.netflix.curator.utils.ZKPaths;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,15 +58,6 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     private final Random                    random = new Random();
     private final ExecutorService           service;
 
-    private final CuratorWatcher            watcher = new CuratorWatcher()
-    {
-        @Override
-        public void process(WatchedEvent event) throws Exception
-        {
-            updateQueues();
-        }
-    };
-
     private static final String         QUEUE_PREFIX = "queue-";
 
     private enum State
@@ -106,7 +95,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
 
         client.newNamespaceAwareEnsurePath(queuePath).ensure(client.getZookeeperClient());
 
-        updateQueues();
+        getInitialQueues();
         leaderLatch.start();
 
         service.submit
@@ -194,9 +183,9 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         return queues.keySet();
     }
 
-    private void updateQueues() throws Exception
+    private void getInitialQueues() throws Exception
     {
-        List<String>        children = client.getChildren().usingWatcher(watcher).forPath(queuePath);
+        List<String>        children = client.getChildren().forPath(queuePath);
         for ( String child : children )
         {
             String              queuePath = ZKPaths.makePath(this.queuePath, child);
@@ -233,6 +222,8 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
             for ( String child : children )
             {
                 String  queuePath = ZKPaths.makePath(this.queuePath, child);
+                addNewQueueIfNeeded(queuePath);
+
                 Stat    stat = client.checkExists().forPath(queuePath);
                 if ( stat.getNumChildren() >= policies.getNewQueueThreshold() )
                 {
