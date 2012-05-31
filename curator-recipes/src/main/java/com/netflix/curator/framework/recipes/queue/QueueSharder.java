@@ -8,9 +8,7 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorWatcher;
-import com.netflix.curator.framework.recipes.leader.LeaderSelector;
-import com.netflix.curator.framework.recipes.leader.LeaderSelectorListener;
-import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.recipes.leader.LeaderLatch;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.Stat;
@@ -27,7 +25,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -59,8 +56,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     private final ConcurrentMap<String, T>  queues = Maps.newConcurrentMap();
     private final Set<String>               preferredQueues = Sets.newSetFromMap(Maps.<String, Boolean>newConcurrentMap());
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
-    private final LeaderSelector            leaderSelector;
-    private final AtomicBoolean             isLeader = new AtomicBoolean(false);
+    private final LeaderLatch               leaderLatch;
     private final Random                    random = new Random();
     private final ExecutorService           service;
 
@@ -70,33 +66,6 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         public void process(WatchedEvent event) throws Exception
         {
             updateQueues();
-        }
-    };
-
-    @SuppressWarnings("FieldCanBeLocal")
-    private final LeaderSelectorListener    listener = new LeaderSelectorListener()
-    {
-        @Override
-        public void takeLeadership(CuratorFramework client) throws Exception
-        {
-            try
-            {
-                isLeader.set(true);
-                Thread.currentThread().join();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-            }
-            finally
-            {
-                isLeader.set(false);
-            }
-        }
-
-        @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
         }
     };
 
@@ -122,7 +91,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         this.queueAllocator = queueAllocator;
         this.queuePath = queuePath;
         this.policies = policies;
-        leaderSelector = new LeaderSelector(client, leaderPath, listener);
+        leaderLatch = new LeaderLatch(client, leaderPath);
         service = Executors.newSingleThreadExecutor(policies.getThreadFactory());
     }
 
@@ -138,7 +107,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         client.newNamespaceAwareEnsurePath(queuePath).ensure(client.getZookeeperClient());
 
         updateQueues();
-        leaderSelector.start();
+        leaderLatch.start();
 
         service.submit
         (
@@ -171,7 +140,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
             service.shutdownNow();
-            Closeables.closeQuietly(leaderSelector);
+            Closeables.closeQuietly(leaderLatch);
 
             for ( T queue : queues.values() )
             {
@@ -280,7 +249,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
                 }
             }
 
-            if ( addAQueue && isLeader.get() )
+            if ( addAQueue && leaderLatch.hasLeadership() )
             {
                 if ( queues.size() < policies.getMaxQueues() )
                 {
