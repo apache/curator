@@ -55,7 +55,7 @@ public class TestQueueSharder extends BaseClassForTests
                 sharder.getQueue().put(Integer.toString(i));
                 Thread.sleep(1);
             }
-            timing.sleepABit();
+            timing.forWaiting().sleepABit();
 
             SummaryStatistics       statistics = new SummaryStatistics();
             for ( String path : sharder.getQueuePaths() )
@@ -67,11 +67,10 @@ public class TestQueueSharder extends BaseClassForTests
             latch.countDown();
 
             Assert.assertTrue(statistics.getMean() >= (threshold * .9));
-
-            timing.sleepABit(); // let queue clear
         }
         finally
         {
+            timing.sleepABit(); // let queue clear
             Closeables.closeQuietly(sharder);
             Closeables.closeQuietly(client);
         }
@@ -99,14 +98,15 @@ public class TestQueueSharder extends BaseClassForTests
             {
                 sharder1.getQueue().put(Integer.toString(i));
             }
-            timing.sleepABit();
+            timing.forWaiting().sleepABit();
 
             Assert.assertTrue((sharder1.getShardQty() > 1) || (sharder2.getShardQty() > 1));
-            timing.sleepABit();
+            timing.forWaiting().sleepABit();
             Assert.assertEquals(sharder1.getShardQty(), sharder2.getShardQty());
         }
         finally
         {
+            timing.sleepABit(); // let queues clear
             Closeables.closeQuietly(sharder1);
             Closeables.closeQuietly(sharder2);
             Closeables.closeQuietly(client);
