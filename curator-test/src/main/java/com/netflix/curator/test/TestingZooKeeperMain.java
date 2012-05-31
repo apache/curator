@@ -51,7 +51,22 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     public void blockUntilStarted() throws Exception
     {
         latch.await();
-        Thread.sleep(100);
+
+        ServerCnxnFactory   cnxnFactory = getServerConnectionFactory();
+        if ( cnxnFactory != null )
+        {
+            ZooKeeperServer     zkServer = getZooKeeperServer(cnxnFactory);
+            if ( zkServer != null )
+            {
+                synchronized ( zkServer )
+                {
+                    if ( !zkServer.isRunning() )
+                    {
+                        zkServer.wait();
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -61,20 +76,18 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
 
         try
         {
-            Field               cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
-            cnxnFactoryField.setAccessible(true);
-            ServerCnxnFactory   cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
-
-            Field               zkServerField = ServerCnxnFactory.class.getDeclaredField("zkServer");
-            zkServerField.setAccessible(true);
-            ZooKeeperServer     zkServer = (ZooKeeperServer)zkServerField.get(cnxnFactory);
-            if ( zkServer != null ) 
+            ServerCnxnFactory   cnxnFactory = getServerConnectionFactory();
+            if ( cnxnFactory != null )
             {
-                ZKDatabase      zkDb = zkServer.getZKDatabase();
-                if ( zkDb != null )
+                ZooKeeperServer     zkServer = getZooKeeperServer(cnxnFactory);
+                if ( zkServer != null )
                 {
-                    // make ZK server close its log files
-                    zkDb.close();
+                    ZKDatabase      zkDb = zkServer.getZKDatabase();
+                    if ( zkDb != null )
+                    {
+                        // make ZK server close its log files
+                        zkDb.close();
+                    }
                 }
             }
         }
@@ -82,5 +95,39 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         {
             e.printStackTrace();
         }
+    }
+
+    private ServerCnxnFactory getServerConnectionFactory() throws Exception
+    {
+        Field               cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
+        cnxnFactoryField.setAccessible(true);
+        ServerCnxnFactory   cnxnFactory;
+
+        // Wait until the cnxnFactory field is non-null or up to 1s, whichever comes first.
+        long startTime = System.currentTimeMillis();
+        do
+        {
+            cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
+        }
+        while ( cnxnFactory == null && System.currentTimeMillis() - startTime < 1000 );
+
+        return cnxnFactory;
+    }
+
+    private ZooKeeperServer getZooKeeperServer(ServerCnxnFactory cnxnFactory) throws Exception
+    {
+        Field               zkServerField = ServerCnxnFactory.class.getDeclaredField("zkServer");
+        zkServerField.setAccessible(true);
+        ZooKeeperServer     zkServer;
+
+        // Wait until the zkServer field is non-null or up to 1s, whichever comes first.
+        long startTime = System.currentTimeMillis();
+        do
+        {
+            zkServer = (ZooKeeperServer)zkServerField.get(cnxnFactory);
+        }
+        while ( zkServer == null && System.currentTimeMillis() - startTime < 1000 );
+
+        return zkServer;
     }
 }
