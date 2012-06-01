@@ -68,6 +68,18 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
             }
 
             @Override
+            public Pathable<byte[]> inBackground(BackgroundCallback callback, Object context)
+            {
+                return GetDataBuilderImpl.this.inBackground(callback, context);
+            }
+
+            @Override
+            public Pathable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            {
+                return GetDataBuilderImpl.this.inBackground(callback, context, executor);
+            }
+
+            @Override
             public Pathable<byte[]> inBackground(Object context)
             {
                 return GetDataBuilderImpl.this.inBackground(context);
@@ -153,6 +165,20 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
     }
 
     @Override
+    public Pathable<byte[]> inBackground(BackgroundCallback callback, Object context)
+    {
+        backgrounding = new Backgrounding(callback, context);
+        return this;
+    }
+
+    @Override
+    public Pathable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    {
+        backgrounding = new Backgrounding(client, callback, context, executor);
+        return this;
+    }
+
+    @Override
     public Pathable<byte[]> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
@@ -211,7 +237,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
             {
                 trace.commit();
-                if ( decompress )
+                if ( decompress && (data != null) )
                 {
                     try
                     {

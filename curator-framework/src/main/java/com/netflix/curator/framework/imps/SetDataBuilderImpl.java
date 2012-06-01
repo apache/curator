@@ -59,6 +59,18 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
             }
 
             @Override
+            public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context)
+            {
+                return SetDataBuilderImpl.this.inBackground(callback, context);
+            }
+
+            @Override
+            public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            {
+                return SetDataBuilderImpl.this.inBackground(callback, context, executor);
+            }
+
+            @Override
             public PathAndBytesable<Stat> inBackground(Object context)
             {
                 return SetDataBuilderImpl.this.inBackground(context);
@@ -100,6 +112,20 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
     public BackgroundPathAndBytesable<Stat> withVersion(int version)
     {
         this.version = version;
+        return this;
+    }
+
+    @Override
+    public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context)
+    {
+        backgrounding = new Backgrounding(callback, context);
+        return this;
+    }
+
+    @Override
+    public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    {
+        backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 

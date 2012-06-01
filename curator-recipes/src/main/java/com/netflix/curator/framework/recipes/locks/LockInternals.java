@@ -23,9 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.CuratorEvent;
-import com.netflix.curator.framework.api.CuratorEventType;
-import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
@@ -48,7 +45,6 @@ public class LockInternals
     private final CuratorFramework                  client;
     private final String                            path;
     private final String                            basePath;
-    private final CuratorListener                   listener;
     private final EnsurePath                        ensurePath;
     private final LockInternalsDriver               driver;
     private final String                            lockName;
@@ -111,21 +107,6 @@ public class LockInternals
         this.path = ZKPaths.makePath(path, lockName);
 
         ensurePath = client.newNamespaceAwareEnsurePath(basePath);
-
-        listener = new CuratorListener()
-        {
-            @Override
-            public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-            {
-                if ( event.getType() == CuratorEventType.WATCHED )
-                {
-                    if ( event.getWatchedEvent().getState() != Watcher.Event.KeeperState.SyncConnected )
-                    {
-                        notifyFromWatcher();
-                    }
-                }
-            }
-        };
     }
 
     synchronized void setMaxLeases(int maxLeases)
@@ -142,7 +123,6 @@ public class LockInternals
     void releaseLock(String lockPath) throws Exception
     {
         revocable.set(null);
-        client.getCuratorListenable().removeListener(listener);
         client.delete().guaranteed().forPath(lockPath);
     }
 
@@ -218,6 +198,7 @@ public class LockInternals
         while ( !isDone )
         {
             isDone = true;
+
             try
             {
                 if ( localLockNodeBytes != null )
@@ -237,10 +218,6 @@ public class LockInternals
                 if ( client.getZookeeperClient().getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMillis) )
                 {
                     isDone = false;
-                    if ( ourPath != null )
-                    {
-                        client.delete().inBackground().forPath(ourPath);    // just in case
-                    }
                 }
                 else
                 {
@@ -251,7 +228,6 @@ public class LockInternals
 
         if ( hasTheLock )
         {
-            client.getCuratorListenable().addListener(listener);
             return ourPath;
         }
 
@@ -329,11 +305,6 @@ public class LockInternals
                     // else it may have been deleted (i.e. lock released). Try to acquire again
                 }
             }
-        }
-        catch ( KeeperException e )
-        {
-            // ignore this and let the retry policy handle it
-            throw e;
         }
         catch ( Exception e )
         {

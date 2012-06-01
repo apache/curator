@@ -61,6 +61,20 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
     }
 
     @Override
+    public Pathable<Void> inBackground(BackgroundCallback callback, Object context)
+    {
+        backgrounding = new Backgrounding(callback, context);
+        return this;
+    }
+
+    @Override
+    public Pathable<Void> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    {
+        backgrounding = new Backgrounding(client, callback, context, executor);
+        return this;
+    }
+
+    @Override
     public Pathable<Void> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);

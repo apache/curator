@@ -24,6 +24,9 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.shared.SharedCountListener;
 import com.netflix.curator.framework.recipes.shared.SharedCountReader;
 import com.netflix.curator.framework.state.ConnectionState;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +62,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class InterProcessSemaphore
 {
+    private final Logger        log = LoggerFactory.getLogger(getClass());
     private final LockInternals internals;
 
     private static final String     LOCK_NAME = "lock-";
@@ -258,6 +262,10 @@ public class InterProcessSemaphore
                 try
                 {
                     internals.releaseLock(path);
+                }
+                catch ( KeeperException.NoNodeException e )
+                {
+                    log.warn("Lease already released", e);
                 }
                 catch ( Exception e )
                 {

@@ -47,7 +47,8 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             ThreadFactory threadFactory,
             Executor executor,
             int minItemsBeforeRefresh,
-            String lockPath)
+            String lockPath
+        )
     {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0, "minItemsBeforeRefresh cannot be negative");
 

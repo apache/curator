@@ -49,6 +49,18 @@ class Backgrounding
         this.callback = null;
     }
 
+    Backgrounding(BackgroundCallback callback, Object context)
+    {
+        this.inBackground = true;
+        this.context = context;
+        this.callback = callback;
+    }
+
+    Backgrounding(CuratorFrameworkImpl client, BackgroundCallback callback, Object context, Executor executor)
+    {
+        this(wrapCallback(client, callback, executor), context);
+    }
+
     Backgrounding(CuratorFrameworkImpl client, BackgroundCallback callback, Executor executor)
     {
         this(wrapCallback(client, callback, executor));

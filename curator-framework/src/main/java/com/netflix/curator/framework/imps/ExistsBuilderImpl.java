@@ -67,6 +67,20 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
     }
 
     @Override
+    public Pathable<Stat> inBackground(BackgroundCallback callback, Object context)
+    {
+        backgrounding = new Backgrounding(callback, context);
+        return this;
+    }
+
+    @Override
+    public Pathable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    {
+        backgrounding = new Backgrounding(client, callback, context, executor);
+        return this;
+    }
+
+    @Override
     public Pathable<Stat> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);

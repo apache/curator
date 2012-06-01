@@ -83,6 +83,20 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
     }
 
     @Override
+    public Pathable<Stat> inBackground(BackgroundCallback callback, Object context)
+    {
+        backgrounding = new Backgrounding(callback, context);
+        return this;
+    }
+
+    @Override
+    public Pathable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    {
+        backgrounding = new Backgrounding(client, callback, context, executor);
+        return this;
+    }
+
+    @Override
     public Pathable<Stat> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
