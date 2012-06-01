@@ -1,4 +1,4 @@
-1.1.11/1.0.12 - xxxxxxxxxxxx
+1.1.11/1.0.12 - June 1, 2012
 ============================
 * MAJOR BUG FIX!!!! Many of the Curator recipes rely on the internal class LockInternals. It has
 a bug that exhibits when the ZooKeeper cluster is unstable. There is an edge case that causes
@@ -12,6 +12,11 @@ condition.
 will break if it has more than 10K-ish items in it. This class provides a facade over multiple
 distributed queues. It monitors the queues and if any one of them goes over a threshold, a new
 queue is added. Puts are distributed amongst the queues.
+
+* Issue 80: Check for null data before decompressing data in getData().
+
+* Merge from user bbeck - enhanced the testing in-memory ZK server to handle some edge cases. A nice
+benefit is that it starts up faster. Thanks Brandon!
 
 1.1.10/1.0.11 - May 17, 2012
 ============================
