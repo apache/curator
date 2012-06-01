@@ -15,6 +15,8 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
 {
     private final CountDownLatch        latch = new CountDownLatch(1);
 
+    private static final int MAX_WAIT_MS = 1000;
+
     @Override
     public void kill()
     {
@@ -34,7 +36,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
+            e.printStackTrace();    // just ignore - this class is only for testing
         }
     }
 
@@ -47,6 +49,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         super.runFromConfig(serverConfig);
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override
     public void blockUntilStarted() throws Exception
     {
@@ -55,7 +58,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         ServerCnxnFactory   cnxnFactory = getServerConnectionFactory();
         if ( cnxnFactory != null )
         {
-            ZooKeeperServer     zkServer = getZooKeeperServer(cnxnFactory);
+            final ZooKeeperServer     zkServer = getZooKeeperServer(cnxnFactory);
             if ( zkServer != null )
             {
                 synchronized ( zkServer )
@@ -93,7 +96,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
+            e.printStackTrace();    // just ignore - this class is only for testing
         }
     }
 
@@ -109,7 +112,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         {
             cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
         }
-        while ( cnxnFactory == null && System.currentTimeMillis() - startTime < 1000 );
+        while ( (cnxnFactory == null) && ((System.currentTimeMillis() - startTime) < MAX_WAIT_MS) );
 
         return cnxnFactory;
     }
@@ -126,7 +129,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         {
             zkServer = (ZooKeeperServer)zkServerField.get(cnxnFactory);
         }
-        while ( zkServer == null && System.currentTimeMillis() - startTime < 1000 );
+        while ( (zkServer == null) && ((System.currentTimeMillis() - startTime) < MAX_WAIT_MS) );
 
         return zkServer;
     }
