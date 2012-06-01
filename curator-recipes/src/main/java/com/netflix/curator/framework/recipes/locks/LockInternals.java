@@ -198,6 +198,7 @@ public class LockInternals
         while ( !isDone )
         {
             isDone = true;
+
             try
             {
                 if ( localLockNodeBytes != null )
@@ -212,8 +213,6 @@ public class LockInternals
             }
             catch ( KeeperException.NoNodeException e )
             {
-                client.delete().guaranteed().forPath(ourPath);
-
                 // gets thrown by StandardLockInternalsDriver when it can't find the lock node
                 // this can happen when the session expires, etc. So, if the retry allows, just try it all again
                 if ( client.getZookeeperClient().getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMillis) )
