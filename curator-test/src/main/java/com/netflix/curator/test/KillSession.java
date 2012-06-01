@@ -48,7 +48,7 @@ public class KillSession
      */
     public static void     kill(ZooKeeper client, String connectString) throws Exception
     {
-        kill(client, connectString, 10000);
+        kill(client, connectString, new Timing().forWaiting().milliseconds());
     }
 
     /**

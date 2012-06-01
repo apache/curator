@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class TestInterProcessSemaphoreEdges extends BaseClassForTests
 {
@@ -27,7 +28,7 @@ public class TestInterProcessSemaphoreEdges extends BaseClassForTests
 
         final Timing                        timing = new Timing();
         ExecutorService                     executor = Executors.newCachedThreadPool();
-        CuratorFramework                    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.milliseconds(), 3));
+        CuratorFramework                    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.milliseconds(), 100));  // retry until it succeeds
         final InterProcessSemaphore         semaphore = new InterProcessSemaphore(client, "/test", 1);
         try
         {
@@ -69,7 +70,14 @@ public class TestInterProcessSemaphoreEdges extends BaseClassForTests
 
             for ( int i = 0; i < QTY; ++i )
             {
-                completionService.take().get();   // should all complete without an exception
+                try
+                {
+                    completionService.take().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);   // should all complete without an exception
+                }
+                catch ( TimeoutException e )
+                {
+                    Assert.fail("Timed out waiting for latch to re-acquire");
+                }
             }
         }
         finally
@@ -86,7 +94,7 @@ public class TestInterProcessSemaphoreEdges extends BaseClassForTests
 
         final Timing                        timing = new Timing();
         ExecutorService                     executor = Executors.newCachedThreadPool();
-        CuratorFramework                    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.milliseconds(), 3));
+        CuratorFramework                    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.milliseconds(), 100));  // retry until it succeeds
         try
         {
             client.start();

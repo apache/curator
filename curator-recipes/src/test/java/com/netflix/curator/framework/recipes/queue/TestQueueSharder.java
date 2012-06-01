@@ -61,6 +61,7 @@ public class TestQueueSharder extends BaseClassForTests
             for ( String path : sharder.getQueuePaths() )
             {
                 int numChildren = client.checkExists().forPath(path).getNumChildren();
+                Assert.assertTrue(numChildren > 0);
                 Assert.assertTrue(numChildren >= (threshold * .1));
                 statistics.addValue(numChildren);
             }
