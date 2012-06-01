@@ -237,7 +237,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
             {
                 trace.commit();
-                if ( decompress )
+                if ( decompress && (data != null) )
                 {
                     try
                     {
