@@ -7,7 +7,6 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.test.KillSession;
-import com.netflix.curator.test.TestingCluster;
 import com.netflix.curator.test.Timing;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
