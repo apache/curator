@@ -1,5 +1,11 @@
 1.1.11/1.0.12 - xxxxxxxxxxxx
 ============================
+* MAJOR BUG FIX!!!! Many of the Curator recipes rely on the internal class LockInternals. It has
+a bug that exhibits when the ZooKeeper cluster is unstable. There is an edge case that causes
+LockInternals to leak a node in the lock path that it is managing. This results in a deadlock. The
+leak occurs when retries are exhausted. NOTE: TestLockCleanlinessWithFaults now tests for this
+condition.
+
 * Added some missing combinations in the backgrounding API
 
 * Added QueueSharder utility. Due to limitations in ZooKeeper's transport layer, a single queue

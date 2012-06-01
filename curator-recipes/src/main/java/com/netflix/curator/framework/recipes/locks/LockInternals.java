@@ -212,15 +212,13 @@ public class LockInternals
             }
             catch ( KeeperException.NoNodeException e )
             {
+                client.delete().guaranteed().forPath(ourPath);
+
                 // gets thrown by StandardLockInternalsDriver when it can't find the lock node
                 // this can happen when the session expires, etc. So, if the retry allows, just try it all again
                 if ( client.getZookeeperClient().getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMillis) )
                 {
                     isDone = false;
-                    if ( ourPath != null )
-                    {
-                        client.delete().inBackground().forPath(ourPath);    // just in case
-                    }
                 }
                 else
                 {
@@ -308,11 +306,6 @@ public class LockInternals
                     // else it may have been deleted (i.e. lock released). Try to acquire again
                 }
             }
-        }
-        catch ( KeeperException e )
-        {
-            // ignore this and let the retry policy handle it
-            throw e;
         }
         catch ( Exception e )
         {
