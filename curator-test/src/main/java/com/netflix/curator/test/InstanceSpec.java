@@ -3,7 +3,9 @@ package com.netflix.curator.test;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -12,6 +14,26 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class InstanceSpec
 {
     private static final AtomicInteger      nextServerId = new AtomicInteger(1);
+    private static final String             localhost;
+    static
+    {
+        String address;
+        try
+        {
+            // This is a workaround for people using OS X Lion.  On Lion when the name 'localhost' is used it gets
+            // resolved via a lookup in /etc/hosts.  In the standard /etc/hosts on Lion there are several mappings for
+            // 'localhost', two of which are ipv6 addresses.  When one of the ipv6 addresses is chosen (randomly), Lion
+            // for some reason will take 5 seconds to establish a connection to it.  So instead of using 'localhost',
+            // attempt to determine it's IP directly so that the 5 second delay can be avoided entirely.
+            address = InetAddress.getLocalHost().getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            // Something went wrong, just default to the existing approach of using 'localhost'.
+            address = "localhost";
+        }
+        localhost = address;
+    }
 
     private final File      dataDirectory;
     private final int       port;
@@ -98,7 +120,7 @@ public class InstanceSpec
 
     public String getConnectString()
     {
-        return "localhost:" + port;
+        return localhost + ":" + port;
     }
 
     public boolean deleteDataDirectoryOnClose()
