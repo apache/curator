@@ -17,20 +17,26 @@ public class InstanceSpec
     private static final String             localhost;
     static
     {
-        String address;
+        String address = "localhost";
         try
         {
-            // This is a workaround for people using OS X Lion.  On Lion when the name 'localhost' is used it gets
-            // resolved via a lookup in /etc/hosts.  In the standard /etc/hosts on Lion there are several mappings for
-            // 'localhost', two of which are ipv6 addresses.  When one of the ipv6 addresses is chosen (randomly), Lion
-            // for some reason will take 5 seconds to establish a connection to it.  So instead of using 'localhost',
-            // attempt to determine it's IP directly so that the 5 second delay can be avoided entirely.
-            address = InetAddress.getLocalHost().getHostAddress();
+            // This is a workaround for people using OS X Lion.  On Lion when a process tries to connect to a link-local
+            // address it takes 5 seconds to establish the connection for some reason.  So instead of using 'localhost'
+            // which could return the link-local address randomly, we'll manually resolve it and look for an address to
+            // return that isn't link-local.  If for some reason we can't find an address that isn't link-local then
+            // we'll fall back to the default lof just looking up 'localhost'.
+            for( InetAddress a : InetAddress.getAllByName("localhost") )
+            {
+              if ( !a.isLinkLocalAddress() )
+              {
+                address = a.getHostAddress();
+                break;
+              }
+            }
         }
         catch ( UnknownHostException e )
         {
             // Something went wrong, just default to the existing approach of using 'localhost'.
-            address = "localhost";
         }
         localhost = address;
     }
