@@ -25,7 +25,7 @@ public class InstanceSpec
             // which could return the link-local address randomly, we'll manually resolve it and look for an address to
             // return that isn't link-local.  If for some reason we can't find an address that isn't link-local then
             // we'll fall back to the default lof just looking up 'localhost'.
-            for( InetAddress a : InetAddress.getAllByName("localhost") )
+            for ( InetAddress a : InetAddress.getAllByName("localhost") )
             {
               if ( !a.isLinkLocalAddress() )
               {
