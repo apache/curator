@@ -152,6 +152,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
     @Override
     public Void forPath(String path) throws Exception
     {
+        final String        unfixedPath = path;
         path = client.fixForNamespace(path);
 
         if ( backgrounding.inBackground() )
@@ -164,7 +165,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                     @Override
                     public void retriesExhausted(OperationAndData<String> operationAndData)
                     {
-                        client.getFailedDeleteManager().addFailedDelete(operationAndData.getData());
+                        client.getFailedDeleteManager().addFailedDelete(unfixedPath);
                     }
                 };
             }
@@ -172,7 +173,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         }
         else
         {
-            pathInForeground(path);
+            pathInForeground(path, unfixedPath);
         }
         return null;
     }
@@ -182,7 +183,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         return version;
     }
 
-    private void pathInForeground(final String path) throws Exception
+    private void pathInForeground(final String path, String unfixedPath) throws Exception
     {
         TimeTrace       trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
         try
@@ -209,7 +210,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         {
             if ( guaranteed )
             {
-                client.getFailedDeleteManager().addFailedDelete(path);
+                client.getFailedDeleteManager().addFailedDelete(unfixedPath);
             }
             throw e;
         }

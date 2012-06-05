@@ -1,3 +1,9 @@
+1.1.12/1.0.13 - xxxxxxxxxxxx
+============================
+* Pull Request 81: Avoid invalid ipv6 localhost addresses
+
+* Another big bug: guaranteed deletions were not working with namespaces.
+
 1.1.11/1.0.12 - June 1, 2012
 ============================
 * MAJOR BUG FIX!!!! Many of the Curator recipes rely on the internal class LockInternals. It has
