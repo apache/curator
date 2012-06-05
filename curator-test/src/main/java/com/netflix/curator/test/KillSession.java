@@ -102,7 +102,7 @@ public class KillSession
                 zk = null;
             }
 
-            while ( client.getState().isConnected() && !sessionLostLatch.await(100, TimeUnit.MILLISECONDS) )
+            while ( (client.getState() == ZooKeeper.States.CONNECTED) && !sessionLostLatch.await(100, TimeUnit.MILLISECONDS) )
             {
                 long        elapsed = System.currentTimeMillis() - startTicks;
                 if ( elapsed > maxMs )
