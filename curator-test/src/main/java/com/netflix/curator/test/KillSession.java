@@ -72,7 +72,7 @@ public class KillSession
                 sessionLostLatch.countDown();
             }
         };
-        client.exists("/___CURATOR_KILL_SESSION___", sessionLostWatch);
+        client.exists("/___CURATOR_KILL_SESSION___" + System.nanoTime(), sessionLostWatch);
 
         final CountDownLatch    connectionLatch = new CountDownLatch(1);
         Watcher                 connectionWatcher = new Watcher()
@@ -102,11 +102,13 @@ public class KillSession
                 zk = null;
             }
 
-            long        elapsed = System.currentTimeMillis() - startTicks;
-            long        thisWaitMs = Math.max(1, maxMs - elapsed);
-            if ( !sessionLostLatch.await(thisWaitMs, TimeUnit.MILLISECONDS) )
+            while ( client.getState().isConnected() && !sessionLostLatch.await(100, TimeUnit.MILLISECONDS) )
             {
-                throw new Exception("KillSession timed out waiting for session to expire");
+                long        elapsed = System.currentTimeMillis() - startTicks;
+                if ( elapsed > maxMs )
+                {
+                    throw new Exception("KillSession timed out waiting for session to expire");
+                }
             }
         }
         finally
