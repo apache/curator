@@ -1,4 +1,4 @@
-1.1.12/1.0.13 - xxxxxxxxxxxx
+1.1.12/1.0.13 - June 5, 2012
 ============================
 * Pull Request 81: Avoid invalid ipv6 localhost addresses
 
