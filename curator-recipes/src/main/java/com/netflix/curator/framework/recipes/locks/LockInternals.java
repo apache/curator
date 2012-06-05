@@ -256,15 +256,15 @@ public class LockInternals
 
     private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception
     {
-        if ( revocable.get() != null )
-        {
-            client.getData().usingWatcher(revocableWatcher).forPath(ourPath);
-        }
-
         boolean     haveTheLock = false;
         boolean     doDelete = false;
         try
         {
+            if ( revocable.get() != null )
+            {
+                client.getData().usingWatcher(revocableWatcher).forPath(ourPath);
+            }
+
             while ( client.isStarted() && !haveTheLock )
             {
                 List<String>        children = getSortedChildren();

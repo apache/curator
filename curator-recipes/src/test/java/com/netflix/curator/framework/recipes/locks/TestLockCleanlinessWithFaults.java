@@ -13,13 +13,14 @@ import java.util.List;
 public class TestLockCleanlinessWithFaults extends BaseClassForTests
 {
     @Test
-    public void     foo() throws Exception
+    public void     testNodeDeleted() throws Exception
     {
         final String PATH = "/foo/bar";
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(0, 0));
+        CuratorFramework        client = null;
         try
         {
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(0, 0));
             client.start();
 
             client.create().creatingParentsIfNeeded().forPath(PATH);

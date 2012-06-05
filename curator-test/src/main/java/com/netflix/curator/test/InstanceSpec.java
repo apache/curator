@@ -3,7 +3,9 @@ package com.netflix.curator.test;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -12,6 +14,32 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class InstanceSpec
 {
     private static final AtomicInteger      nextServerId = new AtomicInteger(1);
+    private static final String             localhost;
+    static
+    {
+        String address = "localhost";
+        try
+        {
+            // This is a workaround for people using OS X Lion.  On Lion when a process tries to connect to a link-local
+            // address it takes 5 seconds to establish the connection for some reason.  So instead of using 'localhost'
+            // which could return the link-local address randomly, we'll manually resolve it and look for an address to
+            // return that isn't link-local.  If for some reason we can't find an address that isn't link-local then
+            // we'll fall back to the default lof just looking up 'localhost'.
+            for ( InetAddress a : InetAddress.getAllByName("localhost") )
+            {
+              if ( !a.isLinkLocalAddress() )
+              {
+                address = a.getHostAddress();
+                break;
+              }
+            }
+        }
+        catch ( UnknownHostException e )
+        {
+            // Something went wrong, just default to the existing approach of using 'localhost'.
+        }
+        localhost = address;
+    }
 
     private final File      dataDirectory;
     private final int       port;
@@ -98,7 +126,7 @@ public class InstanceSpec
 
     public String getConnectString()
     {
-        return "localhost:" + port;
+        return localhost + ":" + port;
     }
 
     public boolean deleteDataDirectoryOnClose()

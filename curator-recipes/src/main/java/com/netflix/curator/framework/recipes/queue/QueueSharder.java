@@ -204,11 +204,15 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         {
             newQueuePath = ZKPaths.makePath(queuePath, QUEUE_PREFIX + UUID.randomUUID().toString());
         }
-        T                   queue = queueAllocator.allocateQueue(client, newQueuePath);
-        if ( queues.putIfAbsent(newQueuePath, queue) == null )
+
+        if ( !queues.containsKey(newQueuePath) )
         {
-            queue.start();
-            preferredQueues.add(newQueuePath);
+            T                   queue = queueAllocator.allocateQueue(client, newQueuePath);
+            if ( queues.putIfAbsent(newQueuePath, queue) == null )
+            {
+                queue.start();
+                preferredQueues.add(newQueuePath);
+            }
         }
     }
 
