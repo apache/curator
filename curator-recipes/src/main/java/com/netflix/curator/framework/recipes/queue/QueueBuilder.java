@@ -40,8 +40,11 @@ public class QueueBuilder<T>
     private ThreadFactory factory;
     private Executor executor;
     private String lockPath;
+    private int maxItems = NOT_SET;
 
-    static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
+    static final ThreadFactory  defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
+
+    static final int            NOT_SET = Integer.MAX_VALUE;
 
     /**
      * Allocate a new builder
@@ -75,7 +78,8 @@ public class QueueBuilder<T>
             executor,
             Integer.MAX_VALUE,
             false,
-            lockPath
+            lockPath,
+            maxItems
         );
     }
 
@@ -96,7 +100,8 @@ public class QueueBuilder<T>
             executor,
             Integer.MAX_VALUE,
             false,
-            lockPath
+            lockPath,
+            maxItems
         );
     }
 
@@ -130,7 +135,8 @@ public class QueueBuilder<T>
             factory,
             executor,
             minItemsBeforeRefresh,
-            lockPath
+            lockPath,
+            maxItems
         );
     }
 
@@ -150,7 +156,8 @@ public class QueueBuilder<T>
             factory,
             executor,
             Integer.MAX_VALUE,
-            lockPath
+            lockPath,
+            maxItems
         );
     }
 
@@ -197,6 +204,22 @@ public class QueueBuilder<T>
     public QueueBuilder<T>  lockPath(String path)
     {
         lockPath = path;
+        return this;
+    }
+
+    /**
+     * By default, the various queues are unbounded. This method allows setting a max number of items
+     * to have in the queue. With this value set, the various <code>put</code> methods will block when the
+     * number of items in the queue approaches <code>maxItems</code>. NOTE: <code>maxItems</code> cannot
+     * be exactly achieved. The only guarantee is that approximately <code>maxItems</code> will cause
+     * puts to block.
+     *
+     * @param maxItems the upper bound for the queue
+     * @return this
+     */
+    public QueueBuilder<T>  maxItems(int maxItems)
+    {
+        this.maxItems = maxItems;
         return this;
     }
 
