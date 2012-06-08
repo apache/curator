@@ -144,8 +144,18 @@ public interface CuratorFramework extends Closeable
      * pre-pend the namespace to all paths
      *
      * @return facade
+     * @deprecated use {@link #usingNamespace} passing <code>null</code>
      */
     public CuratorFramework nonNamespaceView();
+
+    /**
+     * Returns a facade of the current instance that uses the specified namespace
+     * or no namespace if <code>newNamespace</code> is <code>null</code>.
+     *
+     * @param newNamespace the new namespace or null for none
+     * @return facade
+     */
+    public CuratorFramework usingNamespace(String newNamespace);
 
     /**
      * Return the managed zookeeper client
