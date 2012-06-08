@@ -25,6 +25,7 @@ import com.netflix.curator.framework.CuratorFramework;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The builder for both {@link DistributedQueue} and {@link DistributedPriorityQueue}
@@ -41,10 +42,12 @@ public class QueueBuilder<T>
     private Executor executor;
     private String lockPath;
     private int maxItems = NOT_SET;
+    private boolean putInBackground = true;
+    private int finalFlushMs = 5000;
 
     static final ThreadFactory  defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
 
-    static final int            NOT_SET = Integer.MAX_VALUE;
+    static final int NOT_SET = Integer.MAX_VALUE;
 
     /**
      * Allocate a new builder
@@ -79,7 +82,9 @@ public class QueueBuilder<T>
             Integer.MAX_VALUE,
             false,
             lockPath,
-            maxItems
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -101,7 +106,9 @@ public class QueueBuilder<T>
             Integer.MAX_VALUE,
             false,
             lockPath,
-            maxItems
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -136,7 +143,9 @@ public class QueueBuilder<T>
             executor,
             minItemsBeforeRefresh,
             lockPath,
-            maxItems
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -157,7 +166,9 @@ public class QueueBuilder<T>
             executor,
             Integer.MAX_VALUE,
             lockPath,
-            maxItems
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -220,6 +231,32 @@ public class QueueBuilder<T>
     public QueueBuilder<T>  maxItems(int maxItems)
     {
         this.maxItems = maxItems;
+        return this;
+    }
+
+    /**
+     * By default, messages are added in the background. However, this can flood the background thread.
+     *
+     * @param putInBackground true to put in the background (default). false to put in the foreground.
+     * @return this
+     */
+    public QueueBuilder<T>  putInBackground(boolean putInBackground)
+    {
+        this.putInBackground = putInBackground;
+        return this;
+    }
+
+    /**
+     * Sets an amount of time to call {@link DistributedQueue#flushPuts(long, TimeUnit)} when the
+     * queue is closed. The default is 5 seconds. Pass 0 to turn flushing on close off.
+     *
+     * @param time time
+     * @param unit the unit
+     * @return this
+     */
+    public QueueBuilder<T>  finalFlushTime(int time, TimeUnit unit)
+    {
+        finalFlushMs = (int)unit.toMillis(time);
         return this;
     }
 

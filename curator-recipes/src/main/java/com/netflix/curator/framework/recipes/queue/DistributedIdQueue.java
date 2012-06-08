@@ -65,10 +65,12 @@ public class DistributedIdQueue<T> implements QueueBase<T>
         int minItemsBeforeRefresh,
         boolean refreshOnWatch,
         String lockPath,
-        int maxItems
+        int maxItems,
+        boolean putInBackground,
+        int finalFlushMs
     )
     {
-        queue = new DistributedQueue<T>(client, consumer, serializer, queuePath, threadFactory, executor, minItemsBeforeRefresh, refreshOnWatch, lockPath, maxItems)
+        queue = new DistributedQueue<T>(client, consumer, serializer, queuePath, threadFactory, executor, minItemsBeforeRefresh, refreshOnWatch, lockPath, maxItems, putInBackground, finalFlushMs)
         {
             @Override
             protected void sortChildren(List<String> children)

@@ -48,7 +48,9 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             Executor executor,
             int minItemsBeforeRefresh,
             String lockPath,
-            int maxItems
+            int maxItems,
+            boolean putInBackground,
+            int finalFlushMs
         )
     {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0, "minItemsBeforeRefresh cannot be negative");
@@ -64,7 +66,9 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             minItemsBeforeRefresh,
             true,
             lockPath,
-            maxItems
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
