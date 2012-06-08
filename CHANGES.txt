@@ -1,3 +1,10 @@
+1.1.13/1.0.14 - xxxxxxxxxxxx
+============================
+* New queue features: a) bounded queues: use setMaxItems() in the builder to set an (approx) upper
+bound on the queue size; b) the builder now has an option to turn off background puts; c) queues now
+default to flushing remaining puts when closed - this can be controlled in the builder via
+finalFlushTime().
+
 1.1.12/1.0.13 - June 5, 2012
 ============================
 * Pull Request 81: Avoid invalid ipv6 localhost addresses
