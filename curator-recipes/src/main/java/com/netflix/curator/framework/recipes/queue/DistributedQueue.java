@@ -78,6 +78,9 @@ public class DistributedQueue<T> implements QueueBase<T>
     private final AtomicReference<ErrorMode> errorMode = new AtomicReference<ErrorMode>(ErrorMode.REQUEUE);
     private final ListenerContainer<QueuePutListener<T>> putListenerContainer = new ListenerContainer<QueuePutListener<T>>();
     private final AtomicInteger lastChildCount = new AtomicInteger(0);
+    private final int maxItems;
+    private final int finalFlushMs;
+    private final boolean putInBackground;
 
     private final AtomicInteger     putCount = new AtomicInteger(0);
     private final CuratorListener   listener = new CuratorListener()
@@ -120,7 +123,10 @@ public class DistributedQueue<T> implements QueueBase<T>
             Executor executor,
             int minItemsBeforeRefresh,
             boolean refreshOnWatch,
-            String lockPath
+            String lockPath,
+            int maxItems,
+            boolean putInBackground,
+            int finalFlushMs
         )
     {
         Preconditions.checkNotNull(client, "client cannot be null");
@@ -128,9 +134,11 @@ public class DistributedQueue<T> implements QueueBase<T>
         Preconditions.checkNotNull(queuePath, "queuePath cannot be null");
         Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
         Preconditions.checkNotNull(executor, "executor cannot be null");
+        Preconditions.checkArgument(maxItems > 0, "maxItems must be a positive number");
 
         isProducerOnly = (consumer == null);
         this.lockPath = lockPath;
+        this.putInBackground = putInBackground;
         this.consumer = consumer;
         this.minItemsBeforeRefresh = minItemsBeforeRefresh;
         this.refreshOnWatch = refreshOnWatch;
@@ -138,7 +146,14 @@ public class DistributedQueue<T> implements QueueBase<T>
         this.serializer = serializer;
         this.queuePath = queuePath;
         this.executor = executor;
+        this.maxItems = maxItems;
+        this.finalFlushMs = finalFlushMs;
         service = Executors.newSingleThreadExecutor(threadFactory);
+
+        if ( (maxItems != QueueBuilder.NOT_SET) && putInBackground )
+        {
+            log.warn("Bounded queues should set putInBackground(false) in the builder. Putting in the background will result in spotty maxItem consistency.");
+        }
     }
 
     /**
@@ -196,14 +211,26 @@ public class DistributedQueue<T> implements QueueBase<T>
     @Override
     public void close() throws IOException
     {
-        if ( !state.compareAndSet(State.STARTED, State.STOPPED) )
+        if ( state.compareAndSet(State.STARTED, State.STOPPED) )
         {
-            throw new IllegalStateException();
-        }
+            if ( finalFlushMs > 0 )
+            {
+                try
+                {
+                    flushPuts(finalFlushMs, TimeUnit.MILLISECONDS);
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
 
-        putListenerContainer.clear();
-        client.getCuratorListenable().removeListener(listener);
-        service.shutdownNow();
+            putListenerContainer.clear();
+            client.getCuratorListenable().removeListener(listener);
+            service.shutdownNow();
+
+            internalNotify();
+        }
     }
 
     /**
@@ -265,32 +292,66 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     /**
      * Add an item into the queue. Adding is done in the background - thus, this method will
-     * return quickly.
+     * return quickly.<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param item item to add
      * @throws Exception connection issues
      */
     public void     put(T item) throws Exception
     {
+        put(item, 0, null);
+    }
+
+    /**
+     * Same as {@link #put(Object)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param item item to add
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean     put(T item, int maxWait, TimeUnit unit) throws Exception
+    {
         checkState();
 
         String      path = makeItemPath();
-        internalPut(item, null, path);
+        return internalPut(item, null, path, maxWait, unit);
     }
 
     /**
      * Add a set of items into the queue. Adding is done in the background - thus, this method will
-     * return quickly.
+     * return quickly.<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param items items to add
      * @throws Exception connection issues
      */
     public void     putMulti(MultiItem<T> items) throws Exception
     {
+        putMulti(items, 0, null);
+    }
+
+    /**
+     * Same as {@link #putMulti(MultiItem)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param items items to add
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean     putMulti(MultiItem<T> items, int maxWait, TimeUnit unit) throws Exception
+    {
         checkState();
 
         String      path = makeItemPath();
-        internalPut(null, items, path);
+        return internalPut(null, items, path, maxWait, unit);
     }
 
     /**
@@ -305,8 +366,13 @@ public class DistributedQueue<T> implements QueueBase<T>
         return lastChildCount.get();
     }
 
-    void internalPut(final T item, MultiItem<T> multiItem, String path) throws Exception
+    boolean internalPut(final T item, MultiItem<T> multiItem, String path, int maxWait, TimeUnit unit) throws Exception
     {
+        if ( !blockIfMaxed(maxWait, unit) )
+        {
+            return false;
+        }
+
         final MultiItem<T> givenMultiItem = multiItem;
         if ( item != null )
         {
@@ -323,7 +389,49 @@ public class DistributedQueue<T> implements QueueBase<T>
 
         putCount.incrementAndGet();
         byte[]              bytes = ItemSerializer.serialize(multiItem, serializer);
-        BackgroundCallback  callback = new BackgroundCallback()
+        if ( putInBackground )
+        {
+            doPutInBackground(item, path, givenMultiItem, bytes);
+        }
+        else
+        {
+            doPutInForeground(item, path, givenMultiItem, bytes);
+        }
+        return true;
+    }
+
+    private void doPutInForeground(final T item, String path, final MultiItem<T> givenMultiItem, byte[] bytes) throws Exception
+    {
+        client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(path, bytes);
+        synchronized(putCount)
+        {
+            putCount.decrementAndGet();
+            putCount.notifyAll();
+        }
+        putListenerContainer.forEach
+        (
+            new Function<QueuePutListener<T>, Void>()
+            {
+                @Override
+                public Void apply(QueuePutListener<T> listener)
+                {
+                    if ( item != null )
+                    {
+                        listener.putCompleted(item);
+                    }
+                    else
+                    {
+                        listener.putMultiCompleted(givenMultiItem);
+                    }
+                    return null;
+                }
+            }
+        );
+    }
+
+    private void doPutInBackground(final T item, String path, final MultiItem<T> givenMultiItem, byte[] bytes) throws Exception
+    {
+        BackgroundCallback callback = new BackgroundCallback()
         {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
@@ -360,7 +468,6 @@ public class DistributedQueue<T> implements QueueBase<T>
         };
         internalCreateNode(path, bytes, callback);
     }
-
 
     @VisibleForTesting
     void internalCreateNode(String path, byte[] bytes, BackgroundCallback callback) throws Exception
@@ -414,6 +521,38 @@ public class DistributedQueue<T> implements QueueBase<T>
             refreshOnWatchSignaled.set(true);
         }
         notifyAll();
+    }
+
+    private boolean blockIfMaxed(int maxWait, TimeUnit unit) throws Exception
+    {
+        long            startMs = System.currentTimeMillis();
+        boolean         hasMaxWait = (unit != null);
+        long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : 0;
+        if ( lastChildCount.get() >= maxItems )
+        {
+            synchronized(this)
+            {
+                while ( (lastChildCount.get() >= maxItems) && (state.get() == State.STARTED) )
+                {
+                    if ( hasMaxWait )
+                    {
+                        long        elapsedMs = System.currentTimeMillis() - startMs;
+                        long        thisWaitMs = maxWaitMs - elapsedMs;
+                        if ( thisWaitMs <= 0 )
+                        {
+                            break;
+                        }
+                        wait(maxWaitMs);
+                    }
+                    else
+                    {
+                        wait();
+                    }
+                }
+            }
+            return (lastChildCount.get() < maxItems);
+        }
+        return true;
     }
 
     private void runLoop()
@@ -573,7 +712,10 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 bytes = client.getData().storingStatIn(stat).forPath(itemPath);
             }
-            client.delete().withVersion(stat.getVersion()).forPath(itemPath);
+            if ( client.isStarted() )
+            {
+                client.delete().withVersion(stat.getVersion()).forPath(itemPath);
+            }
 
             if ( type == ProcessType.NORMAL )
             {

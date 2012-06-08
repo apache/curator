@@ -25,6 +25,7 @@ import com.netflix.curator.framework.CuratorFramework;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The builder for both {@link DistributedQueue} and {@link DistributedPriorityQueue}
@@ -40,8 +41,13 @@ public class QueueBuilder<T>
     private ThreadFactory factory;
     private Executor executor;
     private String lockPath;
+    private int maxItems = NOT_SET;
+    private boolean putInBackground = true;
+    private int finalFlushMs = 5000;
 
-    static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
+    static final ThreadFactory  defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
+
+    static final int NOT_SET = Integer.MAX_VALUE;
 
     /**
      * Allocate a new builder
@@ -75,7 +81,10 @@ public class QueueBuilder<T>
             executor,
             Integer.MAX_VALUE,
             false,
-            lockPath
+            lockPath,
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -96,7 +105,10 @@ public class QueueBuilder<T>
             executor,
             Integer.MAX_VALUE,
             false,
-            lockPath
+            lockPath,
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -130,7 +142,10 @@ public class QueueBuilder<T>
             factory,
             executor,
             minItemsBeforeRefresh,
-            lockPath
+            lockPath,
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -150,7 +165,10 @@ public class QueueBuilder<T>
             factory,
             executor,
             Integer.MAX_VALUE,
-            lockPath
+            lockPath,
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -197,6 +215,48 @@ public class QueueBuilder<T>
     public QueueBuilder<T>  lockPath(String path)
     {
         lockPath = path;
+        return this;
+    }
+
+    /**
+     * By default, the various queues are unbounded. This method allows setting a max number of items
+     * to have in the queue. With this value set, the various <code>put</code> methods will block when the
+     * number of items in the queue approaches <code>maxItems</code>. NOTE: <code>maxItems</code> cannot
+     * be exactly achieved. The only guarantee is that approximately <code>maxItems</code> will cause
+     * puts to block.
+     *
+     * @param maxItems the upper bound for the queue
+     * @return this
+     */
+    public QueueBuilder<T>  maxItems(int maxItems)
+    {
+        this.maxItems = maxItems;
+        return this;
+    }
+
+    /**
+     * By default, messages are added in the background. However, this can flood the background thread.
+     *
+     * @param putInBackground true to put in the background (default). false to put in the foreground.
+     * @return this
+     */
+    public QueueBuilder<T>  putInBackground(boolean putInBackground)
+    {
+        this.putInBackground = putInBackground;
+        return this;
+    }
+
+    /**
+     * Sets an amount of time to call {@link DistributedQueue#flushPuts(long, TimeUnit)} when the
+     * queue is closed. The default is 5 seconds. Pass 0 to turn flushing on close off.
+     *
+     * @param time time
+     * @param unit the unit
+     * @return this
+     */
+    public QueueBuilder<T>  finalFlushTime(int time, TimeUnit unit)
+    {
+        finalFlushMs = (int)unit.toMillis(time);
         return this;
     }
 

@@ -546,7 +546,7 @@ public class TestDistributedQueue extends BaseClassForTests
         try
         {
             final AtomicBoolean     firstTime = new AtomicBoolean(true);
-            queue = new DistributedQueue<TestQueueItem>(client, null, serializer, "/test", new ThreadFactoryBuilder().build(), MoreExecutors.sameThreadExecutor(), 10, true, null)
+            queue = new DistributedQueue<TestQueueItem>(client, null, serializer, "/test", new ThreadFactoryBuilder().build(), MoreExecutors.sameThreadExecutor(), 10, true, null, -1, false, 0)
             {
                 @Override
                 void internalCreateNode(final String path, final byte[] bytes, final BackgroundCallback callback) throws Exception

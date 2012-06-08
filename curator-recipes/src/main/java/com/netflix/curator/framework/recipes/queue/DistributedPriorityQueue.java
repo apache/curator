@@ -47,7 +47,10 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             ThreadFactory threadFactory,
             Executor executor,
             int minItemsBeforeRefresh,
-            String lockPath
+            String lockPath,
+            int maxItems,
+            boolean putInBackground,
+            int finalFlushMs
         )
     {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0, "minItemsBeforeRefresh cannot be negative");
@@ -62,7 +65,10 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             executor,
             minItemsBeforeRefresh,
             true,
-            lockPath
+            lockPath,
+            maxItems,
+            putInBackground,
+            finalFlushMs
         );
     }
 
@@ -85,7 +91,9 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
 
     /**
      * Add an item into the queue. Adding is done in the background - thus, this method will
-     * return quickly.
+     * return quickly.<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param item item to add
      * @param priority item's priority - lower numbers come out of the queue first
@@ -93,15 +101,33 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      */
     public void     put(T item, int priority) throws Exception
     {
+        put(item, priority, 0, null);
+    }
+
+    /**
+     * Same as {@link #put(Object, int)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param item item to add
+     * @param priority item's priority - lower numbers come out of the queue first
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean     put(T item, int priority, int maxWait, TimeUnit unit) throws Exception
+    {
         queue.checkState();
 
         String      priorityHex = priorityToString(priority);
-        queue.internalPut(item, null, queue.makeItemPath() + priorityHex);
+        return queue.internalPut(item, null, queue.makeItemPath() + priorityHex, maxWait, unit);
     }
 
     /**
      * Add a set of items with the same priority into the queue. Adding is done in the background - thus, this method will
-     * return quickly.
+     * return quickly.<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param items items to add
      * @param priority item priority - lower numbers come out of the queue first
@@ -109,10 +135,26 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      */
     public void     putMulti(MultiItem<T> items, int priority) throws Exception
     {
+        putMulti(items, priority, 0, null);
+    }
+
+    /**
+     * Same as {@link #putMulti(MultiItem, int)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param items items to add
+     * @param priority item priority - lower numbers come out of the queue first
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean      putMulti(MultiItem<T> items, int priority, int maxWait, TimeUnit unit) throws Exception
+    {
         queue.checkState();
 
         String      priorityHex = priorityToString(priority);
-        queue.internalPut(null, items, queue.makeItemPath() + priorityHex);
+        return queue.internalPut(null, items, queue.makeItemPath() + priorityHex, maxWait, unit);
     }
 
     @Override
