@@ -8,6 +8,10 @@ finalFlushTime().
 * Issue 82: Generalized (and deprecated) nonNamespaceView() by adding the usingNamespace() method
 to allow getting a facade of the client that uses a specified namespace.
 
+* createParentsIfNeeded() should now perform better. Instead of "pre" checking, it now only does the
+check if KeeperException.NoNodeException is thrown. LockInternals now uses this method and, so, should
+perform a bit better.
+
 1.1.12/1.0.13 - June 5, 2012
 ============================
 * Pull Request 81: Avoid invalid ipv6 localhost addresses

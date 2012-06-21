@@ -24,7 +24,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorWatcher;
-import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -45,7 +44,6 @@ public class LockInternals
     private final CuratorFramework                  client;
     private final String                            path;
     private final String                            basePath;
-    private final EnsurePath                        ensurePath;
     private final LockInternalsDriver               driver;
     private final String                            lockName;
     private final AtomicReference<RevocationSpec>   revocable = new AtomicReference<RevocationSpec>(null);
@@ -105,8 +103,6 @@ public class LockInternals
         this.client = client;
         this.basePath = path;
         this.path = ZKPaths.makePath(path, lockName);
-
-        ensurePath = client.newNamespaceAwareEnsurePath(basePath);
     }
 
     synchronized void setMaxLeases(int maxLeases)
@@ -190,8 +186,6 @@ public class LockInternals
         final byte[]    localLockNodeBytes = (revocable.get() != null) ? new byte[0] : lockNodeBytes;
         int             retryCount = 0;
 
-        ensurePath.ensure(client.getZookeeperClient());
-
         String          ourPath = null;
         boolean         hasTheLock = false;
         boolean         isDone = false;
@@ -203,11 +197,11 @@ public class LockInternals
             {
                 if ( localLockNodeBytes != null )
                 {
-                    ourPath = client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, localLockNodeBytes);
+                    ourPath = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, localLockNodeBytes);
                 }
                 else
                 {
-                    ourPath = client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path);
+                    ourPath = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path);
                 }
                 hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
             }
