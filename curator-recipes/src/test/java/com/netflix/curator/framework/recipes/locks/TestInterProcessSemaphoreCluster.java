@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestInterProcessSemaphoreCluster
 {
     @Test
-    public void     foo() throws Exception
+    public void     testCluster() throws Exception
     {
         final int           QTY = 20;
         final int           OPERATION_TIME_MS = 1000;

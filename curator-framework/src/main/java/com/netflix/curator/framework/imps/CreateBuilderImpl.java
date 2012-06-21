@@ -110,7 +110,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             @Override
             public ACLCreateModePathAndBytesable<String> creatingParentsIfNeeded()
             {
-                return CreateBuilderImpl.this.creatingParentsIfNeeded();
+                return asACLCreateModePathAndBytesable();
             }
 
             @Override
@@ -244,10 +244,42 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     }
 
     @Override
-    public ACLCreateModePathAndBytesable<String> creatingParentsIfNeeded()
+    public ProtectACLCreateModePathAndBytesable<String> creatingParentsIfNeeded()
     {
         createParentsIfNeeded = true;
-        return asACLCreateModePathAndBytesable();
+        return new ProtectACLCreateModePathAndBytesable<String>()
+        {
+            @Override
+            public ACLCreateModePathAndBytesable<String> withProtection()
+            {
+                return CreateBuilderImpl.this.withProtection();
+            }
+
+            @Override
+            public PathAndBytesable<String> withACL(List<ACL> aclList)
+            {
+                return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public ACLPathAndBytesable<String> withMode(CreateMode mode)
+            {
+                createMode = mode;
+                return this;
+            }
+
+            @Override
+            public String forPath(String path, byte[] data) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path, data);
+            }
+
+            @Override
+            public String forPath(String path) throws Exception
+            {
+                return CreateBuilderImpl.this.forPath(path);
+            }
+        };
     }
 
     @Override
@@ -462,12 +494,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     boolean   localFirstTime = firstTime.getAndSet(false);
 
                     String    localPath = adjustPath(path);
-                    if ( createParentsIfNeeded )
-                    {
-                        ZKPaths.mkdirs(client.getZooKeeper(), localPath, false);
-                    }
-
-                    String  createdPath = null;
+                    String    createdPath = null;
                     if ( !localFirstTime && doProtected )
                     {
                         createdPath = findProtectedNodeInForeground(localPath);
@@ -475,7 +502,22 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
                     if ( createdPath == null )
                     {
-                        createdPath = client.getZooKeeper().create(localPath, data, acling.getAclList(localPath), createMode);
+                        try
+                        {
+                            createdPath = client.getZooKeeper().create(localPath, data, acling.getAclList(localPath), createMode);
+                        }
+                        catch ( KeeperException.NoNodeException e )
+                        {
+                            if ( createParentsIfNeeded )
+                            {
+                                ZKPaths.mkdirs(client.getZooKeeper(), localPath, false);
+                                createdPath = client.getZooKeeper().create(localPath, data, acling.getAclList(localPath), createMode);
+                            }
+                            else
+                            {
+                                throw e;
+                            }
+                        }
                     }
 
                     if ( failNextCreateForTesting )
