@@ -12,6 +12,9 @@ to allow getting a facade of the client that uses a specified namespace.
 check if KeeperException.NoNodeException is thrown. LockInternals now uses this method and, so, should
 perform a bit better.
 
+* Added a new utility: Reaper. This can be used to clean up parent lock nodes so that they don't
+stay around as garbage. See the Utilities wiki for details: https://github.com/Netflix/curator/wiki/Utilities
+
 1.1.12/1.0.13 - June 5, 2012
 ============================
 * Pull Request 81: Avoid invalid ipv6 localhost addresses
