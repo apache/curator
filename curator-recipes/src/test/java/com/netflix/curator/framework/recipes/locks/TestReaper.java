@@ -10,6 +10,7 @@ import junit.framework.Assert;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.testng.annotations.Test;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -20,9 +21,68 @@ public class TestReaper extends BaseClassForTests
     @Test
     public void testReapUntilDelete() throws Exception
     {
+        testReapUntilDelete(null);
+    }
+
+    @Test
+    public void testReapUntilDeleteNamespace() throws Exception
+    {
+        testReapUntilDelete("test");
+    }
+
+    @Test
+    public void testRemove() throws Exception
+    {
+        testRemove(null);
+    }
+
+    @Test
+    public void testRemoveNamespace() throws Exception
+    {
+        testRemove("test");
+    }
+
+    @Test
+    public void testSimulationWithLocks() throws Exception
+    {
+        testSimulationWithLocks(null);
+    }
+
+    @Test
+    public void testSimulationWithLocksNamespace() throws Exception
+    {
+        testSimulationWithLocks("test");
+    }
+
+    @Test
+    public void testWithEphemerals() throws Exception
+    {
+        testWithEphemerals(null);
+    }
+
+    @Test
+    public void testWithEphemeralsNamespace() throws Exception
+    {
+        testWithEphemerals("test");
+    }
+
+    @Test
+    public void testBasic() throws Exception
+    {
+        testBasic(null);
+    }
+
+    @Test
+    public void testBasicNamespace() throws Exception
+    {
+        testBasic("test");
+    }
+
+    private void testReapUntilDelete(String namespace) throws Exception
+    {
         Timing                  timing = new Timing();
         Reaper                  reaper = null;
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework        client = makeClient(timing, namespace);
         try
         {
             client.start();
@@ -49,12 +109,25 @@ public class TestReaper extends BaseClassForTests
         }
     }
 
-    @Test
-    public void testRemove() throws Exception
+    private CuratorFramework makeClient(Timing timing, String namespace) throws IOException
+    {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
+            .connectionTimeoutMs(timing.connection())
+            .sessionTimeoutMs(timing.session())
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1));
+        if ( namespace != null )
+        {
+            builder = builder.namespace(namespace);
+        }
+        return builder.build();
+    }
+
+    private void testRemove(String namespace) throws Exception
     {
         Timing                  timing = new Timing();
         Reaper                  reaper = null;
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework        client = makeClient(timing, namespace);
         try
         {
             client.start();
@@ -83,8 +156,7 @@ public class TestReaper extends BaseClassForTests
         }
     }
 
-    @Test
-    public void testSimulationWithLocks() throws Exception
+    private void testSimulationWithLocks(String namespace) throws Exception
     {
         final int           LOCK_CLIENTS = 10;
         final int           ITERATIONS = 250;
@@ -95,7 +167,7 @@ public class TestReaper extends BaseClassForTests
 
         Timing                      timing = new Timing();
         Reaper                      reaper = null;
-        final CuratorFramework      client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        final CuratorFramework      client = makeClient(timing, namespace);
         try
         {
             client.start();
@@ -151,13 +223,12 @@ public class TestReaper extends BaseClassForTests
         }
     }
 
-    @Test
-    public void testWithEphemerals() throws Exception
+    private void testWithEphemerals(String namespace) throws Exception
     {
         Timing                  timing = new Timing();
         Reaper                  reaper = null;
         CuratorFramework        client2 = null;
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework        client = makeClient(timing, namespace);
         try
         {
             client.start();
@@ -165,7 +236,7 @@ public class TestReaper extends BaseClassForTests
 
             Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
 
-            client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            client2 = makeClient(timing, namespace);
             client2.start();
             for ( int i = 0; i < 10; ++i )
             {
@@ -196,12 +267,11 @@ public class TestReaper extends BaseClassForTests
         }
     }
 
-    @Test
-    public void testBasic() throws Exception
+    private void testBasic(String namespace) throws Exception
     {
         Timing                  timing = new Timing();
         Reaper                  reaper = null;
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework        client = makeClient(timing, namespace);
         try
         {
             client.start();
