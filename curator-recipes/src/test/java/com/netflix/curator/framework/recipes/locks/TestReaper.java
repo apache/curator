@@ -18,6 +18,38 @@ import java.util.concurrent.Executors;
 public class TestReaper extends BaseClassForTests
 {
     @Test
+    public void testReapUntilDelete() throws Exception
+    {
+        Timing                  timing = new Timing();
+        Reaper                  reaper = null;
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/one/two/three");
+
+            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
+
+            reaper = new Reaper(client, 100);
+            reaper.start();
+
+            reaper.addPath("/one/two/three", Reaper.Mode.REAP_UNTIL_DELETE);
+            timing.sleepABit();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+
+            client.create().forPath("/one/two/three");
+            timing.sleepABit();
+            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
+        }
+        finally
+        {
+            Closeables.closeQuietly(reaper);
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testRemove() throws Exception
     {
         Timing                  timing = new Timing();

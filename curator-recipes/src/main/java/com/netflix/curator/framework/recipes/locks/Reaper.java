@@ -36,10 +36,12 @@ public class Reaper implements Closeable
     {
         private final String path;
         private final long expirationMs;
+        private final Mode mode;
 
-        private PathHolder(String path, int delayMs)
+        private PathHolder(String path, int delayMs, Mode mode)
         {
             this.path = path;
+            this.mode = mode;
             this.expirationMs = System.currentTimeMillis() + delayMs;
         }
 
@@ -86,6 +88,12 @@ public class Reaper implements Closeable
         }
     }
 
+    public enum Mode
+    {
+        REAP_INDEFINITELY,
+        REAP_UNTIL_DELETE
+    }
+
     /**
      * Uses the default reaping threshold of 5 minutes and creates an internal thread pool
      *
@@ -120,14 +128,26 @@ public class Reaper implements Closeable
     }
 
     /**
-     * Add a path to be checked by the reaper. The path will be checked periodically
+     * Add a path (using Mode.REAP_INDEFINITELY) to be checked by the reaper. The path will be checked periodically
      * until the path is removed of the reaper is closed.
      *
      * @param path path to check
      */
     public void     addPath(String path)
     {
-        queue.add(new PathHolder(path, reapingThresholdMs));
+        addPath(path, Mode.REAP_INDEFINITELY);
+    }
+
+    /**
+     * Add a path to be checked by the reaper. The path will be checked periodically
+     * until the path is removed of the reaper is closed.
+     *
+     * @param path path to check
+     * @param mode reaping mode
+     */
+    public void     addPath(String path, Mode mode)
+    {
+        queue.add(new PathHolder(path, reapingThresholdMs, mode));
     }
 
     /**
@@ -138,7 +158,7 @@ public class Reaper implements Closeable
      */
     public boolean     removePath(String path)
     {
-        return queue.remove(new PathHolder(path, reapingThresholdMs));
+        return queue.remove(new PathHolder(path, reapingThresholdMs, null));
     }
 
     /**
@@ -159,7 +179,8 @@ public class Reaper implements Closeable
                     {
                         while ( !Thread.currentThread().isInterrupted() )
                         {
-                            reap(queue.take().path);
+                            PathHolder holder = queue.take();
+                            reap(holder.path, holder.mode);
                         }
                     }
                     catch ( InterruptedException e )
@@ -186,8 +207,9 @@ public class Reaper implements Closeable
         }
     }
 
-    private void reap(String path)
+    private void reap(String path, Mode mode)
     {
+        boolean     addBack = true;
         try
         {
             Stat        stat = client.checkExists().forPath(path);
@@ -199,6 +221,10 @@ public class Reaper implements Closeable
                     {
                         client.delete().forPath(path);
                         log.info("Reaping path: " + path);
+                        if ( mode == Mode.REAP_UNTIL_DELETE )
+                        {
+                            addBack = false;
+                        }
                     }
                     catch ( KeeperException.NoNodeException ignore )
                     {
@@ -216,7 +242,7 @@ public class Reaper implements Closeable
             log.error("Trying to reap: " + path, e);
         }
 
-        if ( !Thread.currentThread().isInterrupted() )
+        if ( addBack && !Thread.currentThread().isInterrupted() )
         {
             addPath(path);
         }
