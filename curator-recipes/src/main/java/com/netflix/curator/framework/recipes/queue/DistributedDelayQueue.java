@@ -23,7 +23,6 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
