@@ -15,6 +15,10 @@ perform a bit better.
 * Added a new utility: Reaper. This can be used to clean up parent lock nodes so that they don't
 stay around as garbage. See the Utilities wiki for details: https://github.com/Netflix/curator/wiki/Utilities
 
+* compressed() wasn't setting parents-create bool
+
+* Some problems with recent namespace changes - null namespace wasn't being handled
+
 1.1.12/1.0.13 - June 5, 2012
 ============================
 * Pull Request 81: Avoid invalid ipv6 localhost addresses
