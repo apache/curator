@@ -53,7 +53,7 @@ public class TestQueueSharder extends BaseClassForTests
             for ( int i = 0; i < (factor * threshold); ++i )
             {
                 sharder.getQueue().put(Integer.toString(i));
-                Thread.sleep(1);
+                Thread.sleep(5);
             }
             timing.forWaiting().sleepABit();
 
