@@ -19,6 +19,46 @@ import java.util.concurrent.Executors;
 public class TestReaper extends BaseClassForTests
 {
     @Test
+    public void testSparseUseNoReap() throws Exception
+    {
+        final int   THRESHOLD = 3000;
+
+        Timing                  timing = new Timing();
+        Reaper                  reaper = null;
+        CuratorFramework        client = makeClient(timing, null);
+        try
+        {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/one/two/three");
+
+            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
+
+            reaper = new Reaper(client, THRESHOLD);
+            reaper.start();
+            reaper.addPath("/one/two/three");
+
+            Thread.sleep(2 * (THRESHOLD / Reaper.EMPTY_COUNT_THRESHOLD));
+            Assert.assertTrue(reaper.getEmptyCount("/one/two/three") > 0);
+
+            client.create().forPath("/one/two/three/foo");
+
+            Thread.sleep(2 * (THRESHOLD / Reaper.EMPTY_COUNT_THRESHOLD));
+            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
+            client.delete().forPath("/one/two/three/foo");
+
+            Thread.sleep(THRESHOLD);
+            timing.sleepABit();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+        }
+        finally
+        {
+            Closeables.closeQuietly(reaper);
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testReapUntilDelete() throws Exception
     {
         testReapUntilDelete(null);
