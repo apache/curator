@@ -1,7 +1,7 @@
 package com.netflix.curator.framework.recipes.queue;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -107,7 +107,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
                 {
                     try
                     {
-                        while ( !Thread.currentThread().isInterrupted() )
+                        while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
                         {
                             Thread.sleep(policies.getThresholdCheckMs());
                             checkThreshold();
@@ -177,10 +177,14 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         return queues.size();
     }
 
-    @VisibleForTesting
-    Collection<String>  getQueuePaths()
+    /**
+     * Return the current set of shard paths
+     *
+     * @return paths
+     */
+    public Collection<String>  getQueuePaths()
     {
-        return queues.keySet();
+        return ImmutableSet.copyOf(queues.keySet());
     }
 
     private void getInitialQueues() throws Exception
