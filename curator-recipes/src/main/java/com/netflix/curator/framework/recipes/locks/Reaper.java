@@ -1,5 +1,9 @@
 package com.netflix.curator.framework.recipes.locks;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
@@ -15,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A Utility to delete parent paths of locks, etc. Periodically checks paths added to the reaper.
@@ -27,21 +32,34 @@ public class Reaper implements Closeable
     private final ExecutorService executor;
     private final int reapingThresholdMs;
     private final DelayQueue<PathHolder> queue = new DelayQueue<PathHolder>();
+    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+
+    private enum State
+    {
+        LATENT,
+        STARTED,
+        CLOSED
+    }
 
     private volatile Future<Void> task;
 
     private static final int        REAPING_THRESHOLD_MS = (int)TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
+
+    @VisibleForTesting
+    static final int        EMPTY_COUNT_THRESHOLD = 3;
 
     private static class PathHolder implements Delayed
     {
         private final String path;
         private final long expirationMs;
         private final Mode mode;
+        private final int emptyCount;
 
-        private PathHolder(String path, int delayMs, Mode mode)
+        private PathHolder(String path, int delayMs, Mode mode, int emptyCount)
         {
             this.path = path;
             this.mode = mode;
+            this.emptyCount = emptyCount;
             this.expirationMs = System.currentTimeMillis() + delayMs;
         }
 
@@ -124,7 +142,7 @@ public class Reaper implements Closeable
     {
         this.client = client;
         this.executor = executor;
-        this.reapingThresholdMs = reapingThresholdMs;
+        this.reapingThresholdMs = reapingThresholdMs / EMPTY_COUNT_THRESHOLD;
     }
 
     /**
@@ -147,7 +165,7 @@ public class Reaper implements Closeable
      */
     public void     addPath(String path, Mode mode)
     {
-        queue.add(new PathHolder(path, reapingThresholdMs, mode));
+        queue.add(new PathHolder(path, reapingThresholdMs, mode, 0));
     }
 
     /**
@@ -158,7 +176,7 @@ public class Reaper implements Closeable
      */
     public boolean     removePath(String path)
     {
-        return queue.remove(new PathHolder(path, reapingThresholdMs, null));
+        return queue.remove(new PathHolder(path, reapingThresholdMs, null, 0));
     }
 
     /**
@@ -168,6 +186,8 @@ public class Reaper implements Closeable
      */
     public void start() throws Exception
     {
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
+
         task = executor.submit
         (
             new Callable<Void>()
@@ -177,10 +197,10 @@ public class Reaper implements Closeable
                 {
                     try
                     {
-                        while ( !Thread.currentThread().isInterrupted() )
+                        while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
                         {
                             PathHolder holder = queue.take();
-                            reap(holder.path, holder.mode);
+                            reap(holder);
                         }
                     }
                     catch ( InterruptedException e )
@@ -196,55 +216,86 @@ public class Reaper implements Closeable
     @Override
     public void close() throws IOException
     {
-        try
+        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
-            queue.clear();
-            task.cancel(true);
-        }
-        catch ( Exception e )
-        {
-            log.error("Canceling task", e);
+            try
+            {
+                queue.clear();
+                task.cancel(true);
+            }
+            catch ( Exception e )
+            {
+                log.error("Canceling task", e);
+            }
         }
     }
 
-    private void reap(String path, Mode mode)
+    @VisibleForTesting
+    int getEmptyCount(final String path)
+    {
+        PathHolder found = Iterables.find
+        (
+            queue,
+            new Predicate<PathHolder>()
+            {
+                @Override
+                public boolean apply(PathHolder holder)
+                {
+                    return holder.path.equals(path);
+                }
+            },
+            null
+        );
+
+        return (found != null) ? found.emptyCount : -1;
+    }
+
+    private void reap(PathHolder holder)
     {
         boolean     addBack = true;
+        int         newEmptyCount = 0;
         try
         {
-            Stat        stat = client.checkExists().forPath(path);
+            Stat        stat = client.checkExists().forPath(holder.path);
             if ( stat != null ) // otherwise already deleted
             {
                 if ( stat.getNumChildren() == 0 )
                 {
-                    try
+                    if ( (holder.emptyCount + 1) >= EMPTY_COUNT_THRESHOLD )
                     {
-                        client.delete().forPath(path);
-                        log.info("Reaping path: " + path);
-                        if ( mode == Mode.REAP_UNTIL_DELETE )
+                        try
                         {
-                            addBack = false;
+                            client.delete().forPath(holder.path);
+                            log.info("Reaping path: " + holder.path);
+                            if ( holder.mode == Mode.REAP_UNTIL_DELETE )
+                            {
+                                addBack = false;
+                            }
+                        }
+                        catch ( KeeperException.NoNodeException ignore )
+                        {
+                            // ignore - it must have been deleted by another process/thread
+                        }
+                        catch ( KeeperException.NotEmptyException ignore )
+                        {
+                            // ignore - it must have been re-used
                         }
                     }
-                    catch ( KeeperException.NoNodeException ignore )
+                    else
                     {
-                        // ignore - it must have been deleted by another process/thread
-                    }
-                    catch ( KeeperException.NotEmptyException ignore )
-                    {
-                        // ignore - it must have been re-used
+                        newEmptyCount = holder.emptyCount + 1;
                     }
                 }
             }
         }
         catch ( Exception e )
         {
-            log.error("Trying to reap: " + path, e);
+            log.error("Trying to reap: " + holder.path, e);
         }
 
-        if ( addBack && !Thread.currentThread().isInterrupted() )
+        if ( addBack && !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
         {
-            addPath(path);
+            queue.add(new PathHolder(holder.path, reapingThresholdMs, holder.mode, newEmptyCount));
         }
     }
 }

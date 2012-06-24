@@ -110,6 +110,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             @Override
             public ACLCreateModePathAndBytesable<String> creatingParentsIfNeeded()
             {
+                createParentsIfNeeded = true;
                 return asACLCreateModePathAndBytesable();
             }
 

@@ -23,6 +23,9 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -77,6 +80,23 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
             {
                 long epoch = getEpoch(itemNode);
                 return epoch - System.currentTimeMillis();
+            }
+
+            protected void sortChildren(List<String> children)
+            {
+                Collections.sort
+                (
+                    children,
+                    new Comparator<String>()
+                    {
+                        @Override
+                        public int compare(String o1, String o2)
+                        {
+                            long        diff = getDelay(o1) - getDelay(o2);
+                            return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
+                        }
+                    }
+                );
             }
         };
     }
@@ -209,7 +229,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
         return SEPARATOR + String.format("%08X", epoch) + SEPARATOR;
     }
 
-    private long getEpoch(String itemNode)
+    private static long getEpoch(String itemNode)
     {
         int     index2 = itemNode.lastIndexOf(SEPARATOR);
         int     index1 = (index2 > 0) ? itemNode.lastIndexOf(SEPARATOR, index2 - 1) : -1;

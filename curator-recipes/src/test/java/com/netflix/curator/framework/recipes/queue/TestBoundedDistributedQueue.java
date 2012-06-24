@@ -1,6 +1,5 @@
 package com.netflix.curator.framework.recipes.queue;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
@@ -22,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestBoundedDistributedQueue extends BaseClassForTests
 {
@@ -40,6 +40,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
         }
     };
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Test
     public void         testMulti() throws Exception
     {
@@ -73,9 +74,11 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
             client.start();
             client.create().forPath(PATH);
 
-            final List<Integer> counts = new CopyOnWriteArrayList<Integer>();
-            final Object        lock = new Object();
-            completionService.submit
+            final CountDownLatch    isWaitingLatch = new CountDownLatch(1);
+            final AtomicBoolean     isDone = new AtomicBoolean(false);
+            final List<Integer>     counts = new CopyOnWriteArrayList<Integer>();
+            final Object            lock = new Object();
+            executor.submit
             (
                 new Callable<Void>()
                 {
@@ -94,12 +97,13 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
                             }
                         };
 
-                        while ( !Thread.currentThread().isInterrupted() && client.isStarted() )
+                        while ( !Thread.currentThread().isInterrupted() && client.isStarted() && !isDone.get() )
                         {
                             synchronized(lock)
                             {
                                 int     size = client.getChildren().usingWatcher(watcher).forPath(PATH).size();
                                 counts.add(size);
+                                isWaitingLatch.countDown();
                                 lock.wait();
                             }
                         }
@@ -107,6 +111,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
                     }
                 }
             );
+            isWaitingLatch.await();
 
             for ( int i = 0; i < CLIENT_QTY; ++i )
             {
@@ -125,7 +130,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
                             {
                                 client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
                                 client.start();
-                                queue = QueueBuilder.builder(client, consumer, serializer, PATH).executor(executor).maxItems(MAX_ITEMS).putInBackground(false).buildQueue();
+                                queue = QueueBuilder.builder(client, consumer, serializer, PATH).executor(executor).maxItems(MAX_ITEMS).putInBackground(false).lockPath("/locks").buildQueue();
                                 queue.start();
 
                                 for ( int i = 0; i < ADD_ITEMS; ++i )
@@ -147,6 +152,12 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
             for ( int i = 0; i < CLIENT_QTY; ++i )
             {
                 completionService.take().get();
+            }
+
+            isDone.set(true);
+            synchronized(lock)
+            {
+                lock.notifyAll();
             }
 
             for ( int count : counts )
@@ -172,15 +183,15 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
             client.start();
 
             final List<String>          messages = new CopyOnWriteArrayList<String>();
-            final CountDownLatch        latch = new CountDownLatch(1);
+            final CountDownLatch        latch = new CountDownLatch(2);
             final Semaphore             semaphore = new Semaphore(0);
             QueueConsumer<String>       consumer = new QueueConsumer<String>()
             {
                 @Override
                 public void consumeMessage(String message) throws Exception
                 {
-                    semaphore.acquire();
                     messages.add(message);
+                    semaphore.acquire();
                 }
 
                 @Override
@@ -209,6 +220,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
             Assert.assertTrue(queue.put("1", timing.milliseconds(), TimeUnit.MILLISECONDS));   // should end up in consumer
             Assert.assertTrue(queue.put("2", timing.milliseconds(), TimeUnit.MILLISECONDS));   // should sit blocking in DistributedQueue
             Assert.assertTrue(timing.awaitLatch(latch));
+            timing.sleepABit();
             Assert.assertFalse(queue.put("3", timing.multiple(.5).milliseconds(), TimeUnit.MILLISECONDS));
 
             semaphore.release(100);
@@ -224,6 +236,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
                 }
                 timing.sleepABit();
             }
+            timing.sleepABit();
 
             Assert.assertEquals(messages, Arrays.asList("1", "2", "3", "4", "5"));
         }

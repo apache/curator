@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 class NamespaceFacadeCache
 {
     private final CuratorFrameworkImpl                  client;
+    private final NamespaceFacade                       nullNamespace;
     private final CacheLoader<String, NamespaceFacade>  loader = new CacheLoader<String, NamespaceFacade>()
     {
         @Override
@@ -24,13 +25,14 @@ class NamespaceFacadeCache
     NamespaceFacadeCache(CuratorFrameworkImpl client)
     {
         this.client = client;
+        nullNamespace = new NamespaceFacade(client, null);
     }
 
     NamespaceFacade     get(String namespace)
     {
         try
         {
-            return cache.get(namespace);
+            return (namespace != null) ? cache.get(namespace) : nullNamespace;
         }
         catch ( ExecutionException e )
         {

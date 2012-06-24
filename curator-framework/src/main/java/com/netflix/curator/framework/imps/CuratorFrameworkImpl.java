@@ -32,6 +32,7 @@ import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.framework.state.ConnectionStateManager;
+import com.netflix.curator.utils.DebugUtils;
 import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -468,7 +469,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
             reason = "n/a";
         }
 
-        log.error(reason, e);
+        if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) || !(e instanceof KeeperException) )
+        {
+            log.error(reason, e);
+        }
+
         if ( e instanceof KeeperException.ConnectionLossException )
         {
             connectionStateManager.addStateChange(ConnectionState.LOST);
@@ -527,16 +532,25 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             if ( (operationAndData != null) && RetryLoop.isRetryException(e) )
             {
-                log.debug("Retry-able exception received", e);
+                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                {
+                    log.debug("Retry-able exception received", e);
+                }
                 if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs()) )
                 {
-                    log.debug("Retrying operation");
+                    if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                    {
+                        log.debug("Retrying operation");
+                    }
                     backgroundOperations.offer(operationAndData);
                     break;
                 }
                 else
                 {
-                    log.debug("Retry policy did not allow retry");
+                    if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                    {
+                        log.debug("Retry policy did not allow retry");
+                    }
                     if ( operationAndData.getErrorCallback() != null )
                     {
                         operationAndData.getErrorCallback().retriesExhausted(operationAndData);

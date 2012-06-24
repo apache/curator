@@ -20,17 +20,17 @@ package com.netflix.curator.framework.recipes.queue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
-import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.recipes.leader.LeaderSelector;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,22 +82,9 @@ public class DistributedQueue<T> implements QueueBase<T>
     private final int maxItems;
     private final int finalFlushMs;
     private final boolean putInBackground;
+    private final ChildrenCache childrenCache;
 
     private final AtomicInteger     putCount = new AtomicInteger(0);
-    private final CuratorListener   listener = new CuratorListener()
-    {
-        @Override
-        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-        {
-            if ( event.getType() == CuratorEventType.WATCHED )
-            {
-                if ( event.getWatchedEvent().getType() == Watcher.Event.EventType.NodeChildrenChanged )
-                {
-                    internalNotify();
-                }
-            }
-        }
-    };
 
     private enum State
     {
@@ -105,7 +93,8 @@ public class DistributedQueue<T> implements QueueBase<T>
         STOPPED
     }
 
-    private enum ProcessType
+    @VisibleForTesting
+    protected enum ProcessType
     {
         NORMAL,
         REMOVE
@@ -149,6 +138,18 @@ public class DistributedQueue<T> implements QueueBase<T>
         this.maxItems = maxItems;
         this.finalFlushMs = finalFlushMs;
         service = Executors.newSingleThreadExecutor(threadFactory);
+        childrenCache = new ChildrenCache(client, queuePath)
+        {
+            @Override
+            protected synchronized void notifyFromCallback()
+            {
+                if ( DistributedQueue.this.refreshOnWatch )
+                {
+                    refreshOnWatchSignaled.set(true);
+                }
+                super.notifyFromCallback();
+            }
+        };
 
         if ( (maxItems != QueueBuilder.NOT_SET) && putInBackground )
         {
@@ -189,22 +190,25 @@ public class DistributedQueue<T> implements QueueBase<T>
             }
         }
 
-        client.getCuratorListenable().addListener(listener, executor);
+        if ( !isProducerOnly || (maxItems != QueueBuilder.NOT_SET) )
+        {
+            childrenCache.start();
+        }
 
         if ( !isProducerOnly )
         {
             service.submit
-            (
-                new Callable<Object>()
-                {
-                    @Override
-                    public Object call()
+                (
+                    new Callable<Object>()
                     {
-                        runLoop();
-                        return null;
+                        @Override
+                        public Object call()
+                        {
+                            runLoop();
+                            return null;
+                        }
                     }
-                }
-            );
+                );
         }
     }
 
@@ -225,11 +229,9 @@ public class DistributedQueue<T> implements QueueBase<T>
                 }
             }
 
+            Closeables.closeQuietly(childrenCache);
             putListenerContainer.clear();
-            client.getCuratorListenable().removeListener(listener);
             service.shutdownNow();
-
-            internalNotify();
         }
     }
 
@@ -409,24 +411,24 @@ public class DistributedQueue<T> implements QueueBase<T>
             putCount.notifyAll();
         }
         putListenerContainer.forEach
-        (
-            new Function<QueuePutListener<T>, Void>()
-            {
-                @Override
-                public Void apply(QueuePutListener<T> listener)
+            (
+                new Function<QueuePutListener<T>, Void>()
                 {
-                    if ( item != null )
+                    @Override
+                    public Void apply(QueuePutListener<T> listener)
                     {
-                        listener.putCompleted(item);
+                        if ( item != null )
+                        {
+                            listener.putCompleted(item);
+                        }
+                        else
+                        {
+                            listener.putMultiCompleted(givenMultiItem);
+                        }
+                        return null;
                     }
-                    else
-                    {
-                        listener.putMultiCompleted(givenMultiItem);
-                    }
-                    return null;
                 }
-            }
-        );
+            );
     }
 
     private void doPutInBackground(final T item, String path, final MultiItem<T> givenMultiItem, byte[] bytes) throws Exception
@@ -495,7 +497,7 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     protected List<String> getChildren() throws Exception
     {
-        return client.getChildren().watched().forPath(queuePath);
+        return client.getChildren().forPath(queuePath);
     }
 
     protected long getDelay(String itemNode)
@@ -514,83 +516,50 @@ public class DistributedQueue<T> implements QueueBase<T>
         return processNormally(itemNode, ProcessType.REMOVE);
     }
 
-    private synchronized void internalNotify()
-    {
-        if ( refreshOnWatch )
-        {
-            refreshOnWatchSignaled.set(true);
-        }
-        notifyAll();
-    }
-
     private boolean blockIfMaxed(int maxWait, TimeUnit unit) throws Exception
     {
-        long            startMs = System.currentTimeMillis();
-        boolean         hasMaxWait = (unit != null);
-        long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : 0;
-        if ( lastChildCount.get() >= maxItems )
+        ChildrenCache.Data data = childrenCache.getData();
+        while ( data.children.size() >= maxItems )
         {
-            synchronized(this)
+            long        previousVersion = data.version;
+            data = childrenCache.blockingNextGetData(data.version, maxWait, unit);
+            if ( data.version == previousVersion )
             {
-                while ( (lastChildCount.get() >= maxItems) && (state.get() == State.STARTED) )
-                {
-                    if ( hasMaxWait )
-                    {
-                        long        elapsedMs = System.currentTimeMillis() - startMs;
-                        long        thisWaitMs = maxWaitMs - elapsedMs;
-                        if ( thisWaitMs <= 0 )
-                        {
-                            break;
-                        }
-                        wait(maxWaitMs);
-                    }
-                    else
-                    {
-                        wait();
-                    }
-                }
+                return false;
             }
-            return (lastChildCount.get() < maxItems);
         }
         return true;
     }
 
     private void runLoop()
     {
+        long         currentVersion = -1;
+        long         maxWaitMs = -1;
         try
         {
             while ( !Thread.currentThread().isInterrupted()  )
             {
-                List<String>        children;
-                synchronized(this)
-                {
-                    for(;;)
-                    {
-                        children = getChildren();
-                        lastChildCount.set(children.size());
-                        sortChildren(children); // makes sure items are processed in the correct order
+                ChildrenCache.Data      data = (maxWaitMs > 0) ? childrenCache.blockingNextGetData(currentVersion, maxWaitMs, TimeUnit.MILLISECONDS) : childrenCache.blockingNextGetData(currentVersion);
+                currentVersion = data.version;
 
-                        long        waitMs = (children.size() > 0) ? getDelay(children.get(0)) : 0;
-                        if ( waitMs > 0 )
-                        {
-                            wait(waitMs);
-                        }
-                        else if ( children.size() == 0 )
-                        {
-                            wait();
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
+                List<String>        children = Lists.newArrayList(data.children);
+                sortChildren(children); // makes sure items are processed in the correct order
 
-                    refreshOnWatchSignaled.set(false);
-                }
                 if ( children.size() > 0 )
                 {
-                    processChildren(children);
+                    maxWaitMs = getDelay(children.get(0));
+                    if ( maxWaitMs > 0 )
+                    {
+                        continue;
+                    }
                 }
+                else
+                {
+                    continue;
+                }
+
+                refreshOnWatchSignaled.set(false);
+                processChildrenAndReset(children);
             }
         }
         catch ( InterruptedException ignore )
@@ -603,20 +572,35 @@ public class DistributedQueue<T> implements QueueBase<T>
         }
     }
 
+    private void processChildrenAndReset(List<String> children) throws Exception
+    {
+        try
+        {
+            processChildren(children);
+        }
+        finally
+        {
+            childrenCache.sync();
+        }
+    }
+
     private void processChildren(List<String> children) throws Exception
     {
+        final Semaphore processedLatch = new Semaphore(0);
         final boolean   isUsingLockSafety = (lockPath != null);
         int             min = minItemsBeforeRefresh;
         for ( final String itemNode : children )
         {
             if ( Thread.currentThread().isInterrupted() )
             {
+                processedLatch.release(children.size());
                 break;
             }
 
             if ( !itemNode.startsWith(QUEUE_ITEM_NAME) )
             {
                 log.warn("Foreign node in queue path: " + itemNode);
+                processedLatch.release();
                 continue;
             }
 
@@ -624,12 +608,14 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 if ( refreshOnWatchSignaled.compareAndSet(true, false) )
                 {
+                    processedLatch.release(children.size());
                     break;
                 }
             }
 
             if ( getDelay(itemNode) > 0 )
             {
+                processedLatch.release();
                 continue;
             }
 
@@ -655,10 +641,16 @@ public class DistributedQueue<T> implements QueueBase<T>
                         {
                             log.error("Error processing message at " + itemNode, e);
                         }
+                        finally
+                        {
+                            processedLatch.release();
+                        }
                     }
                 }
             );
         }
+
+        processedLatch.acquire(children.size());
     }
 
     private boolean processMessageBytes(String itemNode, byte[] bytes) throws Exception
@@ -668,7 +660,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         {
             items = ItemSerializer.deserialize(bytes, serializer);
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             log.error("Corrupted queue item: " + itemNode, e);
             return false;
@@ -687,7 +679,7 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 consumer.consumeMessage(item);
             }
-            catch ( Exception e )
+            catch ( Throwable e )
             {
                 log.error("Exception processing queue item: " + itemNode, e);
                 if ( errorMode.get() == ErrorMode.REQUEUE )
@@ -740,7 +732,8 @@ public class DistributedQueue<T> implements QueueBase<T>
         return false;
     }
 
-    private boolean processWithLockSafety(String itemNode, ProcessType type) throws Exception
+    @VisibleForTesting
+    protected boolean processWithLockSafety(String itemNode, ProcessType type) throws Exception
     {
         String      lockNodePath = ZKPaths.makePath(lockPath, itemNode);
         boolean     lockCreated = false;

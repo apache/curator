@@ -231,6 +231,7 @@ public class QueueBuilder<T>
     public QueueBuilder<T>  maxItems(int maxItems)
     {
         this.maxItems = maxItems;
+        putInBackground = false;
         return this;
     }
 
