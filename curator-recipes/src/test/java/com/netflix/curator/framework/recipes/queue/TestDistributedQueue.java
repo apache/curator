@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +53,98 @@ public class TestDistributedQueue extends BaseClassForTests
     private static final String     QUEUE_PATH = "/a/queue";
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
+
+    @Test
+    public void     testCustomExecutor() throws Exception
+    {
+        final int       ITERATIONS = 1000;
+
+        DistributedQueue<String>  queue = null;
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final CountDownLatch    latch = new CountDownLatch(ITERATIONS);
+            QueueConsumer<String>   consumer = new QueueConsumer<String>()
+            {
+                @Override
+                public void consumeMessage(String message) throws Exception
+                {
+                    latch.countDown();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+            QueueSerializer<String> serializer = new QueueSerializer<String>()
+            {
+                @Override
+                public byte[] serialize(String item)
+                {
+                    return item.getBytes();
+                }
+
+                @Override
+                public String deserialize(byte[] bytes)
+                {
+                    return new String(bytes);
+                }
+            };
+
+            Executor        executor = Executors.newCachedThreadPool();
+
+            final Set<String>       used = Sets.newHashSet();
+            final Set<String>       doubleUsed = Sets.newHashSet();
+            queue = new DistributedQueue<String>
+            (
+                client,
+                consumer,
+                serializer,
+                QUEUE_PATH,
+                QueueBuilder.defaultThreadFactory,
+                executor,
+                Integer.MAX_VALUE,
+                false,
+                "/lock",
+                QueueBuilder.NOT_SET,
+                true,
+                5000
+            )
+            {
+                @SuppressWarnings("SimplifiableConditionalExpression")
+                @Override
+                protected boolean processWithLockSafety(String itemNode, DistributedQueue.ProcessType type) throws Exception
+                {
+                    if ( used.contains(itemNode) )
+                    {
+                        doubleUsed.add(itemNode);
+                    }
+                    else
+                    {
+                        used.add(itemNode);
+                    }
+                    return client.isStarted() ? super.processWithLockSafety(itemNode, type) : false;
+                }
+            };
+            queue.start();
+
+            for ( int i = 0; i < ITERATIONS; ++i )
+            {
+                queue.put(Integer.toString(i));
+            }
+
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS), "Count: " + latch.getCount());
+
+            Assert.assertTrue(doubleUsed.size() == 0, doubleUsed.toString());
+        }
+        finally
+        {
+            Closeables.closeQuietly(queue);
+            Closeables.closeQuietly(client);
+        }
+    }
 
     @Test
     public void     testPutListener() throws Exception
@@ -546,7 +639,7 @@ public class TestDistributedQueue extends BaseClassForTests
         try
         {
             final AtomicBoolean     firstTime = new AtomicBoolean(true);
-            queue = new DistributedQueue<TestQueueItem>(client, null, serializer, "/test", new ThreadFactoryBuilder().build(), MoreExecutors.sameThreadExecutor(), 10, true, null, -1, false, 0)
+            queue = new DistributedQueue<TestQueueItem>(client, null, serializer, "/test", new ThreadFactoryBuilder().build(), MoreExecutors.sameThreadExecutor(), 10, true, null, QueueBuilder.NOT_SET, true, 0)
             {
                 @Override
                 void internalCreateNode(final String path, final byte[] bytes, final BackgroundCallback callback) throws Exception
