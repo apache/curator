@@ -15,10 +15,6 @@ perform a bit better.
 * Added a new utility: Reaper. This can be used to clean up parent lock nodes so that they don't
 stay around as garbage. See the Utilities wiki for details: https://github.com/Netflix/curator/wiki/Utilities
 
-* compressed() wasn't setting parents-create bool
-
-* Some problems with recent namespace changes - null namespace wasn't being handled
-
 * Unit tests should be a lot less noisy. A system property now turns off most internal error logging.
 
 * Issue 88: Children processor should wait for all nodes to be processed before fetching more items
