@@ -25,6 +25,7 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.recipes.shared.SharedCount;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Collection;
@@ -46,7 +47,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     @Test
     public void testThreadedLeaseIncrease() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        final Timing        timing = new Timing();
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
             client.start();
@@ -66,10 +68,10 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         @Override
                         public Object call() throws Exception
                         {
-                            Lease lease = semaphore.acquire(10, TimeUnit.SECONDS);
+                            Lease lease = semaphore.acquire(timing.seconds(), TimeUnit.SECONDS);
                             Assert.assertNotNull(lease);
                             latch.countDown();
-                            lease = semaphore.acquire(10, TimeUnit.SECONDS);
+                            lease = semaphore.acquire(timing.seconds(), TimeUnit.SECONDS);
                             Assert.assertNotNull(lease);
                             return null;
                         }
@@ -82,8 +84,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                     @Override
                     public Object call() throws Exception
                     {
-                        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-                        Thread.sleep(1000); // make sure second acquire is waiting
+                        Assert.assertTrue(latch.await(timing.seconds(), TimeUnit.SECONDS));
+                        timing.sleepABit(); // make sure second acquire is waiting
                         Assert.assertTrue(count.trySetCount(2));
                         return null;
                     }

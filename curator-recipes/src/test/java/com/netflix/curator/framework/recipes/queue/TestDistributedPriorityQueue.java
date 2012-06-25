@@ -61,7 +61,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
             {
                 ++count;
             }
-            Assert.assertTrue(Math.abs(minItemsBeforeRefresh - count) < minItemsBeforeRefresh);     // allows for some slack - testing that within a slop value the newly inserted item with lower priority comes out
+            Assert.assertTrue(Math.abs(minItemsBeforeRefresh - count) < minItemsBeforeRefresh, String.format("Diff: %d - min: %d", Math.abs(minItemsBeforeRefresh - count), minItemsBeforeRefresh));     // allows for some slack - testing that within a slop value the newly inserted item with lower priority comes out
         }
         finally
         {

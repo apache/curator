@@ -18,6 +18,7 @@
 package com.netflix.curator;
 
 import com.netflix.curator.drivers.TracerDriver;
+import com.netflix.curator.utils.DebugUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,17 +159,26 @@ public class RetryLoop
         boolean     rethrow = true;
         if ( isRetryException(exception) )
         {
-            log.debug("Retry-able exception received", exception);
+            if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+            {
+                log.debug("Retry-able exception received", exception);
+            }
             if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs) )
             {
                 tracer.get().addCount("retries-disallowed", 1);
-                log.debug("Retry policy not allowing retry");
+                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                {
+                    log.debug("Retry policy not allowing retry");
+                }
                 rethrow = false;
             }
             else
             {
                 tracer.get().addCount("retries-allowed", 1);
-                log.debug("Retrying operation");
+                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                {
+                    log.debug("Retrying operation");
+                }
             }
         }
 

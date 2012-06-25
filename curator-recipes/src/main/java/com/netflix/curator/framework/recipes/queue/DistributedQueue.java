@@ -20,17 +20,17 @@ package com.netflix.curator.framework.recipes.queue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
-import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.recipes.leader.LeaderSelector;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -78,22 +79,12 @@ public class DistributedQueue<T> implements QueueBase<T>
     private final AtomicReference<ErrorMode> errorMode = new AtomicReference<ErrorMode>(ErrorMode.REQUEUE);
     private final ListenerContainer<QueuePutListener<T>> putListenerContainer = new ListenerContainer<QueuePutListener<T>>();
     private final AtomicInteger lastChildCount = new AtomicInteger(0);
+    private final int maxItems;
+    private final int finalFlushMs;
+    private final boolean putInBackground;
+    private final ChildrenCache childrenCache;
 
     private final AtomicInteger     putCount = new AtomicInteger(0);
-    private final CuratorListener   listener = new CuratorListener()
-    {
-        @Override
-        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-        {
-            if ( event.getType() == CuratorEventType.WATCHED )
-            {
-                if ( event.getWatchedEvent().getType() == Watcher.Event.EventType.NodeChildrenChanged )
-                {
-                    internalNotify();
-                }
-            }
-        }
-    };
 
     private enum State
     {
@@ -102,7 +93,8 @@ public class DistributedQueue<T> implements QueueBase<T>
         STOPPED
     }
 
-    private enum ProcessType
+    @VisibleForTesting
+    protected enum ProcessType
     {
         NORMAL,
         REMOVE
@@ -120,7 +112,10 @@ public class DistributedQueue<T> implements QueueBase<T>
             Executor executor,
             int minItemsBeforeRefresh,
             boolean refreshOnWatch,
-            String lockPath
+            String lockPath,
+            int maxItems,
+            boolean putInBackground,
+            int finalFlushMs
         )
     {
         Preconditions.checkNotNull(client, "client cannot be null");
@@ -128,9 +123,11 @@ public class DistributedQueue<T> implements QueueBase<T>
         Preconditions.checkNotNull(queuePath, "queuePath cannot be null");
         Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
         Preconditions.checkNotNull(executor, "executor cannot be null");
+        Preconditions.checkArgument(maxItems > 0, "maxItems must be a positive number");
 
         isProducerOnly = (consumer == null);
         this.lockPath = lockPath;
+        this.putInBackground = putInBackground;
         this.consumer = consumer;
         this.minItemsBeforeRefresh = minItemsBeforeRefresh;
         this.refreshOnWatch = refreshOnWatch;
@@ -138,7 +135,26 @@ public class DistributedQueue<T> implements QueueBase<T>
         this.serializer = serializer;
         this.queuePath = queuePath;
         this.executor = executor;
+        this.maxItems = maxItems;
+        this.finalFlushMs = finalFlushMs;
         service = Executors.newSingleThreadExecutor(threadFactory);
+        childrenCache = new ChildrenCache(client, queuePath)
+        {
+            @Override
+            protected synchronized void notifyFromCallback()
+            {
+                if ( DistributedQueue.this.refreshOnWatch )
+                {
+                    refreshOnWatchSignaled.set(true);
+                }
+                super.notifyFromCallback();
+            }
+        };
+
+        if ( (maxItems != QueueBuilder.NOT_SET) && putInBackground )
+        {
+            log.warn("Bounded queues should set putInBackground(false) in the builder. Putting in the background will result in spotty maxItem consistency.");
+        }
     }
 
     /**
@@ -174,36 +190,49 @@ public class DistributedQueue<T> implements QueueBase<T>
             }
         }
 
-        client.getCuratorListenable().addListener(listener, executor);
+        if ( !isProducerOnly || (maxItems != QueueBuilder.NOT_SET) )
+        {
+            childrenCache.start();
+        }
 
         if ( !isProducerOnly )
         {
             service.submit
-            (
-                new Callable<Object>()
-                {
-                    @Override
-                    public Object call()
+                (
+                    new Callable<Object>()
                     {
-                        runLoop();
-                        return null;
+                        @Override
+                        public Object call()
+                        {
+                            runLoop();
+                            return null;
+                        }
                     }
-                }
-            );
+                );
         }
     }
 
     @Override
     public void close() throws IOException
     {
-        if ( !state.compareAndSet(State.STARTED, State.STOPPED) )
+        if ( state.compareAndSet(State.STARTED, State.STOPPED) )
         {
-            throw new IllegalStateException();
-        }
+            if ( finalFlushMs > 0 )
+            {
+                try
+                {
+                    flushPuts(finalFlushMs, TimeUnit.MILLISECONDS);
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
 
-        putListenerContainer.clear();
-        client.getCuratorListenable().removeListener(listener);
-        service.shutdownNow();
+            Closeables.closeQuietly(childrenCache);
+            putListenerContainer.clear();
+            service.shutdownNow();
+        }
     }
 
     /**
@@ -265,32 +294,66 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     /**
      * Add an item into the queue. Adding is done in the background - thus, this method will
-     * return quickly.
+     * return quickly.<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param item item to add
      * @throws Exception connection issues
      */
     public void     put(T item) throws Exception
     {
+        put(item, 0, null);
+    }
+
+    /**
+     * Same as {@link #put(Object)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param item item to add
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean     put(T item, int maxWait, TimeUnit unit) throws Exception
+    {
         checkState();
 
         String      path = makeItemPath();
-        internalPut(item, null, path);
+        return internalPut(item, null, path, maxWait, unit);
     }
 
     /**
      * Add a set of items into the queue. Adding is done in the background - thus, this method will
-     * return quickly.
+     * return quickly.<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param items items to add
      * @throws Exception connection issues
      */
     public void     putMulti(MultiItem<T> items) throws Exception
     {
+        putMulti(items, 0, null);
+    }
+
+    /**
+     * Same as {@link #putMulti(MultiItem)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param items items to add
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean     putMulti(MultiItem<T> items, int maxWait, TimeUnit unit) throws Exception
+    {
         checkState();
 
         String      path = makeItemPath();
-        internalPut(null, items, path);
+        return internalPut(null, items, path, maxWait, unit);
     }
 
     /**
@@ -305,8 +368,13 @@ public class DistributedQueue<T> implements QueueBase<T>
         return lastChildCount.get();
     }
 
-    void internalPut(final T item, MultiItem<T> multiItem, String path) throws Exception
+    boolean internalPut(final T item, MultiItem<T> multiItem, String path, int maxWait, TimeUnit unit) throws Exception
     {
+        if ( !blockIfMaxed(maxWait, unit) )
+        {
+            return false;
+        }
+
         final MultiItem<T> givenMultiItem = multiItem;
         if ( item != null )
         {
@@ -323,7 +391,49 @@ public class DistributedQueue<T> implements QueueBase<T>
 
         putCount.incrementAndGet();
         byte[]              bytes = ItemSerializer.serialize(multiItem, serializer);
-        BackgroundCallback  callback = new BackgroundCallback()
+        if ( putInBackground )
+        {
+            doPutInBackground(item, path, givenMultiItem, bytes);
+        }
+        else
+        {
+            doPutInForeground(item, path, givenMultiItem, bytes);
+        }
+        return true;
+    }
+
+    private void doPutInForeground(final T item, String path, final MultiItem<T> givenMultiItem, byte[] bytes) throws Exception
+    {
+        client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(path, bytes);
+        synchronized(putCount)
+        {
+            putCount.decrementAndGet();
+            putCount.notifyAll();
+        }
+        putListenerContainer.forEach
+            (
+                new Function<QueuePutListener<T>, Void>()
+                {
+                    @Override
+                    public Void apply(QueuePutListener<T> listener)
+                    {
+                        if ( item != null )
+                        {
+                            listener.putCompleted(item);
+                        }
+                        else
+                        {
+                            listener.putMultiCompleted(givenMultiItem);
+                        }
+                        return null;
+                    }
+                }
+            );
+    }
+
+    private void doPutInBackground(final T item, String path, final MultiItem<T> givenMultiItem, byte[] bytes) throws Exception
+    {
+        BackgroundCallback callback = new BackgroundCallback()
         {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
@@ -361,7 +471,6 @@ public class DistributedQueue<T> implements QueueBase<T>
         internalCreateNode(path, bytes, callback);
     }
 
-
     @VisibleForTesting
     void internalCreateNode(String path, byte[] bytes, BackgroundCallback callback) throws Exception
     {
@@ -388,7 +497,7 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     protected List<String> getChildren() throws Exception
     {
-        return client.getChildren().watched().forPath(queuePath);
+        return client.getChildren().forPath(queuePath);
     }
 
     protected long getDelay(String itemNode)
@@ -407,51 +516,50 @@ public class DistributedQueue<T> implements QueueBase<T>
         return processNormally(itemNode, ProcessType.REMOVE);
     }
 
-    private synchronized void internalNotify()
+    private boolean blockIfMaxed(int maxWait, TimeUnit unit) throws Exception
     {
-        if ( refreshOnWatch )
+        ChildrenCache.Data data = childrenCache.getData();
+        while ( data.children.size() >= maxItems )
         {
-            refreshOnWatchSignaled.set(true);
+            long        previousVersion = data.version;
+            data = childrenCache.blockingNextGetData(data.version, maxWait, unit);
+            if ( data.version == previousVersion )
+            {
+                return false;
+            }
         }
-        notifyAll();
+        return true;
     }
 
     private void runLoop()
     {
+        long         currentVersion = -1;
+        long         maxWaitMs = -1;
         try
         {
             while ( !Thread.currentThread().isInterrupted()  )
             {
-                List<String>        children;
-                synchronized(this)
-                {
-                    for(;;)
-                    {
-                        children = getChildren();
-                        lastChildCount.set(children.size());
-                        sortChildren(children); // makes sure items are processed in the correct order
+                ChildrenCache.Data      data = (maxWaitMs > 0) ? childrenCache.blockingNextGetData(currentVersion, maxWaitMs, TimeUnit.MILLISECONDS) : childrenCache.blockingNextGetData(currentVersion);
+                currentVersion = data.version;
 
-                        long        waitMs = (children.size() > 0) ? getDelay(children.get(0)) : 0;
-                        if ( waitMs > 0 )
-                        {
-                            wait(waitMs);
-                        }
-                        else if ( children.size() == 0 )
-                        {
-                            wait();
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
+                List<String>        children = Lists.newArrayList(data.children);
+                sortChildren(children); // makes sure items are processed in the correct order
 
-                    refreshOnWatchSignaled.set(false);
-                }
                 if ( children.size() > 0 )
                 {
-                    processChildren(children);
+                    maxWaitMs = getDelay(children.get(0));
+                    if ( maxWaitMs > 0 )
+                    {
+                        continue;
+                    }
                 }
+                else
+                {
+                    continue;
+                }
+
+                refreshOnWatchSignaled.set(false);
+                processChildrenAndReset(children);
             }
         }
         catch ( InterruptedException ignore )
@@ -464,20 +572,35 @@ public class DistributedQueue<T> implements QueueBase<T>
         }
     }
 
+    private void processChildrenAndReset(List<String> children) throws Exception
+    {
+        try
+        {
+            processChildren(children);
+        }
+        finally
+        {
+            childrenCache.sync();
+        }
+    }
+
     private void processChildren(List<String> children) throws Exception
     {
+        final Semaphore processedLatch = new Semaphore(0);
         final boolean   isUsingLockSafety = (lockPath != null);
         int             min = minItemsBeforeRefresh;
         for ( final String itemNode : children )
         {
             if ( Thread.currentThread().isInterrupted() )
             {
+                processedLatch.release(children.size());
                 break;
             }
 
             if ( !itemNode.startsWith(QUEUE_ITEM_NAME) )
             {
                 log.warn("Foreign node in queue path: " + itemNode);
+                processedLatch.release();
                 continue;
             }
 
@@ -485,12 +608,14 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 if ( refreshOnWatchSignaled.compareAndSet(true, false) )
                 {
+                    processedLatch.release(children.size());
                     break;
                 }
             }
 
             if ( getDelay(itemNode) > 0 )
             {
+                processedLatch.release();
                 continue;
             }
 
@@ -516,10 +641,16 @@ public class DistributedQueue<T> implements QueueBase<T>
                         {
                             log.error("Error processing message at " + itemNode, e);
                         }
+                        finally
+                        {
+                            processedLatch.release();
+                        }
                     }
                 }
             );
         }
+
+        processedLatch.acquire(children.size());
     }
 
     private boolean processMessageBytes(String itemNode, byte[] bytes) throws Exception
@@ -529,7 +660,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         {
             items = ItemSerializer.deserialize(bytes, serializer);
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             log.error("Corrupted queue item: " + itemNode, e);
             return false;
@@ -548,7 +679,7 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 consumer.consumeMessage(item);
             }
-            catch ( Exception e )
+            catch ( Throwable e )
             {
                 log.error("Exception processing queue item: " + itemNode, e);
                 if ( errorMode.get() == ErrorMode.REQUEUE )
@@ -573,7 +704,10 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 bytes = client.getData().storingStatIn(stat).forPath(itemPath);
             }
-            client.delete().withVersion(stat.getVersion()).forPath(itemPath);
+            if ( client.isStarted() )
+            {
+                client.delete().withVersion(stat.getVersion()).forPath(itemPath);
+            }
 
             if ( type == ProcessType.NORMAL )
             {
@@ -598,7 +732,8 @@ public class DistributedQueue<T> implements QueueBase<T>
         return false;
     }
 
-    private boolean processWithLockSafety(String itemNode, ProcessType type) throws Exception
+    @VisibleForTesting
+    protected boolean processWithLockSafety(String itemNode, ProcessType type) throws Exception
     {
         String      lockNodePath = ZKPaths.makePath(lockPath, itemNode);
         boolean     lockCreated = false;
