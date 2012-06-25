@@ -37,8 +37,14 @@ public class TestReaper extends BaseClassForTests
             reaper.start();
             reaper.addPath("/one/two/three");
 
-            Thread.sleep(2 * (THRESHOLD / Reaper.EMPTY_COUNT_THRESHOLD));
-            Assert.assertTrue(reaper.getEmptyCount("/one/two/three") > 0);
+            long        start = System.currentTimeMillis();
+            boolean     emptyCountIsCorrect = false;
+            while ( ((System.currentTimeMillis() - start) < timing.forWaiting().milliseconds()) && !emptyCountIsCorrect )   // need to loop as the Holder can go in/out of the Reaper's DelayQueue
+            {
+                emptyCountIsCorrect = (reaper.getEmptyCount("/one/two/three") > 0);
+                Thread.sleep(1);
+            }
+            Assert.assertTrue(emptyCountIsCorrect);
 
             client.create().forPath("/one/two/three/foo");
 
