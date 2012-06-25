@@ -4,6 +4,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
@@ -12,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
@@ -32,6 +35,7 @@ public class Reaper implements Closeable
     private final ExecutorService executor;
     private final int reapingThresholdMs;
     private final DelayQueue<PathHolder> queue = new DelayQueue<PathHolder>();
+    private final Set<String> activePaths = Sets.newSetFromMap(Maps.<String, Boolean>newConcurrentMap());
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
     private enum State
@@ -165,6 +169,7 @@ public class Reaper implements Closeable
      */
     public void     addPath(String path, Mode mode)
     {
+        activePaths.add(path);
         queue.add(new PathHolder(path, reapingThresholdMs, mode, 0));
     }
 
@@ -176,7 +181,7 @@ public class Reaper implements Closeable
      */
     public boolean     removePath(String path)
     {
-        return queue.remove(new PathHolder(path, reapingThresholdMs, null, 0));
+        return activePaths.remove(path);
     }
 
     /**
@@ -252,6 +257,11 @@ public class Reaper implements Closeable
 
     private void reap(PathHolder holder)
     {
+        if ( !activePaths.contains(holder.path) )
+        {
+            return;
+        }
+
         boolean     addBack = true;
         int         newEmptyCount = 0;
         try
@@ -293,7 +303,7 @@ public class Reaper implements Closeable
             log.error("Trying to reap: " + holder.path, e);
         }
 
-        if ( addBack && !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
+        if ( addBack && !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) && activePaths.contains(holder.path) )
         {
             queue.add(new PathHolder(holder.path, reapingThresholdMs, holder.mode, newEmptyCount));
         }
