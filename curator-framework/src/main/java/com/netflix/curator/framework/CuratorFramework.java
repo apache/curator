@@ -19,6 +19,7 @@ package com.netflix.curator.framework;
 
 import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.framework.api.*;
+import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
@@ -101,6 +102,13 @@ public interface CuratorFramework extends Closeable
      * @return builder object
      */
     public SetACLBuilder setACL();
+
+    /**
+     * Start a transaction builder
+     *
+     * @return builder object
+     */
+    public CuratorTransaction inTransaction();
 
         /**
      * Perform a sync on the given path - syncs are always in the background

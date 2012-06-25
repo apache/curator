@@ -174,7 +174,7 @@ class ConnectionState implements Watcher, Closeable
         boolean newIsConnected = wasConnected;
         if ( event.getType() == Watcher.Event.EventType.None )
         {
-            newIsConnected = checkState(event.getState());
+            newIsConnected = checkState(event.getState(), wasConnected);
         }
 
         if ( newIsConnected != wasConnected )
@@ -184,9 +184,9 @@ class ConnectionState implements Watcher, Closeable
         }
     }
 
-    private boolean checkState(Event.KeeperState state)
+    private boolean checkState(Event.KeeperState state, boolean wasConnected)
     {
-        boolean     isConnected;
+        boolean     isConnected = wasConnected;
         boolean     checkNewConnectionString = true;
         switch ( state )
         {
@@ -198,6 +198,7 @@ class ConnectionState implements Watcher, Closeable
             }
 
             case SyncConnected:
+            case ConnectedReadOnly:
             {
                 isConnected = true;
                 break;
@@ -215,6 +216,12 @@ class ConnectionState implements Watcher, Closeable
                 isConnected = false;
                 checkNewConnectionString = false;
                 handleExpiredSession();
+                break;
+            }
+
+            case SaslAuthenticated:
+            {
+                // NOP
                 break;
             }
         }
