@@ -202,11 +202,14 @@ public class TestingCluster implements Closeable
         Method              m = client.getClass().getDeclaredMethod("testableRemoteSocketAddress");
         m.setAccessible(true);
         InetSocketAddress   address = (InetSocketAddress)m.invoke(client);
-        for ( TestingZooKeeperServer server : servers )
+        if ( address != null )
         {
-            if ( server.getInstanceSpec().getPort() == address.getPort() )
+            for ( TestingZooKeeperServer server : servers )
             {
-                return server.getInstanceSpec();
+                if ( server.getInstanceSpec().getPort() == address.getPort() )
+                {
+                    return server.getInstanceSpec();
+                }
             }
         }
 
