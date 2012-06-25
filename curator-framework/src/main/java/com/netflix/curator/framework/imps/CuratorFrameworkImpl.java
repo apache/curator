@@ -26,7 +26,6 @@ import com.netflix.curator.TimeTrace;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.*;
-import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.state.ConnectionState;
@@ -323,14 +322,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
 
         return new SetACLBuilderImpl(this);
-    }
-
-    @Override
-    public CuratorTransaction inTransaction()
-    {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
-
-        return new CuratorTransactionImpl(this);
     }
 
     @Override

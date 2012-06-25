@@ -26,12 +26,8 @@ import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.DeleteBuilder;
 import com.netflix.curator.framework.api.DeleteBuilderBase;
 import com.netflix.curator.framework.api.Pathable;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
-import com.netflix.curator.framework.api.transaction.OperationType;
-import com.netflix.curator.framework.api.transaction.TransactionDeleteBuilder;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
@@ -48,27 +44,6 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         version = -1;
         backgrounding = new Backgrounding();
         guaranteed = false;
-    }
-
-    TransactionDeleteBuilder    asTransactionDeleteBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
-    {
-        return new TransactionDeleteBuilder()
-        {
-            @Override
-            public CuratorTransactionBridge forPath(String path) throws Exception
-            {
-                String      fixedPath = client.fixForNamespace(path);
-                transaction.add(Op.delete(fixedPath, version), OperationType.DELETE, path);
-                return curatorTransaction;
-            }
-
-            @Override
-            public Pathable<CuratorTransactionBridge> withVersion(int version)
-            {
-                DeleteBuilderImpl.this.withVersion(version);
-                return this;
-            }
-        };
     }
 
     @Override
