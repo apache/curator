@@ -107,13 +107,15 @@ public class TestServiceDiscovery
             Collection<ServiceInstance<Void>> list = Sets.newHashSet();
             list.add(s1_i1);
             list.add(s1_i2);
-            Assert.assertEquals(Sets.<ServiceInstance<Void>>newHashSet(discovery.queryForInstances(SERVICE_ONE)), list);
+            Collection<ServiceInstance<Void>> queriedInstances = Sets.newHashSet(discovery.queryForInstances(SERVICE_ONE));
+            Assert.assertEquals(queriedInstances, list, String.format("Not equal l: %s - d: %s", list, queriedInstances));
 
             list.clear();
 
             list.add(s2_i1);
             list.add(s2_i2);
-            Assert.assertEquals(Sets.<ServiceInstance<Void>>newHashSet(discovery.queryForInstances(SERVICE_TWO)), list);
+            queriedInstances = Sets.newHashSet(discovery.queryForInstances(SERVICE_TWO));
+            Assert.assertEquals(queriedInstances, list, String.format("Not equal l: %s - d: %s", list, queriedInstances));
         }
         finally
         {

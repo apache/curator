@@ -32,8 +32,8 @@ public class TestDistributedDelayQueue extends BaseClassForTests
             Long        value = consumer.take(1, TimeUnit.SECONDS);
             Assert.assertNull(value);
 
-            queue.put(2L, System.currentTimeMillis() + 10);
-            value = consumer.take(1, TimeUnit.SECONDS);
+            queue.put(2L, System.currentTimeMillis());
+            value = consumer.take(timing.seconds(), TimeUnit.SECONDS);
             Assert.assertEquals(value, Long.valueOf(2));
 
             value = consumer.take(1, TimeUnit.SECONDS);

@@ -31,8 +31,8 @@ import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.framework.state.ConnectionStateManager;
+import com.netflix.curator.utils.DebugUtils;
 import com.netflix.curator.utils.EnsurePath;
-import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -57,14 +57,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ListenerContainer<UnhandledErrorListener>             unhandledErrorListeners;
     private final ExecutorService                                       executorService;
     private final BlockingQueue<OperationAndData<?>>                    backgroundOperations;
-    private final String                                                namespace;
-    private final EnsurePath                                            ensurePath;
+    private final NamespaceImpl                                         namespace;
     private final ConnectionStateManager                                connectionStateManager;
     private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
     private final byte[]                                                defaultData;
     private final FailedDeleteManager                                   failedDeleteManager;
     private final CompressionProvider                                   compressionProvider;
     private final ACLProvider                                           aclProvider;
+    private final NamespaceFacadeCache                                  namespaceFacadeCache;
 
     private enum State
     {
@@ -122,12 +122,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
         backgroundOperations = new LinkedBlockingQueue<OperationAndData<?>>();
-        namespace = builder.getNamespace();
-        ensurePath = (namespace != null) ? new EnsurePath(ZKPaths.makePath("/", namespace)) : null;
+        namespace = new NamespaceImpl(this, builder.getNamespace());
         executorService = Executors.newFixedThreadPool(2, getThreadFactory(builder));  // 1 for listeners, 1 for background ops
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
+        namespaceFacadeCache = new NamespaceFacadeCache(this);
 
         byte[]      builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -162,8 +162,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         failedDeleteManager = parent.failedDeleteManager;
         compressionProvider = parent.compressionProvider;
         aclProvider = parent.aclProvider;
-        namespace = null;
-        ensurePath = null;
+        namespaceFacadeCache = parent.namespaceFacadeCache;
+        namespace = new NamespaceImpl(this, null);
     }
 
     @Override
@@ -249,9 +249,15 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CuratorFramework nonNamespaceView()
     {
+        return usingNamespace(null);
+    }
+
+    @Override
+    public CuratorFramework usingNamespace(String newNamespace)
+    {
         Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
 
-        return new NonNamespaceFacade(this);
+        return namespaceFacadeCache.get(newNamespace);
     }
 
     @Override
@@ -361,7 +367,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
-        return new EnsurePath(fixForNamespace(path));
+        return namespace.newNamespaceAwareEnsurePath(path);
     }
 
     ACLProvider getAclProvider()
@@ -454,7 +460,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
             reason = "n/a";
         }
 
-        log.error(reason, e);
+        if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) || !(e instanceof KeeperException) )
+        {
+            log.error(reason, e);
+        }
+
         if ( e instanceof KeeperException.ConnectionLossException )
         {
             connectionStateManager.addStateChange(ConnectionState.LOST);
@@ -477,24 +487,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     String    unfixForNamespace(String path)
     {
-        if ( (namespace != null) && (path != null) )
-        {
-            String      namespacePath = ZKPaths.makePath(namespace, null);
-            if ( path.startsWith(namespacePath) )
-            {
-                path = (path.length() > namespacePath.length()) ? path.substring(namespacePath.length()) : "/";
-            }
-        }
-        return path;
+        return namespace.unfixForNamespace(path);
     }
 
     String    fixForNamespace(String path)
     {
-        if ( !ensurePath() )
-        {
-            return "";
-        }
-        return ZKPaths.fixForNamespace(namespace, path);
+        return namespace.fixForNamespace(path);
     }
 
     byte[] getDefaultData()
@@ -502,21 +500,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return defaultData;
     }
 
-    private boolean ensurePath()
+    NamespaceFacadeCache getNamespaceFacadeCache()
     {
-        if ( ensurePath != null )
-        {
-            try
-            {
-                ensurePath.ensure(client);
-            }
-            catch ( Exception e )
-            {
-                logError("Ensure path threw exception", e);
-                return false;
-            }
-        }
-        return true;
+        return namespaceFacadeCache;
     }
 
     private <DATA_TYPE> void sendToBackgroundCallback(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
@@ -537,16 +523,25 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             if ( (operationAndData != null) && RetryLoop.isRetryException(e) )
             {
-                log.debug("Retry-able exception received", e);
+                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                {
+                    log.debug("Retry-able exception received", e);
+                }
                 if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs()) )
                 {
-                    log.debug("Retrying operation");
+                    if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                    {
+                        log.debug("Retrying operation");
+                    }
                     backgroundOperations.offer(operationAndData);
                     break;
                 }
                 else
                 {
-                    log.debug("Retry policy did not allow retry");
+                    if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                    {
+                        log.debug("Retry policy did not allow retry");
+                    }
                     if ( operationAndData.getErrorCallback() != null )
                     {
                         operationAndData.getErrorCallback().retriesExhausted(operationAndData);
