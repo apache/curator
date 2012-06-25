@@ -23,8 +23,6 @@ stay around as garbage. See the Utilities wiki for details: https://github.com/N
 
 * Issue 88: Children processor should wait for all nodes to be processed before fetching more items
 
-* There were some race conditions in the bounded version. To fix, factored out the querying of the parent node.
-
 1.1.12/1.0.13 - June 5, 2012
 ============================
 * Pull Request 81: Avoid invalid ipv6 localhost addresses
