@@ -28,7 +28,7 @@ public interface CreateBuilder extends
      *
      * @return this
      */
-    public ACLCreateModePathAndBytesable<String>    creatingParentsIfNeeded();
+    public ProtectACLCreateModePathAndBytesable<String> creatingParentsIfNeeded();
 
     /**
      * @deprecated this has been generalized to support all create modes. Instead, use:

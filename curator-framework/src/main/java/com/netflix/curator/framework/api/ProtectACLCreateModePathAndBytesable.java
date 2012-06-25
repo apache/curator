@@ -15,27 +15,11 @@
  *     limitations under the License.
  *
  */
-package com.netflix.curator;
+package com.netflix.curator.framework.api;
 
-import com.netflix.curator.test.TestingServer;
-import com.netflix.curator.utils.DebugUtils;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-
-public class BaseClassForTests
+public interface ProtectACLCreateModePathAndBytesable<T> extends
+    ACLPathAndBytesable<T>,
+    CreateModable<ACLPathAndBytesable<T>>
 {
-    protected TestingServer server;
-
-    @BeforeMethod
-    public void     setup() throws Exception
-    {
-        System.setProperty(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
-        server = new TestingServer();
-    }
-
-    @AfterMethod
-    public void     teardown() throws Exception
-    {
-        server.close();
-    }
+    public ACLCreateModePathAndBytesable<String>    withProtection();
 }

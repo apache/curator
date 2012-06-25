@@ -26,20 +26,28 @@ import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
 
-public class NonNamespaceFacade extends CuratorFrameworkImpl
+class NamespaceFacade extends CuratorFrameworkImpl
 {
     private final CuratorFrameworkImpl client;
+    private final NamespaceImpl namespace;
 
-    NonNamespaceFacade(CuratorFrameworkImpl client)
+    NamespaceFacade(CuratorFrameworkImpl client, String namespace)
     {
         super(client);
         this.client = client;
+        this.namespace = new NamespaceImpl(client, namespace);
     }
 
     @Override
     public CuratorFramework nonNamespaceView()
     {
-        return this;
+        return usingNamespace(null);
+    }
+
+    @Override
+    public CuratorFramework usingNamespace(String newNamespace)
+    {
+        return client.getNamespaceFacadeCache().get(newNamespace);
     }
 
     @Override
@@ -165,18 +173,18 @@ public class NonNamespaceFacade extends CuratorFrameworkImpl
     @Override
     String unfixForNamespace(String path)
     {
-        return path;
+        return namespace.unfixForNamespace(path);
     }
 
     @Override
     String fixForNamespace(String path)
     {
-        return path;
+        return namespace.fixForNamespace(path);
     }
 
     @Override
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
-        return new EnsurePath(path);    // no namespace
+        return namespace.newNamespaceAwareEnsurePath(path);
     }
 }

@@ -64,10 +64,13 @@ public class DistributedIdQueue<T> implements QueueBase<T>
         executor,
         int minItemsBeforeRefresh,
         boolean refreshOnWatch,
-        String lockPath
+        String lockPath,
+        int maxItems,
+        boolean putInBackground,
+        int finalFlushMs
     )
     {
-        queue = new DistributedQueue<T>(client, consumer, serializer, queuePath, threadFactory, executor, minItemsBeforeRefresh, refreshOnWatch, lockPath)
+        queue = new DistributedQueue<T>(client, consumer, serializer, queuePath, threadFactory, executor, minItemsBeforeRefresh, refreshOnWatch, lockPath, maxItems, putInBackground, finalFlushMs)
         {
             @Override
             protected void sortChildren(List<String> children)
@@ -119,7 +122,9 @@ public class DistributedIdQueue<T> implements QueueBase<T>
     }
 
     /**
-     * Put an item into the queue with the given Id
+     * Put an item into the queue with the given Id<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param item item
      * @param itemId item Id
@@ -127,11 +132,27 @@ public class DistributedIdQueue<T> implements QueueBase<T>
      */
     public void put(T item, String itemId) throws Exception
     {
+        put(item, itemId, 0, null);
+    }
+
+    /**
+     * Same as {@link #put(Object, String)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param item item
+     * @param itemId item Id
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean put(T item, String itemId, int maxWait, TimeUnit unit) throws Exception
+    {
         Preconditions.checkArgument(isValidId(itemId), "Invalid id: " + itemId);
 
         queue.checkState();
 
-        queue.internalPut(item, null, queue.makeItemPath() + SEPARATOR + fixId(itemId) + SEPARATOR);
+        return queue.internalPut(item, null, queue.makeItemPath() + SEPARATOR + fixId(itemId) + SEPARATOR, maxWait, unit);
     }
 
     /**

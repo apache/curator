@@ -1,3 +1,24 @@
+1.1.13/1.0.14 - xxxxxxxxxxxx
+============================
+* New queue features: a) bounded queues: use setMaxItems() in the builder to set an (approx) upper
+bound on the queue size; b) the builder now has an option to turn off background puts; c) queues now
+default to flushing remaining puts when closed - this can be controlled in the builder via
+finalFlushTime().
+
+* Issue 82: Generalized (and deprecated) nonNamespaceView() by adding the usingNamespace() method
+to allow getting a facade of the client that uses a specified namespace.
+
+* createParentsIfNeeded() should now perform better. Instead of "pre" checking, it now only does the
+check if KeeperException.NoNodeException is thrown. LockInternals now uses this method and, so, should
+perform a bit better.
+
+* Added a new utility: Reaper. This can be used to clean up parent lock nodes so that they don't
+stay around as garbage. See the Utilities wiki for details: https://github.com/Netflix/curator/wiki/Utilities
+
+* Unit tests should be a lot less noisy. A system property now turns off most internal error logging.
+
+* Issue 88: Children processor should wait for all nodes to be processed before fetching more items
+
 1.1.12/1.0.13 - June 5, 2012
 ============================
 * Pull Request 81: Avoid invalid ipv6 localhost addresses

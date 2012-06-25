@@ -19,6 +19,7 @@
 package com.netflix.curator.framework.recipes;
 
 import com.netflix.curator.test.TestingServer;
+import com.netflix.curator.utils.DebugUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -29,6 +30,7 @@ public class BaseClassForTests
     @BeforeMethod
     public void     setup() throws Exception
     {
+        System.setProperty(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
         server = new TestingServer();
     }
 

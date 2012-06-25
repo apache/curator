@@ -23,6 +23,9 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +52,10 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
             ThreadFactory threadFactory,
             Executor executor,
             int minItemsBeforeRefresh,
-            String lockPath
+            String lockPath,
+            int maxItems,
+            boolean putInBackground,
+            int finalFlushMs
         )
     {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0, "minItemsBeforeRefresh cannot be negative");
@@ -64,13 +70,33 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
             executor,
             minItemsBeforeRefresh,
             true,
-            lockPath
+            lockPath,
+            maxItems,
+            putInBackground,
+            finalFlushMs
         )
         {
             protected long getDelay(String itemNode)
             {
                 long epoch = getEpoch(itemNode);
                 return epoch - System.currentTimeMillis();
+            }
+
+            protected void sortChildren(List<String> children)
+            {
+                Collections.sort
+                (
+                    children,
+                    new Comparator<String>()
+                    {
+                        @Override
+                        public int compare(String o1, String o2)
+                        {
+                            long        diff = getDelay(o1) - getDelay(o2);
+                            return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
+                        }
+                    }
+                );
             }
         };
     }
@@ -94,7 +120,9 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
 
     /**
      * Add an item into the queue. Adding is done in the background - thus, this method will
-     * return quickly.
+     * return quickly.<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param item item to add
      * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
@@ -102,16 +130,34 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      */
     public void     put(T item, long delayUntilEpoch) throws Exception
     {
+        put(item, delayUntilEpoch, 0, null);
+    }
+
+    /**
+     * Same as {@link #put(Object, long)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param item item to add
+     * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean      put(T item, long delayUntilEpoch, int maxWait, TimeUnit unit) throws Exception
+    {
         Preconditions.checkArgument(delayUntilEpoch > 0, "delayUntilEpoch cannot be negative");
 
         queue.checkState();
 
-        queue.internalPut(item, null, queue.makeItemPath() + epochToString(delayUntilEpoch));
+        return queue.internalPut(item, null, queue.makeItemPath() + epochToString(delayUntilEpoch), maxWait, unit);
     }
 
     /**
      * Add a set of items with the same priority into the queue. Adding is done in the background - thus, this method will
-     * return quickly.
+     * return quickly.<br/><br/>
+     * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
+     * block until there is available space in the queue.
      *
      * @param items items to add
      * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
@@ -119,11 +165,27 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      */
     public void     putMulti(MultiItem<T> items, long delayUntilEpoch) throws Exception
     {
+        putMulti(items, delayUntilEpoch, 0, null);
+    }
+
+    /**
+     * Same as {@link #putMulti(MultiItem, long)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param items items to add
+     * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean      putMulti(MultiItem<T> items, long delayUntilEpoch, int maxWait, TimeUnit unit) throws Exception
+    {
         Preconditions.checkArgument(delayUntilEpoch > 0, "delayUntilEpoch cannot be negative");
 
         queue.checkState();
 
-        queue.internalPut(null, items, queue.makeItemPath() + epochToString(delayUntilEpoch));
+        return queue.internalPut(null, items, queue.makeItemPath() + epochToString(delayUntilEpoch), maxWait, unit);
     }
 
     @Override
@@ -167,7 +229,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
         return SEPARATOR + String.format("%08X", epoch) + SEPARATOR;
     }
 
-    private long getEpoch(String itemNode)
+    private static long getEpoch(String itemNode)
     {
         int     index2 = itemNode.lastIndexOf(SEPARATOR);
         int     index1 = (index2 > 0) ? itemNode.lastIndexOf(SEPARATOR, index2 - 1) : -1;
