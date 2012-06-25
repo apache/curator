@@ -1,5 +1,5 @@
-1.1.13/1.0.14 - xxxxxxxxxxxx
-============================
+1.1.13/1.0.14 - June 25, 2012
+=============================
 * New queue features: a) bounded queues: use setMaxItems() in the builder to set an (approx) upper
 bound on the queue size; b) the builder now has an option to turn off background puts; c) queues now
 default to flushing remaining puts when closed - this can be controlled in the builder via
