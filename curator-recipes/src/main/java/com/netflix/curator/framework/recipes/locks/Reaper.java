@@ -112,8 +112,9 @@ public class Reaper implements Closeable
 
     public enum Mode
     {
-        REAP_INDEFINITELY,
-        REAP_UNTIL_DELETE
+        REAP_INDEFINITELY, //Reap forever, or until removePath is called for the path
+        REAP_UNTIL_DELETE, //Reap until the Reaper succeeds in deleting the path
+        REAP_UNTIL_GONE //Reap until the path no longer exists
     }
 
     /**
@@ -151,7 +152,7 @@ public class Reaper implements Closeable
 
     /**
      * Add a path (using Mode.REAP_INDEFINITELY) to be checked by the reaper. The path will be checked periodically
-     * until the path is removed of the reaper is closed.
+     * until the reaper is closed.
      *
      * @param path path to check
      */
@@ -162,7 +163,7 @@ public class Reaper implements Closeable
 
     /**
      * Add a path to be checked by the reaper. The path will be checked periodically
-     * until the path is removed of the reaper is closed.
+     * until the reaper is closed, or until the point specified by the Mode
      *
      * @param path path to check
      * @param mode reaping mode
@@ -277,14 +278,18 @@ public class Reaper implements Closeable
                         {
                             client.delete().forPath(holder.path);
                             log.info("Reaping path: " + holder.path);
-                            if ( holder.mode == Mode.REAP_UNTIL_DELETE )
+                            if ( holder.mode == Mode.REAP_UNTIL_DELETE || holder.mode == Mode.REAP_UNTIL_GONE)
                             {
                                 addBack = false;
                             }
                         }
                         catch ( KeeperException.NoNodeException ignore )
                         {
-                            // ignore - it must have been deleted by another process/thread
+                            // Node must have been deleted by another process/thread
+                            if ( holder.mode == Mode.REAP_UNTIL_GONE )
+                            {
+                                addBack = false;
+                            }
                         }
                         catch ( KeeperException.NotEmptyException ignore )
                         {
@@ -296,6 +301,11 @@ public class Reaper implements Closeable
                         newEmptyCount = holder.emptyCount + 1;
                     }
                 }
+            } else {
+                if ( holder.mode == Mode.REAP_UNTIL_GONE )
+                {
+                    addBack = false;
+                }
             }
         }
         catch ( Exception e )
@@ -303,7 +313,10 @@ public class Reaper implements Closeable
             log.error("Trying to reap: " + holder.path, e);
         }
 
-        if ( addBack && !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) && activePaths.contains(holder.path) )
+        if ( !addBack ) {
+            activePaths.remove(holder.path);
+        }
+        else if ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) && activePaths.contains(holder.path) )
         {
             queue.add(new PathHolder(holder.path, reapingThresholdMs, holder.mode, newEmptyCount));
         }
