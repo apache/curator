@@ -113,7 +113,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
 
     private ZooKeeperServer getZooKeeperServer(NIOServerCnxn.Factory cnxnFactory) throws Exception
     {
-        Field               zkServerField = NIOServerCnxn.Factory.class.getDeclaredField("zkServer");
+        Field               zkServerField = NIOServerCnxn.Factory.class.getDeclaredField("zks");
         zkServerField.setAccessible(true);
         ZooKeeperServer     zkServer;
 
