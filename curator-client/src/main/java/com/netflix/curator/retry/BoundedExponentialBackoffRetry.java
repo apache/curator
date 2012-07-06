@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright 2011 Netflix, Inc.
+ *  Copyright 2012 Netflix, Inc.
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -18,36 +18,34 @@
 package com.netflix.curator.retry;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.util.Random;
 
 /**
- * Retry policy that retries a set number of times with increasing sleep time between retries
+ * Retry policy that retries a set number of times with an increasing (up to a maximum bound) sleep time between retries
  */
-public class ExponentialBackoffRetry extends SleepingRetry
+public class BoundedExponentialBackoffRetry extends ExponentialBackoffRetry
 {
-    private final Random random = new Random();
-    private final int baseSleepTimeMs;
+    private final int maxSleepTimeMs;
 
     /**
      * @param baseSleepTimeMs initial amount of time to wait between retries
-     * @param maxRetries max number of times to retry
+     * @param maxSleepTimeMs maximum amount of time to wait between retries
+     * @param maxRetries maximum number of times to retry
      */
-    public ExponentialBackoffRetry(int baseSleepTimeMs, int maxRetries)
+    public BoundedExponentialBackoffRetry(int baseSleepTimeMs, int maxSleepTimeMs, int maxRetries)
     {
-        super(maxRetries);
-        this.baseSleepTimeMs = baseSleepTimeMs;
+        super(baseSleepTimeMs, maxRetries);
+        this.maxSleepTimeMs = maxSleepTimeMs;
     }
 
     @VisibleForTesting
-    public int getBaseSleepTimeMs()
+    public int getMaxSleepTimeMs()
     {
-        return baseSleepTimeMs;
+        return maxSleepTimeMs;
     }
 
     @Override
     protected int getSleepTimeMs(int retryCount, long elapsedTimeMs)
     {
-        // copied from Hadoop's RetryPolicies.java
-        return baseSleepTimeMs * Math.max(1, random.nextInt(1 << (retryCount+1)));
+        return Math.min(maxSleepTimeMs, super.getSleepTimeMs(retryCount, elapsedTimeMs));
     }
 }

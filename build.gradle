@@ -1,6 +1,6 @@
 // Establish version and status
 def performingRelease = project.hasProperty('release') && Boolean.parseBoolean(project.release)
-def releaseVersion = '1.0.14'
+def releaseVersion = '1.0.15'
 def versionPostfix = performingRelease?'':'-SNAPSHOT'
 version = "${releaseVersion}${versionPostfix}"
 status = performingRelease?'release':'snapshot'
@@ -152,9 +152,9 @@ project(':curator-test')
 {
     dependencies
     {
-        compile 'org.slf4j:slf4j-api:1.6.3'
         compile 'org.javassist:javassist:3.15.0-GA'
         compile 'org.apache.commons:commons-math:2.2'
+        compile 'org.slf4j:slf4j-api:1.6.6'
     }
 }
 

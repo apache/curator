@@ -1,5 +1,20 @@
-1.1.13/1.0.14 - xxxxxxxxxxxx
+1.1.14/1.0.15 - July 6, 2012
 ============================
+* Merge #100 from bbeck: Added BoundedExponentialBackoffRetry.
+
+* Merge #102 from artemip: Added REAP_UNTIL_GONE mode to Reaper; Remove items from activePaths once
+they are deletes; Tests
+
+* Issue 99: The Double Barrier should allow more than the max to enter the barrier. I don't see any
+harm in this.
+
+* Issue 103: Important change/fix for ExhibitorEnsembleProvider: the previous implementation wasn't
+handling outages very well. The connectionString could get stuck to an old value if the list of
+Exhibitors all went down and couldn't be contacted. Now, a backup provider is required and the backup
+is used to update the list of Exhibitors should there be connection problems.
+
+1.1.13/1.0.14 - June 25, 2012
+=============================
 * New queue features: a) bounded queues: use setMaxItems() in the builder to set an (approx) upper
 bound on the queue size; b) the builder now has an option to turn off background puts; c) queues now
 default to flushing remaining puts when closed - this can be controlled in the builder via

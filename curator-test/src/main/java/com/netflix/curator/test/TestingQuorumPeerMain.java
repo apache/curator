@@ -5,7 +5,6 @@ import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.channels.ServerSocketChannel;
 
 class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
 {
@@ -16,15 +15,10 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
         {
             if ( quorumPeer != null )
             {
-                Field                   cnxnFactoryField = QuorumPeer.class.getDeclaredField("cnxnFactory");
+                Field               cnxnFactoryField = QuorumPeer.class.getDeclaredField("cnxnFactory");
                 cnxnFactoryField.setAccessible(true);
                 NIOServerCnxn.Factory   cnxnFactory = (NIOServerCnxn.Factory)cnxnFactoryField.get(quorumPeer);
                 cnxnFactory.shutdown();
-
-                Field               ssField = cnxnFactory.getClass().getDeclaredField("ss");
-                ssField.setAccessible(true);
-                ServerSocketChannel ss = (ServerSocketChannel)ssField.get(cnxnFactory);
-                ss.close();
             }
             close();
         }
