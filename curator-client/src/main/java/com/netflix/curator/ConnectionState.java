@@ -198,7 +198,6 @@ class ConnectionState implements Watcher, Closeable
             }
 
             case SyncConnected:
-            case ConnectedReadOnly:
             {
                 isConnected = true;
                 break;
@@ -216,12 +215,6 @@ class ConnectionState implements Watcher, Closeable
                 isConnected = false;
                 checkNewConnectionString = false;
                 handleExpiredSession();
-                break;
-            }
-
-            case SaslAuthenticated:
-            {
-                // NOP
                 break;
             }
         }

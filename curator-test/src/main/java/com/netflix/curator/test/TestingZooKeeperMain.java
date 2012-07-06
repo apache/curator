@@ -1,6 +1,6 @@
 package com.netflix.curator.test;
 
-import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
@@ -8,7 +8,6 @@ import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.CountDownLatch;
 
 public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeeperMainFace
@@ -24,13 +23,8 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         {
             Field               cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
             cnxnFactoryField.setAccessible(true);
-            ServerCnxnFactory   cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
-            cnxnFactory.closeAll();
-
-            Field               ssField = cnxnFactory.getClass().getDeclaredField("ss");
-            ssField.setAccessible(true);
-            ServerSocketChannel ss = (ServerSocketChannel)ssField.get(cnxnFactory);
-            ss.close();
+            NIOServerCnxn.Factory   cnxnFactory = (NIOServerCnxn.Factory)cnxnFactoryField.get(this);
+            cnxnFactory.shutdown();
 
             close();
         }
@@ -55,7 +49,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     {
         latch.await();
 
-        ServerCnxnFactory   cnxnFactory = getServerConnectionFactory();
+        NIOServerCnxn.Factory   cnxnFactory = getServerConnectionFactory();
         if ( cnxnFactory != null )
         {
             final ZooKeeperServer     zkServer = getZooKeeperServer(cnxnFactory);
@@ -79,7 +73,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
 
         try
         {
-            ServerCnxnFactory   cnxnFactory = getServerConnectionFactory();
+            NIOServerCnxn.Factory   cnxnFactory = getServerConnectionFactory();
             if ( cnxnFactory != null )
             {
                 ZooKeeperServer     zkServer = getZooKeeperServer(cnxnFactory);
@@ -100,26 +94,26 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         }
     }
 
-    private ServerCnxnFactory getServerConnectionFactory() throws Exception
+    private NIOServerCnxn.Factory getServerConnectionFactory() throws Exception
     {
         Field               cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
         cnxnFactoryField.setAccessible(true);
-        ServerCnxnFactory   cnxnFactory;
+        NIOServerCnxn.Factory   cnxnFactory;
 
         // Wait until the cnxnFactory field is non-null or up to 1s, whichever comes first.
         long startTime = System.currentTimeMillis();
         do
         {
-            cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
+            cnxnFactory = (NIOServerCnxn.Factory)cnxnFactoryField.get(this);
         }
         while ( (cnxnFactory == null) && ((System.currentTimeMillis() - startTime) < MAX_WAIT_MS) );
 
         return cnxnFactory;
     }
 
-    private ZooKeeperServer getZooKeeperServer(ServerCnxnFactory cnxnFactory) throws Exception
+    private ZooKeeperServer getZooKeeperServer(NIOServerCnxn.Factory cnxnFactory) throws Exception
     {
-        Field               zkServerField = ServerCnxnFactory.class.getDeclaredField("zkServer");
+        Field               zkServerField = NIOServerCnxn.Factory.class.getDeclaredField("zkServer");
         zkServerField.setAccessible(true);
         ZooKeeperServer     zkServer;
 
