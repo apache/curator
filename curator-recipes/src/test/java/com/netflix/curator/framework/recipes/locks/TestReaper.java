@@ -76,6 +76,18 @@ public class TestReaper extends BaseClassForTests
         testReapUntilDelete("test");
     }
 
+     @Test
+    public void testReapUntilGone() throws Exception
+    {
+        testReapUntilGone(null);
+    }
+
+    @Test
+    public void testReapUntilGoneNamespace() throws Exception
+    {
+        testReapUntilGone("test");
+    }
+
     @Test
     public void testRemove() throws Exception
     {
@@ -154,6 +166,37 @@ public class TestReaper extends BaseClassForTests
             Closeables.closeQuietly(client);
         }
     }
+
+    private void testReapUntilGone(String namespace) throws Exception
+    {
+        Timing                  timing = new Timing();
+        Reaper                  reaper = null;
+        CuratorFramework        client = makeClient(timing, namespace);
+        try
+        {
+            client.start();
+            
+            reaper = new Reaper(client, 100);
+            reaper.start();
+
+            reaper.addPath("/one/two/three", Reaper.Mode.REAP_UNTIL_GONE);
+            timing.sleepABit();
+
+            client.create().creatingParentsIfNeeded().forPath("/one/two/three");
+            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
+
+            reaper.addPath("/one/two/three", Reaper.Mode.REAP_UNTIL_GONE);
+            timing.sleepABit();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+        }
+        finally
+        {
+            Closeables.closeQuietly(reaper);
+            Closeables.closeQuietly(client);
+        }
+    }
+
 
     private CuratorFramework makeClient(Timing timing, String namespace) throws IOException
     {
