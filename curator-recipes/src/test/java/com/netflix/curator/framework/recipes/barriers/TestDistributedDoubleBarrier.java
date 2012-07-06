@@ -31,9 +31,11 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -106,6 +108,61 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
         }
         Assert.assertEquals(count.get(), 0);
         Assert.assertEquals(max.get(), QTY);
+    }
+
+    @Test
+    public void     testOverSubscribed() throws Exception
+    {
+        final Timing                    timing = new Timing();
+        final CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        ExecutorService                 service = Executors.newCachedThreadPool();
+        ExecutorCompletionService<Void> completionService = new ExecutorCompletionService<Void>(service);
+        try
+        {
+            client.start();
+
+            final Semaphore         semaphore = new Semaphore(0);
+            final CountDownLatch    latch = new CountDownLatch(1);
+            for ( int i = 0; i < (QTY + 1); ++i )
+            {
+                completionService.submit
+                (
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            DistributedDoubleBarrier        barrier = new DistributedDoubleBarrier(client, "/barrier", QTY)
+                            {
+                                @Override
+                                protected List<String> getChildrenForEntering() throws Exception
+                                {
+                                    semaphore.release();
+                                    Assert.assertTrue(timing.awaitLatch(latch));
+                                    return super.getChildrenForEntering();
+                                }
+                            };
+                            Assert.assertTrue(barrier.enter(timing.seconds(), TimeUnit.SECONDS));
+                            Assert.assertTrue(barrier.leave(timing.seconds(), TimeUnit.SECONDS));
+                            return null;
+                        }
+                    }
+                );
+            }
+
+            Assert.assertTrue(semaphore.tryAcquire(QTY + 1, timing.seconds(), TimeUnit.SECONDS));   // wait until all QTY+1 barriers are trying to enter
+            latch.countDown();
+
+            for ( int i = 0; i < (QTY + 1); ++i )
+            {
+                completionService.take().get(); // to check for assertions
+            }
+        }
+        finally
+        {
+            service.shutdown();
+            Closeables.closeQuietly(client);
+        }
     }
 
     @Test

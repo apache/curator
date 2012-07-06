@@ -18,12 +18,12 @@
 
 package com.netflix.curator.framework.recipes.barriers;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -56,7 +56,6 @@ public class DistributedDoubleBarrier
     private final int memberQty;
     private final String ourPath;
     private final String readyPath;
-    private final EnsurePath ensurePath;
     private final AtomicBoolean hasBeenNotified = new AtomicBoolean(false);
     private final AtomicBoolean connectionLost = new AtomicBoolean(false);
     private final Watcher watcher = new Watcher()
@@ -89,7 +88,6 @@ public class DistributedDoubleBarrier
         this.memberQty = memberQty;
         ourPath = ZKPaths.makePath(barrierPath, UUID.randomUUID().toString());
         readyPath = ZKPaths.makePath(barrierPath, READY_NODE);
-        ensurePath = client.newNamespaceAwareEnsurePath(barrierPath);
     }
 
     /**
@@ -117,10 +115,8 @@ public class DistributedDoubleBarrier
         boolean         hasMaxWait = (unit != null);
         long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
-        ensurePath.ensure(client.getZookeeperClient());
-
         boolean         readyPathExists = (client.checkExists().usingWatcher(watcher).forPath(readyPath) != null);
-        client.create().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
+        client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
 
         boolean         result = (readyPathExists || internalEnter(startMs, hasMaxWait, maxWaitMs));
         if ( connectionLost.get() )
@@ -156,9 +152,13 @@ public class DistributedDoubleBarrier
         boolean         hasMaxWait = (unit != null);
         long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
-        ensurePath.ensure(client.getZookeeperClient());
-
         return internalLeave(startMs, hasMaxWait, maxWaitMs);
+    }
+
+    @VisibleForTesting
+    protected List<String> getChildrenForEntering() throws Exception
+    {
+        return client.getChildren().forPath(barrierPath);
     }
 
     private List<String> filterAndSortChildren(List<String> children)
@@ -193,7 +193,15 @@ public class DistributedDoubleBarrier
                 throw new KeeperException.ConnectionLossException();
             }
 
-            List<String> children = client.getChildren().forPath(barrierPath);
+            List<String> children;
+            try
+            {
+                children = client.getChildren().forPath(barrierPath);
+            }
+            catch ( KeeperException.NoNodeException dummy )
+            {
+                children = Lists.newArrayList();
+            }
             children = filterAndSortChildren(children);
             if ( (children == null) || (children.size() == 0) )
             {
@@ -277,9 +285,9 @@ public class DistributedDoubleBarrier
         boolean result = true;
         do
         {
-            List<String>    children = client.getChildren().forPath(barrierPath);
+            List<String>    children = getChildrenForEntering();
             int             count = (children != null) ? children.size() : 0;
-            if ( count == memberQty )
+            if ( count >= memberQty )
             {
                 try
                 {
@@ -290,11 +298,6 @@ public class DistributedDoubleBarrier
                     // ignore
                 }
                 break;
-            }
-
-            if ( count > memberQty )
-            {
-                throw new IllegalStateException(String.format("Count (%d) is greater than memberQty (%d)", count, memberQty));
             }
 
             if ( hasMaxWait && !hasBeenNotified.get() )
