@@ -18,6 +18,7 @@
 
 package com.netflix.curator.ensemble.exhibitor;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -57,6 +58,10 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
     private static final String MIME_TYPE = "application/x-www-form-urlencoded";
+
+    private static final String VALUE_PORT = "port";
+    private static final String VALUE_COUNT = "count";
+    private static final String VALUE_SERVER_PREFIX = "server";
 
     private enum State
     {
@@ -110,27 +115,27 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
         service.submit
-        (
-            new Runnable()
-            {
-                @Override
-                public void run()
+            (
+                new Runnable()
                 {
-                    try
+                    @Override
+                    public void run()
                     {
-                        while ( !Thread.currentThread().isInterrupted() )
+                        try
                         {
-                            poll();
-                            Thread.sleep(pollingMs);
+                            while ( !Thread.currentThread().isInterrupted() )
+                            {
+                                poll();
+                                Thread.sleep(pollingMs);
+                            }
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
                         }
                     }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                    }
                 }
-            }
-        );
+            );
     }
 
     @Override
@@ -144,12 +149,125 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     @Override
     public String getConnectionString()
     {
-        String      localConnectionString = connectionString.get();
-        if ( (localConnectionString == null) || (localConnectionString.length() == 0) )
+        return connectionString.get();
+    }
+
+    @VisibleForTesting
+    protected void poll()
+    {
+        Exhibitors              localExhibitors = exhibitors.get();
+        Map<String, String>     values = queryExhibitors(localExhibitors);
+
+        int                     count = getCountFromValues(values);
+        if ( count == 0 )
         {
-            localConnectionString = exhibitors.get().getBackupConnectionString();
+            log.warn("0 count returned from Exhibitors. Using backup connection values.");
+            values = useBackup(localExhibitors);
+            count = getCountFromValues(values);
         }
-        return localConnectionString;
+
+        if ( count > 0 )
+        {
+            int                     port = Integer.parseInt(values.get(VALUE_PORT));
+            StringBuilder           newConnectionString = new StringBuilder();
+            List<String>            newHostnames = Lists.newArrayList();
+
+            for ( int i = 0; i < count; ++i )
+            {
+                if ( newConnectionString.length() > 0 )
+                {
+                    newConnectionString.append(",");
+                }
+                String      server = values.get(VALUE_SERVER_PREFIX + i);
+                newConnectionString.append(server).append(":").append(port);
+                newHostnames.add(server);
+            }
+
+            String newConnectionStringValue = newConnectionString.toString();
+            if ( !newConnectionStringValue.equals(connectionString.get()) )
+            {
+                log.info("Connection string has changed. Old value (%s), new value (%s)", connectionString.get(), newConnectionStringValue);
+            }
+            Exhibitors newExhibitors = new Exhibitors
+            (
+                newHostnames,
+                localExhibitors.getRestPort(),
+                new Exhibitors.BackupConnectionStringProvider()
+                {
+                    @Override
+                    public String getBackupConnectionString() throws Exception
+                    {
+                        return masterExhibitors.get().getBackupConnectionString();  // this may be overloaded by clients. Make sure there is always a method call to get the value.
+                    }
+                }
+            );
+            connectionString.set(newConnectionStringValue);
+            exhibitors.set(newExhibitors);
+        }
+    }
+
+    private int getCountFromValues(Map<String, String> values)
+    {
+        try
+        {
+            return Integer.parseInt(values.get(VALUE_COUNT));
+        }
+        catch ( NumberFormatException e )
+        {
+            // ignore
+        }
+        return 0;
+    }
+
+    private Map<String, String> useBackup(Exhibitors localExhibitors)
+    {
+        Map<String, String>     values = newValues();
+
+        try
+        {
+            String      backupConnectionString = localExhibitors.getBackupConnectionString();
+
+            int         thePort = -1;
+            int         count = 0;
+            for ( String spec : backupConnectionString.split(",") )
+            {
+                spec = spec.trim();
+                String[]        parts = spec.split(":");
+                if ( parts.length == 2 )
+                {
+                    String      hostname = parts[0];
+                    int         port = Integer.parseInt(parts[1]);
+                    if ( thePort < 0 )
+                    {
+                        thePort = port;
+                    }
+                    else if ( port != thePort )
+                    {
+                        log.warn("Inconsistent port in connection component: " + spec);
+                    }
+                    values.put(VALUE_SERVER_PREFIX + count, hostname);
+                    ++count;
+                }
+                else
+                {
+                    log.warn("Bad backup connection component: " + spec);
+                }
+            }
+            values.put(VALUE_COUNT, Integer.toString(count));
+            values.put(VALUE_PORT, Integer.toString(thePort));
+        }
+        catch ( Exception e )
+        {
+            log.error("Couldn't get backup connection string", e);
+        }
+        return values;
+    }
+
+    private Map<String, String> newValues()
+    {
+        Map<String, String>     values = Maps.newHashMap();
+        values.put(VALUE_COUNT, "0");
+        return values;
     }
 
     private static Map<String, String> decodeExhibitorList(String str) throws UnsupportedEncodingException
@@ -167,16 +285,16 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
         return values;
     }
 
-    private void poll()
+    private Map<String, String> queryExhibitors(Exhibitors localExhibitors)
     {
-        long        start = System.currentTimeMillis();
-        int         retries = 0;
-        boolean     done = false;
+        Map<String, String> values = newValues();
+
+        long                    start = System.currentTimeMillis();
+        int                     retries = 0;
+        boolean                 done = false;
         while ( !done )
         {
-            Exhibitors      localExhibitors = exhibitors.get();
-            
-            List<String>    hostnames = Lists.newArrayList(localExhibitors.getHostnames());
+            List<String> hostnames = Lists.newArrayList(localExhibitors.getHostnames());
             if ( hostnames.size() == 0 )
             {
                 done = true;
@@ -187,42 +305,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                 try
                 {
                     String                  encoded = restClient.getRaw(hostname, localExhibitors.getRestPort(), restUriPath, MIME_TYPE);
-                    Map<String, String>     values = decodeExhibitorList(encoded);
-
-                    int                     port = Integer.parseInt(values.get("port"));
-                    StringBuilder           newConnectionString = new StringBuilder();
-                    List<String>            newHostnames = Lists.newArrayList();
-                    int                     count = Integer.parseInt(values.get("count"));
-                    if ( count > 0 )
-                    {
-                        for ( int i = 0; i < count; ++i )
-                        {
-                            if ( newConnectionString.length() > 0 )
-                            {
-                                newConnectionString.append(",");
-                            }
-                            String      server = values.get("server" + i);
-                            newConnectionString.append(server).append(":").append(port);
-                            newHostnames.add(server);
-                        }
-
-                        String newConnectionStringValue = newConnectionString.toString();
-                        if ( !newConnectionStringValue.equals(connectionString.get()) )
-                        {
-                            log.info("Connection string has changed. Old value (%s), new value (%s)", connectionString.get(), newConnectionStringValue);
-                        }
-                        Exhibitors newExhibitors = new Exhibitors(newHostnames, localExhibitors.getRestPort())
-                        {
-                            @Override
-                            public String getBackupConnectionString()
-                            {
-                                return masterExhibitors.get().getBackupConnectionString();  // this may be overloaded by clients. Make sure there is always a method call to get the value.
-                            }
-                        };
-                        connectionString.set(newConnectionStringValue);
-                        exhibitors.set(newExhibitors);
-                    }
-                    // else - don't allow a situation where there are no known servers
+                    values.putAll(decodeExhibitorList(encoded));
                     done = true;
                 }
                 catch ( Throwable e )
@@ -239,5 +322,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                 }
             }
         }
+
+        return values;
     }
 }

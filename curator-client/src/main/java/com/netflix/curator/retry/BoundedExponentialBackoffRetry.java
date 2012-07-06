@@ -17,6 +17,8 @@
  */
 package com.netflix.curator.retry;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * Retry policy that retries a set number of times with an increasing (up to a maximum bound) sleep time between retries
  */
@@ -35,7 +37,7 @@ public class BoundedExponentialBackoffRetry extends ExponentialBackoffRetry
         this.maxSleepTimeMs = maxSleepTimeMs;
     }
 
-    // made public for testing
+    @VisibleForTesting
     public int getMaxSleepTimeMs()
     {
         return maxSleepTimeMs;

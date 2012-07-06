@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.retry;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Random;
 
 /**
@@ -37,7 +38,7 @@ public class ExponentialBackoffRetry extends SleepingRetry
         this.baseSleepTimeMs = baseSleepTimeMs;
     }
 
-    // made public for testing
+    @VisibleForTesting
     public int getBaseSleepTimeMs()
     {
         return baseSleepTimeMs;
