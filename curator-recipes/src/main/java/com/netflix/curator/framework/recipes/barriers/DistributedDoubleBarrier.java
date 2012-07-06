@@ -77,7 +77,8 @@ public class DistributedDoubleBarrier
      *
      * @param client the client
      * @param barrierPath path to use
-     * @param memberQty the number of members in the barrier
+     * @param memberQty the number of members in the barrier. NOTE: more than <code>memberQty</code>
+     *                  can enter the barrier. <code>memberQty</code> is a threshold, not a limit
      */
     public DistributedDoubleBarrier(CuratorFramework client, String barrierPath, int memberQty)
     {
