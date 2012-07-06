@@ -27,17 +27,97 @@ import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
-import junit.framework.Assert;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
+import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TestExhibitorEnsembleProvider extends BaseClassForTests
 {
+    private static final Exhibitors.BackupConnectionStringProvider dummyConnectionStringProvider = new Exhibitors.BackupConnectionStringProvider()
+    {
+        @Override
+        public String getBackupConnectionString() throws Exception
+        {
+            return null;
+        }
+    };
+
+    @Test
+    public void     testExhibitorFailures() throws Exception
+    {
+        final AtomicReference<String>   backupConnectionString = new AtomicReference<String>("backup1:1");
+        final AtomicReference<String>   connectionString = new AtomicReference<String>("count=1&port=2&server0=localhost");
+        Exhibitors                      exhibitors = new Exhibitors
+        (
+            Lists.newArrayList("foo", "bar"),
+            1000,
+            new Exhibitors.BackupConnectionStringProvider()
+            {
+                @Override
+                public String getBackupConnectionString()
+                {
+                    return backupConnectionString.get();
+                }
+            }
+        );
+        ExhibitorRestClient             mockRestClient = new ExhibitorRestClient()
+        {
+            @Override
+            public String getRaw(String hostname, int port, String uriPath, String mimeType) throws Exception
+            {
+                String localConnectionString = connectionString.get();
+                if ( localConnectionString == null )
+                {
+                    throw new IOException();
+                }
+                return localConnectionString;
+            }
+        };
+
+        final Semaphore             semaphore = new Semaphore(0);
+        ExhibitorEnsembleProvider   provider = new ExhibitorEnsembleProvider(exhibitors, mockRestClient, "/foo", 10, new RetryOneTime(1))
+        {
+            @Override
+            protected void poll()
+            {
+                super.poll();
+                semaphore.release();
+            }
+        };
+        provider.pollForInitialEnsemble();
+        try
+        {
+            provider.start();
+
+            Assert.assertEquals(provider.getConnectionString(), "localhost:2");
+
+            connectionString.set(null);
+            semaphore.drainPermits();
+            semaphore.acquire();    // wait for next poll
+            Assert.assertEquals(provider.getConnectionString(), "backup1:1");
+
+            backupConnectionString.set("backup2:2");
+            semaphore.drainPermits();
+            semaphore.acquire();    // wait for next poll
+            Assert.assertEquals(provider.getConnectionString(), "backup2:2");
+
+            connectionString.set("count=1&port=3&server0=localhost3");
+            semaphore.drainPermits();
+            semaphore.acquire();    // wait for next poll
+            Assert.assertEquals(provider.getConnectionString(), "localhost3:3");
+        }
+        finally
+        {
+            Closeables.closeQuietly(provider);
+        }
+    }
+
     @Test
     public void     testChanging() throws Exception
     {
@@ -49,7 +129,7 @@ public class TestExhibitorEnsembleProvider extends BaseClassForTests
 
             final Semaphore                 semaphore = new Semaphore(0);
             final AtomicReference<String>   connectionString = new AtomicReference<String>(mainConnectionString);
-            Exhibitors                      exhibitors = new Exhibitors(Lists.newArrayList("foo", "bar"), 1000);
+            Exhibitors                      exhibitors = new Exhibitors(Lists.newArrayList("foo", "bar"), 1000, dummyConnectionStringProvider);
             ExhibitorRestClient             mockRestClient = new ExhibitorRestClient()
             {
                 @Override
@@ -115,7 +195,7 @@ public class TestExhibitorEnsembleProvider extends BaseClassForTests
     @Test
     public void     testSimple() throws Exception
     {
-        Exhibitors                  exhibitors = new Exhibitors(Lists.newArrayList("foo", "bar"), 1000);
+        Exhibitors                  exhibitors = new Exhibitors(Lists.newArrayList("foo", "bar"), 1000, dummyConnectionStringProvider);
         ExhibitorRestClient         mockRestClient = new ExhibitorRestClient()
         {
             @Override

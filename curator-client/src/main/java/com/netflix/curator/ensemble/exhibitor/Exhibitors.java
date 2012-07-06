@@ -18,6 +18,7 @@
 
 package com.netflix.curator.ensemble.exhibitor;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 
@@ -28,26 +29,22 @@ public class Exhibitors
 {
     private final Collection<String> hostnames;
     private final int restPort;
-    private final String backupConnectionString;
+    private final BackupConnectionStringProvider backupConnectionStringProvider;
 
-    /**
-     * @param hostnames set of Exhibitor instance host names
-     * @param restPort the REST port used to connect to Exhibitor
-     */
-    public Exhibitors(Collection<String> hostnames, int restPort)
+    public interface BackupConnectionStringProvider
     {
-        this(hostnames, restPort, null);
+        public String getBackupConnectionString() throws Exception;
     }
 
     /**
      * @param hostnames set of Exhibitor instance host names
      * @param restPort the REST port used to connect to Exhibitor
-     * @param backupConnectionString in case an Exhibitor instance can't be contacted, the fixed
+     * @param backupConnectionStringProvider in case an Exhibitor instance can't be contacted, returns the fixed
      *                               connection string to use as a backup
      */
-    public Exhibitors(Collection<String> hostnames, int restPort, String backupConnectionString)
+    public Exhibitors(Collection<String> hostnames, int restPort, BackupConnectionStringProvider backupConnectionStringProvider)
     {
-        this.backupConnectionString = backupConnectionString;
+        this.backupConnectionStringProvider = Preconditions.checkNotNull(backupConnectionStringProvider, "backupConnectionStringProvider cannot be null");
         this.hostnames = ImmutableList.copyOf(hostnames);
         this.restPort = restPort;
     }
@@ -62,8 +59,8 @@ public class Exhibitors
         return restPort;
     }
 
-    public String getBackupConnectionString()
+    public String getBackupConnectionString() throws Exception
     {
-        return backupConnectionString;
+        return backupConnectionStringProvider.getBackupConnectionString();
     }
 }
