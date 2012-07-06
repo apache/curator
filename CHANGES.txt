@@ -1,4 +1,4 @@
-1.1.13/1.0.14 - June 25, 2012
+1.1.14/1.0.15 - xxxxxxxxxxxxx
 =============================
 * Merge #100 from bbeck: Added BoundedExponentialBackoffRetry.
 
