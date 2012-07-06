@@ -1,5 +1,5 @@
-1.1.14/1.0.15 - xxxxxxxxxxxxx
-=============================
+1.1.14/1.0.15 - July 6, 2012
+============================
 * Merge #100 from bbeck: Added BoundedExponentialBackoffRetry.
 
 * Merge #102 from artemip: Added REAP_UNTIL_GONE mode to Reaper; Remove items from activePaths once
