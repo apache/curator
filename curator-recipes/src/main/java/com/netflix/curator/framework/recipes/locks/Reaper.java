@@ -112,9 +112,20 @@ public class Reaper implements Closeable
 
     public enum Mode
     {
-        REAP_INDEFINITELY, //Reap forever, or until removePath is called for the path
-        REAP_UNTIL_DELETE, //Reap until the Reaper succeeds in deleting the path
-        REAP_UNTIL_GONE //Reap until the path no longer exists
+        /**
+         * Reap forever, or until removePath is called for the path
+         */
+        REAP_INDEFINITELY,
+
+        /**
+         * Reap until the Reaper succeeds in deleting the path
+         */
+        REAP_UNTIL_DELETE,
+
+        /**
+         * Reap until the path no longer exists
+         */
+        REAP_UNTIL_GONE
     }
 
     /**
