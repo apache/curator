@@ -1,19 +1,17 @@
 /*
+ * Copyright 2012 Netflix, Inc.
  *
- *  Copyright 2011 Netflix, Inc.
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
  *
- *     Licensed under the Apache License, Version 2.0 (the "License");
- *     you may not use this file except in compliance with the License.
- *     You may obtain a copy of the License at
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing, software
- *     distributed under the License is distributed on an "AS IS" BASIS,
- *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *     See the License for the specific language governing permissions and
- *     limitations under the License.
- *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
  */
 
 package com.netflix.curator.framework.recipes.atomic;
@@ -25,14 +23,6 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
 import java.nio.ByteBuffer;
 
-/**
- * <p>A counter that attempts atomic increments. It first tries uses optimistic locking. If that fails,
- * an optional {@link InterProcessMutex} is taken. For both optimistic and mutex, a retry policy is used to
- * retry the increment.</p>
- *
- * <p>The various increment methods return an {@link AtomicValue} object. You must <b>always</b> check
- * {@link AtomicValue#succeeded()}. None of the methods (other than get()) are guaranteed to succeed.</p>
- */
 public class DistributedAtomicLong implements DistributedAtomicNumber<Long>
 {
     private final DistributedAtomicValue        value;
