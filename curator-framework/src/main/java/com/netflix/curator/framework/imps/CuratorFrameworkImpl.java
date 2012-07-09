@@ -19,7 +19,6 @@ package com.netflix.curator.framework.imps;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.TimeTrace;
@@ -33,6 +32,7 @@ import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.framework.state.ConnectionStateManager;
 import com.netflix.curator.utils.DebugUtils;
 import com.netflix.curator.utils.EnsurePath;
+import com.netflix.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -145,7 +145,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         ThreadFactory threadFactory = builder.getThreadFactory();
         if ( threadFactory == null )
         {
-            threadFactory = new ThreadFactoryBuilder().setNameFormat("CuratorFramework-%d").build();
+            threadFactory = ThreadUtils.newThreadFactory("CuratorFramework");
         }
         return threadFactory;
     }

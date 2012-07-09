@@ -1,19 +1,17 @@
 /*
+ * Copyright 2012 Netflix, Inc.
  *
- *  Copyright 2011 Netflix, Inc.
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
  *
- *     Licensed under the Apache License, Version 2.0 (the "License");
- *     you may not use this file except in compliance with the License.
- *     You may obtain a copy of the License at
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing, software
- *     distributed under the License is distributed on an "AS IS" BASIS,
- *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *     See the License for the specific language governing permissions and
- *     limitations under the License.
- *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
  */
 package com.netflix.curator.framework.recipes.cache;
 
@@ -24,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
@@ -32,6 +29,7 @@ import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
+import com.netflix.curator.utils.ThreadUtils;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -52,15 +50,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
-/**
- * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
- * will watch the ZK path, respond to update/create/delete events, pull down the data, etc. You can
- * register a listener that will get notified when changes occur.</p>
- *
- * <p><b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must
- * be prepared for false-positives and false-negatives. Additionally, always use the version number
- * when updating data to avoid overwriting another process' change.</p>
- */
 public class PathChildrenCache implements Closeable
 {
     private final Logger                    log = LoggerFactory.getLogger(getClass());
@@ -125,7 +114,7 @@ public class PathChildrenCache implements Closeable
             handleStateChange(newState);
         }
     };
-    private static final ThreadFactory defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("PathChildrenCache-%d").build();
+    private static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("PathChildrenCache");
 
     /**
      * @param client the client

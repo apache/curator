@@ -19,7 +19,7 @@
 package com.netflix.curator.x.discovery.server.rest;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.netflix.curator.utils.ThreadUtils;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.ServiceType;
@@ -29,7 +29,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * A background task that purges stale registrations. You should allocate a singleton
@@ -42,7 +41,7 @@ public class InstanceCleanup implements Closeable
 
     private final ServiceDiscovery<Object>  discovery;
     private final int                       instanceRefreshMs;
-    private final ExecutorService           service = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(true).setNameFormat("InstanceCleanup-%d").build());
+    private final ExecutorService           service = ThreadUtils.newSingleThreadExecutor("InstanceCleanup");
 
     /**
      * @param discovery the service being monitored
