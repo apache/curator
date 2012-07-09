@@ -40,6 +40,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Utility to clean up parent lock nodes so that they don't stay around as garbage
+ */
 public class Reaper implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -59,7 +62,7 @@ public class Reaper implements Closeable
 
     private volatile Future<Void> task;
 
-    private static final int REAPING_THRESHOLD_MS = (int)TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
+    static final int DEFAULT_REAPING_THRESHOLD_MS = (int)TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
 
     @VisibleForTesting
     static final int EMPTY_COUNT_THRESHOLD = 3;
@@ -147,7 +150,7 @@ public class Reaper implements Closeable
      */
     public Reaper(CuratorFramework client)
     {
-        this(client, Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("Reaper-%d").build()), REAPING_THRESHOLD_MS);
+        this(client, newExecutorService(), DEFAULT_REAPING_THRESHOLD_MS);
     }
 
     /**
@@ -158,7 +161,7 @@ public class Reaper implements Closeable
      */
     public Reaper(CuratorFramework client, int reapingThresholdMs)
     {
-        this(client, Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("Reaper-%d").build()), reapingThresholdMs);
+        this(client, newExecutorService(), reapingThresholdMs);
     }
 
     /**
@@ -218,28 +221,28 @@ public class Reaper implements Closeable
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
         task = executor.submit
-            (
-                new Callable<Void>()
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
                 {
-                    @Override
-                    public Void call() throws Exception
+                    try
                     {
-                        try
+                        while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
                         {
-                            while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
-                            {
-                                PathHolder holder = queue.take();
-                                reap(holder);
-                            }
+                            PathHolder holder = queue.take();
+                            reap(holder);
                         }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                        }
-                        return null;
                     }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                    return null;
                 }
-            );
+            }
+        );
     }
 
     @Override
@@ -346,5 +349,10 @@ public class Reaper implements Closeable
         {
             queue.add(new PathHolder(holder.path, reapingThresholdMs, holder.mode, newEmptyCount));
         }
+    }
+
+    private static ExecutorService newExecutorService()
+    {
+        return Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("Reaper-%d").build());
     }
 }
