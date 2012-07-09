@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.utils.ThreadUtils;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -143,7 +144,7 @@ public class ChildReaper implements Closeable
 
     private static ExecutorService newExecutorService()
     {
-        return Executors.newFixedThreadPool(2, new ThreadFactoryBuilder().setNameFormat("ChildReaper-%d").build());
+        return ThreadUtils.newFixedThreadPool(2, "ChildReaper");
     }
 
     private void doWork()

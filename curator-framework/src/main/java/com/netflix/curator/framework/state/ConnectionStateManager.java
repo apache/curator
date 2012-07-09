@@ -20,9 +20,9 @@ package com.netflix.curator.framework.state;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
+import com.netflix.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
@@ -74,7 +74,7 @@ public class ConnectionStateManager implements Closeable
         this.client = client;
         if ( threadFactory == null )
         {
-            threadFactory = new ThreadFactoryBuilder().setNameFormat("ConnectionStateManager-%d").build();
+            threadFactory = ThreadUtils.newThreadFactory("ConnectionStateManager");
         }
         service = Executors.newSingleThreadExecutor(threadFactory);
     }

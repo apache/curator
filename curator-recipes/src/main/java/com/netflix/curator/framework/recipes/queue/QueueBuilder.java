@@ -18,8 +18,8 @@ package com.netflix.curator.framework.recipes.queue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.utils.ThreadUtils;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -39,7 +39,7 @@ public class QueueBuilder<T>
     private boolean putInBackground = true;
     private int finalFlushMs = 5000;
 
-    static final ThreadFactory  defaultThreadFactory = new ThreadFactoryBuilder().setNameFormat("QueueBuilder-%d").build();
+    static final ThreadFactory  defaultThreadFactory = ThreadUtils.newThreadFactory("QueueBuilder");
 
     static final int NOT_SET = Integer.MAX_VALUE;
 
