@@ -20,7 +20,9 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
-import com.netflix.curator.framework.recipes.leader.LeaderRunner;
+import com.netflix.curator.framework.recipes.leader.LeaderSelector;
+import com.netflix.curator.framework.recipes.leader.LeaderSelectorListener;
+import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.Timing;
 import junit.framework.Assert;
@@ -37,15 +39,15 @@ import java.util.concurrent.Executors;
 public class TestReaper extends BaseClassForTests
 {
     @Test
-    public void testUsingRunner() throws Exception
+    public void testUsingLeader() throws Exception
     {
         final Timing            timing = new Timing();
         final CuratorFramework  client = makeClient(timing, null);
         final CountDownLatch    latch = new CountDownLatch(1);
-        LeaderRunner.Runner     runner = new LeaderRunner.Runner()
+        LeaderSelectorListener  listener = new LeaderSelectorListener()
         {
             @Override
-            public void run() throws Exception
+            public void takeLeadership(CuratorFramework client) throws Exception
             {
                 Reaper      reaper = new Reaper(client, 1);
                 try
@@ -63,11 +65,11 @@ public class TestReaper extends BaseClassForTests
             }
 
             @Override
-            public void exit() throws Exception
+            public void stateChanged(CuratorFramework client, ConnectionState newState)
             {
             }
         };
-        LeaderRunner            leaderRunner = new LeaderRunner(client, "/leader", runner);
+        LeaderSelector  selector = new LeaderSelector(client, "/leader", listener);
         try
         {
             client.start();
@@ -75,14 +77,14 @@ public class TestReaper extends BaseClassForTests
 
             Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
 
-            leaderRunner.start();
+            selector.start();
             timing.awaitLatch(latch);
 
             Assert.assertNull(client.checkExists().forPath("/one/two/three"));
         }
         finally
         {
-            Closeables.closeQuietly(leaderRunner);
+            Closeables.closeQuietly(selector);
             Closeables.closeQuietly(client);
         }
     }
