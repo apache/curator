@@ -20,6 +20,7 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.leader.LeaderRunner;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.Timing;
 import junit.framework.Assert;
@@ -28,12 +29,64 @@ import org.apache.zookeeper.data.Stat;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TestReaper extends BaseClassForTests
 {
+    @Test
+    public void testUsingRunner() throws Exception
+    {
+        final Timing            timing = new Timing();
+        final CuratorFramework  client = makeClient(timing, null);
+        final CountDownLatch    latch = new CountDownLatch(1);
+        LeaderRunner.Runner     runner = new LeaderRunner.Runner()
+        {
+            @Override
+            public void run() throws Exception
+            {
+                Reaper      reaper = new Reaper(client, 1);
+                try
+                {
+                    reaper.addPath("/one/two/three", Reaper.Mode.REAP_UNTIL_DELETE);
+                    reaper.start();
+
+                    timing.sleepABit();
+                    latch.countDown();
+                }
+                finally
+                {
+                    Closeables.closeQuietly(reaper);
+                }
+            }
+
+            @Override
+            public void exit() throws Exception
+            {
+            }
+        };
+        LeaderRunner            leaderRunner = new LeaderRunner(client, "/leader", runner);
+        try
+        {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/one/two/three");
+
+            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
+
+            leaderRunner.start();
+            timing.awaitLatch(latch);
+
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+        }
+        finally
+        {
+            Closeables.closeQuietly(leaderRunner);
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void testSparseUseNoReap() throws Exception
     {
