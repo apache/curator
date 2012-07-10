@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
- *     Utility for running a task one only one instance in a group. Uses a {@link LeaderSelector}
+ *     Utility for running a task on only one instance in a group. Uses a {@link LeaderSelector}
  *     internally. When leadership is obtained, the task is signaled to run.
  * </p>
  */

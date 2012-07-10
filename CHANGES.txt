@@ -6,7 +6,7 @@ and reaps empty children of that node.
 * Issue 107: The namespace wrapper was corrupting the path if the EnsurePath handler had an error.
 The best thing to do is let the code continue.
 
-* Added LeaderRunner: a utility for running a task one only one instance in a group. Uses a
+* Added LeaderRunner: a utility for running a task on only one instance in a group. Uses a
 LeaderSelector internally. When leadership is obtained, the task is signaled to run.
 
 1.1.14/1.0.15 - July 6, 2012
