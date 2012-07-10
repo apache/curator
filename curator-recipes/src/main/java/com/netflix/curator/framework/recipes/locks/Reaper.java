@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -8,6 +24,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -25,8 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A Utility to delete parent paths of locks, etc. Periodically checks paths added to the reaper.
- * If at check time, there are no children, the path is deleted.
+ * Utility to clean up parent lock nodes so that they don't stay around as garbage
  */
 public class Reaper implements Closeable
 {
@@ -47,7 +63,7 @@ public class Reaper implements Closeable
 
     private volatile Future<Void> task;
 
-    private static final int REAPING_THRESHOLD_MS = (int)TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
+    static final int DEFAULT_REAPING_THRESHOLD_MS = (int)TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
 
     @VisibleForTesting
     static final int EMPTY_COUNT_THRESHOLD = 3;
@@ -135,7 +151,7 @@ public class Reaper implements Closeable
      */
     public Reaper(CuratorFramework client)
     {
-        this(client, Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("Reaper-%d").build()), REAPING_THRESHOLD_MS);
+        this(client, newExecutorService(), DEFAULT_REAPING_THRESHOLD_MS);
     }
 
     /**
@@ -146,7 +162,7 @@ public class Reaper implements Closeable
      */
     public Reaper(CuratorFramework client, int reapingThresholdMs)
     {
-        this(client, Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("Reaper-%d").build()), reapingThresholdMs);
+        this(client, newExecutorService(), reapingThresholdMs);
     }
 
     /**
@@ -206,28 +222,28 @@ public class Reaper implements Closeable
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
         task = executor.submit
-            (
-                new Callable<Void>()
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
                 {
-                    @Override
-                    public Void call() throws Exception
+                    try
                     {
-                        try
+                        while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
                         {
-                            while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
-                            {
-                                PathHolder holder = queue.take();
-                                reap(holder);
-                            }
+                            PathHolder holder = queue.take();
+                            reap(holder);
                         }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                        }
-                        return null;
                     }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                    return null;
                 }
-            );
+            }
+        );
     }
 
     @Override
@@ -334,5 +350,10 @@ public class Reaper implements Closeable
         {
             queue.add(new PathHolder(holder.path, reapingThresholdMs, holder.mode, newEmptyCount));
         }
+    }
+
+    private static ExecutorService newExecutorService()
+    {
+        return ThreadUtils.newSingleThreadExecutor("Reaper");
     }
 }

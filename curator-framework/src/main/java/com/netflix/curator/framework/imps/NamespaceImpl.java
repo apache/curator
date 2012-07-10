@@ -31,20 +31,6 @@ class NamespaceImpl
 
     String    fixForNamespace(String path)
     {
-        if ( !ensurePath() )
-        {
-            return "";
-        }
-        return ZKPaths.fixForNamespace(namespace, path);
-    }
-
-    EnsurePath newNamespaceAwareEnsurePath(String path)
-    {
-        return new EnsurePath(fixForNamespace(path));
-    }
-
-    private boolean ensurePath()
-    {
         if ( ensurePath != null )
         {
             try
@@ -54,9 +40,14 @@ class NamespaceImpl
             catch ( Exception e )
             {
                 client.logError("Ensure path threw exception", e);
-                return false;
             }
         }
-        return true;
+
+        return ZKPaths.fixForNamespace(namespace, path);
+    }
+
+    EnsurePath newNamespaceAwareEnsurePath(String path)
+    {
+        return new EnsurePath(fixForNamespace(path));
     }
 }
