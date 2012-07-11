@@ -211,39 +211,35 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public void     close()
     {
         log.debug("Closing");
-        if ( !state.compareAndSet(State.STARTED, State.STOPPED) )
+        if ( state.compareAndSet(State.STARTED, State.STOPPED) )
         {
-            IllegalStateException error = new IllegalStateException();
-            log.error("Already closed", error);
-            throw error;
+            listeners.forEach
+                (
+                    new Function<CuratorListener, Void>()
+                    {
+                        @Override
+                        public Void apply(CuratorListener listener)
+                        {
+                            CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
+                            try
+                            {
+                                listener.eventReceived(CuratorFrameworkImpl.this, event);
+                            }
+                            catch ( Exception e )
+                            {
+                                log.error("Exception while sending Closing event", e);
+                            }
+                            return null;
+                        }
+                    }
+                );
+
+            listeners.clear();
+            unhandledErrorListeners.clear();
+            connectionStateManager.close();
+            client.close();
+            executorService.shutdownNow();
         }
-
-        listeners.forEach
-        (
-            new Function<CuratorListener, Void>()
-            {
-                @Override
-                public Void apply(CuratorListener listener)
-                {
-                    CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
-                    try
-                    {
-                        listener.eventReceived(CuratorFrameworkImpl.this, event);
-                    }
-                    catch ( Exception e )
-                    {
-                        log.error("Exception while sending Closing event", e);
-                    }
-                    return null;
-                }
-            }
-        );
-
-        listeners.clear();
-        unhandledErrorListeners.clear();
-        connectionStateManager.close();
-        client.close();
-        executorService.shutdownNow();
     }
 
     @Override

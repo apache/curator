@@ -6,6 +6,8 @@ and reaps empty children of that node.
 * Issue 107: The namespace wrapper was corrupting the path if the EnsurePath handler had an error.
 The best thing to do is let the code continue.
 
+* Issue 109: Make duplicate close() calls in CuratorFrameworkImpl a NOP instead of an error.
+
 1.1.14/1.0.15 - July 6, 2012
 ============================
 * Merge #100 from bbeck: Added BoundedExponentialBackoffRetry.
