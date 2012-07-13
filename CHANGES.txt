@@ -8,6 +8,10 @@ The best thing to do is let the code continue.
 
 * Issue 109: Make duplicate close() calls in CuratorFrameworkImpl a NOP instead of an error.
 
+* Rewrote the ChildrenCache to not use background operations. If there are connection issues,
+events can start to build up in ZooKeeper due to the reply logic. This can eventually bring down
+the process. This is something to think about globally for Curator.
+
 1.1.14/1.0.15 - July 6, 2012
 ============================
 * Merge #100 from bbeck: Added BoundedExponentialBackoffRetry.
