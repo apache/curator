@@ -25,7 +25,6 @@ import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.listen.ListenerContainer;
-import com.netflix.curator.framework.recipes.leader.LeaderSelector;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -122,8 +121,8 @@ public class DistributedQueue<T> implements QueueBase<T>
         this.executor = executor;
         this.maxItems = maxItems;
         this.finalFlushMs = finalFlushMs;
-        service = Executors.newSingleThreadExecutor(threadFactory);
-        childrenCache = new ChildrenCache(client, queuePath)
+        service = Executors.newFixedThreadPool(2, threadFactory);
+        childrenCache = new ChildrenCache(client, queuePath, service)
         {
             @Override
             protected synchronized void notifyFromCallback()

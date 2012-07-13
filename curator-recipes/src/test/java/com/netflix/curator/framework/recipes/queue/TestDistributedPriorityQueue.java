@@ -19,15 +19,19 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.Timing;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 public class TestDistributedPriorityQueue extends BaseClassForTests
@@ -71,12 +75,26 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
     @Test
     public void     testSortingWhileTaking() throws Exception
     {
+        Timing           timing = new Timing();
         DistributedPriorityQueue<Integer>   queue = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
-            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class));
+            final BlockingQueue<Integer>    blockingQueue = new SynchronousQueue<Integer>();
+            QueueConsumer<Integer>          consumer = new QueueConsumer<Integer>()
+            {
+                @Override
+                public void consumeMessage(Integer message) throws Exception
+                {
+                    blockingQueue.put(message);
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
             queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(0);
             queue.start();
 
@@ -85,10 +103,12 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                 queue.put(i, 10);
             }
 
-            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(0));
+            Assert.assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(0));
+            timing.sleepABit();
             queue.put(1000, 1); // lower priority
-            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(1));   // was sitting in put()
-            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(1000));
+            timing.sleepABit();
+            Assert.assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(1)); // is in consumer already
+            Assert.assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(1000));
         }
         finally
         {
