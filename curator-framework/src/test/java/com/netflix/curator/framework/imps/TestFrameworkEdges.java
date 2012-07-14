@@ -18,6 +18,7 @@
 package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.RetryPolicy;
+import com.netflix.curator.RetrySleeper;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.CuratorEvent;
@@ -215,7 +216,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 new RetryPolicy()
                 {
                     @Override
-                    public boolean allowRetry(int retryCount, long elapsedTimeMs)
+                    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
                     {
                         semaphore.release();
                         if ( retries.incrementAndGet() == MAX_RETRIES )

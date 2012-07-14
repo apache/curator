@@ -19,34 +19,42 @@ package com.netflix.curator.framework.recipes.queue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.netflix.curator.framework.CuratorFramework;
-import org.apache.zookeeper.KeeperException;
+import com.netflix.curator.framework.api.BackgroundCallback;
+import com.netflix.curator.framework.api.CuratorEvent;
+import com.netflix.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 class ChildrenCache implements Closeable
 {
-    private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final String path;
-    private final ExecutorService service;
     private final AtomicReference<Data> children = new AtomicReference<Data>(new Data(Lists.<String>newArrayList(), 0));
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
-    private final Watcher watcher = new Watcher()
+    private final CuratorWatcher watcher = new CuratorWatcher()
     {
         @Override
-        public void process(WatchedEvent event)
+        public void process(WatchedEvent event) throws Exception
         {
-            notifyFromCallback();
+            if ( !isClosed.get() )
+            {
+                sync();
+            }
+        }
+    };
+
+    private final BackgroundCallback  callback = new BackgroundCallback()
+    {
+        @Override
+        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+        {
+            setNewChildren(event.getChildren());
         }
     };
 
@@ -62,29 +70,15 @@ class ChildrenCache implements Closeable
         }
     }
 
-    ChildrenCache(CuratorFramework client, String path, ExecutorService service)
+    ChildrenCache(CuratorFramework client, String path)
     {
         this.client = client;
         this.path = path;
-        this.service = service;
     }
 
-    void start()
+    void start() throws Exception
     {
-        service.submit
-        (
-            new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    while ( !Thread.currentThread().isInterrupted() )
-                    {
-                        sync();
-                    }
-                }
-            }
-        );
+        sync();
     }
 
     @Override
@@ -129,34 +123,24 @@ class ChildrenCache implements Closeable
         return children.get();
     }
 
-    synchronized void sync()
+    synchronized void sync() throws Exception
     {
-        try
-        {
-            List<String> newChildren = client.getChildren().usingWatcher(watcher).forPath(path);
-            Data currentData = children.get();
-
-            children.set(new Data(newChildren, currentData.version + 1));
-            notifyFromCallback();
-
-            wait();
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-        }
-        catch ( KeeperException ignore )
-        {
-            // ignore
-        }
-        catch ( Exception e )
-        {
-            log.error("Syncing for queue", e);
-        }
+        client.getChildren().usingWatcher(watcher).inBackground(callback).forPath(path);
     }
 
     protected synchronized void notifyFromCallback()
     {
         notifyAll();
+    }
+
+    private synchronized void setNewChildren(List<String> newChildren)
+    {
+        if ( newChildren != null )
+        {
+            Data currentData = children.get();
+
+            children.set(new Data(newChildren, currentData.version + 1));
+            notifyFromCallback();
+        }
     }
 }

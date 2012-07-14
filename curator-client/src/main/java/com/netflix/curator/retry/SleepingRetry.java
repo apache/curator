@@ -18,6 +18,8 @@
 package com.netflix.curator.retry;
 
 import com.netflix.curator.RetryPolicy;
+import com.netflix.curator.RetrySleeper;
+import java.util.concurrent.TimeUnit;
 
 abstract class SleepingRetry implements RetryPolicy
 {
@@ -34,13 +36,13 @@ abstract class SleepingRetry implements RetryPolicy
         return n;
     }
 
-    public boolean allowRetry(int retryCount, long elapsedTimeMs)
+    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
     {
         if ( retryCount < n )
         {
             try
             {
-                Thread.sleep(getSleepTimeMs(retryCount, elapsedTimeMs));
+                sleeper.sleepFor(getSleepTimeMs(retryCount, elapsedTimeMs), TimeUnit.MILLISECONDS);
             }
             catch ( InterruptedException e )
             {
