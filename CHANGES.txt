@@ -8,9 +8,10 @@ The best thing to do is let the code continue.
 
 * Issue 109: Make duplicate close() calls in CuratorFrameworkImpl a NOP instead of an error.
 
-* Rewrote the ChildrenCache to not use background operations. If there are connection issues,
-events can start to build up in ZooKeeper due to the reply logic. This can eventually bring down
-the process. This is something to think about globally for Curator.
+* A more complete solution for background build-ups. The previous implementation did the retry sleep
+in the background process which ends up blocking ZooKeeper. During connection problems, this would
+cause ZooKeeper packets/watchers to back up. The new implementation uses a DelayQueue to simulate a
+sleep in the background. NOTE: this caused a change to the RetryPolicy APIs.
 
 1.1.14/1.0.15 - July 6, 2012
 ============================
