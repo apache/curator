@@ -20,6 +20,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.netflix.curator.RetryLoop;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.utils.ZKPaths;
@@ -207,7 +208,7 @@ public class LockInternals
             {
                 // gets thrown by StandardLockInternalsDriver when it can't find the lock node
                 // this can happen when the session expires, etc. So, if the retry allows, just try it all again
-                if ( client.getZookeeperClient().getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMillis) )
+                if ( client.getZookeeperClient().getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMillis, RetryLoop.getDefaultRetrySleeper()) )
                 {
                     isDone = false;
                 }

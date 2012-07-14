@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.netflix.curator.RetryLoop;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.ensemble.EnsembleProvider;
 import com.netflix.curator.utils.ThreadUtils;
@@ -309,7 +310,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                 }
                 catch ( Throwable e )
                 {
-                    if ( retryPolicy.allowRetry(retries++, System.currentTimeMillis() - start) )
+                    if ( retryPolicy.allowRetry(retries++, System.currentTimeMillis() - start, RetryLoop.getDefaultRetrySleeper()) )
                     {
                         log.warn("Couldn't get servers from Exhibitor. Retrying.", e);
                     }

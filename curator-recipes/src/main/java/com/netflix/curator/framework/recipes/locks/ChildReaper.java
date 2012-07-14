@@ -18,7 +18,6 @@ package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.Closeables;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ThreadUtils;
 import com.netflix.curator.utils.ZKPaths;
@@ -30,7 +29,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 

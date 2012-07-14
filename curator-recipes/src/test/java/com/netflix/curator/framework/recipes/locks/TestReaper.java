@@ -20,6 +20,9 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
+import com.netflix.curator.framework.recipes.leader.LeaderSelector;
+import com.netflix.curator.framework.recipes.leader.LeaderSelectorListener;
+import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.Timing;
 import junit.framework.Assert;
@@ -28,12 +31,64 @@ import org.apache.zookeeper.data.Stat;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TestReaper extends BaseClassForTests
 {
+    @Test
+    public void testUsingLeader() throws Exception
+    {
+        final Timing            timing = new Timing();
+        final CuratorFramework  client = makeClient(timing, null);
+        final CountDownLatch    latch = new CountDownLatch(1);
+        LeaderSelectorListener  listener = new LeaderSelectorListener()
+        {
+            @Override
+            public void takeLeadership(CuratorFramework client) throws Exception
+            {
+                Reaper      reaper = new Reaper(client, 1);
+                try
+                {
+                    reaper.addPath("/one/two/three", Reaper.Mode.REAP_UNTIL_DELETE);
+                    reaper.start();
+
+                    timing.sleepABit();
+                    latch.countDown();
+                }
+                finally
+                {
+                    Closeables.closeQuietly(reaper);
+                }
+            }
+
+            @Override
+            public void stateChanged(CuratorFramework client, ConnectionState newState)
+            {
+            }
+        };
+        LeaderSelector  selector = new LeaderSelector(client, "/leader", listener);
+        try
+        {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/one/two/three");
+
+            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
+
+            selector.start();
+            timing.awaitLatch(latch);
+
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+        }
+        finally
+        {
+            Closeables.closeQuietly(selector);
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void testSparseUseNoReap() throws Exception
     {
