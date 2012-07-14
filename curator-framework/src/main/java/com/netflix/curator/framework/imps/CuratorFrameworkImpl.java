@@ -43,9 +43,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -65,6 +65,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final CompressionProvider                                   compressionProvider;
     private final ACLProvider                                           aclProvider;
     private final NamespaceFacadeCache                                  namespaceFacadeCache;
+
+    interface DebugBackgroundListener
+    {
+        void        listen(OperationAndData<?> data);
+    }
+    volatile DebugBackgroundListener        debugListener = null;
 
     private enum State
     {
@@ -121,7 +127,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
-        backgroundOperations = new LinkedBlockingQueue<OperationAndData<?>>();
+        backgroundOperations = new DelayQueue<OperationAndData<?>>();
         namespace = new NamespaceImpl(this, builder.getNamespace());
         executorService = Executors.newFixedThreadPool(2, getThreadFactory(builder));  // 1 for listeners, 1 for background ops
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
@@ -405,7 +411,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
             if ( RetryLoop.shouldRetry(event.getResultCode()) )
             {
-                if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs()) )
+                if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
                 {
                     queueOperation = true;
                 }
@@ -523,7 +529,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 {
                     log.debug("Retry-able exception received", e);
                 }
-                if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs()) )
+                if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
                 {
                     if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                     {
@@ -571,6 +577,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
             try
             {
                 operationAndData = backgroundOperations.take();
+                if ( debugListener != null )
+                {
+                    debugListener.listen(operationAndData);
+                }
             }
             catch ( InterruptedException e )
             {

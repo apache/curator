@@ -16,6 +16,7 @@
 
 package com.netflix.curator.framework.recipes.atomic;
 
+import com.netflix.curator.RetryLoop;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
@@ -220,7 +221,7 @@ public class DistributedAtomicValue
                      }
                      else
                      {
-                         if ( !promotedToLock.getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMs) )
+                         if ( !promotedToLock.getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMs, RetryLoop.getDefaultRetrySleeper()) )
                          {
                              done = true;
                          }
@@ -252,7 +253,7 @@ public class DistributedAtomicValue
             }
             else
             {
-                if ( !retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startMs) )
+                if ( !retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startMs, RetryLoop.getDefaultRetrySleeper()) )
                 {
                     done = true;
                 }

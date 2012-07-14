@@ -122,7 +122,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         this.maxItems = maxItems;
         this.finalFlushMs = finalFlushMs;
         service = Executors.newFixedThreadPool(2, threadFactory);
-        childrenCache = new ChildrenCache(client, queuePath, service)
+        childrenCache = new ChildrenCache(client, queuePath)
         {
             @Override
             protected synchronized void notifyFromCallback()
