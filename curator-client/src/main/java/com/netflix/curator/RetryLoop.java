@@ -23,6 +23,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -63,6 +64,25 @@ public class RetryLoop
     private final long              startTimeMs = System.currentTimeMillis();
     private final RetryPolicy       retryPolicy;
     private final AtomicReference<TracerDriver>     tracer;
+
+    private static final RetrySleeper  sleeper = new RetrySleeper()
+    {
+        @Override
+        public void sleepFor(long time, TimeUnit unit) throws InterruptedException
+        {
+            unit.sleep(time);
+        }
+    };
+
+    /**
+     * Returns the default retry sleeper
+     *
+     * @return sleeper
+     */
+    public static RetrySleeper      getDefaultRetrySleeper()
+    {
+        return sleeper;
+    }
 
     /**
      * Convenience utility: creates a retry loop calling the given proc and retrying if needed
@@ -163,7 +183,7 @@ public class RetryLoop
             {
                 log.debug("Retry-able exception received", exception);
             }
-            if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs) )
+            if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs, sleeper) )
             {
                 tracer.get().addCount("retries-disallowed", 1);
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )

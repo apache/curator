@@ -17,6 +17,8 @@
  */
 package com.netflix.curator.retry;
 
+import com.netflix.curator.RetrySleeper;
+
 /**
  * A retry policy that retries until a given amount of time elapses
  */
@@ -33,9 +35,9 @@ public class RetryUntilElapsed extends SleepingRetry
     }
 
     @Override
-    public boolean allowRetry(int retryCount, long elapsedTimeMs)
+    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
     {
-        return super.allowRetry(retryCount, elapsedTimeMs) && (elapsedTimeMs < maxElapsedTimeMs);
+        return super.allowRetry(retryCount, elapsedTimeMs, sleeper) && (elapsedTimeMs < maxElapsedTimeMs);
     }
 
     @Override

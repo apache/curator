@@ -97,6 +97,43 @@ public class TestFramework extends BaseClassForTests
     }
 
     @Test
+    public void     testNamespaceWithWatcher() throws Exception
+    {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).namespace("aisa").retryPolicy(new RetryOneTime(1)).build();
+        client.start();
+        try
+        {
+            final BlockingQueue<String>     queue = new LinkedBlockingQueue<String>();
+            Watcher                         watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    try
+                    {
+                        queue.put(event.getPath());
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        throw new Error(e);
+                    }
+                }
+            };
+            client.create().forPath("/base");
+            client.getChildren().usingWatcher(watcher).forPath("/base");
+            client.create().forPath("/base/child");
+
+            String      path = queue.take();
+            Assert.assertEquals(path, "/base");
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
     public void     testNamespaceInBackground() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -136,43 +173,6 @@ public class TestFramework extends BaseClassForTests
             };
             client.getChildren().inBackground(callback).forPath("/base");
             path = queue.poll(10, TimeUnit.SECONDS);
-            Assert.assertEquals(path, "/base");
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-    
-    @Test
-    public void     testNamespaceWithWatcher() throws Exception
-    {
-        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
-        CuratorFramework client = builder.connectString(server.getConnectString()).namespace("aisa").retryPolicy(new RetryOneTime(1)).build();
-        client.start();
-        try
-        {
-            final BlockingQueue<String>     queue = new LinkedBlockingQueue<String>();
-            Watcher                         watcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
-                {
-                    try
-                    {
-                        queue.put(event.getPath());
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        throw new Error(e);
-                    }
-                }
-            };
-            client.create().forPath("/base");
-            client.getChildren().usingWatcher(watcher).forPath("/base");
-            client.create().forPath("/base/child");
-
-            String      path = queue.take();
             Assert.assertEquals(path, "/base");
         }
         finally

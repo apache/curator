@@ -17,17 +17,26 @@
  */
 package com.netflix.curator.framework.imps;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.netflix.curator.RetrySleeper;
 import com.netflix.curator.framework.api.BackgroundCallback;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-class OperationAndData<T>
+class OperationAndData<T> implements Delayed, RetrySleeper
 {
+    private static final AtomicLong     nextOrdinal = new AtomicLong();
+
     private final BackgroundOperation<T>    operation;
     private final T                         data;
     private final BackgroundCallback        callback;
     private final long                      startTimeMs = System.currentTimeMillis();
     private final ErrorCallback<T>          errorCallback;
-
-    private int     retryCount = 0;
+    private final AtomicInteger             retryCount = new AtomicInteger(0);
+    private final AtomicLong                sleepUntilTimeMs = new AtomicLong(0);
+    private final long                      ordinal = nextOrdinal.getAndIncrement();
 
     interface ErrorCallback<T>
     {
@@ -59,7 +68,7 @@ class OperationAndData<T>
 
     int getThenIncrementRetryCount()
     {
-        return retryCount++;
+        return retryCount.getAndIncrement();
     }
 
     BackgroundCallback getCallback()
@@ -70,5 +79,43 @@ class OperationAndData<T>
     ErrorCallback<T> getErrorCallback()
     {
         return errorCallback;
+    }
+
+    @VisibleForTesting
+    BackgroundOperation<T> getOperation()
+    {
+        return operation;
+    }
+
+    @Override
+    public void sleepFor(long time, TimeUnit unit) throws InterruptedException
+    {
+        sleepUntilTimeMs.set(System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(time, unit));
+    }
+
+    @Override
+    public long getDelay(TimeUnit unit)
+    {
+        return unit.convert(sleepUntilTimeMs.get() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public int compareTo(Delayed o)
+    {
+        if ( o == this )
+        {
+            return 0;
+        }
+
+        long        diff = getDelay(TimeUnit.MILLISECONDS) - o.getDelay(TimeUnit.MILLISECONDS);
+        if ( diff == 0 )
+        {
+            if ( o instanceof OperationAndData )
+            {
+                diff = ordinal - ((OperationAndData)o).ordinal;
+            }
+        }
+
+        return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
     }
 }

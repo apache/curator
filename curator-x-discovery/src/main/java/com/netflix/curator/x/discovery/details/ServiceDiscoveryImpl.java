@@ -24,8 +24,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.utils.ThreadUtils;
 import com.netflix.curator.utils.ZKPaths;
 import com.netflix.curator.x.discovery.ServiceCacheBuilder;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
@@ -173,7 +173,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         return new ServiceProviderBuilderImpl<T>(this)
             .providerStrategy(new RoundRobinStrategy<T>())
-            .threadFactory(new ThreadFactoryBuilder().setNameFormat("ServiceProvider-%d").build())
+            .threadFactory(ThreadUtils.newThreadFactory("ServiceProvider"))
             .refreshPaddingMs(ServiceDiscoveryImpl.DEFAULT_REFRESH_PADDING);
     }
 
@@ -186,7 +186,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     public ServiceCacheBuilder<T> serviceCacheBuilder()
     {
         return new ServiceCacheBuilderImpl<T>(this)
-            .threadFactory(new ThreadFactoryBuilder().setNameFormat("ServiceCache-%d").build())
+            .threadFactory(ThreadUtils.newThreadFactory("ServiceCache"))
             .refreshPaddingMs(DEFAULT_REFRESH_PADDING);
     }
 

@@ -22,9 +22,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.netflix.curator.RetryLoop;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.ensemble.EnsembleProvider;
+import com.netflix.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -34,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -52,7 +52,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     private final String restUriPath;
     private final int pollingMs;
     private final RetryPolicy retryPolicy;
-    private final ExecutorService service = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("ExhibitorEnsembleProvider-%d").build());
+    private final ExecutorService service = ThreadUtils.newSingleThreadExecutor("ExhibitorEnsembleProvider");
     private final Random random = new Random();
     private final AtomicReference<String> connectionString = new AtomicReference<String>("");
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
@@ -310,7 +310,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                 }
                 catch ( Throwable e )
                 {
-                    if ( retryPolicy.allowRetry(retries++, System.currentTimeMillis() - start) )
+                    if ( retryPolicy.allowRetry(retries++, System.currentTimeMillis() - start, RetryLoop.getDefaultRetrySleeper()) )
                     {
                         log.warn("Couldn't get servers from Exhibitor. Retrying.", e);
                     }

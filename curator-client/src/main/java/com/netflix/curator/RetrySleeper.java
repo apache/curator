@@ -14,16 +14,21 @@
  *    limitations under the License.
  */
 
-package com.netflix.curator.framework.recipes.shared;
+package com.netflix.curator;
 
-import com.netflix.curator.framework.listen.Listenable;
+import java.util.concurrent.TimeUnit;
 
-public interface SharedCountReader extends Listenable<SharedCountListener>
+/**
+ * Abstraction for retry policies to sleep
+ */
+public interface RetrySleeper
 {
     /**
-     * Return the current value of the count
+     * Sleep for the given time
      *
-     * @return count
+     * @param time time
+     * @param unit time unit
+     * @throws InterruptedException if the sleep is interrupted
      */
-    int      getCount();
+    public void     sleepFor(long time, TimeUnit unit) throws InterruptedException;
 }

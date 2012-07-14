@@ -1,3 +1,18 @@
+1.1.15/1.0.16 - xxxxxxxxxxxx
+============================
+* Added ChildReaper. This builds on the newly added Reaper. This utility monitors a single node
+and reaps empty children of that node.
+
+* Issue 107: The namespace wrapper was corrupting the path if the EnsurePath handler had an error.
+The best thing to do is let the code continue.
+
+* Issue 109: Make duplicate close() calls in CuratorFrameworkImpl a NOP instead of an error.
+
+* A more complete solution for background build-ups. The previous implementation did the retry sleep
+in the background process which ends up blocking ZooKeeper. During connection problems, this would
+cause ZooKeeper packets/watchers to back up. The new implementation uses a DelayQueue to simulate a
+sleep in the background. NOTE: this caused a change to the RetryPolicy APIs.
+
 1.1.14/1.0.15 - July 6, 2012
 ============================
 * Merge #100 from bbeck: Added BoundedExponentialBackoffRetry.
@@ -12,6 +27,9 @@ harm in this.
 handling outages very well. The connectionString could get stuck to an old value if the list of
 Exhibitors all went down and couldn't be contacted. Now, a backup provider is required and the backup
 is used to update the list of Exhibitors should there be connection problems.
+
+* IMPORTANT NOTE: The 1.0.x branch of Curator is now end of life. There will be a few more releases
+but please migrate to the 1.1.x branch.
 
 1.1.13/1.0.14 - June 25, 2012
 =============================
