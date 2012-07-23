@@ -7,6 +7,9 @@ loses connection
 
 * Issue 118: Ignore nonode exceptions when deleting lock path
 
+* Added a non-reentrant mutex: InterProcessSemaphoreMutex. This mutex doesn't have the threading
+restrictions that InterProcessMutex has. This should help with issues 75 and 117.
+
 1.1.15/1.0.16 - July 14, 2012
 =============================
 * Added ChildReaper. This builds on the newly added Reaper. This utility monitors a single node
