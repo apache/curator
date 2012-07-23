@@ -96,4 +96,44 @@ public class TestChildReaper extends BaseClassForTests
             Closeables.closeQuietly(client);
         }
     }
+
+    @Test
+    public void     testNamespace() throws Exception
+    {
+        Timing                  timing = new Timing();
+        ChildReaper             reaper = null;
+        CuratorFramework        client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .sessionTimeoutMs(timing.session())
+            .connectionTimeoutMs(timing.connection())
+            .retryPolicy(new RetryOneTime(1))
+            .namespace("foo")
+            .build();
+        try
+        {
+            client.start();
+
+            for ( int i = 0; i < 10; ++i )
+            {
+                client.create().creatingParentsIfNeeded().forPath("/test/" + Integer.toString(i));
+            }
+
+            reaper = new ChildReaper(client, "/test", Reaper.Mode.REAP_UNTIL_DELETE, 1);
+            reaper.start();
+
+            timing.forWaiting().sleepABit();
+
+            Stat    stat = client.checkExists().forPath("/test");
+            Assert.assertEquals(stat.getNumChildren(), 0);
+
+            stat = client.usingNamespace(null).checkExists().forPath("/foo/test");
+            Assert.assertNotNull(stat);
+            Assert.assertEquals(stat.getNumChildren(), 0);
+        }
+        finally
+        {
+            Closeables.closeQuietly(reaper);
+            Closeables.closeQuietly(client);
+        }
+    }
 }
