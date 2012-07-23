@@ -16,6 +16,9 @@
 
 package com.netflix.curator.framework.recipes.atomic;
 
+/**
+ * Debugging stats about operations
+ */
 public class AtomicStats
 {
     private int     optimisticTries = 0;
