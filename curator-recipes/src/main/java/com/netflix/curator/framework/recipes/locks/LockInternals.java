@@ -118,7 +118,7 @@ public class LockInternals
     void releaseLock(String lockPath) throws Exception
     {
         revocable.set(null);
-        client.delete().guaranteed().forPath(lockPath);
+        deleteOurPath(lockPath);
     }
 
     CuratorFramework getClient()
@@ -130,17 +130,17 @@ public class LockInternals
     {
         List<String>        names = getSortedChildren(client, basePath, lockName, sorter);
         Iterable<String>    transformed = Iterables.transform
-        (
-            names,
-            new Function<String, String>()
-            {
-                @Override
-                public String apply(String name)
+            (
+                names,
+                new Function<String, String>()
                 {
-                    return ZKPaths.makePath(basePath, name);
+                    @Override
+                    public String apply(String name)
+                    {
+                        return ZKPaths.makePath(basePath, name);
+                    }
                 }
-            }
-        );
+            );
         return ImmutableList.copyOf(transformed);
     }
 
@@ -308,10 +308,22 @@ public class LockInternals
         {
             if ( doDelete )
             {
-                client.delete().guaranteed().forPath(ourPath);
+                deleteOurPath(ourPath);
             }
         }
         return haveTheLock;
+    }
+
+    private void deleteOurPath(String ourPath) throws Exception
+    {
+        try
+        {
+            client.delete().guaranteed().forPath(ourPath);
+        }
+        catch ( KeeperException.NoNodeException e )
+        {
+            // ignore - already deleted (possibly expired session, etc.)
+        }
     }
 
     private synchronized void notifyFromWatcher()

@@ -31,6 +31,17 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <p>
+ *     Drop in replacement for: org.apache.zookeeper.recipes.queue.DistributedQueue that is part of
+ *     the ZooKeeper distribution
+ * </p>
+ *
+ * <p>
+ *     This class is data compatible with the ZK version. i.e. it uses the same naming scheme so
+ *     it can read from an existing queue
+ * </p>
+ */
 public class SimpleDistributedQueue
 {
     private final Logger log = LoggerFactory.getLogger(getClass());

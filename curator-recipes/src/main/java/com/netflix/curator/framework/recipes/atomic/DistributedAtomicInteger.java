@@ -23,6 +23,14 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
 import java.nio.ByteBuffer;
 
+/**
+ * <p>A counter that attempts atomic increments. It first tries uses optimistic locking. If that fails,
+ * an optional {@link InterProcessMutex} is taken. For both optimistic and mutex, a retry policy is used to
+ * retry the increment.</p>
+ *
+ * <p>The various increment methods return an {@link AtomicValue} object. You must <b>always</b> check
+ * {@link AtomicValue#succeeded()}. None of the methods (other than get()) are guaranteed to succeed.</p>
+ */
 public class DistributedAtomicInteger implements DistributedAtomicNumber<Integer>
 {
     private final DistributedAtomicValue        value;

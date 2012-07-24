@@ -16,6 +16,9 @@
 
 package com.netflix.curator.framework.recipes.atomic;
 
+/**
+ * Abstracts a value returned from one of the Atomics
+ */
 public interface AtomicValue<T>
 {
     /**

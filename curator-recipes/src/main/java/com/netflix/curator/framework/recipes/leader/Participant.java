@@ -16,6 +16,9 @@
 
 package com.netflix.curator.framework.recipes.leader;
 
+/**
+ * Describes a participant in a leadership selection
+ */
 @SuppressWarnings({"RedundantIfStatement"})
 public class Participant
 {

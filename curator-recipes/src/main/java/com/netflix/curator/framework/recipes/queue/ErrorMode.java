@@ -16,6 +16,10 @@
 
 package com.netflix.curator.framework.recipes.queue;
 
+/**
+ * Used when the queue is created with a {@link QueueBuilder#lockPath(String)}. Determines
+ * the behavior when the queue consumer throws an exception
+ */
 public enum ErrorMode
 {
     /**

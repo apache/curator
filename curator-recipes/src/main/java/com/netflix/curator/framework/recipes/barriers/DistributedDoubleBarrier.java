@@ -35,6 +35,18 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * <p>
+ *     A double barrier as described in the ZK recipes. Quoting the recipe:
+ * </p>
+ *
+ * <blockquote>
+ *     Double barriers enable
+ *     clients to synchronize the beginning and the end of a computation. When enough processes
+ *     have joined the barrier, processes start their computation and leave the barrier
+ *     once they have finished.
+ * </blockquote>
+ */
 public class DistributedDoubleBarrier
 {
     private final CuratorFramework client;

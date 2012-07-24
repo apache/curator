@@ -18,6 +18,9 @@ package com.netflix.curator.framework.recipes.shared;
 
 import com.netflix.curator.framework.listen.ListenerContainer;
 
+/**
+ * Abstracts a shared value and allows listening for changes to the value
+ */
 public interface SharedValueReader
 {
     /**

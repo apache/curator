@@ -28,6 +28,13 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <p>
+ *     A variation of the DistributedPriorityQueue that uses time as the priority. When items
+ *     are added to the queue, a delay value is given. The item will not be sent to a consumer
+ *     until the time elapses.
+ * </p>
+ */
 public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
 {
     private final DistributedQueue<T>      queue;

@@ -33,6 +33,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Manages a shared value. All clients watching the same path will have the up-to-date
+ * value (considering ZK's normal consistency guarantees).
+ */
 public class SharedValue implements Closeable, SharedValueReader
 {
     private final Logger                    log = LoggerFactory.getLogger(getClass());
