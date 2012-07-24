@@ -18,6 +18,9 @@ package com.netflix.curator.framework.recipes.shared;
 
 import com.netflix.curator.framework.listen.Listenable;
 
+/**
+ * Abstracts a shared integer and allows listening for changes to its value
+ */
 public interface SharedCountReader extends Listenable<SharedCountListener>
 {
     /**
