@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -44,10 +44,10 @@ public class ChildReaper implements Closeable
     private final CuratorFramework client;
     private final String path;
     private final Reaper.Mode mode;
-    private final ExecutorService executor;
+    private final ScheduledExecutorService executor;
     private final int reapingThresholdMs;
 
-    private volatile Future<Void> task;
+    private volatile ScheduledFuture<?> task;
 
     private enum State
     {
@@ -84,7 +84,7 @@ public class ChildReaper implements Closeable
      * @param reapingThresholdMs threshold in milliseconds that determines that a path can be deleted
      * @param mode reaping mode
      */
-    public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ExecutorService executor, int reapingThresholdMs)
+    public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs)
     {
         this.client = client;
         this.path = path;
@@ -103,28 +103,19 @@ public class ChildReaper implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
-        task = executor.submit
+        task = executor.scheduleWithFixedDelay
         (
-            new Callable<Void>()
+            new Runnable()
             {
                 @Override
-                public Void call() throws Exception
+                public void run()
                 {
-                    try
-                    {
-                        while ( !Thread.currentThread().isInterrupted() )
-                        {
-                            Thread.sleep(reapingThresholdMs);
-                            doWork();
-                        }
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                    }
-                    return null;
+                    doWork();
                 }
-            }
+            },
+            reapingThresholdMs,
+            reapingThresholdMs,
+            TimeUnit.MILLISECONDS
         );
 
         reaper.start();
@@ -140,9 +131,9 @@ public class ChildReaper implements Closeable
         }
     }
 
-    private static ExecutorService newExecutorService()
+    private static ScheduledExecutorService newExecutorService()
     {
-        return ThreadUtils.newFixedThreadPool(2, "ChildReaper");
+        return ThreadUtils.newFixedThreadScheduledPool(2, "ChildReaper");
     }
 
     private void doWork()
