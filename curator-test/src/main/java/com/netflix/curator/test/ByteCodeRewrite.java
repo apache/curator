@@ -39,10 +39,11 @@ public class ByteCodeRewrite
         ClassPool pool = ClassPool.getDefault();
         try
         {
+            pool.appendClassPath(new javassist.LoaderClassPath(TestingCluster.class.getClassLoader()));     // re: https://github.com/Netflix/curator/issues/11
+
             try
             {
-                CtClass cc = pool.get("org.apache.zookeeper.server.quorum.LearnerZooKeeperServer");
-                pool.appendClassPath(new javassist.LoaderClassPath(TestingCluster.class.getClassLoader()));     // re: https://github.com/Netflix/curator/issues/11
+                CtClass cc = pool.get("org.apache.zookeeper.server.ZooKeeperServer");
                 fixMethods(cc);
             }
             catch ( NotFoundException ignore )
@@ -52,8 +53,7 @@ public class ByteCodeRewrite
 
             try
             {
-                CtClass cc = pool.get("org.apache.zookeeper.server.ZooKeeperServer");
-                pool.appendClassPath(new javassist.LoaderClassPath(TestingCluster.class.getClassLoader()));     // re: https://github.com/Netflix/curator/issues/11
+                CtClass cc = pool.get("org.apache.zookeeper.server.quorum.LearnerZooKeeperServer");
                 fixMethods(cc);
             }
             catch ( NotFoundException ignore )
@@ -69,7 +69,7 @@ public class ByteCodeRewrite
 
     private static void fixMethods(CtClass cc) throws CannotCompileException
     {
-        for ( CtMethod method : cc.getMethods() )
+        for ( CtMethod method : cc.getDeclaredMethods() )
         {
             if ( method.getName().equals("registerJMX") || method.getName().equals("unregisterJMX") )
             {
