@@ -27,6 +27,10 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+/**
+ * Manages a shared integer. All clients watching the same path will have the up-to-date
+ * value of the shared integer (considering ZK's normal consistency guarantees).
+ */
 public class SharedCount implements Closeable, SharedCountReader, Listenable<SharedCountListener>
 {
     private final Map<SharedCountListener, SharedValueListener> listeners = Maps.newConcurrentMap();

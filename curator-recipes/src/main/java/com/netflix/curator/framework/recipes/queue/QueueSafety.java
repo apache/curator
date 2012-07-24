@@ -18,6 +18,10 @@ package com.netflix.curator.framework.recipes.queue;
 
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * Parameter block for specifying queue safety with either {@link DistributedQueue} or
+ * {@link DistributedPriorityQueue}
+ */
 public class QueueSafety<T>
 {
     private final String lockPath;

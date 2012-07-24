@@ -29,6 +29,35 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <p>
+ *     A counting semaphore that works across JVMs. All processes
+ *     in all JVMs that use the same lock path will achieve an inter-process limited set of leases.
+ *     Further, this semaphore is mostly "fair" - each user will get a lease in the order requested
+ *     (from ZK's point of view).
+ * </p>
+ *
+ * <p>
+ *     There are two modes for determining the max leases for the semaphore. In the first mode the
+ *     max leases is a convention maintained by the users of a given path. In the second mode a
+ *     {@link SharedCountReader} is used as the method for semaphores of a given path to determine
+ *     the max leases.
+ * </p>
+ *
+ * <p>
+ *     If a {@link SharedCountReader} is <b>not</b> used, no internal checks are done to prevent
+ *     Process A acting as if there are 10 leases and Process B acting as if there are 20. Therefore,
+ *     make sure that all instances in all processes use the same numberOfLeases value.
+ * </p>
+ *
+ * <p>
+ *     The various acquire methods return {@link Lease} objects that represent acquired leases. Clients
+ *     must take care to close lease objects  (ideally in a <code>finally</code>
+ *     block) else the lease will be lost. However, if the client session drops (crash, etc.),
+ *     any leases held by the client are
+ *     automatically closed and made available to other clients.
+ * </p>
+ */
 public class InterProcessSemaphore
 {
     private final Logger        log = LoggerFactory.getLogger(getClass());

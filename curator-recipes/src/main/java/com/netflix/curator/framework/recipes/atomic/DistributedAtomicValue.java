@@ -24,6 +24,14 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
 
+/**
+ * <p>A distributed value that attempts atomic sets. It first tries uses optimistic locking. If that fails,
+ * an optional {@link InterProcessMutex} is taken. For both optimistic and mutex, a retry policy is used to
+ * retry the increment.</p>
+ *
+ * <p>The various methods return an {@link AtomicValue} object. You must <b>always</b> check
+ * {@link AtomicValue#succeeded()}. None of the methods (other than get()) are guaranteed to succeed.</p>
+ */
 public class DistributedAtomicValue
 {
     private final CuratorFramework  client;

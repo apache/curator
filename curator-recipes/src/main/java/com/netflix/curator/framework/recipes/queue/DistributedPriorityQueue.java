@@ -25,6 +25,13 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <p>An implementation of the Distributed Priority Queue ZK recipe.</p>
+ * <p>Internally, this uses a {@link DistributedQueue}. The only difference is that you specify a
+ * priority when putting into the queue.</p>
+ * <p>IMPORTANT NOTE: The priority queue will perform far worse than a standard queue. Every time an
+ * item is added to/removed from the queue, every watcher must re-get all the nodes</p>
+ */
 public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
 {
     private final DistributedQueue<T>      queue;

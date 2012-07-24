@@ -15,6 +15,9 @@
  */
 package com.netflix.curator.framework.recipes.queue;
 
+/**
+ * Helper to serialize/deserialize queue items
+ */
 public interface QueueSerializer<T>
 {
     /**

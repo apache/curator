@@ -29,6 +29,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A version of {@link DistributedQueue} that allows IDs to be associated with queue items. Items
+ * can then be removed from the queue if needed
+ */
 public class DistributedIdQueue<T> implements QueueBase<T>
 {
     private final Logger                log = LoggerFactory.getLogger(getClass());

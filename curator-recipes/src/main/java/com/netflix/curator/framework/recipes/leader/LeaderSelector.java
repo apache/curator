@@ -37,6 +37,12 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Abstraction to select a "leader" amongst multiple contenders in a group of JMVs connected
+ * to a Zookeeper cluster. If a group of N thread/processes contend for leadership one will randomly
+ * be assigned leader until it releases leadership at which time another one from the group will randomly
+ * be chosen
+ */
 public class LeaderSelector implements Closeable
 {
     private final Logger                    log = LoggerFactory.getLogger(getClass());

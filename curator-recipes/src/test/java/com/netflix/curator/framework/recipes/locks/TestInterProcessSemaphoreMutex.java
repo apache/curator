@@ -13,21 +13,30 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package com.netflix.curator.framework.recipes.cache;
+package com.netflix.curator.framework.recipes.locks;
 
 import com.netflix.curator.framework.CuratorFramework;
+import org.testng.annotations.Test;
 
-/**
- * Listener for PathChildrenCache changes
- */
-public interface PathChildrenCacheListener
+public class TestInterProcessSemaphoreMutex extends TestInterProcessMutexBase
 {
-    /**
-     * Called when a change has occurred
-     *
-     * @param client the client
-     * @param event describes the change
-     * @throws Exception errors
-     */
-    public void     childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception;
+    private static final String LOCK_PATH = "/locks/our-lock";
+
+    @Override
+    @Test(enabled = false)
+    public void testReentrant() throws Exception
+    {
+    }
+
+    @Override
+    @Test(enabled = false)
+    public void testReentrant2Threads() throws Exception
+    {
+    }
+
+    @Override
+    protected InterProcessLock makeLock(CuratorFramework client)
+    {
+        return new InterProcessSemaphoreMutex(client, LOCK_PATH);
+    }
 }

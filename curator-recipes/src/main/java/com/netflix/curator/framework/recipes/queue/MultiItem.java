@@ -16,6 +16,11 @@
 
 package com.netflix.curator.framework.recipes.queue;
 
+/**
+ * Abstraction for multiple items.
+ * @see DistributedQueue#putMulti(MultiItem)
+ * @see DistributedPriorityQueue#putMulti(MultiItem, int)
+ */
 public interface MultiItem<T>
 {
     /**

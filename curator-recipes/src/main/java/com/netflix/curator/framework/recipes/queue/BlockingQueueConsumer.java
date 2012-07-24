@@ -26,6 +26,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Utility - a queue consumer that provides behavior similar to a {@link BlockingQueue}
+ */
 public class BlockingQueueConsumer<T> implements QueueConsumer<T>
 {
     private final ConnectionStateListener   connectionStateListener;
