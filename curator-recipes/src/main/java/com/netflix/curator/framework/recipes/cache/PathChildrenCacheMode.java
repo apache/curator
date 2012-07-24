@@ -19,6 +19,12 @@ package com.netflix.curator.framework.recipes.cache;
 import com.netflix.curator.framework.CuratorFramework;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * Controls which data is cached
+ *
+ * @deprecated no longer used. Instead use either {@link PathChildrenCache#PathChildrenCache(CuratorFramework, String, boolean)}
+ * or {@link PathChildrenCache#PathChildrenCache(CuratorFramework, String, boolean, ThreadFactory)}
+ */
 public enum PathChildrenCacheMode
 {
     /**

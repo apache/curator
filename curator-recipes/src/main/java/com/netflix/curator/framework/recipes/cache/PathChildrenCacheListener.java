@@ -17,6 +17,9 @@ package com.netflix.curator.framework.recipes.cache;
 
 import com.netflix.curator.framework.CuratorFramework;
 
+/**
+ * Listener for PathChildrenCache changes
+ */
 public interface PathChildrenCacheListener
 {
     /**

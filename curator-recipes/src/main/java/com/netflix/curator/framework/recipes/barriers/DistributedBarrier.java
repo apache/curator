@@ -22,6 +22,16 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <p>
+ *     A barrier as described in the ZK recipes. Quoting the recipe:
+ * </p>
+ *
+ * <blockquote>
+ *     Distributed systems use barriers to block processing of a set of nodes
+ *     until a condition is met at which time all the nodes are allowed to proceed
+ * </blockquote>
+ */
 public class DistributedBarrier
 {
     private final CuratorFramework client;
