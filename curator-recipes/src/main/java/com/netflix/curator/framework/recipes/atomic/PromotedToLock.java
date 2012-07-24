@@ -21,6 +21,9 @@ import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.retry.RetryNTimes;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Abstraction of arguments for mutex promotion. Use {@link #builder()} to create.
+ */
 public class PromotedToLock
 {
     private final String        path;

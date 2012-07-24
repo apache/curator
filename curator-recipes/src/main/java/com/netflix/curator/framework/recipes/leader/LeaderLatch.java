@@ -38,6 +38,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * <p>
+ *     Abstraction to select a "leader" amongst multiple contenders in a group of JMVs connected to
+ *     a Zookeeper cluster. If a group of N thread/processes contend for leadership one will
+ *     randomly be assigned leader until it releases leadership at which time another one from the
+ *     group will randomly be chosen
+ * </p>
+ */
 public class LeaderLatch implements Closeable
 {
     private final Logger                                log = LoggerFactory.getLogger(getClass());

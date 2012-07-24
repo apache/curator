@@ -19,6 +19,10 @@ package com.netflix.curator.framework.recipes.queue;
 import com.google.common.base.Preconditions;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * Various policies/options for sharding. Usage:
+ * QueueSharderPolicies.builder().foo().bar().build();
+ */
 public class QueueSharderPolicies
 {
     private int           newQueueThreshold;

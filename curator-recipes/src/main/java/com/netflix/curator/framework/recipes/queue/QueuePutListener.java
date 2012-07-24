@@ -16,6 +16,10 @@
 
 package com.netflix.curator.framework.recipes.queue;
 
+/**
+ * Queue puts are done in the background. Use this listener to
+ * be notified when the put completes
+ */
 public interface QueuePutListener<T>
 {
     /**

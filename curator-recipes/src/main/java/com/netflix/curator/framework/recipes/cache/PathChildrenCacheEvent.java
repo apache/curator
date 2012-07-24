@@ -15,6 +15,9 @@
  */
 package com.netflix.curator.framework.recipes.cache;
 
+/**
+ * POJO that abstracts a change to a path
+ */
 public class PathChildrenCacheEvent
 {
     private final Type type;

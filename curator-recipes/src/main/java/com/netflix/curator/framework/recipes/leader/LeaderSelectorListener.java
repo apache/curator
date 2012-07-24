@@ -18,6 +18,11 @@ package com.netflix.curator.framework.recipes.leader;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 
+/**
+ * Notification for leadership
+ *
+ * @see LeaderSelector
+ */
 public interface LeaderSelectorListener extends ConnectionStateListener
 {
     /**

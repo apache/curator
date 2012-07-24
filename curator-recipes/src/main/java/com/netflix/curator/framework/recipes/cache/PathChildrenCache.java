@@ -50,6 +50,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
+ * will watch the ZK path, respond to update/create/delete events, pull down the data, etc. You can
+ * register a listener that will get notified when changes occur.</p>
+ *
+ * <p><b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must
+ * be prepared for false-positives and false-negatives. Additionally, always use the version number
+ * when updating data to avoid overwriting another process' change.</p>
+ */
 public class PathChildrenCache implements Closeable
 {
     private final Logger                    log = LoggerFactory.getLogger(getClass());

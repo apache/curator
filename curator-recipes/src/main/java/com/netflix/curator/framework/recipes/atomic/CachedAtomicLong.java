@@ -16,6 +16,9 @@
 
 package com.netflix.curator.framework.recipes.atomic;
 
+/**
+ * Uses an {@link DistributedAtomicNumber} and allocates values in chunks for better performance
+ */
 public class CachedAtomicLong
 {
     private final DistributedAtomicLong number;

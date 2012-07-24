@@ -18,6 +18,9 @@ package com.netflix.curator.framework.recipes.locks;
 
 import java.util.concurrent.Executor;
 
+/**
+ * Specifies locks that can be revoked
+ */
 public interface Revocable<T>
 {
     /**

@@ -25,6 +25,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
+ * use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * "fair" - each user will get the mutex in the order requested (from ZK's point of view)
+ */
 public class InterProcessMutex implements InterProcessLock, Revocable<InterProcessMutex>
 {
     private final LockInternals         internals;

@@ -24,6 +24,11 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Lists.reverse;
 
+/**
+ * A container that manages multiple locks as a single entity. When {@link #acquire()} is called,
+ * all the locks are acquired. If that fails, any paths that were acquired are released. Similarly, when
+ * {@link #release()} is called, all locks are released (failures are ignored).
+ */
 public class InterProcessMultiLock implements InterProcessLock
 {
     private final List<InterProcessLock> locks;
