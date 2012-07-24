@@ -34,7 +34,8 @@ import java.net.URLDecoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -52,7 +53,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     private final String restUriPath;
     private final int pollingMs;
     private final RetryPolicy retryPolicy;
-    private final ExecutorService service = ThreadUtils.newSingleThreadExecutor("ExhibitorEnsembleProvider");
+    private final ScheduledExecutorService service = ThreadUtils.newSingleThreadScheduledExecutor("ExhibitorEnsembleProvider");
     private final Random random = new Random();
     private final AtomicReference<String> connectionString = new AtomicReference<String>("");
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
@@ -114,28 +115,20 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
-        service.submit
-            (
-                new Runnable()
+        service.scheduleWithFixedDelay
+        (
+            new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            while ( !Thread.currentThread().isInterrupted() )
-                            {
-                                poll();
-                                Thread.sleep(pollingMs);
-                            }
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
+                    poll();
                 }
-            );
+            },
+            pollingMs,
+            pollingMs,
+            TimeUnit.MILLISECONDS
+        );
     }
 
     @Override

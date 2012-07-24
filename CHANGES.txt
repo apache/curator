@@ -20,6 +20,8 @@ the first of which is the class name of the List type, and the second of which i
 * Issue 121: Apply bytecode rewriting to turn off JMX registrations to TestingServer as well as
 TestingCluster.
 
+* Issue 125: Use ScheduledThreadPoolExecutor instead of blocking threads that have period work.
+
 1.1.15/1.0.16 - July 14, 2012
 =============================
 * Added ChildReaper. This builds on the newly added Reaper. This utility monitors a single node

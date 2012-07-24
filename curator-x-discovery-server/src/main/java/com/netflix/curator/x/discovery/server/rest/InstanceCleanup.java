@@ -28,7 +28,8 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A background task that purges stale registrations. You should allocate a singleton
@@ -41,7 +42,7 @@ public class InstanceCleanup implements Closeable
 
     private final ServiceDiscovery<Object>  discovery;
     private final int                       instanceRefreshMs;
-    private final ExecutorService           service = ThreadUtils.newSingleThreadExecutor("InstanceCleanup");
+    private final ScheduledExecutorService  service = ThreadUtils.newSingleThreadScheduledExecutor("InstanceCleanup");
 
     /**
      * @param discovery the service being monitored
@@ -61,7 +62,7 @@ public class InstanceCleanup implements Closeable
     {
         Preconditions.checkArgument(!service.isShutdown(), "already started");
 
-        service.submit
+        service.scheduleWithFixedDelay
         (
             new Runnable()
             {
@@ -70,7 +71,10 @@ public class InstanceCleanup implements Closeable
                 {
                     doWork();
                 }
-            }
+            },
+            instanceRefreshMs,
+            instanceRefreshMs,
+            TimeUnit.MILLISECONDS
         );
     }
 
@@ -83,29 +87,16 @@ public class InstanceCleanup implements Closeable
 
     private void doWork()
     {
-        while ( !Thread.currentThread().isInterrupted() )
+        try
         {
-            try
+            for ( String name : discovery.queryForNames() )
             {
-                Thread.sleep(instanceRefreshMs);
+                checkService(name);
             }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                break;
-            }
-
-            try
-            {
-                for ( String name : discovery.queryForNames() )
-                {
-                    checkService(name);
-                }
-            }
-            catch ( Exception e )
-            {
-                log.error("GC for service names", e);
-            }
+        }
+        catch ( Exception e )
+        {
+            log.error("GC for service names", e);
         }
     }
 
