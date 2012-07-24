@@ -18,6 +18,11 @@
 
 package com.netflix.curator.x.discovery;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -77,4 +82,85 @@ public class TestJsonInstanceSerializer
         Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
         Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
     }
+
+    @Test
+    public void		testPayloadAsList() throws Exception
+    {
+        JsonInstanceSerializer<Object>    serializer = new JsonInstanceSerializer<Object>(Object.class);
+        List<String> payload = new ArrayList<String>();
+        payload.add("Test value 1");
+        payload.add("Test value 2");
+        ServiceInstance<Object>           instance = new ServiceInstance<Object>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
+        byte[]                          bytes = serializer.serialize(instance);
+
+        ServiceInstance<Object>           rhs = serializer.deserialize(bytes);
+        Assert.assertEquals(instance, rhs);
+        Assert.assertEquals(instance.getId(), rhs.getId());
+        Assert.assertEquals(instance.getName(), rhs.getName());
+        Assert.assertEquals(instance.getPayload(), rhs.getPayload());
+        Assert.assertEquals(instance.getAddress(), rhs.getAddress());
+        Assert.assertEquals(instance.getPort(), rhs.getPort());
+        Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
+        Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
+    }
+
+
+    @Test
+    public void		testPayloadAsMap() throws Exception
+    {
+        JsonInstanceSerializer<Object>    serializer = new JsonInstanceSerializer<Object>(Object.class);
+        Map<String,String> payload = new HashMap<String,String>();
+        payload.put("1", "Test value 1");
+        payload.put("2", "Test value 2");
+        ServiceInstance<Object>           instance = new ServiceInstance<Object>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
+        byte[]                          bytes = serializer.serialize(instance);
+
+        ServiceInstance<Object>           rhs = serializer.deserialize(bytes);
+        Assert.assertEquals(instance, rhs);
+        Assert.assertEquals(instance.getId(), rhs.getId());
+        Assert.assertEquals(instance.getName(), rhs.getName());
+        Assert.assertEquals(instance.getPayload(), rhs.getPayload());
+        Assert.assertEquals(instance.getAddress(), rhs.getAddress());
+        Assert.assertEquals(instance.getPort(), rhs.getPort());
+        Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
+        Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
+    }
+
+    @Test
+    public void		testPayloadClass() throws Exception
+    {
+        JsonInstanceSerializer<Payload>    serializer = new JsonInstanceSerializer<Payload>(Payload.class);
+        Payload payload = new Payload();
+        payload.setVal("Test value");
+        ServiceInstance<Payload>           instance = new ServiceInstance<Payload>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
+        byte[]                          bytes = serializer.serialize(instance);
+
+        ServiceInstance<Payload>           rhs = serializer.deserialize(bytes);
+        Assert.assertEquals(instance, rhs);
+        Assert.assertEquals(instance.getId(), rhs.getId());
+        Assert.assertEquals(instance.getName(), rhs.getName());
+        Assert.assertEquals(instance.getPayload(), rhs.getPayload());
+        Assert.assertEquals(instance.getAddress(), rhs.getAddress());
+        Assert.assertEquals(instance.getPort(), rhs.getPort());
+        Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
+        Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
+    }
+
+    public static class Payload {
+    	private String val;
+    	public String getVal() {
+    		return val;
+    	}
+    	public void setVal(String val) {
+    		this.val = val;
+    	}
+    	@Override
+    	public boolean equals(Object other) {
+    		if (other == null || !(other instanceof Payload)) return false;
+    		String otherVal = ((Payload)other).getVal();
+			if (val == null) return val == otherVal;
+			return val.equals(otherVal);
+    	}
+    }
+
 }
