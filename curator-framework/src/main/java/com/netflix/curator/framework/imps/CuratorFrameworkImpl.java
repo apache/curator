@@ -256,6 +256,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
+    public String getNamespace()
+    {
+        return "";
+    }
+
+    @Override
     public CuratorFramework usingNamespace(String newNamespace)
     {
         Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
