@@ -18,11 +18,8 @@ package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
@@ -32,12 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -48,9 +40,8 @@ public class Reaper implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
-    private final ExecutorService executor;
+    private final ScheduledExecutorService executor;
     private final int reapingThresholdMs;
-    private final DelayQueue<PathHolder> queue = new DelayQueue<PathHolder>();
     private final Set<String> activePaths = Sets.newSetFromMap(Maps.<String, Boolean>newConcurrentMap());
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
@@ -61,68 +52,29 @@ public class Reaper implements Closeable
         CLOSED
     }
 
-    private volatile Future<Void> task;
-
     static final int DEFAULT_REAPING_THRESHOLD_MS = (int)TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
 
     @VisibleForTesting
     static final int EMPTY_COUNT_THRESHOLD = 3;
 
-    private static class PathHolder implements Delayed
+    @VisibleForTesting
+    class PathHolder implements Runnable
     {
-        private final String path;
-        private final long expirationMs;
-        private final Mode mode;
-        private final int emptyCount;
+        final String path;
+        final Mode mode;
+        final int emptyCount;
 
-        private PathHolder(String path, int delayMs, Mode mode, int emptyCount)
+        @Override
+        public void run()
+        {
+            reap(this);
+        }
+
+        private PathHolder(String path, Mode mode, int emptyCount)
         {
             this.path = path;
             this.mode = mode;
             this.emptyCount = emptyCount;
-            this.expirationMs = System.currentTimeMillis() + delayMs;
-        }
-
-        @Override
-        public long getDelay(TimeUnit unit)
-        {
-            return unit.convert(expirationMs - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-        }
-
-        @Override
-        public int compareTo(Delayed o)
-        {
-            long diff = getDelay(TimeUnit.MILLISECONDS) - o.getDelay(TimeUnit.MILLISECONDS);
-            return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
-        }
-
-        @SuppressWarnings("RedundantIfStatement")
-        @Override
-        public boolean equals(Object o)
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-
-            PathHolder that = (PathHolder)o;
-
-            if ( path != null ? !path.equals(that.path) : that.path != null )
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return path.hashCode();
         }
     }
 
@@ -170,7 +122,7 @@ public class Reaper implements Closeable
      * @param executor           thread pool
      * @param reapingThresholdMs threshold in milliseconds that determines that a path can be deleted
      */
-    public Reaper(CuratorFramework client, ExecutorService executor, int reapingThresholdMs)
+    public Reaper(CuratorFramework client, ScheduledExecutorService executor, int reapingThresholdMs)
     {
         this.client = client;
         this.executor = executor;
@@ -198,7 +150,7 @@ public class Reaper implements Closeable
     public void addPath(String path, Mode mode)
     {
         activePaths.add(path);
-        queue.add(new PathHolder(path, reapingThresholdMs, mode, 0));
+        executor.schedule(new PathHolder(path, mode, 0), reapingThresholdMs, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -220,30 +172,6 @@ public class Reaper implements Closeable
     public void start() throws Exception
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
-
-        task = executor.submit
-        (
-            new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
-                {
-                    try
-                    {
-                        while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
-                        {
-                            PathHolder holder = queue.take();
-                            reap(holder);
-                        }
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                    }
-                    return null;
-                }
-            }
-        );
     }
 
     @Override
@@ -253,34 +181,13 @@ public class Reaper implements Closeable
         {
             try
             {
-                queue.clear();
-                task.cancel(true);
+                executor.shutdownNow();
             }
             catch ( Exception e )
             {
                 log.error("Canceling task", e);
             }
         }
-    }
-
-    @VisibleForTesting
-    int getEmptyCount(final String path)
-    {
-        PathHolder found = Iterables.find
-            (
-                queue,
-                new Predicate<PathHolder>()
-                {
-                    @Override
-                    public boolean apply(PathHolder holder)
-                    {
-                        return holder.path.equals(path);
-                    }
-                },
-                null
-            );
-
-        return (found != null) ? found.emptyCount : -1;
     }
 
     private void reap(PathHolder holder)
@@ -348,12 +255,12 @@ public class Reaper implements Closeable
         }
         else if ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) && activePaths.contains(holder.path) )
         {
-            queue.add(new PathHolder(holder.path, reapingThresholdMs, holder.mode, newEmptyCount));
+            executor.schedule(new PathHolder(holder.path, holder.mode, newEmptyCount), reapingThresholdMs, TimeUnit.MILLISECONDS);
         }
     }
 
-    private static ExecutorService newExecutorService()
+    private static ScheduledExecutorService newExecutorService()
     {
-        return ThreadUtils.newSingleThreadExecutor("Reaper");
+        return ThreadUtils.newSingleThreadScheduledExecutor("Reaper");
     }
 }

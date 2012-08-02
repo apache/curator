@@ -30,11 +30,8 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.testng.annotations.Test;
 import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Queue;
+import java.util.concurrent.*;
 
 public class TestReaper extends BaseClassForTests
 {
@@ -96,6 +93,7 @@ public class TestReaper extends BaseClassForTests
 
         Timing                  timing = new Timing();
         Reaper                  reaper = null;
+        Future<Void>            watcher = null;
         CuratorFramework        client = makeClient(timing, null);
         try
         {
@@ -104,7 +102,39 @@ public class TestReaper extends BaseClassForTests
 
             Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
 
-            reaper = new Reaper(client, THRESHOLD);
+            final Queue<Reaper.PathHolder>  holders = new ConcurrentLinkedQueue<Reaper.PathHolder>();
+            final ExecutorService           pool = Executors.newCachedThreadPool();
+            ScheduledExecutorService service = new ScheduledThreadPoolExecutor(1)
+            {
+                @Override
+                public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit)
+                {
+                    final Reaper.PathHolder     pathHolder = (Reaper.PathHolder)command;
+                    holders.add(pathHolder);
+                    final ScheduledFuture<?>    f = super.schedule(command, delay, unit);
+                    pool.submit
+                    (
+                        new Callable<Void>()
+                        {
+                            @Override
+                            public Void call() throws Exception
+                            {
+                                f.get();
+                                holders.remove(pathHolder);
+                                return null;
+                            }
+                        }
+                    );
+                    return f;
+                }
+            };
+
+            reaper = new Reaper
+            (
+                client,
+                service,
+                THRESHOLD
+            );
             reaper.start();
             reaper.addPath("/one/two/three");
 
@@ -112,7 +142,14 @@ public class TestReaper extends BaseClassForTests
             boolean     emptyCountIsCorrect = false;
             while ( ((System.currentTimeMillis() - start) < timing.forWaiting().milliseconds()) && !emptyCountIsCorrect )   // need to loop as the Holder can go in/out of the Reaper's DelayQueue
             {
-                emptyCountIsCorrect = (reaper.getEmptyCount("/one/two/three") > 0);
+                for ( Reaper.PathHolder holder : holders )
+                {
+                    if ( holder.path.endsWith("/one/two/three") )
+                    {
+                        emptyCountIsCorrect = (holder.emptyCount > 0);
+                        break;
+                    }
+                }
                 Thread.sleep(1);
             }
             Assert.assertTrue(emptyCountIsCorrect);
@@ -130,6 +167,10 @@ public class TestReaper extends BaseClassForTests
         }
         finally
         {
+            if ( watcher != null )
+            {
+                watcher.cancel(true);
+            }
             Closeables.closeQuietly(reaper);
             Closeables.closeQuietly(client);
         }

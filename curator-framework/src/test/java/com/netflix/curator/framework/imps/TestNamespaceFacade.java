@@ -4,11 +4,32 @@ import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.RetryOneTime;
-import junit.framework.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class TestNamespaceFacade extends BaseClassForTests
 {
+    @Test
+    public void     testGetNamespace() throws Exception
+    {
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            CuratorFramework fooClient = client.usingNamespace("foo");
+            CuratorFramework barClient = client.usingNamespace("bar");
+
+            Assert.assertEquals(client.getNamespace(), "");
+            Assert.assertEquals(fooClient.getNamespace(), "foo");
+            Assert.assertEquals(barClient.getNamespace(), "bar");
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void     testSimultaneous() throws Exception
     {
