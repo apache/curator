@@ -16,6 +16,11 @@ class NamespaceImpl
         ensurePath = (namespace != null) ? new EnsurePath(ZKPaths.makePath("/", namespace)) : null;
     }
 
+    String getNamespace()
+    {
+        return namespace;
+    }
+
     String    unfixForNamespace(String path)
     {
         if ( (namespace != null) && (path != null) )

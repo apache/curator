@@ -141,7 +141,7 @@ project(':curator-client')
 {
     dependencies
     {
-        compile 'org.slf4j:slf4j-api:1.6.3'
+        compile 'org.slf4j:slf4j-api:1.6.4'
         // Original has commons-logging
         testCompile 'org.mockito:mockito-core:1.8.5'
         testCompile project(':curator-test')
