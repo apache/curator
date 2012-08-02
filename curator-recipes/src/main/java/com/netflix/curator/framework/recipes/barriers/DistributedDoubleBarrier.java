@@ -210,7 +210,14 @@ public class DistributedDoubleBarrier
             int                 ourIndex = children.indexOf(ourPathName);
             if ( (ourIndex < 0) && ourNodeShouldExist )
             {
-                throw new IllegalStateException(String.format("Our path (%s) is missing", ourPathName));
+                if ( connectionLost.get() )
+                {
+                    break;  // connection was lost but we've reconnected. However, our ephemeral node is gone
+                }
+                else
+                {
+                    throw new IllegalStateException(String.format("Our path (%s) is missing", ourPathName));
+                }
             }
 
             if ( children.size() == 1 )

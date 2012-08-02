@@ -150,6 +150,12 @@ public interface CuratorFramework extends Closeable
     public CuratorFramework usingNamespace(String newNamespace);
 
     /**
+     * Return the current namespace or "" if none
+     * @return namespace
+     */
+    public String getNamespace();
+
+    /**
      * Return the managed zookeeper client
      *
      * @return client
