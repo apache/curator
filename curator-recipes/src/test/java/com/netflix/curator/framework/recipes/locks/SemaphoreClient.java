@@ -23,11 +23,12 @@ import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.test.Timing;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
-class SemaphoreClient implements Callable<Void>,ConnectionStateListener
+class SemaphoreClient implements Callable<Void>, ConnectionStateListener, Closeable
 {
     private final CuratorFramework client;
     private final String semaphorePath;
@@ -51,7 +52,8 @@ class SemaphoreClient implements Callable<Void>,ConnectionStateListener
         this.operation = operation;
     }
 
-    void stop()
+    @Override
+    public void close() throws IOException
     {
         shouldRun = false;
     }
