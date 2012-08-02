@@ -50,12 +50,12 @@ public class TestInterProcessSemaphoreCluster
         ExecutorCompletionService<Void> completionService = new ExecutorCompletionService<Void>(executorService);
         final Timing                    timing = new Timing();
         TestingCluster                  cluster = new TestingCluster(3);
+        List<SemaphoreClient>           semaphoreClients = Lists.newArrayList();
         try
         {
             cluster.start();
 
             final AtomicInteger         opCount = new AtomicInteger(0);
-            List<SemaphoreClient>       semaphoreClients = Lists.newArrayList();
             for ( int i = 0; i < QTY; ++i )
             {
                 SemaphoreClient semaphoreClient = new SemaphoreClient
@@ -96,11 +96,12 @@ public class TestInterProcessSemaphoreCluster
             };
             client.getConnectionStateListenable().addListener(listener);
             client.start();
-            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
-
-            cluster.stop();
             try
             {
+                client.getZookeeperClient().blockUntilConnectedOrTimedOut();
+
+                cluster.stop();
+
                 latch.await();
             }
             finally
@@ -140,6 +141,10 @@ public class TestInterProcessSemaphoreCluster
         }
         finally
         {
+            for ( SemaphoreClient semaphoreClient : semaphoreClients )
+            {
+                Closeables.closeQuietly(semaphoreClient);
+            }
             Closeables.closeQuietly(cluster);
             executorService.shutdownNow();
         }
