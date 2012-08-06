@@ -1,3 +1,7 @@
+1.1.17/1.0.18 - August 2, 2012
+==============================
+* Issue 132: If namespace is set in builder, getNamespace() does not return it
+
 1.1.16/1.0.17 - August 2, 2012
 ==============================
 * Merge 114 from amuraru: Make sure internal executor services are not started until startup.
