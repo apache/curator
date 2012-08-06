@@ -13,6 +13,7 @@ public class TestNamespaceFacade extends BaseClassForTests
     public void     testGetNamespace() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework    client2 = CuratorFrameworkFactory.builder().namespace("snafu").retryPolicy(new RetryOneTime(1)).connectString("").build();
         try
         {
             client.start();
@@ -21,11 +22,13 @@ public class TestNamespaceFacade extends BaseClassForTests
             CuratorFramework barClient = client.usingNamespace("bar");
 
             Assert.assertEquals(client.getNamespace(), "");
+            Assert.assertEquals(client2.getNamespace(), "snafu");
             Assert.assertEquals(fooClient.getNamespace(), "foo");
             Assert.assertEquals(barClient.getNamespace(), "bar");
         }
         finally
         {
+            Closeables.closeQuietly(client2);
             Closeables.closeQuietly(client);
         }
     }
