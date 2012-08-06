@@ -26,6 +26,7 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.TestingServer;
+import com.netflix.curator.test.Timing;
 import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
 import com.netflix.curator.x.discovery.details.ServiceDiscoveryImpl;
 import org.testng.Assert;
@@ -35,9 +36,58 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 public class TestServiceDiscovery
 {
+    @Test
+    public void         testCrashedServer() throws Exception
+    {
+        List<Closeable>     closeables = Lists.newArrayList();
+        TestingServer       server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+            Timing              timing = new Timing();
+            CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            final Semaphore             semaphore = new Semaphore(0);
+            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String>    discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance)
+            {
+                @Override
+                public void registerService(ServiceInstance<String> service) throws Exception
+                {
+                    super.registerService(service);
+                    semaphore.release();
+                }
+            };
+            closeables.add(discovery);
+            discovery.start();
+
+            timing.acquireSemaphore(semaphore);
+            Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
+
+            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            server.stop();
+
+            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            closeables.add(server);
+
+            timing.acquireSemaphore(semaphore);
+            Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
+        }
+        finally
+        {
+            for ( Closeable c : closeables )
+            {
+                Closeables.closeQuietly(c);
+            }
+        }
+    }
+
     @Test
     public void         testCrashedInstance() throws Exception
     {
