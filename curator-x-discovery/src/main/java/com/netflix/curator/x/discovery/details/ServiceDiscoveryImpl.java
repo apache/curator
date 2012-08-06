@@ -25,6 +25,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.ThreadUtils;
 import com.netflix.curator.utils.ZKPaths;
 import com.netflix.curator.x.discovery.ServiceCacheBuilder;
@@ -57,6 +59,24 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final Optional<ServiceInstance<T>> thisInstance;
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
     private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    {
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            if ( newState == ConnectionState.RECONNECTED )
+            {
+                try
+                {
+                    registerService(thisInstance.get());
+                }
+                catch ( Exception e )
+                {
+                    log.error("Could not re-register instance after reconnection", e);
+                }
+            }
+        }
+    };
 
     public static final int DEFAULT_REFRESH_PADDING = (int)TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS);
 
@@ -84,6 +104,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         if ( thisInstance.isPresent() )
         {
+            client.getConnectionStateListenable().addListener(connectionStateListener);
             registerService(thisInstance.get());
         }
     }
@@ -104,6 +125,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             try
             {
+                client.getConnectionStateListenable().removeListener(connectionStateListener);
                 unregisterService(thisInstance.get());
             }
             catch ( Exception e )

@@ -261,7 +261,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public String getNamespace()
     {
-        return "";
+        String str = namespace.getNamespace();
+        return (str != null) ? str : "";
     }
 
     @Override
