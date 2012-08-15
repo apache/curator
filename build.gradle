@@ -6,10 +6,12 @@ version = "${releaseVersion}${versionPostfix}"
 status = performingRelease?'release':'snapshot'
 
 apply plugin: 'idea'
+apply plugin: 'eclipse'
 
 subprojects
 {
     apply plugin: 'java'
+    apply plugin: 'eclipse'
     apply plugin: 'idea'
 
     group = 'com.netflix.curator'
