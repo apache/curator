@@ -56,9 +56,8 @@ public class CuratorZookeeperClient implements Closeable
      * @param connectionTimeoutMs connection timeout
      * @param watcher default watcher or null
      * @param retryPolicy the retry policy to use
-     * @throws IOException ZooKeeper creation errors
      */
-    public CuratorZookeeperClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
+    public CuratorZookeeperClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy)
     {
         this(new DefaultZookeeperFactory(), new FixedEnsembleProvider(connectString), sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy);
     }
@@ -85,7 +84,7 @@ public class CuratorZookeeperClient implements Closeable
      * @param retryPolicy the retry policy to use
      * @throws IOException ZooKeeper creation errors
      */
-    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy) throws IOException
+    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy)
     {
         retryPolicy = Preconditions.checkNotNull(retryPolicy, "retryPolicy cannot be null");
         ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
