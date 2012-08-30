@@ -18,6 +18,7 @@ package com.netflix.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
+import com.netflix.curator.ensemble.EnsembleProvider;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.state.ConnectionState;
@@ -28,6 +29,7 @@ import com.netflix.curator.test.TestingCluster;
 import com.netflix.curator.test.Timing;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -35,10 +37,148 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TestInterProcessSemaphoreCluster
 {
+    @Test
+    public void     testKilledServerWithEnsembleProvider() throws Exception
+    {
+        final int           CLIENT_QTY = 10;
+        final Timing        timing = new Timing();
+        final String        PATH = "/foo/bar/lock";
+
+        ExecutorService                 executorService = Executors.newFixedThreadPool(CLIENT_QTY);
+        ExecutorCompletionService<Void> completionService = new ExecutorCompletionService<Void>(executorService);
+        TestingCluster                  cluster = new TestingCluster(3);
+        try
+        {
+            cluster.start();
+
+            final AtomicReference<String>   connectionString = new AtomicReference<String>(cluster.getConnectString());
+            final EnsembleProvider          provider = new EnsembleProvider()
+            {
+                @Override
+                public void start() throws Exception
+                {
+                }
+
+                @Override
+                public String getConnectionString()
+                {
+                    return connectionString.get();
+                }
+
+                @Override
+                public void close() throws IOException
+                {
+                }
+            };
+
+            final Semaphore             acquiredSemaphore = new Semaphore(0);
+            final AtomicInteger         acquireCount = new AtomicInteger(0);
+            final CountDownLatch        suspendedLatch = new CountDownLatch(CLIENT_QTY);
+            for ( int i = 0; i < CLIENT_QTY; ++i )
+            {
+                completionService.submit
+                (
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            CuratorFramework        client = CuratorFrameworkFactory.builder()
+                                .ensembleProvider(provider)
+                                .sessionTimeoutMs(timing.session())
+                                .connectionTimeoutMs(timing.connection())
+                                .retryPolicy(new ExponentialBackoffRetry(100, 3))
+                                .build();
+                            try
+                            {
+                                final Semaphore     suspendedSemaphore = new Semaphore(0);
+                                client.getConnectionStateListenable().addListener
+                                (
+                                    new ConnectionStateListener()
+                                    {
+                                        @Override
+                                        public void stateChanged(CuratorFramework client, ConnectionState newState)
+                                        {
+                                            if ( (newState == ConnectionState.SUSPENDED) || (newState == ConnectionState.LOST) )
+                                            {
+                                                suspendedLatch.countDown();
+                                                suspendedSemaphore.release();
+                                            }
+                                        }
+                                    }
+                                );
+
+                                client.start();
+
+                                InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, PATH, 1);
+
+                                while ( !Thread.currentThread().isInterrupted() )
+                                {
+                                    Lease   lease = null;
+                                    try
+                                    {
+                                        lease = semaphore.acquire();
+                                        acquiredSemaphore.release();
+                                        acquireCount.incrementAndGet();
+                                        suspendedSemaphore.acquire();
+                                    }
+                                    catch ( Exception e )
+                                    {
+                                        // just retry
+                                    }
+                                    finally
+                                    {
+                                        if ( lease != null )
+                                        {
+                                            acquireCount.decrementAndGet();
+                                            Closeables.closeQuietly(lease);
+                                        }
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                Closeables.closeQuietly(client);
+                            }
+                            return null;
+                        }
+                    }
+                );
+            }
+
+            Assert.assertTrue(timing.acquireSemaphore(acquiredSemaphore));
+            Assert.assertEquals(1, acquireCount.get());
+
+            cluster.close();
+            timing.awaitLatch(suspendedLatch);
+            timing.forWaiting().sleepABit();
+            Assert.assertEquals(0, acquireCount.get());
+
+            cluster = new TestingCluster(3);
+            cluster.start();
+
+            connectionString.set(cluster.getConnectString());
+            timing.forWaiting().sleepABit();
+
+            Assert.assertTrue(timing.acquireSemaphore(acquiredSemaphore));
+            timing.forWaiting().sleepABit();
+            Assert.assertEquals(1, acquireCount.get());
+        }
+        finally
+        {
+            executorService.shutdown();
+            executorService.awaitTermination(10, TimeUnit.SECONDS);
+            Closeables.closeQuietly(cluster);
+        }
+    }
+
     @Test
     public void     testCluster() throws Exception
     {
