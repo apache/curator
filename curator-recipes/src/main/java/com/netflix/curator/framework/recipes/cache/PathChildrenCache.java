@@ -487,7 +487,7 @@ public class PathChildrenCache implements Closeable
         }
         else
         {
-            client.checkExists().inBackground(existsCallback).forPath(fullPath);
+            client.checkExists().usingWatcher(dataWatcher).inBackground(existsCallback).forPath(fullPath);
         }
     }
 
