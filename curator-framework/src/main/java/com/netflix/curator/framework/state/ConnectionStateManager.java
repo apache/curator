@@ -61,10 +61,11 @@ public class ConnectionStateManager implements Closeable
     private final Logger                                        log = LoggerFactory.getLogger(getClass());
     private final BlockingQueue<ConnectionState>                eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
     private final CuratorFramework                              client;
-    private final ExecutorService                               service;
+    private final ThreadFactory                                 threadFactory;
     private final ListenerContainer<ConnectionStateListener>    listeners = new ListenerContainer<ConnectionStateListener>();
     private final AtomicReference<ConnectionState>              currentState = new AtomicReference<ConnectionState>();
 
+    private volatile ExecutorService                            service;
     /**
      * @param client the client
      * @param threadFactory thread factory to use or null for a default
@@ -76,7 +77,7 @@ public class ConnectionStateManager implements Closeable
         {
             threadFactory = ThreadUtils.newThreadFactory("ConnectionStateManager");
         }
-        service = Executors.newSingleThreadExecutor(threadFactory);
+        this.threadFactory  = threadFactory;
     }
 
     /**
@@ -84,8 +85,9 @@ public class ConnectionStateManager implements Closeable
      */
     public void     start()
     {
-        Preconditions.checkState(!service.isShutdown(), "already started");
+        Preconditions.checkState(service == null, "already started");
 
+        service = Executors.newSingleThreadExecutor(threadFactory);
         service.submit
         (
             new Callable<Object>()
@@ -103,7 +105,8 @@ public class ConnectionStateManager implements Closeable
     @Override
     public void close()
     {
-        Preconditions.checkState(!service.isShutdown(), "not started");
+        Preconditions.checkState(service != null, "not started");
+        Preconditions.checkState(!service.isShutdown(), "already closed");
 
         service.shutdownNow();
         listeners.clear();

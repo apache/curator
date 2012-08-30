@@ -65,9 +65,8 @@ public class CuratorFrameworkFactory
      * @param connectString list of servers to connect to
      * @param retryPolicy retry policy to use
      * @return client
-     * @throws IOException ZK errors
      */
-    public static CuratorFramework newClient(String connectString, RetryPolicy retryPolicy) throws IOException
+    public static CuratorFramework newClient(String connectString, RetryPolicy retryPolicy)
     {
         return newClient(connectString, DEFAULT_SESSION_TIMEOUT_MS, DEFAULT_CONNECTION_TIMEOUT_MS, retryPolicy);
     }
@@ -83,7 +82,7 @@ public class CuratorFrameworkFactory
      * @return client
      * @throws IOException ZK errors
      */
-    public static CuratorFramework newClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, RetryPolicy retryPolicy) throws IOException
+    public static CuratorFramework newClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, RetryPolicy retryPolicy)
     {
         return builder().
             connectString(connectString).
@@ -114,7 +113,7 @@ public class CuratorFrameworkFactory
          * @return new CuratorFramework
          * @throws IOException errors
          */
-        public CuratorFramework build() throws IOException
+        public CuratorFramework build()
         {
             return new CuratorFrameworkImpl(this);
         }

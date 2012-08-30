@@ -24,6 +24,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
+import org.codehaus.jackson.annotate.JsonTypeInfo;
+import org.codehaus.jackson.annotate.JsonTypeInfo.Id;
+
 /**
  * POJO that represents a service instance
  */
@@ -120,6 +123,7 @@ public class ServiceInstance<T>
         return sslPort;
     }
 
+    @JsonTypeInfo(use=Id.CLASS, defaultImpl=Object.class)
     public T getPayload()
     {
         return payload;

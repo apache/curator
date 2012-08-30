@@ -317,7 +317,12 @@ public class LeaderLatch implements Closeable
         }
         ourPath = client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
 
-        List<String> sortedChildren = LockInternals.getSortedChildren(client, latchPath, LOCK_NAME, sorter);
+        checkForLeadership();
+    }
+    
+    private void checkForLeadership() throws Exception
+    {
+    	List<String> sortedChildren = LockInternals.getSortedChildren(client, latchPath, LOCK_NAME, sorter);
         if ( sortedChildren.size() == 0 )
         {
             throw new Exception("no children - unexpected state");
@@ -339,13 +344,22 @@ public class LeaderLatch implements Closeable
                 {
                     if ( (event.getType() == Event.EventType.NodeDeleted) && (ourPath != null) && ourPath.equals(ourPathWhenWatched) )
                     {
-                        setLeadership(true);
+                    	try
+                    	{
+                    		checkForLeadership();
+                    	} 
+                    	catch(Exception ex) 
+                    	{
+                    		log.error("An error ocurred checking the leadership.", ex);
+                    	}
                     }
                 }
             };
             if ( client.checkExists().usingWatcher(watcher).forPath(ZKPaths.makePath(latchPath, watchPath)) == null )
             {
-                setLeadership(true);
+            	//the previous Participant may be down, so we need to reevaluate the list 
+            	//to get the actual previous Participant or get the leadership 
+                checkForLeadership();
             }
         }
     }

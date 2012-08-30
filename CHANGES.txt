@@ -10,6 +10,8 @@ that false was passed in the constructor for cacheData.
 
 * Merge 136 from wt: Add eclipse support to gradle.
 
+* Merge 137 from pbh101: ConnectionState declares IOException, never throws it
+
 1.1.16/1.0.17 - August 2, 2012
 ==============================
 * Merge 114 from amuraru: Make sure internal executor services are not started until startup.

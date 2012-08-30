@@ -1,40 +1,46 @@
 // Establish version and status
-def performingRelease = project.hasProperty('release') && Boolean.parseBoolean(project.release)
-def releaseVersion = '1.0.18'
-def versionPostfix = performingRelease?'':'-SNAPSHOT'
-version = "${releaseVersion}${versionPostfix}"
-status = performingRelease?'release':'snapshot'
+ext.releaseVersion = '1.0.18'
+ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
+
+buildscript {
+    repositories { mavenCentral() }
+    apply from: file('gradle/buildscript.gradle'), to: buildscript 
+}
+
+allprojects {
+    repositories { mavenCentral() }
+}
+
+apply from: file('gradle/convention.gradle')
+apply from: file('gradle/maven.gradle')
+//apply from: file('gradle/check.gradle')
+//apply from: file('gradle/license.gradle')
+//apply from: file('gradle/release.gradle')
 
 apply plugin: 'idea'
 
-subprojects
-{
-    apply plugin: 'java'
+subprojects {
     apply plugin: 'idea'
 
-    group = 'com.netflix.curator'
-    version = rootProject.version
-
-    sourceCompatibility = 1.6
-
-    tasks.test.useTestNG()
-
-    // GRADLE-2087 workaround, perform after java plugin
-    status = rootProject.status
-
-    repositories
-    {
-        mavenCentral()
-        maven
-        {
-            url "https://repository.jboss.org/nexus/content/groups/public/"
+    // Closure to configure all the POM with extra info, common to all projects
+    pom {
+        project {
+            url "https://github.com/Netflix/${rootProject.githubProjectName}"
+            scm {
+                connection "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+                url "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+                developerConnection "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+            }
+            issueManagement {
+                system 'github'
+                url "https://github.com/Netflix/${rootProject.githubProjectName}/issues"
+            }
         }
     }
 
-    test.testLogging.showStandardStreams = project.hasProperty('log')
+    group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
 
-    dependencies
-    {
+    dependencies {
         compile('org.apache.zookeeper:zookeeper:3.3.5')
         {
             exclude group: 'com.sun.jmx', module: 'jmxri'
@@ -48,93 +54,6 @@ subprojects
         testCompile 'org.testng:testng:6.1.1'
         testCompile 'log4j:log4j:1.2.15'
     }
-
-    task sourcesJar(type: Jar, dependsOn:classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn:javadoc) {
-        classifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives jar
-        archives sourcesJar
-        archives javadocJar
-    }
-
-    // Maven side of things
-    apply plugin: 'maven' // Java plugin has to have been already applied for the conf2scope mappings to work
-    apply plugin: 'signing'
-
-    if (gradle.startParameter.taskNames.contains("uploadMavenCentral")) {
-        signing {
-            required true
-            sign configurations.archives
-        }
-    } else {
-        task signArchives {
-            // do nothing
-        }
-    }
-
-    /**
-     * Publishing to Maven Central example provided from http://jedicoder.blogspot.com/2011/11/automated-gradle-project-deployment-to.html
-     */
-    task uploadMavenCentral(type:Upload) {
-        configuration = configurations.archives
-        dependsOn 'signArchives'
-        doFirst {
-            repositories.mavenDeployer {
-                beforeDeployment { org.gradle.api.artifacts.maven.MavenDeployment deployment -> signing.signPom(deployment) }
-
-                // To test deployment locally, use the following instead of oss.sonatype.org
-                //repository(url: "file://localhost/${rootProject.rootDir}/repo")
-
-                repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
-                    authentication(userName: rootProject.sonatypeUsername, password: rootProject.sonatypePassword)
-                }
-
-                // Prevent datastamp from being appending to artifacts during deployment
-                uniqueVersion = false
-
-                // Closure to configure all the POM with extra info, common to all projects
-                pom.project {
-                    parent {
-                        groupId 'org.sonatype.oss'
-                        artifactId 'oss-parent'
-                        version '7'
-                    }
-                    url 'https://github.com/Netflix/curator'
-                    licenses {
-                        license {
-                            name 'The Apache Software License, Version 2.0'
-                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                            distribution 'repo'
-                        }
-                    }
-                    scm {
-                        connection 'scm:git:git@github.com:Netflix/curator.git'
-                        url 'scm:git:git@github.com:Netflix/curator.git'
-                        developerConnection 'scm:git:git@github.com:Netflix/curator.git'
-                    }
-                    issueManagement {
-                        system 'github'
-                        url 'https://github.com/Netflix/curator/issues'
-                    }
-                }
-            }
-        }
-    }
-}
-
-task aggregateJavadoc(type: Javadoc) {
-    description = 'Aggregate all subproject docs into a single docs directory'
-    source subprojects.collect {project -> project.sourceSets.main.allJava }
-    classpath = files(subprojects.collect {project -> project.sourceSets.main.compileClasspath})
-    destinationDir = new File(projectDir, 'doc')
 }
 
 project(':curator-client')
@@ -195,6 +114,7 @@ project(':curator-x-discovery-server')
         compile 'javax.ws.rs:jsr311-api:1.1.1'
         testCompile project(':curator-test')
         testCompile 'junit:junit-dep:4.10'
+        testCompile 'javax.servlet:servlet-api:2.5'
         testCompile 'com.sun.jersey:jersey-server:1.11'
         testCompile 'com.sun.jersey:jersey-servlet:1.11'
         testCompile 'com.sun.jersey:jersey-client:1.11'
@@ -202,9 +122,4 @@ project(':curator-x-discovery-server')
         testCompile 'org.jboss.resteasy:resteasy-jaxrs:2.3.0.GA'
         testCompile 'org.mortbay.jetty:jetty:6.1.22'
     }
-}
-
-// Generate wrapper, which is distributed as part of source to alleviate the need of installing gradle
-task createWrapper(type: Wrapper) {
-    gradleVersion = '1.0-milestone-9'
 }

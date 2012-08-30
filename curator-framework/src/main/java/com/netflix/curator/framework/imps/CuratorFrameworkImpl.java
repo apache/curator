@@ -55,7 +55,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final CuratorZookeeperClient                                client;
     private final ListenerContainer<CuratorListener>                    listeners;
     private final ListenerContainer<UnhandledErrorListener>             unhandledErrorListeners;
-    private final ExecutorService                                       executorService;
+    private final ThreadFactory                                         threadFactory;
     private final BlockingQueue<OperationAndData<?>>                    backgroundOperations;
     private final NamespaceImpl                                         namespace;
     private final ConnectionStateManager                                connectionStateManager;
@@ -65,6 +65,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final CompressionProvider                                   compressionProvider;
     private final ACLProvider                                           aclProvider;
     private final NamespaceFacadeCache                                  namespaceFacadeCache;
+
+    private volatile ExecutorService                                    executorService;
 
     interface DebugBackgroundListener
     {
@@ -92,7 +94,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder) throws IOException
+    public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
         this.client = new CuratorZookeeperClient
         (
@@ -129,7 +131,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
         backgroundOperations = new DelayQueue<OperationAndData<?>>();
         namespace = new NamespaceImpl(this, builder.getNamespace());
-        executorService = Executors.newFixedThreadPool(2, getThreadFactory(builder));  // 1 for listeners, 1 for background ops
+        threadFactory = getThreadFactory(builder);
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
@@ -161,7 +163,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         client = parent.client;
         listeners = parent.listeners;
         unhandledErrorListeners = parent.unhandledErrorListeners;
-        executorService = parent.executorService;
+        threadFactory = parent.threadFactory;
         backgroundOperations = parent.backgroundOperations;
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
@@ -193,6 +195,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             client.start();
             connectionStateManager.start();
+            executorService = Executors.newFixedThreadPool(2, threadFactory);  // 1 for listeners, 1 for background ops
 
             executorService.submit
             (

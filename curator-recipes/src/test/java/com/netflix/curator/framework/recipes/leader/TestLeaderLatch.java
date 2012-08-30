@@ -102,6 +102,50 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
+    public void testCorrectWatching() throws Exception
+    {
+    	final int PARTICIPANT_QTY = 10;
+    	final int PARTICIPANT_ID = 2;
+    	
+    	List<LeaderLatch> latches = Lists.newArrayList();
+
+        final Timing timing = new Timing();
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+             client.start();
+
+             for ( int i = 0; i < PARTICIPANT_QTY; ++i )
+             {
+                 LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
+                 latch.start();
+                 latches.add(latch);
+             }
+
+             waitForALeader(latches, timing);
+             
+             //we need to close a Participant that doesn't be actual leader (first Participant) nor the last
+             latches.get(PARTICIPANT_ID).close();
+             
+             //As the previous algorithm assumed that if the watched node is deleted gets the leadership
+             //we need to ensure that the PARTICIPANT_ID-1 is not getting (wrongly) elected as leader.
+             Assert.assertTrue(!latches.get(PARTICIPANT_ID-1).hasLeadership());
+	     }
+	     finally
+	     {
+	    	 //removes the already closed participant
+	    	 latches.remove(PARTICIPANT_ID);
+	    	 
+	         for ( LeaderLatch latch : latches )
+	         {
+	             Closeables.closeQuietly(latch);
+	         }
+	         Closeables.closeQuietly(client);
+	     }
+
+    }
+    
+    @Test
     public void testWaiting() throws Exception
     {
         final int PARTICIPANT_QTY = 10;
