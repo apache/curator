@@ -179,7 +179,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
             String newConnectionStringValue = newConnectionString.toString();
             if ( !newConnectionStringValue.equals(connectionString.get()) )
             {
-                log.info("Connection string has changed. Old value (%s), new value (%s)", connectionString.get(), newConnectionStringValue);
+                log.info(String.format("Connection string has changed. Old value (%s), new value (%s)", connectionString.get(), newConnectionStringValue));
             }
             Exhibitors newExhibitors = new Exhibitors
             (
