@@ -34,6 +34,51 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TestPathChildrenCache extends BaseClassForTests
 {
     @Test
+    public void     testUpdateWhenNotCachingData() throws Exception
+    {
+        Timing              timing = new Timing();
+
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final CountDownLatch    updatedLatch = new CountDownLatch(1);
+            final CountDownLatch    addedLatch = new CountDownLatch(1);
+            client.create().creatingParentsIfNeeded().forPath("/test");
+            PathChildrenCache       cache = new PathChildrenCache(client, "/test", false);
+            cache.getListenable().addListener
+            (
+                new PathChildrenCacheListener()
+                {
+                    @Override
+                    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                    {
+                        if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_UPDATED )
+                        {
+                            updatedLatch.countDown();
+                        }
+                        else if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                        {
+                            addedLatch.countDown();
+                        }
+                    }
+                }
+            );
+            cache.start(true);
+
+            client.create().forPath("/test/foo", "first".getBytes());
+            Assert.assertTrue(timing.awaitLatch(addedLatch));
+
+            client.setData().forPath("/test/foo", "something new".getBytes());
+            Assert.assertTrue(timing.awaitLatch(updatedLatch));
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void     testEnsurePath() throws Exception
     {
         Timing              timing = new Timing();
