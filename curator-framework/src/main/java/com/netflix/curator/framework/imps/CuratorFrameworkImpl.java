@@ -95,7 +95,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder) throws IOException
+    public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
         this.client = new CuratorZookeeperClient
         (
