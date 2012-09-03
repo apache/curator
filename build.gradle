@@ -94,6 +94,19 @@ project(':curator-recipes')
     }
 }
 
+project(':curator-x-zkclient-bridge')
+{
+    dependencies
+    {
+        compile project(':curator-client')
+        compile project(':curator-framework')
+        compile 'com.github.sgroschupf:zkclient:0.1'
+        testCompile 'commons-io:commons-io:1.4'
+        testCompile 'org.mockito:mockito-core:1.8.0'
+        testCompile 'junit:junit:4.7'
+    }
+}
+
 project(':curator-x-discovery')
 {
     dependencies
