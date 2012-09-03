@@ -186,7 +186,7 @@ public class CuratorZKClientBridge implements IZkConnection
     @Override
     public String getServers()
     {
-        return "";  // TODO
+        return curator.getZookeeperClient().getCurrentConnectionString();
     }
 
     private void adjustException(Exception e) throws KeeperException, InterruptedException

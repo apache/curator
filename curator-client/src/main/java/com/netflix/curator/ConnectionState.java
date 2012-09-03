@@ -184,6 +184,11 @@ class ConnectionState implements Watcher, Closeable
         }
     }
 
+    EnsembleProvider getEnsembleProvider()
+    {
+        return ensembleProvider;
+    }
+
     private boolean checkState(Event.KeeperState state, boolean wasConnected)
     {
         boolean     isConnected = wasConnected;

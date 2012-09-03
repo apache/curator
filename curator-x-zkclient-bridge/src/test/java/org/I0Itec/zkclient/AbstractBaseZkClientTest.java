@@ -15,25 +15,21 @@
  */
 package org.I0Itec.zkclient;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-
+import com.netflix.curator.test.TestingServer;
+import org.I0Itec.zkclient.testutil.ZkTestSystem;
+import org.apache.log4j.Logger;
+import org.apache.zookeeper.KeeperException;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.curator.test.TestingServer;
-import org.I0Itec.zkclient.exception.ZkTimeoutException;
-import org.I0Itec.zkclient.testutil.ZkTestSystem;
-import org.apache.log4j.Logger;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public abstract class AbstractBaseZkClientTest {
 
@@ -52,7 +48,7 @@ public abstract class AbstractBaseZkClientTest {
         LOG.info("------------ AFTER -------------");
     }
 
-    @Test(expected = ZkTimeoutException.class, timeout = 5000)
+    @Test(expected = RuntimeException.class, timeout = 15000)
     public void testUnableToConnect() throws Exception {
         LOG.info("--- testUnableToConnect");
         // we are using port 4711 to avoid conflicts with the zk server that is
