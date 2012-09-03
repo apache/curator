@@ -15,21 +15,23 @@
  */
 package org.I0Itec.zkclient.util;
 
+import com.netflix.curator.test.TestingServer;
 import junit.framework.TestCase;
 
 import org.I0Itec.zkclient.TestUtil;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkServer;
 import org.I0Itec.zkclient.testutil.ZkPathUtil;
+import org.I0Itec.zkclient.testutil.ZkTestSystem;
 
 public class ZkPathUtilTest extends TestCase {
 
-    protected ZkServer _zkServer;
+    protected TestingServer _zkServer;
     protected ZkClient _client;
 
     public void testToString() throws Exception {
-        _zkServer = TestUtil.startZkServer("ZkPathUtilTest", 4711);
-        _client = new ZkClient("localhost:4711", 5000);
+        _zkServer = new TestingServer(4711);
+        _client = ZkTestSystem.createZkClient("localhost:4711");
         final String file1 = "/files/file1";
         final String file2 = "/files/file2";
         final String file3 = "/files/file2/file3";
@@ -61,7 +63,7 @@ public class ZkPathUtilTest extends TestCase {
         assertTrue(stringRepresentation.contains("file2"));
         assertTrue(stringRepresentation.contains("file3"));
 
-        _zkServer.shutdown();
+        _zkServer.close();
     }
 
     public void testLeadingZeros() throws Exception {

@@ -186,7 +186,7 @@ public class CuratorZKClientBridge implements IZkConnection
     @Override
     public String getServers()
     {
-        throw new UnsupportedOperationException();
+        return "";  // TODO
     }
 
     private void adjustException(Exception e) throws KeeperException, InterruptedException

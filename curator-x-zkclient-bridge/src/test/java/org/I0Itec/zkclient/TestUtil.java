@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.curator.test.TestingServer;
 import org.apache.commons.io.FileUtils;
 import org.mockito.exceptions.base.MockitoAssertionError;
 
@@ -90,15 +91,5 @@ public class TestUtil {
             }
             Thread.sleep(50);
         } while (true);
-    }
-
-    public static ZkServer startZkServer(String testName, int port) throws IOException {
-        String dataPath = "./build/test/" + testName + "/data";
-        String logPath = "./build/test/" + testName + "/log";
-        FileUtils.deleteDirectory(new File(dataPath));
-        FileUtils.deleteDirectory(new File(logPath));
-        ZkServer zkServer = new ZkServer(dataPath, logPath, mock(IDefaultNameSpace.class), port, ZkServer.DEFAULT_TICK_TIME, 100);
-        zkServer.start();
-        return zkServer;
     }
 }

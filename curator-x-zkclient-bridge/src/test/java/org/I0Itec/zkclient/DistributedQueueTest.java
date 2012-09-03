@@ -15,9 +15,11 @@
  */
 package org.I0Itec.zkclient;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
+import com.netflix.curator.test.TestingServer;
+import org.I0Itec.zkclient.testutil.ZkTestSystem;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,25 +28,27 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class DistributedQueueTest {
 
-    private ZkServer _zkServer;
+    private TestingServer _zkServer;
     private ZkClient _zkClient;
 
     @Before
-    public void setUp() throws IOException {
-        _zkServer = TestUtil.startZkServer("ZkClientTest-testDistributedQueue", 4711);
-        _zkClient = _zkServer.getZkClient();
+    public void setUp() throws Exception {
+        _zkServer = new TestingServer(4711);
+        _zkClient = ZkTestSystem.createZkClient(_zkServer.getConnectString());
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws IOException {
+        if (_zkClient != null) {
+            _zkClient.close();
+        }
         if (_zkServer != null) {
-            _zkServer.shutdown();
+            _zkServer.close();
         }
     }
 

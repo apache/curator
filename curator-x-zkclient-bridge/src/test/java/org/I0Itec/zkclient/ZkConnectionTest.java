@@ -27,8 +27,8 @@ public class ZkConnectionTest extends AbstractConnectionTest {
         super(establishConnection());
     }
 
-    private static ZkConnection establishConnection() {
-        ZkConnection zkConnection = new ZkConnection("localhost:" + ZkTestSystem.getInstance().getZkServer().getPort());
+    private static IZkConnection establishConnection() {
+        IZkConnection zkConnection = ZkTestSystem.createZkConnection("localhost:" + ZkTestSystem.getInstance().getZkServer().getPort());
         new ZkClient(zkConnection);// connect
         return zkConnection;
     }

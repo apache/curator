@@ -15,18 +15,18 @@
  */
 package org.I0Itec.zkclient.testutil;
 
-import static org.mockito.Mockito.mock;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import org.I0Itec.zkclient.IDefaultNameSpace;
+import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.CuratorFrameworkFactory;
+import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.TestingServer;
+import com.netflix.curator.test.Timing;
+import com.netflix.curator.x.zkclientbridge.CuratorZKClientBridge;
+import org.I0Itec.zkclient.IZkConnection;
 import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.ZkServer;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.rules.ExternalResource;
+import java.io.IOException;
+import java.util.List;
 
 public class ZkTestSystem extends ExternalResource {
 
@@ -34,20 +34,18 @@ public class ZkTestSystem extends ExternalResource {
 
     private static int PORT = 10002;
     private static ZkTestSystem _instance;
-    private ZkServer _zkServer;
+    private TestingServer _zkServer;
+    private ZkClient _zkClient;
 
     private ZkTestSystem() {
         LOG.info("~~~~~~~~~~~~~~~ starting zk system ~~~~~~~~~~~~~~~");
-        String baseDir = "build/zkdata";
         try {
-            FileUtils.deleteDirectory(new File(baseDir));
-        } catch (IOException e) {
+            _zkServer = new TestingServer(PORT);
+            _zkClient = ZkTestSystem.createZkClient(_zkServer.getConnectString());
+        }
+        catch ( Exception e ) {
             throw new RuntimeException(e);
         }
-        String dataDir = baseDir + "/data";
-        String logDir = baseDir + "/log";
-        _zkServer = new ZkServer(dataDir, logDir, mock(IDefaultNameSpace.class), PORT);
-        _zkServer.start();
         LOG.info("~~~~~~~~~~~~~~~ zk system started ~~~~~~~~~~~~~~~");
     }
 
@@ -83,14 +81,20 @@ public class ZkTestSystem extends ExternalResource {
                 @Override
                 public void run() {
                     LOG.info("shutting zk down");
-                    getInstance().getZkServer().shutdown();
+                    try {
+                        getInstance().getZkClient().close();
+                        getInstance().getZkServer().close();
+                    }
+                    catch ( IOException e ) {
+                        throw new RuntimeException(e);
+                    }
                 }
             });
         }
         return _instance;
     }
 
-    public ZkServer getZkServer() {
+    public TestingServer getZkServer() {
         return _zkServer;
     }
 
@@ -99,15 +103,41 @@ public class ZkTestSystem extends ExternalResource {
     }
 
     public ZkClient getZkClient() {
-        return _zkServer.getZkClient();
+        return _zkClient;
     }
 
     public int getServerPort() {
         return PORT;
     }
 
+    public static IZkConnection createZkConnection(String connectString) {
+        Timing                  timing = new Timing();
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(connectString, timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            return new CuratorZKClientBridge(client);
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ZkClient createZkClient(String connectString) {
+        try
+        {
+            Timing                  timing = new Timing();
+            return new ZkClient(createZkConnection(connectString), timing.connection());
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
     public ZkClient createZkClient() {
-        return new ZkClient("localhost:" + PORT);
+        return createZkClient("localhost:" + PORT);
     }
 
     public void showStructure() {

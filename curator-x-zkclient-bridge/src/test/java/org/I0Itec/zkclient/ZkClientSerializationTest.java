@@ -33,7 +33,8 @@ public class ZkClientSerializationTest {
 
     @Test
     public void testBytes() throws Exception {
-        ZkClient zkClient = new ZkClient(_zk.getZkServerAddress(), 2000, 2000, new BytesPushThroughSerializer());
+        ZkClient zkClient = ZkTestSystem.createZkClient(_zk.getZkServerAddress());
+        zkClient.setZkSerializer(new BytesPushThroughSerializer());
         byte[] bytes = new byte[100];
         new Random().nextBytes(bytes);
         zkClient.createPersistent("/a", bytes);
@@ -43,7 +44,8 @@ public class ZkClientSerializationTest {
 
     @Test
     public void testSerializables() throws Exception {
-        ZkClient zkClient = new ZkClient(_zk.getZkServerAddress(), 2000, 2000, new SerializableSerializer());
+        ZkClient zkClient = ZkTestSystem.createZkClient(_zk.getZkServerAddress());
+        zkClient.setZkSerializer(new SerializableSerializer());
         String data = "hello world";
         zkClient.createPersistent("/a", data);
         String readData = zkClient.readData("/a");

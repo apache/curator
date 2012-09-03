@@ -20,6 +20,8 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.curator.test.TestingServer;
+import org.I0Itec.zkclient.testutil.ZkTestSystem;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -30,20 +32,23 @@ public class ContentWatcherTest {
     private static final Logger LOG = Logger.getLogger(ContentWatcherTest.class);
 
     private static final String FILE_NAME = "/ContentWatcherTest";
-    private ZkServer _zkServer;
+    private TestingServer _zkServer;
     private ZkClient _zkClient;
 
     @Before
     public void setUp() throws Exception {
         LOG.info("------------ BEFORE -------------");
-        _zkServer = TestUtil.startZkServer("ContentWatcherTest", 4711);
-        _zkClient = _zkServer.getZkClient();
+        _zkServer = new TestingServer(4711);
+        _zkClient = ZkTestSystem.createZkClient(_zkServer.getConnectString());
     }
 
     @After
     public void tearDown() throws Exception {
+        if (_zkClient != null) {
+            _zkClient.close();
+        }
         if (_zkServer != null) {
-            _zkServer.shutdown();
+            _zkServer.close();
         }
         LOG.info("------------ AFTER -------------");
     }
@@ -116,7 +121,7 @@ public class ContentWatcherTest {
         LOG.info("--- testHandlingOfConnectionLoss");
         final Gateway gateway = new Gateway(4712, 4711);
         gateway.start();
-        final ZkClient zkClient = new ZkClient("localhost:4712", 5000);
+        final ZkClient zkClient = ZkTestSystem.createZkClient("localhost:4712");
 
         // disconnect
         gateway.stop();

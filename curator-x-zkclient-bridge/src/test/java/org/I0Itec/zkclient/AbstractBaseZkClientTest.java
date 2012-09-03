@@ -26,7 +26,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.curator.test.TestingServer;
 import org.I0Itec.zkclient.exception.ZkTimeoutException;
+import org.I0Itec.zkclient.testutil.ZkTestSystem;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
@@ -36,7 +38,7 @@ import org.junit.Test;
 public abstract class AbstractBaseZkClientTest {
 
     protected static final Logger LOG = Logger.getLogger(AbstractBaseZkClientTest.class);
-    protected ZkServer _zkServer;
+    protected TestingServer _zkServer;
     protected ZkClient _client;
 
     @Before
@@ -55,7 +57,7 @@ public abstract class AbstractBaseZkClientTest {
         LOG.info("--- testUnableToConnect");
         // we are using port 4711 to avoid conflicts with the zk server that is
         // started by the Spring context
-        new ZkClient("localhost:4712", 1000);
+        ZkTestSystem.createZkClient("localhost:4712");
     }
 
     @Test
