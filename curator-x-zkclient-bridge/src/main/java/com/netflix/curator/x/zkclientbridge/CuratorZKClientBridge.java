@@ -27,10 +27,26 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 
+/**
+ * <p>
+ *     ridge between ZKClient and Curator. Accomplished via an implementation for
+ *     {@link IZkConnection} which is the abstraction ZKClient uses to wrap the raw ZooKeeper handle
+ * </p>
+ *
+ * <p>
+ *     Once allocated, bridge to ZKClient via:
+ *     <code><pre>
+ *     ZKClient zkClient = new ZkClient(new CuratorZKClientBridge(curatorInstance, timeout);
+ *     </pre></code>
+ * </p>
+ */
 public class CuratorZKClientBridge implements IZkConnection
 {
     private final CuratorFramework curator;
 
+    /**
+     * @param curator Curator instance to bridge
+     */
     public CuratorZKClientBridge(CuratorFramework curator)
     {
         this.curator = curator;
