@@ -36,7 +36,7 @@ import java.util.List;
  * <p>
  *     Once allocated, bridge to ZKClient via:
  *     <code><pre>
- *     ZKClient zkClient = new ZkClient(new CuratorZKClientBridge(curatorInstance, timeout);
+ *     ZKClient zkClient = new ZkClient(new CuratorZKClientBridge(curatorInstance, timeout));
  *     </pre></code>
  * </p>
  */
