@@ -99,7 +99,12 @@ project(':curator-x-zkclient-bridge')
     {
         compile project(':curator-client')
         compile project(':curator-framework')
-        compile 'com.github.sgroschupf:zkclient:0.1'
+        compile ('com.github.sgroschupf:zkclient:0.1')
+        {
+            exclude group: 'com.sun.jmx', module: 'jmxri'
+            exclude group: 'com.sun.jdmk', module: 'jmxtools'
+            exclude group: 'javax.jms', module: 'jms'
+        }
         testCompile project(':curator-test')
         testCompile 'org.slf4j:slf4j-api:1.6.4'
         testCompile 'org.javassist:javassist:3.15.0-GA'
@@ -131,7 +136,11 @@ project(':curator-x-discovery-server')
         testCompile 'com.sun.jersey:jersey-servlet:1.11'
         testCompile 'com.sun.jersey:jersey-client:1.11'
         testCompile 'com.sun.jersey:jersey-core:1.11'
-        testCompile 'org.jboss.resteasy:resteasy-jaxrs:2.3.0.GA'
+        testCompile 'net.sf.scannotation:scannotation:1.0.2'
+        testCompile ('org.jboss.resteasy:resteasy-jaxrs:2.3.0.GA')
+        {
+            exclude module: 'scannotation'
+        }
         testCompile 'org.mortbay.jetty:jetty:6.1.22'
     }
 }
