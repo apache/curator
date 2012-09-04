@@ -1,4 +1,4 @@
-1.1.18/1.0.19 - August 30, 2012
+1.1.18/1.0.20 - August 30, 2012
 ===============================
 * New extension project: "ZKClient Bridge". A bridge between Curator and ZKClient. Useful for
 projects that would like to use Curator but don't want to risk porting working code that uses
