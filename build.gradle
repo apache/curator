@@ -6,7 +6,12 @@ buildscript {
 }
 
 allprojects {
-    repositories { mavenCentral() }
+    repositories {
+	maven {
+            url "http://repo1.maven.org/maven2"
+            artifactUrls "https://repository.jboss.org/nexus/content/groups/public"
+        }
+    }
 }
 
 apply from: file('gradle/convention.gradle')
