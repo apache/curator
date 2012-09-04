@@ -1,5 +1,3 @@
-// Establish version and status
-ext.releaseVersion = '1.0.19'
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
 buildscript {
