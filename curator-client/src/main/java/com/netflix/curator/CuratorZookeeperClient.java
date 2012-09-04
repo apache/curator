@@ -250,6 +250,17 @@ public class CuratorZookeeperClient implements Closeable
         this.tracer.set(tracer);
     }
 
+    /**
+     * Returns the current known connection string - not guaranteed to be correct
+     * value at any point in the future.
+     *
+     * @return connection string
+     */
+    public String             getCurrentConnectionString()
+    {
+        return state.getEnsembleProvider().getConnectionString();
+    }
+
     void        addParentWatcher(Watcher watcher)
     {
         state.addParentWatcher(watcher);

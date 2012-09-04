@@ -102,7 +102,7 @@ public interface CuratorFramework extends Closeable
      */
     public SetACLBuilder setACL();
 
-        /**
+    /**
      * Perform a sync on the given path - syncs are always in the background
      *
      * @param path the path
