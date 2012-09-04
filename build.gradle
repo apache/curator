@@ -2,7 +2,7 @@ ext.githubProjectName = rootProject.name // Change if github project name is not
 
 buildscript {
     repositories { mavenCentral() }
-    apply from: file('gradle/buildscript.gradle'), to: buildscript 
+    apply from: file('gradle/buildscript.gradle'), to: buildscript
 }
 
 allprojects {
@@ -13,7 +13,7 @@ apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
 //apply from: file('gradle/check.gradle')
 //apply from: file('gradle/license.gradle')
-//apply from: file('gradle/release.gradle')
+apply from: file('gradle/release.gradle')
 
 apply plugin: 'idea'
 
