@@ -29,7 +29,7 @@ import java.util.List;
 
 /**
  * <p>
- *     ridge between ZKClient and Curator. Accomplished via an implementation for
+ *     Bridge between ZKClient and Curator. Accomplished via an implementation for
  *     {@link IZkConnection} which is the abstraction ZKClient uses to wrap the raw ZooKeeper handle
  * </p>
  *
