@@ -136,7 +136,11 @@ project(':curator-x-discovery-server')
         testCompile 'com.sun.jersey:jersey-servlet:1.11'
         testCompile 'com.sun.jersey:jersey-client:1.11'
         testCompile 'com.sun.jersey:jersey-core:1.11'
-        testCompile 'org.jboss.resteasy:resteasy-jaxrs:2.3.0.GA'
+        testCompile 'net.sf.scannotation:scannotation:1.0.2'
+        testCompile ('org.jboss.resteasy:resteasy-jaxrs:2.3.0.GA')
+        {
+            exclude module: 'scannotation'
+        }
         testCompile 'org.mortbay.jetty:jetty:6.1.22'
     }
 }
