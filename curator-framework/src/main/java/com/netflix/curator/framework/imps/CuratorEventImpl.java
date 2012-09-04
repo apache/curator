@@ -98,6 +98,23 @@ class CuratorEventImpl implements CuratorEvent
         return aclList;
     }
 
+    @Override
+    public String toString()
+    {
+        return "CuratorEventImpl{" +
+            "type=" + type +
+            ", resultCode=" + resultCode +
+            ", path='" + path + '\'' +
+            ", name='" + name + '\'' +
+            ", children=" + children +
+            ", context=" + context +
+            ", stat=" + stat +
+            ", data=" + data +
+            ", watchedEvent=" + watchedEvent +
+            ", aclList=" + aclList +
+            '}';
+    }
+
     CuratorEventImpl(CuratorFrameworkImpl client, CuratorEventType type, int resultCode, String path, String name, Object context, Stat stat, byte[] data, List<String> children, WatchedEvent watchedEvent, List<ACL> aclList)
     {
         this.type = type;

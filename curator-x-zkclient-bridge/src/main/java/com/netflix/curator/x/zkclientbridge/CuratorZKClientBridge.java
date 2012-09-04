@@ -112,7 +112,7 @@ public class CuratorZKClientBridge implements IZkConnection
     {
         try
         {
-            return watch ? curator.getChildren().forPath(path) : curator.getChildren().watched().forPath(path);
+            return watch ? curator.getChildren().watched().forPath(path) : curator.getChildren().forPath(path);
         }
         catch ( Exception e )
         {
