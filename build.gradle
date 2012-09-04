@@ -6,13 +6,7 @@ buildscript {
 }
 
 allprojects {
-    repositories {
-	maven {
-            url "http://repo1.maven.org/maven2"
-            artifactUrls "https://maven.java.net/content/repositories/public/"
-            artifactUrls "https://repository.jboss.org/nexus/content/groups/public"
-        }
-    }
+    repositories { mavenCentral() }
 }
 
 apply from: file('gradle/convention.gradle')
@@ -56,7 +50,7 @@ subprojects {
         }
         compile     'com.google.guava:guava:11.0.1'
         testCompile 'org.testng:testng:6.1.1'
-        testCompile 'log4j:log4j:1.2.15'
+        testCompile 'log4j:log4j:1.2.16'
     }
 }
 
@@ -106,7 +100,7 @@ project(':curator-x-zkclient-bridge')
     {
         compile project(':curator-client')
         compile project(':curator-framework')
-        compile 'com.github.sgroschupf:zkclient:0.1'
+        compile ('com.github.sgroschupf:zkclient:0.1')
         {
             exclude group: 'com.sun.jmx', module: 'jmxri'
             exclude group: 'com.sun.jdmk', module: 'jmxtools'
@@ -114,11 +108,6 @@ project(':curator-x-zkclient-bridge')
         }
         testCompile project(':curator-test')
         testCompile 'org.slf4j:slf4j-api:1.6.4'
-        {
-            exclude group: 'com.sun.jmx', module: 'jmxri'
-            exclude group: 'com.sun.jdmk', module: 'jmxtools'
-            exclude group: 'javax.jms', module: 'jms'
-        }
         testCompile 'org.javassist:javassist:3.15.0-GA'
         testCompile 'commons-io:commons-io:1.4'
         testCompile 'org.mockito:mockito-core:1.8.0'
@@ -144,12 +133,15 @@ project(':curator-x-discovery-server')
         compile 'javax.ws.rs:jsr311-api:1.1.1'
         testCompile project(':curator-test')
         testCompile 'junit:junit-dep:4.10'
-        testCompile 'javax.servlet:servlet-api:2.5'
         testCompile 'com.sun.jersey:jersey-server:1.11'
         testCompile 'com.sun.jersey:jersey-servlet:1.11'
         testCompile 'com.sun.jersey:jersey-client:1.11'
         testCompile 'com.sun.jersey:jersey-core:1.11'
-        testCompile 'org.jboss.resteasy:resteasy-jaxrs:2.3.0.GA'
+        testCompile 'net.sf.scannotation:scannotation:1.0.2'
+        testCompile ('org.jboss.resteasy:resteasy-jaxrs:2.3.0.GA')
+        {
+            exclude module: 'scannotation'
+        }
         testCompile 'org.mortbay.jetty:jetty:6.1.22'
     }
 }
