@@ -22,6 +22,7 @@ import com.netflix.curator.framework.api.CuratorListener;
 import org.I0Itec.zkclient.IZkConnection;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
@@ -43,13 +44,24 @@ import java.util.List;
 public class CuratorZKClientBridge implements IZkConnection
 {
     private final CuratorFramework curator;
+    private final boolean doClose;
 
     /**
      * @param curator Curator instance to bridge
      */
     public CuratorZKClientBridge(CuratorFramework curator)
     {
+        this(curator, true);
+    }
+
+    /**
+     * @param curator Curator instance to bridge
+     * @param doClose if true {@link #close()} will close the curator instance. Otherwise it's a NOP.
+     */
+    public CuratorZKClientBridge(CuratorFramework curator, boolean doClose)
+    {
         this.curator = curator;
+        this.doClose = doClose;
     }
 
     @Override
@@ -57,6 +69,7 @@ public class CuratorZKClientBridge implements IZkConnection
     {
         if ( watcher != null )
         {
+            final Object        connectContext = new Object();
             curator.getCuratorListenable().addListener
             (
                 new CuratorListener()
@@ -68,18 +81,33 @@ public class CuratorZKClientBridge implements IZkConnection
                         {
                             watcher.process(event.getWatchedEvent());
                         }
+                        else if ( event.getContext() == connectContext )
+                        {
+                            WatchedEvent        fakeEvent = new WatchedEvent(Watcher.Event.EventType.None, curator.getZookeeperClient().isConnected() ? Watcher.Event.KeeperState.SyncConnected : Watcher.Event.KeeperState.Disconnected, "/");
+                            watcher.process(fakeEvent);
+                        }
                     }
                 }
             );
 
-            curator.sync("/", null);    // force an event so that ZKClient can see the connect
+            try
+            {
+                curator.checkExists().inBackground(connectContext).forPath("/");
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     @Override
     public void close() throws InterruptedException
     {
-        curator.close();
+        if ( doClose )
+        {
+            curator.close();
+        }
     }
 
     @Override
