@@ -1,3 +1,8 @@
+1.1.19/1.0.21 - xxxxxxxxxxxxxxxxx
+=================================
+* For ZKClient Bridge: 1. Previous method of sending intitial connect event to ZKClient was
+unreliable; 2. Added an option to not close the curator instance
+
 1.1.18/1.0.20 - September 4, 2012
 =================================
 * New extension project: "ZKClient Bridge". A bridge between Curator and ZKClient. Useful for
