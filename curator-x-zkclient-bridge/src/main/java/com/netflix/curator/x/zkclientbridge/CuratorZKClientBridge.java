@@ -65,6 +65,16 @@ public class CuratorZKClientBridge implements IZkConnection
         this.doClose = doClose;
     }
 
+    /**
+     * Return the client
+     *
+     * @return client
+     */
+    public CuratorFramework getCurator()
+    {
+        return curator;
+    }
+
     @Override
     public void connect(final Watcher watcher)
     {
@@ -92,7 +102,7 @@ public class CuratorZKClientBridge implements IZkConnection
                     @Override
                     public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                     {
-                        WatchedEvent        fakeEvent = new WatchedEvent(Watcher.Event.EventType.None, curator.getZookeeperClient().isConnected() ? Watcher.Event.KeeperState.SyncConnected : Watcher.Event.KeeperState.Disconnected, "/");
+                        WatchedEvent        fakeEvent = new WatchedEvent(Watcher.Event.EventType.None, curator.getZookeeperClient().isConnected() ? Watcher.Event.KeeperState.SyncConnected : Watcher.Event.KeeperState.Disconnected, null);
                         watcher.process(fakeEvent);
                     }
                 };
