@@ -17,6 +17,7 @@
 package com.netflix.curator.x.zkclientbridge;
 
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorListener;
 import org.I0Itec.zkclient.IZkConnection;
@@ -69,7 +70,6 @@ public class CuratorZKClientBridge implements IZkConnection
     {
         if ( watcher != null )
         {
-            final Object        connectContext = new Object();
             curator.getCuratorListenable().addListener
             (
                 new CuratorListener()
@@ -81,18 +81,22 @@ public class CuratorZKClientBridge implements IZkConnection
                         {
                             watcher.process(event.getWatchedEvent());
                         }
-                        else if ( event.getContext() == connectContext )
-                        {
-                            WatchedEvent        fakeEvent = new WatchedEvent(Watcher.Event.EventType.None, curator.getZookeeperClient().isConnected() ? Watcher.Event.KeeperState.SyncConnected : Watcher.Event.KeeperState.Disconnected, "/");
-                            watcher.process(fakeEvent);
-                        }
                     }
                 }
             );
 
             try
             {
-                curator.checkExists().inBackground(connectContext).forPath("/");
+                BackgroundCallback      callback = new BackgroundCallback()
+                {
+                    @Override
+                    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                    {
+                        WatchedEvent        fakeEvent = new WatchedEvent(Watcher.Event.EventType.None, curator.getZookeeperClient().isConnected() ? Watcher.Event.KeeperState.SyncConnected : Watcher.Event.KeeperState.Disconnected, "/");
+                        watcher.process(fakeEvent);
+                    }
+                };
+                curator.checkExists().inBackground(callback).forPath("/");
             }
             catch ( Exception e )
             {
