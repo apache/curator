@@ -1,8 +1,7 @@
 1.1.19/1.0.21 - xxxxxxxxxxxxxxxxx
 =================================
-* New extension project: "ZKClient Bridge". A bridge between Curator and ZKClient. Useful for
-projects that would like to use Curator but don't want to risk porting working code that uses
-ZKClient.
+* For ZKClient Bridge: 1. Previous method of sending intitial connect event to ZKClient was
+unreliable; 2. Added an option to not close the curator instance
 
 1.1.18/1.0.20 - September 4, 2012
 =================================
