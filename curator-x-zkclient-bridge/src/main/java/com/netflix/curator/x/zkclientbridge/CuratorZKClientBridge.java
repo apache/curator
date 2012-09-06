@@ -106,7 +106,7 @@ public class CuratorZKClientBridge implements IZkConnection
                         watcher.process(fakeEvent);
                     }
                 };
-                curator.checkExists().inBackground(callback).forPath("/");
+                curator.checkExists().inBackground(callback).forPath("/foo");
             }
             catch ( Exception e )
             {
