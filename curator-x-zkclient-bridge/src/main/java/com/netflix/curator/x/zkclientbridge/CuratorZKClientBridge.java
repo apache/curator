@@ -28,6 +28,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
@@ -45,24 +46,14 @@ import java.util.List;
 public class CuratorZKClientBridge implements IZkConnection
 {
     private final CuratorFramework curator;
-    private final boolean doClose;
+    private final AtomicReference<CuratorListener> listener = new AtomicReference<CuratorListener>(null);
 
     /**
      * @param curator Curator instance to bridge
      */
     public CuratorZKClientBridge(CuratorFramework curator)
     {
-        this(curator, true);
-    }
-
-    /**
-     * @param curator Curator instance to bridge
-     * @param doClose if true {@link #close()} will close the curator instance. Otherwise it's a NOP.
-     */
-    public CuratorZKClientBridge(CuratorFramework curator, boolean doClose)
-    {
         this.curator = curator;
-        this.doClose = doClose;
     }
 
     /**
@@ -80,20 +71,19 @@ public class CuratorZKClientBridge implements IZkConnection
     {
         if ( watcher != null )
         {
-            curator.getCuratorListenable().addListener
-            (
-                new CuratorListener()
+            CuratorListener     localListener = new CuratorListener()
+            {
+                @Override
+                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
                 {
-                    @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                    if ( event.getWatchedEvent() != null )
                     {
-                        if ( event.getWatchedEvent() != null )
-                        {
-                            watcher.process(event.getWatchedEvent());
-                        }
+                        watcher.process(event.getWatchedEvent());
                     }
                 }
-            );
+            };
+            curator.getCuratorListenable().addListener(localListener);
+            listener.set(localListener);
 
             try
             {
@@ -118,9 +108,12 @@ public class CuratorZKClientBridge implements IZkConnection
     @Override
     public void close() throws InterruptedException
     {
-        if ( doClose )
+        // NOTE: the curator instance is NOT closed here
+
+        CuratorListener localListener = listener.getAndSet(null);
+        if ( localListener != null )
         {
-            curator.close();
+            curator.getCuratorListenable().removeListener(localListener);
         }
     }
 
