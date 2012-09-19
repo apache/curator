@@ -39,8 +39,8 @@ import java.util.concurrent.ThreadFactory;
  */
 public class CuratorFrameworkFactory
 {
-    private static final int        DEFAULT_SESSION_TIMEOUT_MS = 15 * 1000;     // TODO make configurable
-    private static final int        DEFAULT_CONNECTION_TIMEOUT_MS = 10 * 1000;  // TODO make configurable
+    private static final int        DEFAULT_SESSION_TIMEOUT_MS = Integer.getInteger("curator-default-session-timeout", 60 * 1000);
+    private static final int        DEFAULT_CONNECTION_TIMEOUT_MS = Integer.getInteger("curator-default-connection-timeout", 15 * 1000);
 
     private static final byte[]     LOCAL_ADDRESS = getLocalAddress();
 
