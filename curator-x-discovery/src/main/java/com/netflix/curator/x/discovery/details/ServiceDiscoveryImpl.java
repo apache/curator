@@ -68,6 +68,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             {
                 try
                 {
+                    log.debug("Re-registering due to reconnection");
                     registerService(thisInstance.get());
                 }
                 catch ( Exception e )
