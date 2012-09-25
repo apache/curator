@@ -241,6 +241,11 @@ public class InterProcessSemaphoreV2
         {
             while ( qty-- > 0 )
             {
+                if ( !client.isStarted() )
+                {
+                    return null;
+                }
+
                 if ( hasWait )
                 {
                     long    thisWaitMs = getThisWaitMs(startMs, waitMs);
