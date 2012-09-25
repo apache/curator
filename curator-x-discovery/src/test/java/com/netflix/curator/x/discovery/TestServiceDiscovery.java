@@ -96,9 +96,9 @@ public class TestServiceDiscovery
         closeables.add(server);
         try
         {
-            final int TIMEOUT_SECONDS = 5;
+            Timing              timing = new Timing();
 
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
+            CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
@@ -110,8 +110,9 @@ public class TestServiceDiscovery
             Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
             
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            Thread.sleep(timing.multiple(1.5).session());
 
-            Assert.assertEquals(discovery.queryForInstances("test").size(), 0);
+            Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
         }
         finally
         {
