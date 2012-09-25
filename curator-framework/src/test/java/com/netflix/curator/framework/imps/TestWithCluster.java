@@ -23,16 +23,92 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
+import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.InstanceSpec;
 import com.netflix.curator.test.TestingCluster;
 import com.netflix.curator.test.Timing;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 
 public class TestWithCluster
 {
+    @Test
+    public void     testSessionSurvive() throws Exception
+    {
+        Timing              timing = new Timing();
+
+        CuratorFramework    client = null;
+        TestingCluster      cluster = new TestingCluster(3);
+        cluster.start();
+        try
+        {
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
+            client.start();
+
+            client.create().withMode(CreateMode.EPHEMERAL).forPath("/temp", "value".getBytes());
+            Assert.assertNotNull(client.checkExists().forPath("/temp"));
+            Watcher     watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    System.out.println(event);
+                }
+            };
+            client.checkExists().usingWatcher(watcher).forPath("/temp");
+
+            cluster.close();
+            cluster = new TestingCluster(cluster.getInstances());
+            cluster.start();
+
+            Thread.sleep(100000);
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+            Closeables.closeQuietly(cluster);
+        }
+    }
+
+    @Test
+    public void     testSessionSurvives() throws Exception
+    {
+        Timing              timing = new Timing();
+
+        CuratorFramework    client = null;
+        TestingCluster      cluster = new TestingCluster(3);
+        cluster.start();
+        try
+        {
+            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
+            client.start();
+
+            client.create().withMode(CreateMode.EPHEMERAL).forPath("/temp", "value".getBytes());
+            Assert.assertNotNull(client.checkExists().forPath("/temp"));
+
+            for ( InstanceSpec spec : cluster.getInstances() )
+            {
+                cluster.killServer(spec);
+                timing.forWaiting().sleepABit();
+                cluster.restartServer(spec);
+                timing.sleepABit();
+            }
+
+            timing.sleepABit();
+            Assert.assertNotNull(client.checkExists().forPath("/temp"));
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+            Closeables.closeQuietly(cluster);
+        }
+    }
+
     @Test
     public void     testSplitBrain() throws Exception
     {
