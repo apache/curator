@@ -38,44 +38,6 @@ import java.util.concurrent.CountDownLatch;
 public class TestWithCluster
 {
     @Test
-    public void     testSessionSurvive() throws Exception
-    {
-        Timing              timing = new Timing();
-
-        CuratorFramework    client = null;
-        TestingCluster      cluster = new TestingCluster(3);
-        cluster.start();
-        try
-        {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
-            client.start();
-
-            client.create().withMode(CreateMode.EPHEMERAL).forPath("/temp", "value".getBytes());
-            Assert.assertNotNull(client.checkExists().forPath("/temp"));
-            Watcher     watcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
-                {
-                    System.out.println(event);
-                }
-            };
-            client.checkExists().usingWatcher(watcher).forPath("/temp");
-
-            cluster.close();
-            cluster = new TestingCluster(cluster.getInstances());
-            cluster.start();
-
-            Thread.sleep(100000);
-        }
-        finally
-        {
-            Closeables.closeQuietly(client);
-            Closeables.closeQuietly(cluster);
-        }
-    }
-
-    @Test
     public void     testSessionSurvives() throws Exception
     {
         Timing              timing = new Timing();
