@@ -117,7 +117,7 @@ public class TestInterProcessSemaphoreCluster
 
                                 client.start();
 
-                                InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, PATH, 1);
+                                InterProcessSemaphoreV2   semaphore = new InterProcessSemaphoreV2(client, PATH, 1);
 
                                 while ( !Thread.currentThread().isInterrupted() )
                                 {

@@ -33,7 +33,7 @@ public class StandardLockInternalsDriver implements LockInternalsDriver
         validateOurIndex(sequenceNodeName, ourIndex);
 
         boolean         getsTheLock = ourIndex < maxLeases;
-        String          pathToWatch = getsTheLock ? null : children.get(ourIndex - 1);
+        String          pathToWatch = getsTheLock ? null : children.get(ourIndex - maxLeases);
 
         return new PredicateResults(pathToWatch, getsTheLock);
     }

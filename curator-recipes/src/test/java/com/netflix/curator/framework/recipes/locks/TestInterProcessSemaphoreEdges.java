@@ -45,7 +45,7 @@ public class TestInterProcessSemaphoreEdges extends BaseClassForTests
         final Timing                        timing = new Timing();
         ExecutorService                     executor = Executors.newCachedThreadPool();
         CuratorFramework                    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.milliseconds(), 100));  // retry until it succeeds
-        final InterProcessSemaphore         semaphore = new InterProcessSemaphore(client, "/test", 1);
+        final InterProcessSemaphoreV2       semaphore = new InterProcessSemaphoreV2(client, "/test", 1);
         try
         {
             client.start();
@@ -115,17 +115,17 @@ public class TestInterProcessSemaphoreEdges extends BaseClassForTests
         {
             client.start();
 
-            List<InterProcessSemaphore> semaphores = Lists.newArrayList();
+            List<InterProcessSemaphoreV2> semaphores = Lists.newArrayList();
             for ( int i = 0; i < QTY; ++i )
             {
-                InterProcessSemaphore semaphore = new InterProcessSemaphore(client, "/test", 1);
+                InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", 1);
                 semaphores.add(semaphore);
             }
 
             final CountDownLatch                hasSemaphoreLatch = new CountDownLatch(1);
             final CountDownLatch                latch = new CountDownLatch(1);
             ExecutorCompletionService<Void>     completionService = new ExecutorCompletionService<Void>(executor);
-            for ( final InterProcessSemaphore semaphore : semaphores )
+            for ( final InterProcessSemaphoreV2 semaphore : semaphores )
             {
                 completionService.submit
                 (

@@ -54,7 +54,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             final SharedCount             count = new SharedCount(client, "/foo/count", 1);
             count.start();
 
-            final InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", count);
+            final InterProcessSemaphoreV2   semaphore = new InterProcessSemaphoreV2(client, "/test", count);
 
             ExecutorService     service = Executors.newCachedThreadPool();
 
@@ -104,8 +104,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     {
         CuratorFramework client1 = null;
         CuratorFramework client2 = null;
-        InterProcessSemaphore semaphore1;
-        InterProcessSemaphore semaphore2;
+        InterProcessSemaphoreV2 semaphore1;
+        InterProcessSemaphoreV2 semaphore2;
         try
         {
             client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -114,8 +114,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             client1.start();
             client2.start();
 
-            semaphore1 = new InterProcessSemaphore(client1, "/test", 1);
-            semaphore2 = new InterProcessSemaphore(client2, "/test", 1);
+            semaphore1 = new InterProcessSemaphoreV2(client1, "/test", 1);
+            semaphore2 = new InterProcessSemaphoreV2(client2, "/test", 1);
 
             Lease lease = semaphore2.acquire(10, TimeUnit.SECONDS);
             Assert.assertNotNull(lease);
@@ -163,7 +163,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                             client.start();
                             try
                             {
-                                InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", SESSION_MAX);
+                                InterProcessSemaphoreV2   semaphore = new InterProcessSemaphoreV2(client, "/test", SESSION_MAX);
 
                                 for ( int i = 0; i < LOOP_QTY; ++i )
                                 {
@@ -263,7 +263,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         client.start();
                         try
                         {
-                            InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", MAX);
+                            InterProcessSemaphoreV2   semaphore = new InterProcessSemaphoreV2(client, "/test", MAX);
                             Lease lease = semaphore.acquire(10, TimeUnit.SECONDS);
                             Assert.assertNotNull(lease);
                             uses.incrementAndGet();
@@ -330,7 +330,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         @Override
                         public Object call() throws Exception
                         {
-                            InterProcessSemaphore semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+                            InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", MAX_LEASES);
                             Lease lease = semaphore.acquire(10, TimeUnit.SECONDS);
                             if ( lease == null )
                             {
@@ -401,7 +401,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         client.start();
         try
         {
-            final InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", 1);
+            final InterProcessSemaphoreV2   semaphore = new InterProcessSemaphoreV2(client, "/test", 1);
             ExecutorService               service = Executors.newFixedThreadPool(THREAD_QTY);
             for ( int i = 0; i < THREAD_QTY; ++i )
             {
@@ -443,7 +443,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         client.start();
         try
         {
-            InterProcessSemaphore   semaphore = new InterProcessSemaphore(client, "/test", 1);
+            InterProcessSemaphoreV2   semaphore = new InterProcessSemaphoreV2(client, "/test", 1);
             Assert.assertNotNull(semaphore.acquire(10, TimeUnit.SECONDS));
             Assert.assertNull(semaphore.acquire(3, TimeUnit.SECONDS));
         }
@@ -465,13 +465,13 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             List<Lease>        leases = Lists.newArrayList();
             for ( int i = 0; i < MAX_LEASES; ++i )
             {
-                InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+                InterProcessSemaphoreV2      semaphore = new InterProcessSemaphoreV2(client, "/test", MAX_LEASES);
                 Lease                      lease = semaphore.acquire(10, TimeUnit.SECONDS);
                 Assert.assertNotNull(lease);
                 leases.add(lease);
             }
 
-            InterProcessSemaphore      semaphore = new InterProcessSemaphore(client, "/test", MAX_LEASES);
+            InterProcessSemaphoreV2      semaphore = new InterProcessSemaphoreV2(client, "/test", MAX_LEASES);
             Lease lease = semaphore.acquire(3, TimeUnit.SECONDS);
             Assert.assertNull(lease);
 

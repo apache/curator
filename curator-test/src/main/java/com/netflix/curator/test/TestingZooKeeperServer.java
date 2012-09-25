@@ -17,7 +17,7 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
 
     private final QuorumConfigBuilder configBuilder;
     private final int thisInstanceIndex;
-    private final ZooKeeperMainFace main;
+    private volatile ZooKeeperMainFace main;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
     private enum State
@@ -44,6 +44,17 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
     {
         main.kill();
         state.set(State.STOPPED);
+    }
+
+    public void     restart() throws Exception
+    {
+        if ( !state.compareAndSet(State.STOPPED, State.LATENT) )
+        {
+            throw new IllegalStateException("Instance not stopped");
+        }
+
+        main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        start();
     }
 
     public void     stop() throws IOException

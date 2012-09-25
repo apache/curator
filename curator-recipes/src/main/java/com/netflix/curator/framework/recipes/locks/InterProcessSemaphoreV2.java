@@ -22,11 +22,16 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.shared.SharedCountListener;
 import com.netflix.curator.framework.recipes.shared.SharedCountReader;
 import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,25 +59,40 @@ import java.util.concurrent.TimeUnit;
  *     The various acquire methods return {@link Lease} objects that represent acquired leases. Clients
  *     must take care to close lease objects  (ideally in a <code>finally</code>
  *     block) else the lease will be lost. However, if the client session drops (crash, etc.),
- *     any leases held by the client are
- *     automatically closed and made available to other clients.
+ *     any leases held by the client are automatically closed and made available to other clients.
  * </p>
  *
- * @deprecated Use {@link InterProcessSemaphoreV2} instead of this class. It uses a better algorithm.
+ * <p>
+ *     Thanks to Ben Bangert (ben@groovie.org) for the algorithm used.
+ * </p>
  */
-public class InterProcessSemaphore
+public class InterProcessSemaphoreV2
 {
-    private final Logger        log = LoggerFactory.getLogger(getClass());
-    private final LockInternals internals;
+    private final Logger                log = LoggerFactory.getLogger(getClass());
+    private final InterProcessMutex     lock;
+    private final CuratorFramework      client;
+    private final String                leasesPath;
+    private final Watcher               watcher = new Watcher()
+    {
+        @Override
+        public void process(WatchedEvent event)
+        {
+            notifyFromWatcher();
+        }
+    };
 
-    private static final String     LOCK_NAME = "lock-";
+    private volatile int                maxLeases;
+
+    private static final String     LOCK_PARENT = "locks";
+    private static final String     LEASE_PARENT = "leases";
+    private static final String     LEASE_BASE_NAME = "lease-";
 
     /**
      * @param client the client
      * @param path path for the semaphore
      * @param maxLeases the max number of leases to allow for this instance
      */
-    public InterProcessSemaphore(CuratorFramework client, String path, int maxLeases)
+    public InterProcessSemaphoreV2(CuratorFramework client, String path, int maxLeases)
     {
         this(client, path, maxLeases, null);
     }
@@ -82,14 +102,18 @@ public class InterProcessSemaphore
      * @param path path for the semaphore
      * @param count the shared count to use for the max leases
      */
-    public InterProcessSemaphore(CuratorFramework client, String path, SharedCountReader count)
+    public InterProcessSemaphoreV2(CuratorFramework client, String path, SharedCountReader count)
     {
         this(client, path, 0, count);
     }
 
-    private InterProcessSemaphore(CuratorFramework client, String path, int maxLeases, SharedCountReader count)
+    private InterProcessSemaphoreV2(CuratorFramework client, String path, int maxLeases, SharedCountReader count)
     {
-        internals = new LockInternals(client, new StandardLockInternalsDriver(), path, LOCK_NAME, (count != null) ? count.getCount() : maxLeases);
+        this.client = client;
+        lock = new InterProcessMutex(client, ZKPaths.makePath(path, LOCK_PARENT));
+        this.maxLeases = (count != null) ? count.getCount() : maxLeases;
+        leasesPath = ZKPaths.makePath(path, LEASE_PARENT);
+
         if ( count != null )
         {
             count.addListener
@@ -99,7 +123,7 @@ public class InterProcessSemaphore
                     @Override
                     public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception
                     {
-                        internals.setMaxLeases(newCount);
+                        InterProcessSemaphoreV2.this.maxLeases = newCount;
                     }
 
                     @Override
@@ -147,8 +171,8 @@ public class InterProcessSemaphore
      */
     public Lease acquire() throws Exception
     {
-        String      path = internals.attemptLock(-1, null, null);
-        return makeLease(path);
+        Collection<Lease> leases = acquire(1, 0, null);
+        return leases.iterator().next();
     }
 
     /**
@@ -165,23 +189,7 @@ public class InterProcessSemaphore
      */
     public Collection<Lease> acquire(int qty) throws Exception
     {
-        Preconditions.checkArgument(qty > 0, "qty cannot be 0");
-
-        ImmutableList.Builder<Lease>    builder = ImmutableList.builder();
-        try
-        {
-            while ( qty-- > 0 )
-            {
-                String      path = internals.attemptLock(-1, null, null);
-                builder.add(makeLease(path));
-            }
-        }
-        catch ( Exception e )
-        {
-            returnAll(builder.build());
-            throw e;
-        }
-        return builder.build();
+        return acquire(qty, 0, null);
     }
 
     /**
@@ -199,8 +207,8 @@ public class InterProcessSemaphore
      */
     public Lease acquire(long time, TimeUnit unit) throws Exception
     {
-        String      path = internals.attemptLock(time, unit, null);
-        return (path != null) ? makeLease(path) : null;
+        Collection<Lease> leases = acquire(1, time, unit);
+        return (leases != null) ? leases.iterator().next() : null;
     }
 
     /**
@@ -222,34 +230,88 @@ public class InterProcessSemaphore
     public Collection<Lease> acquire(int qty, long time, TimeUnit unit) throws Exception
     {
         long                startMs = System.currentTimeMillis();
-        long                waitMs = TimeUnit.MILLISECONDS.convert(time, unit);
+        boolean             hasWait = (unit != null);
+        long                waitMs = hasWait ? TimeUnit.MILLISECONDS.convert(time, unit) : 0;
 
         Preconditions.checkArgument(qty > 0, "qty cannot be 0");
 
         ImmutableList.Builder<Lease>    builder = ImmutableList.builder();
+        boolean                         success = false;
         try
         {
             while ( qty-- > 0 )
             {
-                long        elapsedMs = System.currentTimeMillis() - startMs;
-                long        thisWaitMs = waitMs - elapsedMs;
-
-                String      path = (thisWaitMs > 0) ? internals.attemptLock(thisWaitMs, TimeUnit.MILLISECONDS, null) : null;
-                if ( path == null )
+                if ( hasWait )
                 {
-                    returnAll(builder.build());
-                    return null;
+                    long    thisWaitMs = getThisWaitMs(startMs, waitMs);
+                    if ( !lock.acquire(thisWaitMs, TimeUnit.MILLISECONDS) )
+                    {
+                        return null;
+                    }
                 }
-                builder.add(makeLease(path));
+                else
+                {
+                    lock.acquire();
+                }
+                try
+                {
+                    String          path = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
+                    String          nodeName = ZKPaths.getNodeFromPath(path);
+                    builder.add(makeLease(path));
+
+                    synchronized(this)
+                    {
+                        for(;;)
+                        {
+                            List<String>    children = client.getChildren().usingWatcher(watcher).forPath(leasesPath);
+                            if ( !children.contains(nodeName) )
+                            {
+                                log.error("Sequential path not found: " + path);
+                                throw new KeeperException.NoNodeException("Sequential path not found: " + path);
+                            }
+
+                            if ( children.size() <= maxLeases )
+                            {
+                                break;
+                            }
+                            if ( hasWait )
+                            {
+                                long    thisWaitMs = getThisWaitMs(startMs, waitMs);
+                                if ( thisWaitMs <= 0 )
+                                {
+                                    return null;
+                                }
+                                wait(thisWaitMs);
+                            }
+                            else
+                            {
+                                wait();
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    lock.release();
+                }
             }
+            success = true;
         }
-        catch ( Exception e )
+        finally
         {
-            returnAll(builder.build());
-            throw e;
+            if ( !success )
+            {
+                returnAll(builder.build());
+            }
         }
 
         return builder.build();
+    }
+
+    private long getThisWaitMs(long startMs, long waitMs)
+    {
+        long        elapsedMs = System.currentTimeMillis() - startMs;
+        return waitMs - elapsedMs;
     }
 
     private Lease makeLease(final String path)
@@ -261,7 +323,7 @@ public class InterProcessSemaphore
             {
                 try
                 {
-                    internals.releaseLock(path);
+                    client.delete().guaranteed().forPath(path);
                 }
                 catch ( KeeperException.NoNodeException e )
                 {
@@ -273,5 +335,10 @@ public class InterProcessSemaphore
                 }
             }
         };
+    }
+
+    private synchronized void notifyFromWatcher()
+    {
+        notifyAll();
     }
 }
