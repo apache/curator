@@ -7,12 +7,6 @@ ZooKeeper comes bundled with a Java client, using the client is non-trivial and 
 
 Please see the doc at https://github.com/Netflix/curator/wiki
 
-== VERSIONS
-
-There are currently two version paths:
-* Curator 1.0.x will stay compatible with ZooKeeper 3.3.x - NOTE: Now end of life and no longer maintained
-* Curator 1.1.x+ will require ZooKeeper 3.4.x+
-
 == BUILDING
 
 Curator is built via Gradle (http://www.gradle.org). To build from the command line:
