@@ -1,5 +1,8 @@
-1.1.19/1.0.21 - xxxxxxxxxxxxxxxxx
-=================================
+1.2.0 - September 30, 2012
+==========================
+* NOTE: The 1.0.x branch is not being released and has been deprecated. It was advised many versions
+ago that this was coming. So, here it is.
+
 * For ZKClient Bridge: 1. Previous method of sending initial connect event to ZKClient was
 unreliable; 2. Added an option to not close the curator instance
 
@@ -12,6 +15,10 @@ waiting node has to wait for all nodes in front of it. I've improved this a bit.
 used still suffers from potential out of order acquisition as well as potential starvation if a given client
 does not release a lease. Therefore, I'm deprecating InterProcessSemaphore in favor of the new
 InterProcessSemaphoreV2 which is based on Ben's algorithm.
+
+* Issue 164: The PathChildrenCache no longer clears its internal state when there is a connection
+issue. Consequently, the PathChildrenCacheEvent.Type values have changed. Instead of a RESET event
+there are events that match the ConnectionState events.
 
 1.1.18/1.0.20 - September 4, 2012
 =================================

@@ -51,25 +51,30 @@ public class TestPathChildrenCacheInCluster
             cache.start();
 
             final CountDownLatch                    resetLatch = new CountDownLatch(1);
+            final CountDownLatch                    reconnectLatch = new CountDownLatch(1);
             final AtomicReference<CountDownLatch>   latch = new AtomicReference<CountDownLatch>(new CountDownLatch(3));
             cache.getListenable().addListener
-            (
-                new PathChildrenCacheListener()
-                {
-                    @Override
-                    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                (
+                    new PathChildrenCacheListener()
                     {
-                        if ( event.getType() == PathChildrenCacheEvent.Type.RESET )
+                        @Override
+                        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
                         {
-                            resetLatch.countDown();
-                        }
-                        else if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
-                        {
-                            latch.get().countDown();
+                            if ( event.getType() == PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED )
+                            {
+                                resetLatch.countDown();
+                            }
+                            else if ( event.getType() == PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED )
+                            {
+                                reconnectLatch.countDown();
+                            }
+                            else if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                            {
+                                latch.get().countDown();
+                            }
                         }
                     }
-                }
-            );
+                );
 
             client.create().forPath("/test/one");
             client.create().forPath("/test/two");
@@ -77,12 +82,12 @@ public class TestPathChildrenCacheInCluster
 
             Assert.assertTrue(latch.get().await(10, TimeUnit.SECONDS));
 
-            latch.set(new CountDownLatch(3));
             InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(timing.multiple(4).awaitLatch(resetLatch));
-            Assert.assertTrue(timing.multiple(4).awaitLatch(latch.get())); // the cache should reset itself
+            Assert.assertTrue(timing.awaitLatch(reconnectLatch));
+
+            Assert.assertEquals(cache.getCurrentData().size(), 3);
         }
         finally
         {

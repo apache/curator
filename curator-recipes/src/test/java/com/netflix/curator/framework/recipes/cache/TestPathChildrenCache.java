@@ -24,6 +24,7 @@ import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.Timing;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -384,48 +385,59 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void     testKilledSession() throws Exception
     {
-        final int           TIMEOUT_SECONDS = 10;
-        
-        CuratorFramework    client1 = null;
-        CuratorFramework    client2 = null;
+        Timing              timing = new Timing();
+        CuratorFramework    client = null;
         try
         {
-            client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), TIMEOUT_SECONDS * 1000, TIMEOUT_SECONDS * 1000, new RetryOneTime(1));
-            client1.start();
-            client1.create().forPath("/test");
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            client.start();
+            client.create().forPath("/test");
 
-            PathChildrenCache cache = new PathChildrenCache(client1, "/test", true);
+            PathChildrenCache cache = new PathChildrenCache(client, "/test", true);
             cache.start();
 
-            final Semaphore         childAddedLatch = new Semaphore(0);
+            final CountDownLatch         childAddedLatch = new CountDownLatch(1);
+            final CountDownLatch         lostLatch = new CountDownLatch(1);
+            final CountDownLatch         reconnectedLatch = new CountDownLatch(1);
+            final CountDownLatch         removedLatch = new CountDownLatch(1);
             cache.getListenable().addListener
-            (
-                new PathChildrenCacheListener()
-                {
-                    @Override
-                    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                (
+                    new PathChildrenCacheListener()
                     {
-                        if ( (event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED) || (event.getType() == PathChildrenCacheEvent.Type.CHILD_UPDATED) )
+                        @Override
+                        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
                         {
-                            childAddedLatch.release();
+                            if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                            {
+                                childAddedLatch.countDown();
+                            }
+                            else if ( event.getType() == PathChildrenCacheEvent.Type.CONNECTION_LOST )
+                            {
+                                lostLatch.countDown();
+                            }
+                            else if ( event.getType() == PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED )
+                            {
+                                reconnectedLatch.countDown();
+                            }
+                            else if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_REMOVED )
+                            {
+                                removedLatch.countDown();
+                            }
                         }
                     }
-                }
-            );
+                );
 
-            client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            client2.start();
-            client2.create().forPath("/test/me", "data".getBytes());
-            Assert.assertTrue(childAddedLatch.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            client.create().withMode(CreateMode.EPHEMERAL).forPath("/test/me", "data".getBytes());
+            Assert.assertTrue(timing.awaitLatch(childAddedLatch));
 
-            KillSession.kill(client1.getZookeeperClient().getZooKeeper(), server.getConnectString());
-
-            Assert.assertTrue(childAddedLatch.tryAcquire(1, TIMEOUT_SECONDS * 2, TimeUnit.SECONDS));
+            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+            Assert.assertTrue(timing.awaitLatch(removedLatch));
         }
         finally
         {
-            Closeables.closeQuietly(client1);
-            Closeables.closeQuietly(client2);
+            Closeables.closeQuietly(client);
         }
     }
 
