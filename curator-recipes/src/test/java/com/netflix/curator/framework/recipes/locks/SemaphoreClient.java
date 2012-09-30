@@ -114,7 +114,7 @@ class SemaphoreClient implements Callable<Void>, ConnectionStateListener, Closea
 
     private void acquireAndRun() throws Exception
     {
-        InterProcessSemaphore semaphore = new InterProcessSemaphore(client, semaphorePath, MAX_SEMAPHORE_LEASES);
+        InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, semaphorePath, MAX_SEMAPHORE_LEASES);
         Lease lease = semaphore.acquire();
         try
         {

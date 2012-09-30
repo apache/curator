@@ -111,7 +111,7 @@ public class PathChildrenCache implements Closeable
     private final BlockingQueue<PathChildrenCacheEvent>         listenerEvents = new LinkedBlockingQueue<PathChildrenCacheEvent>();
     private final ListenerContainer<PathChildrenCacheListener>  listeners = new ListenerContainer<PathChildrenCacheListener>();
     private final ConcurrentMap<String, ChildData>              currentData = Maps.newConcurrentMap();
-    
+
     @VisibleForTesting
     volatile Exchanger<Object>      rebuildTestExchanger;
 
@@ -129,7 +129,7 @@ public class PathChildrenCache implements Closeable
      * @param client the client
      * @param path path to watch
      * @param mode caching mode
-     *             
+     *
      * @deprecated use {@link #PathChildrenCache(CuratorFramework, String, boolean)} instead
      */
     @SuppressWarnings("deprecation")
@@ -202,7 +202,7 @@ public class PathChildrenCache implements Closeable
 
     /**
      * Same as {@link #start()} but gives the option of doing an initial build
-     * 
+     *
      * @param buildInitial if true, {@link #rebuild()} will be called before this method
      *                     returns in order to get an initial view of the node
      * @throws Exception errors
@@ -213,17 +213,17 @@ public class PathChildrenCache implements Closeable
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         executorService.submit
-        (
-            new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
+            (
+                new Callable<Object>()
                 {
-                    listenerLoop();
-                    return null;
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        listenerLoop();
+                        return null;
+                    }
                 }
-            }
-        );
+            );
 
         if ( buildInitial )
         {
@@ -343,6 +343,15 @@ public class PathChildrenCache implements Closeable
     }
 
     /**
+     * Clears the current data without beginning a new query and without generating any events
+     * for listeners.
+     */
+    public void clear()
+    {
+        currentData.clear();
+    }
+
+    /**
      * Default behavior is just to log the exception
      *
      * @param e the exception
@@ -356,27 +365,31 @@ public class PathChildrenCache implements Closeable
     {
         switch ( newState )
         {
-            case SUSPENDED:
-            {
-                currentData.clear();
-                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.RESET, null));
-                break;
-            }
+        case SUSPENDED:
+        {
+            listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED, null));
+            break;
+        }
 
-            case LOST:
-            case RECONNECTED:
+        case LOST:
+        {
+            listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_LOST, null));
+            break;
+        }
+
+        case RECONNECTED:
+        {
+            try
             {
-                try
-                {
-                    clearAndRefresh();
-                    listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.RESET, null));
-                }
-                catch ( Exception e )
-                {
-                    handleException(e);
-                }
-                break;
+                refresh(true);
+                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED, null));
             }
+            catch ( Exception e )
+            {
+                handleException(e);
+            }
+            break;
+        }
         }
     }
 
@@ -399,25 +412,25 @@ public class PathChildrenCache implements Closeable
     private void processChildren(List<String> children, boolean forceGetDataAndStat) throws Exception
     {
         List<String>    fullPaths = Lists.transform
-            (
-                children,
-                new Function<String, String>()
+        (
+            children,
+            new Function<String, String>()
+            {
+                @Override
+                public String apply(String child)
                 {
-                    @Override
-                    public String apply(String child)
-                    {
-                        return ZKPaths.makePath(path, child);
-                    }
+                    return ZKPaths.makePath(path, child);
                 }
-            );
+            }
+        );
         Set<String>     removedNodes = Sets.newHashSet(currentData.keySet());
         removedNodes.removeAll(fullPaths);
-        
+
         for ( String fullPath : removedNodes )
         {
             remove(fullPath);
         }
-        
+
         for ( String name : children )
         {
             String      fullPath = ZKPaths.makePath(path, name);

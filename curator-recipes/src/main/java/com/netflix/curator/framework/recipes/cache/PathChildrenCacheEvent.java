@@ -15,6 +15,8 @@
  */
 package com.netflix.curator.framework.recipes.cache;
 
+import com.netflix.curator.framework.state.ConnectionState;
+
 /**
  * POJO that abstracts a change to a path
  */
@@ -44,9 +46,19 @@ public class PathChildrenCacheEvent
         CHILD_REMOVED,
 
         /**
-         * The cache was cleared due to an error/ZK event, etc.
+         * Called when the connection has changed to {@link ConnectionState#SUSPENDED}
          */
-        RESET
+        CONNECTION_SUSPENDED,
+
+        /**
+         * Called when the connection has changed to {@link ConnectionState#RECONNECTED}
+         */
+        CONNECTION_RECONNECTED,
+
+        /**
+         * Called when the connection has changed to {@link ConnectionState#LOST}
+         */
+        CONNECTION_LOST
     }
 
     /**

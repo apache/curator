@@ -168,6 +168,19 @@ public class TestingCluster implements Closeable
         return false;
     }
 
+    public boolean restartServer(InstanceSpec instance) throws Exception
+    {
+        for ( TestingZooKeeperServer server : servers )
+        {
+            if ( server.getInstanceSpec().equals(instance) )
+            {
+                server.restart();
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Given a ZooKeeper instance, returns which server it is connected to
      *

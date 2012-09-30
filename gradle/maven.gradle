@@ -29,17 +29,22 @@ subprojects {
 
                 // Closure to configure all the POM with extra info, common to all projects
                 pom.project {
-                    parent {
-                        groupId 'org.sonatype.oss'
-                        artifactId 'oss-parent'
-                        version '7'
-                    }
                     licenses {
                         license {
                             name 'The Apache Software License, Version 2.0'
                             url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                             distribution 'repo'
                         }
+                    }
+                    url "https://github.com/Netflix/${rootProject.githubProjectName}"
+                    scm {
+                        connection "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+                        url "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+                        developerConnection "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+                    }
+                    issueManagement {
+                        system 'github'
+                        url "https://github.com/Netflix/${rootProject.githubProjectName}/issues"
                     }
                 }
             }

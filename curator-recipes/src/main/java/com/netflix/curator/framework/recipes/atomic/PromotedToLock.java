@@ -71,7 +71,7 @@ public class PromotedToLock
         }
 
         /**
-         * Set the retry policy to use when an operation does not succeeed (optional)
+         * Set the retry policy to use when an operation does not succeed
          *
          * @param retryPolicy new policy
          * @return this
