@@ -28,13 +28,24 @@ task uploadMavenCentral(type:Upload, dependsOn: signArchives) {
             // Prevent datastamp from being appending to artifacts during deployment
             uniqueVersion = false
 
-            // Closure to configure all the POM with extra info, common to all projects
-            pom.project {
-                licenses {
-                    license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution 'repo'
+                // Closure to configure all the POM with extra info, common to all projects
+                pom.project {
+                    licenses {
+                        license {
+                            name 'The Apache Software License, Version 2.0'
+                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                            distribution 'repo'
+                        }
+                    }
+                    url "https://github.com/Netflix/${rootProject.githubProjectName}"
+                    scm {
+                        connection "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+                        url "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+                        developerConnection "scm:git:git@github.com:Netflix/${rootProject.githubProjectName}.git"
+                    }
+                    issueManagement {
+                        system 'github'
+                        url "https://github.com/Netflix/${rootProject.githubProjectName}/issues"
                     }
                 }
             }
