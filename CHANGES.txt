@@ -1,4 +1,5 @@
-1.2.1 - September 30, 2012
+<<<<<<< HEAD
+1.2.2 - September 30, 2012
 ==========================
 * NOTE: The 1.0.x branch is not being released and has been deprecated. It was advised many versions
 ago that this was coming. So, here it is.

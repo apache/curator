@@ -46,6 +46,16 @@ subprojects {
                         system 'github'
                         url "https://github.com/Netflix/${rootProject.githubProjectName}/issues"
                     }
+
+                    name "${rootProject.githubProjectName}"
+                    description "${rootProject.githubProjectName} developed by Netflix"
+                    developers {
+                        developer {
+                            id 'randgalt'
+                            name 'Jordan Zimmerman'
+                            email 'jzimmerman@netflix.com'
+                        }
+                    }
                 }
             }
         }
