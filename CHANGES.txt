@@ -1,3 +1,12 @@
+1.2.3 - xxxxxxxxxxxxxxxxxx
+==========================
+* Issue 173: Previously, all background operations (i.e. when the inBackground() method is used)
+were put into a queue and processed in an internal thread. Curator does this to handle retries in
+background operations. This can be improved, however. The first time the background operation is
+executed the ZooKeeper method can be called directly - without queuing. This will get the operation
+into ZooKeeper immediately and will help prevent Curator's internal queue from backing up (which is
+what I believe is happening in this issue).
+
 1.2.2 - September 30, 2012
 ==========================
 * NOTE: The 1.0.x branch is not being released and has been deprecated. It was advised many versions
