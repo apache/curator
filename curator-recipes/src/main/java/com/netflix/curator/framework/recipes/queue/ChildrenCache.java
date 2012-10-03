@@ -98,11 +98,6 @@ class ChildrenCache implements Closeable
         return blockingNextGetData(startVersion, 0, null);
     }
 
-    void refreshChildren() throws Exception
-    {
-        sync(false);
-    }
-
     synchronized Data blockingNextGetData(long startVersion, long maxWait, TimeUnit unit) throws InterruptedException
     {
         long            startMs = System.currentTimeMillis();
@@ -128,7 +123,7 @@ class ChildrenCache implements Closeable
         return children.get();
     }
 
-    protected synchronized void notifyFromCallback()
+    private synchronized void notifyFromCallback()
     {
         notifyAll();
     }
