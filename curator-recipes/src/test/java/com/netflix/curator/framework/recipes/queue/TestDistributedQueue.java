@@ -205,7 +205,8 @@ public class TestDistributedQueue extends BaseClassForTests
     @Test
     public void     testErrorMode() throws Exception
     {
-        CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing                    timing = new Timing();
+        CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -236,7 +237,7 @@ public class TestDistributedQueue extends BaseClassForTests
                 TestQueueItem       item = new TestQueueItem("1");
                 queue.put(item);
 
-                Assert.assertTrue(latch.get().await(10, TimeUnit.SECONDS));
+                Assert.assertTrue(timing.awaitLatch(latch.get()));
                 Assert.assertEquals(count.get(), 2);
 
                 queue.setErrorMode(ErrorMode.DELETE);
