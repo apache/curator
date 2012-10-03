@@ -40,7 +40,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -419,15 +418,16 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
     {
+        boolean     isInitialExecution = (event == null);
+        if ( isInitialExecution )
+        {
+            performBackgroundOperation(operationAndData);
+            return;
+        }
+
         boolean     queueOperation = false;
         do
         {
-            if ( event == null )
-            {
-                queueOperation = true;
-                break;
-            }
-
             if ( RetryLoop.shouldRetry(event.getResultCode()) )
             {
                 if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
@@ -607,14 +607,19 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 break;
             }
 
-            try
-            {
-                operationAndData.callPerformBackgroundOperation();
-            }
-            catch ( Throwable e )
-            {
-                handleBackgroundOperationException(operationAndData, e);
-            }
+            performBackgroundOperation(operationAndData);
+        }
+    }
+
+    private void performBackgroundOperation(OperationAndData<?> operationAndData)
+    {
+        try
+        {
+            operationAndData.callPerformBackgroundOperation();
+        }
+        catch ( Throwable e )
+        {
+            handleBackgroundOperationException(operationAndData, e);
         }
     }
 
