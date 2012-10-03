@@ -171,8 +171,9 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
     {
         List<Integer>                       nums = new ArrayList<Integer>();
 
+        Timing                              timing = new Timing();
         DistributedPriorityQueue<Integer>   queue = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
