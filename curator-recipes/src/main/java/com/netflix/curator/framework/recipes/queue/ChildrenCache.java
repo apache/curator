@@ -44,7 +44,7 @@ class ChildrenCache implements Closeable
         {
             if ( !isClosed.get() )
             {
-                sync();
+                sync(true);
             }
         }
     };
@@ -78,7 +78,7 @@ class ChildrenCache implements Closeable
 
     void start() throws Exception
     {
-        sync();
+        sync(true);
     }
 
     @Override
@@ -96,6 +96,11 @@ class ChildrenCache implements Closeable
     Data blockingNextGetData(long startVersion) throws InterruptedException
     {
         return blockingNextGetData(startVersion, 0, null);
+    }
+
+    void refreshChildren() throws Exception
+    {
+        sync(false);
     }
 
     synchronized Data blockingNextGetData(long startVersion, long maxWait, TimeUnit unit) throws InterruptedException
@@ -123,14 +128,21 @@ class ChildrenCache implements Closeable
         return children.get();
     }
 
-    synchronized void sync() throws Exception
-    {
-        client.getChildren().usingWatcher(watcher).inBackground(callback).forPath(path);
-    }
-
     protected synchronized void notifyFromCallback()
     {
         notifyAll();
+    }
+
+    private synchronized void sync(boolean watched) throws Exception
+    {
+        if ( watched )
+        {
+            client.getChildren().usingWatcher(watcher).inBackground(callback).forPath(path);
+        }
+        else
+        {
+            client.getChildren().inBackground(callback).forPath(path);
+        }
     }
 
     private synchronized void setNewChildren(List<String> newChildren)

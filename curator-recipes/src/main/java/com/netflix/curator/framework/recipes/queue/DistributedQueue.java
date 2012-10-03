@@ -255,6 +255,11 @@ public class DistributedQueue<T> implements QueueBase<T>
     {
         Preconditions.checkNotNull(lockPath, "lockPath cannot be null");
 
+        if ( newErrorMode == ErrorMode.REQUEUE )
+        {
+            log.warn("ErrorMode.REQUEUE requires ZooKeeper version 3.4.x+ - make sure you are not using a prior version");
+        }
+
         errorMode.set(newErrorMode);
     }
 
@@ -409,24 +414,24 @@ public class DistributedQueue<T> implements QueueBase<T>
             putCount.notifyAll();
         }
         putListenerContainer.forEach
-            (
-                new Function<QueuePutListener<T>, Void>()
+        (
+            new Function<QueuePutListener<T>, Void>()
+            {
+                @Override
+                public Void apply(QueuePutListener<T> listener)
                 {
-                    @Override
-                    public Void apply(QueuePutListener<T> listener)
+                    if ( item != null )
                     {
-                        if ( item != null )
-                        {
-                            listener.putCompleted(item);
-                        }
-                        else
-                        {
-                            listener.putMultiCompleted(givenMultiItem);
-                        }
-                        return null;
+                        listener.putCompleted(item);
                     }
+                    else
+                    {
+                        listener.putMultiCompleted(givenMultiItem);
+                    }
+                    return null;
                 }
-            );
+            }
+        );
     }
 
     private void doPutInBackground(final T item, String path, final MultiItem<T> givenMultiItem, byte[] bytes) throws Exception
@@ -557,7 +562,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                 }
 
                 refreshOnWatchSignaled.set(false);
-                processChildrenAndReset(children);
+                processChildren(children);
             }
         }
         catch ( InterruptedException ignore )
@@ -567,18 +572,6 @@ public class DistributedQueue<T> implements QueueBase<T>
         catch ( Exception e )
         {
             log.error("Exception caught in background handler", e);
-        }
-    }
-
-    private void processChildrenAndReset(List<String> children) throws Exception
-    {
-        try
-        {
-            processChildren(children);
-        }
-        finally
-        {
-            childrenCache.sync();
         }
     }
 
@@ -651,9 +644,16 @@ public class DistributedQueue<T> implements QueueBase<T>
         processedLatch.acquire(children.size());
     }
 
-    private boolean processMessageBytes(String itemNode, byte[] bytes) throws Exception
+    private enum ProcessMessageBytesCode
     {
-        MultiItem<T>    items;
+        NORMAL,
+        REQUEUE
+    }
+
+    private ProcessMessageBytesCode processMessageBytes(String itemNode, byte[] bytes) throws Exception
+    {
+        ProcessMessageBytesCode     resultCode = ProcessMessageBytesCode.NORMAL;
+        MultiItem<T>                items;
         try
         {
             items = ItemSerializer.deserialize(bytes, serializer);
@@ -661,10 +661,9 @@ public class DistributedQueue<T> implements QueueBase<T>
         catch ( Throwable e )
         {
             log.error("Corrupted queue item: " + itemNode, e);
-            return false;
+            return resultCode;
         }
 
-        boolean     removeItem = true;
         for(;;)
         {
             T       item = items.nextItem();
@@ -682,12 +681,12 @@ public class DistributedQueue<T> implements QueueBase<T>
                 log.error("Exception processing queue item: " + itemNode, e);
                 if ( errorMode.get() == ErrorMode.REQUEUE )
                 {
-                    removeItem = false;
+                    resultCode = ProcessMessageBytesCode.REQUEUE;
                     break;
                 }
             }
         }
-        return removeItem;
+        return resultCode;
     }
 
     private boolean processNormally(String itemNode, ProcessType type) throws Exception
@@ -741,18 +740,24 @@ public class DistributedQueue<T> implements QueueBase<T>
             lockCreated = true;
 
             String  itemPath = ZKPaths.makePath(queuePath, itemNode);
-            boolean doDelete = false;
+            boolean requeue = false;
+            byte[]  bytes = null;
             if ( type == ProcessType.NORMAL )
             {
-                byte[]  bytes = client.getData().forPath(itemPath);
-                doDelete = processMessageBytes(itemNode, bytes);
-            }
-            else if ( type == ProcessType.REMOVE )
-            {
-                doDelete = true;
+                bytes = client.getData().forPath(itemPath);
+                requeue = (processMessageBytes(itemNode, bytes) == ProcessMessageBytesCode.REQUEUE);
             }
 
-            if ( doDelete )
+            if ( requeue )
+            {
+                client.inTransaction()
+                    .delete().forPath(itemPath)
+                    .and()
+                    .create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(itemPath, bytes)
+                    .and()
+                    .commit();
+            }
+            else
             {
                 client.delete().forPath(itemPath);
             }

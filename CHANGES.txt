@@ -1,11 +1,17 @@
 1.2.3 - xxxxxxxxxxxxxxxxxx
 ==========================
-* Issue 173: Previously, all background operations (i.e. when the inBackground() method is used)
+* Previously, all background operations (i.e. when the inBackground() method is used)
 were put into a queue and processed in an internal thread. Curator does this to handle retries in
 background operations. This can be improved, however. The first time the background operation is
 executed the ZooKeeper method can be called directly - without queuing. This will get the operation
-into ZooKeeper immediately and will help prevent Curator's internal queue from backing up (which is
-what I believe is happening in this issue).
+into ZooKeeper immediately and will help prevent Curator's internal queue from backing up.
+
+* Issue 173: The DistributedQueue (and, thus, all the other queue recipes) was unnecessarily
+calling getChildren (with a watch) after each group of children was processed. It can just as easily
+wait for the internal cache to get its watch notified. This change creates an edge case, though,
+for ErrorMode.REQUEUE. Consequently, when in mode ErrorMode.REQUEUE the DistributedQueue now
+deletes the bad message and re-creates it. This required the use of ZooKeeper 3.4.x's transactions.
+So, if you use ErrorMode.REQUEUE you MUST be running ZooKeeper 3.4+.
 
 1.2.2 - September 30, 2012
 ==========================
