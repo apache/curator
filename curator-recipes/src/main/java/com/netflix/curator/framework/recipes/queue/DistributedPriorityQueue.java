@@ -191,6 +191,12 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
     }
 
     @VisibleForTesting
+    ChildrenCache getCache()
+    {
+        return queue.getCache();
+    }
+
+    @VisibleForTesting
     static String priorityToString(int priority)
     {
         // the padded hex val of the number prefixed with a 0 for negative numbers
