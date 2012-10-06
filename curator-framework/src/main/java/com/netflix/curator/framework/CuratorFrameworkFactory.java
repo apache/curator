@@ -28,7 +28,6 @@ import com.netflix.curator.framework.imps.DefaultACLProvider;
 import com.netflix.curator.framework.imps.GzipCompressionProvider;
 import com.netflix.curator.utils.DefaultZookeeperFactory;
 import com.netflix.curator.utils.ZookeeperFactory;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -80,7 +79,6 @@ public class CuratorFrameworkFactory
      * @param connectionTimeoutMs connection timeout
      * @param retryPolicy retry policy to use
      * @return client
-     * @throws IOException ZK errors
      */
     public static CuratorFramework newClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, RetryPolicy retryPolicy)
     {
@@ -111,7 +109,6 @@ public class CuratorFrameworkFactory
          * Apply the current values and build a new CuratorFramework
          *
          * @return new CuratorFramework
-         * @throws IOException errors
          */
         public CuratorFramework build()
         {
@@ -133,6 +130,9 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * Set the list of servers to connect to. IMPORTANT: use either this or {@link #ensembleProvider(EnsembleProvider)}
+         * but not both.
+         *
          * @param connectString list of servers to connect to
          * @return this
          */
@@ -143,6 +143,9 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * Set the list ensemble provider. IMPORTANT: use either this or {@link #connectString(String)}
+         * but not both.
+         *
          * @param ensembleProvider the ensemble provider to use
          * @return this
          */

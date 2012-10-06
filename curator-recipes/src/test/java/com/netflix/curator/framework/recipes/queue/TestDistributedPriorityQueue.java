@@ -173,16 +173,28 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
 
         Timing                              timing = new Timing();
         DistributedPriorityQueue<Integer>   queue = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework                    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
-            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class));
+            final CountDownLatch            hasConsumedLatch = new CountDownLatch(1);
+            final CountDownLatch            okToConsumeLatch = new CountDownLatch(1);
+            BlockingQueueConsumer<Integer>  consumer = new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class))
+            {
+                @Override
+                public void consumeMessage(Integer message) throws Exception
+                {
+                    hasConsumedLatch.countDown();
+                    okToConsumeLatch.await();
+                    super.consumeMessage(message);
+                }
+            };
             queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test").buildPriorityQueue(0);
             queue.start();
 
             nums.add(Integer.MIN_VALUE);
             queue.put(Integer.MIN_VALUE, Integer.MIN_VALUE);  // the queue background thread will be blocking with the first item - make sure it's the lowest value
+            Assert.assertTrue(timing.awaitLatch(hasConsumedLatch));
 
             Random          random = new Random();
             for ( int i = 0; i < 100; ++i )
@@ -191,6 +203,12 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                 nums.add(priority);
                 queue.put(priority, priority);
             }
+
+            while ( queue.getCache().getData().children.size() < (nums.size() - 1) )    // -1 because the first message has already been consumed
+            {
+                timing.sleepABit(); // wait for the cache to catch up
+            }
+            okToConsumeLatch.countDown();
 
             assertOrdering(consumer, nums.size());
         }

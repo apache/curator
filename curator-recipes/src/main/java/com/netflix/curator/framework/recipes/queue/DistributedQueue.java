@@ -42,7 +42,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -72,7 +71,6 @@ public class DistributedQueue<T> implements QueueBase<T>
     private final int minItemsBeforeRefresh;
     private final boolean refreshOnWatch;
     private final boolean isProducerOnly;
-    private final AtomicBoolean refreshOnWatchSignaled = new AtomicBoolean(false);
     private final String lockPath;
     private final AtomicReference<ErrorMode> errorMode = new AtomicReference<ErrorMode>(ErrorMode.REQUEUE);
     private final ListenerContainer<QueuePutListener<T>> putListenerContainer = new ListenerContainer<QueuePutListener<T>>();
@@ -136,18 +134,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         this.maxItems = maxItems;
         this.finalFlushMs = finalFlushMs;
         service = Executors.newFixedThreadPool(2, threadFactory);
-        childrenCache = new ChildrenCache(client, queuePath)
-        {
-            @Override
-            protected synchronized void notifyFromCallback()
-            {
-                if ( DistributedQueue.this.refreshOnWatch )
-                {
-                    refreshOnWatchSignaled.set(true);
-                }
-                super.notifyFromCallback();
-            }
-        };
+        childrenCache = new ChildrenCache(client, queuePath);
 
         if ( (maxItems != QueueBuilder.NOT_SET) && putInBackground )
         {
@@ -493,6 +480,12 @@ public class DistributedQueue<T> implements QueueBase<T>
         return ZKPaths.makePath(queuePath, QUEUE_ITEM_NAME);
     }
 
+    @VisibleForTesting
+    ChildrenCache getCache()
+    {
+        return childrenCache;
+    }
+
     protected void sortChildren(List<String> children)
     {
         Collections.sort(children);
@@ -561,8 +554,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                     continue;
                 }
 
-                refreshOnWatchSignaled.set(false);
-                processChildren(children);
+                processChildren(children, currentVersion);
             }
         }
         catch ( InterruptedException ignore )
@@ -575,7 +567,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         }
     }
 
-    private void processChildren(List<String> children) throws Exception
+    private void processChildren(List<String> children, long currentVersion) throws Exception
     {
         final Semaphore processedLatch = new Semaphore(0);
         final boolean   isUsingLockSafety = (lockPath != null);
@@ -597,7 +589,7 @@ public class DistributedQueue<T> implements QueueBase<T>
 
             if ( min-- <= 0 )
             {
-                if ( refreshOnWatchSignaled.compareAndSet(true, false) )
+                if ( refreshOnWatch && (currentVersion != childrenCache.getData().version) )
                 {
                     processedLatch.release(children.size());
                     break;
