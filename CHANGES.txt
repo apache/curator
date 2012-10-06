@@ -1,5 +1,5 @@
-1.2.3 - xxxxxxxxxxxxxxxxxx
-==========================
+1.2.3 - October 6, 2012
+=======================
 * Previously, all background operations (i.e. when the inBackground() method is used)
 were put into a queue and processed in an internal thread. Curator does this to handle retries in
 background operations. This can be improved, however. The first time the background operation is
