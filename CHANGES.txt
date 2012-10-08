@@ -1,3 +1,7 @@
+1.2.4 - xxxxxxxxxxxxxxx
+=======================
+* Depend on ZooKeeper 3.4.4
+
 1.2.3 - October 6, 2012
 =======================
 * Previously, all background operations (i.e. when the inBackground() method is used)
