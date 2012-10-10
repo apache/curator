@@ -23,6 +23,7 @@ import com.netflix.curator.framework.state.ConnectionState;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * An example leader selector client
@@ -31,6 +32,7 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
 {
     private final String name;
     private final LeaderSelector leaderSelector;
+    private final AtomicInteger leaderCount = new AtomicInteger();
 
     private volatile Thread     ourThread = null;
 
@@ -42,6 +44,9 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
         // all participants in a given leader selection must use the same path
         // ExampleClient here is also a LeaderSelectorListener but this isn't required
         leaderSelector = new LeaderSelector(client, path, this);
+
+        // for most cases you will want your instance to requeue when it relinquishes leadership
+        leaderSelector.autoRequeue();
     }
 
     public void start() throws IOException
@@ -62,10 +67,11 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
     {
         // we are now the leader. This method should not return until we want to relinquish leadership
 
-        int         waitSeconds = (int)(10 * Math.random()) + 1;
+        final int         waitSeconds = (int)(5 * Math.random()) + 1;
 
         ourThread = Thread.currentThread();
-        System.out.println(name + " is now the leader. Waiting " + waitSeconds + " seconds");
+        System.out.println(name + " is now the leader. Waiting " + waitSeconds + " seconds...");
+        System.out.println(name + " has been leader " + leaderCount.getAndIncrement() + " time(s) before.");
         try
         {
             Thread.sleep(TimeUnit.SECONDS.toMillis(waitSeconds));
@@ -78,7 +84,7 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
         finally
         {
             ourThread = null;
-            System.out.println(name + " relinquishing leadership\n");
+            System.out.println(name + " relinquishing leadership.\n");
         }
     }
 
