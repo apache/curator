@@ -1,0 +1,242 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+package cache;
+
+import com.google.common.collect.Lists;
+import com.google.common.io.Closeables;
+import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.CuratorFrameworkFactory;
+import com.netflix.curator.framework.recipes.cache.ChildData;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCacheListener;
+import com.netflix.curator.retry.ExponentialBackoffRetry;
+import com.netflix.curator.test.TestingServer;
+import com.netflix.curator.utils.ZKPaths;
+import discovery.ExampleServer;
+import org.apache.zookeeper.KeeperException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Semaphore;
+
+public class PathCacheExample
+{
+    private static final String     PATH = "/example/cache";
+
+    public static void main(String[] args) throws Exception
+    {
+        // This method is scaffolding to get the example up and running
+
+        TestingServer       server = new TestingServer();
+        CuratorFramework    client = null;
+        PathChildrenCache   cache = null;
+        try
+        {
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(1000, 3));
+            client.start();
+
+            cache = new PathChildrenCache(client, PATH, true);
+            cache.start();
+
+            processCommands(client, cache);
+        }
+        finally
+        {
+            Closeables.closeQuietly(cache);
+            Closeables.closeQuietly(client);
+            Closeables.closeQuietly(server);
+        }
+    }
+
+    private static void addListener(PathChildrenCache cache, final Semaphore updateLatch)
+    {
+        PathChildrenCacheListener listener = new PathChildrenCacheListener()
+        {
+            @Override
+            public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+            {
+                switch ( event.getType() )
+                {
+                    case CHILD_ADDED:
+                    {
+                        System.out.println("Node added: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
+                        updateLatch.release();
+                        break;
+                    }
+
+                    case CHILD_UPDATED:
+                    {
+                        System.out.println("Node changed: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
+                        updateLatch.release();
+                        break;
+                    }
+
+                    case CHILD_REMOVED:
+                    {
+                        System.out.println("Node removed: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
+                        updateLatch.release();
+                        break;
+                    }
+                }
+            }
+        };
+        cache.getListenable().addListener(listener);
+    }
+
+    private static void processCommands(CuratorFramework client, PathChildrenCache cache) throws Exception
+    {
+        // More scaffolding that does a simple command line processor
+
+        printHelp();
+
+        List<ExampleServer> servers = Lists.newArrayList();
+        try
+        {
+            Semaphore       updateLatch = new Semaphore(0);
+            addListener(cache, updateLatch);
+
+            BufferedReader  in = new BufferedReader(new InputStreamReader(System.in));
+            boolean         done = false;
+            while ( !done )
+            {
+                System.out.print("> ");
+
+                String      command = in.readLine().trim();
+                String[]    parts = command.split("\\s");
+                if ( parts.length == 0 )
+                {
+                    continue;
+                }
+                String      operation = parts[0];
+                String      args[] = Arrays.copyOfRange(parts, 1, parts.length);
+
+                if ( operation.equalsIgnoreCase("help") || operation.equalsIgnoreCase("?") )
+                {
+                    printHelp();
+                    updateLatch.release();
+                }
+                else if ( operation.equalsIgnoreCase("q") || operation.equalsIgnoreCase("quit") )
+                {
+                    done = true;
+                    updateLatch.release();
+                }
+                else if ( operation.equals("set") )
+                {
+                    setValue(client, command, args);
+                }
+                else if ( operation.equals("remove") )
+                {
+                    remove(client, command, args);
+                }
+                else if ( operation.equals("list") )
+                {
+                    list(cache);
+                    updateLatch.release();
+                }
+
+                updateLatch.acquire();
+            }
+        }
+        finally
+        {
+            for ( ExampleServer server : servers )
+            {
+                Closeables.closeQuietly(server);
+            }
+        }
+    }
+
+    private static void list(PathChildrenCache cache)
+    {
+        if ( cache.getCurrentData().size() == 0 )
+        {
+            System.out.println("* empty *");
+        }
+        else
+        {
+            for ( ChildData data : cache.getCurrentData() )
+            {
+                System.out.println(data.getPath() + " = " + new String(data.getData()));
+            }
+        }
+    }
+
+    private static void remove(CuratorFramework client, String command, String[] args) throws Exception
+    {
+        if ( args.length != 1 )
+        {
+            System.err.println("syntax error (expected remove <path>): " + command);
+            return;
+        }
+
+        String      name = args[0];
+        if ( name.contains("/") )
+        {
+            System.err.println("Invalid node name" + name);
+            return;
+        }
+        String      path = ZKPaths.makePath(PATH, name);
+
+        try
+        {
+            client.delete().forPath(path);
+        }
+        catch ( KeeperException.NoNodeException e )
+        {
+            // ignore
+        }
+    }
+
+    private static void setValue(CuratorFramework client, String command, String[] args) throws Exception
+    {
+        if ( args.length != 2 )
+        {
+            System.err.println("syntax error (expected set <path> <value>): " + command);
+            return;
+        }
+
+        String      name = args[0];
+        if ( name.contains("/") )
+        {
+            System.err.println("Invalid node name" + name);
+            return;
+        }
+        String      path = ZKPaths.makePath(PATH, name);
+
+        byte[]      bytes = args[1].getBytes();
+        try
+        {
+            client.setData().forPath(path, bytes);
+        }
+        catch ( KeeperException.NoNodeException e )
+        {
+            client.create().creatingParentsIfNeeded().forPath(path, bytes);
+        }
+    }
+
+    private static void printHelp()
+    {
+        System.out.println("An example of using PathChildrenCache. This example is driven by entering commands at the prompt:\n");
+        System.out.println("set <name> <value>: Adds or updates a node with the given name");
+        System.out.println("remove <name>: Deletes the node with the given name");
+        System.out.println("delete: List the nodes/values in the cache");
+        System.out.println("quit: Quit the example");
+        System.out.println();
+    }
+}
