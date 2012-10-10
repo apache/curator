@@ -43,6 +43,8 @@ public class DiscoveryExample
 
     public static void main(String[] args) throws Exception
     {
+        // This method is scaffolding to get the example up and running
+
         TestingServer                                   server = new TestingServer();
         CuratorFramework                                client = null;
         ServiceDiscovery<InstanceDetails>               serviceDiscovery = null;
@@ -73,6 +75,8 @@ public class DiscoveryExample
 
     private static void processCommands(ServiceDiscovery<InstanceDetails> serviceDiscovery, Map<String, ServiceProvider<InstanceDetails>> providers, CuratorFramework client) throws Exception
     {
+        // More scaffolding that does a simple command line processor
+
         printHelp();
 
         List<ExampleServer>     servers = Lists.newArrayList();
