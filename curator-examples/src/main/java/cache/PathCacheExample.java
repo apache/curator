@@ -33,16 +33,18 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
+/**
+ * An example of the PathChildrenCache. The example "harness" is a command processor
+ * that allows adding/updating/removed nodes in a path. A PathChildrenCache keeps a
+ * cache of these changes and outputs when updates occurs.
+ */
 public class PathCacheExample
 {
     private static final String     PATH = "/example/cache";
 
     public static void main(String[] args) throws Exception
     {
-        // This method is scaffolding to get the example up and running
-
         TestingServer       server = new TestingServer();
         CuratorFramework    client = null;
         PathChildrenCache   cache = null;
@@ -51,6 +53,7 @@ public class PathCacheExample
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(1000, 3));
             client.start();
 
+            // in this example we will cache data. Notice that this is optional.
             cache = new PathChildrenCache(client, PATH, true);
             cache.start();
 
@@ -64,8 +67,9 @@ public class PathCacheExample
         }
     }
 
-    private static void addListener(PathChildrenCache cache, final Semaphore updateLatch)
+    private static void addListener(PathChildrenCache cache)
     {
+        // a PathChildrenCacheListener is optional. Here, it's used just to log changes
         PathChildrenCacheListener listener = new PathChildrenCacheListener()
         {
             @Override
@@ -76,21 +80,18 @@ public class PathCacheExample
                     case CHILD_ADDED:
                     {
                         System.out.println("Node added: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
-                        updateLatch.release();
                         break;
                     }
 
                     case CHILD_UPDATED:
                     {
                         System.out.println("Node changed: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
-                        updateLatch.release();
                         break;
                     }
 
                     case CHILD_REMOVED:
                     {
                         System.out.println("Node removed: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
-                        updateLatch.release();
                         break;
                     }
                 }
@@ -108,8 +109,7 @@ public class PathCacheExample
         List<ExampleServer> servers = Lists.newArrayList();
         try
         {
-            Semaphore       updateLatch = new Semaphore(0);
-            addListener(cache, updateLatch);
+            addListener(cache);
 
             BufferedReader  in = new BufferedReader(new InputStreamReader(System.in));
             boolean         done = false;
@@ -129,12 +129,10 @@ public class PathCacheExample
                 if ( operation.equalsIgnoreCase("help") || operation.equalsIgnoreCase("?") )
                 {
                     printHelp();
-                    updateLatch.release();
                 }
                 else if ( operation.equalsIgnoreCase("q") || operation.equalsIgnoreCase("quit") )
                 {
                     done = true;
-                    updateLatch.release();
                 }
                 else if ( operation.equals("set") )
                 {
@@ -147,10 +145,9 @@ public class PathCacheExample
                 else if ( operation.equals("list") )
                 {
                     list(cache);
-                    updateLatch.release();
                 }
 
-                updateLatch.acquire();
+                Thread.sleep(1000); // just to allow the console output to catch up
             }
         }
         finally
