@@ -18,6 +18,10 @@ package discovery;
 
 import org.codehaus.jackson.map.annotate.JsonRootName;
 
+/**
+ * In a real application, the Service payload will most likely
+ * be more detailed than this. But, this gives a good example.
+ */
 @JsonRootName("details")
 public class InstanceDetails
 {

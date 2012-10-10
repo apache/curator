@@ -19,6 +19,7 @@ package discovery;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
@@ -27,11 +28,14 @@ import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceDiscoveryBuilder;
 import com.netflix.curator.x.discovery.ServiceInstance;
+import com.netflix.curator.x.discovery.ServiceProvider;
 import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
+import com.netflix.curator.x.discovery.strategies.RandomStrategy;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public class DiscoveryExample
 {
@@ -39,23 +43,35 @@ public class DiscoveryExample
 
     public static void main(String[] args) throws Exception
     {
-        TestingServer       server = new TestingServer();
-        CuratorFramework    client = null;
+        TestingServer                                   server = new TestingServer();
+        CuratorFramework                                client = null;
+        ServiceDiscovery<InstanceDetails>               serviceDiscovery = null;
+        Map<String, ServiceProvider<InstanceDetails>>   providers = Maps.newHashMap();
         try
         {
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(1000, 3));
             client.start();
 
-            processCommands(client);
+            JsonInstanceSerializer<InstanceDetails> serializer = new JsonInstanceSerializer<InstanceDetails>(InstanceDetails.class);
+            serviceDiscovery = ServiceDiscoveryBuilder.builder(InstanceDetails.class).client(client).basePath(PATH).serializer(serializer).build();
+            serviceDiscovery.start();
+
+            processCommands(serviceDiscovery, providers, client);
         }
         finally
         {
+            for ( ServiceProvider<InstanceDetails> cache : providers.values() )
+            {
+                Closeables.closeQuietly(cache);
+            }
+
+            Closeables.closeQuietly(serviceDiscovery);
             Closeables.closeQuietly(client);
             Closeables.closeQuietly(server);
         }
     }
 
-    private static void processCommands(CuratorFramework client) throws Exception
+    private static void processCommands(ServiceDiscovery<InstanceDetails> serviceDiscovery, Map<String, ServiceProvider<InstanceDetails>> providers, CuratorFramework client) throws Exception
     {
         printHelp();
 
@@ -85,9 +101,13 @@ public class DiscoveryExample
                 {
                     deleteInstance(command, servers);
                 }
+                else if ( command.startsWith("random ") )
+                {
+                    listRandomInstance(serviceDiscovery, providers, command);
+                }
                 else if ( command.equals("list") )
                 {
-                    listInstances(client);
+                    listInstances(serviceDiscovery);
                 }
             }
         }
@@ -100,14 +120,46 @@ public class DiscoveryExample
         }
     }
 
-    private static void listInstances(CuratorFramework client) throws Exception
+    private static void listRandomInstance(ServiceDiscovery<InstanceDetails> serviceDiscovery, Map<String, ServiceProvider<InstanceDetails>> providers, String command) throws Exception
     {
-        JsonInstanceSerializer<InstanceDetails> serializer = new JsonInstanceSerializer<InstanceDetails>(InstanceDetails.class);
-        ServiceDiscovery<InstanceDetails> serviceDiscovery = ServiceDiscoveryBuilder.builder(InstanceDetails.class).client(client).basePath(PATH).serializer(serializer).build();
+        // this shows how to use a ServiceProvider
+        // in a real application you'd create the ServiceProvider early for the service(s) you're interested in
+
+        String[]        parts = command.split("\\s");
+        if ( parts.length != 2 )
+        {
+            System.err.println("syntax error (expected random <name>): " + command);
+            return;
+        }
+
+        String                              serviceName = parts[1];
+        ServiceProvider<InstanceDetails>    provider = providers.get(serviceName);
+        if ( provider == null )
+        {
+            provider = serviceDiscovery.serviceProviderBuilder().serviceName(serviceName).providerStrategy(new RandomStrategy<InstanceDetails>()).build();
+            providers.put(serviceName, provider);
+            provider.start();
+
+            Thread.sleep(2500); // give the provider time to warm up - in a real application you wouldn't need to do this
+        }
+
+        ServiceInstance<InstanceDetails>    instance = provider.getInstance();
+        if ( instance == null )
+        {
+            System.err.println("No instances named: " + serviceName);
+        }
+        else
+        {
+            outputInstance(instance);
+        }
+    }
+
+    private static void listInstances(ServiceDiscovery<InstanceDetails> serviceDiscovery) throws Exception
+    {
+        // This shows how to query all the instances in service discovery
+
         try
         {
-            serviceDiscovery.start();
-
             Collection<String>  serviceNames = serviceDiscovery.queryForNames();
             System.out.println(serviceNames.size() + " type(s)");
             for ( String serviceName : serviceNames )
@@ -116,7 +168,7 @@ public class DiscoveryExample
                 System.out.println(serviceName);
                 for ( ServiceInstance<InstanceDetails> instance : instances )
                 {
-                    System.out.println("\t" + instance.getPayload().getDescription() + ": " + instance.buildUriSpec());
+                    outputInstance(instance);
                 }
             }
         }
@@ -126,8 +178,16 @@ public class DiscoveryExample
         }
     }
 
+    private static void outputInstance(ServiceInstance<InstanceDetails> instance)
+    {
+        System.out.println("\t" + instance.getPayload().getDescription() + ": " + instance.buildUriSpec());
+    }
+
     private static void deleteInstance(String command, List<ExampleServer> servers)
     {
+        // simulate a random instance going down
+        // in a real application, this would occur due to normal operation, a crash, maintenance, etc.
+
         String[]        parts = command.split("\\s");
         if ( parts.length != 2 )
         {
@@ -135,7 +195,7 @@ public class DiscoveryExample
             return;
         }
 
-        final String        serverName = parts[1];
+        final String    serviceName = parts[1];
         ExampleServer   server = Iterables.find
         (
             servers,
@@ -144,24 +204,27 @@ public class DiscoveryExample
                 @Override
                 public boolean apply(ExampleServer server)
                 {
-                    return server.getThisInstance().getName().endsWith(serverName);
+                    return server.getThisInstance().getName().endsWith(serviceName);
                 }
             },
             null
         );
         if ( server == null )
         {
-            System.err.println("No servers found named: " + serverName);
+            System.err.println("No servers found named: " + serviceName);
             return;
         }
 
         servers.remove(server);
         Closeables.closeQuietly(server);
-        System.out.println("Removed a random instance of: " + serverName);
+        System.out.println("Removed a random instance of: " + serviceName);
     }
 
     private static void addInstance(CuratorFramework client, String command, List<ExampleServer> servers) throws Exception
     {
+        // simulate a new instance coming up
+        // in a real application, this would be a separate process
+
         String[]        parts = command.split("\\s");
         if ( parts.length < 3 )
         {
@@ -192,6 +255,7 @@ public class DiscoveryExample
         System.out.println("add <name> <description>: Adds a mock service with the given name and description");
         System.out.println("delete <name>: Deletes one of the mock services with the given name");
         System.out.println("list: Lists all the currently registered services");
+        System.out.println("random <name>: Lists a random instance of the service with the given name");
         System.out.println("quit: Quit the example");
         System.out.println();
     }

@@ -18,6 +18,7 @@
 
 package com.netflix.curator.x.discovery.details;
 
+import com.netflix.curator.x.discovery.ServiceCache;
 import com.netflix.curator.x.discovery.ServiceCacheBuilder;
 import java.util.concurrent.ThreadFactory;
 
@@ -42,9 +43,9 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
      * @return service cache
      */
     @Override
-    public ServiceCache<T>  build()
+    public ServiceCache<T> build()
     {
-        return new ServiceCache<T>(discovery, name, threadFactory, refreshPaddingMs);
+        return new ServiceCacheImpl<T>(discovery, name, threadFactory, refreshPaddingMs);
     }
 
     /**

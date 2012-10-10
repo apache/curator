@@ -18,7 +18,6 @@
 
 package com.netflix.curator.x.discovery;
 
-import com.netflix.curator.x.discovery.details.ServiceCache;
 import java.util.concurrent.ThreadFactory;
 
 public interface ServiceCacheBuilder<T>

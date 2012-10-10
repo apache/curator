@@ -25,7 +25,6 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.TestingServer;
-import com.netflix.curator.x.discovery.details.ServiceCache;
 import com.netflix.curator.x.discovery.details.ServiceCacheListener;
 import org.testng.Assert;
 import org.testng.annotations.Test;

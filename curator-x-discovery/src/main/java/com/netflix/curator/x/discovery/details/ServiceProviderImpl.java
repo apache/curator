@@ -19,6 +19,7 @@
 package com.netflix.curator.x.discovery.details;
 
 import com.netflix.curator.x.discovery.ProviderStrategy;
+import com.netflix.curator.x.discovery.ServiceCache;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import com.netflix.curator.x.discovery.ServiceProvider;
 import java.io.IOException;
