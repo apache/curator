@@ -37,6 +37,7 @@ public class LeaderSelectorExample
         // all of the useful sample code is in ExampleClient.java
 
         System.out.println("Create " + CLIENT_QTY + " clients, have each negotiate for leadership and then wait a random number of seconds before letting another leader election occur.");
+        System.out.println("Notice that leader election is fair: all clients will become leader and will do so the same number of times.");
 
         List<CuratorFramework>  clients = Lists.newArrayList();
         List<ExampleClient>     examples = Lists.newArrayList();
