@@ -33,6 +33,7 @@ import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
 import com.netflix.curator.x.discovery.strategies.RandomStrategy;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -89,27 +90,35 @@ public class DiscoveryExample
                 System.out.print("> ");
 
                 String      command = in.readLine().trim();
-                if ( command.equalsIgnoreCase("help") || command.equalsIgnoreCase("?") )
+                String[]    parts = command.split("\\s");
+                if ( parts.length == 0 )
+                {
+                    continue;
+                }
+                String      operation = parts[0];
+                String      args[] = Arrays.copyOfRange(parts, 1, parts.length);
+
+                if ( operation.equalsIgnoreCase("help") || operation.equalsIgnoreCase("?") )
                 {
                     printHelp();
                 }
-                else if ( command.equalsIgnoreCase("q") || command.equalsIgnoreCase("quit") )
+                else if ( operation.equalsIgnoreCase("q") || operation.equalsIgnoreCase("quit") )
                 {
                     done = true;
                 }
-                else if ( command.startsWith("add ") )
+                else if ( operation.equals("add") )
                 {
-                    addInstance(client, command, servers);
+                    addInstance(args, client, command, servers);
                 }
-                else if ( command.startsWith("delete ") )
+                else if ( operation.equals("delete") )
                 {
-                    deleteInstance(command, servers);
+                    deleteInstance(args, command, servers);
                 }
-                else if ( command.startsWith("random ") )
+                else if ( operation.equals("random") )
                 {
-                    listRandomInstance(serviceDiscovery, providers, command);
+                    listRandomInstance(args, serviceDiscovery, providers, command);
                 }
-                else if ( command.equals("list") )
+                else if ( operation.equals("list") )
                 {
                     listInstances(serviceDiscovery);
                 }
@@ -124,19 +133,18 @@ public class DiscoveryExample
         }
     }
 
-    private static void listRandomInstance(ServiceDiscovery<InstanceDetails> serviceDiscovery, Map<String, ServiceProvider<InstanceDetails>> providers, String command) throws Exception
+    private static void listRandomInstance(String[] args, ServiceDiscovery<InstanceDetails> serviceDiscovery, Map<String, ServiceProvider<InstanceDetails>> providers, String command) throws Exception
     {
         // this shows how to use a ServiceProvider
         // in a real application you'd create the ServiceProvider early for the service(s) you're interested in
 
-        String[]        parts = command.split("\\s");
-        if ( parts.length != 2 )
+        if ( args.length != 1 )
         {
             System.err.println("syntax error (expected random <name>): " + command);
             return;
         }
 
-        String                              serviceName = parts[1];
+        String                              serviceName = args[0];
         ServiceProvider<InstanceDetails>    provider = providers.get(serviceName);
         if ( provider == null )
         {
@@ -187,19 +195,18 @@ public class DiscoveryExample
         System.out.println("\t" + instance.getPayload().getDescription() + ": " + instance.buildUriSpec());
     }
 
-    private static void deleteInstance(String command, List<ExampleServer> servers)
+    private static void deleteInstance(String[] args, String command, List<ExampleServer> servers)
     {
         // simulate a random instance going down
         // in a real application, this would occur due to normal operation, a crash, maintenance, etc.
 
-        String[]        parts = command.split("\\s");
-        if ( parts.length != 2 )
+        if ( args.length != 1 )
         {
             System.err.println("syntax error (expected delete <name>): " + command);
             return;
         }
 
-        final String    serviceName = parts[1];
+        final String    serviceName = args[0];
         ExampleServer   server = Iterables.find
         (
             servers,
@@ -224,33 +231,33 @@ public class DiscoveryExample
         System.out.println("Removed a random instance of: " + serviceName);
     }
 
-    private static void addInstance(CuratorFramework client, String command, List<ExampleServer> servers) throws Exception
+    private static void addInstance(String[] args, CuratorFramework client, String command, List<ExampleServer> servers) throws Exception
     {
         // simulate a new instance coming up
         // in a real application, this would be a separate process
 
-        String[]        parts = command.split("\\s");
-        if ( parts.length < 3 )
+        if ( args.length < 2 )
         {
             System.err.println("syntax error (expected add <name> <description>): " + command);
             return;
         }
 
         StringBuilder   description = new StringBuilder();
-        for ( int i = 2; i < parts.length; ++i )
+        for ( int i = 1; i < args.length; ++i )
         {
-            if ( i > 2 )
+            if ( i > 1 )
             {
                 description.append(' ');
             }
-            description.append(parts[i]);
+            description.append(args[i]);
         }
 
-        ExampleServer   server = new ExampleServer(client, PATH, parts[1], description.toString());
+        String          serviceName = args[0];
+        ExampleServer   server = new ExampleServer(client, PATH, serviceName, description.toString());
         servers.add(server);
         server.start();
 
-        System.out.println(parts[1] + " added");
+        System.out.println(serviceName + " added");
     }
 
     private static void printHelp()
