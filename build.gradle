@@ -25,7 +25,7 @@ subprojects {
     group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
 
     dependencies {
-        compile('org.apache.zookeeper:zookeeper:3.4.3')
+        compile('org.apache.zookeeper:zookeeper:3.4.4')
         {
             exclude group: 'com.sun.jmx', module: 'jmxri'
             exclude group: 'com.sun.jdmk', module: 'jmxtools'
@@ -128,5 +128,15 @@ project(':curator-x-discovery-server')
             exclude module: 'scannotation'
         }
         testCompile 'org.mortbay.jetty:jetty:6.1.22'
+    }
+}
+
+project(':curator-examples')
+{
+    dependencies
+    {
+        compile project(':curator-test')
+        compile project(':curator-recipes')
+        compile project(':curator-x-discovery')
     }
 }

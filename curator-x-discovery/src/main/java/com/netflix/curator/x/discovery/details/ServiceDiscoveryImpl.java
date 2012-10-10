@@ -29,6 +29,7 @@ import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.ThreadUtils;
 import com.netflix.curator.utils.ZKPaths;
+import com.netflix.curator.x.discovery.ServiceCache;
 import com.netflix.curator.x.discovery.ServiceCacheBuilder;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.ServiceInstance;
