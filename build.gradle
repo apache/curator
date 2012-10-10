@@ -130,3 +130,13 @@ project(':curator-x-discovery-server')
         testCompile 'org.mortbay.jetty:jetty:6.1.22'
     }
 }
+
+project(':curator-examples')
+{
+    dependencies
+    {
+        compile project(':curator-test')
+        compile project(':curator-recipes')
+        compile project(':curator-x-discovery')
+    }
+}
