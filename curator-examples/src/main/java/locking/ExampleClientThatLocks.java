@@ -18,6 +18,7 @@ package locking;
 
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
+import java.util.concurrent.TimeUnit;
 
 public class ExampleClientThatLocks
 {
@@ -32,9 +33,12 @@ public class ExampleClientThatLocks
         lock = new InterProcessMutex(client, lockPath);
     }
 
-    public void     doWork() throws Exception
+    public void     doWork(long time, TimeUnit unit) throws Exception
     {
-        lock.acquire();
+        if ( !lock.acquire(time, unit) )
+        {
+            throw new IllegalStateException(clientName + " could not acquire the lock");
+        }
         try
         {
             System.out.println(clientName + " has the lock");
@@ -43,7 +47,7 @@ public class ExampleClientThatLocks
         finally
         {
             System.out.println(clientName + " releasing the lock");
-            lock.release();
+            lock.release(); // always release the lock in a finally block
         }
     }
 }

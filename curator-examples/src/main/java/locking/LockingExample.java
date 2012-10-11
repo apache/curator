@@ -35,7 +35,11 @@ public class LockingExample
 
     public static void main(String[] args) throws Exception
     {
+        // all of the useful sample code is in ExampleClientThatLocks.java
+
+        // FakeLimitedResource simulates some external resource that can only be access by one process at a time
         final FakeLimitedResource   resource = new FakeLimitedResource();
+
         ExecutorService             service = Executors.newFixedThreadPool(QTY);
         final TestingServer         server = new TestingServer();
         try
@@ -56,8 +60,12 @@ public class LockingExample
                             ExampleClientThatLocks      example = new ExampleClientThatLocks(client, PATH, resource, "Client " + index);
                             for ( int j = 0; j < REPETITIONS; ++j )
                             {
-                                example.doWork();
+                                example.doWork(10, TimeUnit.SECONDS);
                             }
+                        }
+                        catch ( Throwable e )
+                        {
+                            e.printStackTrace();
                         }
                         finally
                         {
