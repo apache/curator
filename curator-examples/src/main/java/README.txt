@@ -3,3 +3,4 @@ This project contains example usages of various Curator features. Each directory
 /discovery  Example usage of the Curator's ServiceDiscovery
 /leader     Example leader selector code
 /cache      Example PathChildrenCache usage
+/framework  A few examples of how to use the CuratorFramework class
