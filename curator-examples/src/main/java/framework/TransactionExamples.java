@@ -24,13 +24,22 @@ public class TransactionExamples
 {
     public static Collection<CuratorTransactionResult>      transaction(CuratorFramework client) throws Exception
     {
-        return client.inTransaction()
+        // this example shows how to use ZooKeeper's new transactions
+
+        Collection<CuratorTransactionResult>    results = client.inTransaction()
                 .create().forPath("/a/path", "some data".getBytes())
             .and()
                 .setData().forPath("/another/path", "other data".getBytes())
             .and()
                 .delete().forPath("/yet/another/path")
             .and()
-                .commit();
+                .commit();  // IMPORTANT! The transaction is not submitted until commit() is called
+
+        for ( CuratorTransactionResult result : results )
+        {
+            System.out.println(result.getForPath() + " - " + result.getType());
+        }
+
+        return results;
     }
 }
