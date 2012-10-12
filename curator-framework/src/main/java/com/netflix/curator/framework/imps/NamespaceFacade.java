@@ -30,6 +30,7 @@ class NamespaceFacade extends CuratorFrameworkImpl
 {
     private final CuratorFrameworkImpl client;
     private final NamespaceImpl namespace;
+    private final FailedDeleteManager failedDeleteManager = new FailedDeleteManager(this);
 
     NamespaceFacade(CuratorFrameworkImpl client, String namespace)
     {
@@ -192,5 +193,11 @@ class NamespaceFacade extends CuratorFrameworkImpl
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
         return namespace.newNamespaceAwareEnsurePath(path);
+    }
+
+    @Override
+    FailedDeleteManager getFailedDeleteManager()
+    {
+        return failedDeleteManager;
     }
 }
