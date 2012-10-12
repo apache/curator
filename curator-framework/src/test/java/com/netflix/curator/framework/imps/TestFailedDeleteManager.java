@@ -158,6 +158,69 @@ public class TestFailedDeleteManager extends BaseClassForTests
     }
 
     @Test
+    public void     testWithNamespaceAndLostSessionAlt() throws Exception
+    {
+        Timing                  timing = new Timing();
+        CuratorFramework        client = CuratorFrameworkFactory.builder().connectString(server.getConnectString())
+            .sessionTimeoutMs(timing.session())
+            .connectionTimeoutMs(timing.connection())
+            .retryPolicy(new ExponentialBackoffRetry(100, 3))
+            .build();
+        try
+        {
+            client.start();
+
+            CuratorFramework        namespaceClient = client.usingNamespace("foo");
+            namespaceClient.create().forPath("/test-me");
+
+            final CountDownLatch            latch = new CountDownLatch(1);
+            final Semaphore                 semaphore = new Semaphore(0);
+            ConnectionStateListener         listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( (newState == ConnectionState.LOST) || (newState == ConnectionState.SUSPENDED) )
+                    {
+                        semaphore.release();
+                    }
+                    else if ( newState == ConnectionState.RECONNECTED )
+                    {
+                        latch.countDown();
+                    }
+                }
+            };
+            namespaceClient.getConnectionStateListenable().addListener(listener);
+            server.stop();
+
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            try
+            {
+                namespaceClient.delete().guaranteed().forPath("/test-me");
+                Assert.fail();
+            }
+            catch ( KeeperException.ConnectionLossException e )
+            {
+                // expected
+            }
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+
+            timing.sleepABit();
+
+            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            Assert.assertTrue(timing.awaitLatch(latch));
+
+            timing.sleepABit();
+
+            Assert.assertNull(namespaceClient.checkExists().forPath("/test-me"));
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void     testBasic() throws Exception
     {
         final String PATH = "/one/two/three";

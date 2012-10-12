@@ -4,6 +4,8 @@
 
 * Added a new Examples sub project - better late than never.
 
+* Guaranteed deletes were not working correctly if CuratorFramework.usingNamespace() was used.
+
 1.2.3 - October 6, 2012
 =======================
 * Previously, all background operations (i.e. when the inBackground() method is used)
