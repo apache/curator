@@ -47,6 +47,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
@@ -68,6 +69,8 @@ public class PathChildrenCache implements Closeable
     private final boolean                   cacheData;
     private final boolean                   dataIsCompressed;
     private final EnsurePath                ensurePath;
+
+    private volatile Future<Void>           mainLoopTask;
 
     private final Watcher     childrenWatcher = new Watcher()
     {
@@ -212,18 +215,18 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkState(!executorService.isShutdown(), "already started");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        executorService.submit
-            (
-                new Callable<Object>()
+        mainLoopTask = executorService.submit
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
                 {
-                    @Override
-                    public Object call() throws Exception
-                    {
-                        listenerLoop();
-                        return null;
-                    }
+                    mainLoop();
+                    return null;
                 }
-            );
+            }
+        );
 
         if ( buildInitial )
         {
@@ -294,7 +297,7 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkState(!executorService.isShutdown(), "has not been started");
 
         client.getConnectionStateListenable().removeListener(connectionStateListener);
-        executorService.shutdownNow();
+        mainLoopTask.cancel(true);
     }
 
     /**
@@ -412,17 +415,17 @@ public class PathChildrenCache implements Closeable
     private void processChildren(List<String> children, boolean forceGetDataAndStat) throws Exception
     {
         List<String>    fullPaths = Lists.transform
-        (
-            children,
-            new Function<String, String>()
-            {
-                @Override
-                public String apply(String child)
+            (
+                children,
+                new Function<String, String>()
                 {
-                    return ZKPaths.makePath(path, child);
+                    @Override
+                    public String apply(String child)
+                    {
+                        return ZKPaths.makePath(path, child);
+                    }
                 }
-            }
-        );
+            );
         Set<String>     removedNodes = Sets.newHashSet(currentData.keySet());
         removedNodes.removeAll(fullPaths);
 
@@ -504,7 +507,7 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private void listenerLoop()
+    private void mainLoop()
     {
         while ( !Thread.currentThread().isInterrupted() )
         {
