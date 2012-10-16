@@ -152,8 +152,8 @@ public class TestingCluster implements Closeable
      * Kills the given server. This simulates the server unexpectedly crashing
      *
      * @param instance server to kill
-     * @throws Exception errors
      * @return true if the instance was found
+     * @throws Exception errors
      */
     public boolean killServer(InstanceSpec instance) throws Exception
     {
@@ -168,6 +168,13 @@ public class TestingCluster implements Closeable
         return false;
     }
 
+    /**
+     * Restart the given server of the cluster
+     *
+     * @param instance server instance
+     * @return true of the server was found
+     * @throws Exception errors
+     */
     public boolean restartServer(InstanceSpec instance) throws Exception
     {
         for ( TestingZooKeeperServer server : servers )
