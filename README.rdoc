@@ -18,7 +18,7 @@ Curator binaries are published to Maven Central. Please see the docs for details
 
 == MAILING LIST
 
-There is a Curator mailing list. Join here: http://groups.google.com/group/exhibitor-users
+There is a Curator mailing list. Join here: http://groups.google.com/group/curator-users
 
 == AUTHOR
 
