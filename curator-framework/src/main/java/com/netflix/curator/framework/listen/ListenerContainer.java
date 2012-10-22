@@ -76,18 +76,28 @@ public class ListenerContainer<T> implements Listenable<T>
      *
      * @param function function to call for each listener
      */
-    public void     forEach(Function<T, Void> function)
+    public void     forEach(final Function<T, Void> function)
     {
         for ( final ListenerEntry<T> entry : listeners.values() )
         {
-            try
-            {
-                function.apply(entry.listener);
-            }
-            catch ( Throwable e )
-            {
-                log.error(String.format("Listener (%s) threw an exception", entry.listener), e);
-            }
+            entry.executor.execute
+            (
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            function.apply(entry.listener);
+                        }
+                        catch ( Throwable e )
+                        {
+                            log.error(String.format("Listener (%s) threw an exception", entry.listener), e);
+                        }
+                    }
+                }
+            );
         }
     }
 }
