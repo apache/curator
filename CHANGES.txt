@@ -6,6 +6,8 @@
 
 * Guaranteed deletes were not working correctly if CuratorFramework.usingNamespace() was used.
 
+* I can't believe this has been like this for so long. The executor passed to listeners was never used. Doh!!! Major bug.
+
 1.2.3 - October 6, 2012
 =======================
 * Previously, all background operations (i.e. when the inBackground() method is used)
