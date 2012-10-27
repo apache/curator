@@ -8,6 +8,8 @@
 
 * I can't believe this has been like this for so long. The executor passed to listeners was never used. Doh!!! Major bug.
 
+* Issue 188: Display a meaningful message if the value node is corrupted
+
 1.2.3 - October 6, 2012
 =======================
 * Previously, all background operations (i.e. when the inBackground() method is used)
