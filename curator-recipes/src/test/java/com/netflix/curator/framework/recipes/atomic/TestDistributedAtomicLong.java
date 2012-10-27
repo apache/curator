@@ -27,6 +27,8 @@ import org.apache.commons.math.stat.descriptive.SynchronizedSummaryStatistics;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -38,6 +40,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestDistributedAtomicLong extends BaseClassForTests
 {
+    @Test
+    public void     testCorruptedValue() throws Exception
+    {
+        final CuratorFramework      client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().forPath("/counter", "foo".getBytes());
+            DistributedAtomicLong   dal = new DistributedAtomicLong(client, "/counter", new RetryOneTime(1));
+            try
+            {
+                dal.get().postValue();
+            }
+            catch ( BufferUnderflowException e )
+            {
+                Assert.fail("", e);
+            }
+            catch ( BufferOverflowException e )
+            {
+                Assert.fail("", e);
+            }
+            catch ( RuntimeException e )
+            {
+                // correct
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void     testCompareAndSet() throws Exception
     {
