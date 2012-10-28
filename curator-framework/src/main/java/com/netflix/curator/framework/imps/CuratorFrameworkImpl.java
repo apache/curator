@@ -375,7 +375,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
-        backgroundOperations.offer(new OperationAndData<String>(operation, path, null, null));
+        performBackgroundOperation(new OperationAndData<String>(operation, path, null, null));
     }
 
     @Override
