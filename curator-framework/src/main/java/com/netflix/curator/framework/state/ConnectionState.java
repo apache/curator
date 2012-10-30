@@ -18,6 +18,8 @@
 
 package com.netflix.curator.framework.state;
 
+import com.netflix.curator.framework.CuratorFrameworkFactory;
+
 /**
  * Represents state changes in the connection to ZK
  */
@@ -37,7 +39,7 @@ public enum ConnectionState
     SUSPENDED,
 
     /**
-     * A suspended connection has been re-established
+     * A suspended or read-only connection has been re-established
      */
     RECONNECTED,
 
@@ -46,5 +48,14 @@ public enum ConnectionState
      * attempt to re-create them. NOTE: it is possible to get a {@link #RECONNECTED}
      * state after this but you should still consider any locks, etc. as dirty/unstable
      */
-    LOST
+    LOST,
+
+    /**
+     * The connection has gone into read-only mode. This can only happen if you pass true
+     * for {@link CuratorFrameworkFactory.Builder#canBeReadOnly()}. See the ZooKeeper doc
+     * regarding read only connections:
+     * <a href="http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode">http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode</a>.
+     * The connection will remain in read only mode until another state change is sent.
+     */
+    READ_ONLY
 }

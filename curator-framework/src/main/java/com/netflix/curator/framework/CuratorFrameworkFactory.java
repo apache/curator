@@ -28,6 +28,8 @@ import com.netflix.curator.framework.imps.DefaultACLProvider;
 import com.netflix.curator.framework.imps.GzipCompressionProvider;
 import com.netflix.curator.utils.DefaultZookeeperFactory;
 import com.netflix.curator.utils.ZookeeperFactory;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -104,6 +106,7 @@ public class CuratorFrameworkFactory
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
         private ZookeeperFactory    zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
         private ACLProvider         aclProvider = DEFAULT_ACL_PROVIDER;
+        private boolean             canBeReadOnly = false;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -253,6 +256,19 @@ public class CuratorFrameworkFactory
             return this;
         }
 
+        /**
+         * @param canBeReadOnly if true, allow ZooKeeper client to enter
+         *                      read only mode in case of a network partition. See
+         *                      {@link ZooKeeper#ZooKeeper(String, int, Watcher, long, byte[], boolean)}
+         *                      for details
+         * @return this
+         */
+        public Builder canBeReadOnly(boolean canBeReadOnly)
+        {
+            this.canBeReadOnly = canBeReadOnly;
+            return this;
+        }
+
         public ACLProvider getAclProvider()
         {
             return aclProvider;
@@ -311,6 +327,11 @@ public class CuratorFrameworkFactory
         public byte[] getDefaultData()
         {
             return defaultData;
+        }
+
+        public boolean canBeReadOnly()
+        {
+            return canBeReadOnly;
         }
 
         private Builder()
