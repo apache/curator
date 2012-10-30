@@ -124,7 +124,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     processEvent(event);
                 }
             },
-            builder.getRetryPolicy()
+            builder.getRetryPolicy(),
+            builder.canBeReadOnly()
         );
 
         listeners = new ListenerContainer<CuratorListener>();
@@ -375,7 +376,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
-        backgroundOperations.offer(new OperationAndData<String>(operation, path, null, null));
+        performBackgroundOperation(new OperationAndData<String>(operation, path, null, null));
     }
 
     @Override
@@ -666,6 +667,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
             else if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.SyncConnected )
             {
                 connectionStateManager.addStateChange(ConnectionState.RECONNECTED);
+            }
+            else if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.ConnectedReadOnly )
+            {
+                connectionStateManager.addStateChange(ConnectionState.READ_ONLY);
             }
         }
     }

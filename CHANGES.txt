@@ -6,6 +6,19 @@
 
 * Guaranteed deletes were not working correctly if CuratorFramework.usingNamespace() was used.
 
+* I can't believe this has been like this for so long. The executor passed to listeners was never used.
+Doh!!! Major bug.
+
+* Issue 188: Display a meaningful message if the value node is corrupted
+
+* Issue 194: Initial sync() operation should occur immediately - like the change in 1.2.3 for all "background"
+operations.
+
+* Added support for ZK 3.4's read only operation as described here:
+http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode - CuratorFrameworkFactory.Builder has a new
+method to set canBeReadOnly(). There is a new ConnectionState: READ_ONLY. Note: Your servers need to
+see a system property set "readonlymode.enabled" as true. This isn't documented anywhere that I can see.
+
 1.2.3 - October 6, 2012
 =======================
 * Previously, all background operations (i.e. when the inBackground() method is used)

@@ -29,14 +29,85 @@ import com.netflix.curator.test.InstanceSpec;
 import com.netflix.curator.test.TestingCluster;
 import com.netflix.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
 public class TestWithCluster
 {
+    @Test
+    public void     testReadOnly() throws Exception
+    {
+        System.setProperty("readonlymode.enabled", "true");
+        try
+        {
+            Timing              timing = new Timing();
+
+            CuratorFramework    client = null;
+            TestingCluster      cluster = new TestingCluster(2);
+            try
+            {
+                cluster.start();
+
+                client = CuratorFrameworkFactory.builder()
+                    .connectString(cluster.getConnectString())
+                    .canBeReadOnly(true)
+                    .connectionTimeoutMs(timing.connection())
+                    .sessionTimeoutMs(timing.session())
+                    .retryPolicy(new ExponentialBackoffRetry(100, 3))
+                    .build();
+                client.start();
+
+                client.create().forPath("/test");
+
+                final CountDownLatch        readOnlyLatch = new CountDownLatch(1);
+                final CountDownLatch        reconnectedLatch = new CountDownLatch(1);
+                ConnectionStateListener     listener = new ConnectionStateListener()
+                {
+                    @Override
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                    {
+                        if ( newState == ConnectionState.READ_ONLY )
+                        {
+                            readOnlyLatch.countDown();
+                        }
+                        else if ( newState == ConnectionState.RECONNECTED )
+                        {
+                            reconnectedLatch.countDown();
+                        }
+                    }
+                };
+                client.getConnectionStateListenable().addListener(listener);
+
+                InstanceSpec                ourInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
+                Iterator<InstanceSpec>      iterator = cluster.getInstances().iterator();
+                InstanceSpec                killInstance = iterator.next();
+                if ( killInstance.equals(ourInstance) )
+                {
+                    killInstance = iterator.next(); // kill the instance we're not connected to
+                }
+                cluster.killServer(killInstance);
+
+                Assert.assertEquals(reconnectedLatch.getCount(), 1);
+                Assert.assertTrue(timing.awaitLatch(readOnlyLatch));
+
+                Assert.assertEquals(reconnectedLatch.getCount(), 1);
+                cluster.restartServer(killInstance);
+                Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+            }
+            finally
+            {
+                Closeables.closeQuietly(client);
+                Closeables.closeQuietly(cluster);
+            }
+        }
+        finally
+        {
+            System.clearProperty("readonlymode.enabled");
+        }
+    }
+
     @Test
     public void     testSessionSurvives() throws Exception
     {

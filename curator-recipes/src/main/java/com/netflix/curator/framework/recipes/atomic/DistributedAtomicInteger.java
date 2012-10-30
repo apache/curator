@@ -21,6 +21,8 @@ import com.google.common.base.Preconditions;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 /**
@@ -159,7 +161,18 @@ public class DistributedAtomicInteger implements DistributedAtomicNumber<Integer
             return 0;
         }
         ByteBuffer wrapper = ByteBuffer.wrap(data);
-        return wrapper.getInt();
+        try
+        {
+            return wrapper.getInt();
+        }
+        catch ( BufferUnderflowException e )
+        {
+            throw value.createCorruptionException(data);
+        }
+        catch ( BufferOverflowException e )
+        {
+            throw value.createCorruptionException(data);
+        }
     }
 
     private AtomicValue<Integer>   worker(final Integer addAmount) throws Exception

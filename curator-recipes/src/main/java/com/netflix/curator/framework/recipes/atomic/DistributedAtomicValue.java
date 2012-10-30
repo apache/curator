@@ -194,6 +194,27 @@ public class DistributedAtomicValue
         return result;
     }
 
+    RuntimeException createCorruptionException(byte[] bytes)
+    {
+        StringBuilder       str = new StringBuilder();
+        str.append('[');
+        boolean             first = true;
+        for ( byte b : bytes )
+        {
+            if ( first )
+            {
+                first = false;
+            }
+            else
+            {
+                str.append(", ");
+            }
+            str.append("0x").append(Integer.toHexString((b & 0xff)));
+        }
+        str.append(']');
+        return new RuntimeException(String.format("Corrupted data for node \"%s\": %s", path, str.toString()));
+    }
+
     private boolean getCurrentValue(MutableAtomicValue<byte[]> result, Stat stat) throws Exception
     {
         boolean             createIt = false;

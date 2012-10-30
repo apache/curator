@@ -29,6 +29,7 @@ class HandleHolder
     private final Watcher watcher;
     private final EnsembleProvider ensembleProvider;
     private final int sessionTimeout;
+    private final boolean canBeReadOnly;
 
     private volatile Helper helper;
 
@@ -39,12 +40,13 @@ class HandleHolder
         String getConnectionString();
     }
 
-    HandleHolder(ZookeeperFactory zookeeperFactory, Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout)
+    HandleHolder(ZookeeperFactory zookeeperFactory, Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout, boolean canBeReadOnly)
     {
         this.zookeeperFactory = zookeeperFactory;
         this.watcher = watcher;
         this.ensembleProvider = ensembleProvider;
         this.sessionTimeout = sessionTimeout;
+        this.canBeReadOnly = canBeReadOnly;
     }
 
     ZooKeeper getZooKeeper() throws Exception
@@ -88,7 +90,7 @@ class HandleHolder
                     if ( zooKeeperHandle == null )
                     {
                         connectionString = ensembleProvider.getConnectionString();
-                        zooKeeperHandle = zookeeperFactory.newZooKeeper(connectionString, sessionTimeout, watcher);
+                        zooKeeperHandle = zookeeperFactory.newZooKeeper(connectionString, sessionTimeout, watcher, canBeReadOnly);
                     }
 
                     helper = new Helper()

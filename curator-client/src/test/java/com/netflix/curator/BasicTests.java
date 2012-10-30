@@ -46,12 +46,12 @@ public class BasicTests extends BaseClassForTests
         ZookeeperFactory        zookeeperFactory = new ZookeeperFactory()
         {
             @Override
-            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher) throws Exception
+            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
             {
                 return mockZookeeper;
             }
         };
-        CuratorZookeeperClient  client = new CuratorZookeeperClient(zookeeperFactory, new FixedEnsembleProvider(server.getConnectString()), 10000, 10000, null, new RetryOneTime(1));
+        CuratorZookeeperClient  client = new CuratorZookeeperClient(zookeeperFactory, new FixedEnsembleProvider(server.getConnectString()), 10000, 10000, null, new RetryOneTime(1), false);
         client.start();
         Assert.assertEquals(client.getZooKeeper(), mockZookeeper);
     }

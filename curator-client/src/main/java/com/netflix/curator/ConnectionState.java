@@ -51,7 +51,7 @@ class ConnectionState implements Watcher, Closeable
     private static final int        MAX_BACKGROUND_EXCEPTIONS = 10;
     private static final boolean    LOG_EVENTS = Boolean.getBoolean(DebugUtils.PROPERTY_LOG_EVENTS);
 
-    ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer) 
+    ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer, boolean canBeReadOnly)
     {
         this.ensembleProvider = ensembleProvider;
         this.connectionTimeoutMs = connectionTimeoutMs;
@@ -61,7 +61,7 @@ class ConnectionState implements Watcher, Closeable
             parentWatchers.offer(parentWatcher);
         }
 
-        zooKeeper = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs);
+        zooKeeper = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs, canBeReadOnly);
     }
 
     ZooKeeper getZooKeeper() throws Exception
