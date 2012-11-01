@@ -80,7 +80,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         STARTED,
         STOPPED
     }
-    private final AtomicReference<State>                    state = new AtomicReference<State>(State.LATENT);
+    private final AtomicReference<State>                    state;
 
     private static class AuthInfo
     {
@@ -136,7 +136,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
-        namespaceFacadeCache = new NamespaceFacadeCache(this);
+        state = new AtomicReference<State>(State.LATENT);
 
         byte[]      builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -147,6 +147,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
 
         failedDeleteManager = new FailedDeleteManager(this);
+        namespaceFacadeCache = new NamespaceFacadeCache(this);
     }
 
     private ThreadFactory getThreadFactory(CuratorFrameworkFactory.Builder builder)
@@ -173,6 +174,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         aclProvider = parent.aclProvider;
         namespaceFacadeCache = parent.namespaceFacadeCache;
         namespace = new NamespaceImpl(this, null);
+        state = parent.state;
     }
 
     @Override
@@ -268,7 +270,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CuratorFramework usingNamespace(String newNamespace)
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return namespaceFacadeCache.get(newNamespace);
     }
@@ -276,7 +278,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CreateBuilder create()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new CreateBuilderImpl(this);
     }
@@ -284,7 +286,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public DeleteBuilder delete()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new DeleteBuilderImpl(this);
     }
@@ -292,7 +294,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public ExistsBuilder checkExists()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new ExistsBuilderImpl(this);
     }
@@ -300,7 +302,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public GetDataBuilder getData()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new GetDataBuilderImpl(this);
     }
@@ -308,7 +310,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public SetDataBuilder setData()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new SetDataBuilderImpl(this);
     }
@@ -316,7 +318,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public GetChildrenBuilder getChildren()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new GetChildrenBuilderImpl(this);
     }
@@ -324,7 +326,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public GetACLBuilder getACL()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new GetACLBuilderImpl(this);
     }
@@ -332,7 +334,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public SetACLBuilder setACL()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new SetACLBuilderImpl(this);
     }
@@ -340,7 +342,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CuratorTransaction inTransaction()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         return new CuratorTransactionImpl(this);
     }
@@ -366,7 +368,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public void sync(String path, Object context)
     {
-        Preconditions.checkState(state.get() == State.STARTED, "instance must be started before calling this method");
+        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
 
         path = fixForNamespace(path);
 

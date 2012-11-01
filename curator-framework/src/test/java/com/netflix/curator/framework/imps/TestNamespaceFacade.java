@@ -95,4 +95,23 @@ public class TestNamespaceFacade extends BaseClassForTests
             Closeables.closeQuietly(client);
         }
     }
+
+    @Test
+    public void     testIsStarted() throws Exception
+    {
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework    namespaced = client.usingNamespace(null);
+        try
+        {
+            Assert.assertEquals(client.isStarted(), namespaced.isStarted());
+
+            client.start();
+
+            Assert.assertEquals(client.isStarted(), namespaced.isStarted());
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
 }
