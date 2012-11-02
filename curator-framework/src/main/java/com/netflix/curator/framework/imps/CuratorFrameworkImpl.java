@@ -196,8 +196,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         try
         {
+            connectionStateManager.start(); // ordering dependency - must be called before client.start()
             client.start();
-            connectionStateManager.start();
             executorService = Executors.newFixedThreadPool(2, threadFactory);  // 1 for listeners, 1 for background ops
 
             executorService.submit
