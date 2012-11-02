@@ -47,7 +47,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
@@ -69,8 +68,6 @@ public class PathChildrenCache implements Closeable
     private final boolean                   cacheData;
     private final boolean                   dataIsCompressed;
     private final EnsurePath                ensurePath;
-
-    private volatile Future<Void>           mainLoopTask;
 
     private final Watcher     childrenWatcher = new Watcher()
     {
@@ -215,7 +212,7 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkState(!executorService.isShutdown(), "already started");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        mainLoopTask = executorService.submit
+        executorService.submit
         (
             new Callable<Void>()
             {
@@ -297,7 +294,7 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkState(!executorService.isShutdown(), "has not been started");
 
         client.getConnectionStateListenable().removeListener(connectionStateListener);
-        mainLoopTask.cancel(true);
+        executorService.shutdownNow();
     }
 
     /**
