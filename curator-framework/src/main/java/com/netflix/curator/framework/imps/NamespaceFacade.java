@@ -70,48 +70,6 @@ class NamespaceFacade extends CuratorFrameworkImpl
     }
 
     @Override
-    public CreateBuilder create()
-    {
-        return new CreateBuilderImpl(this);
-    }
-
-    @Override
-    public DeleteBuilder delete()
-    {
-        return new DeleteBuilderImpl(this);
-    }
-
-    @Override
-    public ExistsBuilder checkExists()
-    {
-        return new ExistsBuilderImpl(this);
-    }
-
-    @Override
-    public GetDataBuilder getData()
-    {
-        return new GetDataBuilderImpl(this);
-    }
-
-    @Override
-    public SetDataBuilder setData()
-    {
-        return new SetDataBuilderImpl(this);
-    }
-
-    @Override
-    public GetChildrenBuilder getChildren()
-    {
-        return new GetChildrenBuilderImpl(this);
-    }
-
-    @Override
-    public boolean isStarted()
-    {
-        return client.isStarted();
-    }
-
-    @Override
     public GetACLBuilder getACL()
     {
         return client.getACL();
