@@ -61,11 +61,18 @@ public class ConnectionStateManager implements Closeable
     private final Logger                                        log = LoggerFactory.getLogger(getClass());
     private final BlockingQueue<ConnectionState>                eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
     private final CuratorFramework                              client;
-    private final ThreadFactory                                 threadFactory;
     private final ListenerContainer<ConnectionStateListener>    listeners = new ListenerContainer<ConnectionStateListener>();
     private final AtomicReference<ConnectionState>              currentState = new AtomicReference<ConnectionState>();
+    private final ExecutorService                               service;
+    private final AtomicReference<State>                        state = new AtomicReference<State>(State.LATENT);
 
-    private volatile ExecutorService                            service;
+    private enum State
+    {
+        LATENT,
+        STARTED,
+        CLOSED
+    }
+
     /**
      * @param client the client
      * @param threadFactory thread factory to use or null for a default
@@ -77,7 +84,7 @@ public class ConnectionStateManager implements Closeable
         {
             threadFactory = ThreadUtils.newThreadFactory("ConnectionStateManager");
         }
-        this.threadFactory  = threadFactory;
+        service = Executors.newSingleThreadExecutor(threadFactory);
     }
 
     /**
@@ -85,9 +92,8 @@ public class ConnectionStateManager implements Closeable
      */
     public void     start()
     {
-        Preconditions.checkState(service == null, "already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
 
-        service = Executors.newSingleThreadExecutor(threadFactory);
         service.submit
         (
             new Callable<Object>()
@@ -105,11 +111,11 @@ public class ConnectionStateManager implements Closeable
     @Override
     public void close()
     {
-        Preconditions.checkState(service != null, "not started");
-        Preconditions.checkState(!service.isShutdown(), "already closed");
-
-        service.shutdownNow();
-        listeners.clear();
+        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
+        {
+            service.shutdownNow();
+            listeners.clear();
+        }
     }
 
     /**
@@ -130,7 +136,7 @@ public class ConnectionStateManager implements Closeable
      */
     public void addStateChange(ConnectionState newState)
     {
-        if ( service.isShutdown() )
+        if ( state.get() != State.STARTED )
         {
             return;
         }

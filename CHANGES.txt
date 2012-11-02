@@ -1,5 +1,5 @@
-1.2.4 - xxxxxxxxxxxxxxx
-=======================
+1.2.4 - November 2, 2012
+========================
 * Depend on ZooKeeper 3.4.4
 
 * Added a new Examples sub project - better late than never.
@@ -18,6 +18,12 @@ operations.
 http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode - CuratorFrameworkFactory.Builder has a new
 method to set canBeReadOnly(). There is a new ConnectionState: READ_ONLY. Note: Your servers need to
 see a system property set "readonlymode.enabled" as true. This isn't documented anywhere that I can see.
+
+* Pull Request: 196 - Fix some issues with NamespaceFacade stemming from inconsistent state. Thanks to
+Answashe.
+
+* Issue 197 - Possible NullPointerException from ConnectionStateManager line 133 that is caused by a race
+condition. In CuratorFrameworkImpl, connectionStateManager.start() is called after client.start().
 
 1.2.3 - October 6, 2012
 =======================
