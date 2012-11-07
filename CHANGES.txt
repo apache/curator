@@ -7,6 +7,10 @@ refresh code and the PathChildrenCacheListener notification threads have been me
 for very long inside of your PathChildrenCacheListener or you will prevent the cache from getting
 updated.
 
+* Issue 200: Post-creation services registered in ServiceDiscovery via registerService() were
+not being treated the same as the service passed in the constructor. Consequently they wouldn't get
+re-registered if there were connection problems.
+
 1.2.4 - November 2, 2012
 ========================
 * Depend on ZooKeeper 3.4.4

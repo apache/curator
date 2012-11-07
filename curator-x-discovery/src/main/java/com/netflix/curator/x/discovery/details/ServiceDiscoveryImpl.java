@@ -17,7 +17,7 @@
  */
 package com.netflix.curator.x.discovery.details;
 
-import com.google.common.base.Optional;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -57,7 +58,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final CuratorFramework client;
     private final String basePath;
     private final InstanceSerializer<T> serializer;
-    private final Optional<ServiceInstance<T>> thisInstance;
+    private final List<ServiceInstance<T>> services = new CopyOnWriteArrayList<ServiceInstance<T>>();
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
     private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -70,11 +71,11 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                 try
                 {
                     log.debug("Re-registering due to reconnection");
-                    registerService(thisInstance.get());
+                    reRegisterServices();
                 }
                 catch ( Exception e )
                 {
-                    log.error("Could not re-register instance after reconnection", e);
+                    log.error("Could not re-register instances after reconnection", e);
                 }
             }
         }
@@ -93,7 +94,10 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
         this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
         this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
-        this.thisInstance = Optional.fromNullable(thisInstance);
+        if ( thisInstance != null )
+        {
+            services.add(thisInstance);
+        }
     }
 
     /**
@@ -104,11 +108,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void start() throws Exception
     {
-        if ( thisInstance.isPresent() )
-        {
-            client.getConnectionStateListenable().addListener(connectionStateListener);
-            registerService(thisInstance.get());
-        }
+        client.getConnectionStateListenable().addListener(connectionStateListener);
+        reRegisterServices();
     }
 
     @Override
@@ -123,18 +124,19 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             Closeables.closeQuietly(provider);
         }
 
-        if ( thisInstance.isPresent() )
+        for ( ServiceInstance<T> service : services )
         {
             try
             {
-                client.getConnectionStateListenable().removeListener(connectionStateListener);
-                unregisterService(thisInstance.get());
+                unregisterService(service);
             }
             catch ( Exception e )
             {
-                log.error("Could not unregister this instance", e);
+                log.error("Could not unregister instance: " + service.getName(), e);
             }
         }
+
+        client.getConnectionStateListenable().removeListener(connectionStateListener);
     }
 
     /**
@@ -144,7 +146,17 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      * @throws Exception errors
      */
     @Override
-    public void     registerService(ServiceInstance<T> service) throws Exception
+    public void registerService(ServiceInstance<T> service) throws Exception
+    {
+        if ( !services.contains(service) )
+        {
+            services.add(service);
+        }
+        internalRegisterService(service);
+    }
+
+    @VisibleForTesting
+    protected void     internalRegisterService(ServiceInstance<T> service) throws Exception
     {
         byte[]          bytes = serializer.serialize(service);
         String          path = pathForInstance(service.getName(), service.getId());
@@ -184,6 +196,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             // ignore
         }
+        services.remove(service);
     }
 
     /**
@@ -359,5 +372,13 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private String  pathForName(String name) throws UnsupportedEncodingException
     {
         return ZKPaths.makePath(basePath, name);
+    }
+
+    private void reRegisterServices() throws Exception
+    {
+        for ( ServiceInstance<T> service : services )
+        {
+            internalRegisterService(service);
+        }
     }
 }
