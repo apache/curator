@@ -23,6 +23,7 @@ import com.netflix.curator.framework.api.CuratorEventType;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import java.util.Arrays;
 import java.util.List;
 
 class CuratorEventImpl implements CuratorEvent
@@ -109,7 +110,7 @@ class CuratorEventImpl implements CuratorEvent
             ", children=" + children +
             ", context=" + context +
             ", stat=" + stat +
-            ", data=" + data +
+            ", data=" + Arrays.toString(data) +
             ", watchedEvent=" + watchedEvent +
             ", aclList=" + aclList +
             '}';
