@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -60,6 +61,7 @@ public class PersistentEphemeralNode implements Closeable
     private final String                    basePath;
     private final byte[]                    data;
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
+    private final AtomicBoolean             isSuspended = new AtomicBoolean(false);
     private volatile CountDownLatch         initialCreateLatch = new CountDownLatch(1);
     private final Watcher                   watcher = new Watcher()
     {
@@ -74,6 +76,7 @@ public class PersistentEphemeralNode implements Closeable
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
+            isSuspended.set((newState != ConnectionState.RECONNECTED) && (newState != ConnectionState.CONNECTED));
             if ( newState == ConnectionState.RECONNECTED )
             {
                 createNode();
@@ -287,7 +290,7 @@ public class PersistentEphemeralNode implements Closeable
 
     private void createNode()
     {
-        if ( state.get() != State.STARTED )
+        if ( !isActive() )
         {
             return;
         }
@@ -305,7 +308,7 @@ public class PersistentEphemeralNode implements Closeable
 
     private void watchNode()
     {
-        if ( state.get() != State.STARTED )
+        if ( !isActive() )
         {
             return;
         }
@@ -322,6 +325,11 @@ public class PersistentEphemeralNode implements Closeable
                 log.error("Watching node: " + localNodePath, e);
             }
         }
+    }
+
+    private boolean isActive()
+    {
+        return (state.get() == State.STARTED) && !isSuspended.get();
     }
 
     private static PathAndBytesable<String> makeCreateMethod(CuratorFramework curator, Mode mode, BackgroundCallback backgroundCallback)
