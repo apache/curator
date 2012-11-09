@@ -322,7 +322,7 @@ public class PersistentEphemeralNode implements Closeable
             }
             catch ( Exception e )
             {
-                log.error("Deleting node on close", e);
+                log.error("Deleting node: " + localNodePath, e);
             }
         }
     }
