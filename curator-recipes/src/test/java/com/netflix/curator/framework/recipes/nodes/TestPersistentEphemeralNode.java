@@ -66,28 +66,28 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullCurator() throws Exception
     {
-        new PersistentEphemeralNode(null, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        new PersistentEphemeralNode(null, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullPath() throws Exception
     {
         CuratorFramework curator = newCurator();
-        new PersistentEphemeralNode(curator, null, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, null, new byte[0]);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullData() throws Exception
     {
         CuratorFramework curator = newCurator();
-        new PersistentEphemeralNode(curator, PATH, null, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, null);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullMode() throws Exception
     {
         CuratorFramework curator = newCurator();
-        new PersistentEphemeralNode(curator, PATH, new byte[0], null);
+        new PersistentEphemeralNode(curator, null, PATH, new byte[0]);
     }
 
     @Test
@@ -95,7 +95,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node.start();
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
         assertNodeExists(curator, node.getActualPath());
@@ -106,7 +106,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node.start();
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
         assertNodeExists(curator, node.getActualPath());
@@ -121,7 +121,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node.start();
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
 
@@ -139,7 +139,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
         CuratorFramework observer = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node.start();
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
         assertNodeExists(observer, node.getActualPath());
@@ -160,13 +160,14 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
         CuratorFramework observer = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node.start();
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
-        assertNodeExists(observer, node.getActualPath());
+        String actualPath = node.getActualPath();
+        assertNodeExists(observer, actualPath);
 
         Trigger deletedTrigger = Trigger.deleted();
-        observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
+        observer.checkExists().usingWatcher(deletedTrigger).forPath(actualPath);
 
         killSession(curator);
 
@@ -175,7 +176,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
         // Check for it to be recreated...
         Trigger createdTrigger = Trigger.created();
-        Stat stat = observer.checkExists().usingWatcher(createdTrigger).forPath(node.getActualPath());
+        Stat stat = observer.checkExists().usingWatcher(createdTrigger).forPath(actualPath);
         assertTrue(stat != null || createdTrigger.firedWithin(10, TimeUnit.SECONDS));
     }
 
@@ -185,7 +186,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
         CuratorFramework observer = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node.start();
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
         String path = node.getActualPath();
@@ -215,7 +216,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node.start();
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
         String originalNode = node.getActualPath();
@@ -236,12 +237,12 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node1 = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node1 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node1.start();
         node1.waitForInitialCreate(10, TimeUnit.SECONDS);
         String path1 = node1.getActualPath();
 
-        PersistentEphemeralNode node2 = new PersistentEphemeralNode(curator, PATH, new byte[0], PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node2 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
         node2.start();
         node2.waitForInitialCreate(10, TimeUnit.SECONDS);
         String path2 = node2.getActualPath();
@@ -255,7 +256,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
         byte[] data = "Hello World".getBytes();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PATH, data, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL);
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, data);
         node.start();
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
         assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));

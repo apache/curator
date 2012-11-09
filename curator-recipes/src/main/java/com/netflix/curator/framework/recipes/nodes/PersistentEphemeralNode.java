@@ -16,7 +16,6 @@
 
 package com.netflix.curator.framework.recipes.nodes;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.ACLBackgroundPathAndBytesable;
@@ -37,14 +36,14 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
- *     A persistent ephemeral node is an ephemeral node that attempts to stay present in ZooKeeper, even through connection and session interruptions.
+ *     A persistent ephemeral node is an ephemeral node that attempts to stay present in
+ *     ZooKeeper, even through connection and session interruptions.
  * </p>
  *
  * <p>
@@ -59,6 +58,7 @@ public class PersistentEphemeralNode implements Closeable
     private final PathAndBytesable<String>  createMethod;
     private final AtomicReference<String>   nodePath = new AtomicReference<String>(null);
     private final String                    basePath;
+    private final Mode                      mode;
     private final byte[]                    data;
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean             isSuspended = new AtomicBoolean(false);
@@ -123,6 +123,12 @@ public class PersistentEphemeralNode implements Closeable
             {
                 return false;
             }
+
+            @Override
+            protected boolean isSequential()
+            {
+                return false;
+            }
         },
 
         /**
@@ -140,6 +146,12 @@ public class PersistentEphemeralNode implements Closeable
             protected boolean isProtected()
             {
                 return false;
+            }
+
+            @Override
+            protected boolean isSequential()
+            {
+                return true;
             }
         },
 
@@ -159,6 +171,12 @@ public class PersistentEphemeralNode implements Closeable
             {
                 return true;
             }
+
+            @Override
+            protected boolean isSequential()
+            {
+                return false;
+            }
         },
 
         /**
@@ -177,6 +195,12 @@ public class PersistentEphemeralNode implements Closeable
             {
                 return true;
             }
+
+            @Override
+            protected boolean isSequential()
+            {
+                return true;
+            }
         }
 
         ;
@@ -184,23 +208,25 @@ public class PersistentEphemeralNode implements Closeable
         protected abstract CreateMode getCreateMode();
 
         protected abstract boolean isProtected();
+
+        protected abstract boolean isSequential();
     }
 
     /**
-     * @param curator curator instance
+     * @param client client instance
+     * @param mode creation/protection mode
      * @param basePath the base path for the node
      * @param data data for the node
-     * @param mode creation/protection mode
      */
-    public PersistentEphemeralNode(CuratorFramework curator, String basePath, byte[] data, Mode mode)
+    public PersistentEphemeralNode(CuratorFramework client, Mode mode, String basePath, byte[] data)
     {
-        client = Preconditions.checkNotNull(curator, "curator cannot be null");
+        this.client = Preconditions.checkNotNull(client, "client cannot be null");
         this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
-        mode = Preconditions.checkNotNull(mode, "mode cannot be null");
+        this.mode = Preconditions.checkNotNull(mode, "mode cannot be null");
         data = Preconditions.checkNotNull(data, "data cannot be null");
 
         String parentDir = ZKPaths.getPathAndNode(basePath).getPath();
-        ensurePath = curator.newNamespaceAwareEnsurePath(parentDir);
+        ensurePath = client.newNamespaceAwareEnsurePath(parentDir);
 
         BackgroundCallback        backgroundCallback = new BackgroundCallback()
         {
@@ -226,7 +252,7 @@ public class PersistentEphemeralNode implements Closeable
             }
         };
 
-        createMethod = makeCreateMethod(curator, mode, backgroundCallback);
+        createMethod = makeCreateMethod(client, mode, backgroundCallback);
         this.data = Arrays.copyOf(data, data.length);
     }
 
@@ -268,6 +294,21 @@ public class PersistentEphemeralNode implements Closeable
 
         client.getConnectionStateListenable().removeListener(listener);
 
+        deleteNode();
+    }
+
+    /**
+     * Returns the currently set path or null if the node does not exist
+     *
+     * @return node path or null
+     */
+    public String getActualPath()
+    {
+        return nodePath.get();
+    }
+
+    private void deleteNode()
+    {
         String          localNodePath = nodePath.getAndSet(null);
         if ( localNodePath != null )
         {
@@ -275,17 +316,15 @@ public class PersistentEphemeralNode implements Closeable
             {
                 client.delete().guaranteed().forPath(localNodePath);
             }
+            catch ( KeeperException.NoNodeException ignore )
+            {
+                // ignore
+            }
             catch ( Exception e )
             {
                 log.error("Deleting node on close", e);
             }
         }
-    }
-
-    @VisibleForTesting
-    String getActualPath() throws ExecutionException, InterruptedException
-    {
-        return nodePath.get();
     }
 
     private void createNode()
@@ -297,6 +336,10 @@ public class PersistentEphemeralNode implements Closeable
 
         try
         {
+            if ( mode.isSequential() )
+            {
+                deleteNode();
+            }
             ensurePath.ensure(client.getZookeeperClient());
             createMethod.forPath(basePath, data);
         }
