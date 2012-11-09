@@ -11,7 +11,8 @@ updated.
 not being treated the same as the service passed in the constructor. Consequently they wouldn't get
 re-registered if there were connection problems.
 
-* Creating withProtection() is now supported in the background.
+* Creating nodes withProtection() is now supported in the background. e.g.
+client.create().withProtection().inBackground()...
 
 1.2.4 - November 2, 2012
 ========================
