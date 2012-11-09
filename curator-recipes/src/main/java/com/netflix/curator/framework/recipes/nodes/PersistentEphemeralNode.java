@@ -16,6 +16,8 @@
 
 package com.netflix.curator.framework.recipes.nodes;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.ACLBackgroundPathAndBytesable;
@@ -52,6 +54,9 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class PersistentEphemeralNode implements Closeable
 {
+    @VisibleForTesting
+    volatile CountDownLatch         initialCreateLatch = new CountDownLatch(1);
+
     private final Logger                    log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework          client;
     private final EnsurePath                ensurePath;
@@ -62,13 +67,15 @@ public class PersistentEphemeralNode implements Closeable
     private final byte[]                    data;
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean             isSuspended = new AtomicBoolean(false);
-    private volatile CountDownLatch         initialCreateLatch = new CountDownLatch(1);
     private final Watcher                   watcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
         {
-            createNode();
+            if ( Objects.equal(nodePath.get(), event.getPath()) )
+            {
+                createNode();
+            }
         }
     };
     private final ConnectionStateListener   listener = new ConnectionStateListener()
@@ -233,9 +240,18 @@ public class PersistentEphemeralNode implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if ( (event.getResultCode() == KeeperException.Code.OK.intValue()) || (event.getResultCode() == KeeperException.Code.NODEEXISTS.intValue()) )
+                String      path = null;
+                if ( event.getResultCode() == KeeperException.Code.NODEEXISTS.intValue() )
                 {
-                    nodePath.set(event.getPath());
+                    path = event.getPath();
+                }
+                else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
+                    path = event.getName();
+                }
+                if ( path != null )
+                {
+                    nodePath.set(path);
                     watchNode();
 
                     CountDownLatch      localLatch = initialCreateLatch;

@@ -24,11 +24,13 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
+import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 import java.io.IOException;
@@ -212,6 +214,47 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
 
     @Test
+    public void testSafeRecreatesNodeWhenReconnects() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
+        node.start();
+        node.waitForInitialCreate(10, TimeUnit.SECONDS);
+        String path = node.getActualPath();
+
+        server.stop();
+        node.initialCreateLatch = new CountDownLatch(1);
+        server = new TestingServer(server.getPort(), server.getTempDirectory());
+        assertTrue(node.waitForInitialCreate(10, TimeUnit.SECONDS));
+        String postPath = node.getActualPath();
+        assertNodeExists(curator, postPath);
+        assertEquals(path, postPath);
+    }
+
+    @Test
+    public void testSequentialNodeRecreate() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]);
+        node.start();
+        node.waitForInitialCreate(10, TimeUnit.SECONDS);
+        String originalNode = node.getActualPath();
+        assertNodeExists(curator, originalNode);
+
+        node.initialCreateLatch = new CountDownLatch(1);
+        curator.delete().forPath(originalNode);
+
+        node.waitForInitialCreate(10, TimeUnit.SECONDS);
+
+        String newNode = node.getActualPath();
+        assertNodeDoesNotExist(curator, originalNode);
+        assertNodeExists(curator, newNode);
+        assertNotEquals(originalNode, newNode);
+    }
+
+    @Test
     public void testRecreatesNodeWhenItGetsDeleted() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -265,7 +308,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     private void assertNodeExists(CuratorFramework curator, String path) throws Exception
     {
         assertNotNull(path);
-        assertTrue(curator.checkExists().forPath(path) != null);
+        assertTrue(curator.checkExists().forPath(path) != null, path);
     }
 
     private void assertNodeDoesNotExist(CuratorFramework curator, String path) throws Exception
