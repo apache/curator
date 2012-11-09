@@ -46,7 +46,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -58,7 +58,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final CuratorFramework client;
     private final String basePath;
     private final InstanceSerializer<T> serializer;
-    private final List<ServiceInstance<T>> services = new CopyOnWriteArrayList<ServiceInstance<T>>();
+    private final Map<String, ServiceInstance<T>> services = Maps.newConcurrentMap();
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
     private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -96,7 +96,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
         if ( thisInstance != null )
         {
-            services.add(thisInstance);
+            services.put(thisInstance.getId(), thisInstance);
         }
     }
 
@@ -124,7 +124,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             Closeables.closeQuietly(provider);
         }
 
-        for ( ServiceInstance<T> service : services )
+        for ( ServiceInstance<T> service : services.values() )
         {
             try
             {
@@ -148,10 +148,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void registerService(ServiceInstance<T> service) throws Exception
     {
-        if ( !services.contains(service) )
-        {
-            services.add(service);
-        }
+        services.put(service.getId(), service);
         internalRegisterService(service);
     }
 
@@ -196,7 +193,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             // ignore
         }
-        services.remove(service);
+        services.remove(service.getId());
     }
 
     /**
@@ -376,7 +373,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 
     private void reRegisterServices() throws Exception
     {
-        for ( ServiceInstance<T> service : services )
+        for ( ServiceInstance<T> service : services.values() )
         {
             internalRegisterService(service);
         }
