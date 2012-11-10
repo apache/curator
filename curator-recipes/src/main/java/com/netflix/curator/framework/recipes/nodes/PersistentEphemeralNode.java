@@ -330,7 +330,7 @@ public class PersistentEphemeralNode implements Closeable
         {
             try
             {
-                client.delete().guaranteed().forPath(localNodePath);
+                client.delete().guaranteed().inBackground().forPath(localNodePath);
             }
             catch ( KeeperException.NoNodeException ignore )
             {
