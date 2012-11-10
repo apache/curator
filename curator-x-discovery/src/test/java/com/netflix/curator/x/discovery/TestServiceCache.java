@@ -170,15 +170,16 @@ public class TestServiceCache
             };
             cache.addListener(listener);
 
-            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            discovery.registerService(instance);
+            ServiceInstance<String>     instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceInstance<String>     instance2 = ServiceInstance.<String>builder().payload("thing").name("test").port(10065).build();
+            discovery.registerService(instance1);
             Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
 
-            discovery.registerService(instance);
-            Assert.assertTrue(semaphore.tryAcquire(3, TimeUnit.SECONDS));  // re-register
+            discovery.registerService(instance2);
+            Assert.assertTrue(semaphore.tryAcquire(3, TimeUnit.SECONDS));
 
-            instance = ServiceInstance.<String>builder().payload("thing").name("another").port(10064).build();
-            discovery.registerService(instance);
+            ServiceInstance<String>     instance3 = ServiceInstance.<String>builder().payload("thing").name("another").port(10064).build();
+            discovery.registerService(instance3);
             Assert.assertFalse(semaphore.tryAcquire(3, TimeUnit.SECONDS));  // should not get called for a different service
         }
         finally

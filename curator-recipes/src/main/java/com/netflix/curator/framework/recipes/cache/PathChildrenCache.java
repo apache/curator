@@ -47,7 +47,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
@@ -69,22 +68,16 @@ public class PathChildrenCache implements Closeable
     private final boolean                   cacheData;
     private final boolean                   dataIsCompressed;
     private final EnsurePath                ensurePath;
-
-    private volatile Future<Void>           mainLoopTask;
+    private final BlockingQueue<Operation>                      operations = new LinkedBlockingQueue<Operation>();
+    private final ListenerContainer<PathChildrenCacheListener>  listeners = new ListenerContainer<PathChildrenCacheListener>();
+    private final ConcurrentMap<String, ChildData>              currentData = Maps.newConcurrentMap();
 
     private final Watcher     childrenWatcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
         {
-            try
-            {
-                refresh(false);
-            }
-            catch ( Exception e )
-            {
-                handleException(e);
-            }
+            offerOperation(new RefreshOperation(PathChildrenCache.this));
         }
     };
 
@@ -101,7 +94,7 @@ public class PathChildrenCache implements Closeable
                 }
                 else if ( event.getType() == Event.EventType.NodeDataChanged )
                 {
-                    getDataAndStat(event.getPath());
+                    offerOperation(new GetDataOperation(PathChildrenCache.this, event.getPath()));
                 }
             }
             catch ( Exception e )
@@ -110,10 +103,6 @@ public class PathChildrenCache implements Closeable
             }
         }
     };
-
-    private final BlockingQueue<PathChildrenCacheEvent>         listenerEvents = new LinkedBlockingQueue<PathChildrenCacheEvent>();
-    private final ListenerContainer<PathChildrenCacheListener>  listeners = new ListenerContainer<PathChildrenCacheListener>();
-    private final ConcurrentMap<String, ChildData>              currentData = Maps.newConcurrentMap();
 
     @VisibleForTesting
     volatile Exchanger<Object>      rebuildTestExchanger;
@@ -215,7 +204,7 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkState(!executorService.isShutdown(), "already started");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        mainLoopTask = executorService.submit
+        executorService.submit
         (
             new Callable<Void>()
             {
@@ -234,7 +223,7 @@ public class PathChildrenCache implements Closeable
         }
         else
         {
-            refresh(false);
+            offerOperation(new RefreshOperation(this));
         }
     }
 
@@ -283,7 +272,7 @@ public class PathChildrenCache implements Closeable
         }
 
         // this is necessary so that any updates that occurred while rebuilding are taken
-        refresh(true);
+        offerOperation(new ForceRefreshOperation(this));
     }
 
     /**
@@ -297,7 +286,7 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkState(!executorService.isShutdown(), "has not been started");
 
         client.getConnectionStateListenable().removeListener(connectionStateListener);
-        mainLoopTask.cancel(true);
+        executorService.shutdownNow();
     }
 
     /**
@@ -342,7 +331,7 @@ public class PathChildrenCache implements Closeable
     public void clearAndRefresh() throws Exception
     {
         currentData.clear();
-        refresh(false);
+        offerOperation(new RefreshOperation(this));
     }
 
     /**
@@ -352,6 +341,82 @@ public class PathChildrenCache implements Closeable
     public void clear()
     {
         currentData.clear();
+    }
+
+    void refresh(final boolean forceGetDataAndStat) throws Exception
+    {
+        ensurePath.ensure(client.getZookeeperClient());
+
+        final BackgroundCallback  callback = new BackgroundCallback()
+        {
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                processChildren(event.getChildren(), forceGetDataAndStat);
+            }
+        };
+
+        client.getChildren().usingWatcher(childrenWatcher).inBackground(callback).forPath(path);
+    }
+
+    void callListeners(final PathChildrenCacheEvent event)
+    {
+        listeners.forEach
+            (
+                new Function<PathChildrenCacheListener, Void>()
+                {
+                    @Override
+                    public Void apply(PathChildrenCacheListener listener)
+                    {
+                        try
+                        {
+                            listener.childEvent(client, event);
+                        }
+                        catch ( Exception e )
+                        {
+                            handleException(e);
+                        }
+                        return null;
+                    }
+                }
+            );
+    }
+
+    void getDataAndStat(final String fullPath) throws Exception
+    {
+        BackgroundCallback  existsCallback = new BackgroundCallback()
+        {
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                applyNewData(fullPath, event.getResultCode(), event.getStat(), null);
+            }
+        };
+
+        BackgroundCallback  getDataCallback = new BackgroundCallback()
+        {
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                applyNewData(fullPath, event.getResultCode(), event.getStat(), event.getData());
+            }
+        };
+
+        if ( cacheData )
+        {
+            if ( dataIsCompressed )
+            {
+                client.getData().decompressed().usingWatcher(dataWatcher).inBackground(getDataCallback).forPath(fullPath);
+            }
+            else
+            {
+                client.getData().usingWatcher(dataWatcher).inBackground(getDataCallback).forPath(fullPath);
+            }
+        }
+        else
+        {
+            client.checkExists().usingWatcher(dataWatcher).inBackground(existsCallback).forPath(fullPath);
+        }
     }
 
     /**
@@ -370,13 +435,13 @@ public class PathChildrenCache implements Closeable
         {
         case SUSPENDED:
         {
-            listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED, null));
+            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED, null)));
             break;
         }
 
         case LOST:
         {
-            listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_LOST, null));
+            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_LOST, null)));
             break;
         }
 
@@ -384,8 +449,8 @@ public class PathChildrenCache implements Closeable
         {
             try
             {
-                refresh(true);
-                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED, null));
+                offerOperation(new ForceRefreshOperation(this));
+                offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED, null)));
             }
             catch ( Exception e )
             {
@@ -394,22 +459,6 @@ public class PathChildrenCache implements Closeable
             break;
         }
         }
-    }
-
-    private void refresh(final boolean forceGetDataAndStat) throws Exception
-    {
-        ensurePath.ensure(client.getZookeeperClient());
-
-        final BackgroundCallback  callback = new BackgroundCallback()
-        {
-            @Override
-            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-            {
-                processChildren(event.getChildren(), forceGetDataAndStat);
-            }
-        };
-
-        client.getChildren().usingWatcher(childrenWatcher).inBackground(callback).forPath(path);
     }
 
     private void processChildren(List<String> children, boolean forceGetDataAndStat) throws Exception
@@ -449,7 +498,7 @@ public class PathChildrenCache implements Closeable
         ChildData data = currentData.remove(fullPath);
         if ( data != null )
         {
-            listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, data));
+            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, data)));
         }
     }
 
@@ -461,49 +510,12 @@ public class PathChildrenCache implements Closeable
             ChildData       previousData = currentData.put(fullPath, data);
             if ( previousData == null ) // i.e. new
             {
-                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data));
+                offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data)));
             }
             else if ( previousData.getStat().getVersion() != stat.getVersion() )
             {
-                listenerEvents.offer(new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data));
+                offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
             }
-        }
-    }
-
-    private void getDataAndStat(final String fullPath) throws Exception
-    {
-        BackgroundCallback  existsCallback = new BackgroundCallback()
-        {
-            @Override
-            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-            {
-                applyNewData(fullPath, event.getResultCode(), event.getStat(), null);
-            }
-        };
-
-        BackgroundCallback  getDataCallback = new BackgroundCallback()
-        {
-            @Override
-            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-            {
-                applyNewData(fullPath, event.getResultCode(), event.getStat(), event.getData());
-            }
-        };
-
-        if ( cacheData )
-        {
-            if ( dataIsCompressed )
-            {
-                client.getData().decompressed().usingWatcher(dataWatcher).inBackground(getDataCallback).forPath(fullPath);
-            }
-            else
-            {
-                client.getData().usingWatcher(dataWatcher).inBackground(getDataCallback).forPath(fullPath);
-            }
-        }
-        else
-        {
-            client.checkExists().usingWatcher(dataWatcher).inBackground(existsCallback).forPath(fullPath);
         }
     }
 
@@ -513,37 +525,23 @@ public class PathChildrenCache implements Closeable
         {
             try
             {
-                PathChildrenCacheEvent event = listenerEvents.take();
-                callListeners(event);
+                operations.take().invoke();
             }
             catch ( InterruptedException e )
             {
                 Thread.currentThread().interrupt();
                 break;
             }
+            catch ( Exception e )
+            {
+                handleException(e);
+            }
         }
     }
 
-    private void callListeners(final PathChildrenCacheEvent event)
+    private void offerOperation(Operation operation)
     {
-        listeners.forEach
-        (
-            new Function<PathChildrenCacheListener, Void>()
-            {
-                @Override
-                public Void apply(PathChildrenCacheListener listener)
-                {
-                    try
-                    {
-                        listener.childEvent(client, event);
-                    }
-                    catch ( Exception e )
-                    {
-                        handleException(e);
-                    }
-                    return null;
-                }
-            }
-        );
+        operations.remove(operation);   // avoids herding for refresh operations
+        operations.offer(operation);
     }
 }

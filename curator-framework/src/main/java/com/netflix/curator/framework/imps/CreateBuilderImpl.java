@@ -251,22 +251,57 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         return new ProtectACLCreateModePathAndBytesable<String>()
         {
             @Override
-            public ACLCreateModePathAndBytesable<String> withProtection()
+            public ACLCreateModeBackgroundPathAndBytesable<String> withProtection()
             {
                 return CreateBuilderImpl.this.withProtection();
             }
 
             @Override
-            public PathAndBytesable<String> withACL(List<ACL> aclList)
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
             {
                 return CreateBuilderImpl.this.withACL(aclList);
             }
 
             @Override
-            public ACLPathAndBytesable<String> withMode(CreateMode mode)
+            public PathAndBytesable<String> inBackground()
             {
-                createMode = mode;
-                return this;
+                return CreateBuilderImpl.this.inBackground();
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(Object context)
+            {
+                return CreateBuilderImpl.this.inBackground(context);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback)
+            {
+                return CreateBuilderImpl.this.inBackground(callback);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
+            {
+                return CreateBuilderImpl.this.inBackground(callback, context);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
+            {
+                return CreateBuilderImpl.this.inBackground(callback, executor);
+            }
+
+            @Override
+            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            {
+                return CreateBuilderImpl.this.inBackground(callback, context, executor);
+            }
+
+            @Override
+            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode)
+            {
+                return CreateBuilderImpl.this.withMode(mode);
             }
 
             @Override
@@ -284,10 +319,10 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     }
 
     @Override
-    public ACLCreateModePathAndBytesable<String> withProtection()
+    public ACLCreateModeBackgroundPathAndBytesable<String> withProtection()
     {
         setProtected();
-        return asACLCreateModePathAndBytesable();
+        return this;
     }
 
     @Override
@@ -374,23 +409,23 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     }
 
     @Override
-    public String forPath(String path, byte[] data) throws Exception
+    public String forPath(final String givenPath, byte[] data) throws Exception
     {
         if ( compress )
         {
-            data = client.getCompressionProvider().compress(path, data);
+            data = client.getCompressionProvider().compress(givenPath, data);
         }
 
-        path = client.fixForNamespace(path);
+        final String    adjustedPath = adjustPath(client.fixForNamespace(givenPath));
 
         String  returnPath = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null), null);
+            pathInBackground(adjustedPath, data, givenPath);
         }
         else
         {
-            returnPath = pathInForeground(path, data);
+            returnPath = pathInForeground(adjustedPath, data);
             returnPath = client.unfixForNamespace(returnPath);
         }
         return returnPath;
@@ -411,16 +446,21 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 @Override
                 public void processResult(int rc, String path, Object ctx, String name)
                 {
-                    path = client.unfixForNamespace(path);
-                    name = client.unfixForNamespace(name);
-
                     trace.commit();
-                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, null, null, null, null, null);
-                    client.processBackgroundOperation(operationAndData, event);
+                    sendBackgroundResponse(rc, path, ctx, name, operationAndData);
                 }
             },
             backgrounding.getContext()
         );
+    }
+
+    private void sendBackgroundResponse(int rc, String path, Object ctx, String name, OperationAndData<PathAndBytes> operationAndData)
+    {
+        path = client.unfixForNamespace(path);
+        name = client.unfixForNamespace(name);
+
+        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, null, null, null, null, null);
+        client.processBackgroundOperation(operationAndData, event);
     }
 
     private void setProtected()
@@ -479,6 +519,49 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         };
     }
 
+    private void pathInBackground(final String path, final byte[] data, final String givenPath)
+    {
+        final AtomicBoolean firstTime = new AtomicBoolean(true);
+        OperationAndData<PathAndBytes> operationAndData = new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null)
+        {
+            @Override
+            void callPerformBackgroundOperation() throws Exception
+            {
+                boolean   callSuper = true;
+                boolean   localFirstTime = firstTime.getAndSet(false);
+                if ( !localFirstTime && doProtected )
+                {
+                    String      createdPath = findProtectedNodeInForeground(path);
+                    if ( createdPath != null )
+                    {
+                        try
+                        {
+                            sendBackgroundResponse(KeeperException.Code.OK.intValue(), createdPath, backgrounding.getContext(), ZKPaths.getNodeFromPath(createdPath), this);
+                        }
+                        catch ( Exception e )
+                        {
+                            client.logError("Processing protected create for path: " + givenPath, e);
+                        }
+                        callSuper = false;
+                    }
+                }
+
+                if ( failNextCreateForTesting )
+                {
+                    pathInForeground(path, data);   // simulate success on server without notification to client
+                    failNextCreateForTesting = false;
+                    throw new KeeperException.ConnectionLossException();
+                }
+
+                if ( callSuper )
+                {
+                    super.callPerformBackgroundOperation();
+                }
+            }
+        };
+        client.processBackgroundOperation(operationAndData, null);
+    }
+
     private String pathInForeground(final String path, final byte[] data) throws Exception
     {
         TimeTrace               trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
@@ -494,25 +577,24 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 {
                     boolean   localFirstTime = firstTime.getAndSet(false);
 
-                    String    localPath = adjustPath(path);
                     String    createdPath = null;
                     if ( !localFirstTime && doProtected )
                     {
-                        createdPath = findProtectedNodeInForeground(localPath);
+                        createdPath = findProtectedNodeInForeground(path);
                     }
 
                     if ( createdPath == null )
                     {
                         try
                         {
-                            createdPath = client.getZooKeeper().create(localPath, data, acling.getAclList(localPath), createMode);
+                            createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
                         }
                         catch ( KeeperException.NoNodeException e )
                         {
                             if ( createParentsIfNeeded )
                             {
-                                ZKPaths.mkdirs(client.getZooKeeper(), localPath, false);
-                                createdPath = client.getZooKeeper().create(localPath, data, acling.getAclList(localPath), createMode);
+                                ZKPaths.mkdirs(client.getZooKeeper(), path, false);
+                                createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
                             }
                             else
                             {

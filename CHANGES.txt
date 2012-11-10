@@ -1,3 +1,19 @@
+1.2.5 - xxxxxxxxxxxxxxxx
+========================
+* Issue 177: PathChildrenCache wasn't shutting down the executor when closed. Also, reworked the event
+queue to avoid potential herding of messages in unstable conditions. The herding could result in runaway
+memory allocation as reported in the issue. NOTE: due to this change, the PathChildrenCache node
+refresh code and the PathChildrenCacheListener notification threads have been merged. Do not block
+for very long inside of your PathChildrenCacheListener or you will prevent the cache from getting
+updated.
+
+* Issue 200: Post-creation services registered in ServiceDiscovery via registerService() were
+not being treated the same as the service passed in the constructor. Consequently they wouldn't get
+re-registered if there were connection problems.
+
+* Creating nodes withProtection() is now supported in the background. e.g.
+client.create().withProtection().inBackground()...
+
 1.2.4 - November 2, 2012
 ========================
 * Depend on ZooKeeper 3.4.4

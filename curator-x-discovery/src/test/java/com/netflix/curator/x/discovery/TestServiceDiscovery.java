@@ -33,13 +33,72 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class TestServiceDiscovery
 {
+    private static final Comparator<ServiceInstance<Void>>      comparator = new Comparator<ServiceInstance<Void>>()
+    {
+        @Override
+        public int compare(ServiceInstance<Void> o1, ServiceInstance<Void> o2)
+        {
+            return o1.getId().compareTo(o2.getId());
+        }
+    };
+
+    @Test
+    public void         testCrashedServerMultiInstances() throws Exception
+    {
+        List<Closeable>     closeables = Lists.newArrayList();
+        TestingServer       server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+            Timing              timing = new Timing();
+            CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            final Semaphore             semaphore = new Semaphore(0);
+            ServiceInstance<String>     instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceInstance<String>     instance2 = ServiceInstance.<String>builder().payload("thing").name("test").port(10065).build();
+            ServiceDiscovery<String>    discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance1)
+            {
+                @Override
+                protected void internalRegisterService(ServiceInstance<String> service) throws Exception
+                {
+                    super.internalRegisterService(service);
+                    semaphore.release();
+                }
+            };
+            closeables.add(discovery);
+            discovery.start();
+            discovery.registerService(instance2);
+
+            timing.acquireSemaphore(semaphore, 2);
+            Assert.assertEquals(discovery.queryForInstances("test").size(), 2);
+
+            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            server.stop();
+
+            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            closeables.add(server);
+
+            timing.acquireSemaphore(semaphore, 2);
+            Assert.assertEquals(discovery.queryForInstances("test").size(), 2);
+        }
+        finally
+        {
+            for ( Closeable c : closeables )
+            {
+                Closeables.closeQuietly(c);
+            }
+        }
+    }
+
     @Test
     public void         testCrashedServer() throws Exception
     {
@@ -58,9 +117,9 @@ public class TestServiceDiscovery
             ServiceDiscovery<String>    discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance)
             {
                 @Override
-                public void registerService(ServiceInstance<String> service) throws Exception
+                protected void internalRegisterService(ServiceInstance<String> service) throws Exception
                 {
-                    super.registerService(service);
+                    super.internalRegisterService(service);
                     semaphore.release();
                 }
             };
@@ -155,18 +214,22 @@ public class TestServiceDiscovery
 
             Assert.assertEquals(Sets.newHashSet(discovery.queryForNames()), Sets.newHashSet(SERVICE_ONE, SERVICE_TWO));
 
-            Collection<ServiceInstance<Void>> list = Sets.newHashSet();
+            List<ServiceInstance<Void>> list = Lists.newArrayList();
             list.add(s1_i1);
             list.add(s1_i2);
-            Collection<ServiceInstance<Void>> queriedInstances = Sets.newHashSet(discovery.queryForInstances(SERVICE_ONE));
+            Collections.sort(list, comparator);
+            List<ServiceInstance<Void>> queriedInstances = Lists.newArrayList(discovery.queryForInstances(SERVICE_ONE));
+            Collections.sort(queriedInstances, comparator);
             Assert.assertEquals(queriedInstances, list, String.format("Not equal l: %s - d: %s", list, queriedInstances));
 
             list.clear();
 
             list.add(s2_i1);
             list.add(s2_i2);
-            queriedInstances = Sets.newHashSet(discovery.queryForInstances(SERVICE_TWO));
-            Assert.assertEquals(queriedInstances, list, String.format("Not equal l: %s - d: %s", list, queriedInstances));
+            Collections.sort(list, comparator);
+            queriedInstances = Lists.newArrayList(discovery.queryForInstances(SERVICE_TWO));
+            Collections.sort(queriedInstances, comparator);
+            Assert.assertEquals(queriedInstances, list, String.format("Not equal 2: %s - d: %s", list, queriedInstances));
         }
         finally
         {

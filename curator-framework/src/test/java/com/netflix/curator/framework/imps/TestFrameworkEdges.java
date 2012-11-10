@@ -17,10 +17,12 @@
  */
 package com.netflix.curator.framework.imps;
 
+import com.google.common.collect.Queues;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.RetrySleeper;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
+import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorEventType;
 import com.netflix.curator.framework.api.CuratorListener;
@@ -38,6 +40,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +49,36 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
+    @Test
+    public void     testMissedResponseOnBackgroundESCreate() throws Exception
+    {
+        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            CreateBuilderImpl               createBuilder = (CreateBuilderImpl)client.create();
+            createBuilder.failNextCreateForTesting = true;
+
+            final BlockingQueue<String>     queue = Queues.newArrayBlockingQueue(1);
+            BackgroundCallback              callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    queue.put(event.getPath());
+                }
+            };
+            createBuilder.withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath("/");
+            String          ourPath = queue.poll(10, TimeUnit.SECONDS);
+            Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
+            Assert.assertFalse(createBuilder.failNextCreateForTesting);
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void     testMissedResponseOnESCreate() throws Exception
     {
