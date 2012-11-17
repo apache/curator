@@ -14,6 +14,8 @@ re-registered if there were connection problems.
 * Creating nodes withProtection() is now supported in the background. e.g.
 client.create().withProtection().inBackground()...
 
+* Added methods to InterProcessSemaphoreV2: setNodeData() and getParticipantNodes()
+
 1.2.4 - November 2, 2012
 ========================
 * Depend on ZooKeeper 3.4.4
