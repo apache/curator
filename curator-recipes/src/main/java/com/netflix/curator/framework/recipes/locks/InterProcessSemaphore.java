@@ -272,6 +272,12 @@ public class InterProcessSemaphore
                     throw new IOException(e);
                 }
             }
+
+            @Override
+            public byte[] getData() throws Exception
+            {
+                return internals.getClient().getData().forPath(path);
+            }
         };
     }
 }
