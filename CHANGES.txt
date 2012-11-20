@@ -19,6 +19,8 @@ client.create().withProtection().inBackground()...
 * Added methods to InterProcessSemaphoreV2: setNodeData() and getParticipantNodes() and, to the Lease
 interface, getData().
 
+* Issue 205 - already started error message was misleading.
+
 1.2.4 - November 2, 2012
 ========================
 * Depend on ZooKeeper 3.4.4
