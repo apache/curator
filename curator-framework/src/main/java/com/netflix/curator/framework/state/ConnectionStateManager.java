@@ -92,7 +92,7 @@ public class ConnectionStateManager implements Closeable
      */
     public void     start()
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         service.submit
         (

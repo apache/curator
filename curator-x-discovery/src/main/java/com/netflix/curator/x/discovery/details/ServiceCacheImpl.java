@@ -80,7 +80,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>
 
     @Override public void start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         executorService.submit
         (
@@ -103,7 +103,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>
     @Override
     public void close() throws IOException
     {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.STOPPED), "not started");
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.STOPPED), "Already closed or has not been started");
 
         listenerContainer.forEach
             (

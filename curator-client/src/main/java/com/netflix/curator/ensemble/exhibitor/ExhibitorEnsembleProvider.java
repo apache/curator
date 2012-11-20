@@ -113,7 +113,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     @Override
     public void start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         service.scheduleWithFixedDelay
         (
@@ -134,7 +134,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     @Override
     public void close() throws IOException
     {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed");
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
 
         service.shutdownNow();
     }

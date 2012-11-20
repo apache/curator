@@ -113,7 +113,7 @@ public class LeaderLatch implements Closeable
      */
     public void start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         client.getConnectionStateListenable().addListener(listener);
 
@@ -131,7 +131,7 @@ public class LeaderLatch implements Closeable
     @Override
     public void close() throws IOException
     {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Not started");
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
 
         try
         {
