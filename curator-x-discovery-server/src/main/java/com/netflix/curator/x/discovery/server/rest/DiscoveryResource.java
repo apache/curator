@@ -130,7 +130,7 @@ public abstract class DiscoveryResource<T>
     }
 
     @GET
-    @Path("{name}/{id}")
+    @Path("v1/service/{name}/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response     get(@PathParam("name") String name, @PathParam("id") String id)
     {
