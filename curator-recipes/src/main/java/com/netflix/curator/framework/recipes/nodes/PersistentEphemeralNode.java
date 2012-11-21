@@ -327,8 +327,10 @@ public class PersistentEphemeralNode implements Closeable
 
         try
         {
+            String      existingPath = nodePath.get();
+            String      createPath = (existingPath != null) ? existingPath : basePath;
             ensurePath.ensure(client.getZookeeperClient());
-            createMethod.withMode(mode.getCreateMode(false)).inBackground(backgroundCallback).forPath(basePath, data);
+            createMethod.withMode(mode.getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data);
         }
         catch ( Exception e )
         {

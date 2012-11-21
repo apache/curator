@@ -248,9 +248,8 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         node.waitForInitialCreate(10, TimeUnit.SECONDS);
 
         String newNode = node.getActualPath();
-        assertNodeDoesNotExist(curator, originalNode);
         assertNodeExists(curator, newNode);
-        assertNotEquals(originalNode, newNode);
+        assertEquals(originalNode, newNode);
     }
 
     @Test
