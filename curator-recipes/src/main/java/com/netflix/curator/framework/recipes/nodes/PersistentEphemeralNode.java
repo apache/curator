@@ -60,13 +60,14 @@ public class PersistentEphemeralNode implements Closeable
     private final Logger                    log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework          client;
     private final EnsurePath                ensurePath;
-    private final PathAndBytesable<String>  createMethod;
+    private final CreateModable<ACLBackgroundPathAndBytesable<String>>  createMethod;
     private final AtomicReference<String>   nodePath = new AtomicReference<String>(null);
     private final String                    basePath;
     private final Mode                      mode;
     private final byte[]                    data;
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean             isSuspended = new AtomicBoolean(false);
+    private final BackgroundCallback        backgroundCallback;
     private final Watcher                   watcher = new Watcher()
     {
         @Override
@@ -120,19 +121,13 @@ public class PersistentEphemeralNode implements Closeable
         EPHEMERAL()
         {
             @Override
-            protected CreateMode getCreateMode()
+            protected CreateMode getCreateMode(boolean pathIsSet)
             {
                 return CreateMode.EPHEMERAL;
             }
 
             @Override
             protected boolean isProtected()
-            {
-                return false;
-            }
-
-            @Override
-            protected boolean isSequential()
             {
                 return false;
             }
@@ -144,21 +139,15 @@ public class PersistentEphemeralNode implements Closeable
         EPHEMERAL_SEQUENTIAL()
         {
             @Override
-            protected CreateMode getCreateMode()
+            protected CreateMode getCreateMode(boolean pathIsSet)
             {
-                return CreateMode.EPHEMERAL_SEQUENTIAL;
+                return pathIsSet ? CreateMode.EPHEMERAL : CreateMode.EPHEMERAL_SEQUENTIAL;
             }
 
             @Override
             protected boolean isProtected()
             {
                 return false;
-            }
-
-            @Override
-            protected boolean isSequential()
-            {
-                return true;
             }
         },
 
@@ -168,7 +157,7 @@ public class PersistentEphemeralNode implements Closeable
         PROTECTED_EPHEMERAL()
         {
             @Override
-            protected CreateMode getCreateMode()
+            protected CreateMode getCreateMode(boolean pathIsSet)
             {
                 return CreateMode.EPHEMERAL;
             }
@@ -178,12 +167,6 @@ public class PersistentEphemeralNode implements Closeable
             {
                 return true;
             }
-
-            @Override
-            protected boolean isSequential()
-            {
-                return false;
-            }
         },
 
         /**
@@ -192,9 +175,9 @@ public class PersistentEphemeralNode implements Closeable
         PROTECTED_EPHEMERAL_SEQUENTIAL()
         {
             @Override
-            protected CreateMode getCreateMode()
+            protected CreateMode getCreateMode(boolean pathIsSet)
             {
-                return CreateMode.EPHEMERAL_SEQUENTIAL;
+                return pathIsSet ? CreateMode.EPHEMERAL : CreateMode.EPHEMERAL_SEQUENTIAL;
             }
 
             @Override
@@ -202,21 +185,13 @@ public class PersistentEphemeralNode implements Closeable
             {
                 return true;
             }
-
-            @Override
-            protected boolean isSequential()
-            {
-                return true;
-            }
         }
 
         ;
 
-        protected abstract CreateMode getCreateMode();
+        protected abstract CreateMode getCreateMode(boolean pathIsSet);
 
         protected abstract boolean isProtected();
-
-        protected abstract boolean isSequential();
     }
 
     /**
@@ -235,7 +210,7 @@ public class PersistentEphemeralNode implements Closeable
         String parentDir = ZKPaths.getPathAndNode(basePath).getPath();
         ensurePath = client.newNamespaceAwareEnsurePath(parentDir);
 
-        BackgroundCallback        backgroundCallback = new BackgroundCallback()
+        backgroundCallback = new BackgroundCallback()
         {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
@@ -254,7 +229,7 @@ public class PersistentEphemeralNode implements Closeable
                     nodePath.set(path);
                     watchNode();
 
-                    CountDownLatch      localLatch = initialCreateLatch;
+                    CountDownLatch localLatch = initialCreateLatch;
                     initialCreateLatch = null;
                     if ( localLatch != null )
                     {
@@ -268,7 +243,7 @@ public class PersistentEphemeralNode implements Closeable
             }
         };
 
-        createMethod = makeCreateMethod(client, mode, backgroundCallback);
+        createMethod = mode.isProtected() ? client.create().withProtection() : client.create();
         this.data = Arrays.copyOf(data, data.length);
     }
 
@@ -352,12 +327,8 @@ public class PersistentEphemeralNode implements Closeable
 
         try
         {
-            if ( mode.isSequential() )
-            {
-                deleteNode();
-            }
             ensurePath.ensure(client.getZookeeperClient());
-            createMethod.forPath(basePath, data);
+            createMethod.withMode(mode.getCreateMode(false)).inBackground(backgroundCallback).forPath(basePath, data);
         }
         catch ( Exception e )
         {
@@ -389,11 +360,5 @@ public class PersistentEphemeralNode implements Closeable
     private boolean isActive()
     {
         return (state.get() == State.STARTED) && !isSuspended.get();
-    }
-
-    private static PathAndBytesable<String> makeCreateMethod(CuratorFramework curator, Mode mode, BackgroundCallback backgroundCallback)
-    {
-        CreateModable<ACLBackgroundPathAndBytesable<String>> builder = mode.isProtected() ? curator.create().withProtection() : curator.create();
-        return builder.withMode(mode.getCreateMode()).inBackground(backgroundCallback);
     }
 }
