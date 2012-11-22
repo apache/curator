@@ -18,25 +18,83 @@
 
 package com.netflix.curator.x.discovery.server.contexts;
 
-import java.util.Map;
-
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
-
+import com.google.common.collect.Maps;
 import com.netflix.curator.x.discovery.ProviderStrategy;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ObjectNode;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * For convenience, a version of {@link DiscoveryContext} that uses a String-to-String map as the
  * payload
  */
 @Provider
-public class MapDiscoveryContext extends GenericDiscoveryContext<Map<String, String>> implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
+public class MapDiscoveryContext implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
 {
+    private final ServiceDiscovery<Map<String, String>> serviceDiscovery;
+    private final ProviderStrategy<Map<String, String>> providerStrategy;
+    private final int instanceRefreshMs;
+
     public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, ProviderStrategy<Map<String, String>> providerStrategy, int instanceRefreshMs)
     {
-    	super(serviceDiscovery, providerStrategy, instanceRefreshMs, Map.class);
-    	
+        this.serviceDiscovery = serviceDiscovery;
+        this.providerStrategy = providerStrategy;
+        this.instanceRefreshMs = instanceRefreshMs;
+    }
+
+    @Override
+    public ProviderStrategy<Map<String, String>> getProviderStrategy()
+    {
+        return providerStrategy;
+    }
+
+    @Override
+    public int getInstanceRefreshMs()
+    {
+        return instanceRefreshMs;
+    }
+
+    @Override
+    public ServiceDiscovery<Map<String, String>> getServiceDiscovery()
+    {
+        return serviceDiscovery;
+    }
+
+    @Override
+    public void marshallJson(ObjectNode node, String fieldName, Map<String, String> map) throws Exception
+    {
+        if ( map == null )
+        {
+            map = Maps.newHashMap();
+        }
+        ObjectNode objectNode = node.putObject(fieldName);
+        for ( Map.Entry<String, String> entry : map.entrySet() )
+        {
+            objectNode.put(entry.getKey(), entry.getValue());
+        }
+    }
+
+    @Override
+    public Map<String, String> unMarshallJson(JsonNode node) throws Exception
+    {
+        Map<String, String>                     map = Maps.newHashMap();
+        Iterator<Map.Entry<String,JsonNode>> fields = node.getFields();
+        while ( fields.hasNext() )
+        {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            map.put(entry.getKey(), entry.getValue().asText());
+        }
+        return map;
+    }
+
+    @Override
+    public DiscoveryContext<Map<String, String>> getContext(Class<?> type)
+    {
+        return this;
     }
 }
