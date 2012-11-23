@@ -140,5 +140,11 @@ public class TestMapsWithJersey
         Assert.assertEquals(instances.getServices().size(), 1);
         Assert.assertEquals(instances.getServices().get(0), service);
         Assert.assertEquals(instances.getServices().get(0).getPayload(), payload);
+
+        // Retrieve a single instance
+        GenericType<ServiceInstance<Map<String, String>>> singleInstanceType = new GenericType<ServiceInstance<Map<String, String>>>(){};
+        ServiceInstance<Map<String, String>>    instance = resource.path("/v1/service/test/" + service.getId()).get(singleInstanceType);
+        Assert.assertEquals(instance, service);
+
     }
 }

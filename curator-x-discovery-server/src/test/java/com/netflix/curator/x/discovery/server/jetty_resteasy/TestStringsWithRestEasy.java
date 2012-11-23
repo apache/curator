@@ -99,6 +99,12 @@ public class TestStringsWithRestEasy
         ServiceInstances<String> instances = restEasySingletons.serviceInstancesMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
         Assert.assertEquals(instances.getServices().size(), 1);
         Assert.assertEquals(instances.getServices().get(0), service);
+
+        // Retrieve single instance
+        json = getJson("http://localhost:8080/v1/service/test/" + service.getId(), null);
+        ServiceInstance<String> instance = restEasySingletons.serviceInstanceMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
+        Assert.assertEquals(instance, service);
+
     }
 
     @Test
