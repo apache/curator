@@ -129,8 +129,17 @@ public abstract class DiscoveryResource<T>
         return Response.ok().build();
     }
 
+    @Deprecated
     @GET
     @Path("{name}/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response     getDeprecated(@PathParam("name") String name, @PathParam("id") String id)
+    {
+    	return get(name, id);
+    }
+    
+    @GET
+    @Path("v1/service/{name}/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response     get(@PathParam("name") String name, @PathParam("id") String id)
     {

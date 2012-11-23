@@ -133,6 +133,11 @@ public class TestStringsWithJersey
         ServiceInstances<String> instances = resource.path("/v1/service/test").get(type);
         Assert.assertEquals(instances.getServices().size(), 1);
         Assert.assertEquals(instances.getServices().get(0), service);
+
+        // Retrieve a single instance
+        GenericType<ServiceInstance<String>> singleInstanceType = new GenericType<ServiceInstance<String>>(){};
+        ServiceInstance<String>    instance = resource.path("/v1/service/test/" + service.getId()).get(singleInstanceType);
+        Assert.assertEquals(instance, service);
     }
 
     @Test
