@@ -23,6 +23,8 @@ interface, getData().
 
 * Pull 209 - Fixed inconsistent API for get() in DiscoveryResource.java - thanks to user dougnukem
 
+* Issue 211 - Added getState() method to CuratorFramework.
+
 1.2.4 - November 2, 2012
 ========================
 * Depend on ZooKeeper 3.4.4

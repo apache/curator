@@ -20,6 +20,7 @@ package com.netflix.curator.framework;
 import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.framework.api.*;
 import com.netflix.curator.framework.api.transaction.CuratorTransaction;
+import com.netflix.curator.framework.imps.CuratorFrameworkState;
 import com.netflix.curator.framework.listen.Listenable;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
@@ -41,9 +42,17 @@ public interface CuratorFramework extends Closeable
     public void     close();
 
     /**
+     * Returns the state of this instance
+     *
+     * @return state
+     */
+    public CuratorFrameworkState getState();
+
+    /**
      * Return true if the client is started, not closed, etc.
      *
      * @return true/false
+     * @deprecated use {@link #getState()} instead
      */
     public boolean  isStarted();
 
