@@ -16,27 +16,25 @@
  *  
  */
 
-package com.netflix.curator.x.discovery.server.contexts;
-
-import java.util.Map;
+package com.netflix.curator.x.discovery.server.jetty_jersey;
 
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 
 import com.netflix.curator.x.discovery.ProviderStrategy;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
+import com.netflix.curator.x.discovery.server.contexts.GenericDiscoveryContext;
 import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
 
 /**
- * For convenience, a version of {@link DiscoveryContext} that uses a String-to-String map as the
- * payload
+ * A DiscoveryContext that maps a concrete payload object of ServiceDetails
  */
 @Provider
-public class MapDiscoveryContext extends GenericDiscoveryContext<Map<String, String>> implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
+public class ServiceDetailsDiscoveryContext extends GenericDiscoveryContext<ServiceDetails> implements DiscoveryContext<ServiceDetails>, ContextResolver<DiscoveryContext<ServiceDetails>>
 {
-    public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, ProviderStrategy<Map<String, String>> providerStrategy, int instanceRefreshMs)
+    public ServiceDetailsDiscoveryContext(ServiceDiscovery<ServiceDetails> serviceDiscovery, ProviderStrategy<ServiceDetails> providerStrategy, int instanceRefreshMs)
     {
-    	super(serviceDiscovery, providerStrategy, instanceRefreshMs, Map.class);
+    	super(serviceDiscovery, providerStrategy, instanceRefreshMs, ServiceDetails.class);
     	
     }
 }
