@@ -1,8 +1,25 @@
+/*
+ * Copyright 2012 Netflix, Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.netflix.curator.x.discovery.server.contexts;
 
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 
+import com.google.inject.TypeLiteral;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
@@ -12,9 +29,7 @@ import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
 
 /**
- * For convenience, a version of {@link DiscoveryContext} that allows a user to
- * specify their own custom type as the payload.
- * 
+ * For convenience, a version of {@link DiscoveryContext} that uses any generic type as the payload
  */
 @Provider
 public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextResolver<DiscoveryContext<T>>
@@ -22,14 +37,14 @@ public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextR
     private final ServiceDiscovery<T> serviceDiscovery;
     private final ProviderStrategy<T> providerStrategy;
     private final int instanceRefreshMs;
-    
-    /**
-     *  payloadType is wildcard Class<?> it could be Class<T> except when dealing with situations like
-     *  Map<String,String> which cannot be referenced explicitly and instead can only be referenced as Map.class.
-     */
-    private final Class<?> payloadType;
+    private final TypeLiteral<T> payloadType;   // in the future - replace TypeLiteral with corresponding api from Guava 13
 
-    public GenericDiscoveryContext(ServiceDiscovery<T> serviceDiscovery, ProviderStrategy<T> providerStrategy, int instanceRefreshMs, Class<?> payloadType)
+    public GenericDiscoveryContext(ServiceDiscovery<T> serviceDiscovery, ProviderStrategy<T> providerStrategy, int instanceRefreshMs, Class<T> payloadType)
+    {
+        this(serviceDiscovery, providerStrategy, instanceRefreshMs, TypeLiteral.get(payloadType));
+    }
+
+    public GenericDiscoveryContext(ServiceDiscovery<T> serviceDiscovery, ProviderStrategy<T> providerStrategy, int instanceRefreshMs, TypeLiteral<T> payloadType)
     {
         this.serviceDiscovery = serviceDiscovery;
         this.providerStrategy = providerStrategy;
@@ -55,26 +70,25 @@ public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextR
         return serviceDiscovery;
     }
 
-    @SuppressWarnings("unchecked") // because payloadType is Class<?> instead of Class<T> because of generic generics like Map<String,String>
 	@Override
     public void marshallJson(ObjectNode node, String fieldName, T payload) throws Exception
     {
         if ( payload == null )
         {
-        	payload = (T) payloadType.newInstance();
+            //noinspection unchecked
+            payload = (T)payloadType.getRawType().newInstance();
         }
         
         node.putPOJO(fieldName, payload);
-        
     }
 
-    @SuppressWarnings("unchecked") // 
 	@Override
     public T unMarshallJson(JsonNode node) throws Exception
     {
         T payload;
         ObjectMapper mapper = new ObjectMapper();
-        payload = (T) mapper.readValue(node, payloadType);
+        //noinspection unchecked
+        payload = (T)mapper.readValue(node, payloadType.getRawType());
         return payload;
     }
 

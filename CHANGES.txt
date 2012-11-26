@@ -29,6 +29,9 @@ interface, getData().
 ServiceDiscovery: updateService(). NOTE: this method requires all ServiceDiscovery instances to be using
 version 1.2.5 of Curator. Internally, ServiceCache now uses PathChildrenCache.
 
+* Pull 210 - For convenience, a version of {@link DiscoveryContext} that uses any generic type as the
+payload. Thanks to user dougnukem.
+
 1.2.4 - November 2, 2012
 ========================
 * Depend on ZooKeeper 3.4.4
