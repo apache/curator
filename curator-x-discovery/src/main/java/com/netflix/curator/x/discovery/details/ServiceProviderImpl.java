@@ -35,11 +35,11 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
     private final ServiceDiscoveryImpl<T> discovery;
     private final ProviderStrategy<T> providerStrategy;
 
-    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, int refreshPaddingMs)
+    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory)
     {
         this.discovery = discovery;
         this.providerStrategy = providerStrategy;
-        cache = discovery.serviceCacheBuilder().name(serviceName).refreshPaddingMs(refreshPaddingMs).threadFactory(threadFactory).build();
+        cache = discovery.serviceCacheBuilder().name(serviceName).threadFactory(threadFactory).build();
     }
 
     /**

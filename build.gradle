@@ -104,7 +104,7 @@ project(':curator-x-discovery')
 {
     dependencies
     {
-        compile project(':curator-framework')
+        compile project(':curator-recipes')
         compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.2'
         testCompile project(':curator-test')
     }

@@ -117,7 +117,7 @@ public class TestServiceCache
             cache.start();
 
             instance = ServiceInstance.<String>builder().payload("changed").name("test").port(10064).id(instance.getId()).build();
-            discovery.registerService(instance);
+            discovery.updateService(instance);
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
 

@@ -47,7 +47,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A mechanism to register and query service instances using ZooKeeper
@@ -80,8 +79,6 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
         }
     };
-
-    public static final int DEFAULT_REFRESH_PADDING = (int)TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS);
 
     /**
      * @param client the client
@@ -152,6 +149,16 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         internalRegisterService(service);
     }
 
+    @Override
+    public void updateService(ServiceInstance<T> service) throws Exception
+    {
+        Preconditions.checkArgument(services.containsKey(service.getId()), "Service is not registered: " + service);
+
+        byte[]          bytes = serializer.serialize(service);
+        String          path = pathForInstance(service.getName(), service.getId());
+        client.setData().forPath(path, bytes);
+    }
+
     @VisibleForTesting
     protected void     internalRegisterService(ServiceInstance<T> service) throws Exception
     {
@@ -207,8 +214,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         return new ServiceProviderBuilderImpl<T>(this)
             .providerStrategy(new RoundRobinStrategy<T>())
-            .threadFactory(ThreadUtils.newThreadFactory("ServiceProvider"))
-            .refreshPaddingMs(ServiceDiscoveryImpl.DEFAULT_REFRESH_PADDING);
+            .threadFactory(ThreadUtils.newThreadFactory("ServiceProvider"));
     }
 
     /**
@@ -220,8 +226,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     public ServiceCacheBuilder<T> serviceCacheBuilder()
     {
         return new ServiceCacheBuilderImpl<T>(this)
-            .threadFactory(ThreadUtils.newThreadFactory("ServiceCache"))
-            .refreshPaddingMs(DEFAULT_REFRESH_PADDING);
+            .threadFactory(ThreadUtils.newThreadFactory("ServiceCache"));
     }
 
     /**
@@ -299,6 +304,16 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         return client;
     }
 
+    String  pathForName(String name)
+    {
+        return ZKPaths.makePath(basePath, name);
+    }
+
+    InstanceSerializer<T> getSerializer()
+    {
+        return serializer;
+    }
+
     List<ServiceInstance<T>>  queryForInstances(String name, Watcher watcher) throws Exception
     {
         ImmutableList.Builder<ServiceInstance<T>>   builder = ImmutableList.builder();
@@ -364,11 +379,6 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private String  pathForInstance(String name, String id) throws UnsupportedEncodingException
     {
         return ZKPaths.makePath(pathForName(name), id);
-    }
-
-    private String  pathForName(String name) throws UnsupportedEncodingException
-    {
-        return ZKPaths.makePath(basePath, name);
     }
 
     private void reRegisterServices() throws Exception

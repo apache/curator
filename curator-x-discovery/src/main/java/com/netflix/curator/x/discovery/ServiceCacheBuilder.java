@@ -44,13 +44,4 @@ public interface ServiceCacheBuilder<T>
      * @return this
      */
     public ServiceCacheBuilder<T> threadFactory(ThreadFactory threadFactory);
-
-    /**
-     * To avoid herding in noisy scenarios, the cache should be padded to only update 1 per period.
-     * The refresh padding is that period in milliseconds. Set to 0 to turn off padding.
-     *
-     * @param refreshPaddingMs padding in milliseconds
-     * @return this
-     */
-    public ServiceCacheBuilder<T> refreshPaddingMs(int refreshPaddingMs);
 }

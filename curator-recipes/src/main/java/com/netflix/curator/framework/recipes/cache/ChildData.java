@@ -17,18 +17,19 @@ package com.netflix.curator.framework.recipes.cache;
 
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ChildData implements Comparable<ChildData>
 {
     private final String    path;
     private final Stat      stat;
-    private final byte[]    data;
+    private final AtomicReference<byte[]>    data;
 
     ChildData(String path, Stat stat, byte[] data)
     {
         this.path = path;
         this.stat = stat;
-        this.data = data;
+        this.data = new AtomicReference<byte[]>(data);
     }
 
     /**
@@ -66,7 +67,7 @@ public class ChildData implements Comparable<ChildData>
 
         ChildData childData = (ChildData)o;
 
-        if ( !Arrays.equals(data, childData.data) )
+        if ( !Arrays.equals(data.get(), childData.data.get()) )
         {
             return false;
         }
@@ -87,7 +88,7 @@ public class ChildData implements Comparable<ChildData>
     {
         int result = path != null ? path.hashCode() : 0;
         result = 31 * result + (stat != null ? stat.hashCode() : 0);
-        result = 31 * result + (data != null ? Arrays.hashCode(data) : 0);
+        result = 31 * result + (data != null ? Arrays.hashCode(data.get()) : 0);
         return result;
     }
 
@@ -121,7 +122,12 @@ public class ChildData implements Comparable<ChildData>
      */
     public byte[] getData()
     {
-        return data;
+        return data.get();
+    }
+
+    void clearData()
+    {
+        data.set(null);
     }
 
     @Override
@@ -130,7 +136,7 @@ public class ChildData implements Comparable<ChildData>
         return "ChildData{" +
             "path='" + path + '\'' +
             ", stat=" + stat +
-            ", data=" + Arrays.toString(data) +
+            ", data=" + Arrays.toString(data.get()) +
             '}';
     }
 }

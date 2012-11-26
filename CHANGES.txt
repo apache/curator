@@ -25,6 +25,10 @@ interface, getData().
 
 * Issue 211 - Added getState() method to CuratorFramework.
 
+* Issue 212 - There wasn't a good way to update the data for a Service. I've added a new method
+ServiceDiscovery: updateService(). NOTE: this method requires all ServiceDiscovery instances to be using
+version 1.2.5 of Curator. Internally, ServiceCache now uses PathChildrenCache.
+
 1.2.4 - November 2, 2012
 ========================
 * Depend on ZooKeeper 3.4.4

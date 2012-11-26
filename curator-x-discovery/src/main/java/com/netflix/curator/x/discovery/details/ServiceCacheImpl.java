@@ -17,42 +17,32 @@ package com.netflix.curator.x.discovery.details;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.io.Closeables;
+import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.listen.ListenerContainer;
-import com.netflix.curator.x.discovery.ServiceInstance;
+import com.netflix.curator.framework.recipes.cache.ChildData;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCacheListener;
+import com.netflix.curator.utils.ZKPaths;
 import com.netflix.curator.x.discovery.ServiceCache;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.netflix.curator.x.discovery.ServiceInstance;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ServiceCacheImpl<T> implements ServiceCache<T>
+public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheListener
 {
-    private final Logger                                            log = LoggerFactory.getLogger(getClass());
     private final ListenerContainer<ServiceCacheListener>           listenerContainer = new ListenerContainer<ServiceCacheListener>();
-    private final ServiceDiscoveryImpl<T> discovery;
-    private final String                                            name;
-    private final int                                               refreshPaddingMs;
-    private final ExecutorService                                   executorService;
-    private final Latch refreshLatch = new Latch();
+    private final ServiceDiscoveryImpl<T>                           discovery;
     private final AtomicReference<State>                            state = new AtomicReference<State>(State.LATENT);
-    private final AtomicReference<List<ServiceInstance<T>>>         instances = new AtomicReference<List<ServiceInstance<T>>>(ImmutableList.<ServiceInstance<T>>of());
-    private final Watcher                                           watcher = new Watcher()
-    {
-        @Override
-        public void process(WatchedEvent event)
-        {
-            refreshLatch.set();
-        }
-    };
+    private final PathChildrenCache                                 cache;
+    private final Map<String, ServiceInstance<T>>                   instances = Maps.newConcurrentMap();
 
     private enum State
     {
@@ -61,42 +51,28 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>
         STOPPED
     }
 
-    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory, int refreshPaddingMs)
+    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory)
     {
         Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
-        Preconditions.checkArgument(refreshPaddingMs >= 0, "refreshPaddingMs cannot be negative");
 
         this.discovery = discovery;
-        this.name = name;
-        this.refreshPaddingMs = refreshPaddingMs;
 
-        executorService = Executors.newSingleThreadExecutor(threadFactory);
+        cache = new PathChildrenCache(discovery.getClient(), discovery.pathForName(name), true, threadFactory);
+        cache.getListenable().addListener(this);
     }
 
-    @Override public List<ServiceInstance<T>> getInstances()
+    @Override
+    public List<ServiceInstance<T>> getInstances()
     {
-        return instances.get();
+        return Lists.newArrayList(instances.values());
     }
 
-    @Override public void start() throws Exception
+    @Override
+    public void start() throws Exception
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        executorService.submit
-        (
-            new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
-                {
-                    doWork();
-                    return null;
-                }
-            }
-        );
-
-        refresh(false);
-        
+        cache.start(true);
         discovery.cacheOpened(this);
     }
 
@@ -119,8 +95,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>
             );
         listenerContainer.clear();
 
-        // Interrupt our own worker thread and shutdown thread pool
-        executorService.shutdownNow();
+        Closeables.closeQuietly(cache);
 
         discovery.cacheClosed(this);
     }
@@ -146,54 +121,55 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>
         discovery.getClient().getConnectionStateListenable().removeListener(listener);
     }
 
-    private void doWork()
+    @Override
+    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
     {
-        while ( !Thread.currentThread().isInterrupted() )
+        boolean         notifyListeners = false;
+        switch ( event.getType() )
         {
-            try
+            case CHILD_ADDED:
+            case CHILD_UPDATED:
             {
-                if ( refreshPaddingMs > 0 )
-                {
-                    Thread.sleep(refreshPaddingMs);
-                }
-                
-                refreshLatch.await();
-                refresh(true);
+                addInstance(event.getData());
+                notifyListeners = true;
+                break;
             }
-            catch ( InterruptedException e )
+
+            case CHILD_REMOVED:
             {
-                Thread.currentThread().interrupt();
+                instances.remove(instanceIdFromData(event.getData()));
+                notifyListeners = true;
                 break;
             }
         }
+
+        if ( notifyListeners )
+        {
+            listenerContainer.forEach
+            (
+                new Function<ServiceCacheListener, Void>()
+                {
+                    @Override
+                    public Void apply(ServiceCacheListener listener)
+                    {
+                        listener.cacheChanged();
+                        return null;
+                    }
+                }
+            );
+        }
     }
 
-    private void refresh(boolean notifyListeners)
+    private String instanceIdFromData(ChildData childData)
     {
-        try
-        {
-            List<ServiceInstance<T>> theInstances = discovery.queryForInstances(name, watcher);
-            instances.set(theInstances);
+        return ZKPaths.getNodeFromPath(childData.getPath());
+    }
 
-            if ( notifyListeners )
-            {
-                listenerContainer.forEach
-                (
-                    new Function<ServiceCacheListener, Void>()
-                    {
-                        @Override
-                        public Void apply(ServiceCacheListener listener)
-                        {
-                            listener.cacheChanged();
-                            return null;
-                        }
-                    }
-                );
-            }
-        }
-        catch ( Exception e )
-        {
-            log.error("ServiceCache.refresh()", e);
-        }
+    private void addInstance(ChildData childData) throws Exception
+    {
+        String                  instanceId = instanceIdFromData(childData);
+        ServiceInstance<T>      serviceInstance = discovery.getSerializer().deserialize(childData.getData());
+        instances.put(instanceId, serviceInstance);
+        cache.clearDataBytes(childData.getPath());
     }
 }
