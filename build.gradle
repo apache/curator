@@ -118,7 +118,6 @@ project(':curator-x-discovery-server')
         compile 'javax.ws.rs:jsr311-api:1.1.1'
         compile 'com.google.inject:guice:3.0'   // only for TypeLiteral - in the future will be replaced by Guava 13
         testCompile project(':curator-test')
-        testCompile 'junit:junit-dep:4.10'
         testCompile 'com.sun.jersey:jersey-server:1.11'
         testCompile 'com.sun.jersey:jersey-servlet:1.11'
         testCompile 'com.sun.jersey:jersey-client:1.11'

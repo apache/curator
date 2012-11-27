@@ -29,12 +29,12 @@ import junit.framework.Assert;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 import javax.ws.rs.core.MediaType;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -51,7 +51,7 @@ public class TestStringsWithRestEasy
 {
     private Server server;
 
-    @Before
+    @BeforeMethod
     public void         setup() throws Exception
     {
         RestEasyApplication.singletonsRef.set(new RestEasySingletons());
@@ -68,7 +68,7 @@ public class TestStringsWithRestEasy
         server.start();
     }
     
-    @After
+    @AfterMethod
     public void         teardown() throws Exception
     {
         server.stop();

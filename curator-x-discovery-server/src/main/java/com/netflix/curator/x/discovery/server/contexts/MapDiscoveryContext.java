@@ -22,6 +22,7 @@ import com.google.inject.TypeLiteral;
 import com.netflix.curator.x.discovery.ProviderStrategy;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
+import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ import java.util.Map;
  * payload
  */
 @Provider
-public class MapDiscoveryContext extends GenericDiscoveryContext<Map<String, String>>
+public class MapDiscoveryContext extends GenericDiscoveryContext<Map<String, String>> implements ContextResolver<DiscoveryContext<Map<String, String>>>
 {
     public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, ProviderStrategy<Map<String, String>> providerStrategy, int instanceRefreshMs)
     {
