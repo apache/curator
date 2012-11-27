@@ -30,8 +30,7 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
     private ServiceDiscoveryImpl<T> discovery;
     private String name;
     private ThreadFactory threadFactory;
-    private int refreshPaddingMs;
-    
+
     ServiceCacheBuilderImpl(ServiceDiscoveryImpl<T> discovery)
     {
         this.discovery = discovery;
@@ -45,7 +44,7 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
     @Override
     public ServiceCache<T> build()
     {
-        return new ServiceCacheImpl<T>(discovery, name, threadFactory, refreshPaddingMs);
+        return new ServiceCacheImpl<T>(discovery, name, threadFactory);
     }
 
     /**
@@ -71,20 +70,6 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
     public ServiceCacheBuilder<T> threadFactory(ThreadFactory threadFactory)
     {
         this.threadFactory = threadFactory;
-        return this;
-    }
-
-    /**
-     * To avoid herding in noisy scenarios, the cache should be padded to only update 1 per period.
-     * The refresh padding is that period in milliseconds. Set to 0 to turn off padding.
-     *
-     * @param refreshPaddingMs padding in milliseconds
-     * @return this
-     */
-    @Override
-    public ServiceCacheBuilder<T> refreshPaddingMs(int refreshPaddingMs)
-    {
-        this.refreshPaddingMs = refreshPaddingMs;
         return this;
     }
 }

@@ -171,7 +171,7 @@ public class Reaper implements Closeable
      */
     public void start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
     }
 
     @Override

@@ -324,6 +324,21 @@ public class PathChildrenCache implements Closeable
     }
 
     /**
+     * As a memory optimization, you can clear the cached data bytes for a node. Subsequent
+     * calls to {@link ChildData#getData()} for this node will return <code>null</code>.
+     *
+     * @param fullPath the path of the node to clear
+     */
+    public void         clearDataBytes(String fullPath)
+    {
+        ChildData data = currentData.get(fullPath);
+        if ( data != null )
+        {
+            data.clearData();
+        }
+    }
+
+    /**
      * Clear out current data and begin a new query on the path
      *
      * @throws Exception errors

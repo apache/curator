@@ -25,7 +25,7 @@ subprojects {
     group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
 
     dependencies {
-        compile('org.apache.zookeeper:zookeeper:3.4.4')
+        compile('org.apache.zookeeper:zookeeper:3.4.5')
         {
             exclude group: 'com.sun.jmx', module: 'jmxri'
             exclude group: 'com.sun.jdmk', module: 'jmxtools'
@@ -104,7 +104,7 @@ project(':curator-x-discovery')
 {
     dependencies
     {
-        compile project(':curator-framework')
+        compile project(':curator-recipes')
         compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.2'
         testCompile project(':curator-test')
     }
@@ -116,8 +116,8 @@ project(':curator-x-discovery-server')
     {
         compile project(':curator-x-discovery')
         compile 'javax.ws.rs:jsr311-api:1.1.1'
+        compile 'com.google.inject:guice:3.0'   // only for TypeLiteral - in the future will be replaced by Guava 13
         testCompile project(':curator-test')
-        testCompile 'junit:junit-dep:4.10'
         testCompile 'com.sun.jersey:jersey-server:1.11'
         testCompile 'com.sun.jersey:jersey-servlet:1.11'
         testCompile 'com.sun.jersey:jersey-client:1.11'

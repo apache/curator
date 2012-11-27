@@ -18,25 +18,23 @@
 
 package com.netflix.curator.x.discovery.server.contexts;
 
-import java.util.Map;
-
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
-
+import com.google.inject.TypeLiteral;
 import com.netflix.curator.x.discovery.ProviderStrategy;
 import com.netflix.curator.x.discovery.ServiceDiscovery;
 import com.netflix.curator.x.discovery.server.rest.DiscoveryContext;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
+import java.util.Map;
 
 /**
  * For convenience, a version of {@link DiscoveryContext} that uses a String-to-String map as the
  * payload
  */
 @Provider
-public class MapDiscoveryContext extends GenericDiscoveryContext<Map<String, String>> implements DiscoveryContext<Map<String, String>>, ContextResolver<DiscoveryContext<Map<String, String>>>
+public class MapDiscoveryContext extends GenericDiscoveryContext<Map<String, String>> implements ContextResolver<DiscoveryContext<Map<String, String>>>
 {
     public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, ProviderStrategy<Map<String, String>> providerStrategy, int instanceRefreshMs)
     {
-    	super(serviceDiscovery, providerStrategy, instanceRefreshMs, Map.class);
-    	
+    	super(serviceDiscovery, providerStrategy, instanceRefreshMs, new TypeLiteral<Map<String, String>>(){});
     }
 }

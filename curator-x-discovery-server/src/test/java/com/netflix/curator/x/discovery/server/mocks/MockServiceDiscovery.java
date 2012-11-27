@@ -66,6 +66,12 @@ public class MockServiceDiscovery<T> implements ServiceDiscovery<T>
     }
 
     @Override
+    public void updateService(ServiceInstance<T> service) throws Exception
+    {
+        services.put(service.getName(), service);
+    }
+
+    @Override
     public ServiceCacheBuilder<T> serviceCacheBuilder()
     {
         throw new UnsupportedOperationException();

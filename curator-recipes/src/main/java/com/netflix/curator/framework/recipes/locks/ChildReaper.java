@@ -101,7 +101,7 @@ public class ChildReaper implements Closeable
      */
     public void start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         task = executor.scheduleWithFixedDelay
         (

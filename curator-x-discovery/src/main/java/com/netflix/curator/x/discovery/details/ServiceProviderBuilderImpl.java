@@ -43,7 +43,7 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     @Override
     public ServiceProvider<T> build()
     {
-        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, refreshPaddingMs);
+        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory);
     }
 
     ServiceProviderBuilderImpl(ServiceDiscoveryImpl<T> discovery)

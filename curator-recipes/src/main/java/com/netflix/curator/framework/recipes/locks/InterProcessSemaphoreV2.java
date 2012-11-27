@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.recipes.shared.SharedCountListener;
 import com.netflix.curator.framework.recipes.shared.SharedCountReader;
 import com.netflix.curator.framework.state.ConnectionState;
@@ -30,6 +31,7 @@ import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -81,6 +83,7 @@ public class InterProcessSemaphoreV2
         }
     };
 
+    private volatile byte[]             nodeData;
     private volatile int                maxLeases;
 
     private static final String     LOCK_PARENT = "locks";
@@ -134,6 +137,28 @@ public class InterProcessSemaphoreV2
                 }
             );
         }
+    }
+
+    /**
+     * Set the data to put for the node created by this semaphore. This must be called prior to calling one
+     * of the acquire() methods.
+     *
+     * @param nodeData node data
+     */
+    public void     setNodeData(byte[] nodeData)
+    {
+        this.nodeData = (nodeData != null) ? Arrays.copyOf(nodeData, nodeData.length) : null;
+    }
+
+    /**
+     * Return a list of all current nodes participating in the semaphore
+     *
+     * @return list of nodes
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Collection<String>   getParticipantNodes() throws Exception
+    {
+        return client.getChildren().forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
     }
 
     /**
@@ -260,8 +285,9 @@ public class InterProcessSemaphoreV2
                 }
                 try
                 {
-                    String          path = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
-                    String          nodeName = ZKPaths.getNodeFromPath(path);
+                    PathAndBytesable<String>    createBuilder = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
+                    String                      path = (nodeData != null) ? createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME), nodeData) : createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
+                    String                      nodeName = ZKPaths.getNodeFromPath(path);
                     builder.add(makeLease(path));
 
                     synchronized(this)
@@ -338,6 +364,12 @@ public class InterProcessSemaphoreV2
                 {
                     throw new IOException(e);
                 }
+            }
+
+            @Override
+            public byte[] getData() throws Exception
+            {
+                return client.getData().forPath(path);
             }
         };
     }

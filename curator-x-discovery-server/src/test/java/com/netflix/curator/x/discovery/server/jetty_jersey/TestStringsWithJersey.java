@@ -38,12 +38,12 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.core.DefaultResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import junit.framework.Assert;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 import java.util.Set;
@@ -56,7 +56,7 @@ public class TestStringsWithJersey
     private JsonServiceInstancesMarshaller<String> serviceInstancesMarshaller;
     private StringDiscoveryContext context;
 
-    @Before
+    @BeforeMethod
     public void         setup() throws Exception
     {
         context = new StringDiscoveryContext(new MockServiceDiscovery<String>(), new RandomStrategy<String>(), 1000);
@@ -93,7 +93,7 @@ public class TestStringsWithJersey
         server.start();
     }
     
-    @After
+    @AfterMethod
     public void         teardown() throws Exception
     {
         server.stop();

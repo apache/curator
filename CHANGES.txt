@@ -1,5 +1,7 @@
 1.2.5 - xxxxxxxxxxxxxxxx
 ========================
+* Depend on ZooKeeper 3.4.5
+
 * Issue 177: PathChildrenCache wasn't shutting down the executor when closed. Also, reworked the event
 queue to avoid potential herding of messages in unstable conditions. The herding could result in runaway
 memory allocation as reported in the issue. NOTE: due to this change, the PathChildrenCache node
@@ -13,6 +15,22 @@ re-registered if there were connection problems.
 
 * Creating nodes withProtection() is now supported in the background. e.g.
 client.create().withProtection().inBackground()...
+
+* Added methods to InterProcessSemaphoreV2: setNodeData() and getParticipantNodes() and, to the Lease
+interface, getData().
+
+* Issue 205 - already started error message was misleading.
+
+* Pull 209 - Fixed inconsistent API for get() in DiscoveryResource.java - thanks to user dougnukem
+
+* Issue 211 - Added getState() method to CuratorFramework.
+
+* Issue 212 - There wasn't a good way to update the data for a Service. I've added a new method
+ServiceDiscovery: updateService(). NOTE: this method requires all ServiceDiscovery instances to be using
+version 1.2.5 of Curator. Internally, ServiceCache now uses PathChildrenCache.
+
+* Pull 210 - For convenience, a version of {@link DiscoveryContext} that uses any generic type as the
+payload. Thanks to user dougnukem.
 
 1.2.4 - November 2, 2012
 ========================

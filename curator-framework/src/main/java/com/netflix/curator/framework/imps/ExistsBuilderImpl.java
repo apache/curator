@@ -162,7 +162,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
                 public Stat call() throws Exception
                 {
                     Stat    returnStat;
-                    if ( watching.isWatched()  )
+                    if ( watching.isWatched() )
                     {
                         returnStat = client.getZooKeeper().exists(path, true);
                     }

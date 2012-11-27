@@ -161,7 +161,7 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public void     start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         try

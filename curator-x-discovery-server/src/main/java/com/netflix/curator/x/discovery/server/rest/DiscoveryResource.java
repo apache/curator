@@ -135,7 +135,7 @@ public abstract class DiscoveryResource<T>
     @Produces(MediaType.APPLICATION_JSON)
     public Response     getDeprecated(@PathParam("name") String name, @PathParam("id") String id)
     {
-    	return get(name, id);
+        return internalGet(name, id, true);
     }
     
     @GET
@@ -143,20 +143,7 @@ public abstract class DiscoveryResource<T>
     @Produces(MediaType.APPLICATION_JSON)
     public Response     get(@PathParam("name") String name, @PathParam("id") String id)
     {
-        try
-        {
-            ServiceInstance<T> instance = context.getServiceDiscovery().queryForInstance(name, id);
-            if ( instance == null )
-            {
-                return Response.status(Response.Status.NOT_FOUND).build();
-            }
-            return Response.ok(instance).build();
-        }
-        catch ( Exception e )
-        {
-            log.error(String.format("Trying to get instance (%s) from service (%s)", id, name), e);
-            return Response.serverError().build();
-        }
+        return internalGet(name, id, false);
     }
 
     @GET
@@ -222,6 +209,29 @@ public abstract class DiscoveryResource<T>
         catch ( Exception e )
         {
             log.error(String.format("Trying to get any instance from service (%s)", name), e);
+            return Response.serverError().build();
+        }
+    }
+
+    private Response internalGet(String name, String id, boolean addDeprecationHeader)
+    {
+        try
+        {
+            ServiceInstance<T> instance = context.getServiceDiscovery().queryForInstance(name, id);
+            if ( instance == null )
+            {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+            Response.ResponseBuilder builder = Response.ok(instance);
+            if ( addDeprecationHeader )
+            {
+                builder = builder.header("Warning", "This API has been deprecated. Please see the updated spec for the replacement API.");
+            }
+            return builder.build();
+        }
+        catch ( Exception e )
+        {
+            log.error(String.format("Trying to get instance (%s) from service (%s)", id, name), e);
             return Response.serverError().build();
         }
     }

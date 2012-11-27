@@ -32,12 +32,20 @@ public interface ServiceDiscovery<T> extends Closeable
     public void start() throws Exception;
 
     /**
-     * Register/re-register/update a service instance
+     * Register/re-register a service
      *
      * @param service service to add
      * @throws Exception errors
      */
     public void     registerService(ServiceInstance<T> service) throws Exception;
+
+    /**
+     * Update a service
+     *
+     * @param service service to update
+     * @throws Exception errors
+     */
+    public void     updateService(ServiceInstance<T> service) throws Exception;
 
     /**
      * Unregister/remove a service instance

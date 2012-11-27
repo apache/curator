@@ -74,13 +74,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
     volatile DebugBackgroundListener        debugListener = null;
 
-    private enum State
-    {
-        LATENT,
-        STARTED,
-        STOPPED
-    }
-    private final AtomicReference<State>                    state;
+    private final AtomicReference<CuratorFrameworkState>                    state;
 
     private static class AuthInfo
     {
@@ -136,7 +130,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
-        state = new AtomicReference<State>(State.LATENT);
+        state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
 
         byte[]      builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -178,19 +172,25 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
+    public CuratorFrameworkState getState()
+    {
+        return state.get();
+    }
+
+    @Override
     public boolean isStarted()
     {
-        return state.get() == State.STARTED;
+        return state.get() == CuratorFrameworkState.STARTED;
     }
 
     @Override
     public void     start()
     {
         log.info("Starting");
-        if ( !state.compareAndSet(State.LATENT, State.STARTED) )
+        if ( !state.compareAndSet(CuratorFrameworkState.LATENT, CuratorFrameworkState.STARTED) )
         {
             IllegalStateException error = new IllegalStateException();
-            log.error("Already started", error);
+            log.error("Cannot be started more than once", error);
             throw error;
         }
 
@@ -223,7 +223,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public void     close()
     {
         log.debug("Closing");
-        if ( state.compareAndSet(State.STARTED, State.STOPPED) )
+        if ( state.compareAndSet(CuratorFrameworkState.STARTED, CuratorFrameworkState.STOPPED) )
         {
             listeners.forEach
                 (

@@ -162,7 +162,7 @@ public class LeaderSelector implements Closeable
      */
     public void     start()
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         Preconditions.checkState(!executorService.isShutdown(), "Already started");
         Preconditions.checkState(!hasLeadership, "Already has leadership");
@@ -208,7 +208,7 @@ public class LeaderSelector implements Closeable
      */
     public void     close()
     {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed");
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
 
         client.getConnectionStateListenable().removeListener(listener);
         executorService.shutdownNow();

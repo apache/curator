@@ -29,8 +29,16 @@ public interface Lease extends Closeable
     /**
      * Releases the lease so that other clients/processes can acquire it
      *
-     * @throws IOException
+     * @throws IOException errors
      */
     @Override
     public void close() throws IOException;
+
+    /**
+     * Return the data stored in the node for this lease
+     *
+     * @return data
+     * @throws Exception errors
+     */
+    public byte[]   getData() throws Exception;
 }
