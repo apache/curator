@@ -1,3 +1,6 @@
+1.2.6 - xxxxxxxxxxxxxxxxx
+=========================
+
 1.2.5 - November 27, 2012
 =========================
 * Depend on ZooKeeper 3.4.5
