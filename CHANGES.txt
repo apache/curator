@@ -1,5 +1,5 @@
-1.2.5 - xxxxxxxxxxxxxxxx
-========================
+1.2.5 - November 27, 2012
+=========================
 * Depend on ZooKeeper 3.4.5
 
 * Issue 177: PathChildrenCache wasn't shutting down the executor when closed. Also, reworked the event
