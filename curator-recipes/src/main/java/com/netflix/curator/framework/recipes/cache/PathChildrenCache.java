@@ -243,27 +243,7 @@ public class PathChildrenCache implements Closeable
         for ( String child : children )
         {
             String  fullPath = ZKPaths.makePath(path, child);
-            if ( cacheData )
-            {
-                try
-                {
-                    Stat        stat = new Stat();
-                    byte[]      bytes = dataIsCompressed ? client.getData().decompressed().storingStatIn(stat).forPath(fullPath) : client.getData().storingStatIn(stat).forPath(fullPath);
-                    currentData.put(fullPath, new ChildData(fullPath, stat, bytes));
-                }
-                catch ( KeeperException.NoNodeException ignore )
-                {
-                    // ignore
-                }
-            }
-            else
-            {
-                Stat        stat = client.checkExists().forPath(fullPath);
-                if ( stat != null )
-                {
-                    currentData.put(fullPath, new ChildData(fullPath, stat, null));
-                }
-            }
+            internalRebuildNode(fullPath);
 
             if ( rebuildTestExchanger != null )
             {
@@ -272,6 +252,26 @@ public class PathChildrenCache implements Closeable
         }
 
         // this is necessary so that any updates that occurred while rebuilding are taken
+        offerOperation(new ForceRefreshOperation(this));
+    }
+
+    /**
+     * NOTE: this is a BLOCKING method. Rebuild the internal cache for the given node by querying
+     * for all needed data WITHOUT generating any events to send to listeners.
+     *
+     * @param fullPath full path of the node to rebuild
+     * @throws Exception errors
+     */
+    public void     rebuildNode(String fullPath) throws Exception
+    {
+        Preconditions.checkArgument(ZKPaths.getPathAndNode(fullPath).getPath().equals(path), "Node is not part of this cache: " + fullPath);
+        Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
+
+        ensurePath.ensure(client.getZookeeperClient());
+        internalRebuildNode(fullPath);
+
+        // this is necessary so that any updates that occurred while rebuilding are taken
+        // have to rebuild entire tree in case this node got deleted in the interim
         offerOperation(new ForceRefreshOperation(this));
     }
 
@@ -377,24 +377,24 @@ public class PathChildrenCache implements Closeable
     void callListeners(final PathChildrenCacheEvent event)
     {
         listeners.forEach
-            (
-                new Function<PathChildrenCacheListener, Void>()
+        (
+            new Function<PathChildrenCacheListener, Void>()
+            {
+                @Override
+                public Void apply(PathChildrenCacheListener listener)
                 {
-                    @Override
-                    public Void apply(PathChildrenCacheListener listener)
+                    try
                     {
-                        try
-                        {
-                            listener.childEvent(client, event);
-                        }
-                        catch ( Exception e )
-                        {
-                            handleException(e);
-                        }
-                        return null;
+                        listener.childEvent(client, event);
                     }
+                    catch ( Exception e )
+                    {
+                        handleException(e);
+                    }
+                    return null;
                 }
-            );
+            }
+        );
     }
 
     void getDataAndStat(final String fullPath) throws Exception
@@ -442,6 +442,31 @@ public class PathChildrenCache implements Closeable
     protected void      handleException(Throwable e)
     {
         log.error("", e);
+    }
+
+    private void internalRebuildNode(String fullPath) throws Exception
+    {
+        if ( cacheData )
+        {
+            try
+            {
+                Stat stat = new Stat();
+                byte[]      bytes = dataIsCompressed ? client.getData().decompressed().storingStatIn(stat).forPath(fullPath) : client.getData().storingStatIn(stat).forPath(fullPath);
+                currentData.put(fullPath, new ChildData(fullPath, stat, bytes));
+            }
+            catch ( KeeperException.NoNodeException ignore )
+            {
+                // ignore
+            }
+        }
+        else
+        {
+            Stat        stat = client.checkExists().forPath(fullPath);
+            if ( stat != null )
+            {
+                currentData.put(fullPath, new ChildData(fullPath, stat, null));
+            }
+        }
     }
 
     private void handleStateChange(ConnectionState newState)

@@ -30,6 +30,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TestPathChildrenCache extends BaseClassForTests
@@ -461,6 +462,49 @@ public class TestPathChildrenCache extends BaseClassForTests
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    public void     testRebuildNode() throws Exception
+    {
+        PathChildrenCache   cache = null;
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().creatingParentsIfNeeded().forPath("/test/one", "one".getBytes());
+
+            final CountDownLatch    latch = new CountDownLatch(1);
+            final AtomicInteger     counter = new AtomicInteger();
+            final Semaphore         semaphore = new Semaphore(1);
+            cache = new PathChildrenCache(client, "/test", true)
+            {
+                @Override
+                void getDataAndStat(String fullPath) throws Exception
+                {
+                    semaphore.acquire();
+                    counter.incrementAndGet();
+                    super.getDataAndStat(fullPath);
+                    latch.countDown();
+                }
+            };
+            cache.start(true);
+
+            latch.await();
+
+            int         saveCounter = counter.get();
+            client.setData().forPath("/test/one", "alt".getBytes());
+            cache.rebuildNode("/test/one");
+            Assert.assertEquals(cache.getCurrentData("/test/one").getData(), "alt".getBytes());
+            Assert.assertEquals(saveCounter, counter.get());
+
+            semaphore.release(1000);
+        }
+        finally
+        {
+            Closeables.closeQuietly(cache);
+            Closeables.closeQuietly(client);
         }
     }
 
