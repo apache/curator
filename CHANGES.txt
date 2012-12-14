@@ -5,6 +5,8 @@
 * Added a NodeCache to compliment the PathChildrenCache. The doc is here:
 https://github.com/Netflix/curator/wiki/Node-Cache
 
+* Creating nodes in background wasn't handling createParentsIfNeeded.
+
 1.2.5 - November 27, 2012
 =========================
 * Depend on ZooKeeper 3.4.5
