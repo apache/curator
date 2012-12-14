@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.netflix.curator.RetryLoop;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.CuratorWatcher;
+import com.netflix.curator.framework.imps.CuratorFrameworkState;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -163,6 +164,24 @@ public class LockInternals
         return sortedList;
     }
 
+    public static List<String> getSortedChildren(final String lockName, final LockInternalsSorter sorter, List<String> children)
+    {
+        List<String> sortedList = Lists.newArrayList(children);
+        Collections.sort
+        (
+            sortedList,
+            new Comparator<String>()
+            {
+                @Override
+                public int compare(String lhs, String rhs)
+                {
+                    return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
+                }
+            }
+        );
+        return sortedList;
+    }
+
     List<String> getSortedChildren() throws Exception
     {
         return getSortedChildren(client, basePath, lockName, driver);
@@ -258,7 +277,7 @@ public class LockInternals
                 client.getData().usingWatcher(revocableWatcher).forPath(ourPath);
             }
 
-            while ( client.isStarted() && !haveTheLock )
+            while ( (client.getState() == CuratorFrameworkState.STARTED) && !haveTheLock )
             {
                 List<String>        children = getSortedChildren();
                 String              sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash

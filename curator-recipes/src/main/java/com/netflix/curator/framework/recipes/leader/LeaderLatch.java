@@ -18,6 +18,8 @@ package com.netflix.curator.framework.recipes.leader;
 
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.BackgroundCallback;
+import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.recipes.locks.LockInternals;
 import com.netflix.curator.framework.recipes.locks.LockInternalsSorter;
 import com.netflix.curator.framework.recipes.locks.StandardLockInternalsDriver;
@@ -25,6 +27,7 @@ import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
@@ -53,7 +56,6 @@ public class LeaderLatch implements Closeable
     private final String                                latchPath;
     private final String                                id;
     private final AtomicReference<State>                state = new AtomicReference<State>(State.LATENT);
-    private final AtomicReference<ConnectionState>      connectionState = new AtomicReference<ConnectionState>(ConnectionState.CONNECTED);
     private final AtomicBoolean                         hasLeadership = new AtomicBoolean(false);
 
     private final ConnectionStateListener               listener = new ConnectionStateListener()
@@ -116,9 +118,7 @@ public class LeaderLatch implements Closeable
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         client.getConnectionStateListenable().addListener(listener);
-
-        client.newNamespaceAwareEnsurePath(latchPath).ensure(client.getZookeeperClient());
-        internalStart();
+        reset();
     }
 
     /**
@@ -305,85 +305,122 @@ public class LeaderLatch implements Closeable
      */
     public boolean hasLeadership()
     {
-        return (state.get() == State.STARTED) && hasLeadership.get() && (connectionState.get() == ConnectionState.CONNECTED);
+        return (state.get() == State.STARTED) && hasLeadership.get();
     }
 
-    private void internalStart() throws Exception
+    private void reset() throws Exception
     {
-        hasLeadership.set(false);
+        setLeadership(false);
         if ( ourPath != null )
         {
             client.delete().guaranteed().inBackground().forPath(ourPath);
         }
-        ourPath = client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
+        ourPath = null;
 
-        checkForLeadership();
-    }
-    
-    private void checkForLeadership() throws Exception
-    {
-    	List<String> sortedChildren = LockInternals.getSortedChildren(client, latchPath, LOCK_NAME, sorter);
-        if ( sortedChildren.size() == 0 )
+        BackgroundCallback          callback = new BackgroundCallback()
         {
-            throw new Exception("no children - unexpected state");
-        }
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
+                    ourPath = event.getName();
+                    getChildren();
+                }
+                else
+                {
+                    // TBD
+                    System.out.println(event.getResultCode());
+                }
+            }
+        };
+        client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
+    }
 
-        int ourIndex = sortedChildren.indexOf(ZKPaths.getNodeFromPath(ourPath));
-        if ( ourIndex == 0 )
+    private void checkLeadership(List<String> children) throws Exception
+    {
+        List<String>    sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
+        int             ourIndex = (ourPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(ourPath)) : -1;
+        if ( ourIndex < 0 )
+        {
+            log.error("Can't find our node. Resetting. Index: " + ourIndex);
+            reset();
+        }
+        else if ( ourIndex == 0 )
         {
             setLeadership(true);
         }
         else
         {
-            final String    ourPathWhenWatched = ourPath;   // protected against a lost/suspended connection and an old watcher - I'm not sure if this is possible but it can't hurt
             String          watchPath = sortedChildren.get(ourIndex - 1);
             Watcher watcher = new Watcher()
             {
                 @Override
                 public void process(WatchedEvent event)
                 {
-                    if ( (event.getType() == Event.EventType.NodeDeleted) && (ourPath != null) && ourPath.equals(ourPathWhenWatched) )
+                    if ( state.get() == State.STARTED )
                     {
-                    	try
-                    	{
-                    		checkForLeadership();
-                    	} 
-                    	catch(Exception ex) 
-                    	{
-                    		log.error("An error ocurred checking the leadership.", ex);
-                    	}
+                        try
+                        {
+                            getChildren();
+                        }
+                        catch(Exception ex)
+                        {
+                            log.error("An error ocurred checking the leadership.", ex);
+                        }
                     }
                 }
             };
-            if ( client.checkExists().usingWatcher(watcher).forPath(ZKPaths.makePath(latchPath, watchPath)) == null )
+
+            BackgroundCallback          callback = new BackgroundCallback()
             {
-            	//the previous Participant may be down, so we need to reevaluate the list 
-            	//to get the actual previous Participant or get the leadership 
-                checkForLeadership();
-            }
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
+                    {
+                        // previous node is gone - reset
+                        reset();
+                    }
+                }
+            };
+            client.checkExists().usingWatcher(watcher).inBackground(callback).forPath(ZKPaths.makePath(latchPath, watchPath));
         }
+    }
+
+    private void getChildren() throws Exception
+    {
+        BackgroundCallback          callback = new BackgroundCallback()
+        {
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
+                    checkLeadership(event.getChildren());
+                }
+            }
+        };
+        client.getChildren().inBackground(callback).forPath(latchPath);
     }
 
     private void handleStateChange(ConnectionState newState)
     {
         if ( newState == ConnectionState.RECONNECTED )
         {
-            newState = ConnectionState.CONNECTED;
-        }
-
-        ConnectionState previousState = connectionState.getAndSet(newState);
-        if ( (previousState == ConnectionState.LOST) && (newState == ConnectionState.CONNECTED) )
-        {
             try
             {
-                internalStart();
+                reset();
             }
             catch ( Exception e )
             {
                 log.error("Could not restart leader latch", e);
-                connectionState.set(ConnectionState.LOST);
                 setLeadership(false);
             }
+        }
+        else
+        {
+            setLeadership(false);
         }
     }
 

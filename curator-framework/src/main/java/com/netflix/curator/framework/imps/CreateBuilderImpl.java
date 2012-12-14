@@ -448,30 +448,9 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 {
                     trace.commit();
 
-                    boolean     retry = false;
                     if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
                     {
-                        try
-                        {
-                            ZKPaths.mkdirs(client.getZooKeeper(), operationAndData.getData().getPath(), false);
-                            retry = true;
-                        }
-                        catch ( Exception e )
-                        {
-                            client.logError("Could not create parents for path: " + operationAndData.getData().getPath(), e);
-                        }
-                    }
-
-                    if ( retry )
-                    {
-                        try
-                        {
-                            performBackgroundOperation(operationAndData);
-                        }
-                        catch ( Exception e )
-                        {
-                            client.logError("Could not create node after creating parents for path: " + operationAndData.getData().getPath(), e);
-                        }
+                        backgroundCreateParentsThenNode(operationAndData);
                     }
                     else
                     {
@@ -481,6 +460,28 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             },
             backgrounding.getContext()
         );
+    }
+
+    private void backgroundCreateParentsThenNode(final OperationAndData<PathAndBytes> mainOperationAndData)
+    {
+        BackgroundOperation<PathAndBytes>     operation = new BackgroundOperation<PathAndBytes>()
+        {
+            @Override
+            public void performBackgroundOperation(OperationAndData<PathAndBytes> dummy) throws Exception
+            {
+                try
+                {
+                    ZKPaths.mkdirs(client.getZooKeeper(), mainOperationAndData.getData().getPath(), false);
+                }
+                catch ( KeeperException e )
+                {
+                    // ignore
+                }
+                client.queueOperation(mainOperationAndData);
+            }
+        };
+        OperationAndData<PathAndBytes>        parentOperation = new OperationAndData<PathAndBytes>(operation, mainOperationAndData.getData(), null, null);
+        client.queueOperation(parentOperation);
     }
 
     private void sendBackgroundResponse(int rc, String path, Object ctx, String name, OperationAndData<PathAndBytes> operationAndData)

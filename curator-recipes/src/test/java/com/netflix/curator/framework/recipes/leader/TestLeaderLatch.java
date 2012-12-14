@@ -88,8 +88,7 @@ public class TestLeaderLatch extends BaseClassForTests
             Assert.assertEquals(getLeaders(latches).size(), 0);
 
             server = new TestingServer(server.getPort(), server.getTempDirectory());
-            waitForALeader(latches, timing);    // should reconnect
-            Assert.assertEquals(getLeaders(latches).size(), 1);
+            Assert.assertEquals(waitForALeader(latches, timing).size(), 1); // should reconnect
         }
         finally
         {
@@ -220,7 +219,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
     private void basic(Mode mode) throws Exception
     {
-        final int PARTICIPANT_QTY = 10;
+        final int PARTICIPANT_QTY = 1;//0;
 
         List<LeaderLatch> latches = Lists.newArrayList();
 
@@ -263,9 +262,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
             while ( latches.size() > 0 )
             {
-                waitForALeader(latches, timing);
-
-                List<LeaderLatch> leaders = getLeaders(latches);
+                List<LeaderLatch> leaders = waitForALeader(latches, timing);
                 Assert.assertEquals(leaders.size(), 1); // there can only be one leader
                 LeaderLatch theLeader = leaders.get(0);
                 if ( mode == Mode.START_IMMEDIATELY )
@@ -286,16 +283,18 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    private void waitForALeader(List<LeaderLatch> latches, Timing timing) throws InterruptedException
+    private List<LeaderLatch> waitForALeader(List<LeaderLatch> latches, Timing timing) throws InterruptedException
     {
         for ( int i = 0; i < MAX_LOOPS; ++i )
         {
-            if ( getLeaders(latches).size() != 0 )
+            List<LeaderLatch> leaders = getLeaders(latches);
+            if ( leaders.size() != 0 )
             {
-                break;
+                return leaders;
             }
             timing.sleepABit();
         }
+        return Lists.newArrayList();
     }
 
     private List<LeaderLatch> getLeaders(Collection<LeaderLatch> latches)
