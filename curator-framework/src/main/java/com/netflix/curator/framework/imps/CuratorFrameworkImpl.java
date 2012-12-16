@@ -428,14 +428,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
             return;
         }
 
-        boolean     queueOperation = false;
+        boolean     doQueueOperation = false;
         do
         {
             if ( RetryLoop.shouldRetry(event.getResultCode()) )
             {
                 if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
                 {
-                    queueOperation = true;
+                    doQueueOperation = true;
                 }
                 else
                 {
@@ -471,10 +471,15 @@ public class CuratorFrameworkImpl implements CuratorFramework
             processEvent(event);
         } while ( false );
 
-        if ( queueOperation )
+        if ( doQueueOperation )
         {
-            backgroundOperations.offer(operationAndData);
+            queueOperation(operationAndData);
         }
+    }
+
+    <DATA_TYPE> void queueOperation(OperationAndData<DATA_TYPE> operationAndData)
+    {
+        backgroundOperations.offer(operationAndData);
     }
 
     void logError(String reason, final Throwable e)

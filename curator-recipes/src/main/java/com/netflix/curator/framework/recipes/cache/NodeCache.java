@@ -82,11 +82,20 @@ public class NodeCache implements Closeable
         }
     };
 
+    /**
+     * @param client curztor client
+     * @param path the full path to the node to cache
+     */
     public NodeCache(CuratorFramework client, String path)
     {
         this(client, path, false);
     }
 
+    /**
+     * @param client curztor client
+     * @param path the full path to the node to cache
+     * @param dataIsCompressed if true, data in the path is compressed
+     */
     public NodeCache(CuratorFramework client, String path, boolean dataIsCompressed)
     {
         this.client = client;

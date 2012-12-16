@@ -447,11 +447,41 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 public void processResult(int rc, String path, Object ctx, String name)
                 {
                     trace.commit();
-                    sendBackgroundResponse(rc, path, ctx, name, operationAndData);
+
+                    if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
+                    {
+                        backgroundCreateParentsThenNode(operationAndData);
+                    }
+                    else
+                    {
+                        sendBackgroundResponse(rc, path, ctx, name, operationAndData);
+                    }
                 }
             },
             backgrounding.getContext()
         );
+    }
+
+    private void backgroundCreateParentsThenNode(final OperationAndData<PathAndBytes> mainOperationAndData)
+    {
+        BackgroundOperation<PathAndBytes>     operation = new BackgroundOperation<PathAndBytes>()
+        {
+            @Override
+            public void performBackgroundOperation(OperationAndData<PathAndBytes> dummy) throws Exception
+            {
+                try
+                {
+                    ZKPaths.mkdirs(client.getZooKeeper(), mainOperationAndData.getData().getPath(), false);
+                }
+                catch ( KeeperException e )
+                {
+                    // ignore
+                }
+                client.queueOperation(mainOperationAndData);
+            }
+        };
+        OperationAndData<PathAndBytes>        parentOperation = new OperationAndData<PathAndBytes>(operation, mainOperationAndData.getData(), null, null);
+        client.queueOperation(parentOperation);
     }
 
     private void sendBackgroundResponse(int rc, String path, Object ctx, String name, OperationAndData<PathAndBytes> operationAndData)
