@@ -223,7 +223,7 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         client.start();
         try
         {
-            DistributedAtomicLong dal = new DistributedAtomicLong(client, "/counter", new RetryOneTime(1));
+            DistributedAtomicLong dal = new DistributedAtomicLong(client, "/foo/bar/counter", new RetryOneTime(1));
 
             AtomicValue<Long>           value = dal.increment();
             Assert.assertTrue(value.succeeded());

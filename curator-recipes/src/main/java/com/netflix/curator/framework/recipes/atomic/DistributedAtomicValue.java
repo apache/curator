@@ -20,6 +20,8 @@ import com.netflix.curator.RetryLoop;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
+import com.netflix.curator.utils.EnsurePath;
+import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
@@ -39,6 +41,7 @@ public class DistributedAtomicValue
     private final RetryPolicy       retryPolicy;
     private final PromotedToLock    promotedToLock;
     private final InterProcessMutex mutex;
+    private final EnsurePath        ensurePath;
 
     /**
      * Creates in optimistic mode only - i.e. the promotion to a mutex is not done
@@ -69,6 +72,7 @@ public class DistributedAtomicValue
         this.retryPolicy = retryPolicy;
         this.promotedToLock = promotedToLock;
         mutex = (promotedToLock != null) ? new InterProcessMutex(client, promotedToLock.getPath()) : null;
+        ensurePath = client.newNamespaceAwareEnsurePath(ZKPaths.getPathAndNode(path).getPath());
     }
 
     /**
@@ -97,6 +101,7 @@ public class DistributedAtomicValue
     {
         try
         {
+            ensurePath.ensure(client.getZookeeperClient());
             client.setData().forPath(path, newValue);
         }
         catch ( KeeperException.NoNodeException dummy )
@@ -220,6 +225,7 @@ public class DistributedAtomicValue
         boolean             createIt = false;
         try
         {
+            ensurePath.ensure(client.getZookeeperClient());
             result.preValue = client.getData().storingStatIn(stat).forPath(path);
         }
         catch ( KeeperException.NoNodeException e )

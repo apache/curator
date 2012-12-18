@@ -10,6 +10,8 @@ https://github.com/Netflix/curator/wiki/Node-Cache
 * Issue 216: Rewrote LeaderLatch to better handle connection/server instability. At the same time, made
 most of the calls async which will help concurrency and performance.
 
+* Issue 217: DistributedAtomicLong (et al) should use ensurePath internally to be consistent with
+other recipes.
 
 1.2.5 - November 27, 2012
 =========================
