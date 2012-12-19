@@ -38,6 +38,67 @@ import java.util.concurrent.TimeUnit;
 public class TestServiceCache
 {
     @Test
+    public void     testInitialLoad() throws Exception
+    {
+        List<Closeable> closeables = Lists.newArrayList();
+        TestingServer server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            ServiceCache<String>        cache = discovery.serviceCacheBuilder().name("test").build();
+            closeables.add(cache);
+
+            final CountDownLatch        latch = new CountDownLatch(3);
+            ServiceCacheListener        listener = new ServiceCacheListener()
+            {
+                @Override
+                public void cacheChanged()
+                {
+                    latch.countDown();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+            cache.addListener(listener);
+            cache.start();
+
+            ServiceInstance<String>     instance1 = ServiceInstance.<String>builder().payload("test").name("test").port(10064).build();
+            ServiceInstance<String>     instance2 = ServiceInstance.<String>builder().payload("test").name("test").port(10065).build();
+            ServiceInstance<String>     instance3 = ServiceInstance.<String>builder().payload("test").name("test").port(10066).build();
+            discovery.registerService(instance1);
+            discovery.registerService(instance2);
+            discovery.registerService(instance3);
+
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+            ServiceCache<String>        cache2 = discovery.serviceCacheBuilder().name("test").build();
+            closeables.add(cache2);
+            cache2.start();
+
+            Assert.assertEquals(cache2.getInstances().size(), 3);
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                Closeables.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
     public void     testViaProvider() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();

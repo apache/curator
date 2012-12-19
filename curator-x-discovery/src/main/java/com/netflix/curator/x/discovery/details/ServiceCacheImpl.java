@@ -72,7 +72,14 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        cache.start(true);
+        synchronized(this)
+        {
+            cache.start(true);
+            for ( ChildData childData : cache.getCurrentData() )
+            {
+                addInstance(childData);
+            }
+        }
         discovery.cacheOpened(this);
     }
 
@@ -122,7 +129,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     }
 
     @Override
-    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+    public synchronized void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
     {
         boolean         notifyListeners = false;
         switch ( event.getType() )

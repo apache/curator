@@ -205,17 +205,17 @@ public class PathChildrenCache implements Closeable
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         executorService.submit
-        (
-            new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            (
+                new Callable<Void>()
                 {
-                    mainLoop();
-                    return null;
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        mainLoop();
+                        return null;
+                    }
                 }
-            }
-        );
+            );
 
         if ( buildInitial )
         {
@@ -377,24 +377,24 @@ public class PathChildrenCache implements Closeable
     void callListeners(final PathChildrenCacheEvent event)
     {
         listeners.forEach
-        (
-            new Function<PathChildrenCacheListener, Void>()
-            {
-                @Override
-                public Void apply(PathChildrenCacheListener listener)
+            (
+                new Function<PathChildrenCacheListener, Void>()
                 {
-                    try
+                    @Override
+                    public Void apply(PathChildrenCacheListener listener)
                     {
-                        listener.childEvent(client, event);
+                        try
+                        {
+                            listener.childEvent(client, event);
+                        }
+                        catch ( Exception e )
+                        {
+                            handleException(e);
+                        }
+                        return null;
                     }
-                    catch ( Exception e )
-                    {
-                        handleException(e);
-                    }
-                    return null;
                 }
-            }
-        );
+            );
     }
 
     void getDataAndStat(final String fullPath) throws Exception
@@ -504,17 +504,17 @@ public class PathChildrenCache implements Closeable
     private void processChildren(List<String> children, boolean forceGetDataAndStat) throws Exception
     {
         List<String>    fullPaths = Lists.transform
-            (
-                children,
-                new Function<String, String>()
+        (
+            children,
+            new Function<String, String>()
+            {
+                @Override
+                public String apply(String child)
                 {
-                    @Override
-                    public String apply(String child)
-                    {
-                        return ZKPaths.makePath(path, child);
-                    }
+                    return ZKPaths.makePath(path, child);
                 }
-            );
+            }
+        );
         Set<String>     removedNodes = Sets.newHashSet(currentData.keySet());
         removedNodes.removeAll(fullPaths);
 
