@@ -74,6 +74,10 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
 
         synchronized(this)
         {
+            // must be synchronized as PathChildrenCache might be posting events
+            // as we are processing this (now old) data. Note: childEvent() is
+            // synchronized as well because of this
+
             cache.start(true);
             for ( ChildData childData : cache.getCurrentData() )
             {
