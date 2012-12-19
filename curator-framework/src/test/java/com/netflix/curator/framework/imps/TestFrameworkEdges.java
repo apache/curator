@@ -50,6 +50,29 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestFrameworkEdges extends BaseClassForTests
 {
     @Test
+    public void     testGetAclNoStat() throws Exception
+    {
+
+        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            try
+            {
+                client.getACL().forPath("/");
+            }
+            catch ( NullPointerException e )
+            {
+                Assert.fail();
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
     public void     testMissedResponseOnBackgroundESCreate() throws Exception
     {
         CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));

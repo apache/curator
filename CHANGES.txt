@@ -10,6 +10,17 @@ https://github.com/Netflix/curator/wiki/Node-Cache
 * Issue 216: Rewrote LeaderLatch to better handle connection/server instability. At the same time, made
 most of the calls async which will help concurrency and performance.
 
+* Issue 217: DistributedAtomicLong (et al) should use ensurePath internally to be consistent with
+other recipes.
+
+* Issue 220: When creating a ServiceCacheImpl, a PathChildrenCache is created. The cache loads all existing services,
+but because preloading does not create events, ServiceCacheImpl never notices this. ServiceCacheImpl.getInstances()
+will return an empty list.
+
+* Issue 221: client.getACL().forPath("/") throws a NullPointerException, because the Zookeeper
+API expects a Stat, but GetACLBuilderImpl initializes responseStat to null.
+
+* Issue 222: Counter and log messages reversed in RetryLoop.takeException().
 
 1.2.5 - November 27, 2012
 =========================
