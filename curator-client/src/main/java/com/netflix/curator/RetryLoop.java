@@ -183,21 +183,22 @@ public class RetryLoop
             {
                 log.debug("Retry-able exception received", exception);
             }
+
             if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs, sleeper) )
-            {
-                tracer.get().addCount("retries-disallowed", 1);
-                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
-                {
-                    log.debug("Retry policy not allowing retry");
-                }
-                rethrow = false;
-            }
-            else
             {
                 tracer.get().addCount("retries-allowed", 1);
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
                     log.debug("Retrying operation");
+                }
+                rethrow = false;
+            }
+            else
+            {
+                tracer.get().addCount("retries-disallowed", 1);
+                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+                {
+                    log.debug("Retry policy not allowing retry");
                 }
             }
         }

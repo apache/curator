@@ -16,6 +16,8 @@ other recipes.
 * Issue 221: client.getACL().forPath("/") throws a NullPointerException, because the Zookeeper
 API expects a Stat, but GetACLBuilderImpl initializes responseStat to null.
 
+* Issue 222: Counter and log messages reversed in RetryLoop.takeException().
+
 1.2.5 - November 27, 2012
 =========================
 * Depend on ZooKeeper 3.4.5
