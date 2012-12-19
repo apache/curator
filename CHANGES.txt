@@ -13,6 +13,9 @@ most of the calls async which will help concurrency and performance.
 * Issue 217: DistributedAtomicLong (et al) should use ensurePath internally to be consistent with
 other recipes.
 
+* Issue 221: client.getACL().forPath("/") throws a NullPointerException, because the Zookeeper
+API expects a Stat, but GetACLBuilderImpl initializes responseStat to null.
+
 1.2.5 - November 27, 2012
 =========================
 * Depend on ZooKeeper 3.4.5

@@ -41,7 +41,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>
     {
         this.client = client;
         backgrounding = new Backgrounding();
-        responseStat = null;
+        responseStat = new Stat();
     }
 
     @Override
