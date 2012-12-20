@@ -331,11 +331,29 @@ public class PathChildrenCache implements Closeable
      */
     public void         clearDataBytes(String fullPath)
     {
+        clearDataBytes(fullPath, -1);
+    }
+
+    /**
+     * As a memory optimization, you can clear the cached data bytes for a node. Subsequent
+     * calls to {@link ChildData#getData()} for this node will return <code>null</code>.
+     *
+     * @param fullPath the path of the node to clear
+     * @param ifVersion if non-zero, only clear the data if the data's version matches this version
+     * @return true if the data was cleared
+     */
+    public boolean         clearDataBytes(String fullPath, int ifVersion)
+    {
         ChildData data = currentData.get(fullPath);
         if ( data != null )
         {
-            data.clearData();
+            if ( (ifVersion < 0) || (ifVersion == data.getStat().getVersion()) )
+            {
+                data.clearData();
+                return true;
+            }
         }
+        return false;
     }
 
     /**
