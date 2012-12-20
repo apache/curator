@@ -22,6 +22,9 @@ API expects a Stat, but GetACLBuilderImpl initializes responseStat to null.
 
 * Issue 222: Counter and log messages reversed in RetryLoop.takeException().
 
+* Issue 201: Added PersistentEphemeralNode recipe. Thanks to user bbeck for the idea, initial design
+and most of the test cases. Details here:
+
 1.2.5 - November 27, 2012
 =========================
 * Depend on ZooKeeper 3.4.5

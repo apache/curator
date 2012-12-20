@@ -24,7 +24,6 @@ import com.netflix.curator.framework.api.ACLBackgroundPathAndBytesable;
 import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CreateModable;
 import com.netflix.curator.framework.api.CuratorEvent;
-import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
@@ -328,7 +327,7 @@ public class PersistentEphemeralNode implements Closeable
         try
         {
             String      existingPath = nodePath.get();
-            String      createPath = (existingPath != null) ? existingPath : basePath;
+            String      createPath = (existingPath != null) ? fixExistingPath(existingPath) : basePath;
             ensurePath.ensure(client.getZookeeperClient());
             createMethod.withMode(mode.getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data);
         }
@@ -336,6 +335,21 @@ public class PersistentEphemeralNode implements Closeable
         {
             log.error("Creating node. BasePath: " + basePath, e);
         }
+    }
+
+    private String fixExistingPath(String path)
+    {
+        if ( mode.isProtected() )
+        {
+            ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+            String              protectedPrefix = createMethod.getProtectedPrefix();
+            int                 index = pathAndNode.getNode().indexOf(protectedPrefix);
+            if ( index >= 0 )
+            {
+                return ZKPaths.makePath(pathAndNode.getPath(), pathAndNode.getNode().substring(index + protectedPrefix.length()));
+            }
+        }
+        return path;
     }
 
     private void watchNode()
