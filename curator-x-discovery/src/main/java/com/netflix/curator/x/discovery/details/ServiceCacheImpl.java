@@ -175,15 +175,12 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         ServiceInstance<T>      serviceInstance = discovery.getSerializer().deserialize(childData.getData());
         if ( onlyIfAbsent )
         {
-            if ( instances.putIfAbsent(instanceId, serviceInstance) == null )
-            {
-                cache.clearDataBytes(childData.getPath(), childData.getStat().getVersion());
-            }
+            instances.putIfAbsent(instanceId, serviceInstance);
         }
         else
         {
             instances.put(instanceId, serviceInstance);
-            cache.clearDataBytes(childData.getPath());
         }
+        cache.clearDataBytes(childData.getPath(), childData.getStat().getVersion());
     }
 }
