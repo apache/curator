@@ -339,7 +339,7 @@ public class PathChildrenCache implements Closeable
      * calls to {@link ChildData#getData()} for this node will return <code>null</code>.
      *
      * @param fullPath the path of the node to clear
-     * @param ifVersion if non-zero, only clear the data if the data's version matches this version
+     * @param ifVersion if non-negative, only clear the data if the data's version matches this version
      * @return true if the data was cleared
      */
     public boolean         clearDataBytes(String fullPath, int ifVersion)
