@@ -24,6 +24,7 @@ import com.netflix.curator.framework.api.ACLProvider;
 import com.netflix.curator.framework.api.CompressionProvider;
 import com.netflix.curator.framework.api.PathAndBytesable;
 import com.netflix.curator.framework.imps.CuratorFrameworkImpl;
+import com.netflix.curator.framework.imps.CuratorTempFrameworkImpl;
 import com.netflix.curator.framework.imps.DefaultACLProvider;
 import com.netflix.curator.framework.imps.GzipCompressionProvider;
 import com.netflix.curator.utils.DefaultZookeeperFactory;
@@ -34,6 +35,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Factory methods for creating framework-style clients
@@ -48,6 +50,7 @@ public class CuratorFrameworkFactory
     private static final CompressionProvider        DEFAULT_COMPRESSION_PROVIDER = new GzipCompressionProvider();
     private static final DefaultZookeeperFactory    DEFAULT_ZOOKEEPER_FACTORY = new DefaultZookeeperFactory();
     private static final DefaultACLProvider         DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
+    private static final long                       DEFAULT_INACTIVE_THRESHOLD_MS = (int)TimeUnit.MINUTES.toMillis(3);
 
     /**
      * Return a new builder that builds a CuratorFramework
@@ -116,6 +119,33 @@ public class CuratorFrameworkFactory
         public CuratorFramework build()
         {
             return new CuratorFrameworkImpl(this);
+        }
+
+        /**
+         * Apply the current values and build a new temporary CuratorFramework. Temporary
+         * CuratorFramework instances are meant for single requests to ZooKeeper ensembles
+         * over a failure prone network such as a WAN. The APIs available from {@link CuratorTempFramework}
+         * are limited. Further, the connection will be closed after 3 minutes of inactivity.
+         *
+         * @return temp instance
+         */
+        public CuratorTempFramework buildTemp()
+        {
+            return new CuratorTempFrameworkImpl(this, DEFAULT_INACTIVE_THRESHOLD_MS);
+        }
+
+        /**
+         * Apply the current values and build a new temporary CuratorFramework. Temporary
+         * CuratorFramework instances are meant for single requests to ZooKeeper ensembles
+         * over a failure prone network such as a WAN. The APIs available from {@link CuratorTempFramework}
+         * are limited. Further, the connection will be closed after <code>inactiveThresholdMs</code> milliseconds of inactivity.
+         *
+         * @param inactiveThresholdMs number of milliseconds of inactivity to cause connection close
+         * @return temp instance
+         */
+        public CuratorTempFramework buildTemp(long inactiveThresholdMs)
+        {
+            return new CuratorTempFrameworkImpl(this, inactiveThresholdMs);
         }
 
         /**
