@@ -31,7 +31,7 @@ import com.netflix.curator.x.discovery.ServiceCache;
 import com.netflix.curator.x.discovery.ServiceInstance;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,7 +42,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     private final ServiceDiscoveryImpl<T>                           discovery;
     private final AtomicReference<State>                            state = new AtomicReference<State>(State.LATENT);
     private final PathChildrenCache                                 cache;
-    private final Map<String, ServiceInstance<T>>                   instances = Maps.newConcurrentMap();
+    private final ConcurrentMap<String, ServiceInstance<T>>         instances = Maps.newConcurrentMap();
 
     private enum State
     {
@@ -72,13 +72,10 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        synchronized(this)
+        cache.start(true);
+        for ( ChildData childData : cache.getCurrentData() )
         {
-            cache.start(true);
-            for ( ChildData childData : cache.getCurrentData() )
-            {
-                addInstance(childData);
-            }
+            addInstance(childData, true);
         }
         discovery.cacheOpened(this);
     }
@@ -129,7 +126,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     }
 
     @Override
-    public synchronized void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
     {
         boolean         notifyListeners = false;
         switch ( event.getType() )
@@ -137,7 +134,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
             case CHILD_ADDED:
             case CHILD_UPDATED:
             {
-                addInstance(event.getData());
+                addInstance(event.getData(), false);
                 notifyListeners = true;
                 break;
             }
@@ -172,11 +169,18 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         return ZKPaths.getNodeFromPath(childData.getPath());
     }
 
-    private void addInstance(ChildData childData) throws Exception
+    private void addInstance(ChildData childData, boolean onlyIfAbsent) throws Exception
     {
         String                  instanceId = instanceIdFromData(childData);
         ServiceInstance<T>      serviceInstance = discovery.getSerializer().deserialize(childData.getData());
-        instances.put(instanceId, serviceInstance);
-        cache.clearDataBytes(childData.getPath());
+        if ( onlyIfAbsent )
+        {
+            instances.putIfAbsent(instanceId, serviceInstance);
+        }
+        else
+        {
+            instances.put(instanceId, serviceInstance);
+        }
+        cache.clearDataBytes(childData.getPath(), childData.getStat().getVersion());
     }
 }

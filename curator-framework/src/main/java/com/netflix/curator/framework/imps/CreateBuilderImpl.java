@@ -462,6 +462,11 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         );
     }
 
+    private String getProtectedPrefix()
+    {
+        return PROTECTED_PREFIX + protectedId + "-";
+    }
+
     private void backgroundCreateParentsThenNode(final OperationAndData<PathAndBytes> mainOperationAndData)
     {
         BackgroundOperation<PathAndBytes>     operation = new BackgroundOperation<PathAndBytes>()
@@ -642,7 +647,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 }
             }
         );
-        
+
         trace.commit();
         return returnPath;
     }
@@ -706,10 +711,5 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             path = ZKPaths.makePath(pathAndNode.getPath(), name);
         }
         return path;
-    }
-
-    private String getProtectedPrefix() throws Exception
-    {
-        return PROTECTED_PREFIX + protectedId + "-";
     }
 }
