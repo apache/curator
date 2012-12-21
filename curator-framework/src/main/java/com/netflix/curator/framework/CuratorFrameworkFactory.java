@@ -131,7 +131,7 @@ public class CuratorFrameworkFactory
          */
         public CuratorTempFramework buildTemp()
         {
-            return new CuratorTempFrameworkImpl(this, DEFAULT_INACTIVE_THRESHOLD_MS);
+            return buildTemp(DEFAULT_INACTIVE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
         }
 
         /**
@@ -140,12 +140,13 @@ public class CuratorFrameworkFactory
          * over a failure prone network such as a WAN. The APIs available from {@link CuratorTempFramework}
          * are limited. Further, the connection will be closed after <code>inactiveThresholdMs</code> milliseconds of inactivity.
          *
-         * @param inactiveThresholdMs number of milliseconds of inactivity to cause connection close
+         * @param inactiveThreshold number of milliseconds of inactivity to cause connection close
+         * @param unit threshold unit
          * @return temp instance
          */
-        public CuratorTempFramework buildTemp(long inactiveThresholdMs)
+        public CuratorTempFramework buildTemp(long inactiveThreshold, TimeUnit unit)
         {
-            return new CuratorTempFrameworkImpl(this, inactiveThresholdMs);
+            return new CuratorTempFrameworkImpl(this, unit.toMillis(inactiveThreshold));
         }
 
         /**
