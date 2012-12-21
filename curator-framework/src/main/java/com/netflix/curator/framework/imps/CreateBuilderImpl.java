@@ -98,12 +98,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
                 return curatorTransaction;
             }
-
-            @Override
-            public String getProtectedPrefix()
-            {
-                return CreateBuilderImpl.this.getProtectedPrefix();
-            }
         };
     }
 
@@ -184,12 +178,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             public String forPath(String path) throws Exception
             {
                 return CreateBuilderImpl.this.forPath(path);
-            }
-
-            @Override
-            public String getProtectedPrefix()
-            {
-                return CreateBuilderImpl.this.getProtectedPrefix();
             }
         };
     }
@@ -326,12 +314,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             public String forPath(String path) throws Exception
             {
                 return CreateBuilderImpl.this.forPath(path);
-            }
-
-            @Override
-            public String getProtectedPrefix()
-            {
-                return CreateBuilderImpl.this.getProtectedPrefix();
             }
         };
     }
@@ -480,8 +462,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         );
     }
 
-    @Override
-    public String getProtectedPrefix()
+    private String getProtectedPrefix()
     {
         return PROTECTED_PREFIX + protectedId + "-";
     }
@@ -557,12 +538,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                         return CreateBuilderImpl.this.forPath(path);
                     }
                 };
-            }
-
-            @Override
-            public String getProtectedPrefix()
-            {
-                return CreateBuilderImpl.this.getProtectedPrefix();
             }
 
             @Override

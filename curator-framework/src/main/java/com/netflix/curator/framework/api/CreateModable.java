@@ -28,13 +28,4 @@ public interface CreateModable<T>
      * @return this
      */
     public T withMode(CreateMode mode);
-
-    /**
-     * If create builder is in {@link CreateBuilder#withProtection()} mode this returns
-     * the prefix that will be added to the node name. If not in protection mode the
-     * return result is undefined.
-     *
-     * @return prefix
-     */
-    public String getProtectedPrefix();
 }
