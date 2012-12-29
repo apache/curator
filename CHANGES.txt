@@ -28,6 +28,9 @@ are limited. Further, the connection will be closed after a period of inactivity
 post by Camille Fournier: http://whilefalse.blogspot.com/2012/12/building-global-highly-available.html - details
 here: https://github.com/Netflix/curator/wiki/Temporary-Framework
 
+* Issue 224: ExponentialBackoffRetry was not protected against edge-cases where a too big maxRetries argument
+was used. It now also incorporates a maxSleep value.
+
 1.2.5 - November 27, 2012
 =========================
 * Depend on ZooKeeper 3.4.5
