@@ -30,7 +30,7 @@ public class ExponentialBackoffRetry extends SleepingRetry
     private static final Logger     log = LoggerFactory.getLogger(ExponentialBackoffRetry.class);
 
     private static final int MAX_RETRIES_LIMIT = 29;
-    private static final int DEFAULT_MAX_SLEEP_MS = 60000;
+    private static final int DEFAULT_MAX_SLEEP_MS = Integer.MAX_VALUE;
 
     private final Random random = new Random();
     private final int baseSleepTimeMs;
