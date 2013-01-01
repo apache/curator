@@ -1,5 +1,5 @@
-1.2.6 - xxxxxxxxxxxxxxxxx
-=========================
+1.2.6 - January 1, 2013
+=======================
 * Issue 214: Added rebuildNode method to PathChildrenCache.
 
 * Added a NodeCache to compliment the PathChildrenCache. The doc is here:
@@ -22,14 +22,14 @@ API expects a Stat, but GetACLBuilderImpl initializes responseStat to null.
 
 * Issue 222: Counter and log messages reversed in RetryLoop.takeException().
 
-* Issue 201: Added PersistentEphemeralNode recipe. Thanks to user bbeck for the idea, initial design
-and most of the test cases. Details here:
-
 * New feature: CuratorTempFramework. Temporary CuratorFramework instances are meant for single requests to
 ZooKeeper ensembles over a failure prone network such as a WAN. The APIs available from CuratorTempFramework
 are limited. Further, the connection will be closed after a period of inactivity. Based on an idea mentioned in a
 post by Camille Fournier: http://whilefalse.blogspot.com/2012/12/building-global-highly-available.html - details
 here: https://github.com/Netflix/curator/wiki/Temporary-Framework
+
+* Issue 224: ExponentialBackoffRetry was not protected against edge-cases where a too big maxRetries argument
+was used. It now also incorporates a maxSleep value.
 
 1.2.5 - November 27, 2012
 =========================

@@ -32,7 +32,7 @@ public class TestTempFramework extends BaseClassForTests
     @Test
     public void testInactivity() throws Exception
     {
-        final CuratorTempFrameworkImpl        client = (CuratorTempFrameworkImpl)CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).buildTemp(1000);
+        final CuratorTempFrameworkImpl        client = (CuratorTempFrameworkImpl)CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).buildTemp(1, TimeUnit.SECONDS);
         try
         {
             ScheduledExecutorService    service = Executors.newScheduledThreadPool(1);

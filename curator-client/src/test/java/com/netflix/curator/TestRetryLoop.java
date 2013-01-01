@@ -17,6 +17,7 @@
  */
 package com.netflix.curator;
 
+import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.TestingServer;
 import org.apache.zookeeper.CreateMode;
@@ -24,9 +25,28 @@ import org.apache.zookeeper.ZooDefs;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 public class TestRetryLoop extends BaseClassForTests
 {
+    @Test
+    public void     testExponentialBackoffRetryLimit()
+    {
+        RetrySleeper                    sleeper = new RetrySleeper()
+        {
+            @Override
+            public void sleepFor(long time, TimeUnit unit) throws InterruptedException
+            {
+                Assert.assertTrue(unit.toMillis(time) <= 100);
+            }
+        };
+        ExponentialBackoffRetry         retry = new ExponentialBackoffRetry(1, Integer.MAX_VALUE, 100);
+        for ( int i = 0; i >= 0; ++i )
+        {
+            retry.allowRetry(i, 0, sleeper);
+        }
+    }
+
     @Test
     public void     testRetryLoopWithFailure() throws Exception
     {
