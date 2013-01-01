@@ -191,6 +191,7 @@ public class TestNodeCache extends BaseClassForTests
                 );
 
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            Thread.sleep(timing.multiple(2).session());
             Assert.assertTrue(timing.awaitLatch(latch));
         }
         finally

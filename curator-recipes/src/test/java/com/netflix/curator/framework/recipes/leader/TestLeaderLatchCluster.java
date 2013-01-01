@@ -91,7 +91,7 @@ public class TestLeaderLatchCluster
 
             cluster.killServer(instances.get(leader.index));
 
-            Thread.sleep(timing.session());
+            Thread.sleep(timing.multiple(2).session());
 
             leader = waitForALeader(clients, timing);
             Assert.assertNotNull(leader);
