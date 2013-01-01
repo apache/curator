@@ -1,5 +1,5 @@
-1.2.6 - xxxxxxxxxxxxxxxxx
-=========================
+1.2.6 - January 1, 2013
+=======================
 * Issue 214: Added rebuildNode method to PathChildrenCache.
 
 * Added a NodeCache to compliment the PathChildrenCache. The doc is here:
