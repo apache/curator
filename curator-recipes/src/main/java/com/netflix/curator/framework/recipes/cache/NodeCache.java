@@ -25,6 +25,8 @@ import com.netflix.curator.framework.api.BackgroundCallback;
 import com.netflix.curator.framework.api.CuratorEvent;
 import com.netflix.curator.framework.api.CuratorWatcher;
 import com.netflix.curator.framework.listen.ListenerContainer;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -56,6 +59,32 @@ public class NodeCache implements Closeable
     private final AtomicReference<ChildData> data = new AtomicReference<ChildData>(null);
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final ListenerContainer<NodeCacheListener> listeners = new ListenerContainer<NodeCacheListener>();
+    private final AtomicBoolean isConnected = new AtomicBoolean(true);
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    {
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            if ( (newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED) )
+            {
+                if ( isConnected.compareAndSet(false, true) )
+                {
+                    try
+                    {
+                        reset();
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error("Trying to reset after reconnection", e);
+                    }
+                }
+            }
+            else
+            {
+                isConnected.set(false);
+            }
+        }
+    };
 
     private final CuratorWatcher watcher = new CuratorWatcher()
     {
@@ -127,6 +156,8 @@ public class NodeCache implements Closeable
 
         ensurePath.ensure(client.getZookeeperClient());
 
+        client.getConnectionStateListenable().addListener(connectionStateListener);
+
         if ( buildInitial )
         {
             internalRebuild();
@@ -141,6 +172,7 @@ public class NodeCache implements Closeable
         {
             listeners.clear();
         }
+        client.getConnectionStateListenable().removeListener(connectionStateListener);
     }
 
     /**
@@ -187,7 +219,7 @@ public class NodeCache implements Closeable
 
     private void     reset() throws Exception
     {
-        if ( state.get() == State.STARTED )
+        if ( (state.get() == State.STARTED) && isConnected.get() )
         {
             client.checkExists().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
         }
