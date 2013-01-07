@@ -18,6 +18,7 @@ package com.netflix.curator.framework.imps;
 
 import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ZKPaths;
+import org.apache.zookeeper.common.PathUtils;
 
 class NamespaceImpl
 {
@@ -27,6 +28,18 @@ class NamespaceImpl
 
     NamespaceImpl(CuratorFrameworkImpl client, String namespace)
     {
+        if ( namespace != null )
+        {
+            try
+            {
+                PathUtils.validatePath("/" + namespace);
+            }
+            catch ( IllegalArgumentException e )
+            {
+                throw new IllegalArgumentException("Invalid namespace: " + namespace);
+            }
+        }
+
         this.client = client;
         this.namespace = namespace;
         ensurePath = (namespace != null) ? new EnsurePath(ZKPaths.makePath("/", namespace)) : null;

@@ -26,6 +26,20 @@ import org.testng.annotations.Test;
 public class TestNamespaceFacade extends BaseClassForTests
 {
     @Test
+    public void     testInvalid() throws Exception
+    {
+        try
+        {
+            CuratorFrameworkFactory.builder().namespace("/snafu").retryPolicy(new RetryOneTime(1)).connectString("").build();
+            Assert.fail();
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // correct
+        }
+    }
+
+    @Test
     public void     testGetNamespace() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
