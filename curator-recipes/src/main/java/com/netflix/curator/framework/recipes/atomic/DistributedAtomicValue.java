@@ -21,7 +21,6 @@ import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
 import com.netflix.curator.utils.EnsurePath;
-import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
@@ -72,7 +71,7 @@ public class DistributedAtomicValue
         this.retryPolicy = retryPolicy;
         this.promotedToLock = promotedToLock;
         mutex = (promotedToLock != null) ? new InterProcessMutex(client, promotedToLock.getPath()) : null;
-        ensurePath = client.newNamespaceAwareEnsurePath(ZKPaths.getPathAndNode(path).getPath());
+        ensurePath = client.newNamespaceAwareEnsurePath(path).excludingLast();
     }
 
     /**
