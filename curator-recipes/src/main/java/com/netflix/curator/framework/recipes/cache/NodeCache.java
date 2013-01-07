@@ -28,7 +28,6 @@ import com.netflix.curator.framework.listen.ListenerContainer;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.utils.EnsurePath;
-import com.netflix.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.Stat;
@@ -130,7 +129,7 @@ public class NodeCache implements Closeable
         this.client = client;
         this.path = path;
         this.dataIsCompressed = dataIsCompressed;
-        ensurePath = client.newNamespaceAwareEnsurePath(ZKPaths.getPathAndNode(path).getPath());
+        ensurePath = client.newNamespaceAwareEnsurePath(path).excludingLast();
     }
 
     /**

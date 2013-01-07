@@ -52,12 +52,13 @@ import java.util.concurrent.atomic.AtomicReference;
 public class EnsurePath
 {
     private final String                    path;
-    private final AtomicReference<Helper>   helper = new AtomicReference<Helper>();
+    private final boolean                   makeLastNode;
+    private final AtomicReference<Helper>   helper;
 
     private static final Helper             doNothingHelper = new Helper()
     {
         @Override
-        public void ensure(CuratorZookeeperClient client, String path) throws Exception
+        public void ensure(CuratorZookeeperClient client, String path, final boolean makeLastNode) throws Exception
         {
             // NOP
         }
@@ -65,7 +66,7 @@ public class EnsurePath
 
     private interface Helper
     {
-        public void     ensure(CuratorZookeeperClient client, String path) throws Exception;
+        public void     ensure(CuratorZookeeperClient client, String path, final boolean makeLastNode) throws Exception;
     }
 
     /**
@@ -73,8 +74,7 @@ public class EnsurePath
      */
     public EnsurePath(String path)
     {
-        this.path = path;
-        helper.set(new InitialHelper());
+        this(path, null, true);
     }
 
     /**
@@ -87,7 +87,25 @@ public class EnsurePath
     public void     ensure(CuratorZookeeperClient client) throws Exception
     {
         Helper  localHelper = helper.get();
-        localHelper.ensure(client, path);
+        localHelper.ensure(client, path, makeLastNode);
+    }
+
+    /**
+     * Returns a view of this EnsurePath instance that does not make the last node.
+     * i.e. if the path is "/a/b/c" only "/a/b" will be ensured
+     *
+     * @return view
+     */
+    public EnsurePath excludingLast()
+    {
+        return new EnsurePath(path, helper, false);
+    }
+
+    private EnsurePath(String path, AtomicReference<Helper> helper, boolean makeLastNode)
+    {
+        this.path = path;
+        this.makeLastNode = makeLastNode;
+        this.helper = (helper != null) ? helper : new AtomicReference<Helper>(new InitialHelper());
     }
 
     private class InitialHelper implements Helper
@@ -95,7 +113,7 @@ public class EnsurePath
         private boolean         isSet = false;  // guarded by synchronization
 
         @Override
-        public synchronized void ensure(final CuratorZookeeperClient client, final String path) throws Exception
+        public synchronized void ensure(final CuratorZookeeperClient client, final String path, final boolean makeLastNode) throws Exception
         {
             if ( !isSet )
             {
@@ -107,7 +125,7 @@ public class EnsurePath
                         @Override
                         public Object call() throws Exception
                         {
-                            ZKPaths.mkdirs(client.getZooKeeper(), path, true);
+                            ZKPaths.mkdirs(client.getZooKeeper(), path, makeLastNode);
                             helper.set(doNothingHelper);
                             isSet = true;
                             return null;

@@ -5,6 +5,11 @@
 * Issue 232: NodeCache wasn't handling server connection issues well. It would repeatedly execute checkExists()
 with a watcher causing the heap to fill with watcher objects.
 
+* Issue 233: An internal idiom being used to create an EnsurePath instance with the parent of a passed in path
+wasn't correct. Due to an unfortunate implementation of ZKPaths.PathAndNode (mea culpa) the root path is specified
+differently than non-root paths. To work around this, I added a method to EnsurePath - excludingLast() - that
+can be used instead of the idiom.
+
 1.2.6 - January 1, 2013
 =======================
 * Issue 214: Added rebuildNode method to PathChildrenCache.
