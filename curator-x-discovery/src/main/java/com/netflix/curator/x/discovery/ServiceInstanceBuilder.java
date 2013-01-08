@@ -25,6 +25,7 @@ import java.net.SocketException;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Builder for service instances
@@ -40,6 +41,38 @@ public class ServiceInstanceBuilder<T>
     private long registrationTimeUTC;
     private ServiceType serviceType = ServiceType.DYNAMIC;
     private UriSpec uriSpec;
+
+    private static final AtomicReference<LocalIpFilter> localIpFilter = new AtomicReference<LocalIpFilter>
+    (
+        new LocalIpFilter()
+        {
+            @Override
+            public boolean use(NetworkInterface nif, InetAddress adr) throws SocketException
+            {
+                return (adr != null) && !adr.isLoopbackAddress() && (nif.isPointToPoint() || !adr.isLinkLocalAddress());
+            }
+        }
+    );
+
+    /**
+     * Replace the default local ip filter used by {@link #getAllLocalIPs()}
+     *
+     * @param newLocalIpFilter the new local ip filter
+     */
+    public static void setLocalIpFilter(LocalIpFilter newLocalIpFilter)
+    {
+        localIpFilter.set(newLocalIpFilter);
+    }
+
+    /**
+     * Return the current local ip filter used by {@link #getAllLocalIPs()}
+     *
+     * @return ip filter
+     */
+    public static LocalIpFilter getLocalIpFilter()
+    {
+        return localIpFilter.get();
+    }
 
     ServiceInstanceBuilder()
     {
@@ -140,10 +173,10 @@ public class ServiceInstanceBuilder<T>
             // We ignore subinterfaces - as not yet needed.
 
             Enumeration<InetAddress> adrs = nif.getInetAddresses();
-            while (adrs.hasMoreElements())
+            while ( adrs.hasMoreElements() )
             {
                 InetAddress adr = adrs.nextElement();
-                if (adr != null && !adr.isLoopbackAddress() && (nif.isPointToPoint() || !adr.isLinkLocalAddress()))
+                if ( localIpFilter.get().use(nif, adr) )
                 {
                     listAdr.add(adr);
                 }

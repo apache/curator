@@ -10,6 +10,9 @@ wasn't correct. Due to an unfortunate implementation of ZKPaths.PathAndNode (mea
 differently than non-root paths. To work around this, I added a method to EnsurePath - excludingLast() - that
 can be used instead of the idiom.
 
+* Issue 230: Added a filter to control which IP address are returned by ServiceInstanceBuilder.getAllLocalIPs().
+Set the filter via ServiceInstanceBuilder.setLocalIpFilter().
+
 1.2.6 - January 1, 2013
 =======================
 * Issue 214: Added rebuildNode method to PathChildrenCache.
