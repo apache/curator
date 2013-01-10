@@ -1,5 +1,14 @@
-1.2.7 - xxxxxxxxxxxxxxx
+1.3.0 - xxxxxxxxxxxxxxx
 =======================
+* MAJOR CHANGE (thus a version bump): I'd always thought that if the client is disconnected from the server
+long enough then an Expired event would be generated. Testing, however, shows this not to be the case. I believe
+it's related to ZOOKEEPER-1159. The behavior associated with this is that if the clients lost connection to the
+cluster for longer than the session expiration they would _never_ be able to reconnect. The connection would
+be permanently lost. Many users were seeing this as endless log messages indicating "Connection timed out
+for connection...". As a workaround, in 1.3.0+ when the Curator state changes to LOST, a flag will be set
+so that the next time Curator needs to get the ZooKeeper instance, the current instance will be closed and a new
+ZooKeeper instance will be allocated (as if the session had expired).
+
 * Added checks for illegal namespaces.
 
 * Issue 232: NodeCache wasn't handling server connection issues well. It would repeatedly execute checkExists()

@@ -18,6 +18,7 @@
 package com.netflix.curator.framework.imps;
 
 import com.google.common.collect.Queues;
+import com.google.common.io.Closeables;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.RetrySleeper;
 import com.netflix.curator.framework.CuratorFramework;
@@ -50,6 +51,54 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestFrameworkEdges extends BaseClassForTests
 {
     @Test
+    public void     testReconnectAfterLoss() throws Exception
+    {
+        Timing                          timing = new Timing();
+        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            final CountDownLatch            lostLatch = new CountDownLatch(1);
+            ConnectionStateListener         listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.LOST )
+                    {
+                        lostLatch.countDown();
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
+
+            client.checkExists().forPath("/");
+
+            server.close();
+
+            Assert.assertTrue(timing.awaitLatch(lostLatch));
+
+            try
+            {
+                client.checkExists().forPath("/");
+                Assert.fail();
+            }
+            catch ( KeeperException.ConnectionLossException e )
+            {
+                // correct
+            }
+
+            server = new TestingServer(server.getPort());
+            client.checkExists().forPath("/");
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void     testGetAclNoStat() throws Exception
     {
 
@@ -68,7 +117,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -98,7 +147,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -117,7 +166,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -149,7 +198,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -188,7 +237,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -226,7 +275,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -251,7 +300,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -312,7 +361,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            Closeables.closeQuietly(client);
         }
     }
 
@@ -339,9 +388,15 @@ public class TestFrameworkEdges extends BaseClassForTests
     public void         testStopped() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        client.start();
-        client.getData();
-        client.close();
+        try
+        {
+            client.start();
+            client.getData();
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
 
         try
         {
