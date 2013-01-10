@@ -42,6 +42,7 @@ class ConnectionState implements Watcher, Closeable
     private final Logger                        log = LoggerFactory.getLogger(getClass());
     private final HandleHolder                  zooKeeper;
     private final AtomicBoolean                 isConnected = new AtomicBoolean(false);
+    private final AtomicBoolean                 lost = new AtomicBoolean(false);
     private final EnsembleProvider              ensembleProvider;
     private final int                           connectionTimeoutMs;
     private final AtomicReference<TracerDriver> tracer;
@@ -69,6 +70,12 @@ class ConnectionState implements Watcher, Closeable
         if ( SessionFailRetryLoop.sessionForThreadHasFailed() )
         {
             throw new SessionFailRetryLoop.SessionFailedException();
+        }
+
+        if ( lost.compareAndSet(true, false) )
+        {
+            log.debug("resetting after loss");
+            reset();
         }
 
         Exception exception = backgroundExceptions.poll();
@@ -147,8 +154,17 @@ class ConnectionState implements Watcher, Closeable
         parentWatchers.remove(watcher);
     }
 
-    private void reset() throws Exception
+    void markLost()
     {
+        log.debug("lost");
+
+        lost.set(true);
+    }
+
+    void reset() throws Exception
+    {
+        log.debug("reset");
+
         isConnected.set(false);
         connectionStartMs = System.currentTimeMillis();
         zooKeeper.closeAndReset();

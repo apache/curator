@@ -179,20 +179,19 @@ public class TestNodeCache extends BaseClassForTests
 
             final CountDownLatch         latch = new CountDownLatch(1);
             cache.getListenable().addListener
-                (
-                    new NodeCacheListener()
+            (
+                new NodeCacheListener()
+                {
+                    @Override
+                    public void nodeChanged() throws Exception
                     {
-                        @Override
-                        public void nodeChanged() throws Exception
-                        {
-                            latch.countDown();
-                        }
+                        latch.countDown();
                     }
-                );
+                }
+            );
 
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
-            Thread.sleep(timing.multiple(2).session());
-            Assert.assertTrue(timing.awaitLatch(latch));
+            Assert.assertTrue(timing.multiple(4).awaitLatch(latch));
         }
         finally
         {

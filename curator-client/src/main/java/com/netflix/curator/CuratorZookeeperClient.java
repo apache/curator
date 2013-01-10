@@ -183,6 +183,15 @@ public class CuratorZookeeperClient implements Closeable
     }
 
     /**
+     * Mark the connection as lost. The next time {@link #getZooKeeper()} is called,
+     * a new connection will be created.
+     */
+    public void markLost()
+    {
+        state.markLost();
+    }
+
+    /**
      * Close the client
      */
     public void     close()

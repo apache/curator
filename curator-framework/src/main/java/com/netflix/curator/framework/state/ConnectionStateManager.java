@@ -141,6 +141,11 @@ public class ConnectionStateManager implements Closeable
             return;
         }
 
+        if ( newState == ConnectionState.LOST )
+        {
+            client.getZookeeperClient().markLost();
+        }
+
         ConnectionState     previousState = currentState.getAndSet(newState);
         if ( previousState == newState )
         {
