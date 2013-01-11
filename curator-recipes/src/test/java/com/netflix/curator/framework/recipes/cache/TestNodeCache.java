@@ -172,10 +172,10 @@ public class TestNodeCache extends BaseClassForTests
         {
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
-            client.create().creatingParentsIfNeeded().forPath("/test/node");
+            client.create().creatingParentsIfNeeded().forPath("/test/node", "start".getBytes());
 
             cache = new NodeCache(client, "/test/node");
-            cache.start();
+            cache.start(true);
 
             final CountDownLatch         latch = new CountDownLatch(1);
             cache.getListenable().addListener
@@ -191,7 +191,12 @@ public class TestNodeCache extends BaseClassForTests
             );
 
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
-            Assert.assertTrue(timing.multiple(4).awaitLatch(latch));
+            Thread.sleep(timing.multiple(1.5).session());
+
+            Assert.assertEquals(cache.getCurrentData().getData(), "start".getBytes());
+
+            client.setData().forPath("/test/node", "new data".getBytes());
+            Assert.assertTrue(timing.awaitLatch(latch));
         }
         finally
         {
