@@ -141,6 +141,7 @@ class ConnectionState implements Watcher, Closeable
         finally
         {
             isConnected.set(false);
+            lost.set(false);
         }
     }
 
@@ -196,6 +197,10 @@ class ConnectionState implements Watcher, Closeable
         if ( newIsConnected != wasConnected )
         {
             isConnected.set(newIsConnected);
+            if ( newIsConnected )
+            {
+                lost.set(false);
+            }
             connectionStartMs = System.currentTimeMillis();
         }
     }
