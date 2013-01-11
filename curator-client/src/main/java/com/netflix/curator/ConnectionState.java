@@ -162,16 +162,6 @@ class ConnectionState implements Watcher, Closeable
         lost.set(true);
     }
 
-    void reset() throws Exception
-    {
-        log.debug("reset");
-
-        isConnected.set(false);
-        connectionStartMs = System.currentTimeMillis();
-        zooKeeper.closeAndReset();
-        zooKeeper.getZooKeeper();   // initiate connection
-    }
-
     @Override
     public void process(WatchedEvent event)
     {
@@ -208,6 +198,16 @@ class ConnectionState implements Watcher, Closeable
     EnsembleProvider getEnsembleProvider()
     {
         return ensembleProvider;
+    }
+
+    private synchronized void reset() throws Exception
+    {
+        log.debug("reset");
+
+        isConnected.set(false);
+        connectionStartMs = System.currentTimeMillis();
+        zooKeeper.closeAndReset();
+        zooKeeper.getZooKeeper();   // initiate connection
     }
 
     private boolean checkState(Event.KeeperState state, boolean wasConnected)
