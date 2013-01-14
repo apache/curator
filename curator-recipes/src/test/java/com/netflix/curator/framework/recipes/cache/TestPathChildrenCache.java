@@ -23,9 +23,12 @@ import com.netflix.curator.framework.api.UnhandledErrorListener;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.retry.RetryOneTime;
 import com.netflix.curator.test.KillSession;
+import com.netflix.curator.test.TestingCluster;
 import com.netflix.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -35,6 +38,60 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestPathChildrenCache extends BaseClassForTests
 {
+    @Test
+    public void     testChildrenInitialized() throws Exception
+    {
+        Timing              timing = new Timing();
+        PathChildrenCache   cache = null;
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().forPath("/test");
+
+            cache = new PathChildrenCache(client, "/test", true);
+
+            final CountDownLatch        addedLatch = new CountDownLatch(3);
+            final CountDownLatch        initLatch = new CountDownLatch(1);
+            cache.getListenable().addListener
+            (
+                new PathChildrenCacheListener()
+                {
+                    @Override
+                    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                    {
+                        if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                        {
+                            addedLatch.countDown();
+                        }
+                        else if ( event.getType() == PathChildrenCacheEvent.Type.INITIALIZED )
+                        {
+                            initLatch.countDown();
+                        }
+                    }
+                }
+            );
+
+            client.create().forPath("/test/1", "1".getBytes());
+            client.create().forPath("/test/2", "2".getBytes());
+            client.create().forPath("/test/3", "3".getBytes());
+
+            cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+
+            Assert.assertTrue(timing.awaitLatch(addedLatch));
+            Assert.assertTrue(timing.awaitLatch(initLatch));
+            Assert.assertEquals(cache.getCurrentData().size(), 3);
+            Assert.assertEquals(cache.getCurrentData().get(0).getData(), "1".getBytes());
+            Assert.assertEquals(cache.getCurrentData().get(1).getData(), "2".getBytes());
+            Assert.assertEquals(cache.getCurrentData().get(2).getData(), "3".getBytes());
+        }
+        finally
+        {
+            Closeables.closeQuietly(cache);
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void     testUpdateWhenNotCachingData() throws Exception
     {
@@ -66,7 +123,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                     }
                 }
             );
-            cache.start(true);
+            cache.start(PathChildrenCache.StartMode.BUILD_INITIAL);
 
             client.create().forPath("/test/foo", "first".getBytes());
             Assert.assertTrue(timing.awaitLatch(addedLatch));
@@ -161,7 +218,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                         }
                     }
                 );
-            cache.start(true);
+            cache.start(PathChildrenCache.StartMode.BUILD_INITIAL);
 
             client.delete().forPath("/test/foo");
             Assert.assertTrue(removedLatch.await(10, TimeUnit.SECONDS));
@@ -260,7 +317,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                     }
                 }
             );
-            cache.start(true);
+            cache.start(PathChildrenCache.StartMode.BUILD_INITIAL);
             future.get();
 
             Assert.assertTrue(addedLatch.await(10, TimeUnit.SECONDS));
@@ -362,7 +419,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                     }
                 }
             );
-            cache.start(true);
+            cache.start(PathChildrenCache.StartMode.BUILD_INITIAL);
 
             client.delete().forPath("/base/a");
             Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
@@ -489,7 +546,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                     latch.countDown();
                 }
             };
-            cache.start(true);
+            cache.start(PathChildrenCache.StartMode.BUILD_INITIAL);
 
             latch.await();
 

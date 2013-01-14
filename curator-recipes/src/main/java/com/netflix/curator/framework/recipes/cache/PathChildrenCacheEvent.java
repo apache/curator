@@ -46,19 +46,25 @@ public class PathChildrenCacheEvent
         CHILD_REMOVED,
 
         /**
-         * Called when the connection has changed to {@link ConnectionState#SUSPENDED}
+         * send when the connection has changed to {@link ConnectionState#SUSPENDED}
          */
         CONNECTION_SUSPENDED,
 
         /**
-         * Called when the connection has changed to {@link ConnectionState#RECONNECTED}
+         * set when the connection has changed to {@link ConnectionState#RECONNECTED}
          */
         CONNECTION_RECONNECTED,
 
         /**
-         * Called when the connection has changed to {@link ConnectionState#LOST}
+         * set when the connection has changed to {@link ConnectionState#LOST}
          */
-        CONNECTION_LOST
+        CONNECTION_LOST,
+
+        /**
+         * Sent when start(StartMode.POST_CHILDREN_INITIALIZED_EVENT) has completed loading
+         * the initial data set
+         */
+        INITIALIZED
     }
 
     /**

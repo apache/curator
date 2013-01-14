@@ -72,12 +72,14 @@ public class PathChildrenCache implements Closeable
     private final ListenerContainer<PathChildrenCacheListener>  listeners = new ListenerContainer<PathChildrenCacheListener>();
     private final ConcurrentMap<String, ChildData>              currentData = Maps.newConcurrentMap();
 
+    private volatile Set<String>                  initialSet = null;
+
     private final Watcher     childrenWatcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
         {
-            offerOperation(new RefreshOperation(PathChildrenCache.this));
+            offerOperation(new RefreshOperation(PathChildrenCache.this, RefreshMode.STANDARD));
         }
     };
 
@@ -189,7 +191,7 @@ public class PathChildrenCache implements Closeable
      */
     public void     start() throws Exception
     {
-        start(false);
+        start(StartMode.STANDARD);
     }
 
     /**
@@ -198,32 +200,73 @@ public class PathChildrenCache implements Closeable
      * @param buildInitial if true, {@link #rebuild()} will be called before this method
      *                     returns in order to get an initial view of the node
      * @throws Exception errors
+     * @deprecated use {@link #start(StartMode)}
      */
     public void     start(boolean buildInitial) throws Exception
     {
+        start(buildInitial ? StartMode.BUILD_INITIAL : StartMode.STANDARD);
+    }
+
+    /**
+     * How to load initial data when calling start()
+     */
+    public enum StartMode
+    {
+        /**
+         * Load data in the background - start() will return immediately
+         */
+        STANDARD,
+
+        /**
+         * Load initial data set in the foregroup. start() will block until all initial data is loaded
+         */
+        BUILD_INITIAL,
+
+        /**
+         * Load data in the background and post {@link PathChildrenCacheEvent.Type#INITIALIZED} when done
+         */
+        POST_INITIALIZED_EVENT
+    }
+
+    public void     start(StartMode mode) throws Exception
+    {
+        mode = Preconditions.checkNotNull(mode, "mode cannot be null");
+
         Preconditions.checkState(!executorService.isShutdown(), "already started");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         executorService.submit
-            (
-                new Callable<Void>()
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
                 {
-                    @Override
-                    public Void call() throws Exception
-                    {
-                        mainLoop();
-                        return null;
-                    }
+                    mainLoop();
+                    return null;
                 }
-            );
+            }
+        );
 
-        if ( buildInitial )
+        switch ( mode )
         {
-            rebuild();
-        }
-        else
-        {
-            offerOperation(new RefreshOperation(this));
+            case STANDARD:
+            {
+                offerOperation(new RefreshOperation(this, RefreshMode.STANDARD));
+                break;
+            }
+
+            case BUILD_INITIAL:
+            {
+                rebuild();
+                break;
+            }
+
+            case POST_INITIALIZED_EVENT:
+            {
+                offerOperation(new RefreshOperation(this, RefreshMode.POST_CHILDREN_INITIALIZED_EVENT));
+                break;
+            }
         }
     }
 
@@ -252,7 +295,7 @@ public class PathChildrenCache implements Closeable
         }
 
         // this is necessary so that any updates that occurred while rebuilding are taken
-        offerOperation(new ForceRefreshOperation(this));
+        offerOperation(new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT));
     }
 
     /**
@@ -272,7 +315,7 @@ public class PathChildrenCache implements Closeable
 
         // this is necessary so that any updates that occurred while rebuilding are taken
         // have to rebuild entire tree in case this node got deleted in the interim
-        offerOperation(new ForceRefreshOperation(this));
+        offerOperation(new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT));
     }
 
     /**
@@ -364,7 +407,7 @@ public class PathChildrenCache implements Closeable
     public void clearAndRefresh() throws Exception
     {
         currentData.clear();
-        offerOperation(new RefreshOperation(this));
+        offerOperation(new RefreshOperation(this, RefreshMode.STANDARD));
     }
 
     /**
@@ -376,7 +419,14 @@ public class PathChildrenCache implements Closeable
         currentData.clear();
     }
 
-    void refresh(final boolean forceGetDataAndStat) throws Exception
+    enum RefreshMode
+    {
+        STANDARD,
+        FORCE_GET_DATA_AND_STAT,
+        POST_CHILDREN_INITIALIZED_EVENT
+    }
+
+    void refresh(final RefreshMode mode) throws Exception
     {
         ensurePath.ensure(client.getZookeeperClient());
 
@@ -385,7 +435,7 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                processChildren(event.getChildren(), forceGetDataAndStat);
+                processChildren(event.getChildren(), mode);
             }
         };
 
@@ -507,7 +557,7 @@ public class PathChildrenCache implements Closeable
         {
             try
             {
-                offerOperation(new ForceRefreshOperation(this));
+                offerOperation(new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT));
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED, null)));
             }
             catch ( Exception e )
@@ -519,7 +569,7 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private void processChildren(List<String> children, boolean forceGetDataAndStat) throws Exception
+    private void processChildren(List<String> children, RefreshMode mode) throws Exception
     {
         List<String>    fullPaths = Lists.transform
         (
@@ -541,12 +591,38 @@ public class PathChildrenCache implements Closeable
             remove(fullPath);
         }
 
+        if ( mode == RefreshMode.POST_CHILDREN_INITIALIZED_EVENT )
+        {
+            initialSet = Sets.newHashSet(children);
+            updateInitialSet(null);
+        }
+
         for ( String name : children )
         {
             String      fullPath = ZKPaths.makePath(path, name);
-            if ( forceGetDataAndStat || !currentData.containsKey(fullPath) )
+            if ( (mode == RefreshMode.FORCE_GET_DATA_AND_STAT) || !currentData.containsKey(fullPath) )
             {
                 getDataAndStat(fullPath);
+            }
+            else
+            {
+                updateInitialSet(name);
+            }
+        }
+    }
+
+    private void updateInitialSet(String child)
+    {
+        if ( initialSet != null )
+        {
+            if ( child != null )
+            {
+                initialSet.remove(child);
+            }
+            if ( initialSet.size() == 0 )
+            {
+                offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, null)));
+                initialSet = null;
             }
         }
     }
@@ -574,6 +650,7 @@ public class PathChildrenCache implements Closeable
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
             }
+            updateInitialSet(ZKPaths.getNodeFromPath(fullPath));
         }
     }
 
