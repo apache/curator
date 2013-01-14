@@ -239,6 +239,8 @@ public class PathChildrenCache implements Closeable
 
         ensurePath.ensure(client.getZookeeperClient());
 
+        clear();
+
         List<String>            children = client.getChildren().forPath(path);
         for ( String child : children )
         {
@@ -462,19 +464,30 @@ public class PathChildrenCache implements Closeable
         log.error("", e);
     }
 
+    @VisibleForTesting
+    protected void remove(String fullPath)
+    {
+        ChildData data = currentData.remove(fullPath);
+        if ( data != null )
+        {
+            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, data)));
+        }
+    }
+
     private void internalRebuildNode(String fullPath) throws Exception
     {
         if ( cacheData )
         {
             try
             {
-                Stat stat = new Stat();
+                Stat        stat = new Stat();
                 byte[]      bytes = dataIsCompressed ? client.getData().decompressed().storingStatIn(stat).forPath(fullPath) : client.getData().storingStatIn(stat).forPath(fullPath);
                 currentData.put(fullPath, new ChildData(fullPath, stat, bytes));
             }
             catch ( KeeperException.NoNodeException ignore )
             {
-                // ignore
+                // node no longer exists - remove it
+                currentData.remove(fullPath);
             }
         }
         else
@@ -483,6 +496,11 @@ public class PathChildrenCache implements Closeable
             if ( stat != null )
             {
                 currentData.put(fullPath, new ChildData(fullPath, stat, null));
+            }
+            else
+            {
+                // node no longer exists - remove it
+                currentData.remove(fullPath);
             }
         }
     }
@@ -548,15 +566,6 @@ public class PathChildrenCache implements Closeable
             {
                 getDataAndStat(fullPath);
             }
-        }
-    }
-
-    private void remove(String fullPath)
-    {
-        ChildData data = currentData.remove(fullPath);
-        if ( data != null )
-        {
-            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, data)));
         }
     }
 

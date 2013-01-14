@@ -36,6 +36,105 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TestPathChildrenCache extends BaseClassForTests
 {
     @Test
+    public void     testRebuildWithDelete() throws Exception
+    {
+        Timing              timing = new Timing();
+
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().creatingParentsIfNeeded().forPath("/test");
+
+            final CountDownLatch    addedLatch = new CountDownLatch(2);
+            PathChildrenCache       cache = new PathChildrenCache(client, "/test", true)
+            {
+                @Override
+                protected void remove(String fullPath)
+                {
+                    // override all watcher based deletes
+                }
+            };
+            cache.start(true);
+            cache.getListenable().addListener
+            (
+                new PathChildrenCacheListener()
+                {
+                    @Override
+                    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                    {
+                        if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                        {
+                            addedLatch.countDown();
+                        }
+                    }
+                }
+            );
+
+            client.create().forPath("/test/foo", "first".getBytes());
+            client.create().forPath("/test/bar", "second".getBytes());
+
+            Assert.assertTrue(timing.awaitLatch(addedLatch));
+            client.delete().forPath("/test/foo");
+
+            cache.rebuild();
+            Assert.assertEquals(cache.getCurrentData().size(), 1);
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void     testRebuildNodeWithDelete() throws Exception
+    {
+        Timing              timing = new Timing();
+
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().creatingParentsIfNeeded().forPath("/test");
+
+            final CountDownLatch    addedLatch = new CountDownLatch(1);
+            PathChildrenCache       cache = new PathChildrenCache(client, "/test", true)
+            {
+                @Override
+                protected void remove(String fullPath)
+                {
+                    // override all watcher based deletes
+                }
+            };
+            cache.start(true);
+            cache.getListenable().addListener
+                (
+                    new PathChildrenCacheListener()
+                    {
+                        @Override
+                        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                        {
+                            if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                            {
+                                addedLatch.countDown();
+                            }
+                        }
+                    }
+                );
+
+            client.create().forPath("/test/foo", "first".getBytes());
+            Assert.assertTrue(timing.awaitLatch(addedLatch));
+            client.delete().forPath("/test/foo");
+            cache.rebuildNode("/test/foo");
+            Assert.assertEquals(cache.getCurrentData().size(), 0);
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void     testUpdateWhenNotCachingData() throws Exception
     {
         Timing              timing = new Timing();
