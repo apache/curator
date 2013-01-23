@@ -601,17 +601,17 @@ public class PathChildrenCache implements Closeable
     private void processChildren(List<String> children, RefreshMode mode) throws Exception
     {
         List<String> fullPaths = Lists.transform
-            (
-                children,
-                new Function<String, String>()
+        (
+            children,
+            new Function<String, String>()
+            {
+                @Override
+                public String apply(String child)
                 {
-                    @Override
-                    public String apply(String child)
-                    {
-                        return ZKPaths.makePath(path, child);
-                    }
+                    return ZKPaths.makePath(path, child);
                 }
-            );
+            }
+        );
         Set<String> removedNodes = Sets.newHashSet(currentData.keySet());
         removedNodes.removeAll(fullPaths);
 
@@ -683,17 +683,19 @@ public class PathChildrenCache implements Closeable
         {
             // all initial children have been processed - send initialized message
 
-            final List<ChildData> children = ImmutableList.copyOf(localInitialSet.values());
-            ChildData data = new ChildData(path, new Stat(), new byte[0])
+            if ( initialSet.getAndSet(null) != null )   // avoid edge case - don't send more than 1 INITIALIZED event
             {
-                @Override
-                public List<ChildData> getInitialData()
+                final List<ChildData> children = ImmutableList.copyOf(localInitialSet.values());
+                ChildData data = new ChildData(path, new Stat(), new byte[0])
                 {
-                    return children;
-                }
-            };
-            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, data)));
-            initialSet.set(null);
+                    @Override
+                    public List<ChildData> getInitialData()
+                    {
+                        return children;
+                    }
+                };
+                offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, data)));
+            }
         }
     }
 
