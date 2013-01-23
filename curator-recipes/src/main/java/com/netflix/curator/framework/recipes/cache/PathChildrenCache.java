@@ -40,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -268,6 +267,7 @@ public class PathChildrenCache implements Closeable
 
             case POST_INITIALIZED_EVENT:
             {
+                initialSet.set(Maps.<String, ChildData>newHashMap());
                 offerOperation(new RefreshOperation(this, RefreshMode.POST_INITIALIZED));
                 break;
             }
@@ -620,19 +620,6 @@ public class PathChildrenCache implements Closeable
             remove(fullPath);
         }
 
-        if ( mode == RefreshMode.POST_INITIALIZED )
-        {
-            // keep track of the initial children
-            HashMap<String,ChildData> localInitialSet = Maps.newHashMap();
-            initialSet.set(localInitialSet);
-            for ( String name : children )
-            {
-                localInitialSet.put(name, null);
-            }
-
-            maybeOfferInitializedEvent(localInitialSet);
-        }
-
         for ( String name : children )
         {
             String fullPath = ZKPaths.makePath(path, name);
@@ -641,7 +628,8 @@ public class PathChildrenCache implements Closeable
             {
                 getDataAndStat(fullPath);
             }
-            else
+
+            if ( mode == RefreshMode.POST_INITIALIZED )
             {
                 updateInitialSet(name, null);
             }
