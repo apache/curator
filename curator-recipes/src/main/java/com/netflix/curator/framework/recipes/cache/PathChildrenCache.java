@@ -636,7 +636,7 @@ public class PathChildrenCache implements Closeable
         {
             String fullPath = ZKPaths.makePath(path, name);
 
-            if ( mode == RefreshMode.FORCE_GET_DATA_AND_STAT || !currentData.containsKey(fullPath) )
+            if ( (mode == RefreshMode.FORCE_GET_DATA_AND_STAT) || !currentData.containsKey(fullPath) )
             {
                 getDataAndStat(fullPath);
             }
@@ -693,7 +693,17 @@ public class PathChildrenCache implements Closeable
         if ( uninitializedChildren.size() == 0 )
         {
             // all initial children have been processed - send initialized message
-            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, null)));
+
+            final List<ChildData> children = ImmutableList.copyOf(localInitialSet.values());
+            ChildData data = new ChildData(path, new Stat(), new byte[0])
+            {
+                @Override
+                public List<ChildData> getInitialData()
+                {
+                    return children;
+                }
+            };
+            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, data)));
             initialSet.set(null);
         }
     }

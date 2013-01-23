@@ -17,6 +17,7 @@ package com.netflix.curator.framework.recipes.cache;
 
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ChildData implements Comparable<ChildData>
@@ -30,6 +31,18 @@ public class ChildData implements Comparable<ChildData>
         this.path = path;
         this.stat = stat;
         this.data = new AtomicReference<byte[]>(data);
+    }
+
+    /**
+     * Special purpose method. When an {@link PathChildrenCacheEvent.Type#INITIALIZED}
+     * event is received, you can call this method on the passed ChildData object to
+     * receive the initial state of the cache.
+     *
+     * @return initial state of cache for {@link PathChildrenCacheEvent.Type#INITIALIZED} events. Otherwise, <code>null</code>.
+     */
+    public List<ChildData> getInitialData()
+    {
+        return null;
     }
 
     /**

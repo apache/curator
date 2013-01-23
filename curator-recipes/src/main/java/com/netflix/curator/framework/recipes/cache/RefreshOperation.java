@@ -34,26 +34,37 @@ class RefreshOperation implements Operation
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(Object o)
     {
-        return RefreshOperation.class.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        //noinspection SimplifiableIfStatement
-        if ( obj == null )
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
 
-        return (this == obj) || (getClass().equals(obj.getClass()));
+        RefreshOperation that = (RefreshOperation)o;
+
+        //noinspection RedundantIfStatement
+        if ( mode != that.mode )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return mode.hashCode();
     }
 
     @Override
     public String toString()
     {
-        return "RefreshOperation{}";
+        return "RefreshOperation(" + mode + "){}";
     }
 }
