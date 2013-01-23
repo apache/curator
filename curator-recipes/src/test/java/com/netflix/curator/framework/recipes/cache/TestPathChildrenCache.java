@@ -36,6 +36,47 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TestPathChildrenCache extends BaseClassForTests
 {
     @Test
+    public void     testAsyncInitialPopulation() throws Exception
+    {
+        PathChildrenCache cache = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            client.create().forPath("/test");
+            client.create().forPath("/test/one", "hey there".getBytes());
+
+            final BlockingQueue<PathChildrenCacheEvent>        events = new LinkedBlockingQueue<PathChildrenCacheEvent>();
+            cache = new PathChildrenCache(client, "/test", true);
+            cache.getListenable().addListener
+            (
+                new PathChildrenCacheListener()
+                {
+                    @Override
+                    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                    {
+                        events.offer(event);
+                    }
+                }
+            );
+            cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+
+            PathChildrenCacheEvent event = events.poll(10, TimeUnit.SECONDS);
+            Assert.assertEquals(event.getType(), PathChildrenCacheEvent.Type.CHILD_ADDED);
+
+            event = events.poll(10, TimeUnit.SECONDS);
+            Assert.assertEquals(event.getType(), PathChildrenCacheEvent.Type.INITIALIZED);
+            Assert.assertEquals(event.getData().getInitialData().size(), 1);
+        }
+        finally
+        {
+            Closeables.closeQuietly(cache);
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void     testChildrenInitialized() throws Exception
     {
         Timing              timing = new Timing();
