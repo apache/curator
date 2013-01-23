@@ -531,6 +531,7 @@ public class PathChildrenCache implements Closeable
         if ( localInitialSet != null )
         {
             localInitialSet.remove(fullPath);
+            maybeOfferInitializedEvent(localInitialSet);
         }
     }
 
