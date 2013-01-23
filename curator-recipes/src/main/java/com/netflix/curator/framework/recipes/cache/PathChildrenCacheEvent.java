@@ -58,7 +58,14 @@ public class PathChildrenCacheEvent
         /**
          * Called when the connection has changed to {@link ConnectionState#LOST}
          */
-        CONNECTION_LOST
+        CONNECTION_LOST,
+
+        /**
+         * Posted when {@link PathChildrenCache#start(PathChildrenCache.StartMode)} is called
+         * with {@link PathChildrenCache.StartMode#POST_INITIALIZED_EVENT}. This
+         * event signals that the initial cache has been populated.
+         */
+        INITIALIZED
     }
 
     /**

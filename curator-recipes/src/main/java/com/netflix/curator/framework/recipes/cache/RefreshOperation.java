@@ -19,16 +19,18 @@ package com.netflix.curator.framework.recipes.cache;
 class RefreshOperation implements Operation
 {
     private final PathChildrenCache cache;
+    private final PathChildrenCache.RefreshMode mode;
 
-    RefreshOperation(PathChildrenCache cache)
+    RefreshOperation(PathChildrenCache cache, PathChildrenCache.RefreshMode mode)
     {
         this.cache = cache;
+        this.mode = mode;
     }
 
     @Override
     public void invoke() throws Exception
     {
-        cache.refresh(false);
+        cache.refresh(mode);
     }
 
     @Override
