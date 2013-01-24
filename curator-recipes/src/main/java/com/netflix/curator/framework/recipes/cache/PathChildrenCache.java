@@ -629,10 +629,7 @@ public class PathChildrenCache implements Closeable
                 getDataAndStat(fullPath);
             }
 
-            if ( mode == RefreshMode.POST_INITIALIZED )
-            {
-                updateInitialSet(name, null);
-            }
+            updateInitialSet(name, null);
         }
     }
 
