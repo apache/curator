@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.api.BackgroundCallback;
+import com.netflix.curator.framework.imps.CuratorFrameworkState;
 import com.netflix.curator.framework.recipes.BaseClassForTests;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
@@ -57,8 +58,9 @@ public class TestDistributedQueue extends BaseClassForTests
     {
         final int       ITERATIONS = 1000;
 
-        DistributedQueue<String>  queue = null;
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing                      timing = new Timing();
+        DistributedQueue<String>    queue = null;
+        final CuratorFramework      client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -123,7 +125,7 @@ public class TestDistributedQueue extends BaseClassForTests
                     {
                         used.add(itemNode);
                     }
-                    return client.isStarted() ? super.processWithLockSafety(itemNode, type) : false;
+                    return (client.getState() == CuratorFrameworkState.STARTED) ? super.processWithLockSafety(itemNode, type) : false;
                 }
             };
             queue.start();
@@ -133,7 +135,7 @@ public class TestDistributedQueue extends BaseClassForTests
                 queue.put(Integer.toString(i));
             }
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS), "Count: " + latch.getCount());
+            Assert.assertTrue(timing.awaitLatch(latch));
 
             Assert.assertTrue(doubleUsed.size() == 0, doubleUsed.toString());
         }

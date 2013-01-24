@@ -18,6 +18,7 @@ package com.netflix.curator.framework.recipes.cache;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -49,39 +51,41 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
  * will watch the ZK path, respond to update/create/delete events, pull down the data, etc. You can
  * register a listener that will get notified when changes occur.</p>
- *
+ * <p/>
  * <p><b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must
  * be prepared for false-positives and false-negatives. Additionally, always use the version number
  * when updating data to avoid overwriting another process' change.</p>
  */
 public class PathChildrenCache implements Closeable
 {
-    private final Logger                    log = LoggerFactory.getLogger(getClass());
-    private final CuratorFramework          client;
-    private final String                    path;
-    private final ExecutorService           executorService;
-    private final boolean                   cacheData;
-    private final boolean                   dataIsCompressed;
-    private final EnsurePath                ensurePath;
-    private final BlockingQueue<Operation>                      operations = new LinkedBlockingQueue<Operation>();
-    private final ListenerContainer<PathChildrenCacheListener>  listeners = new ListenerContainer<PathChildrenCacheListener>();
-    private final ConcurrentMap<String, ChildData>              currentData = Maps.newConcurrentMap();
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final CuratorFramework client;
+    private final String path;
+    private final ExecutorService executorService;
+    private final boolean cacheData;
+    private final boolean dataIsCompressed;
+    private final EnsurePath ensurePath;
+    private final BlockingQueue<Operation> operations = new LinkedBlockingQueue<Operation>();
+    private final ListenerContainer<PathChildrenCacheListener> listeners = new ListenerContainer<PathChildrenCacheListener>();
+    private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
+    private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
 
-    private final Watcher     childrenWatcher = new Watcher()
+    private final Watcher childrenWatcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
         {
-            offerOperation(new RefreshOperation(PathChildrenCache.this));
+            offerOperation(new RefreshOperation(PathChildrenCache.this, RefreshMode.STANDARD));
         }
     };
 
-    private final Watcher     dataWatcher = new Watcher()
+    private final Watcher dataWatcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
@@ -105,7 +109,7 @@ public class PathChildrenCache implements Closeable
     };
 
     @VisibleForTesting
-    volatile Exchanger<Object>      rebuildTestExchanger;
+    volatile Exchanger<Object> rebuildTestExchanger;
 
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
@@ -119,9 +123,8 @@ public class PathChildrenCache implements Closeable
 
     /**
      * @param client the client
-     * @param path path to watch
-     * @param mode caching mode
-     *
+     * @param path   path to watch
+     * @param mode   caching mode
      * @deprecated use {@link #PathChildrenCache(CuratorFramework, String, boolean)} instead
      */
     @SuppressWarnings("deprecation")
@@ -131,11 +134,10 @@ public class PathChildrenCache implements Closeable
     }
 
     /**
-     * @param client the client
-     * @param path path to watch
-     * @param mode caching mode
+     * @param client        the client
+     * @param path          path to watch
+     * @param mode          caching mode
      * @param threadFactory factory to use when creating internal threads
-     *
      * @deprecated use {@link #PathChildrenCache(CuratorFramework, String, boolean, ThreadFactory)} instead
      */
     @SuppressWarnings("deprecation")
@@ -145,8 +147,8 @@ public class PathChildrenCache implements Closeable
     }
 
     /**
-     * @param client the client
-     * @param path path to watch
+     * @param client    the client
+     * @param path      path to watch
      * @param cacheData if true, node contents are cached in addition to the stat
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData)
@@ -155,9 +157,9 @@ public class PathChildrenCache implements Closeable
     }
 
     /**
-     * @param client the client
-     * @param path path to watch
-     * @param cacheData if true, node contents are cached in addition to the stat
+     * @param client        the client
+     * @param path          path to watch
+     * @param cacheData     if true, node contents are cached in addition to the stat
      * @param threadFactory factory to use when creating internal threads
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, ThreadFactory threadFactory)
@@ -166,11 +168,11 @@ public class PathChildrenCache implements Closeable
     }
 
     /**
-     * @param client the client
-     * @param path path to watch
-     * @param cacheData if true, node contents are cached in addition to the stat
+     * @param client           the client
+     * @param path             path to watch
+     * @param cacheData        if true, node contents are cached in addition to the stat
      * @param dataIsCompressed if true, data in the path is compressed
-     * @param threadFactory factory to use when creating internal threads
+     * @param threadFactory    factory to use when creating internal threads
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, ThreadFactory threadFactory)
     {
@@ -187,43 +189,88 @@ public class PathChildrenCache implements Closeable
      *
      * @throws Exception errors
      */
-    public void     start() throws Exception
+    public void start() throws Exception
     {
-        start(false);
+        start(StartMode.NORMAL);
     }
 
     /**
      * Same as {@link #start()} but gives the option of doing an initial build
      *
      * @param buildInitial if true, {@link #rebuild()} will be called before this method
-     *                     returns in order to get an initial view of the node
+     *                     returns in order to get an initial view of the node; otherwise,
+     *                     the cache will be initialized asynchronously
+     * @deprecated use {@link #start(StartMode)}
      * @throws Exception errors
      */
-    public void     start(boolean buildInitial) throws Exception
+    public void start(boolean buildInitial) throws Exception
+    {
+        start(buildInitial ? StartMode.BUILD_INITIAL_CACHE : StartMode.NORMAL);
+    }
+
+    /**
+     * Method of priming cache on {@link PathChildrenCache#start(StartMode)}
+     */
+    public enum StartMode
+    {
+        /**
+         * cache will _not_ be primed. i.e. it will start empty and you will receive
+         * events for all nodes added, etc.
+         */
+        NORMAL,
+
+        /**
+         * {@link PathChildrenCache#rebuild() will be called before this method returns in
+         * order to get an initial view of the node.
+         */
+        BUILD_INITIAL_CACHE,
+
+        /**
+         * After cache is primed with initial values (in the background) a
+         * {@link PathChildrenCacheEvent.Type#INITIALIZED} will be posted
+         */
+        POST_INITIALIZED_EVENT
+    }
+
+    public void start(StartMode mode) throws Exception
     {
         Preconditions.checkState(!executorService.isShutdown(), "already started");
+        mode = Preconditions.checkNotNull(mode, "mode cannot be null");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         executorService.submit
-            (
-                new Callable<Void>()
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
                 {
-                    @Override
-                    public Void call() throws Exception
-                    {
-                        mainLoop();
-                        return null;
-                    }
+                    mainLoop();
+                    return null;
                 }
-            );
+            }
+        );
 
-        if ( buildInitial )
+        switch ( mode )
         {
-            rebuild();
-        }
-        else
-        {
-            offerOperation(new RefreshOperation(this));
+            case NORMAL:
+            {
+                offerOperation(new RefreshOperation(this, RefreshMode.STANDARD));
+                break;
+            }
+
+            case BUILD_INITIAL_CACHE:
+            {
+                rebuild();
+                break;
+            }
+
+            case POST_INITIALIZED_EVENT:
+            {
+                initialSet.set(Maps.<String, ChildData>newHashMap());
+                offerOperation(new RefreshOperation(this, RefreshMode.POST_INITIALIZED));
+                break;
+            }
         }
     }
 
@@ -233,16 +280,18 @@ public class PathChildrenCache implements Closeable
      *
      * @throws Exception errors
      */
-    public void     rebuild() throws Exception
+    public void rebuild() throws Exception
     {
         Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
 
         ensurePath.ensure(client.getZookeeperClient());
 
-        List<String>            children = client.getChildren().forPath(path);
+        clear();
+
+        List<String> children = client.getChildren().forPath(path);
         for ( String child : children )
         {
-            String  fullPath = ZKPaths.makePath(path, child);
+            String fullPath = ZKPaths.makePath(path, child);
             internalRebuildNode(fullPath);
 
             if ( rebuildTestExchanger != null )
@@ -252,7 +301,7 @@ public class PathChildrenCache implements Closeable
         }
 
         // this is necessary so that any updates that occurred while rebuilding are taken
-        offerOperation(new ForceRefreshOperation(this));
+        offerOperation(new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT));
     }
 
     /**
@@ -262,7 +311,7 @@ public class PathChildrenCache implements Closeable
      * @param fullPath full path of the node to rebuild
      * @throws Exception errors
      */
-    public void     rebuildNode(String fullPath) throws Exception
+    public void rebuildNode(String fullPath) throws Exception
     {
         Preconditions.checkArgument(ZKPaths.getPathAndNode(fullPath).getPath().equals(path), "Node is not part of this cache: " + fullPath);
         Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
@@ -272,7 +321,7 @@ public class PathChildrenCache implements Closeable
 
         // this is necessary so that any updates that occurred while rebuilding are taken
         // have to rebuild entire tree in case this node got deleted in the interim
-        offerOperation(new ForceRefreshOperation(this));
+        offerOperation(new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT));
     }
 
     /**
@@ -305,7 +354,7 @@ public class PathChildrenCache implements Closeable
      *
      * @return list of children and data
      */
-    public List<ChildData>      getCurrentData()
+    public List<ChildData> getCurrentData()
     {
         return ImmutableList.copyOf(Sets.<ChildData>newTreeSet(currentData.values()));
     }
@@ -318,7 +367,7 @@ public class PathChildrenCache implements Closeable
      * @param fullPath full path to the node to check
      * @return data or null
      */
-    public ChildData            getCurrentData(String fullPath)
+    public ChildData getCurrentData(String fullPath)
     {
         return currentData.get(fullPath);
     }
@@ -329,7 +378,7 @@ public class PathChildrenCache implements Closeable
      *
      * @param fullPath the path of the node to clear
      */
-    public void         clearDataBytes(String fullPath)
+    public void clearDataBytes(String fullPath)
     {
         clearDataBytes(fullPath, -1);
     }
@@ -338,11 +387,11 @@ public class PathChildrenCache implements Closeable
      * As a memory optimization, you can clear the cached data bytes for a node. Subsequent
      * calls to {@link ChildData#getData()} for this node will return <code>null</code>.
      *
-     * @param fullPath the path of the node to clear
+     * @param fullPath  the path of the node to clear
      * @param ifVersion if non-negative, only clear the data if the data's version matches this version
      * @return true if the data was cleared
      */
-    public boolean         clearDataBytes(String fullPath, int ifVersion)
+    public boolean clearDataBytes(String fullPath, int ifVersion)
     {
         ChildData data = currentData.get(fullPath);
         if ( data != null )
@@ -364,7 +413,7 @@ public class PathChildrenCache implements Closeable
     public void clearAndRefresh() throws Exception
     {
         currentData.clear();
-        offerOperation(new RefreshOperation(this));
+        offerOperation(new RefreshOperation(this, RefreshMode.STANDARD));
     }
 
     /**
@@ -376,16 +425,23 @@ public class PathChildrenCache implements Closeable
         currentData.clear();
     }
 
-    void refresh(final boolean forceGetDataAndStat) throws Exception
+    enum RefreshMode
+    {
+        STANDARD,
+        FORCE_GET_DATA_AND_STAT,
+        POST_INITIALIZED
+    }
+
+    void refresh(final RefreshMode mode) throws Exception
     {
         ensurePath.ensure(client.getZookeeperClient());
 
-        final BackgroundCallback  callback = new BackgroundCallback()
+        final BackgroundCallback callback = new BackgroundCallback()
         {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                processChildren(event.getChildren(), forceGetDataAndStat);
+                processChildren(event.getChildren(), mode);
             }
         };
 
@@ -417,7 +473,7 @@ public class PathChildrenCache implements Closeable
 
     void getDataAndStat(final String fullPath) throws Exception
     {
-        BackgroundCallback  existsCallback = new BackgroundCallback()
+        BackgroundCallback existsCallback = new BackgroundCallback()
         {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
@@ -426,7 +482,7 @@ public class PathChildrenCache implements Closeable
             }
         };
 
-        BackgroundCallback  getDataCallback = new BackgroundCallback()
+        BackgroundCallback getDataCallback = new BackgroundCallback()
         {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
@@ -457,9 +513,26 @@ public class PathChildrenCache implements Closeable
      *
      * @param e the exception
      */
-    protected void      handleException(Throwable e)
+    protected void handleException(Throwable e)
     {
         log.error("", e);
+    }
+
+    @VisibleForTesting
+    protected void remove(String fullPath)
+    {
+        ChildData data = currentData.remove(fullPath);
+        if ( data != null )
+        {
+            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, data)));
+        }
+
+        Map<String, ChildData> localInitialSet = initialSet.get();
+        if ( localInitialSet != null )
+        {
+            localInitialSet.remove(fullPath);
+            maybeOfferInitializedEvent(localInitialSet);
+        }
     }
 
     private void internalRebuildNode(String fullPath) throws Exception
@@ -469,20 +542,26 @@ public class PathChildrenCache implements Closeable
             try
             {
                 Stat stat = new Stat();
-                byte[]      bytes = dataIsCompressed ? client.getData().decompressed().storingStatIn(stat).forPath(fullPath) : client.getData().storingStatIn(stat).forPath(fullPath);
+                byte[] bytes = dataIsCompressed ? client.getData().decompressed().storingStatIn(stat).forPath(fullPath) : client.getData().storingStatIn(stat).forPath(fullPath);
                 currentData.put(fullPath, new ChildData(fullPath, stat, bytes));
             }
             catch ( KeeperException.NoNodeException ignore )
             {
-                // ignore
+                // node no longer exists - remove it
+                currentData.remove(fullPath);
             }
         }
         else
         {
-            Stat        stat = client.checkExists().forPath(fullPath);
+            Stat stat = client.checkExists().forPath(fullPath);
             if ( stat != null )
             {
                 currentData.put(fullPath, new ChildData(fullPath, stat, null));
+            }
+            else
+            {
+                // node no longer exists - remove it
+                currentData.remove(fullPath);
             }
         }
     }
@@ -507,7 +586,7 @@ public class PathChildrenCache implements Closeable
         {
             try
             {
-                offerOperation(new ForceRefreshOperation(this));
+                offerOperation(new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT));
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED, null)));
             }
             catch ( Exception e )
@@ -519,9 +598,9 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private void processChildren(List<String> children, boolean forceGetDataAndStat) throws Exception
+    private void processChildren(List<String> children, RefreshMode mode) throws Exception
     {
-        List<String>    fullPaths = Lists.transform
+        List<String> fullPaths = Lists.transform
         (
             children,
             new Function<String, String>()
@@ -533,7 +612,7 @@ public class PathChildrenCache implements Closeable
                 }
             }
         );
-        Set<String>     removedNodes = Sets.newHashSet(currentData.keySet());
+        Set<String> removedNodes = Sets.newHashSet(currentData.keySet());
         removedNodes.removeAll(fullPaths);
 
         for ( String fullPath : removedNodes )
@@ -543,20 +622,14 @@ public class PathChildrenCache implements Closeable
 
         for ( String name : children )
         {
-            String      fullPath = ZKPaths.makePath(path, name);
-            if ( forceGetDataAndStat || !currentData.containsKey(fullPath) )
+            String fullPath = ZKPaths.makePath(path, name);
+
+            if ( (mode == RefreshMode.FORCE_GET_DATA_AND_STAT) || !currentData.containsKey(fullPath) )
             {
                 getDataAndStat(fullPath);
             }
-        }
-    }
 
-    private void remove(String fullPath)
-    {
-        ChildData data = currentData.remove(fullPath);
-        if ( data != null )
-        {
-            offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, data)));
+            updateInitialSet(name, null);
         }
     }
 
@@ -564,8 +637,8 @@ public class PathChildrenCache implements Closeable
     {
         if ( resultCode == KeeperException.Code.OK.intValue() ) // otherwise - node must have dropped or something - we should be getting another event
         {
-            ChildData       data = new ChildData(fullPath, stat, bytes);
-            ChildData       previousData = currentData.put(fullPath, data);
+            ChildData data = new ChildData(fullPath, stat, bytes);
+            ChildData previousData = currentData.put(fullPath, data);
             if ( previousData == null ) // i.e. new
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data)));
@@ -573,6 +646,52 @@ public class PathChildrenCache implements Closeable
             else if ( previousData.getStat().getVersion() != stat.getVersion() )
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
+            }
+            updateInitialSet(ZKPaths.getNodeFromPath(fullPath), data);
+        }
+    }
+
+    private void updateInitialSet(String name, ChildData data)
+    {
+        Map<String, ChildData> localInitialSet = initialSet.get();
+        if ( localInitialSet != null )
+        {
+            localInitialSet.put(name, data);
+            maybeOfferInitializedEvent(localInitialSet);
+        }
+    }
+
+    private void maybeOfferInitializedEvent(Map<String, ChildData> localInitialSet)
+    {
+        Map<String, ChildData> uninitializedChildren = Maps.filterValues
+        (
+            localInitialSet,
+            new Predicate<ChildData>()
+            {
+                @Override
+                public boolean apply(ChildData input)
+                {
+                    return (input == null);
+                }
+            }
+        );
+
+        if ( uninitializedChildren.size() == 0 )
+        {
+            // all initial children have been processed - send initialized message
+
+            if ( initialSet.getAndSet(null) != null )   // avoid edge case - don't send more than 1 INITIALIZED event
+            {
+                final List<ChildData> children = ImmutableList.copyOf(localInitialSet.values());
+                PathChildrenCacheEvent event = new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, null)
+                {
+                    @Override
+                    public List<ChildData> getInitialData()
+                    {
+                        return children;
+                    }
+                };
+                offerOperation(new EventOperation(this, event));
             }
         }
     }
