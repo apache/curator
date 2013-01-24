@@ -663,20 +663,7 @@ public class PathChildrenCache implements Closeable
 
     private void maybeOfferInitializedEvent(Map<String, ChildData> localInitialSet)
     {
-        Map<String, ChildData> uninitializedChildren = Maps.filterValues
-        (
-            localInitialSet,
-            new Predicate<ChildData>()
-            {
-                @Override
-                public boolean apply(ChildData input)
-                {
-                    return (input == null);
-                }
-            }
-        );
-
-        if ( uninitializedChildren.size() == 0 )
+        if ( !hasUninitialized(localInitialSet) )
         {
             // all initial children have been processed - send initialized message
 
@@ -694,6 +681,23 @@ public class PathChildrenCache implements Closeable
                 offerOperation(new EventOperation(this, event));
             }
         }
+    }
+
+    private boolean hasUninitialized(Map<String, ChildData> localInitialSet)
+    {
+        Map<String, ChildData> uninitializedChildren = Maps.filterValues
+        (
+            localInitialSet,
+            new Predicate<ChildData>()
+            {
+                @Override
+                public boolean apply(ChildData input)
+                {
+                    return (input == null);
+                }
+            }
+        );
+        return (uninitializedChildren.size() != 0);
     }
 
     private void mainLoop()
