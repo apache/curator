@@ -96,11 +96,11 @@ public class PathChildrenCacheEvent
     }
 
     /**
-     * Special purpose method. When an {@link PathChildrenCacheEvent.Type#INITIALIZED}
-     * event is received, you can call this method on the passed ChildData object to
+     * Special purpose method. When an {@link Type#INITIALIZED}
+     * event is received, you can call this method to
      * receive the initial state of the cache.
      *
-     * @return initial state of cache for {@link PathChildrenCacheEvent.Type#INITIALIZED} events. Otherwise, <code>null</code>.
+     * @return initial state of cache for {@link Type#INITIALIZED} events. Otherwise, <code>null</code>.
      */
     public List<ChildData> getInitialData()
     {
