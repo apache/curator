@@ -16,6 +16,7 @@
 package com.netflix.curator.framework.recipes.cache;
 
 import com.netflix.curator.framework.state.ConnectionState;
+import java.util.List;
 
 /**
  * POJO that abstracts a change to a path
@@ -92,6 +93,18 @@ public class PathChildrenCacheEvent
     public ChildData getData()
     {
         return data;
+    }
+
+    /**
+     * Special purpose method. When an {@link PathChildrenCacheEvent.Type#INITIALIZED}
+     * event is received, you can call this method on the passed ChildData object to
+     * receive the initial state of the cache.
+     *
+     * @return initial state of cache for {@link PathChildrenCacheEvent.Type#INITIALIZED} events. Otherwise, <code>null</code>.
+     */
+    public List<ChildData> getInitialData()
+    {
+        return null;
     }
 
     @Override

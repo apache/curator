@@ -67,7 +67,7 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             event = events.poll(10, TimeUnit.SECONDS);
             Assert.assertEquals(event.getType(), PathChildrenCacheEvent.Type.INITIALIZED);
-            Assert.assertEquals(event.getData().getInitialData().size(), 1);
+            Assert.assertEquals(event.getInitialData().size(), 1);
         }
         finally
         {

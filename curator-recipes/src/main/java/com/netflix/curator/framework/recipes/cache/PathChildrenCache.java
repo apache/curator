@@ -686,7 +686,7 @@ public class PathChildrenCache implements Closeable
             if ( initialSet.getAndSet(null) != null )   // avoid edge case - don't send more than 1 INITIALIZED event
             {
                 final List<ChildData> children = ImmutableList.copyOf(localInitialSet.values());
-                ChildData data = new ChildData(path, new Stat(), new byte[0])
+                PathChildrenCacheEvent event = new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, null)
                 {
                     @Override
                     public List<ChildData> getInitialData()
@@ -694,7 +694,7 @@ public class PathChildrenCache implements Closeable
                         return children;
                     }
                 };
-                offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, data)));
+                offerOperation(new EventOperation(this, event));
             }
         }
     }
