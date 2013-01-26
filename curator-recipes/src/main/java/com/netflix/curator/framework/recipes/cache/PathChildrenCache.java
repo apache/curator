@@ -267,7 +267,7 @@ public class PathChildrenCache implements Closeable
 
             case POST_INITIALIZED_EVENT:
             {
-                initialSet.set(Maps.<String, ChildData>newHashMap());
+                initialSet.set(Maps.<String, ChildData>newConcurrentMap());
                 offerOperation(new RefreshOperation(this, RefreshMode.POST_INITIALIZED));
                 break;
             }
