@@ -234,6 +234,12 @@ public class PathChildrenCache implements Closeable
         POST_INITIALIZED_EVENT
     }
 
+    /**
+     * Start the cache. The cache is not started automatically. You must call this method.
+     *
+     * @param mode Method for priming the cache
+     * @throws Exception errors
+     */
     public void start(StartMode mode) throws Exception
     {
         Preconditions.checkState(!executorService.isShutdown(), "already started");
