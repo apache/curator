@@ -175,6 +175,7 @@ public class TestInterProcessSemaphoreCluster
         {
             executorService.shutdown();
             executorService.awaitTermination(10, TimeUnit.SECONDS);
+            executorService.shutdownNow();
             Closeables.closeQuietly(cluster);
         }
     }
