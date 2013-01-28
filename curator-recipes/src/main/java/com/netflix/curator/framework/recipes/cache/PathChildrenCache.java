@@ -222,7 +222,7 @@ public class PathChildrenCache implements Closeable
         NORMAL,
 
         /**
-         * {@link PathChildrenCache#rebuild() will be called before this method returns in
+         * {@link PathChildrenCache#rebuild()} will be called before this method returns in
          * order to get an initial view of the node.
          */
         BUILD_INITIAL_CACHE,
