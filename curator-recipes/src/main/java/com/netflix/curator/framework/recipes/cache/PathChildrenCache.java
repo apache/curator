@@ -76,6 +76,8 @@ public class PathChildrenCache implements Closeable
     private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
 
+    private static final ChildData      NULL_CHILD_DATA = new ChildData(null, null, null);
+
     private final Watcher childrenWatcher = new Watcher()
     {
         @Override
@@ -267,7 +269,7 @@ public class PathChildrenCache implements Closeable
 
             case POST_INITIALIZED_EVENT:
             {
-                initialSet.set(Maps.<String, ChildData>newHashMap());
+                initialSet.set(Maps.<String, ChildData>newConcurrentMap());
                 offerOperation(new RefreshOperation(this, RefreshMode.POST_INITIALIZED));
                 break;
             }
@@ -629,7 +631,7 @@ public class PathChildrenCache implements Closeable
                 getDataAndStat(fullPath);
             }
 
-            updateInitialSet(name, null);
+            updateInitialSet(name, NULL_CHILD_DATA);
         }
     }
 
@@ -663,20 +665,7 @@ public class PathChildrenCache implements Closeable
 
     private void maybeOfferInitializedEvent(Map<String, ChildData> localInitialSet)
     {
-        Map<String, ChildData> uninitializedChildren = Maps.filterValues
-        (
-            localInitialSet,
-            new Predicate<ChildData>()
-            {
-                @Override
-                public boolean apply(ChildData input)
-                {
-                    return (input == null);
-                }
-            }
-        );
-
-        if ( uninitializedChildren.size() == 0 )
+        if ( !hasUninitialized(localInitialSet) )
         {
             // all initial children have been processed - send initialized message
 
@@ -694,6 +683,23 @@ public class PathChildrenCache implements Closeable
                 offerOperation(new EventOperation(this, event));
             }
         }
+    }
+
+    private boolean hasUninitialized(Map<String, ChildData> localInitialSet)
+    {
+        Map<String, ChildData> uninitializedChildren = Maps.filterValues
+        (
+            localInitialSet,
+            new Predicate<ChildData>()
+            {
+                @Override
+                public boolean apply(ChildData input)
+                {
+                    return (input == NULL_CHILD_DATA);  // check against ref intentional
+                }
+            }
+        );
+        return (uninitializedChildren.size() != 0);
     }
 
     private void mainLoop()
