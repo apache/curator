@@ -26,10 +26,6 @@ import com.netflix.curator.test.KillSession;
 import com.netflix.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -39,42 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestPathChildrenCache extends BaseClassForTests
 {
-    @Test
-    public void     foo() throws Exception
-    {
-        final CountDownLatch    latch = new CountDownLatch(1);
-        Watcher         watcher = new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent event)
-            {
-                if ( event.getType() == Event.EventType.None )
-                {
-                    System.out.println(event.getState());
-                    latch.countDown();
-                }
-            }
-        };
-        ZooKeeper       client = new ZooKeeper("ec2-23-22-39-152.compute-1.amazonaws.com:8080,ec2-23-22-39-152.compute-1.amazonaws.com:2181", 60000, watcher);
-        System.out.println("pre get");
-        try
-        {
-            client.exists("/jztest", false);
-        }
-        catch ( KeeperException e )
-        {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
-        System.out.println("post get");
-        latch.await();
-        client.close();
-        System.out.println("done");
-    }
-
     @Test
     public void     testAsyncInitialPopulation() throws Exception
     {
