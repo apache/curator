@@ -76,6 +76,8 @@ public class PathChildrenCache implements Closeable
     private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
 
+    private static final ChildData      NULL_CHILD_DATA = new ChildData(null, null, null);
+
     private final Watcher childrenWatcher = new Watcher()
     {
         @Override
@@ -629,7 +631,7 @@ public class PathChildrenCache implements Closeable
                 getDataAndStat(fullPath);
             }
 
-            updateInitialSet(name, null);
+            updateInitialSet(name, NULL_CHILD_DATA);
         }
     }
 
@@ -693,7 +695,7 @@ public class PathChildrenCache implements Closeable
                 @Override
                 public boolean apply(ChildData input)
                 {
-                    return (input == null);
+                    return (input == NULL_CHILD_DATA);  // check against ref intentional
                 }
             }
         );
