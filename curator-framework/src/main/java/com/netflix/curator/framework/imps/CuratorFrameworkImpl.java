@@ -65,6 +65,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final CompressionProvider                                   compressionProvider;
     private final ACLProvider                                           aclProvider;
     private final NamespaceFacadeCache                                  namespaceFacadeCache;
+    private final NamespaceWatcherMap                                   namespaceWatcherMap = new NamespaceWatcherMap(this);
 
     private volatile ExecutorService                                    executorService;
 
@@ -250,6 +251,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             unhandledErrorListeners.clear();
             connectionStateManager.close();
             client.close();
+            namespaceWatcherMap.close();
             executorService.shutdownNow();
         }
     }
@@ -532,6 +534,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     NamespaceFacadeCache getNamespaceFacadeCache()
     {
         return namespaceFacadeCache;
+    }
+
+    NamespaceWatcherMap getNamespaceWatcherMap()
+    {
+        return namespaceWatcherMap;
     }
 
     private <DATA_TYPE> void sendToBackgroundCallback(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)

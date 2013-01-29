@@ -33,13 +33,13 @@ class Watching
 
     Watching(CuratorFrameworkImpl client, Watcher watcher)
     {
-        this.watcher = new NamespaceWatcher(client, watcher);
+        this.watcher = client.getNamespaceWatcherMap().getNamespaceWatcher(watcher);
         this.watched = false;
     }
 
     Watching(CuratorFrameworkImpl client, CuratorWatcher watcher)
     {
-        this.watcher = new NamespaceWatcher(client, watcher);
+        this.watcher = client.getNamespaceWatcherMap().getNamespaceWatcher(watcher);
         this.watched = false;
     }
 
