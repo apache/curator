@@ -1,4 +1,4 @@
-1.3.2 - xxxxxxxxxxxxxxxx
+1.3.2 - February 6, 2013
 ========================
 * MAJOR BUG FIX - Issue 232: ZooKeeper guarantees that "A watch object, or function/context pair, will only
 be triggered once for a given notification." Curator was breaking this guarantee by internally creating a
