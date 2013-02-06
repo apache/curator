@@ -20,6 +20,7 @@ package com.netflix.curator;
 
 import com.netflix.curator.ensemble.EnsembleProvider;
 import com.netflix.curator.utils.ZookeeperFactory;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
@@ -127,6 +128,14 @@ class HandleHolder
             ZooKeeper zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
             if ( zooKeeper != null )
             {
+                Watcher dummyWatcher = new Watcher()
+                {
+                    @Override
+                    public void process(WatchedEvent event)
+                    {
+                    }
+                };
+                zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
                 zooKeeper.close();
             }
         }

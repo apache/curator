@@ -74,7 +74,7 @@ class ConnectionState implements Watcher, Closeable
 
         if ( lost.compareAndSet(true, false) )
         {
-            log.debug("resetting after loss");
+            log.info("resetting after loss");
             reset();
         }
 
@@ -157,7 +157,7 @@ class ConnectionState implements Watcher, Closeable
 
     void markLost()
     {
-        log.debug("lost");
+        log.info("lost marked");
 
         lost.set(true);
     }
