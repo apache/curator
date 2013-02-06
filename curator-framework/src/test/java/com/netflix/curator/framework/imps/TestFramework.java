@@ -17,6 +17,7 @@
  */
 package com.netflix.curator.framework.imps;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
@@ -27,6 +28,7 @@ import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
@@ -34,6 +36,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -74,27 +78,6 @@ public class TestFramework extends BaseClassForTests
         {
             Closeables.closeQuietly(client);
         }
-    }
-    
-    @Test
-    public void     testIt() throws Exception
-    {
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        client.start();
-
-        Watcher                 watcher = new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent event)
-            {
-                System.out.println("yep");
-            }
-        };
-        client.checkExists().usingWatcher(watcher).forPath("/hey");
-
-        server.close();
-
-        Thread.sleep(10000);
     }
 
     @Test
@@ -182,25 +165,49 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test(enabled = false)  // temp disable - there's a bug in ZK 3.4.3 with this
+    @Test
     public void     testCreateACL() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
-        CuratorFramework client = builder.connectString(server.getConnectString()).authorization("digest", "me:pass".getBytes()).retryPolicy(new RetryOneTime(1)).build();
+        CuratorFramework client = builder
+            .connectString(server.getConnectString())
+            .authorization("digest", "me:pass".getBytes())
+            .retryPolicy(new RetryOneTime(1))
+            .build();
         client.start();
         try
         {
-            client.create().withACL(ZooDefs.Ids.CREATOR_ALL_ACL).forPath("/test");
-
-            client.setData().forPath("/test", "test".getBytes());
-
+            ACL acl = new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.AUTH_IDS);
+            List<ACL> aclList = Lists.newArrayList(acl);
+            client.create().withACL(aclList).forPath("/test", "test".getBytes());
             client.close();
-            client = builder.connectString(server.getConnectString()).authorization("digest", "someone:else".getBytes()).retryPolicy(new RetryOneTime(1)).build();
+
+            client = builder
+                .connectString(server.getConnectString())
+                .authorization("digest", "me:pass".getBytes())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
             client.start();
             try
             {
                 client.setData().forPath("/test", "test".getBytes());
-                Assert.fail("Should be prohibited due to auth");
+            }
+            catch ( KeeperException.NoAuthException e )
+            {
+                Assert.fail("Auth failed");
+            }
+            client.close();
+
+            client = builder
+                .connectString(server.getConnectString())
+                .authorization("digest", "something:else".getBytes())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
+            client.start();
+            try
+            {
+                client.setData().forPath("/test", "test".getBytes());
+                Assert.fail("Should have failed with auth exception");
             }
             catch ( KeeperException.NoAuthException e )
             {
@@ -210,6 +217,67 @@ public class TestFramework extends BaseClassForTests
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    public void     testCreateACLWithReset() throws Exception
+    {
+        Timing timing = new Timing();
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder
+            .connectString(server.getConnectString())
+            .sessionTimeoutMs(timing.session())
+            .connectionTimeoutMs(timing.connection())
+            .authorization("digest", "me:pass".getBytes())
+            .retryPolicy(new RetryOneTime(1))
+            .build();
+        client.start();
+        try
+        {
+            final CountDownLatch lostLatch = new CountDownLatch(1);
+            ConnectionStateListener listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.LOST )
+                    {
+                        lostLatch.countDown();
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
+
+            ACL acl = new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.AUTH_IDS);
+            List<ACL> aclList = Lists.newArrayList(acl);
+            client.create().withACL(aclList).forPath("/test", "test".getBytes());
+
+            server.stop();
+            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            try
+            {
+                client.checkExists().forPath("/");
+                Assert.fail("Connection should be down");
+            }
+            catch ( KeeperException.ConnectionLossException e )
+            {
+                // expected
+            }
+
+            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            try
+            {
+                client.setData().forPath("/test", "test".getBytes());
+            }
+            catch ( KeeperException.NoAuthException e )
+            {
+                Assert.fail("Auth failed");
+            }
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
         }
     }
 

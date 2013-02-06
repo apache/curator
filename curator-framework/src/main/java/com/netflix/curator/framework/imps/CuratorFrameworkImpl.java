@@ -34,6 +34,7 @@ import com.netflix.curator.framework.state.ConnectionStateManager;
 import com.netflix.curator.utils.DebugUtils;
 import com.netflix.curator.utils.EnsurePath;
 import com.netflix.curator.utils.ThreadUtils;
+import com.netflix.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -87,13 +88,23 @@ public class CuratorFrameworkImpl implements CuratorFramework
             this.scheme = scheme;
             this.auth = auth;
         }
+
+        @Override
+        public String toString()
+        {
+            return "AuthInfo{" +
+                "scheme='" + scheme + '\'' +
+                ", auth=" + Arrays.toString(auth) +
+                '}';
+        }
     }
 
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
+        ZookeeperFactory localZookeeperFactory = makeZookeeperFactory(builder.getZookeeperFactory());
         this.client = new CuratorZookeeperClient
         (
-            builder.getZookeeperFactory(),
+            localZookeeperFactory,
             builder.getEnsembleProvider(),
             builder.getSessionTimeoutMs(),
             builder.getConnectionTimeoutMs(),
@@ -143,6 +154,25 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         failedDeleteManager = new FailedDeleteManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
+    }
+
+    private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
+    {
+        return new ZookeeperFactory()
+        {
+            @Override
+            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
+            {
+                ZooKeeper zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
+                AuthInfo auth = authInfo.get();
+                if ( auth != null )
+                {
+                    zooKeeper.addAuthInfo(auth.scheme, auth.auth);
+                }
+
+                return zooKeeper;
+            }
+        };
     }
 
     private ThreadFactory getThreadFactory(CuratorFrameworkFactory.Builder builder)
@@ -591,20 +621,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void backgroundOperationsLoop()
     {
-        AuthInfo    auth = authInfo.getAndSet(null);
-        if ( auth != null )
-        {
-            try
-            {
-                client.getZooKeeper().addAuthInfo(auth.scheme, auth.auth);
-            }
-            catch ( Exception e )
-            {
-                logError("addAuthInfo for background operation threw exception", e);
-                return;
-            }
-        }
-
         while ( !Thread.interrupted() )
         {
             OperationAndData<?>         operationAndData;

@@ -639,6 +639,7 @@ public class PathChildrenCache implements Closeable
 
             updateInitialSet(name, NULL_CHILD_DATA);
         }
+        maybeOfferInitializedEvent(initialSet.get());
     }
 
     private void applyNewData(String fullPath, int resultCode, Stat stat, byte[] bytes)
@@ -693,6 +694,11 @@ public class PathChildrenCache implements Closeable
 
     private boolean hasUninitialized(Map<String, ChildData> localInitialSet)
     {
+        if ( localInitialSet == null )
+        {
+            return false;
+        }
+
         Map<String, ChildData> uninitializedChildren = Maps.filterValues
         (
             localInitialSet,
