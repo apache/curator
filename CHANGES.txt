@@ -7,6 +7,9 @@ thanks to user barkbay for his persistence and help on this.
 
 * Issue 247: POST_INITIALIZED_EVENT wasn't correctly handling an initially empty node.
 
+* Issue 245: Auth info specified in the CuratorFrameworkFactory.Builder was not being re-set in cases
+where the internal ZooKeeper handle was recreated. i.e. if the cluster has issues auth info would be lost.
+
 1.3.1 - January 28, 2013
 ========================
 * Tightened up a possible race deep inside the connection management.
