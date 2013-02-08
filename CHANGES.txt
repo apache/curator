@@ -1,3 +1,7 @@
+1.3.3 - xxxxxxxxxxxxxxxx
+========================
+* Issue 250: Restore support for passing null to usingWatcher().
+
 1.3.2 - February 6, 2013
 ========================
 * MAJOR BUG FIX - Issue 232: ZooKeeper guarantees that "A watch object, or function/context pair, will only
