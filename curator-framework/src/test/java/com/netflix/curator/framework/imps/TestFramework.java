@@ -28,6 +28,8 @@ import com.netflix.curator.framework.api.CuratorListener;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.RetryOneTime;
+import com.netflix.curator.test.InstanceSpec;
+import com.netflix.curator.test.TestingCluster;
 import com.netflix.curator.test.TestingServer;
 import com.netflix.curator.test.Timing;
 import com.netflix.curator.utils.EnsurePath;
@@ -50,6 +52,33 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("deprecation")
 public class TestFramework extends BaseClassForTests
 {
+    @Test
+    public void foo() throws Exception
+    {
+        Timing                  timing = new Timing();
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().forPath("/foo");
+
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    System.out.println(event);
+                }
+            };
+            client.checkExists().usingWatcher(watcher).forPath("/foo");
+            client.setData().forPath("/foo", "hey".getBytes());
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void     testConnectionState() throws Exception
     {
