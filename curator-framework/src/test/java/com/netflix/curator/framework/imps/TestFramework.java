@@ -53,33 +53,6 @@ import java.util.concurrent.TimeUnit;
 public class TestFramework extends BaseClassForTests
 {
     @Test
-    public void foo() throws Exception
-    {
-        Timing                  timing = new Timing();
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
-            client.start();
-            client.create().forPath("/foo");
-
-            Watcher watcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
-                {
-                    System.out.println(event);
-                }
-            };
-            client.checkExists().usingWatcher(watcher).forPath("/foo");
-            client.setData().forPath("/foo", "hey".getBytes());
-        }
-        finally
-        {
-            Closeables.closeQuietly(client);
-        }
-    }
-
-    @Test
     public void     testConnectionState() throws Exception
     {
         Timing                  timing = new Timing();
