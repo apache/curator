@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
@@ -62,6 +61,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * be prepared for false-positives and false-negatives. Additionally, always use the version number
  * when updating data to avoid overwriting another process' change.</p>
  */
+@SuppressWarnings("NullableProblems")
 public class PathChildrenCache implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -132,7 +132,7 @@ public class PathChildrenCache implements Closeable
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode)
     {
-        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, defaultThreadFactory);
+        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, Executors.newSingleThreadExecutor(defaultThreadFactory));
     }
 
     /**
@@ -145,7 +145,7 @@ public class PathChildrenCache implements Closeable
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode, ThreadFactory threadFactory)
     {
-        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, threadFactory);
+        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, Executors.newSingleThreadExecutor(threadFactory));
     }
 
     /**
@@ -155,7 +155,7 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData)
     {
-        this(client, path, cacheData, false, defaultThreadFactory);
+        this(client, path, cacheData, false, Executors.newSingleThreadExecutor(defaultThreadFactory));
     }
 
     /**
@@ -166,7 +166,7 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, ThreadFactory threadFactory)
     {
-        this(client, path, cacheData, false, threadFactory);
+        this(client, path, cacheData, false, Executors.newSingleThreadExecutor(threadFactory));
     }
 
     /**
@@ -178,11 +178,23 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, ThreadFactory threadFactory)
     {
+        this(client, path, cacheData, dataIsCompressed, Executors.newSingleThreadExecutor(threadFactory));
+    }
+
+    /**
+     * @param client           the client
+     * @param path             path to watch
+     * @param cacheData        if true, node contents are cached in addition to the stat
+     * @param dataIsCompressed if true, data in the path is compressed
+     * @param executorService  ExecutorService to use for the PathChildrenCache's background thread
+     */
+    public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final ExecutorService executorService)
+    {
         this.client = client;
         this.path = path;
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
-        executorService = Executors.newFixedThreadPool(1, threadFactory);
+        this.executorService = executorService;
         ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 
@@ -246,18 +258,17 @@ public class PathChildrenCache implements Closeable
         mode = Preconditions.checkNotNull(mode, "mode cannot be null");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        executorService.submit
-        (
-            new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+        executorService.execute
+            (
+                new Runnable()
                 {
-                    mainLoop();
-                    return null;
+                    @Override
+                    public void run()
+                    {
+                        mainLoop();
+                    }
                 }
-            }
-        );
+            );
 
         switch ( mode )
         {
