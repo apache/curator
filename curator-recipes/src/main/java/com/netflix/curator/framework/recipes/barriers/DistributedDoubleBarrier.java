@@ -256,8 +256,10 @@ public class DistributedDoubleBarrier
                     {
                         result = false;
                     }
-
-                    wait(thisWaitMs);
+                    else
+                    {
+                        wait(thisWaitMs);
+                    }
                 }
                 else
                 {
@@ -314,8 +316,10 @@ public class DistributedDoubleBarrier
                 {
                     result = false;
                 }
-
-                wait(thisWaitMs);
+                else
+                {
+                    wait(thisWaitMs);
+                }
 
                 if ( !hasBeenNotified.get() )
                 {
