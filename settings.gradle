@@ -1,2 +1,2 @@
 rootProject.name='curator'
-include 'curator-client','curator-framework','curator-recipes','curator-test','curator-x-discovery','curator-x-discovery-server','curator-x-zkclient-bridge','curator-examples'
+include 'curator-client','curator-framework','curator-recipes','curator-test','curator-x-discovery','curator-x-discovery-server','curator-x-zkclient-bridge','curator-examples','curator-x-global-sync'

@@ -140,3 +140,14 @@ project(':curator-examples')
         compile project(':curator-x-discovery')
     }
 }
+
+project(':curator-x-global-sync')
+{
+    dependencies
+    {
+        compile project(':curator-client')
+        compile project(':curator-framework')
+        compile project(':curator-recipes')
+        testCompile project(':curator-test')
+    }
+}
