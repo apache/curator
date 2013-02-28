@@ -282,7 +282,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
             connectionStateManager.close();
             client.close();
             namespaceWatcherMap.close();
-            executorService.shutdownNow();
+            if ( executorService != null )
+            {
+                executorService.shutdownNow();
+            }
         }
     }
 
