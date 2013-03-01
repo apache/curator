@@ -1,3 +1,5 @@
+http://netflix.github.com/curator/curator.png
+
 == DESCRIPTION
 
 Curator is a set of Java libraries that make using Apache ZooKeeper much easier. While
