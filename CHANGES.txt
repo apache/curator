@@ -9,6 +9,8 @@ numbers to wait().
 
 * Issue 254: Check that executorService isn't null before closing.
 
+* Pull 258: Fix bad performing use of Guava's transform.
+
 1.3.2 - February 6, 2013
 ========================
 * MAJOR BUG FIX - Issue 232: ZooKeeper guarantees that "A watch object, or function/context pair, will only
