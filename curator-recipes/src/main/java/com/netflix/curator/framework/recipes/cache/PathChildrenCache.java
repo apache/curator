@@ -608,7 +608,7 @@ public class PathChildrenCache implements Closeable
 
     private void processChildren(List<String> children, RefreshMode mode) throws Exception
     {
-        List<String> fullPaths = Lists.transform
+        List<String> fullPaths = Lists.newArrayList(Lists.transform
         (
             children,
             new Function<String, String>()
@@ -619,7 +619,7 @@ public class PathChildrenCache implements Closeable
                     return ZKPaths.makePath(path, child);
                 }
             }
-        );
+        ));
         Set<String> removedNodes = Sets.newHashSet(currentData.keySet());
         removedNodes.removeAll(fullPaths);
 
