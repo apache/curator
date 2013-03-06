@@ -43,6 +43,36 @@ public class TestLeaderLatch extends BaseClassForTests
     private static final int MAX_LOOPS = 5;
 
     @Test
+    public void testResetRace() throws Exception
+    {
+        Timing timing = new Timing();
+        LeaderLatch latch = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            latch = new LeaderLatch(client, PATH_NAME);
+
+            latch.debugResetWaitLatch = new CountDownLatch(1);
+            latch.start();  // will call reset()
+            latch.reset();  // should not result in two nodes
+
+            timing.sleepABit();
+
+            latch.debugResetWaitLatch.countDown();
+
+            timing.sleepABit();
+
+            Assert.assertEquals(client.getChildren().forPath(PATH_NAME).size(), 1);
+        }
+        finally
+        {
+            Closeables.closeQuietly(latch);
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testLostConnection() throws Exception
     {
         final int PARTICIPANT_QTY = 10;

@@ -1,3 +1,8 @@
+1.3.4 - xxxxxxxxxxxxx
+=====================
+* Issue 257: Fixed a race condition in LeaderLatch that cause the recipe to create
+two nodes in some edge cases.
+
 1.3.3 - March 6, 2013
 =====================
 * Issue 250: Restore support for passing null to usingWatcher().

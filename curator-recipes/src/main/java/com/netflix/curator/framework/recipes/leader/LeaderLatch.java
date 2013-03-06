@@ -16,6 +16,7 @@
 
 package com.netflix.curator.framework.recipes.leader;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.BackgroundCallback;
@@ -37,6 +38,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,6 +59,7 @@ public class LeaderLatch implements Closeable
     private final String                                id;
     private final AtomicReference<State>                state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean                         hasLeadership = new AtomicBoolean(false);
+    private final AtomicReference<String>               ourPath = new AtomicReference<String>();
 
     private final ConnectionStateListener               listener = new ConnectionStateListener()
     {
@@ -66,8 +69,6 @@ public class LeaderLatch implements Closeable
             handleStateChange(newState);
         }
     };
-
-    private volatile String     ourPath = null;
 
     private static final String LOCK_NAME = "latch-";
 
@@ -135,7 +136,7 @@ public class LeaderLatch implements Closeable
 
         try
         {
-            deleteNode();
+            setNode(null);
         }
         catch ( Exception e )
         {
@@ -308,19 +309,29 @@ public class LeaderLatch implements Closeable
         return (state.get() == State.STARTED) && hasLeadership.get();
     }
 
-    private void reset() throws Exception
+    @VisibleForTesting
+    volatile CountDownLatch debugResetWaitLatch = null;
+
+    @VisibleForTesting
+    void reset() throws Exception
     {
         setLeadership(false);
-        deleteNode();
+        setNode(null);
 
         BackgroundCallback          callback = new BackgroundCallback()
         {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
+                if ( debugResetWaitLatch != null )
+                {
+                    debugResetWaitLatch.await();
+                    debugResetWaitLatch = null;
+                }
+
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    ourPath = event.getName();
+                    setNode(event.getName());
                     getChildren();
                 }
                 else
@@ -334,8 +345,9 @@ public class LeaderLatch implements Closeable
 
     private void checkLeadership(List<String> children) throws Exception
     {
+        final String    localOurPath = ourPath.get();
         List<String>    sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
-        int             ourIndex = (ourPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(ourPath)) : -1;
+        int             ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
         if ( ourIndex < 0 )
         {
             log.error("Can't find our node. Resetting. Index: " + ourIndex);
@@ -353,7 +365,7 @@ public class LeaderLatch implements Closeable
                 @Override
                 public void process(WatchedEvent event)
                 {
-                    if ( (state.get() == State.STARTED) && (event.getType() == Event.EventType.NodeDeleted) && (ourPath != null) )
+                    if ( (state.get() == State.STARTED) && (event.getType() == Event.EventType.NodeDeleted) && (localOurPath != null) )
                     {
                         try
                         {
@@ -438,19 +450,12 @@ public class LeaderLatch implements Closeable
         notifyAll();
     }
 
-    private void deleteNode() throws Exception
+    private void setNode(String newValue) throws Exception
     {
-        String      localPath = ourPath;
-        if ( localPath != null )
+        String      oldPath = ourPath.getAndSet(newValue);
+        if ( oldPath != null )
         {
-            try
-            {
-                client.delete().guaranteed().inBackground().forPath(localPath);
-            }
-            finally
-            {
-                ourPath = null;
-            }
+            client.delete().guaranteed().inBackground().forPath(oldPath);
         }
     }
 }
