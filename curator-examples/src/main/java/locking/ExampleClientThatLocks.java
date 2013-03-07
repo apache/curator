@@ -16,8 +16,8 @@
 
 package locking;
 
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import java.util.concurrent.TimeUnit;
 
 public class ExampleClientThatLocks

@@ -18,10 +18,10 @@ package leader;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.retry.ExponentialBackoffRetry;
-import com.netflix.curator.test.TestingServer;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.test.TestingServer;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.List;

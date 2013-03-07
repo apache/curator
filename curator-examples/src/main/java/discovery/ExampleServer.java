@@ -17,12 +17,12 @@
 package discovery;
 
 import com.google.common.io.Closeables;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.x.discovery.ServiceDiscovery;
-import com.netflix.curator.x.discovery.ServiceDiscoveryBuilder;
-import com.netflix.curator.x.discovery.ServiceInstance;
-import com.netflix.curator.x.discovery.UriSpec;
-import com.netflix.curator.x.discovery.details.JsonInstanceSerializer;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.x.discovery.ServiceDiscovery;
+import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
+import org.apache.curator.x.discovery.ServiceInstance;
+import org.apache.curator.x.discovery.UriSpec;
+import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import java.io.Closeable;
 import java.io.IOException;
 

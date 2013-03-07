@@ -16,10 +16,10 @@
 
 package framework;
 
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.transaction.CuratorTransaction;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionFinal;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import java.util.Collection;
 
 public class TransactionExamples
