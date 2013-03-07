@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
  | Licensed to the Apache Software Foundation (ASF) under one
  | or more contributor license agreements.  See the NOTICE file
  | distributed with this work for additional information
@@ -18,61 +17,61 @@
  | under the License.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <parent>
+    <parent>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator</artifactId>
+        <version>2.0.0-SNAPSHOT</version>
+    </parent>
+
     <groupId>org.apache.curator</groupId>
-    <artifactId>curator</artifactId>
+    <artifactId>curator-test</artifactId>
     <version>2.0.0-SNAPSHOT</version>
-  </parent>
 
-  <groupId>org.apache.curator</groupId>
-  <artifactId>curator-test</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
-
-  <name>Apache Curator Testing</name>
-  <description>TBD</description>
-  <url>TBD</url>
-  <inceptionYear>2011</inceptionYear>
-
-  <scm>
+    <name>Apache Curator Testing</name>
+    <description>TBD</description>
     <url>TBD</url>
-    <connection>TBD</connection>
-    <developerConnection>TBD</developerConnection>
-    <tag>TBD</tag>
-  </scm>
-  <issueManagement>
-    <system>JIRA</system>
-    <url>TBD</url>
-  </issueManagement>
-  <ciManagement>
-    <system>Jenkins</system>
-    <url>TBD/</url>
-    <notifiers>
-      <notifier>
-        <type>mail</type>
-        <sendOnError>true</sendOnError>
-        <sendOnFailure>true</sendOnFailure>
-        <sendOnSuccess>false</sendOnSuccess>
-        <sendOnWarning>false</sendOnWarning>
-        <configuration>
-          <address>TBD</address>
-        </configuration>
-      </notifier>
-    </notifiers>
-  </ciManagement>
+    <inceptionYear>2011</inceptionYear>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.javassist</groupId>
-			<artifactId>javassist</artifactId>
-			<version>3.15.0-GA</version>
-		</dependency>
+    <scm>
+        <url>TBD</url>
+        <connection>TBD</connection>
+        <developerConnection>TBD</developerConnection>
+        <tag>TBD</tag>
+    </scm>
+    <issueManagement>
+        <system>JIRA</system>
+        <url>TBD</url>
+    </issueManagement>
+    <ciManagement>
+        <system>Jenkins</system>
+        <url>TBD/</url>
+        <notifiers>
+            <notifier>
+                <type>mail</type>
+                <sendOnError>true</sendOnError>
+                <sendOnFailure>true</sendOnFailure>
+                <sendOnSuccess>false</sendOnSuccess>
+                <sendOnWarning>false</sendOnWarning>
+                <configuration>
+                    <address>TBD</address>
+                </configuration>
+            </notifier>
+        </notifiers>
+    </ciManagement>
 
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-math</artifactId>
-			<version>2.2</version>
-		</dependency>
-	</dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.15.0-GA</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math</artifactId>
+            <version>2.2</version>
+        </dependency>
+    </dependencies>
 </project>
