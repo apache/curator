@@ -32,22 +32,30 @@
 
     <name>Apache Curator Testing</name>
     <description>TBD</description>
+<!--
     <url>TBD</url>
+-->
     <inceptionYear>2011</inceptionYear>
 
     <scm>
+<!--
         <url>TBD</url>
         <connection>TBD</connection>
         <developerConnection>TBD</developerConnection>
+-->
         <tag>TBD</tag>
     </scm>
     <issueManagement>
         <system>JIRA</system>
+<!--
         <url>TBD</url>
+-->
     </issueManagement>
     <ciManagement>
         <system>Jenkins</system>
-        <url>TBD/</url>
+        <!--
+                <url>TBD</url>
+        -->
         <notifiers>
             <notifier>
                 <type>mail</type>
