@@ -27,8 +27,7 @@
 
     <name>Apache Curator</name>
     <description>
-        Curator n ˈkyoor͝ˌātər: a keeper or custodian of a museum or other collection – A ZooKeeper Keeper. Curator is a set of Java libraries
-        that make using Apache ZooKeeper much easier. While ZooKeeper comes bundled with a Java client, using the client is non-trivial and error prone.
+        Curator is a set of Java libraries that make using Apache ZooKeeper much easier.
     </description>
 
     <properties>
@@ -194,6 +193,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
                 <version>3.2</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-module-confluence</artifactId>
+                        <version>1.3</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

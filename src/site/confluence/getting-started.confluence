@@ -1,0 +1,92 @@
+h2. Learn ZooKeeper
+
+Curator users are assumed to know ZooKeeper. A good place to start is here: [[http://zookeeper.apache.org/doc/trunk/zookeeperStarted.html]]
+
+h2. Using Curator
+
+The Curator JARs are available from Maven Central. The various artifacts are listed here: [[https://github.com/Netflix/curator/wiki]]. Users
+of Maven, Gradle, Ant, etc. can easily include Curator into their build script.
+
+Most users will want to use one of Curator's pre-built recipes. So, the {{curator-recipes}} is the correct artifact to use. If you only
+want a wrapper around ZooKeeper that adds connection management and retry policies, use {{curator-framework}}.
+
+h2. Getting a Connection
+
+Curator uses [[Fluent Style|http://en.wikipedia.org/wiki/Fluent_interface]]. If you haven't used this before, it might seem odd
+so it's suggested that you familiarize yourself with the style.
+
+Curator connection instances ({{CuratorFramework}}) are allocated from the {{CuratorFrameworkFactory}}. You only need *one*
+{{CuratorFramework}} object for each ZooKeeper cluster you are connecting to:
+
+{code}
+CuratorFrameworkFactory.newClient(zookeeperConnectionString, retryPolicy)
+{code}
+
+This will create a connection to a ZooKeeper cluster using default values. The only thing that you need to specify is the retry
+policy. For most cases, you should use:
+
+{code}
+RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3)
+CuratorFramework client = CuratorFrameworkFactory.newClient(zookeeperConnectionString, retryPolicy);
+client.start();
+{code}
+
+The client must be started (and closed when no longer needed).
+
+h2. Calling ZooKeeper Directly
+
+Once you have a CuratorFramework instance, you can make direct calls to ZooKeeper in a similar way to using the raw
+{{ZooKeeper}} object provided in the ZooKeeper distribution. E.g.:
+
+{code}
+client.create().forPath("/my/path", myData)
+{code}
+
+The benefit here is that Curator manages the ZooKeeper connection and will retry operations if there are connection problems.
+
+h2. Recipes
+
+h3. Distributed Lock
+
+{code}
+InterProcessMutex lock = new InterProcessMutex(client, lockPath);
+if ( lock.acquire(maxWait, waitUnit) ) 
+{
+    try 
+    {
+        // do some work inside of the critical section here
+    }
+    finally
+    {
+        lock.release();
+    }
+}
+{code}
+
+h3. Leader Election
+
+{code}
+LeaderSelectorListener listener = new LeaderSelectorListener()
+{
+    public void takeLeadership(CuratorFramework client) throws Exception
+    {
+        // this callback will get called when you are the leader
+        // do whatever leader work you need to and only exit
+        // this method when you want to relinquish leadership
+    }
+
+    public void stateChanged(CuratorFramework client, ConnectionState newState)
+    {
+        // see https://github.com/Netflix/curator/wiki/Errors
+        // You always need to be aware that connections to ZK can fail
+    }
+}
+
+LeaderSelector selector = new LeaderSelector(client, path, listener);
+selector.autoRequeue();  // not required, but this is behavior that you will probably expect
+selector.start();
+{code}
+
+h2. Examples
+
+Examples of Curator usage can be found here: [[https://github.com/Netflix/curator/tree/master/curator-examples/src/main/java]]

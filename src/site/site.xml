@@ -27,7 +27,7 @@
     <bannerLeft>
         <name>Apache Curator</name>
         <src>/images/curator-logo.png</src>
-        <href>/</href>
+        <href>/index.html</href>
     </bannerLeft>
 
     <bannerRight>
@@ -36,10 +36,14 @@
         <href>http://incubator.apache.org</href>
     </bannerRight>
 
-    <publishDate position="right"/>
-    <version position="right"/>
+    <publishDate/>
 
     <body>
+        <menu name="Apache Curator">
+            <item name="Home" href="index.html" />
+            <item name="Getting Started" href="getting-started.html" />
+        </menu>
+
         <footer>
             <div>
                 Apache Curator, the Apache feather logo, and the Apache Curator project logos are trademarks of The Apache Software Foundation. All other marks mentioned may be trademarks or registered trademarks of their respective owners.
