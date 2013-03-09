@@ -25,7 +25,23 @@
     <version>2.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Curator</name>
+    <name>Apache Curator</name>
+    <description>
+        Curator n ˈkyoor͝ˌātər: a keeper or custodian of a museum or other collection – A ZooKeeper Keeper. Curator is a set of Java libraries
+        that make using Apache ZooKeeper much easier. While ZooKeeper comes bundled with a Java client, using the client is non-trivial and error prone.
+    </description>
+
+    <properties>
+        <svnUrl>https://svn.apache.org/repos/asf/incubator/onami/site/</svnUrl>
+        <checkoutDirectory>site-publish</checkoutDirectory>
+    </properties>
+
+    <distributionManagement>
+        <site>
+            <id>apache.website.svnpub</id>
+            <url>scm:svn:${svnUrl}</url>
+        </site>
+    </distributionManagement>
 
     <!--
       <parent>
