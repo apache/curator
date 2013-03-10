@@ -1,0 +1,35 @@
+h1. Error Handling
+
+h2. Background
+ZooKeeper is a very low level system that requires users to do a lot of housekeeping. See:
+
+* [[http://wiki.apache.org/hadoop/ZooKeeper/FAQ]]
+
+The Curator [[Framework|curator-framework/index.html]] is designed to hide as much of the details/tedium of this housekeeping as is possible.
+
+h2. Connection Guarantees
+The Curator [[Framework|curator-framework/index.html]] constantly monitors the connection to the ZooKeeper ensemble. Further every operation is wrapped
+in a retry mechanism. Thus, the following guarantees can be made:
+
+* Every Curator operation properly waits until the ZooKeeper connection is established
+* Every Curator [[Framework|curator-framework/index.html]] operation (create, getData, etc.) is guaranteed to manage connection loss and/or session expiration per the currently set retry policy
+* If the connection is temporarily lost, Curator will attempt to retry the operation until it succeeds per the currently set retry policy
+* All Curator recipes attempt to deal with connection issues in an appropriate way
+
+h2. Notifications
+Curator exposes several listenable interfaces for clients to monitor the state of the ZooKeeper connection.
+
+{{ConnectionStateListener}} is called when there are connection disruptions. Clients can monitor these changes and take
+appropriate action. There are three possible state changes:
+
+|SUSPENDED|There has been a loss of connection. Leaders, locks, etc. should suspend until the connection is re-established. If the connection times-out you will receive a LOST notice|
+|RECONNECTED</td>
+|A suspended connection has been re-established</td>
+|LOST|The connection is confirmed to be lost. Close any locks, leaders, etc. and attempt to re-create them. NOTE: it is possible to get a RECONNECTED state after this but you should still consider any locks, etc. as dirty/unstable|
+|READ_ONLY|The connection has gone into read-only mode. This can only happen if you pass true for CuratorFrameworkFactory.Builder.canBeReadOnly(). See the ZooKeeper doc regarding read only connections: <a href="http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode">http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode</a>. The connection will remain in read only mode until another state change is sent.|
+
+{{UnhandledErrorListener}} is called when a background task, etc. catch an exception. In general, Curator users shouldn't care
+about these as they are logged. However, you can listen for them if you choose.
+
+h2. Recipes
+In general, the recipes attempt to deal with errors and connection issues. See the doc for each recipe for details on how it deals with errors.

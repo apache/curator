@@ -19,6 +19,7 @@
 
 <project xmlns="http://maven.apache.org/DECORATION/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/DECORATION/1.1.0 http://maven.apache.org/xsd/decoration-1.1.0.xsd" name="Apache Curator">
+
     <skin>
         <groupId>org.apache.maven.skins</groupId>
         <artifactId>maven-fluido-skin</artifactId>
@@ -44,13 +45,22 @@
             <item name="Apache ZooKeeper" href="http://zookeeper.apache.org"/>
         </links>
 
-        <menu name="Apache Curator">
+        <menu name="Apache Curator" inherit="top">
             <item name="Home" href="index.html"/>
             <item name="Getting Started" href="getting-started.html"/>
+            <item name="Framework" href="curator-framework/index.html"/>
             <item name="Recipes" href="curator-recipes/index.html"/>
+            <item name="Utilities" href="utilities.html"/>
+            <item name="Client" href="curator-client/index.html"/>
         </menu>
 
-        <menu name="ASF" inherit="bottom">
+        <menu name="Details" inherit="top">
+            <item name="Error Handling" href="errors.html"/>
+        </menu>
+
+        <menu ref="reports" />
+
+        <menu name="ASF">
             <item name="How the ASF works" href="http://www.apache.org/foundation/how-it-works.html"/>
             <item name="Get Involved" href="http://www.apache.org/foundation/getinvolved.html"/>
             <item name="Developer Resources" href="http://www.apache.org/dev/"/>
