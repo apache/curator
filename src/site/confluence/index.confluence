@@ -24,7 +24,7 @@ h2. Maven / Artifacts
 Curator binaries are published to Maven Central. Curator consists of several artifacts. Which artifacts to use depends on your needs. For
 most users, the only artifact you need is {{curator-recipes}}.
 
-||GroupID/Org||ArtifactID/Name||Description>||
+||GroupID/Org||ArtifactID/Name||Description||
 |org.apache.curator|curator-recipes|All of the recipes. Note: this artifact has dependencies on client and framework and, so, Maven (or whatever tool you're using) should pull those in automatically.|
 |org.apache.curator|curator-framework|The Curator Framework high level API. This is built on top of the client and should pull it in automatically.|
 |org.apache.curator|curator-client|The Curator Client - replacement for the ZooKeeper class in the ZK distribution.|
