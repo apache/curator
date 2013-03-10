@@ -1,3 +1,5 @@
+h1. Getting Started
+
 h2. Learn ZooKeeper
 
 Curator users are assumed to know ZooKeeper. A good place to start is here: [[http://zookeeper.apache.org/doc/trunk/zookeeperStarted.html]]

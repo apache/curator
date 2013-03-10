@@ -72,6 +72,7 @@
         <menu name="Community" inherit="top">
             <item name="Submitting Patches" href="patches.html"/>
             <item name="History" href="history.html"/>
+            <item name="Third Party Articles" href="articles.html"/>
         </menu>
 
         <menu name="ASF" inherit="bottom">
