@@ -35,7 +35,7 @@
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>file://${basedir}/LICENSE.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -67,6 +67,18 @@
                 <role>PPMC Member</role>
             </roles>
             <url>https://people.apache.org/~randgalt</url>
+        </developer>
+
+        <developer>
+            <id>jzarfoss</id>
+            <name>Jay Zarfoss</name>
+            <email>jzarfoss@apache.org</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PPMC Member</role>
+            </roles>
+            <url>https://people.apache.org/~jzarfoss</url>
         </developer>
     </developers>
 
