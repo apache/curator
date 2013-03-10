@@ -78,7 +78,7 @@
         </menu>
 
         <footer>
-            <div class="row span12">
+            <div class="row span12" style="margin-bottom: 8px;">
                 Apache Curator, the Apache feather logo, and the Apache Curator project logos are
                 trademarks of The Apache Software Foundation. All other marks mentioned may be
                 trademarks or registered trademarks of their respective owners.

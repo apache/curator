@@ -1,6 +1,5 @@
 h1. Framework
 
-h2. Introducing Curator Framework
 The Curator Framework is a high-level API that greatly simplifies using ZooKeeper. It adds many features that build on
 ZooKeeper and handles the complexity of managing connections to the ZooKeeper cluster and retrying operations. Some of the features are:
 

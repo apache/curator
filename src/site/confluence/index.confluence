@@ -4,7 +4,7 @@ h2. What is Curator?
 
 Curator _n &#x02c8;kyoor&#x035d;&#x02cc;&#x0101;t&#x0259;r_: a keeper or custodian of a museum or other collection - A ZooKeeper Keeper.
 
-Curator is a set of Java libraries that make using [[http://zookeeper.apache.org|Apache ZooKeeper]] much easier.
+Curator is a set of Java libraries that make using [[Apache ZooKeeper|http://zookeeper.apache.org]] much easier.
 
 h2. Getting Started
 
