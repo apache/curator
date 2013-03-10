@@ -32,7 +32,7 @@ basePath - path to use for locking
 {code}
 
 h3. General Usage
-Access either the read lock or the write lock and then use the methods as described for [[Shared lock]].
+Access either the read lock or the write lock and then use the methods as described for [[Shared lock|shared-lock.html]].
 
 {code}
 public InterProcessLock readLock()

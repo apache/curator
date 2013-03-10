@@ -51,7 +51,7 @@ prevents other processes from taking the message. The message will not be remove
 if there is a failure or the process dies, the message will get sent to another process. There is a small performance penalty for this behavior however.
 
 h2. Data Format
-Same as [[Distributed Queue]]
+Same as [[Distributed Queue|distributed-queue.html]].
 
 h2. Error Handling
 The {{QueueConsumer}} class extends {{ConnectionStateListener}}. When the queue is started, it adds the listener to the

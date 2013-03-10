@@ -67,7 +67,7 @@ until the consumer functor returns. Thus, if there is a failure or the process d
 There is a small performance penalty for this behavior however.
 
 h2. Data Format
-Same as [[Distributed Queue]]
+Same as [[Distributed Queue|distributed-queue.html]].
 
 h2. Error Handling
 The {{QueueConsumer}} class extends {{ConnectionStateListener}}. When the queue is started, it adds the listener to the
