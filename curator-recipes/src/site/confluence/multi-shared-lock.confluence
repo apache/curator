@@ -1,0 +1,36 @@
+h1. Multi Shared Lock
+
+h2. Description
+A container that manages multiple locks as a single entity. When acquire() is called, all the locks are acquired. If that fails,
+any paths that were acquired are released. Similarly, when release() is called, all locks are released (failures are ignored).
+
+h2. Participating Classes
+* InterProcessMultiLock
+* InterProcessLock
+
+h2. Usage
+h3. Creating a InterProcessMultiLock
+{code}
+public InterProcessMultiLock(List<InterProcessLock> locks)
+Creates a multi lock of any type of inter process lock
+Parameters:
+locks - the locks
+{code}
+
+{code}
+public InterProcessMultiLock(CuratorFramework client,
+                             List<String> paths)
+Creates a multi lock of InterProcessMutexes
+Parameters:
+client - client
+paths - list of paths to manage in the order that they are to be locked
+{code}
+
+h2. General Usage
+The usage is the same as for [[Shared Lock|shared-lock.html]]. However, When acquire() is called, all the locks are acquired. If that
+fails, any paths that were acquired are released. Similarly, when release() is called, all locks are released (failures are ignored).
+
+h2. Error Handling
+It is strongly recommended that you add a {{ConnectionStateListener}} and watch for SUSPENDED and LOST state changes. If a
+SUSPENDED state is reported you cannot be certain that you still hold the lock unless you subsequently receive a
+RECONNECTED state. If a LOST state is reported it is certain that you no longer hold the lock.

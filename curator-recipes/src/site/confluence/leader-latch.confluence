@@ -1,0 +1,80 @@
+h1. Leader Latch
+
+h2. Description
+In distributed computing, leader election is the process of designating a single process as the organizer of some task distributed
+among several computers (nodes). Before the task is begun, all network nodes are unaware which node will serve as the "leader,"
+or coordinator, of the task. After a leader election algorithm has been run, however, each node throughout the network recognizes
+a particular, unique node as the task leader.
+
+NOTE: Curator has two leader election recipes. Which one to use depends on your requirements.
+
+h2. Participating Classes
+* LeaderLatch
+
+h2. Usage
+h3. Creating a LeaderLatch
+{code}
+public LeaderLatch(CuratorFramework client,
+                   String latchPath)
+Parameters:
+client - the client
+latchPath - the path for this leadership group
+{code}
+
+{code}
+public LeaderLatch(CuratorFramework client,
+                   String latchPath,
+                   String id)
+Parameters:
+client - the client
+latchPath - the path for this leadership group
+id - participant ID
+{code}
+
+h3. General Usage
+LeaderLatches must be started:
+{code}
+leaderLatch.start();
+{code}
+
+Once started, the LeaderLatch will negotiate with any other LeaderLatch participants that use the same latch path and randomly choose one of them to be the leader. At any time, you can determine if a given instance is the leader by calling:
+
+{code}
+public boolean hasLeadership()
+Return true if leadership is currently held by this instance
+{code}
+
+Similar to the JDK's CountDownLatch, LeaderLatch has methods that block until leadership is acquired:
+
+{code}
+public void await()
+          throws InterruptedException,
+                 EOFException
+Causes the current thread to wait until this instance acquires leadership
+unless the thread is interrupted or closed.
+{code}
+
+{code}
+public boolean await(long timeout,
+                     TimeUnit unit)
+             throws InterruptedException
+Causes the current thread to wait until this instance acquires leadership unless
+the thread is interrupted, the specified waiting time elapses or the instance is closed.
+&nbsp;
+Parameters:
+timeout - the maximum time to wait
+unit - the time unit of the timeout argument
+Returns:
+true if the count reached zero and false if the waiting time elapsed before the count
+reached zero or the instances was closed
+{code}
+
+When you are through with the LeaderLatch instance, you must call close. This removes the instance from the leader election and releases leadership if the instance has it. Once leadership is released, another participating instance (if any) will be chosen as leader.
+{code}
+leaderLatch.close();
+{code}
+
+h2. Error Handling
+LeaderLatch instances add a ConnectionStateListener to watch for connection problems. If SUSPENDED or LOST is reported, the LeaderLatch that is the leader will report that it is no longer the leader (i.e. there will not be a leader until the connection is re-established). If a LOST connection is RECONNECTED, the LeaderLatch will delete its previous ZNode and create a new one.
+
+Users of LeaderLatch must take account that connection issues can cause leadership to be lost. i.e. hasLeadership() returns true but some time later the connection is SUSPENDED or LOST. At that point hasLeadership() will return false. It is highly recommended that LeaderLatch users register a ConnectionStateListener.

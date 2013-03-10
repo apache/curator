@@ -17,7 +17,8 @@
   ~ under the License.
   -->
 
-<project xmlns="http://maven.apache.org/DECORATION/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/DECORATION/1.1.0 http://maven.apache.org/xsd/decoration-1.1.0.xsd" name="${project.name}">
+<project xmlns="http://maven.apache.org/DECORATION/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.1.0 http://maven.apache.org/xsd/decoration-1.1.0.xsd" name="Apache Curator">
     <skin>
         <groupId>org.apache.maven.skins</groupId>
         <artifactId>maven-fluido-skin</artifactId>
@@ -39,14 +40,29 @@
     <publishDate/>
 
     <body>
+        <links>
+            <item name="Apache ZooKeeper" href="http://zookeeper.apache.org"/>
+        </links>
+
         <menu name="Apache Curator">
-            <item name="Home" href="index.html" />
-            <item name="Getting Started" href="getting-started.html" />
+            <item name="Home" href="index.html"/>
+            <item name="Getting Started" href="getting-started.html"/>
+            <item name="Recipes" href="curator-recipes/index.html"/>
+        </menu>
+
+        <menu name="ASF" inherit="bottom">
+            <item name="How the ASF works" href="http://www.apache.org/foundation/how-it-works.html"/>
+            <item name="Get Involved" href="http://www.apache.org/foundation/getinvolved.html"/>
+            <item name="Developer Resources" href="http://www.apache.org/dev/"/>
+            <item name="Sponsorship" href="http://www.apache.org/foundation/sponsorship.html"/>
+            <item name="Thanks" href="http://www.apache.org/foundation/thanks.html"/>
         </menu>
 
         <footer>
-            <div>
-                Apache Curator, the Apache feather logo, and the Apache Curator project logos are trademarks of The Apache Software Foundation. All other marks mentioned may be trademarks or registered trademarks of their respective owners.
+            <div class="row span12">
+                Apache Curator, the Apache feather logo, and the Apache Curator project logos are
+                trademarks of The Apache Software Foundation. All other marks mentioned may be
+                trademarks or registered trademarks of their respective owners.
             </div>
         </footer>
     </body>

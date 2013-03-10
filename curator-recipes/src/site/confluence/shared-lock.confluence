@@ -1,0 +1,48 @@
+h1. Shared Lock
+
+h2. Description
+Fully distributed locks that are globally synchronous, meaning at any snapshot in time no two clients think
+they hold the same lock. Note: unlike InterProcessMutex this lock is *not* reentrant.
+
+h2. Participating Classes
+* InterProcessSemaphoreMutex
+
+h2. Usage
+h3. Create an InterProcessSemaphoreMutex
+{code}
+public InterProcessSemaphoreMutex(CuratorFramework client,
+                         String path)
+Parameters:
+client - client
+path - the path to lock
+{code}
+
+h3. General Usage
+To acquire the lock, use one of the acquire methods:
+{code}
+public void acquire()
+Acquire the mutex - blocking until it's available. Must be balanced by a call to release().
+{code}
+
+{code}
+public boolean acquire(long time,
+                       TimeUnit unit)
+Acquire the mutex - blocks until it's available or the given time expires. Must be balanced by a call to release().
+    &nbsp;
+Parameters:
+time - time to wait
+unit - time unit
+Returns:
+true if the mutex was acquired, false if not
+{code}
+
+To release the mutex, call:
+{code}
+public void release()
+Perform one release of the mutex if the calling thread is the same thread that acquired it.
+{code}
+
+h2. Error Handling
+It is strongly recommended that you add a {{ConnectionStateListener}} and watch for SUSPENDED and LOST state changes.
+If a SUSPENDED state is reported you cannot be certain that you still hold the lock unless you subsequently receive a
+RECONNECTED state. If a LOST state is reported it is certain that you no longer hold the lock.

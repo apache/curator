@@ -1,0 +1,54 @@
+h1. Leader Election
+
+h2. Description
+In distributed computing, leader election is the process of designating a single process as the organizer of some task distributed among several computers (nodes). Before the task is begun, all network nodes are unaware which node will serve as the "leader," or coordinator, of the task. After a leader election algorithm has been run, however, each node throughout the network recognizes a particular, unique node as the task leader.
+
+NOTE: Curator has two leader election recipes. Which one two use depends on your requirements.
+
+h2. Participating Classes
+* LeaderSelector
+* LeaderSelectorListener
+
+h2. Usage
+h3. Creating a LeaderSelector
+{code}
+public LeaderSelector(CuratorFramework client,
+                      String mutexPath,
+                      LeaderSelectorListener listener)
+Parameters:
+client - the client
+mutexPath - the path for this leadership group
+listener - listener
+{code}
+
+{code}
+public LeaderSelector(CuratorFramework client,
+                      String mutexPath,
+                      ThreadFactory threadFactory,
+                      Executor executor,
+                      LeaderSelectorListener listener)
+Parameters:
+client - the client
+mutexPath - the path for this leadership group
+threadFactory - factory to use for making internal threads
+executor - the executor to run in
+listener - listener
+{code}
+
+h3. General Usage
+LeaderSelectors must be started:
+{code}
+leaderSelector.start();
+{code}
+
+Once started, the {{takeLeadership()}} of your listener will be called when you have leadership. Your {{takeLeadership()}} method should only return when leadership is being relinquished.
+
+When you are through with the LeaderSelector instance, you should call close:
+{code}
+leaderSelector.close();
+{code}
+
+h2. Error Handling
+The {{LeaderSelectorListener}} class extends {{ConnectionStateListener}}. When the LeaderSelector is started, it adds the listener to the Curator instance. Users of the {{LeaderSelector}} must pay attention to any connection state changes. If an instance becomes the leader, it should respond to notification of being SUSPENDED or LOST.
+
+If the SUSPENDED state is reported, the instance must assume that it might no longer be the leader until it receives a RECONNECTED state. If the LOST state is reported, the instance is no longer the leader and its {{takeLeadership}} method should exit.
