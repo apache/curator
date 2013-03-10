@@ -1,0 +1,9 @@
+Curator
+Copyright 2011 Netflix, Inc.
+
+This product includes software developed by The Apache Software
+Foundation (http://www.apache.org/).
+
+Alternative collection types provided by Google Guava from
+http://code.google.com/p/guava-libraries/
+Copyright (C) 2007 Google Inc.

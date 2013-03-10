@@ -32,6 +32,14 @@
     <url>http://curator.incubator.apache.org</url>
     <inceptionYear>2011</inceptionYear>
 
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <properties>
         <svnUrl>https://svn.apache.org/repos/asf/incubator/onami/site/</svnUrl>
         <checkoutDirectory>site-publish</checkoutDirectory>
@@ -171,6 +179,18 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>${basedir}</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>DISCLAIMER.txt</include>
+                    <include>LICENSE.txt</include>
+                    <include>NOTICE.txt</include>
+                </includes>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
