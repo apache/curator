@@ -51,39 +51,39 @@ method registers a service instance. If the ServiceType is STATIC, the instance 
 until they are manually deleted.
 
 h2. removeService
-*Method:* DELETE
-*Path:* v1/service/{name}/{id}
-*Request Entity:* n/a
-*Response Entity:* n/a
+*Method:* DELETE \\
+*Path:* v1/service/{name}/{id} \\
+*Request Entity:* n/a \\
+*Response Entity:* n/a \\
 *Description:* {name} is the service name, {id} is the instance id. The specified service is deleted/unregistered.
 
 h2. get
-*Method:* GET
-*Path:* v1/service/{name}/{id}
-*Request Entity:* n/a
-*Response Entity:* ServiceInstance
+*Method:* GET \\
+*Path:* v1/service/{name}/{id} \\
+*Request Entity:* n/a \\
+*Response Entity:* ServiceInstance \\
 *Description:* {name} is the service name, {id} is the instance id. Returns the complete _ServiceInstance_ for the specified
 service. 404 is returned if not found.
 
 h2. getAllNames
-*Method:* GET
-*Path:* v1/service
-*Request Entity:* n/a
-*Response Entity:* ServiceNames
+*Method:* GET \\
+*Path:* v1/service \\
+*Request Entity:* n/a \\
+*Response Entity:* ServiceNames \\
 *Description:* Returns all currently registered service names.
 
 h2. getAll
-*Method:* GET
-*Path:* v1/service/{name}
-*Request Entity:* n/a
-*Response Entity:* ServiceInstances
+*Method:* GET \\
+*Path:* v1/service/{name} \\
+*Request Entity:* n/a \\
+*Response Entity:* ServiceInstances \\
 *Description:* {name} is the service name. Returns all service instances for the named service.
 
 h2. getAny
-*Method:* GET
-*Path:* v1/anyservice/{name}
-*Request Entity:* n/a
-*Response Entity:* ServiceInstance
+*Method:* GET \\
+*Path:* v1/anyservice/{name} \\
+*Request Entity:* n/a \\
+*Response Entity:* ServiceInstance \\
 *Description:* {name} is the service name. Return a random instance from the given service or 404.
 
 h2. JSON specs

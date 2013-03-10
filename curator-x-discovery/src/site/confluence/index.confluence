@@ -72,35 +72,35 @@ The ServiceProvider API is all you should need for most purposes. However, for f
 Normally, you pass your application's service descriptor to the ServiceDiscovery constructor and it will get registered/unregistered
 automatically. If, though, you need to manually do this, use these methods:
 
-```java
+{code}
 public void registerService(ServiceInstance<T> service)
                     throws Exception
 Register/re-register/update a service instance
 Parameters:
 service - service to add
-```
+{code}
 
-```java
+{code}
 public void unregisterService(ServiceInstance<T> service)
                       throws Exception
 Unregister/remove a service instance
 Parameters:
 service - the service
-```
+{code}
 
 *Querying for Services*
 
 You can query for all service names, all instances of a particular service, or single service instance.
 
-```java
+{code}
 public Collection<String> queryForNames()
                               throws Exception
 Return the names of all known services
 Returns:
 list of service names
-```
+{code}
 
-```java
+{code}
 public Collection<ServiceInstance<T>> queryForInstances(String name)
                                             throws Exception
 Return all known instances for the given service
@@ -108,9 +108,9 @@ Parameters:
 name - name of the service
 Returns:
 list of instances (or an empty list)
-```
+{code}
 
-```java
+{code}
 public ServiceInstance<T> queryForInstance(String name,
                                          String id)
                                  throws Exception
@@ -120,7 +120,7 @@ name - name of the service
 id - ID of the instance
 Returns:
 the instance or null if not found
-```
+{code}
 
 *Service Cache*
 
