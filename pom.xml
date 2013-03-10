@@ -56,6 +56,49 @@
         </site>
     </distributionManagement>
 
+    <contributors>
+        <contributor>
+            <name>Patrick Hunt</name>
+            <email>phunt1@gmail.com</email>
+            <roles>
+                <role>Champion</role>
+                <role>Mentor</role>
+            </roles>
+            <timezone>-8</timezone>
+            <url>http://www.linkedin.com/pub/patrick-hunt/2/5b2/24a</url>
+        </contributor>
+
+        <contributor>
+            <name>Mahadev Konar</name>
+            <email>mahadev@apache.org</email>
+            <roles>
+                <role>Mentor</role>
+            </roles>
+            <timezone>-8</timezone>
+            <url>http://www.linkedin.com/in/mahadevkonar</url>
+        </contributor>
+
+        <contributor>
+            <name>Luciano Resende</name>
+            <email>lresende@apache.org</email>
+            <roles>
+                <role>Mentor</role>
+            </roles>
+            <timezone>-8</timezone>
+            <url>https://people.apache.org/~lresende</url>
+        </contributor>
+
+        <contributor>
+            <name>Enis Söztutar</name>
+            <email>enis@apache.org</email>
+            <roles>
+                <role>Mentor</role>
+            </roles>
+            <timezone>-8</timezone>
+            <url>https://people.apache.org/~enis</url>
+        </contributor>
+    </contributors>
+
     <developers>
         <developer>
             <id>randgalt</id>

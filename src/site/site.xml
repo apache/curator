@@ -69,6 +69,11 @@
             <item name="Service Discovery Server" href="curator-x-discovery-server/index.html"/>
         </menu>
 
+        <menu name="Community" inherit="top">
+            <item name="Submitting Patches" href="patches.html"/>
+            <item name="History" href="history.html"/>
+        </menu>
+
         <menu name="ASF" inherit="bottom">
             <item name="How the ASF works" href="http://www.apache.org/foundation/how-it-works.html"/>
             <item name="Get Involved" href="http://www.apache.org/foundation/getinvolved.html"/>
