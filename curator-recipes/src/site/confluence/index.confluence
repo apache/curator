@@ -2,30 +2,32 @@ h1. Recipes
 
 Curator implements all of the recipes listed on the ZooKeeper recipes doc (except two phase commit). Click on the recipe name below for detailed documentation.
 
-||Elections|| ||
-|[[Leader Latch|leader-latch.html]]|In distributed computing, leader election is the process of designating a single process as the organizer of some task distributed among several computers (nodes). Before the task is begun, all network nodes are unaware which node will serve as the "leader," or coordinator, of the task. After a leader election algorithm has been run, however, each node throughout the network recognizes a particular, unique node as the task leader.|
-|[[Leader Election|leader-election.html]]|Initial Curator leader election recipe.|
-| | |
-||Locks|| ||
-|[[Shared Reentrant Lock|shared-reentrant-lock.html]]|Fully distributed locks that are globally synchronous, meaning at any snapshot in time no two clients think they hold the same lock.|
-|[[Shared Lock|shared-lock.html]]|Similar to [[Shared Reentrant Lock|shared-reentrant-lock.html]] but not reentrant.|
-|[[Shared Reentrant Read Write Lock|shared-reentrant-read-write-lock.html]]|A re-entrant read/write mutex that works across JVMs. A read write lock maintains a pair of associated locks, one for read-only operations and one for writing. The read lock may be held simultaneously by multiple reader processes, so long as there are no writers. The write lock is exclusive.|
-|[[Shared Semaphore|shared-semaphore.html]]|A counting semaphore that works across JVMs. All processes in all JVMs that use the same lock path will achieve an inter-process limited set of leases. Further, this semaphore is mostly "fair" - each user will get a lease in the order requested (from ZK's point of view).|
-|[[Multi Shared Lock|multi-shared-lock.html]]|A container that manages multiple locks as a single entity. When acquire() is called, all the locks are acquired. If that fails, any paths that were acquired are released. Similarly, when release() is called, all locks are released (failures are ignored).|
-||Queues|| ||
-|[[Distributed Queue|distributed-queue.html]]|An implementation of the Distributed Queue ZK recipe. Items put into the queue are guaranteed to be ordered (by means of ZK's PERSISTENT_SEQUENTIAL node). If a single consumer takes items out of the queue, they will be ordered FIFO. If ordering is important, use a LeaderSelector to nominate a single consumer.|
-|[[Distributed Id Queue|distributed-id-queue.html]]|A version of DistributedQueue that allows IDs to be associated with queue items. Items can then be removed from the queue if needed.|
-|[[Distributed Priority Queue|distributed-priority-queue.html]]|An implementation of the Distributed Priority Queue ZK recipe.|
-|[[Distributed Delay Queue|distributed-delay-queue.html]]|An implementation of a Distributed Delay Queue.|
-|[[Simple Distributed Queue|simple-distributed-queue.html]]|A drop-in replacement for the DistributedQueue that comes with the ZK distribution.|
-||Barriers|| ||
-|[[Barrier|barrier.html]]|Distributed systems use barriers to block processing of a set of nodes until a condition is met at which time all the nodes are allowed to proceed.|
-|[[Double Barrier|double-barrier.html]]|Double barriers enable clients to synchronize the beginning and the end of a computation. When enough processes have joined the barrier, processes start their computation and leave the barrier once they have finished.|
-| | |
-||Counters|| ||
-|[[Shared Counter|shared-counter.html]]|Manages a shared integer. All clients watching the same path will have the up-to-date value of the shared integer (considering ZK's normal consistency guarantees).|
-|[[Distributed Atomic Long|distributed-atomic-long.html]]|A counter that attempts atomic increments. It first tries using optimistic locking. If that fails, an optional InterProcessMutex is taken. For both optimistic and mutex, a retry policy is used to retry the increment.|
-| | |
-||Caches|| ||
-|[[Path Cache|path-cache.html]]|A Path Cache is used to watch a ZNode. Whenever a child is added, updated or removed, the Path Cache will change its state to contain the current set of children, the children's data and the children's state. Path caches in the Curator Framework are provided by the PathChildrenCache class. Changes to the path are passed to registered PathChildrenCacheListener instances.|
-|[[Node Cache|node-cache.html]]|A utility that attempts to keep the data from a node locally cached. This class will watch the node, respond to update/create/delete events, pull down the data, etc. You can register a listener that will get notified when changes occur.|
+||Elections||
+|[[Leader Latch|leader-latch.html]] - In distributed computing, leader election is the process of designating a single process as the organizer of some task distributed among several computers (nodes). Before the task is begun, all network nodes are unaware which node will serve as the "leader," or coordinator, of the task. After a leader election algorithm has been run, however, each node throughout the network recognizes a particular, unique node as the task leader.|
+|[[Leader Election|leader-election.html]] - Initial Curator leader election recipe.|
+
+||Locks||
+|[[Shared Reentrant Lock|shared-reentrant-lock.html]] - Fully distributed locks that are globally synchronous, meaning at any snapshot in time no two clients think they hold the same lock.|
+|[[Shared Lock|shared-lock.html]] - Similar to Shared Reentrant Lock but not reentrant.|
+|[[Shared Reentrant Read Write Lock|shared-reentrant-read-write-lock.html]] - A re-entrant read/write mutex that works across JVMs. A read write lock maintains a pair of associated locks, one for read-only operations and one for writing. The read lock may be held simultaneously by multiple reader processes, so long as there are no writers. The write lock is exclusive.|
+|[[Shared Semaphore|shared-semaphore.html]] - A counting semaphore that works across JVMs. All processes in all JVMs that use the same lock path will achieve an inter-process limited set of leases. Further, this semaphore is mostly "fair" - each user will get a lease in the order requested (from ZK's point of view).|
+|[[Multi Shared Lock|multi-shared-lock.html]] - A container that manages multiple locks as a single entity. When acquire() is called, all the locks are acquired. If that fails, any paths that were acquired are released. Similarly, when release() is called, all locks are released (failures are ignored).|
+
+||Queues||
+|[[Distributed Queue|distributed-queue.html]] - An implementation of the Distributed Queue ZK recipe. Items put into the queue are guaranteed to be ordered (by means of ZK's PERSISTENT_SEQUENTIAL node). If a single consumer takes items out of the queue, they will be ordered FIFO. If ordering is important, use a LeaderSelector to nominate a single consumer.|
+|[[Distributed Id Queue|distributed-id-queue.html]] - A version of DistributedQueue that allows IDs to be associated with queue items. Items can then be removed from the queue if needed.|
+|[[Distributed Priority Queue|distributed-priority-queue.html]] - An implementation of the Distributed Priority Queue ZK recipe.|
+|[[Distributed Delay Queue|distributed-delay-queue.html]] - An implementation of a Distributed Delay Queue.|
+|[[Simple Distributed Queue|simple-distributed-queue.html]] - A drop-in replacement for the DistributedQueue that comes with the ZK distribution.|
+
+||Barriers||
+|[[Barrier|barrier.html]] - Distributed systems use barriers to block processing of a set of nodes until a condition is met at which time all the nodes are allowed to proceed.|
+|[[Double Barrier|double-barrier.html]] - Double barriers enable clients to synchronize the beginning and the end of a computation. When enough processes have joined the barrier, processes start their computation and leave the barrier once they have finished.|
+
+||Counters||
+|[[Shared Counter|shared-counter.html]] - Manages a shared integer. All clients watching the same path will have the up-to-date value of the shared integer (considering ZK's normal consistency guarantees).|
+|[[Distributed Atomic Long|distributed-atomic-long.html]] - A counter that attempts atomic increments. It first tries using optimistic locking. If that fails, an optional InterProcessMutex is taken. For both optimistic and mutex, a retry policy is used to retry the increment.|
+
+||Caches||
+|[[Path Cache|path-cache.html]] - A Path Cache is used to watch a ZNode. Whenever a child is added, updated or removed, the Path Cache will change its state to contain the current set of children, the children's data and the children's state. Path caches in the Curator Framework are provided by the PathChildrenCache class. Changes to the path are passed to registered PathChildrenCacheListener instances.|
+|[[Node Cache|node-cache.html]] - A utility that attempts to keep the data from a node locally cached. This class will watch the node, respond to update/create/delete events, pull down the data, etc. You can register a listener that will get notified when changes occur.|
