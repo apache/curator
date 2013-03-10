@@ -56,11 +56,18 @@
 
         <menu name="Details" inherit="top">
             <item name="Error Handling" href="errors.html"/>
+            <item name="Logging and Tracing" href="logging.html"/>
+            <item name="Tech Notes" href="tech-notes.html"/>
+            <item name="Exhibitor Integration" href="exhibitor.html"/>
+            <item name="Project Information" href="project-info.html"/>
         </menu>
 
-        <menu ref="reports" />
+        <menu name="Extensions" inherit="top">
+            <item name="Service Discovery" href="curator-x-discovery/index.html"/>
+            <item name="Service Discovery Server" href="curator-x-discovery-server/index.html"/>
+        </menu>
 
-        <menu name="ASF">
+        <menu name="ASF" inherit="bottom">
             <item name="How the ASF works" href="http://www.apache.org/foundation/how-it-works.html"/>
             <item name="Get Involved" href="http://www.apache.org/foundation/getinvolved.html"/>
             <item name="Developer Resources" href="http://www.apache.org/dev/"/>

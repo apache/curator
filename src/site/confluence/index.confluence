@@ -16,8 +16,8 @@ h2. Components
 |[[Recipes|curator-recipes/index.html]]|Implementations of some of the common ZooKeeper "recipes". The implementations are built on top of the Curator Framework.|
 |[[Utilities|utilities.html]]|Various utilities that are useful when using ZooKeeper.|
 |[[Client|curator-client/index.html]]|A replacement for the bundled {{ZooKeeper}} class that takes care of some low-level housekeeping and provides some useful utilities.|
-|[[Errors]]|How Curator deals with errors, connection issues, recoverable exceptions, etc.|
-|[[Extensions]]|Optional/extension recipes for vertical uses.|
+|[[Errors|errors.html]]|How Curator deals with errors, connection issues, recoverable exceptions, etc.|
+|Extensions|The curator-recipes package implements the common recipes that are described in the ZooKeeper documentation. To avoid bloating that package, recipes/applications that have a vertical appeal will be put in separate "extension" packages using the naming convention curator-x-name.|
 
 h2. Maven / Artifacts
 
