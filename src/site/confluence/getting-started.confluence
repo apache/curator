@@ -86,7 +86,3 @@ LeaderSelector selector = new LeaderSelector(client, path, listener);
 selector.autoRequeue();  // not required, but this is behavior that you will probably expect
 selector.start();
 {code}
-
-h2. Examples
-
-Examples of Curator usage can be found here: [[https://github.com/Netflix/curator/tree/master/curator-examples/src/main/java]]

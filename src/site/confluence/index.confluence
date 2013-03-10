@@ -29,5 +29,6 @@ most users, the only artifact you need is {{curator-recipes}}.
 |org.apache.curator|curator-framework|The Curator Framework high level API. This is built on top of the client and should pull it in automatically.|
 |org.apache.curator|curator-client|The Curator Client - replacement for the ZooKeeper class in the ZK distribution.|
 |org.apache.curator|curator-test|Contains the TestingServer, the TestingCluster and a few other tools useful for testing.|
+|org.apache.curator|curator-examples|Example usages of various Curator features.|
 |org.apache.curator|curator-x-discovery|A Service Discovery implementation built on the Curator Framework.|
 |org.apache.curator|curator-x-discovery-server|A RESTful server that can be used with Curator Discovery.|
