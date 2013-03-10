@@ -31,7 +31,7 @@
     <version>2.0.0-SNAPSHOT</version>
 
     <name>Curator Examples</name>
-    <description>TBD</description>
+    <description>Example usages of various Curator features.</description>
 <!--
     <url>TBD</url>
 -->

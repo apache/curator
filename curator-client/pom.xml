@@ -31,7 +31,7 @@
     <version>2.0.0-SNAPSHOT</version>
 
     <name>Curator Client</name>
-    <description>TBD</description>
+    <description>Low-level API</description>
 <!--
     <url>TBD</url>
 -->

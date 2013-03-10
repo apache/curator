@@ -31,7 +31,7 @@
     <version>2.0.0-SNAPSHOT</version>
 
     <name>Curator Service Discovery</name>
-    <description>TBD</description>
+    <description>A service discovery recipe.</description>
 <!--
     <url>TBD</url>
 -->

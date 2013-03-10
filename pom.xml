@@ -40,6 +40,11 @@
         </license>
     </licenses>
 
+    <organization>
+        <name>The Apache Software Foundation</name>
+        <url>http://www.apache.org/</url>
+    </organization>
+
     <properties>
         <svnUrl>https://svn.apache.org/repos/asf/incubator/onami/site/</svnUrl>
         <checkoutDirectory>site-publish</checkoutDirectory>

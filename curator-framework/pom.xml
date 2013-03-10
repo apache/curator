@@ -31,7 +31,7 @@
     <version>2.0.0-SNAPSHOT</version>
 
     <name>Curator Framework</name>
-    <description>TBD</description>
+    <description>High-level API that greatly simplifies using ZooKeeper.</description>
 <!--
     <url>TBD</url>
 -->
