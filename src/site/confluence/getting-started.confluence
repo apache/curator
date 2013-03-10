@@ -4,7 +4,7 @@ Curator users are assumed to know ZooKeeper. A good place to start is here: [[ht
 
 h2. Using Curator
 
-The Curator JARs are available from Maven Central. The various artifacts are listed here: [[https://github.com/Netflix/curator/wiki]]. Users
+The Curator JARs are available from Maven Central. The various artifacts are listed on the [[main page|index.html]]. Users
 of Maven, Gradle, Ant, etc. can easily include Curator into their build script.
 
 Most users will want to use one of Curator's pre-built recipes. So, the {{curator-recipes}} is the correct artifact to use. If you only
@@ -12,7 +12,7 @@ want a wrapper around ZooKeeper that adds connection management and retry polici
 
 h2. Getting a Connection
 
-Curator uses [[Fluent Style|http://en.wikipedia.org/wiki/Fluent_interface]]. If you haven't used this before, it might seem odd
+Curator uses [[Fluent Style|http://en.wikipedia.org/wiki/Fluent%5Finterface]]. If you haven't used this before, it might seem odd
 so it's suggested that you familiarize yourself with the style.
 
 Curator connection instances ({{CuratorFramework}}) are allocated from the {{CuratorFrameworkFactory}}. You only need *one*

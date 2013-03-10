@@ -48,8 +48,8 @@
         <menu name="Apache Curator" inherit="top">
             <item name="About" href="index.html"/>
             <item name="Getting Started" href="getting-started.html"/>
-            <item name="Framework" href="curator-framework/index.html"/>
             <item name="Recipes" href="curator-recipes/index.html"/>
+            <item name="Framework" href="curator-framework/index.html"/>
             <item name="Utilities" href="utilities.html"/>
             <item name="Client" href="curator-client/index.html"/>
         </menu>

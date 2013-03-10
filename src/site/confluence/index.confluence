@@ -12,8 +12,8 @@ See the page for quick start: [[Getting Started|getting-started.html]].
 
 h2. Components
 
-|[[Framework|curator-framework/index.html]]|The Curator Framework is a high-level API that greatly simplifies using ZooKeeper. It adds many features that build on ZooKeeper and handles the complexity of managing connections to the ZooKeeper cluster and retrying operations.|
 |[[Recipes|curator-recipes/index.html]]|Implementations of some of the common ZooKeeper "recipes". The implementations are built on top of the Curator Framework.|
+|[[Framework|curator-framework/index.html]]|The Curator Framework is a high-level API that greatly simplifies using ZooKeeper. It adds many features that build on ZooKeeper and handles the complexity of managing connections to the ZooKeeper cluster and retrying operations.|
 |[[Utilities|utilities.html]]|Various utilities that are useful when using ZooKeeper.|
 |[[Client|curator-client/index.html]]|A replacement for the bundled {{ZooKeeper}} class that takes care of some low-level housekeeping and provides some useful utilities.|
 |[[Errors|errors.html]]|How Curator deals with errors, connection issues, recoverable exceptions, etc.|
