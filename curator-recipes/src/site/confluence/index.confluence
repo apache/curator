@@ -19,13 +19,13 @@ Curator implements all of the recipes listed on the ZooKeeper recipes doc (excep
 |[[Distributed Delay Queue|distributed-delay-queue.html]]|An implementation of a Distributed Delay Queue.|
 |[[Simple Distributed Queue|simple-distributed-queue.html]]|A drop-in replacement for the DistributedQueue that comes with the ZK distribution.|
 ||Barriers|| ||
-|[[Barrier]]|Distributed systems use barriers to block processing of a set of nodes until a condition is met at which time all the nodes are allowed to proceed.|
-|[[Double Barrier]]|Double barriers enable clients to synchronize the beginning and the end of a computation. When enough processes have joined the barrier, processes start their computation and leave the barrier once they have finished.|
+|[[Barrier|barrier.html]]|Distributed systems use barriers to block processing of a set of nodes until a condition is met at which time all the nodes are allowed to proceed.|
+|[[Double Barrier|double-barrier.html]]|Double barriers enable clients to synchronize the beginning and the end of a computation. When enough processes have joined the barrier, processes start their computation and leave the barrier once they have finished.|
 | | |
 ||Counters|| ||
-|[[Shared Counter]]|Manages a shared integer. All clients watching the same path will have the up-to-date value of the shared integer (considering ZK's normal consistency guarantees).|
-|[[Distributed Atomic Long]]|A counter that attempts atomic increments. It first tries using optimistic locking. If that fails, an optional InterProcessMutex is taken. For both optimistic and mutex, a retry policy is used to retry the increment.|
+|[[Shared Counter|shared-counter.html]]|Manages a shared integer. All clients watching the same path will have the up-to-date value of the shared integer (considering ZK's normal consistency guarantees).|
+|[[Distributed Atomic Long|distributed-atomic-long.html]]|A counter that attempts atomic increments. It first tries using optimistic locking. If that fails, an optional InterProcessMutex is taken. For both optimistic and mutex, a retry policy is used to retry the increment.|
 | | |
 ||Caches|| ||
-|[[Path Cache]]|A Path Cache is used to watch a ZNode. Whenever a child is added, updated or removed, the Path Cache will change its state to contain the current set of children, the children's data and the children's state. Path caches in the Curator Framework are provided by the PathChildrenCache class. Changes to the path are passed to registered PathChildrenCacheListener instances.|
-|[[Node Cache]]|A utility that attempts to keep the data from a node locally cached. This class will watch the node, respond to update/create/delete events, pull down the data, etc. You can register a listener that will get notified when changes occur.|
+|[[Path Cache|path-cache.html]]|A Path Cache is used to watch a ZNode. Whenever a child is added, updated or removed, the Path Cache will change its state to contain the current set of children, the children's data and the children's state. Path caches in the Curator Framework are provided by the PathChildrenCache class. Changes to the path are passed to registered PathChildrenCacheListener instances.|
+|[[Node Cache|node-cache.html]]|A utility that attempts to keep the data from a node locally cached. This class will watch the node, respond to update/create/delete events, pull down the data, etc. You can register a listener that will get notified when changes occur.|

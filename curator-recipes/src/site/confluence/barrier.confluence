@@ -1,0 +1,35 @@
+h1. Barrier
+
+h2. Description
+An implementation of the Distributed Barrier ZK recipe.
+
+Distributed systems use barriers to block processing of a set of nodes until a condition is met at which time all the nodes are allowed to proceed.
+
+h2. Participating Classes
+* DistributedBarrier
+
+h2. Usage
+h3. Creating a DistributedBarrier
+{code}
+public DistributedBarrier(CuratorFramework client,
+                          String barrierPath)
+Parameters:
+client - client
+barrierPath - path to use as the barrier
+{code}
+
+h2. General Usage
+To wait on the barrier:
+{code}
+public void waitOnBarrier()
+{code}
+
+There are utilities for setting/removing the barrier:
+
+{code}
+setBarrier();
+removeBarrier();
+{code}
+
+h2. Error Handling
+DistributedBarrier instances watch for connection loss and will throw an exception from {{waitOnBarrier()}}.

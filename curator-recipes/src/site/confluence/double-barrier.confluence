@@ -1,0 +1,39 @@
+h1. Double Barrier
+
+h2. Description
+An implementation of the Distributed Double Barrier ZK recipe.
+
+Double barriers enable clients to synchronize the beginning and the end of a computation. When enough processes have
+joined the barrier, processes start their computation and leave the barrier once they have finished.
+
+h2. Participating Classes
+* DistributedDoubleBarrier
+
+h2. Usage
+h3. Creating a DistributedBarrier
+{code}
+public DistributedDoubleBarrier(CuratorFramework client,
+                                String barrierPath,
+                                int memberQty)
+Creates the barrier abstraction. memberQty is the number of members in the barrier. When enter() is called, it blocks until
+all members have entered. When leave() is called, it blocks until all members have left.
+
+Parameters:
+client - the client
+barrierPath - path to use
+memberQty - the number of members in the barrier
+{code}
+
+h2. General Usage
+To enter on the barrier:
+{code}
+public void     enter();
+{code}
+
+To leave on the barrier:
+{code}
+public void     leave();
+{code}
+
+h2. Error Handling
+DistributedDoubleBarrier instances watch for connection loss and will throw an exception from {{enter()}} and/or {{leave()}}.
