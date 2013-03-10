@@ -1,4 +1,35 @@
+body
+{
+    font-size: 16px;
+    line-height: 22px;
+}
+
 tt
 {
     background-color: transparent;
+}
+
+.well, .breadcrumb
+{
+    background-color: #f5f5ff;
+}
+
+a:link, a:visited, a:active
+{
+    color: #0035AC;
+}
+
+a:hover
+{
+    color: #001F67;
+}
+
+.nav-list .active a:link, .nav-list .active a:visited, .nav-list .active a:active, .nav-list .active a:hover
+{
+    background-color: #0035AC;
+}
+
+.nav-list li a:hover
+{
+    background-color: #DDDDDD;
 }
