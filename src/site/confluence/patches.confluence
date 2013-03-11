@@ -14,11 +14,11 @@ Curator uses:
 * Google Guava
 
 h2. Style/Development Guide
-* Use spaces not tabs
-* Match the style of the Curator files. Any patches will be re-formatted to match Curator style
-* All submissions must have TestNG tests
-* All submissions must have proper Apache license headers
-* The simpler and smaller the change the more likely it is to be accepted
+* Use spaces not tabs.
+* Match the style of the Curator files. Any patches will be re-formatted to match Curator style.
+* All submissions must have TestNG tests.
+* All submissions must have proper Apache license headers.
+* The simpler and smaller the change the more likely it is to be accepted.
 
 h2. Creating A Patch
 The Apache Curator source code repository holds the current source. A link to information about using the
