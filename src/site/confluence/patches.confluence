@@ -6,6 +6,7 @@ Please read the [[Apache Contribution Guide|http://www.apache.org/foundation/get
 h2. Tools/Libraries
 Curator uses:
 
+* Java 6
 * Maven
 * Jira
 * TestNG
