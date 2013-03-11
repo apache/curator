@@ -39,3 +39,16 @@ a:hover
 {
     background-color: #DDDDDD;
 }
+
+footer
+{
+    font-size: 12px;
+    line-height: 15px;
+}
+
+h2
+{
+    text-align: center;
+    border-bottom: 1px solid #0035AC;
+    margin-bottom: 18px;
+}
