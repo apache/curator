@@ -73,6 +73,7 @@
             <item name="Submitting Patches" href="patches.html"/>
             <item name="History" href="history.html"/>
             <item name="Third Party Articles" href="articles.html"/>
+            <item name="Third Party Contributions" href="contributions.html"/>
         </menu>
 
         <menu name="ASF" inherit="bottom">

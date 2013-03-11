@@ -1,0 +1,9 @@
+h1. Contributions
+
+Curator is being extended by third parties. Here are some of the extensions:
+
+||Netflix Extensions||
+|Netflix (the original creator of Curator) maintains some Curator extensions at: [[https://github.com/Netflix/curator]]|
+
+||Bazaarvoice Curator Extensions||
+|Helpers that extend the functionality of Curator: [[https://github.com/bazaarvoice/curator-extensions]]|
