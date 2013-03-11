@@ -6,7 +6,13 @@ body
 
 tt
 {
+    font-size: 14px;
     background-color: transparent;
+}
+
+pre
+{
+    font-size: 14px;
 }
 
 .well, .breadcrumb
