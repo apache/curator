@@ -46,20 +46,70 @@
     </organization>
 
     <properties>
-        <svnUrl>https://svn.apache.org/repos/asf/incubator/onami/site/</svnUrl>
-        <checkoutDirectory>site-publish</checkoutDirectory>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
+    <scm>
+        <url>https://git-wip-us.apache.org/repos/asf?p=curator.git</url>
+        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git</connection>
+        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>JIRA</system>
+        <url>http://issues.apache.org/jira/browse/CURATOR</url>
+    </issueManagement>
+
+    <ciManagement>
+        <system>Jenkins</system>
+        <url>https://builds.apache.org/job/Curator/</url>
+        <notifiers>
+            <notifier>
+                <type>mail</type>
+                <sendOnError>true</sendOnError>
+                <sendOnFailure>true</sendOnFailure>
+                <sendOnSuccess>false</sendOnSuccess>
+                <sendOnWarning>false</sendOnWarning>
+                <configuration>
+                    <address>dev@curator.incubator.apache.org</address>
+                </configuration>
+            </notifier>
+        </notifiers>
+    </ciManagement>
+
     <distributionManagement>
         <site>
-            <id>apache.website.svnpub</id>
-            <url>scm:svn:${svnUrl}</url>
+            <id>apache.website</id>
+            <url>scpexe://people.apache.org/www/incubator.apache.org/curator</url>
         </site>
     </distributionManagement>
+
+    <mailingLists>
+        <mailingList>
+            <name>Users</name>
+            <post>curator-user@incubator.apache.org</post>
+            <subscribe>curator-user-subscribe@incubator.apache.org</subscribe>
+            <unsubscribe>curator-user-unsubscribe@incubator.apache.org</unsubscribe>
+            <archive>http://mail-archives.apache.org/mod_mbox/incubator-curator-user/</archive>
+        </mailingList>
+        <mailingList>
+            <name>Development</name>
+            <post>curator-dev@incubator.apache.org</post>
+            <subscribe>curator-dev-subscribe@incubator.apache.org</subscribe>
+            <unsubscribe>curator-dev-unsubscribe@incubator.apache.org</unsubscribe>
+            <archive>http://mail-archives.apache.org/mod_mbox/incubator-curator-dev/</archive>
+        </mailingList>
+        <mailingList>
+            <name>Commits</name>
+            <post>curator-commits@incubator.apache.org</post>
+            <subscribe>curator-commits-subscribe@incubator.apache.org</subscribe>
+            <unsubscribe>curator-commits-unsubscribe@incubator.apache.org</unsubscribe>
+            <archive>http://mail-archives.apache.org/mod_mbox/incubator-curator-commits/</archive>
+        </mailingList>
+    </mailingLists>
 
     <contributors>
         <contributor>
@@ -237,6 +287,16 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.6</version>
+            </plugin>
+        </plugins>
+    </reporting>
 
     <build>
         <resources>

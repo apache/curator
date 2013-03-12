@@ -32,43 +32,7 @@
 
     <name>Curator Testing</name>
     <description>Unit testing utilities.</description>
-<!--
-    <url>TBD</url>
--->
     <inceptionYear>2011</inceptionYear>
-
-    <scm>
-<!--
-        <url>TBD</url>
-        <connection>TBD</connection>
-        <developerConnection>TBD</developerConnection>
--->
-        <tag>TBD</tag>
-    </scm>
-    <issueManagement>
-        <system>JIRA</system>
-<!--
-        <url>TBD</url>
--->
-    </issueManagement>
-    <ciManagement>
-        <system>Jenkins</system>
-        <!--
-                <url>TBD</url>
-        -->
-        <notifiers>
-            <notifier>
-                <type>mail</type>
-                <sendOnError>true</sendOnError>
-                <sendOnFailure>true</sendOnFailure>
-                <sendOnSuccess>false</sendOnSuccess>
-                <sendOnWarning>false</sendOnWarning>
-                <configuration>
-                    <address>TBD</address>
-                </configuration>
-            </notifier>
-        </notifiers>
-    </ciManagement>
 
     <dependencies>
         <dependency>
