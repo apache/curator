@@ -133,13 +133,13 @@
         <developer>
             <id>zarfide</id>
             <name>Jay Zarfoss</name>
-            <email>jzarfoss@apache.org</email>
+            <email>zarfide@apache.org</email>
             <timezone>-8</timezone>
             <roles>
                 <role>Committer</role>
                 <role>PPMC Member</role>
             </roles>
-            <url>https://people.apache.org/~jzarfoss</url>
+            <url>https://people.apache.org/~zarfide</url>
         </developer>
     </developers>
 
