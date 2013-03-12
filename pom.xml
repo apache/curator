@@ -117,6 +117,32 @@
         </mailingList>
     </mailingLists>
 
+    <developers>
+        <developer>
+            <id>randgalt</id>
+            <name>Jordan Zimmerman</name>
+            <email>randgalt@apache.org</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PPMC Member</role>
+            </roles>
+            <url>https://people.apache.org/~randgalt</url>
+        </developer>
+
+        <developer>
+            <id>zarfide</id>
+            <name>Jay Zarfoss</name>
+            <email>jzarfoss@apache.org</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PPMC Member</role>
+            </roles>
+            <url>https://people.apache.org/~jzarfoss</url>
+        </developer>
+    </developers>
+
     <contributors>
         <contributor>
             <name>Patrick Hunt</name>
@@ -159,32 +185,6 @@
             <url>https://people.apache.org/~enis</url>
         </contributor>
     </contributors>
-
-    <developers>
-        <developer>
-            <id>randgalt</id>
-            <name>Jordan Zimmerman</name>
-            <email>randgalt@apache.org</email>
-            <timezone>-8</timezone>
-            <roles>
-                <role>Committer</role>
-                <role>PPMC Member</role>
-            </roles>
-            <url>https://people.apache.org/~randgalt</url>
-        </developer>
-
-        <developer>
-            <id>jzarfoss</id>
-            <name>Jay Zarfoss</name>
-            <email>jzarfoss@apache.org</email>
-            <timezone>-8</timezone>
-            <roles>
-                <role>Committer</role>
-                <role>PPMC Member</role>
-            </roles>
-            <url>https://people.apache.org/~jzarfoss</url>
-        </developer>
-    </developers>
 
     <modules>
         <module>curator-client</module>
