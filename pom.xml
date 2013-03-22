@@ -88,8 +88,8 @@
 
     <distributionManagement>
         <site>
-            <id>apache</id>
-            <url>scp://people.apache.org/www/curator.incubator.apache.org</url>
+            <id>${site-deploy-id}</id>
+            <url>${site-deploy-url}</url>
         </site>
     </distributionManagement>
 
