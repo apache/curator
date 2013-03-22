@@ -88,8 +88,8 @@
 
     <distributionManagement>
         <site>
-            <id>${site-deploy-id}</id>
-            <url>${site-deploy-url}</url>
+            <id>${site-deploy-id}</id>  <!-- define this in settings.xml under profiles.profile.properties.site-deploy-id -->
+            <url>${site-deploy-url}</url>   <!-- define this in settings.xml under profiles.profile.properties.site-deploy-url -->
         </site>
     </distributionManagement>
 
