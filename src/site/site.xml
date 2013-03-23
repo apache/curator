@@ -74,6 +74,7 @@
             <item name="History" href="history.html"/>
             <item name="Third Party Articles" href="articles.html"/>
             <item name="Third Party Contributions" href="contributions.html"/>
+            <item name="Information/Recipes for Committers" href="committers.html"/>
         </menu>
 
         <menu name="ASF" inherit="bottom">

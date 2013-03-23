@@ -1,0 +1,53 @@
+h1. Information/Recipes for Curator Committers
+
+h2. How to Publish the Curator Website
+
+_Preparation_
+
+* Update the Maven settings file: {{~/.m2/settings.xml}}
+** Make sure your svn login is set
+** Set a chosen directory in the default profile
+* Checkout the website svn source to the chosen directory
+** {{svn co https://svn.apache.org/repos/asf/incubator/curator/site/trunk}} _chosen-dir_
+
+{noformat}
+<settings>
+    ...
+    <servers>
+        ...
+        <server>
+            <id>apache.website.svnpub</id>
+            <username>Your Apache Username</username>
+            <privateKey>${user.home}/.ssh/id_rsa</privateKey>
+        </server>
+        ...
+    </servers>
+
+    <profiles>
+        <profile>
+            <properties>
+                ...
+                <curator-website-checkout-path>path-goes-here</curator-website-checkout-path>
+                ...
+            </properties>
+            ...
+        <profile>
+        ...
+    <profiles>
+    ...
+</settings>
+{noformat}
+
+_Publishing_
+
+Assuming you have a clean compile/install of Curator, from the root of the Curator directory:
+
+{noformat}
+mvn site site:stage
+{noformat}
+
+Have a look at the staged site and make sure it's good. Then:
+
+{noformat}
+mvn site-deploy
+{noformat}
