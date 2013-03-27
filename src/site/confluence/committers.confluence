@@ -1,14 +1,10 @@
 h1. Information/Recipes for Curator Committers
 
-h2. How to Publish the Curator Website
+h2. Maven Settings
 
-_Preparation_
-
-* Update the Maven settings file: {{~/.m2/settings.xml}}
-** Make sure your svn login is set
-** Set a chosen directory in the default profile
-* Checkout the website svn source to the chosen directory
-** {{svn co https://svn.apache.org/repos/asf/incubator/curator/site/trunk}} _chosen-dir_
+Your Maven settings ({{~/.m2/settings.xml}}) file should have the following (note:
+{{curator-website-checkout-path}} is used as a temporary path when deploying the Curator
+website):
 
 {noformat}
 <settings>
@@ -38,7 +34,7 @@ _Preparation_
 </settings>
 {noformat}
 
-_Publishing_
+h2. How to Publish the Curator Website
 
 Assuming you have a clean compile/install of Curator, from the root of the Curator directory:
 
