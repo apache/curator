@@ -58,9 +58,9 @@
     </properties>
 
     <scm>
-        <url>https://git-wip-us.apache.org/repos/asf?p=curator.git</url>
-        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git</developerConnection>
+        <url>https://git-wip-us.apache.org/repos/asf?p=incubator-curator.git</url>
+        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-curator.git</connection>
+        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-curator.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -280,7 +280,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>11.0.1</version>
+            <version>14.0.1</version>
         </dependency>
 
         <dependency>
