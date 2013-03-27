@@ -417,6 +417,7 @@
                 <configuration>
                     <header>src/etc/header.txt</header>
                     <excludes>
+                        <exclude>**/*.confluence</exclude>
                         <exclude>**/.gitignore</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/LICENSE.txt</exclude>
@@ -426,9 +427,6 @@
                         <exclude>**/RELEASE-NOTES</exclude>
                     </excludes>
                     <strictCheck>true</strictCheck>
-                    <mapping>
-                        <confluence>XML_STYLE</confluence>
-                    </mapping>
                 </configuration>
                 <executions>
                     <execution>
