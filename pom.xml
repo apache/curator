@@ -419,7 +419,7 @@
                     <excludes>
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/.gitignore</exclude>
-                        <exclude>**/DISCLAIMER</exclude>
+                        <exclude>**/DISCLAIMER.txt</exclude>
                         <exclude>**/LICENSE.txt</exclude>
                         <exclude>**/NOTICE.txt</exclude>
                         <exclude>**/README.txt</exclude>
