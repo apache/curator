@@ -408,6 +408,36 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>com.mycila.maven-license-plugin</groupId>
+                <artifactId>maven-license-plugin</artifactId>
+                <version>1.9.0</version>
+                <configuration>
+                    <header>src/etc/header.txt</header>
+                    <excludes>
+                        <exclude>**/.gitignore</exclude>
+                        <exclude>**/DISCLAIMER</exclude>
+                        <exclude>**/LICENSE.txt</exclude>
+                        <exclude>**/NOTICE.txt</exclude>
+                        <exclude>**/README.txt</exclude>
+                        <exclude>**/CHANGES.txt</exclude>
+                        <exclude>**/RELEASE-NOTES</exclude>
+                    </excludes>
+                    <strictCheck>true</strictCheck>
+                    <mapping>
+                        <confluence>XML_STYLE</confluence>
+                    </mapping>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>license</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
