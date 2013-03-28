@@ -47,3 +47,8 @@ Have a look at the staged site and make sure it's good. Then:
 {noformat}
 mvn site-deploy
 {noformat}
+
+h2. Git Setup
+
+Apache has a good guide on how to prepare your environment for interacting with the Curator Git repo: [https://git-wip-us.apache.org/].
+
