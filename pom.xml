@@ -60,8 +60,8 @@
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf?p=incubator-curator.git</url>
-        <connection>scm:git://git-wip-us.apache.org/repos/asf/incubator-curator.git</connection>
-        <developerConnection>scm:git://git-wip-us.apache.org/repos/asf/incubator-curator.git</developerConnection>
+        <connection>scm:https://git-wip-us.apache.org/repos/asf/incubator-curator.git</connection>
+        <developerConnection>scm:https://git-wip-us.apache.org/repos/asf/incubator-curator.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
