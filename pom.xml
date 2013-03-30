@@ -418,11 +418,11 @@
                     <excludes>
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/.gitignore</exclude>
-                        <exclude>**/DISCLAIMER.txt</exclude>
-                        <exclude>**/LICENSE.txt</exclude>
-                        <exclude>**/NOTICE.txt</exclude>
-                        <exclude>**/README.txt</exclude>
-                        <exclude>**/CHANGES.txt</exclude>
+                        <exclude>**/DISCLAIMER</exclude>
+                        <exclude>**/LICENSE</exclude>
+                        <exclude>**/NOTICE</exclude>
+                        <exclude>**/README</exclude>
+                        <exclude>**/CHANGES</exclude>
                         <exclude>**/RELEASE-NOTES</exclude>
                     </excludes>
                     <strictCheck>true</strictCheck>
