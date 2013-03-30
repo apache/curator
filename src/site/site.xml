@@ -28,6 +28,22 @@
         <version>1.3.0</version>
     </skin>
 
+    <custom>
+        <fluidoSkin>
+            <ohloh>
+                <projectId>apache-curator</projectId>
+                <widget>factoids</widget>
+            </ohloh>
+            <facebookLike />
+            <googlePlusOne />
+            <twitter>
+                <user>ApacheCurator</user>
+                <showUser>false</showUser>
+                <showFollowers>false</showFollowers>
+            </twitter>
+        </fluidoSkin>
+    </custom>
+
     <bannerLeft>
         <name>Apache Curator</name>
         <src>/images/curator-logo.png</src>
