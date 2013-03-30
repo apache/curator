@@ -339,7 +339,6 @@
                 <version>2.13</version>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <parallel>classes</parallel>
                 </configuration>
             </plugin>
 
