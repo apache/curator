@@ -1,5 +1,10 @@
 h1. Information/Recipes for Curator Committers
 
+* [Maven Settings|#maven-settings]
+* [How to Publish the Curator Website|#publish-website]
+* [Git Setup|#git-setup]
+
+{anchor:maven-settings}
 h2. Maven Settings
 
 Your Maven settings ({{~/.m2/settings.xml}}) file should have the following (note:
@@ -34,6 +39,7 @@ website):
 </settings>
 {noformat}
 
+{anchor:publish-website}
 h2. How to Publish the Curator Website
 
 Assuming you have a clean compile/install of Curator, from the root of the Curator directory:
@@ -48,6 +54,7 @@ Have a look at the staged site and make sure it's good. Then:
 mvn site-deploy
 {noformat}
 
+{anchor:git-setup}
 h2. Git Setup
 
 Apache has a good guide on how to prepare your environment for interacting with the Curator Git repo: [https://git-wip-us.apache.org/].
