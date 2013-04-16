@@ -7,3 +7,6 @@ Curator is being extended by third parties. Here are some of the extensions:
 
 ||Bazaarvoice||
 |Helpers that extend the functionality of Curator: [[https://github.com/bazaarvoice/curator-extensions]]|
+
+||Rackspace||
+|Service Registry Bindings for Netflix Curator: [[http://devops.rackspace.com/service-registry-curator-bindings.html]]|
