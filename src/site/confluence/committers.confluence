@@ -125,7 +125,7 @@ h2. Perform the Release
 
 {anchor:release-vote}
 h2. Initiate a Vote On the Release
-# Create a VOTE email thread on [@dev|mailto:dev@curator.incubator.apache.org] to record votes as replies (see [Example Emails|email-examples.html]).
+# Create a VOTE email thread on dev@curator.incubator.apache.org to record votes as replies (see [Example Emails|email-examples.html]).
 # If the Vote succeeds, you can then promote the release:
 ** At [https://repository.apache.org] select the curator repo and click the "Release" button.
 ** More TBD
