@@ -80,6 +80,7 @@
             <item name="Exhibitor Integration" href="exhibitor.html"/>
             <item name="Project Information" href="project-info.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>
+            <item name="Wiki" href="https://cwiki.apache.org/confluence/display/CURATOR/Index"/>
         </menu>
 
         <menu name="Extensions" inherit="top">
@@ -92,7 +93,7 @@
             <item name="History" href="history.html"/>
             <item name="Third Party Articles" href="articles.html"/>
             <item name="Third Party Contributions" href="contributions.html"/>
-            <item name="For Committers" href="committers.html"/>
+            <item name="For Committers" href="https://cwiki.apache.org/confluence/display/CURATOR/For+Curator+Committers"/>
         </menu>
 
         <menu name="ASF" inherit="bottom">
