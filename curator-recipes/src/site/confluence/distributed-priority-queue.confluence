@@ -1,6 +1,6 @@
 h1. Distributed Priority Queue
 
-h2. *IMPORTANT* - We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|../tech-note-4.html]] for details.
+h2. *IMPORTANT* - We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|https://cwiki.apache.org/confluence/display/CURATOR/TN4]] for details.
 
 h2. Description
 An implementation of the Distributed Priority Queue ZK recipe.

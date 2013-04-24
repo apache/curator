@@ -1,6 +1,6 @@
 h1. Distributed ID Queue
 
-h2. *IMPORTANT* - We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|../tech-note-4.html]] for details.
+h2. *IMPORTANT* - We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|https://cwiki.apache.org/confluence/display/CURATOR/TN4]] for details.
 
 h2. Description
 This is an alternate version of [[Distributed Queue|distributed-queue.html]] that supports assigning IDs to the items

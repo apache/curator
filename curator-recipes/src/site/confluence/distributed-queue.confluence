@@ -1,6 +1,6 @@
 h1. Distributed Queue
 
-h2. *IMPORTANT* - We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|../tech-note-4.html]] for details.
+h2. *IMPORTANT* - We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|https://cwiki.apache.org/confluence/display/CURATOR/TN4]] for details.
 
 h2. Description
 An implementation of the Distributed Queue ZK recipe. Items put into the queue are guaranteed to be ordered (by means of ZK's PERSISTENT_SEQUENTIAL node). If a single consumer takes items out of the queue, they will be ordered FIFO. If ordering is important, use a LeaderSelector to nominate a single consumer.

@@ -76,7 +76,7 @@
         <menu name="Details" inherit="top">
             <item name="Error Handling" href="errors.html"/>
             <item name="Logging and Tracing" href="logging.html"/>
-            <item name="Tech Notes" href="tech-notes.html"/>
+            <item name="Tech Notes" href="https://cwiki.apache.org/confluence/display/CURATOR/Tech+Notes"/>
             <item name="Exhibitor Integration" href="exhibitor.html"/>
             <item name="Project Information" href="project-info.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>
@@ -89,10 +89,10 @@
         </menu>
 
         <menu name="Community" inherit="top">
-            <item name="Submitting Patches" href="patches.html"/>
-            <item name="History" href="history.html"/>
-            <item name="Third Party Articles" href="articles.html"/>
-            <item name="Third Party Contributions" href="contributions.html"/>
+            <item name="Submitting Patches" href="https://cwiki.apache.org/confluence/display/CURATOR/Submitting+Patches"/>
+            <item name="History" href="https://cwiki.apache.org/confluence/display/CURATOR/Curator's+History"/>
+            <item name="Third Party Articles" href="https://cwiki.apache.org/confluence/display/CURATOR/Third+Party+Articles"/>
+            <item name="Third Party Contributions" href="https://cwiki.apache.org/confluence/display/CURATOR/Contributions+to+Curator"/>
             <item name="For Committers" href="https://cwiki.apache.org/confluence/display/CURATOR/For+Curator+Committers"/>
         </menu>
 

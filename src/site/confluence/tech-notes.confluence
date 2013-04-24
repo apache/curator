@@ -1,8 +1,0 @@
-h1. Tech Notes
-
-Various questions, issues, etc. come up from time to time. Answers and workarounds will be collected here as Tech Notes.
-
-|[[TN1|tech-note-1.html]]|[[ZooKeeper watches are single threaded|tech-note-1.html]]|
-|[[TN2|tech-note-2.html]]|[[How do I try to lock with InterProcessMutex but return immediately if lock can't be acquired?|tech-note-2.html]]|
-|[[TN3|tech-note-3.html]]|[[Dealing with session failure|tech-note-3.html]]|
-|[[TN4|tech-note-4.html]]|[[ZooKeeper is not a good system to use as a distributed queue|tech-note-4.html]]|
