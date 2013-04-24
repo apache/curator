@@ -58,6 +58,8 @@
 
     <publishDate/>
 
+    <version position="none"/>
+
     <body>
         <links>
             <item name="Apache ZooKeeper" href="http://zookeeper.apache.org"/>
