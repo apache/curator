@@ -82,7 +82,7 @@
             <item name="Exhibitor Integration" href="exhibitor.html"/>
             <item name="Project Information" href="project-info.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>
-            <item name="Wiki" href="https://cwiki.apache.org/confluence/display/CURATOR/Index"/>
+            <item name="Wiki" href="https://cwiki.apache.org/confluence/display/CURATOR"/>
         </menu>
 
         <menu name="Extensions" inherit="top">
