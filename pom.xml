@@ -315,9 +315,9 @@
                 <directory>${basedir}</directory>
                 <targetPath>META-INF</targetPath>
                 <includes>
-                    <include>DISCLAIMER.txt</include>
-                    <include>LICENSE.txt</include>
-                    <include>NOTICE.txt</include>
+                    <include>DISCLAIMER</include>
+                    <include>LICENSE</include>
+                    <include>NOTICE</include>
                 </includes>
             </resource>
         </resources>
