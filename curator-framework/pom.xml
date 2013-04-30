@@ -24,12 +24,12 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>2.0.1-incubating-SNAPSHOT</version>
+        <version>apache-curator-2.0.0-incubating-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.curator</groupId>
     <artifactId>curator-framework</artifactId>
-    <version>2.0.1-incubating-SNAPSHOT</version>
+    <version>apache-curator-2.0.0-incubating-SNAPSHOT</version>
 
     <name>Curator Framework</name>
     <description>High-level API that greatly simplifies using ZooKeeper.</description>
