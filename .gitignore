@@ -64,5 +64,5 @@ atlassian-ide-plugin.xml
 # NetBeans specific files/directories
 .nbattrs
 
-
-build-web.sh
+# Patch fies
+*.patch
