@@ -32,3 +32,11 @@ most users, the only artifact you need is {{curator-recipes}}.
 |org.apache.curator|curator-examples|Example usages of various Curator features.|
 |org.apache.curator|curator-x-discovery|A Service Discovery implementation built on the Curator Framework.|
 |org.apache.curator|curator-x-discovery-server|A RESTful server that can be used with Curator Discovery.|
+
+h2. Disclaimer
+
+Apache Curator is an effort undergoing incubation at the Apache Software Foundation (ASF), sponsored by the Incubator PMC.
+
+Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects.
+
+While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.
