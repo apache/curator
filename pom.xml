@@ -456,6 +456,28 @@
                     <arguments>-Dmaven.test.skip=true</arguments>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <version>0.8</version>
+                <configuration>
+                    <numUnapprovedLicenses>0</numUnapprovedLicenses>
+                    <excludeSubProjects>false</excludeSubProjects>
+                    <excludes>
+                        <exclude>**/*.confluence</exclude>
+                        <exclude>**/.gitignore</exclude>
+                        <exclude>**/DISCLAIMER</exclude>
+                        <exclude>**/DEPENDENCIES</exclude>
+                        <exclude>**/KEYS</exclude>
+                        <exclude>**/LICENSE</exclude>
+                        <exclude>**/NOTICE</exclude>
+                        <exclude>**/README</exclude>
+                        <exclude>**/CHANGES</exclude>
+                        <exclude>**/RELEASE-NOTES</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
