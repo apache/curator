@@ -51,16 +51,37 @@ public class PathChildrenCacheEvent
 
         /**
          * Called when the connection has changed to {@link ConnectionState#SUSPENDED}
+         *
+         * This is exposed so that users of the class can be notified of issues that *might* affect normal operation.
+         * The PathChildrenCache is written such that listeners are not expected to do anything special on this
+         * event, except for those people who want to cause some application-specific logic to fire when this occurs.
+         * While the connection is down, the PathChildrenCache will continue to have its state from before it lost
+         * the connection and after the connection is restored, the PathChildrenCache will emit normal child events
+         * for all of the adds, deletes and updates that happened during the time that it was disconnected.
          */
         CONNECTION_SUSPENDED,
 
         /**
          * Called when the connection has changed to {@link ConnectionState#RECONNECTED}
+         *
+         * This is exposed so that users of the class can be notified of issues that *might* affect normal operation.
+         * The PathChildrenCache is written such that listeners are not expected to do anything special on this
+         * event, except for those people who want to cause some application-specific logic to fire when this occurs.
+         * While the connection is down, the PathChildrenCache will continue to have its state from before it lost
+         * the connection and after the connection is restored, the PathChildrenCache will emit normal child events
+         * for all of the adds, deletes and updates that happened during the time that it was disconnected.
          */
         CONNECTION_RECONNECTED,
 
         /**
          * Called when the connection has changed to {@link ConnectionState#LOST}
+         *
+         * This is exposed so that users of the class can be notified of issues that *might* affect normal operation.
+         * The PathChildrenCache is written such that listeners are not expected to do anything special on this
+         * event, except for those people who want to cause some application-specific logic to fire when this occurs.
+         * While the connection is down, the PathChildrenCache will continue to have its state from before it lost
+         * the connection and after the connection is restored, the PathChildrenCache will emit normal child events
+         * for all of the adds, deletes and updates that happened during the time that it was disconnected.
          */
         CONNECTION_LOST,
 

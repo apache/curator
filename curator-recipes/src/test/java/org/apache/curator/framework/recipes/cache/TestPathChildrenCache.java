@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
 import org.apache.curator.framework.CuratorFramework;
@@ -31,6 +32,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -726,6 +728,255 @@ public class TestPathChildrenCache extends BaseClassForTests
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    public void testBasicsOnTwoCachesWithSameExecutor() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().forPath("/test");
+
+            final BlockingQueue<PathChildrenCacheEvent.Type> events = new LinkedBlockingQueue<PathChildrenCacheEvent.Type>();
+            final ExecutorService exec = new ShutdownNowIgnoringExecutorService(Executors.newSingleThreadExecutor());
+            PathChildrenCache cache = new PathChildrenCache(client, "/test", true, false, exec);
+            cache.getListenable().addListener
+                (
+                    new PathChildrenCacheListener()
+                    {
+                        @Override
+                        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                        {
+                            if ( event.getData().getPath().equals("/test/one") )
+                            {
+                                events.offer(event.getType());
+                            }
+                        }
+                    }
+                );
+            cache.start();
+
+            final BlockingQueue<PathChildrenCacheEvent.Type> events2 = new LinkedBlockingQueue<PathChildrenCacheEvent.Type>();
+            PathChildrenCache cache2 = new PathChildrenCache(client, "/test", true, false, exec);
+            cache2.getListenable().addListener(
+                    new PathChildrenCacheListener() {
+                        @Override
+                        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event)
+                                throws Exception
+                        {
+                            if ( event.getData().getPath().equals("/test/one") )
+                            {
+                                events2.offer(event.getType());
+                            }
+                        }
+                    }
+            );
+            cache2.start();
+
+            client.create().forPath("/test/one", "hey there".getBytes());
+            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            Assert.assertEquals(events2.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+
+            client.setData().forPath("/test/one", "sup!".getBytes());
+            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+            Assert.assertEquals(events2.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+            Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
+            Assert.assertEquals(new String(cache2.getCurrentData("/test/one").getData()), "sup!");
+
+            client.delete().forPath("/test/one");
+            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+            Assert.assertEquals(events2.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+
+            cache.close();
+            cache2.close();
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void testDeleteNodeAfterCloseDoesntCallExecutor()
+            throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().forPath("/test");
+
+            final ExecuteCalledWatchingExecutorService exec = new ExecuteCalledWatchingExecutorService(Executors.newSingleThreadExecutor());
+            PathChildrenCache cache = new PathChildrenCache(client, "/test", true, false, exec);
+
+            cache.start();
+            client.create().forPath("/test/one", "hey there".getBytes());
+
+            cache.rebuild();
+            Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
+            Assert.assertTrue(exec.isExecuteCalled());
+
+            exec.setExecuteCalled(false);
+            cache.close();
+            Assert.assertFalse(exec.isExecuteCalled());
+
+            client.delete().forPath("/test/one");
+            Thread.sleep(100);
+            Assert.assertFalse(exec.isExecuteCalled());
+        }
+        finally {
+            client.close();
+        }
+
+    }
+
+    public static class ExecuteCalledWatchingExecutorService extends DelegatingExecutorService
+    {
+        boolean executeCalled = false;
+
+        public ExecuteCalledWatchingExecutorService(ExecutorService delegate)
+        {
+            super(delegate);
+        }
+
+        @Override
+        public synchronized void execute(Runnable command)
+        {
+            executeCalled = true;
+            super.execute(command);
+        }
+
+        public synchronized boolean isExecuteCalled()
+        {
+            return executeCalled;
+        }
+
+        public synchronized void setExecuteCalled(boolean executeCalled)
+        {
+            this.executeCalled = executeCalled;
+        }
+    }
+
+    /**
+     * This is required to work around https://issues.apache.org/jira/browse/CURATOR-17
+     */
+    public static class ShutdownNowIgnoringExecutorService extends DelegatingExecutorService
+    {
+        public ShutdownNowIgnoringExecutorService(ExecutorService delegate)
+        {
+            super(delegate);
+        }
+
+        @Override
+        public void shutdown()
+        {
+            // ignore
+        }
+
+        @Override
+        public List<Runnable> shutdownNow()
+        {
+            // ignore
+            return ImmutableList.of();
+        }
+    }
+
+    public static class DelegatingExecutorService implements ExecutorService
+    {
+        private final ExecutorService delegate;
+
+        public DelegatingExecutorService(
+                ExecutorService delegate
+        )
+        {
+            this.delegate = delegate;
+        }
+
+
+        @Override
+        public void shutdown()
+        {
+            delegate.shutdown();
+        }
+
+        @Override
+        public List<Runnable> shutdownNow()
+        {
+            return delegate.shutdownNow();
+        }
+
+        @Override
+        public boolean isShutdown()
+        {
+            return delegate.isShutdown();
+        }
+
+        @Override
+        public boolean isTerminated()
+        {
+            return delegate.isTerminated();
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit)
+                throws InterruptedException
+        {
+            return delegate.awaitTermination(timeout, unit);
+        }
+
+        @Override
+        public <T> Future<T> submit(Callable<T> task)
+        {
+            return delegate.submit(task);
+        }
+
+        @Override
+        public <T> Future<T> submit(Runnable task, T result)
+        {
+            return delegate.submit(task, result);
+        }
+
+        @Override
+        public Future<?> submit(Runnable task)
+        {
+            return delegate.submit(task);
+        }
+
+        @Override
+        public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
+                throws InterruptedException
+        {
+            return delegate.invokeAll(tasks);
+        }
+
+        @Override
+        public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+                throws InterruptedException
+        {
+            return delegate.invokeAll(tasks, timeout, unit);
+        }
+
+        @Override
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
+                throws InterruptedException, ExecutionException
+        {
+            return delegate.invokeAny(tasks);
+        }
+
+        @Override
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException
+        {
+            return delegate.invokeAny(tasks, timeout, unit);
+        }
+
+        @Override
+        public void execute(Runnable command)
+        {
+            delegate.execute(command);
         }
     }
 }

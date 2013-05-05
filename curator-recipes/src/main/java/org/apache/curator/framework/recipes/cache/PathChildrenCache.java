@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -46,12 +47,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -74,12 +73,20 @@ public class PathChildrenCache implements Closeable
     private final boolean cacheData;
     private final boolean dataIsCompressed;
     private final EnsurePath ensurePath;
-    private final BlockingQueue<Operation> operations = new LinkedBlockingQueue<Operation>();
     private final ListenerContainer<PathChildrenCacheListener> listeners = new ListenerContainer<PathChildrenCacheListener>();
     private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
+    private final Set<Operation> operationsQuantizer = Sets.newSetFromMap(Maps.<Operation, Boolean>newConcurrentMap());
+    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
-    private static final ChildData      NULL_CHILD_DATA = new ChildData(null, null, null);
+    private enum State
+    {
+        LATENT,
+        STARTED,
+        CLOSED
+    }
+
+    private static final ChildData NULL_CHILD_DATA = new ChildData(null, null, null);
 
     private final Watcher childrenWatcher = new Watcher()
     {
@@ -217,8 +224,8 @@ public class PathChildrenCache implements Closeable
      * @param buildInitial if true, {@link #rebuild()} will be called before this method
      *                     returns in order to get an initial view of the node; otherwise,
      *                     the cache will be initialized asynchronously
-     * @deprecated use {@link #start(StartMode)}
      * @throws Exception errors
+     * @deprecated use {@link #start(StartMode)}
      */
     public void start(boolean buildInitial) throws Exception
     {
@@ -257,21 +264,10 @@ public class PathChildrenCache implements Closeable
      */
     public void start(StartMode mode) throws Exception
     {
-        Preconditions.checkState(!executorService.isShutdown(), "already started");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
         mode = Preconditions.checkNotNull(mode, "mode cannot be null");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        executorService.execute
-            (
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        mainLoop();
-                    }
-                }
-            );
 
         switch ( mode )
         {
@@ -354,10 +350,11 @@ public class PathChildrenCache implements Closeable
     @Override
     public void close() throws IOException
     {
-        Preconditions.checkState(!executorService.isShutdown(), "has not been started");
-
-        client.getConnectionStateListenable().removeListener(connectionStateListener);
-        executorService.shutdownNow();
+        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
+        {
+            client.getConnectionStateListenable().removeListener(connectionStateListener);
+            executorService.shutdownNow();
+        }
     }
 
     /**
@@ -623,17 +620,17 @@ public class PathChildrenCache implements Closeable
     private void processChildren(List<String> children, RefreshMode mode) throws Exception
     {
         List<String> fullPaths = Lists.newArrayList(Lists.transform
-        (
-            children,
-            new Function<String, String>()
-            {
-                @Override
-                public String apply(String child)
+            (
+                children,
+                new Function<String, String>()
                 {
-                    return ZKPaths.makePath(path, child);
+                    @Override
+                    public String apply(String child)
+                    {
+                        return ZKPaths.makePath(path, child);
+                    }
                 }
-            }
-        ));
+            ));
         Set<String> removedNodes = Sets.newHashSet(currentData.keySet());
         removedNodes.removeAll(fullPaths);
 
@@ -714,43 +711,64 @@ public class PathChildrenCache implements Closeable
         }
 
         Map<String, ChildData> uninitializedChildren = Maps.filterValues
-        (
-            localInitialSet,
-            new Predicate<ChildData>()
-            {
-                @Override
-                public boolean apply(ChildData input)
+            (
+                localInitialSet,
+                new Predicate<ChildData>()
                 {
-                    return (input == NULL_CHILD_DATA);  // check against ref intentional
+                    @Override
+                    public boolean apply(ChildData input)
+                    {
+                        return (input == NULL_CHILD_DATA);  // check against ref intentional
+                    }
                 }
-            }
-        );
+            );
         return (uninitializedChildren.size() != 0);
     }
 
-    private void mainLoop()
+    private void offerOperation(final Operation operation)
     {
-        while ( !Thread.currentThread().isInterrupted() )
+        if ( operationsQuantizer.add(operation) )
         {
-            try
-            {
-                operations.take().invoke();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                break;
-            }
-            catch ( Exception e )
-            {
-                handleException(e);
-            }
+            submitToExecutor
+            (
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            operationsQuantizer.remove(operation);
+                            operation.invoke();
+                        }
+                        catch ( Exception e )
+                        {
+                            handleException(e);
+                        }
+                    }
+                }
+            );
         }
     }
 
-    private void offerOperation(Operation operation)
+    /**
+     * Submits a runnable to the executor.
+     * <p/>
+     * This method is synchronized because it has to check state about whether this instance is still open.  Without this check
+     * there is a race condition with the dataWatchers that get set.  Even after this object is closed() it can still be
+     * called by those watchers, because the close() method cannot actually disable the watcher.
+     * <p/>
+     * The synchronization overhead should be minimal if non-existant as this is generally only called from the
+     * ZK client thread and will only contend if close() is called in parallel with an update, and that's the exact state
+     * we want to protect from.
+     *
+     * @param command The runnable to run
+     */
+    private synchronized void submitToExecutor(final Runnable command)
     {
-        operations.remove(operation);   // avoids herding for refresh operations
-        operations.offer(operation);
+        if ( state.get() == State.STARTED )
+        {
+            executorService.execute(command);
+        }
     }
 }
