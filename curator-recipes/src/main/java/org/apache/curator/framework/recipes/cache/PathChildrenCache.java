@@ -32,6 +32,7 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -70,7 +71,7 @@ public class PathChildrenCache implements Closeable
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final String path;
-    private final ExecutorService executorService;
+    private final CloseableExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
     private final EnsurePath ensurePath;
@@ -197,7 +198,7 @@ public class PathChildrenCache implements Closeable
         this.path = path;
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
-        this.executorService = executorService;
+        this.executorService = new CloseableExecutorService(executorService);
         ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 
@@ -261,17 +262,17 @@ public class PathChildrenCache implements Closeable
         mode = Preconditions.checkNotNull(mode, "mode cannot be null");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        executorService.execute
-            (
-                new Runnable()
+        executorService.submit
+        (
+            new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        mainLoop();
-                    }
+                    mainLoop();
                 }
-            );
+            }
+        );
 
         switch ( mode )
         {
@@ -357,7 +358,7 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkState(!executorService.isShutdown(), "has not been started");
 
         client.getConnectionStateListenable().removeListener(connectionStateListener);
-        executorService.shutdownNow();
+        executorService.close();
     }
 
     /**

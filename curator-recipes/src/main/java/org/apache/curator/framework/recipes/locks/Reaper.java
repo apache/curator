@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.CloseableScheduledExecutorService;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -42,7 +43,7 @@ public class Reaper implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
-    private final ScheduledExecutorService executor;
+    private final CloseableScheduledExecutorService executor;
     private final int reapingThresholdMs;
     private final Set<String> activePaths = Sets.newSetFromMap(Maps.<String, Boolean>newConcurrentMap());
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
@@ -127,7 +128,7 @@ public class Reaper implements Closeable
     public Reaper(CuratorFramework client, ScheduledExecutorService executor, int reapingThresholdMs)
     {
         this.client = client;
-        this.executor = executor;
+        this.executor = new CloseableScheduledExecutorService(executor);
         this.reapingThresholdMs = reapingThresholdMs / EMPTY_COUNT_THRESHOLD;
     }
 
@@ -181,14 +182,7 @@ public class Reaper implements Closeable
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
-            try
-            {
-                executor.shutdownNow();
-            }
-            catch ( Exception e )
-            {
-                log.error("Canceling task", e);
-            }
+            executor.close();
         }
     }
 
