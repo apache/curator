@@ -263,16 +263,16 @@ public class PathChildrenCache implements Closeable
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
         executorService.submit
-        (
-            new Runnable()
-            {
-                @Override
-                public void run()
+            (
+                new Runnable()
                 {
-                    mainLoop();
+                    @Override
+                    public void run()
+                    {
+                        mainLoop();
+                    }
                 }
-            }
-        );
+            );
 
         switch ( mode )
         {

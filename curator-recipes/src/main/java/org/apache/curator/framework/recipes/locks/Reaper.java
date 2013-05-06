@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -153,7 +154,7 @@ public class Reaper implements Closeable
     public void addPath(String path, Mode mode)
     {
         activePaths.add(path);
-        executor.schedule(new PathHolder(path, mode, 0), reapingThresholdMs, TimeUnit.MILLISECONDS);
+        schedule(new PathHolder(path, mode, 0), reapingThresholdMs);
     }
 
     /**
@@ -184,6 +185,12 @@ public class Reaper implements Closeable
         {
             executor.close();
         }
+    }
+
+    @VisibleForTesting
+    protected Future<?> schedule(PathHolder pathHolder, int reapingThresholdMs)
+    {
+        return executor.schedule(pathHolder, reapingThresholdMs, TimeUnit.MILLISECONDS);
     }
 
     private void reap(PathHolder holder)
@@ -251,7 +258,7 @@ public class Reaper implements Closeable
         }
         else if ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) && activePaths.contains(holder.path) )
         {
-            executor.schedule(new PathHolder(holder.path, holder.mode, newEmptyCount), reapingThresholdMs, TimeUnit.MILLISECONDS);
+            schedule(new PathHolder(holder.path, holder.mode, newEmptyCount), reapingThresholdMs);
         }
     }
 

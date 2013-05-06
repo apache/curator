@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.locks;
 import com.google.common.base.Preconditions;
 import com.google.common.io.Closeables;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.CloseableScheduledExecutorService;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
@@ -29,8 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,10 +47,10 @@ public class ChildReaper implements Closeable
     private final CuratorFramework client;
     private final String path;
     private final Reaper.Mode mode;
-    private final ScheduledExecutorService executor;
+    private final CloseableScheduledExecutorService executor;
     private final int reapingThresholdMs;
 
-    private volatile ScheduledFuture<?> task;
+    private volatile Future<?> task;
 
     private enum State
     {
@@ -91,7 +92,7 @@ public class ChildReaper implements Closeable
         this.client = client;
         this.path = path;
         this.mode = mode;
-        this.executor = executor;
+        this.executor = new CloseableScheduledExecutorService(executor);
         this.reapingThresholdMs = reapingThresholdMs;
         this.reaper = new Reaper(client, executor, reapingThresholdMs);
     }

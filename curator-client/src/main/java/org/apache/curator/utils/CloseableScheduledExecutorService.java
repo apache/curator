@@ -1,100 +1,72 @@
 package org.apache.curator.utils;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
+import com.google.common.base.Preconditions;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Decorates an {@link ExecutorService} such that submitted tasks
- * are recorded and can be closed en masse.
+ * Decoration on an ScheduledExecutorService that tracks created futures and provides
+ * a method to close futures created via this class
  */
-public class CloseableScheduledExecutorService extends CloseableExecutorServiceBase
+public class CloseableScheduledExecutorService extends CloseableExecutorService
 {
-    private final ListeningScheduledExecutorService executorService;
+    private final ScheduledExecutorService scheduledExecutorService;
 
     /**
-     * @param executorService the service to decorate
+     * @param scheduledExecutorService the service to decorate
      */
-    public CloseableScheduledExecutorService(ScheduledExecutorService executorService)
+    public CloseableScheduledExecutorService(ScheduledExecutorService scheduledExecutorService)
     {
-        this.executorService = MoreExecutors.listeningDecorator(executorService);
-    }
-
-    @Override
-    protected ListeningExecutorService getService()
-    {
-        return executorService;
+        super(scheduledExecutorService);
+        this.scheduledExecutorService = scheduledExecutorService;
     }
 
     /**
-     * Calls {@link ScheduledExecutorService#schedule(Runnable, long, TimeUnit)}, records
-     * and returns the future
+     * Creates and executes a one-shot action that becomes enabled
+     * after the given delay.
      *
-     * @param command the task to execute
+     * @param task  the task to execute
      * @param delay the time from now to delay execution
-     * @param unit the time unit of the delay parameter
-     * @return a ScheduledFuture representing pending completion of
+     * @param unit  the time unit of the delay parameter
+     * @return a Future representing pending completion of
      *         the task and whose <tt>get()</tt> method will return
      *         <tt>null</tt> upon completion
      */
-    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit)
+    public Future<?> schedule(Runnable task, long delay, TimeUnit unit)
     {
-        return record(executorService.schedule(command, delay, unit));
+        Preconditions.checkState(isOpen.get(), "CloseableExecutorService is closed");
+
+        InternalFutureTask<Void> futureTask = new InternalFutureTask<Void>(new FutureTask<Void>(task, null));
+        scheduledExecutorService.schedule(futureTask, delay, unit);
+        return futureTask;
     }
 
     /**
-     * Calls {@link ScheduledExecutorService#schedule(Callable, long, TimeUnit)}, records
-     * and returns the future
+     * Creates and executes a periodic action that becomes enabled first
+     * after the given initial delay, and subsequently with the
+     * given delay between the termination of one execution and the
+     * commencement of the next.  If any execution of the task
+     * encounters an exception, subsequent executions are suppressed.
+     * Otherwise, the task will only terminate via cancellation or
+     * termination of the executor.
      *
-     * @param callable the task to execute
-     * @param delay the time from now to delay execution
-     * @param unit the time unit of the delay parameter
-     * @return a ScheduledFuture representing pending completion of
-     *         the task and whose <tt>get()</tt> method will return
-     *         <tt>null</tt> upon completion
-     */
-    public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit)
-    {
-        return record(executorService.schedule(callable, delay, unit));
-    }
-
-    /**
-     * Calls {@link ScheduledExecutorService#scheduleAtFixedRate(Runnable, long, long, TimeUnit)}, records
-     * and returns the future
-     *
-     * @param command the task to execute
+     * @param task      the task to execute
      * @param initialDelay the time to delay first execution
-     * @param period the period between successive executions
-     * @param unit the time unit of the initialDelay and period parameters
-     * @return a ScheduledFuture representing pending completion of
+     * @param delay        the delay between the termination of one
+     *                     execution and the commencement of the next
+     * @param unit         the time unit of the initialDelay and delay parameters
+     * @return a Future representing pending completion of
      *         the task, and whose <tt>get()</tt> method will throw an
      *         exception upon cancellation
      */
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit)
+    public Future<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit)
     {
-        return record(executorService.scheduleAtFixedRate(command, initialDelay, period, unit));
-    }
+        Preconditions.checkState(isOpen.get(), "CloseableExecutorService is closed");
 
-    /**
-     * Calls {@link ScheduledExecutorService#scheduleWithFixedDelay(Runnable, long, long, TimeUnit)}, records
-     * and returns the future
-     *
-     * @param command the task to execute
-     * @param initialDelay the time to delay first execution
-     * @param delay the delay between the termination of one
-     * execution and the commencement of the next
-     * @param unit the time unit of the initialDelay and delay parameters
-     * @return a ScheduledFuture representing pending completion of
-     *         the task, and whose <tt>get()</tt> method will throw an
-     *         exception upon cancellation
-     */
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit)
-    {
-        return record(executorService.scheduleWithFixedDelay(command, initialDelay, delay, unit));
+        InternalFutureTask<Void> futureTask = new InternalFutureTask<Void>(new FutureTask<Void>(task, null));
+        scheduledExecutorService.scheduleWithFixedDelay(futureTask, initialDelay, delay, unit);
+        return futureTask;
     }
 }

@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.io.Closeables;
+import junit.framework.Assert;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -27,13 +28,20 @@ import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
-import junit.framework.Assert;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class TestReaper extends BaseClassForTests
 {
@@ -106,37 +114,36 @@ public class TestReaper extends BaseClassForTests
 
             final Queue<Reaper.PathHolder>  holders = new ConcurrentLinkedQueue<Reaper.PathHolder>();
             final ExecutorService           pool = Executors.newCachedThreadPool();
-            ScheduledExecutorService service = new ScheduledThreadPoolExecutor(1)
-            {
-                @Override
-                public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit)
-                {
-                    final Reaper.PathHolder     pathHolder = (Reaper.PathHolder)command;
-                    holders.add(pathHolder);
-                    final ScheduledFuture<?>    f = super.schedule(command, delay, unit);
-                    pool.submit
-                    (
-                        new Callable<Void>()
-                        {
-                            @Override
-                            public Void call() throws Exception
-                            {
-                                f.get();
-                                holders.remove(pathHolder);
-                                return null;
-                            }
-                        }
-                    );
-                    return f;
-                }
-            };
+            ScheduledExecutorService service = new ScheduledThreadPoolExecutor(1);
 
             reaper = new Reaper
             (
                 client,
                 service,
                 THRESHOLD
-            );
+            )
+            {
+                @Override
+                protected Future<Void> schedule(final PathHolder pathHolder, int reapingThresholdMs)
+                {
+                    holders.add(pathHolder);
+                    final Future<?>    f = super.schedule(pathHolder, reapingThresholdMs);
+                    pool.submit
+                        (
+                            new Callable<Void>()
+                            {
+                                @Override
+                                public Void call() throws Exception
+                                {
+                                    f.get();
+                                    holders.remove(pathHolder);
+                                    return null;
+                                }
+                            }
+                        );
+                    return null;
+                }
+            };
             reaper.start();
             reaper.addPath("/one/two/three");
 
