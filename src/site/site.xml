@@ -83,6 +83,7 @@
             <item name="Project Information" href="project-info.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/CURATOR"/>
+            <item name="Releases" href="https://cwiki.apache.org/confluence/display/CURATOR/Releases"/>
         </menu>
 
         <menu name="Extensions" inherit="top">
