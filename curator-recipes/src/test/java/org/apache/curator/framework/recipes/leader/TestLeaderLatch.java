@@ -16,10 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.leader;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -39,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TestLeaderLatch extends BaseClassForTests
 {
@@ -88,7 +92,7 @@ public class TestLeaderLatch extends BaseClassForTests
         {
             client.start();
 
-            final CountDownLatch        countDownLatch = new CountDownLatch(1);
+            final CountDownLatch countDownLatch = new CountDownLatch(1);
             client.getConnectionStateListenable().addListener
             (
                 new ConnectionStateListener()
@@ -136,47 +140,47 @@ public class TestLeaderLatch extends BaseClassForTests
     @Test
     public void testCorrectWatching() throws Exception
     {
-    	final int PARTICIPANT_QTY = 10;
-    	final int PARTICIPANT_ID = 2;
-    	
-    	List<LeaderLatch> latches = Lists.newArrayList();
+        final int PARTICIPANT_QTY = 10;
+        final int PARTICIPANT_ID = 2;
+
+        List<LeaderLatch> latches = Lists.newArrayList();
 
         final Timing timing = new Timing();
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
-             client.start();
+            client.start();
 
-             for ( int i = 0; i < PARTICIPANT_QTY; ++i )
-             {
-                 LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
-                 latch.start();
-                 latches.add(latch);
-             }
+            for ( int i = 0; i < PARTICIPANT_QTY; ++i )
+            {
+                LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
+                latch.start();
+                latches.add(latch);
+            }
 
-             waitForALeader(latches, timing);
-             
-             //we need to close a Participant that doesn't be actual leader (first Participant) nor the last
-             latches.get(PARTICIPANT_ID).close();
-             
-             //As the previous algorithm assumed that if the watched node is deleted gets the leadership
-             //we need to ensure that the PARTICIPANT_ID-1 is not getting (wrongly) elected as leader.
-             Assert.assertTrue(!latches.get(PARTICIPANT_ID-1).hasLeadership());
-	     }
-	     finally
-	     {
-	    	 //removes the already closed participant
-	    	 latches.remove(PARTICIPANT_ID);
-	    	 
-	         for ( LeaderLatch latch : latches )
-	         {
-	             Closeables.closeQuietly(latch);
-	         }
-	         Closeables.closeQuietly(client);
-	     }
+            waitForALeader(latches, timing);
+
+            //we need to close a Participant that doesn't be actual leader (first Participant) nor the last
+            latches.get(PARTICIPANT_ID).close();
+
+            //As the previous algorithm assumed that if the watched node is deleted gets the leadership
+            //we need to ensure that the PARTICIPANT_ID-1 is not getting (wrongly) elected as leader.
+            Assert.assertTrue(!latches.get(PARTICIPANT_ID - 1).hasLeadership());
+        }
+        finally
+        {
+            //removes the already closed participant
+            latches.remove(PARTICIPANT_ID);
+
+            for ( LeaderLatch latch : latches )
+            {
+                Closeables.closeQuietly(latch);
+            }
+            Closeables.closeQuietly(client);
+        }
 
     }
-    
+
     @Test
     public void testWaiting() throws Exception
     {
@@ -244,6 +248,93 @@ public class TestLeaderLatch extends BaseClassForTests
         basic(Mode.START_IN_THREADS);
     }
 
+    @Test
+    public void testCallbackSanity() throws Exception
+    {
+        final int PARTICIPANT_QTY = 10;
+        final CountDownLatch timesSquare = new CountDownLatch(PARTICIPANT_QTY);
+        final AtomicLong masterCounter = new AtomicLong(0);
+        final AtomicLong dunceCounter = new AtomicLong(0);
+
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        ExecutorService exec = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(true).setNameFormat("callbackSanity-%s").build());
+
+        List<LeaderLatch> latches = Lists.newArrayList();
+        for ( int i = 0; i < PARTICIPANT_QTY; ++i )
+        {
+            final LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
+            latch.addListener(
+                new LeaderLatchListener()
+                {
+                    boolean beenLeader = false;
+
+                    @Override
+                    public void isLeader()
+                    {
+                        if ( !beenLeader )
+                        {
+                            masterCounter.incrementAndGet();
+                            beenLeader = true;
+                            try
+                            {
+                                latch.reset();
+                            }
+                            catch ( Exception e )
+                            {
+                                throw Throwables.propagate(e);
+                            }
+                        }
+                        else
+                        {
+                            masterCounter.incrementAndGet();
+                            Closeables.closeQuietly(latch);
+                            timesSquare.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void notLeader()
+                    {
+                        dunceCounter.incrementAndGet();
+                    }
+                },
+                exec
+            );
+            latches.add(latch);
+        }
+
+        try
+        {
+            client.start();
+
+            for ( LeaderLatch latch : latches )
+            {
+                latch.start();
+            }
+
+            timesSquare.await();
+
+            Assert.assertEquals(masterCounter.get(), PARTICIPANT_QTY * 2);
+            Assert.assertEquals(dunceCounter.get(), PARTICIPANT_QTY);
+            for ( LeaderLatch latch : latches )
+            {
+                Assert.assertEquals(latch.getState(), LeaderLatch.State.CLOSED);
+            }
+        }
+        finally
+        {
+            for ( LeaderLatch latch : latches )
+            {
+                if ( latch.getState() != LeaderLatch.State.CLOSED )
+                {
+                    Closeables.closeQuietly(latch);
+                }
+            }
+            Closeables.closeQuietly(client);
+        }
+    }
+
     private enum Mode
     {
         START_IMMEDIATELY,
@@ -277,18 +368,18 @@ public class TestLeaderLatch extends BaseClassForTests
                 for ( final LeaderLatch latch : latches )
                 {
                     service.submit
-                    (
-                        new Callable<Object>()
-                        {
-                            @Override
-                            public Object call() throws Exception
+                        (
+                            new Callable<Object>()
                             {
-                                Thread.sleep((int)(100 * Math.random()));
-                                latch.start();
-                                return null;
+                                @Override
+                                public Object call() throws Exception
+                                {
+                                    Thread.sleep((int)(100 * Math.random()));
+                                    latch.start();
+                                    return null;
+                                }
                             }
-                        }
-                    );
+                        );
                 }
                 service.shutdown();
             }
