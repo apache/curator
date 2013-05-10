@@ -396,7 +396,14 @@ public class LeaderLatch implements Closeable
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
                     setNode(event.getName());
-                    getChildren();
+                    if ( state.get() == State.CLOSED )
+                    {
+                        setNode(null);
+                    }
+                    else
+                    {
+                        getChildren();
+                    }
                 }
                 else
                 {
