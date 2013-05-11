@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.CloseableScheduledExecutorService;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,7 +44,7 @@ public class Reaper implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
-    private final ScheduledExecutorService executor;
+    private final CloseableScheduledExecutorService executor;
     private final int reapingThresholdMs;
     private final Set<String> activePaths = Sets.newSetFromMap(Maps.<String, Boolean>newConcurrentMap());
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
@@ -127,7 +129,7 @@ public class Reaper implements Closeable
     public Reaper(CuratorFramework client, ScheduledExecutorService executor, int reapingThresholdMs)
     {
         this.client = client;
-        this.executor = executor;
+        this.executor = new CloseableScheduledExecutorService(executor);
         this.reapingThresholdMs = reapingThresholdMs / EMPTY_COUNT_THRESHOLD;
     }
 
@@ -152,7 +154,7 @@ public class Reaper implements Closeable
     public void addPath(String path, Mode mode)
     {
         activePaths.add(path);
-        executor.schedule(new PathHolder(path, mode, 0), reapingThresholdMs, TimeUnit.MILLISECONDS);
+        schedule(new PathHolder(path, mode, 0), reapingThresholdMs);
     }
 
     /**
@@ -181,15 +183,14 @@ public class Reaper implements Closeable
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
-            try
-            {
-                executor.shutdownNow();
-            }
-            catch ( Exception e )
-            {
-                log.error("Canceling task", e);
-            }
+            executor.close();
         }
+    }
+
+    @VisibleForTesting
+    protected Future<?> schedule(PathHolder pathHolder, int reapingThresholdMs)
+    {
+        return executor.schedule(pathHolder, reapingThresholdMs, TimeUnit.MILLISECONDS);
     }
 
     private void reap(PathHolder holder)
@@ -257,7 +258,7 @@ public class Reaper implements Closeable
         }
         else if ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) && activePaths.contains(holder.path) )
         {
-            executor.schedule(new PathHolder(holder.path, holder.mode, newEmptyCount), reapingThresholdMs, TimeUnit.MILLISECONDS);
+            schedule(new PathHolder(holder.path, holder.mode, newEmptyCount), reapingThresholdMs);
         }
     }
 

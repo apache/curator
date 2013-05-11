@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
 import org.apache.curator.framework.CuratorFramework;
@@ -741,7 +740,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             client.create().forPath("/test");
 
             final BlockingQueue<PathChildrenCacheEvent.Type> events = new LinkedBlockingQueue<PathChildrenCacheEvent.Type>();
-            final ExecutorService exec = new ShutdownNowIgnoringExecutorService(Executors.newSingleThreadExecutor());
+            final ExecutorService exec = Executors.newSingleThreadExecutor();
             PathChildrenCache cache = new PathChildrenCache(client, "/test", true, false, exec);
             cache.getListenable().addListener
                 (
@@ -857,30 +856,6 @@ public class TestPathChildrenCache extends BaseClassForTests
         public synchronized void setExecuteCalled(boolean executeCalled)
         {
             this.executeCalled = executeCalled;
-        }
-    }
-
-    /**
-     * This is required to work around https://issues.apache.org/jira/browse/CURATOR-17
-     */
-    public static class ShutdownNowIgnoringExecutorService extends DelegatingExecutorService
-    {
-        public ShutdownNowIgnoringExecutorService(ExecutorService delegate)
-        {
-            super(delegate);
-        }
-
-        @Override
-        public void shutdown()
-        {
-            // ignore
-        }
-
-        @Override
-        public List<Runnable> shutdownNow()
-        {
-            // ignore
-            return ImmutableList.of();
         }
     }
 
