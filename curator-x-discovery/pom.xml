@@ -24,12 +24,12 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>2.0.1-incubating</version>
+        <version>2.0.2-incubating-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.curator</groupId>
     <artifactId>curator-x-discovery</artifactId>
-    <version>2.0.1-incubating</version>
+    <version>2.0.2-incubating-SNAPSHOT</version>
 
     <name>Curator Service Discovery</name>
     <description>A service discovery recipe.</description>
