@@ -24,12 +24,12 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>2.0.1-incubating-SNAPSHOT</version>
+        <version>2.0.1-incubating</version>
     </parent>
 
     <groupId>org.apache.curator</groupId>
     <artifactId>curator-recipes</artifactId>
-    <version>2.0.1-incubating-SNAPSHOT</version>
+    <version>2.0.1-incubating</version>
 
     <name>Curator Recipes</name>
     <description>All of the recipes listed on the ZooKeeper recipes doc (except two phase commit).</description>
