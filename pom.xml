@@ -142,6 +142,17 @@
             </roles>
             <url>https://people.apache.org/~zarfide</url>
         </developer>
+
+        <developer>
+            <id>cheddar</id>
+            <name>Eric Tschetter</name>
+            <email>cheddar@apache.org</email>
+            <timezone>-6</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>ChedHeader</role>
+            </roles>
+        </developer>
     </developers>
 
     <contributors>

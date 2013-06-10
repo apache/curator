@@ -12,12 +12,14 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.*;
@@ -71,6 +73,54 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         CuratorFramework curator = newCurator();
         new PersistentEphemeralNode(curator, null, PATH, new byte[0]);
+    }
+
+    @Test
+    public void testSettingData() throws Exception
+    {
+        PersistentEphemeralNode node = null;
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, "a".getBytes());
+            node.start();
+            Assert.assertTrue(node.waitForInitialCreate(5, TimeUnit.SECONDS));
+
+            Assert.assertEquals(node.getActualPath(), PATH);
+            Assert.assertEquals(client.getData().forPath(PATH), "a".getBytes());
+
+            final Semaphore semaphore = new Semaphore(0);
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent arg0)
+                {
+                    semaphore.release();
+                }
+            };
+            client.checkExists().usingWatcher(watcher).forPath(PATH);
+            node.setData("b".getBytes());
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            Assert.assertEquals(node.getActualPath(), PATH);
+            Assert.assertEquals(client.getData().usingWatcher(watcher).forPath(PATH), "b".getBytes());
+            node.setData("c".getBytes());
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            Assert.assertEquals(node.getActualPath(), PATH);
+            Assert.assertEquals(client.getData().usingWatcher(watcher).forPath(PATH), "c".getBytes());
+            node.close();
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            Assert.assertTrue(client.checkExists().forPath(PATH) == null);
+        }
+        finally
+        {
+            if ( node != null )
+            {
+                node.close();
+            }
+            client.close();
+        }
     }
 
     @Test
@@ -342,7 +392,8 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             try
             {
                 return latch.await(duration, unit);
-            } catch ( InterruptedException e )
+            }
+            catch ( InterruptedException e )
             {
                 throw Throwables.propagate(e);
             }

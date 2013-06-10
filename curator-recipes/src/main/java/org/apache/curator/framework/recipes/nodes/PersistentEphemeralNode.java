@@ -47,7 +47,7 @@ public class PersistentEphemeralNode implements Closeable
     private final AtomicReference<String>   nodePath = new AtomicReference<String>(null);
     private final String                    basePath;
     private final Mode                      mode;
-    private final byte[]                    data;
+    private final AtomicReference<byte[]>   data = new AtomicReference<byte[]>();
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean             isSuspended = new AtomicBoolean(false);
     private final BackgroundCallback        backgroundCallback;
@@ -227,7 +227,7 @@ public class PersistentEphemeralNode implements Closeable
         };
 
         createMethod = mode.isProtected() ? client.create().withProtection() : client.create();
-        this.data = Arrays.copyOf(data, data.length);
+        this.data.set(Arrays.copyOf(data, data.length));
     }
 
     /**
@@ -281,6 +281,22 @@ public class PersistentEphemeralNode implements Closeable
         return nodePath.get();
     }
 
+    /**
+     * Set data that ephemeral node should set in ZK also writes the data to the node
+     *
+     * @param data new data value
+     * @throws Exception errors
+     */
+    public void setData(byte[] data) throws Exception
+    {
+        data = Preconditions.checkNotNull(data, "data cannot be null");
+        this.data.set(Arrays.copyOf(data, data.length));
+        if ( isActive() )
+        {
+            client.setData().inBackground().forPath(basePath, this.data.get());
+        }
+    }
+
     private void deleteNode()
     {
         String          localNodePath = nodePath.getAndSet(null);
@@ -313,7 +329,7 @@ public class PersistentEphemeralNode implements Closeable
             String      existingPath = nodePath.get();
             String      createPath = (existingPath != null) ? existingPath : basePath;
             ensurePath.ensure(client.getZookeeperClient());
-            createMethod.withMode(mode.getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data);
+            createMethod.withMode(mode.getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data.get());
         }
         catch ( Exception e )
         {
