@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.test;
 
 import javassist.CannotCompileException;
@@ -26,7 +27,7 @@ import javassist.NotFoundException;
 
 public class ByteCodeRewrite
 {
-    public static void      apply()
+    public static void apply()
     {
         // NOP - only needed so that static initializer is run
     }
@@ -46,7 +47,7 @@ public class ByteCodeRewrite
             try
             {
                 CtClass cc = pool.get("org.apache.zookeeper.server.ZooKeeperServer");
-                fixMethods(cc);
+                fixMethods(cc, "registerJMX", "unregisterJMX");
             }
             catch ( NotFoundException ignore )
             {
@@ -56,7 +57,17 @@ public class ByteCodeRewrite
             try
             {
                 CtClass cc = pool.get("org.apache.zookeeper.server.quorum.LearnerZooKeeperServer");
-                fixMethods(cc);
+                fixMethods(cc, "registerJMX", "unregisterJMX");
+            }
+            catch ( NotFoundException ignore )
+            {
+                // ignore
+            }
+
+            try
+            {
+                CtClass cc = pool.get("org.apache.zookeeper.jmx.MBeanRegistry");
+                fixMethods(cc, "register", "unregister");
             }
             catch ( NotFoundException ignore )
             {
@@ -69,13 +80,16 @@ public class ByteCodeRewrite
         }
     }
 
-    private static void fixMethods(CtClass cc) throws CannotCompileException
+    private static void fixMethods(CtClass cc, String... methodNames) throws CannotCompileException
     {
         for ( CtMethod method : cc.getDeclaredMethods() )
         {
-            if ( method.getName().equals("registerJMX") || method.getName().equals("unregisterJMX") )
+            for ( String methodName : methodNames )
             {
-                method.setBody(null);
+                if ( method.getName().equals(methodName) )
+                {
+                    method.setBody(null);
+                }
             }
         }
         cc.toClass();
