@@ -1,0 +1,37 @@
+h1. Persistent Ephemeral Node
+
+h2. Description
+A persistent ephemeral node is an ephemeral node that attempts to stay present in ZooKeeper, even through connection and session interruptions.
+
+h2. Participating Classes
+* PersistentEphemeralNode
+
+h2. Usage
+h3. Creating a PersistentEphemeralNode
+{code}
+public PersistentEphemeralNode(CuratorFramework client,
+                               PersistentEphemeralNode.Mode mode,
+                               String basePath,
+                               byte[] data)
+Parameters:
+client - client instance
+mode - creation/protection mode
+basePath - the base path for the node
+data - data for the node
+{code}
+
+h3. General Usage
+PersistentEphemeralNodes must be started:
+{code}
+node.start();
+{code}
+
+When you are through with the PersistentEphemeralNode instance, you should call close:
+{code}
+node.close();
+{code}
+
+NOTE: this will delete the node
+
+h2. Error Handling
+PersistentEphemeralNode instances internally handle all error states recreating the node as necessary.
