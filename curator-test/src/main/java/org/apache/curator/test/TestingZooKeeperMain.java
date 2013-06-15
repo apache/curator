@@ -23,6 +23,7 @@ import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
+import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -65,6 +66,12 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         serverConfig.readFrom(config);
         latch.countDown();
         super.runFromConfig(serverConfig);
+    }
+
+    @Override
+    public QuorumPeer getQuorumPeer()
+    {
+        throw new UnsupportedOperationException();
     }
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")

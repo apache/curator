@@ -18,12 +18,14 @@
  */
 package org.apache.curator.test;
 
+import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -56,6 +58,16 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
         main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+    }
+
+    public QuorumPeer getQuorumPeer()
+    {
+        return main.getQuorumPeer();
+    }
+
+    public Collection<InstanceSpec> getInstanceSpecs()
+    {
+        return configBuilder.getInstanceSpecs();
     }
 
     public void     kill()

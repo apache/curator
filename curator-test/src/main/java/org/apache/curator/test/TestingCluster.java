@@ -18,7 +18,12 @@
  */
 package org.apache.curator.test;
 
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import org.apache.zookeeper.ZooKeeper;
 import java.io.Closeable;
 import java.io.IOException;
@@ -26,6 +31,7 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * manages an internally running ensemble of ZooKeeper servers. FOR TESTING PURPOSES ONLY
@@ -37,7 +43,6 @@ public class TestingCluster implements Closeable
         ByteCodeRewrite.apply();
     }
 
-    private final QuorumConfigBuilder           builder;
     private final List<TestingZooKeeperServer>  servers;
 
     /**
@@ -58,7 +63,7 @@ public class TestingCluster implements Closeable
      */
     public TestingCluster(InstanceSpec... specs)
     {
-        this(ImmutableList.copyOf(specs));
+        this(listToMap(ImmutableList.copyOf(specs)));
     }
 
     /**
@@ -68,11 +73,25 @@ public class TestingCluster implements Closeable
      */
     public TestingCluster(Collection<InstanceSpec> specs)
     {
-        builder = new QuorumConfigBuilder(specs);
+        this(listToMap(specs));
+    }
+
+    /**
+     * Creates an ensemble using the given server specs
+     *
+     * @param specs map of an instance spec to its set of quorum instances. Allows simulation of an ensemble with instances
+     *              having different config peers
+     */
+    public TestingCluster(Map<InstanceSpec, Collection<InstanceSpec>> specs)
+    {
         ImmutableList.Builder<TestingZooKeeperServer> serverBuilder = ImmutableList.builder();
-        for ( int i = 0; i < specs.size(); ++i )
+        for ( Map.Entry<InstanceSpec, Collection<InstanceSpec>> entry : specs.entrySet() )
         {
-            serverBuilder.add(new TestingZooKeeperServer(builder, i));
+            List<InstanceSpec> instanceSpecs = Lists.newArrayList(entry.getValue());
+            int index = instanceSpecs.indexOf(entry.getKey());
+            Preconditions.checkState(index >= 0, entry.getKey() + " not found in specs");
+            QuorumConfigBuilder builder = new QuorumConfigBuilder(instanceSpecs);
+            serverBuilder.add(new TestingZooKeeperServer(builder, index));
         }
         servers = serverBuilder.build();
     }
@@ -84,7 +103,24 @@ public class TestingCluster implements Closeable
      */
     public Collection<InstanceSpec> getInstances()
     {
-        return builder.getInstanceSpecs();
+        Iterable<InstanceSpec> transformed = Iterables.transform
+        (
+            servers,
+            new Function<TestingZooKeeperServer, InstanceSpec>()
+            {
+                @Override
+                public InstanceSpec apply(TestingZooKeeperServer server)
+                {
+                    return server.getInstanceSpec();
+                }
+            }
+        );
+        return Lists.newArrayList(transformed);
+    }
+
+    public List<TestingZooKeeperServer> getServers()
+    {
+        return Lists.newArrayList(servers);
     }
 
     /**
@@ -95,7 +131,7 @@ public class TestingCluster implements Closeable
     public String   getConnectString()
     {
         StringBuilder       str = new StringBuilder();
-        for ( InstanceSpec spec : builder.getInstanceSpecs() )
+        for ( InstanceSpec spec : getInstances() )
         {
             if ( str.length() > 0 )
             {
@@ -211,13 +247,25 @@ public class TestingCluster implements Closeable
         return null;
     }
 
-    private static Collection<InstanceSpec> makeSpecs(int instanceQty)
+    private static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty)
     {
         ImmutableList.Builder<InstanceSpec> builder = ImmutableList.builder();
         for ( int i = 0; i < instanceQty; ++i )
         {
             builder.add(InstanceSpec.newInstanceSpec());
         }
-        return builder.build();
+
+        return listToMap(builder.build());
+    }
+
+    private static Map<InstanceSpec, Collection<InstanceSpec>> listToMap(Collection<InstanceSpec> list)
+    {
+        ImmutableMap.Builder<InstanceSpec, Collection<InstanceSpec>> mapBuilder = ImmutableMap.builder();
+        for ( InstanceSpec spec : list )
+        {
+            mapBuilder.put(spec, list);
+        }
+
+        return mapBuilder.build();
     }
 }
