@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework;
 
 import org.apache.curator.CuratorZookeeperClient;
@@ -35,12 +36,12 @@ public interface CuratorFramework extends Closeable
     /**
      * Start the client. Most mutator methods will not work until the client is started
      */
-    public void     start();
+    public void start();
 
     /**
      * Stop the client
      */
-    public void     close();
+    public void close();
 
     /**
      * Returns the state of this instance
@@ -55,7 +56,7 @@ public interface CuratorFramework extends Closeable
      * @return true/false
      * @deprecated use {@link #getState()} instead
      */
-    public boolean  isStarted();
+    public boolean isStarted();
 
     /**
      * Start a create builder
@@ -73,7 +74,7 @@ public interface CuratorFramework extends Closeable
 
     /**
      * Start an exists builder
-     *
+     * <p/>
      * The builder will return a Stat object as if org.apache.zookeeper.ZooKeeper.exists() were called.  Thus, a null
      * means that it does not exist and an actual Stat object means it does exist.
      *
@@ -126,10 +127,19 @@ public interface CuratorFramework extends Closeable
     /**
      * Perform a sync on the given path - syncs are always in the background
      *
-     * @param path the path
+     * @param path                    the path
      * @param backgroundContextObject optional context
+     * @deprecated use {@link #sync()} instead
      */
-    public void     sync(String path, Object backgroundContextObject);
+    public void sync(String path, Object backgroundContextObject);
+
+    /**
+     * Start a sync builder. Note: sync is ALWAYS in the background even
+     * if you don't use one of the background() methods
+     *
+     * @return builder object
+     */
+    public SyncBuilder sync();
 
     /**
      * Returns the listenable interface for the Connect State
@@ -143,14 +153,14 @@ public interface CuratorFramework extends Closeable
      *
      * @return listenable
      */
-    public Listenable<CuratorListener>         getCuratorListenable();
+    public Listenable<CuratorListener> getCuratorListenable();
 
     /**
      * Returns the listenable interface for unhandled errors
      *
      * @return listenable
      */
-    public Listenable<UnhandledErrorListener>  getUnhandledErrorListenable();
+    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable();
 
     /**
      * Returns a facade of the current instance that does _not_ automatically
@@ -172,6 +182,7 @@ public interface CuratorFramework extends Closeable
 
     /**
      * Return the current namespace or "" if none
+     *
      * @return namespace
      */
     public String getNamespace();
@@ -189,5 +200,5 @@ public interface CuratorFramework extends Closeable
      * @param path path to ensure
      * @return new EnsurePath instance
      */
-    public EnsurePath    newNamespaceAwareEnsurePath(String path);
+    public EnsurePath newNamespaceAwareEnsurePath(String path);
 }

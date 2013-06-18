@@ -411,6 +411,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
         internalSync(this, path, context);
     }
 
+    @Override
+    public SyncBuilder sync()
+    {
+        return new SyncBuilderImpl(this);
+    }
+
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);

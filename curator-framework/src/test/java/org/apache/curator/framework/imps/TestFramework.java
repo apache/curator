@@ -427,6 +427,37 @@ public class TestFramework extends BaseClassForTests
     }
 
     @Test
+    public void     testSyncNew() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().forPath("/head");
+            Assert.assertNotNull(client.checkExists().forPath("/head"));
+
+            final CountDownLatch      latch = new CountDownLatch(1);
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    if ( event.getType() == CuratorEventType.SYNC )
+                    {
+                        latch.countDown();
+                    }
+                }
+            };
+            client.sync().inBackground(callback).forPath("/head");
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
     public void     testBackgroundDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
