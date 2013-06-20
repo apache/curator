@@ -29,7 +29,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>2.1.0-incubating</version>
+    <version>2.1.0-incubating-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -229,37 +229,37 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-client</artifactId>
-                <version>2.1.0-incubating</version>
+                <version>2.1.0-incubating-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-framework</artifactId>
-                <version>2.1.0-incubating</version>
+                <version>2.1.0-incubating-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-recipes</artifactId>
-                <version>2.1.0-incubating</version>
+                <version>2.1.0-incubating-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-test</artifactId>
-                <version>2.1.0-incubating</version>
+                <version>2.1.0-incubating-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-x-discovery</artifactId>
-                <version>2.1.0-incubating</version>
+                <version>2.1.0-incubating-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-x-discovery-server</artifactId>
-                <version>2.1.0-incubating</version>
+                <version>2.1.0-incubating-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
