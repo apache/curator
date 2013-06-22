@@ -21,6 +21,7 @@ package org.apache.curator.x.discovery.server.jetty_resteasy;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
+import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.server.entity.ServiceInstances;
@@ -50,6 +51,7 @@ import java.net.URLConnection;
 public class TestStringsWithRestEasy
 {
     private Server server;
+    private int port;
 
     @BeforeMethod
     public void         setup() throws Exception
@@ -60,7 +62,8 @@ public class TestStringsWithRestEasy
 
         HttpServletDispatcher   dispatcher = new HttpServletDispatcher();
 
-        server = new Server(8080);
+        port = InstanceSpec.getRandomPort();
+        server = new Server(port);
         Context root = new Context(server, "/", Context.SESSIONS);
         root.getInitParams().put("javax.ws.rs.Application", RestEasyApplication.class.getName());
         root.addServlet(new ServletHolder(dispatcher), "/*");
@@ -89,19 +92,19 @@ public class TestStringsWithRestEasy
         ByteArrayOutputStream           out = new ByteArrayOutputStream();
         restEasySingletons.serviceInstanceMarshallerSingleton.writeTo(service, null, null, null, null, null, out);
 
-        getJson("http://localhost:8080/v1/service/test/" + service.getId(), new String(out.toByteArray()));
+        getJson("http://localhost:" + port + "/v1/service/test/" + service.getId(), new String(out.toByteArray()));
 
-        String json = getJson("http://localhost:8080/v1/service", null);
+        String json = getJson("http://localhost:" + port + "/v1/service", null);
         ServiceNames names = restEasySingletons.serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
         Assert.assertEquals(names.getNames(), Lists.newArrayList("test"));
 
-        json = getJson("http://localhost:8080/v1/service/test", null);
+        json = getJson("http://localhost:" + port + "/v1/service/test", null);
         ServiceInstances<String> instances = restEasySingletons.serviceInstancesMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
         Assert.assertEquals(instances.getServices().size(), 1);
         Assert.assertEquals(instances.getServices().get(0), service);
 
         // Retrieve single instance
-        json = getJson("http://localhost:8080/v1/service/test/" + service.getId(), null);
+        json = getJson("http://localhost:" + port + "/v1/service/test/" + service.getId(), null);
         ServiceInstance<String> instance = restEasySingletons.serviceInstanceMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
         Assert.assertEquals(instance, service);
 
@@ -110,7 +113,7 @@ public class TestStringsWithRestEasy
     @Test
     public void     testEmptyServiceNames() throws Exception
     {
-        String          json = getJson("http://localhost:8080/v1/service", null);
+        String          json = getJson("http://localhost:" + port + "/v1/service", null);
         ServiceNames    names = RestEasyApplication.singletonsRef.get().serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
 
         Assert.assertEquals(names.getNames(), Lists.<String>newArrayList());

@@ -25,6 +25,7 @@ import javax.ws.rs.core.MediaType;
 
 import junit.framework.Assert;
 
+import org.apache.curator.test.InstanceSpec;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
@@ -58,6 +59,7 @@ public class TestObjectPayloadWithJersey
     private JsonServiceInstanceMarshaller<ServiceDetails> serviceInstanceMarshaller;
     private JsonServiceInstancesMarshaller<ServiceDetails> serviceInstancesMarshaller;
     private ServiceDetailsDiscoveryContext context;
+    private int port;
 
     @BeforeMethod
     public void         setup() throws Exception
@@ -90,7 +92,8 @@ public class TestObjectPayloadWithJersey
         };
         ServletContainer        container = new ServletContainer(application);
 
-        server = new Server(8080);
+        port = InstanceSpec.getRandomPort();
+        server = new Server(port);
         Context root = new Context(server, "/", Context.SESSIONS);
         root.addServlet(new ServletHolder(container), "/*");
         server.start();
@@ -131,7 +134,7 @@ public class TestObjectPayloadWithJersey
             }
         };
         Client          client = Client.create(config);
-        WebResource     resource = client.resource("http://localhost:8080");
+        WebResource     resource = client.resource("http://localhost:" + port);
 	        resource.path("/v1/service/test/" + service.getId()).type(MediaType.APPLICATION_JSON_TYPE).put(service);
 
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);

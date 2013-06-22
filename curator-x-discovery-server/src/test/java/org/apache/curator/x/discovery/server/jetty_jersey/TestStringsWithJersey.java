@@ -20,6 +20,7 @@ package org.apache.curator.x.discovery.server.jetty_jersey;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.server.entity.JsonServiceInstanceMarshaller;
@@ -55,6 +56,7 @@ public class TestStringsWithJersey
     private JsonServiceInstanceMarshaller<String> serviceInstanceMarshaller;
     private JsonServiceInstancesMarshaller<String> serviceInstancesMarshaller;
     private StringDiscoveryContext context;
+    private int port;
 
     @BeforeMethod
     public void         setup() throws Exception
@@ -87,7 +89,8 @@ public class TestStringsWithJersey
         };
         ServletContainer        container = new ServletContainer(application);
 
-        server = new Server(8080);
+        port = InstanceSpec.getRandomPort();
+        server = new Server(port);
         Context root = new Context(server, "/", Context.SESSIONS);
         root.addServlet(new ServletHolder(container), "/*");
         server.start();
@@ -123,7 +126,7 @@ public class TestStringsWithJersey
             }
         };
         Client          client = Client.create(config);
-        WebResource     resource = client.resource("http://localhost:8080");
+        WebResource     resource = client.resource("http://localhost:" + port);
         resource.path("/v1/service/test/" + service.getId()).type(MediaType.APPLICATION_JSON_TYPE).put(service);
 
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
@@ -157,7 +160,7 @@ public class TestStringsWithJersey
             }
         };
         Client          client = Client.create(config);
-        WebResource     resource = client.resource("http://localhost:8080");
+        WebResource     resource = client.resource("http://localhost:" + port);
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
         Assert.assertEquals(names.getNames(), Lists.<String>newArrayList());
     }

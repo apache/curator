@@ -21,16 +21,6 @@ package org.apache.curator.x.discovery.server.jetty_jersey;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.curator.x.discovery.ServiceInstance;
-import org.apache.curator.x.discovery.ServiceType;
-import org.apache.curator.x.discovery.server.entity.JsonServiceInstanceMarshaller;
-import org.apache.curator.x.discovery.server.entity.JsonServiceInstancesMarshaller;
-import org.apache.curator.x.discovery.server.entity.JsonServiceNamesMarshaller;
-import org.apache.curator.x.discovery.server.entity.ServiceInstances;
-import org.apache.curator.x.discovery.server.entity.ServiceNames;
-import org.apache.curator.x.discovery.server.mocks.MockServiceDiscovery;
-import org.apache.curator.x.discovery.server.contexts.MapDiscoveryContext;
-import org.apache.curator.x.discovery.strategies.RandomStrategy;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.WebResource;
@@ -39,6 +29,17 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.core.DefaultResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import junit.framework.Assert;
+import org.apache.curator.test.InstanceSpec;
+import org.apache.curator.x.discovery.ServiceInstance;
+import org.apache.curator.x.discovery.ServiceType;
+import org.apache.curator.x.discovery.server.contexts.MapDiscoveryContext;
+import org.apache.curator.x.discovery.server.entity.JsonServiceInstanceMarshaller;
+import org.apache.curator.x.discovery.server.entity.JsonServiceInstancesMarshaller;
+import org.apache.curator.x.discovery.server.entity.JsonServiceNamesMarshaller;
+import org.apache.curator.x.discovery.server.entity.ServiceInstances;
+import org.apache.curator.x.discovery.server.entity.ServiceNames;
+import org.apache.curator.x.discovery.server.mocks.MockServiceDiscovery;
+import org.apache.curator.x.discovery.strategies.RandomStrategy;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
@@ -57,6 +58,7 @@ public class TestMapsWithJersey
     private JsonServiceInstanceMarshaller<Map<String, String>> serviceInstanceMarshaller;
     private JsonServiceInstancesMarshaller<Map<String, String>> serviceInstancesMarshaller;
     private MapDiscoveryContext context;
+    private int port;
 
     @BeforeMethod
     public void         setup() throws Exception
@@ -89,7 +91,8 @@ public class TestMapsWithJersey
         };
         ServletContainer        container = new ServletContainer(application);
 
-        server = new Server(8080);
+        port = InstanceSpec.getRandomPort();
+        server = new Server(port);
         Context root = new Context(server, "/", Context.SESSIONS);
         root.addServlet(new ServletHolder(container), "/*");
         server.start();
@@ -129,7 +132,7 @@ public class TestMapsWithJersey
             }
         };
         Client          client = Client.create(config);
-        WebResource     resource = client.resource("http://localhost:8080");
+        WebResource     resource = client.resource("http://localhost:" + port);
         resource.path("/v1/service/test/" + service.getId()).type(MediaType.APPLICATION_JSON_TYPE).put(service);
 
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
