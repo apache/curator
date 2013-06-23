@@ -18,11 +18,16 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import org.apache.curator.x.discovery.DownInstanceManager;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -32,14 +37,41 @@ import java.util.concurrent.ThreadFactory;
 public class ServiceProviderImpl<T> implements ServiceProvider<T>
 {
     private final ServiceCache<T> cache;
+    private final InstanceProvider<T> instanceProvider;
     private final ServiceDiscoveryImpl<T> discovery;
     private final ProviderStrategy<T> providerStrategy;
 
-    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory)
+    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, final DownInstanceManager downInstanceManager)
     {
         this.discovery = discovery;
         this.providerStrategy = providerStrategy;
         cache = discovery.serviceCacheBuilder().name(serviceName).threadFactory(threadFactory).build();
+
+        instanceProvider = new InstanceProvider<T>()
+        {
+            @Override
+            public List<ServiceInstance<T>> getInstances() throws Exception
+            {
+                List<ServiceInstance<T>> instances = cache.getInstances();
+                if ( (downInstanceManager != null) && downInstanceManager.hasEntries() )
+                {
+                    Iterable<ServiceInstance<T>> filtered = Iterables.filter
+                    (
+                        instances,
+                        new Predicate<ServiceInstance<T>>()
+                        {
+                            @Override
+                            public boolean apply(ServiceInstance<T> instance)
+                            {
+                                return !downInstanceManager.contains(instance);
+                            }
+                        }
+                    );
+                    instances = ImmutableList.copyOf(filtered);
+                }
+                return instances;
+            }
+        };
     }
 
     /**
@@ -74,6 +106,6 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
     @Override
     public ServiceInstance<T> getInstance() throws Exception
     {
-        return providerStrategy.getInstance(cache);
+        return providerStrategy.getInstance(instanceProvider);
     }
 }

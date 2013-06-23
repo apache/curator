@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import org.apache.curator.x.discovery.DownInstanceManager;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceProvider;
 import org.apache.curator.x.discovery.ServiceProviderBuilder;
@@ -34,6 +35,7 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     private ProviderStrategy<T> providerStrategy;
     private ThreadFactory threadFactory;
     private int refreshPaddingMs;
+    private DownInstanceManager downInstanceManager;
 
     /**
      * Allocate a new service provider based on the current builder settings
@@ -43,7 +45,7 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     @Override
     public ServiceProvider<T> build()
     {
-        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory);
+        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, downInstanceManager);
     }
 
     ServiceProviderBuilderImpl(ServiceDiscoveryImpl<T> discovery)
@@ -102,6 +104,13 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     public ServiceProviderBuilder<T> refreshPaddingMs(int refreshPaddingMs)
     {
         this.refreshPaddingMs = refreshPaddingMs;
+        return this;
+    }
+
+    @Override
+    public ServiceProviderBuilder<T> downInstanceManager(DownInstanceManager downInstanceManager)
+    {
+        this.downInstanceManager = downInstanceManager;
         return this;
     }
 }

@@ -63,4 +63,6 @@ public interface ServiceProviderBuilder<T>
      * @return this
      */
     public ServiceProviderBuilder<T> refreshPaddingMs(int refreshPaddingMs);
+
+    public ServiceProviderBuilder<T> downInstanceManager(DownInstanceManager downInstanceManager);
 }
