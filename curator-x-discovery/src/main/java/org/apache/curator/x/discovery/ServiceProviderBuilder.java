@@ -55,7 +55,7 @@ public interface ServiceProviderBuilder<T>
     public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory);
 
     /**
-     * optional To avoid herding in noisy scenarios, the cache should be padded to only update 1 per period.
+     * optional - To avoid herding in noisy scenarios, the cache should be padded to only update 1 per period.
      * The refresh padding is that period in milliseconds. Set to 0 to turn off padding. The default
      * is 1 second.
      *
@@ -64,5 +64,12 @@ public interface ServiceProviderBuilder<T>
      */
     public ServiceProviderBuilder<T> refreshPaddingMs(int refreshPaddingMs);
 
+    /**
+     * optional - add a down instance manager to this provider. The provider will ignore instances
+     * that are currently unavailable as specified by the manager
+     *
+     * @param downInstanceManager manager
+     * @return this
+     */
     public ServiceProviderBuilder<T> downInstanceManager(DownInstanceManager downInstanceManager);
 }

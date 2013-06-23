@@ -22,6 +22,12 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Container for marking instance as temporarily down. Instances
+ * added to this container will not be selected by {@link ServiceProvider}. NOTE:
+ * you must add an instance of this class via {@link ServiceProviderBuilder#downInstanceManager(DownInstanceManager)}
+ * to get this behavior.
+ */
 public class DownInstanceManager
 {
     private final long timeoutMs;
@@ -41,7 +47,7 @@ public class DownInstanceManager
         {
             long elapsedMs = System.currentTimeMillis() - startMs;
             long remainingMs = timeoutMs - elapsedMs;
-            return (remainingMs > 0) ? TimeUnit.MILLISECONDS.convert(remainingMs, unit) : 0;
+            return (remainingMs > 0) ? unit.convert(remainingMs, TimeUnit.MILLISECONDS) : 0;
         }
 
         @Override
@@ -82,25 +88,52 @@ public class DownInstanceManager
         }
     }
 
+    /**
+     * @param timeout amount of time for instances to be unavailable
+     * @param unit time unit
+     */
     public DownInstanceManager(long timeout, TimeUnit unit)
     {
         timeoutMs = unit.toMillis(timeout);
     }
 
+    /**
+     * This instance will be unavailable for the configured timeout
+     *
+     * @param instance instance to mark unavailable
+     */
     public void add(ServiceInstance<?> instance)
     {
+        purge();
         queue.add(new Entry(instance));
     }
 
+    /**
+     * Return true of the given instance is currently unavailable
+     *
+     * @param instance instance to check
+     * @return true/false
+     */
     public boolean contains(ServiceInstance<?> instance)
     {
-        //noinspection StatementWithEmptyBody
-        while ( queue.poll() != null ){}    // pull out expired entries
+        purge();
         return queue.contains(new Entry(instance));
     }
 
+    /**
+     * Return true if there are instances currently unavailable
+     *
+     * @return true/false
+     */
     public boolean hasEntries()
     {
+        purge();
         return !queue.isEmpty();
+    }
+
+    private void purge()
+    {
+        //noinspection StatementWithEmptyBody
+        while ( queue.poll() != null ){}    // pull out expired entries
     }
 }
