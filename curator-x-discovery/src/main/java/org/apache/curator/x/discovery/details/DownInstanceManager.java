@@ -19,21 +19,17 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Maps;
+import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ServiceInstance;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class DownInstanceManager<T> implements InstanceFilter<T>
 {
-    private final long timeoutMs;
-    private final int threshold;
     private final ConcurrentMap<ServiceInstance<?>, Status> statuses = Maps.newConcurrentMap();
-
-    private static final long DEFAULT_TIMEOUT_MS = 30000;
-    private static final int DEFAULT_THRESHOLD = 2;
+    private final DownInstancePolicy downInstancePolicy;
 
     private static class Status
     {
@@ -43,24 +39,14 @@ class DownInstanceManager<T> implements InstanceFilter<T>
 
     DownInstanceManager()
     {
-        this(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS, DEFAULT_THRESHOLD);
+        this(new DownInstancePolicy());
     }
 
-    /**
-     * @param timeout amount of time for instances to be unavailable
-     * @param unit time unit
-     */
-    DownInstanceManager(long timeout, TimeUnit unit, int threshold)
+    DownInstanceManager(DownInstancePolicy downInstancePolicy)
     {
-        this.threshold = threshold;
-        timeoutMs = unit.toMillis(timeout);
+        this.downInstancePolicy = downInstancePolicy;
     }
 
-    /**
-     * This instance will be unavailable for the configured timeout
-     *
-     * @param instance instance to mark unavailable
-     */
     void add(ServiceInstance<?> instance)
     {
         purge();
@@ -77,7 +63,7 @@ class DownInstanceManager<T> implements InstanceFilter<T>
         purge();
 
         Status status = statuses.get(instance);
-        return (status == null) || (status.errorCount.get() < threshold);
+        return (status == null) || (status.errorCount.get() < downInstancePolicy.getThreshold());
     }
 
     private void purge()
@@ -85,7 +71,7 @@ class DownInstanceManager<T> implements InstanceFilter<T>
         for ( Map.Entry<ServiceInstance<?>, Status> entry : statuses.entrySet() )
         {
             long elapsedMs = System.currentTimeMillis() - entry.getValue().startMs;
-            if ( elapsedMs >= timeoutMs )
+            if ( elapsedMs >= downInstancePolicy.getTimeoutMs() )
             {
                 statuses.remove(entry.getKey());
             }

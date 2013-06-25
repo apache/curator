@@ -19,30 +19,34 @@
 
 package org.apache.curator.x.discovery;
 
-import org.apache.curator.x.discovery.details.InstanceProvider;
-import java.io.Closeable;
+import java.util.concurrent.TimeUnit;
 
-/**
- * The main API for Discovery. This class is essentially a facade over a {@link ProviderStrategy}
- * paired with an {@link InstanceProvider}
- */
-public interface ServiceProvider<T> extends Closeable
+public class DownInstancePolicy
 {
-    /**
-     * The provider must be started before use
-     *
-     * @throws Exception any errors
-     */
-    public void start() throws Exception;
+    private final long timeoutMs;
+    private final int threshold;
 
-    /**
-     * Return an instance for a single use. <b>IMPORTANT: </b> users
-     * should not hold on to the instance returned. They should always get a fresh instance.
-     *
-     * @return the instance to use
-     * @throws Exception any errors
-     */
-    public ServiceInstance<T> getInstance() throws Exception;
+    private static final long DEFAULT_TIMEOUT_MS = 30000;
+    private static final int DEFAULT_THRESHOLD = 2;
 
-    public void noteError(ServiceInstance<T> instance);
+    public DownInstancePolicy()
+    {
+        this(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS, DEFAULT_THRESHOLD);
+    }
+
+    public DownInstancePolicy(long timeout, TimeUnit unit, int threshold)
+    {
+        this.timeoutMs = unit.toMillis(timeout);
+        this.threshold = threshold;
+    }
+
+    public long getTimeoutMs()
+    {
+        return timeoutMs;
+    }
+
+    public int getThreshold()
+    {
+        return threshold;
+    }
 }

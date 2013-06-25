@@ -31,7 +31,7 @@ public class TestDownInstanceManager
         ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
         ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
 
-        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(10, TimeUnit.DAYS, 1);
+        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>();
         Assert.assertTrue(downInstanceManager.apply(instance1));
         Assert.assertTrue(downInstanceManager.apply(instance2));
 
@@ -46,7 +46,7 @@ public class TestDownInstanceManager
         ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
         ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
 
-        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(1, TimeUnit.SECONDS, 1);
+        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>();
 
         downInstanceManager.add(instance1);
         Assert.assertFalse(downInstanceManager.apply(instance1));
@@ -64,7 +64,7 @@ public class TestDownInstanceManager
         ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
         ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
 
-        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(1, TimeUnit.SECONDS, 1);
+        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>();
         ServiceDiscoveryImpl<Void> discovery = new ServiceDiscoveryImpl<Void>(null, null, null, null);
     }
 }

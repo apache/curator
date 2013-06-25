@@ -19,6 +19,7 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceProvider;
@@ -38,14 +39,12 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     private String serviceName;
     private ProviderStrategy<T> providerStrategy;
     private ThreadFactory threadFactory;
-    private DownInstanceManager<T> downInstanceManager = new DownInstanceManager<T>();
     private List<InstanceFilter<T>> filters = Lists.newArrayList();
+    private DownInstancePolicy downInstancePolicy = new DownInstancePolicy();
 
     public ServiceProvider<T> build()
     {
-        ArrayList<InstanceFilter<T>> localFilters = Lists.newArrayList(filters);
-        localFilters.add(downInstanceManager);
-        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, filters);
+        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, filters, downInstancePolicy);
     }
 
     ServiceProviderBuilderImpl(ServiceDiscoveryImpl<T> discovery)
@@ -93,9 +92,9 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     }
 
     @Override
-    public ServiceProviderBuilder<T> downInstanceArguments(long timeout, TimeUnit unit, int threshold)
+    public ServiceProviderBuilder<T> downInstancePolicy(DownInstancePolicy downInstancePolicy)
     {
-        downInstanceManager = new DownInstanceManager<T>(timeout, unit, threshold);
+        this.downInstancePolicy = downInstancePolicy;
         return this;
     }
 

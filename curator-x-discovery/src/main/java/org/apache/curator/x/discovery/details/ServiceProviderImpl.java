@@ -18,12 +18,15 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import com.google.common.collect.Lists;
+import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
@@ -37,13 +40,19 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
     private final InstanceProvider<T> instanceProvider;
     private final ServiceDiscoveryImpl<T> discovery;
     private final ProviderStrategy<T> providerStrategy;
+    private final DownInstanceManager<T> downInstanceManager;
 
-    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, List<InstanceFilter<T>> filters)
+    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
     {
         this.discovery = discovery;
         this.providerStrategy = providerStrategy;
+
+        downInstanceManager = new DownInstanceManager<T>(downInstancePolicy);
         cache = discovery.serviceCacheBuilder().name(serviceName).threadFactory(threadFactory).build();
-        instanceProvider = new FilteredInstanceProvider<T>(cache, filters);
+
+        ArrayList<InstanceFilter<T>> localFilters = Lists.newArrayList(filters);
+        localFilters.add(downInstanceManager);
+        instanceProvider = new FilteredInstanceProvider<T>(cache, localFilters);
     }
 
     /**
@@ -79,5 +88,11 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
     public ServiceInstance<T> getInstance() throws Exception
     {
         return providerStrategy.getInstance(instanceProvider);
+    }
+
+    @Override
+    public void noteError(ServiceInstance<T> instance)
+    {
+        downInstanceManager.add(instance);
     }
 }

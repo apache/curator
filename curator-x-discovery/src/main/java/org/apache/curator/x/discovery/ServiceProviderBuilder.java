@@ -55,7 +55,7 @@ public interface ServiceProviderBuilder<T>
      */
     public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory);
 
-    public ServiceProviderBuilder<T> downInstanceArguments(long timeout, TimeUnit unit, int threshold);
+    public ServiceProviderBuilder<T> downInstancePolicy(DownInstancePolicy downInstancePolicy);
 
     public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter);
 }
