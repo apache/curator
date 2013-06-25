@@ -38,7 +38,6 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     private String serviceName;
     private ProviderStrategy<T> providerStrategy;
     private ThreadFactory threadFactory;
-    private int refreshPaddingMs;
     private DownInstanceManager<T> downInstanceManager = new DownInstanceManager<T>();
     private List<InstanceFilter<T>> filters = Lists.newArrayList();
 
@@ -90,21 +89,6 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory)
     {
         this.threadFactory = threadFactory;
-        return this;
-    }
-
-    /**
-     * optional To avoid herding in noisy scenarios, the cache should be padded to only update 1 per period.
-     * The refresh padding is that period in milliseconds. Set to 0 to turn off padding. The default
-     * is 1 second.
-     *
-     * @param refreshPaddingMs padding in milliseconds
-     * @return this
-     */
-    @Override
-    public ServiceProviderBuilder<T> refreshPaddingMs(int refreshPaddingMs)
-    {
-        this.refreshPaddingMs = refreshPaddingMs;
         return this;
     }
 

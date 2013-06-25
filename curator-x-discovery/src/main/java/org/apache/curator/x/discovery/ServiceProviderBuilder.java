@@ -55,16 +55,6 @@ public interface ServiceProviderBuilder<T>
      */
     public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory);
 
-    /**
-     * optional - To avoid herding in noisy scenarios, the cache should be padded to only update 1 per period.
-     * The refresh padding is that period in milliseconds. Set to 0 to turn off padding. The default
-     * is 1 second.
-     *
-     * @param refreshPaddingMs padding in milliseconds
-     * @return this
-     */
-    public ServiceProviderBuilder<T> refreshPaddingMs(int refreshPaddingMs);
-
     public ServiceProviderBuilder<T> downInstanceArguments(long timeout, TimeUnit unit, int threshold);
 
     public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter);
