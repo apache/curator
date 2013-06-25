@@ -20,6 +20,7 @@ package org.apache.curator.x.discovery;
 
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 public interface ServiceProviderBuilder<T>
 {
@@ -64,12 +65,7 @@ public interface ServiceProviderBuilder<T>
      */
     public ServiceProviderBuilder<T> refreshPaddingMs(int refreshPaddingMs);
 
-    /**
-     * optional - add a down instance manager to this provider. The provider will ignore instances
-     * that are currently unavailable as specified by the manager
-     *
-     * @param downInstanceManager manager
-     * @return this
-     */
-    public ServiceProviderBuilder<T> downInstanceManager(DownInstanceManager downInstanceManager);
+    public ServiceProviderBuilder<T> downInstanceArguments(long timeout, TimeUnit unit, int threshold);
+
+    public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter);
 }

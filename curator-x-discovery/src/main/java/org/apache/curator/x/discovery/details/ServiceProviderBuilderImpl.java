@@ -18,12 +18,16 @@
  */
 package org.apache.curator.x.discovery.details;
 
-import org.apache.curator.x.discovery.DownInstanceManager;
+import com.google.common.collect.Lists;
+import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceProvider;
 import org.apache.curator.x.discovery.ServiceProviderBuilder;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Builder for service providers
@@ -35,17 +39,14 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     private ProviderStrategy<T> providerStrategy;
     private ThreadFactory threadFactory;
     private int refreshPaddingMs;
-    private DownInstanceManager downInstanceManager;
+    private DownInstanceManager<T> downInstanceManager = new DownInstanceManager<T>();
+    private List<InstanceFilter<T>> filters = Lists.newArrayList();
 
-    /**
-     * Allocate a new service provider based on the current builder settings
-     *
-     * @return provider
-     */
-    @Override
     public ServiceProvider<T> build()
     {
-        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, downInstanceManager);
+        ArrayList<InstanceFilter<T>> localFilters = Lists.newArrayList(filters);
+        localFilters.add(downInstanceManager);
+        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, filters);
     }
 
     ServiceProviderBuilderImpl(ServiceDiscoveryImpl<T> discovery)
@@ -108,9 +109,16 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     }
 
     @Override
-    public ServiceProviderBuilder<T> downInstanceManager(DownInstanceManager downInstanceManager)
+    public ServiceProviderBuilder<T> downInstanceArguments(long timeout, TimeUnit unit, int threshold)
     {
-        this.downInstanceManager = downInstanceManager;
+        downInstanceManager = new DownInstanceManager<T>(timeout, unit, threshold);
+        return this;
+    }
+
+    @Override
+    public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter)
+    {
+        filters.add(filter);
         return this;
     }
 }
