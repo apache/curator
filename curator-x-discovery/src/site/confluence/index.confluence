@@ -61,6 +61,13 @@ In order to allocate a ServiceProvider, you must have a ServiceDiscovery. It is 
 
 You must call {{start()}} on the object and, when done with it, call {{close()}}.
 
+h3. Instance Stability
+
+If a particular instance has an I/O error, etc. you should call {{ServiceProvider.noteError()}} passing in the instance.
+The ServiceProvider will temporarily consider instances that have errors to be "down". The thresholds and timeouts for
+down instances are set via the {{DownInstancePolicy}} which can be passed to {{ServiceProviderBuilder}} (note: a default
+DownInstancePolicy is used if you don't specify one).
+
 ----
 
 h3. Low Level APIs
