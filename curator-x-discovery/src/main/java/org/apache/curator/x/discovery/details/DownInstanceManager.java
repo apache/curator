@@ -25,21 +25,18 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 class DownInstanceManager<T> implements InstanceFilter<T>
 {
     private final ConcurrentMap<ServiceInstance<?>, Status> statuses = Maps.newConcurrentMap();
     private final DownInstancePolicy downInstancePolicy;
+    private final AtomicLong lastPurge = new AtomicLong(System.currentTimeMillis());
 
     private static class Status
     {
         private final long startMs = System.currentTimeMillis();
         private final AtomicInteger errorCount = new AtomicInteger(0);
-    }
-
-    DownInstanceManager()
-    {
-        this(new DownInstancePolicy());
     }
 
     DownInstanceManager(DownInstancePolicy downInstancePolicy)
@@ -63,11 +60,23 @@ class DownInstanceManager<T> implements InstanceFilter<T>
         purge();
 
         Status status = statuses.get(instance);
-        return (status == null) || (status.errorCount.get() < downInstancePolicy.getThreshold());
+        return (status == null) || (status.errorCount.get() < downInstancePolicy.getErrorThreshold());
     }
 
     private void purge()
     {
+        long localLastPurge = lastPurge.get();
+        long ticksSinceLastPurge = System.currentTimeMillis() - localLastPurge;
+        if ( ticksSinceLastPurge < (downInstancePolicy.getTimeoutMs() / 2) )
+        {
+            return;
+        }
+
+        if ( !lastPurge.compareAndSet(localLastPurge, System.currentTimeMillis()) )
+        {
+            return;
+        }
+
         for ( Map.Entry<ServiceInstance<?>, Status> entry : statuses.entrySet() )
         {
             long elapsedMs = System.currentTimeMillis() - entry.getValue().startMs;

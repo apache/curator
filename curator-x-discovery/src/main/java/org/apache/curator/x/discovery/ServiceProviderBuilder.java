@@ -20,7 +20,6 @@ package org.apache.curator.x.discovery;
 
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 public interface ServiceProviderBuilder<T>
 {
@@ -55,7 +54,21 @@ public interface ServiceProviderBuilder<T>
      */
     public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory);
 
+    /**
+     * Set the down instance policy
+     *
+     * @param downInstancePolicy new policy
+     * @return this
+     */
     public ServiceProviderBuilder<T> downInstancePolicy(DownInstancePolicy downInstancePolicy);
 
+    /**
+     * Add an instance filter. NOTE: this does not remove previously added filters. i.e.
+     * a l;ist is created of all added filters. Filters are called in the order they were
+     * added.
+     *
+     * @param filter filter to add
+     * @return this
+     */
     public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter);
 }

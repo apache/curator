@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -25,13 +26,35 @@ import java.util.concurrent.TimeUnit;
 
 public class TestDownInstanceManager
 {
+    private static final DownInstancePolicy debugDownInstancePolicy = new DownInstancePolicy(1, TimeUnit.SECONDS, 1);
+    private static final DownInstancePolicy debugMultiDownInstancePolicy = new DownInstancePolicy(1, TimeUnit.SECONDS, 2);
+
     @Test
     public void testBasic() throws Exception
     {
         ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
         ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
 
-        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>();
+        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugDownInstancePolicy);
+        Assert.assertTrue(downInstanceManager.apply(instance1));
+        Assert.assertTrue(downInstanceManager.apply(instance2));
+
+        downInstanceManager.add(instance1);
+        Assert.assertFalse(downInstanceManager.apply(instance1));
+        Assert.assertTrue(downInstanceManager.apply(instance2));
+    }
+
+    @Test
+    public void testThreshold() throws Exception
+    {
+        ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
+        ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
+
+        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugMultiDownInstancePolicy);
+        Assert.assertTrue(downInstanceManager.apply(instance1));
+        Assert.assertTrue(downInstanceManager.apply(instance2));
+
+        downInstanceManager.add(instance1);
         Assert.assertTrue(downInstanceManager.apply(instance1));
         Assert.assertTrue(downInstanceManager.apply(instance2));
 
@@ -46,25 +69,15 @@ public class TestDownInstanceManager
         ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
         ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
 
-        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>();
+        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugDownInstancePolicy);
 
         downInstanceManager.add(instance1);
         Assert.assertFalse(downInstanceManager.apply(instance1));
         Assert.assertTrue(downInstanceManager.apply(instance2));
 
-        Thread.sleep(1000);
+        Thread.sleep(debugDownInstancePolicy.getTimeoutMs());
 
         Assert.assertTrue(downInstanceManager.apply(instance1));
         Assert.assertTrue(downInstanceManager.apply(instance2));
-    }
-
-    //@Test
-    public void testInProvider() throws Exception
-    {
-        ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
-        ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
-
-        DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>();
-        ServiceDiscoveryImpl<Void> discovery = new ServiceDiscoveryImpl<Void>(null, null, null, null);
     }
 }

@@ -20,6 +20,9 @@ package org.apache.curator.x.discovery;
 
 import com.google.common.base.Predicate;
 
+/**
+ * Typedef for an Instance predicate
+ */
 public interface InstanceFilter<T> extends Predicate<ServiceInstance<T>>
 {
 }

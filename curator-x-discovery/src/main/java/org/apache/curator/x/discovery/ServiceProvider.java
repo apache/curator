@@ -44,5 +44,11 @@ public interface ServiceProvider<T> extends Closeable
      */
     public ServiceInstance<T> getInstance() throws Exception;
 
+    /**
+     * Take note of an error connecting to the given instance. The instance will potentially
+     * be marked as "down" depending on the {@link DownInstancePolicy}.
+     *
+     * @param instance instance that had an error
+     */
     public void noteError(ServiceInstance<T> instance);
 }
