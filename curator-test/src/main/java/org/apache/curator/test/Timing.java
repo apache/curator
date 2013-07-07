@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.test;
 
 import java.util.concurrent.CountDownLatch;
@@ -27,10 +28,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class Timing
 {
-    private final long      value;
-    private final TimeUnit  unit;
+    private final long value;
+    private final TimeUnit unit;
+    private final int waitingMultiple;
 
     private static final int DEFAULT_SECONDS = 10;
+    private static final int DEFAULT_WAITING_MULTIPLE = 5;
     private static final double SESSION_MULTIPLE = .25;
 
     /**
@@ -38,7 +41,11 @@ public class Timing
      */
     public Timing()
     {
-        this(Integer.getInteger("timing-multiple", 1));
+        this
+        (
+            Integer.getInteger("timing-multiple", 1),
+            Integer.getInteger("timing-waiting-multiple", DEFAULT_WAITING_MULTIPLE)
+        );
     }
 
     /**
@@ -48,33 +55,54 @@ public class Timing
      */
     public Timing(double multiple)
     {
-        value = (int)(DEFAULT_SECONDS * multiple);
-        unit = TimeUnit.SECONDS;
+        this((long)(DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, DEFAULT_WAITING_MULTIPLE);
+    }
+
+    /**
+     * Use a multiple of the default base time
+     *
+     * @param multiple the multiple
+     * @param waitingMultiple multiple of main timing to use when waiting
+     */
+    public Timing(double multiple, int waitingMultiple)
+    {
+        this((long)(DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, waitingMultiple);
     }
 
     /**
      * @param value base time
-     * @param unit base time unit
+     * @param unit  base time unit
      */
     public Timing(long value, TimeUnit unit)
     {
+        this(value, unit, DEFAULT_WAITING_MULTIPLE);
+    }
+
+    /**
+     * @param value base time
+     * @param unit  base time unit
+     * @param waitingMultiple multiple of main timing to use when waiting
+     */
+    public Timing(long value, TimeUnit unit, int waitingMultiple)
+    {
         this.value = value;
         this.unit = unit;
+        this.waitingMultiple = waitingMultiple;
     }
 
     /**
      * Return the base time in milliseconds
-     * 
+     *
      * @return time ms
      */
-    public int  milliseconds()
+    public int milliseconds()
     {
         return (int)TimeUnit.MILLISECONDS.convert(value, unit);
     }
 
     /**
      * Return the base time in seconds
-     * 
+     *
      * @return time secs
      */
     public int seconds()
@@ -84,7 +112,7 @@ public class Timing
 
     /**
      * Wait on the given latch
-     * 
+     *
      * @param latch latch to wait on
      * @return result of {@link CountDownLatch#await(long, TimeUnit)}
      */
@@ -126,7 +154,7 @@ public class Timing
      * Wait on the given semaphore
      *
      * @param semaphore the semaphore
-     * @param n number of permits to acquire
+     * @param n         number of permits to acquire
      * @return result of {@link Semaphore#tryAcquire(int, long, TimeUnit)}
      */
     public boolean acquireSemaphore(Semaphore semaphore, int n)
@@ -149,7 +177,7 @@ public class Timing
      * @param n the multiple
      * @return this timing times the multiple
      */
-    public Timing   multiple(double n)
+    public Timing multiple(double n)
     {
         return new Timing((int)(value * n), unit);
     }
@@ -162,7 +190,7 @@ public class Timing
     @SuppressWarnings("PointlessArithmeticExpression")
     public Timing forWaiting()
     {
-        return multiple(5);
+        return multiple(waitingMultiple);
     }
 
     /**
@@ -177,18 +205,20 @@ public class Timing
 
     /**
      * Return the value to use for ZK session timeout
+     *
      * @return session timeout
      */
-    public int  session()
+    public int session()
     {
         return multiple(SESSION_MULTIPLE).milliseconds();
     }
 
     /**
      * Return the value to use for ZK connection timeout
+     *
      * @return connection timeout
      */
-    public int  connection()
+    public int connection()
     {
         return milliseconds();
     }
