@@ -212,7 +212,7 @@ public class ZKPaths
             path.append("/");
         }
         path.append(parent);
-        if ( (child == null) || (child.length() == 0) )
+        if ( (child == null) || (child.length() == 0) || (child.equals("/")))
         {
             return path.toString();
         }
