@@ -16,20 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.BackgroundPathable;
+import org.apache.curator.framework.api.BackgroundVersionable;
+import org.apache.curator.framework.api.ChildrenDeletable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.DeleteBuilder;
-import org.apache.curator.framework.api.DeleteBuilderBase;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionDeleteBuilder;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -38,27 +41,29 @@ import java.util.concurrent.Executor;
 
 class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
 {
-    private final CuratorFrameworkImpl  client;
-    private int                         version;
-    private Backgrounding               backgrounding;
-    private boolean                     guaranteed;
+    private final CuratorFrameworkImpl client;
+    private int version;
+    private Backgrounding backgrounding;
+    private boolean deletingChildrenIfNeeded;
+    private boolean guaranteed;
 
     DeleteBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
         version = -1;
         backgrounding = new Backgrounding();
+        deletingChildrenIfNeeded = false;
         guaranteed = false;
     }
 
-    TransactionDeleteBuilder    asTransactionDeleteBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
+    TransactionDeleteBuilder asTransactionDeleteBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
     {
         return new TransactionDeleteBuilder()
         {
             @Override
             public CuratorTransactionBridge forPath(String path) throws Exception
             {
-                String      fixedPath = client.fixForNamespace(path);
+                String fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.delete(fixedPath, version), OperationType.DELETE, path);
                 return curatorTransaction;
             }
@@ -73,9 +78,16 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
     }
 
     @Override
-    public DeleteBuilderBase guaranteed()
+    public ChildrenDeletable guaranteed()
     {
         guaranteed = true;
+        return this;
+    }
+
+    @Override
+    public BackgroundVersionable deletingChildrenIfNeeded()
+    {
+        deletingChildrenIfNeeded = true;
         return this;
     }
 
@@ -131,34 +143,63 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
     @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
-        final TimeTrace   trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Background");
+        final TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Background");
         client.getZooKeeper().delete
-        (
-            operationAndData.getData(),
-            version,
-            new AsyncCallback.VoidCallback()
-            {
-                @Override
-                public void processResult(int rc, String path, Object ctx)
+            (
+                operationAndData.getData(),
+                version,
+                new AsyncCallback.VoidCallback()
                 {
-                    trace.commit();
-                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null);
-                    client.processBackgroundOperation(operationAndData, event);
+                    @Override
+                    public void processResult(int rc, String path, Object ctx)
+                    {
+                        trace.commit();
+                        if ( (rc == KeeperException.Code.NOTEMPTY.intValue()) && deletingChildrenIfNeeded )
+                        {
+                            backgroundDeleteChildrenThenNode(operationAndData);
+                        }
+                        else
+                        {
+                            CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null);
+                            client.processBackgroundOperation(operationAndData, event);
+                        }
+                    }
+                },
+                backgrounding.getContext()
+            );
+    }
+
+    private void backgroundDeleteChildrenThenNode(final OperationAndData<String> mainOperationAndData)
+    {
+        BackgroundOperation<String> operation = new BackgroundOperation<String>()
+        {
+            @Override
+            public void performBackgroundOperation(OperationAndData<String> dummy) throws Exception
+            {
+                try
+                {
+                    ZKPaths.deleteChildren(client.getZooKeeper(), mainOperationAndData.getData(), false);
                 }
-            },
-            backgrounding.getContext()
-        );
+                catch ( KeeperException e )
+                {
+                    // ignore
+                }
+                client.queueOperation(mainOperationAndData);
+            }
+        };
+        OperationAndData<String> parentOperation = new OperationAndData<String>(operation, mainOperationAndData.getData(), null, null);
+        client.queueOperation(parentOperation);
     }
 
     @Override
     public Void forPath(String path) throws Exception
     {
-        final String        unfixedPath = path;
+        final String unfixedPath = path;
         path = client.fixForNamespace(path);
 
         if ( backgrounding.inBackground() )
         {
-            OperationAndData.ErrorCallback<String>  errorCallback = null;
+            OperationAndData.ErrorCallback<String> errorCallback = null;
             if ( guaranteed )
             {
                 errorCallback = new OperationAndData.ErrorCallback<String>()
@@ -186,7 +227,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
 
     private void pathInForeground(final String path, String unfixedPath) throws Exception
     {
-        TimeTrace       trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
+        TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
         try
         {
             RetryLoop.callWithRetry
@@ -197,7 +238,21 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                     @Override
                     public Void call() throws Exception
                     {
-                        client.getZooKeeper().delete(path, version);
+                        try
+                        {
+                            client.getZooKeeper().delete(path, version);
+                        }
+                        catch ( KeeperException.NotEmptyException e )
+                        {
+                            if ( deletingChildrenIfNeeded )
+                            {
+                                ZKPaths.deleteChildren(client.getZooKeeper(), path, true);
+                            }
+                            else
+                            {
+                                throw e;
+                            }
+                        }
                         return null;
                     }
                 }

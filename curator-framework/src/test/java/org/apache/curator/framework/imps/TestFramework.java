@@ -398,25 +398,25 @@ public class TestFramework extends BaseClassForTests
         try
         {
             client.getCuratorListenable().addListener
-            (
-                new CuratorListener()
-                {
-                    @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                (
+                    new CuratorListener()
                     {
-                        if ( event.getType() == CuratorEventType.SYNC )
+                        @Override
+                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
                         {
-                            Assert.assertEquals(event.getPath(), "/head");
-                            ((CountDownLatch)event.getContext()).countDown();
+                            if ( event.getType() == CuratorEventType.SYNC )
+                            {
+                                Assert.assertEquals(event.getPath(), "/head");
+                                ((CountDownLatch)event.getContext()).countDown();
+                            }
                         }
                     }
-                }
-            );
+                );
 
             client.create().forPath("/head");
             Assert.assertNotNull(client.checkExists().forPath("/head"));
 
-            CountDownLatch      latch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(1);
             client.sync("/head", latch);
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
@@ -495,6 +495,43 @@ public class TestFramework extends BaseClassForTests
     }
 
     @Test
+    public void     testBackgroundDeleteWithChildren() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.getCuratorListenable().addListener
+            (
+                    new CuratorListener()
+                    {
+                        @Override
+                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                        {
+                            if ( event.getType() == CuratorEventType.DELETE )
+                            {
+                                Assert.assertEquals(event.getPath(), "/one/two");
+                                ((CountDownLatch)event.getContext()).countDown();
+                            }
+                        }
+                    }
+            );
+
+            client.create().creatingParentsIfNeeded().forPath("/one/two/three/four");
+            Assert.assertNotNull(client.checkExists().forPath("/one/two/three/four"));
+
+            CountDownLatch      latch = new CountDownLatch(1);
+            client.delete().deletingChildrenIfNeeded().inBackground(latch).forPath("/one/two");
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
     public void     testDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -505,6 +542,26 @@ public class TestFramework extends BaseClassForTests
             Assert.assertNotNull(client.checkExists().forPath("/head"));
             client.delete().forPath("/head");
             Assert.assertNull(client.checkExists().forPath("/head"));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void testDeleteWithChildren() throws Exception
+    {
+        CuratorFrameworkFactory.Builder      builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).build();
+        client.start();
+        try
+        {
+            client.create().creatingParentsIfNeeded().forPath("/one/two/three/four/five/six", "foo".getBytes());
+            client.delete().deletingChildrenIfNeeded().forPath("/one/two/three/four/five");
+            Assert.assertNull(client.checkExists().forPath("/one/two/three/four/five"));
+            client.delete().deletingChildrenIfNeeded().forPath("/one/two");
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
         }
         finally
         {

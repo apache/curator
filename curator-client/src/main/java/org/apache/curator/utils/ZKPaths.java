@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.utils;
 
 import com.google.common.collect.Lists;
@@ -33,10 +34,10 @@ public class ZKPaths
      * Apply the namespace to the given path
      *
      * @param namespace namespace (can be null)
-     * @param path path
+     * @param path      path
      * @return adjusted path
      */
-    public static String    fixForNamespace(String namespace, String path)
+    public static String fixForNamespace(String namespace, String path)
     {
         if ( namespace != null )
         {
@@ -47,7 +48,7 @@ public class ZKPaths
 
     /**
      * Given a full path, return the node name. i.e. "/one/two/three" will return "three"
-     * 
+     *
      * @param path the path
      * @return the node
      */
@@ -59,7 +60,7 @@ public class ZKPaths
         {
             return path;
         }
-        if ( (i + 1) >= path.length()  )
+        if ( (i + 1) >= path.length() )
         {
             return "";
         }
@@ -68,8 +69,8 @@ public class ZKPaths
 
     public static class PathAndNode
     {
-        private final String        path;
-        private final String        node;
+        private final String path;
+        private final String node;
 
         public PathAndNode(String path, String node)
         {
@@ -102,7 +103,7 @@ public class ZKPaths
         {
             return new PathAndNode(path, "");
         }
-        if ( (i + 1) >= path.length()  )
+        if ( (i + 1) >= path.length() )
         {
             return new PathAndNode("/", "");
         }
@@ -131,8 +132,8 @@ public class ZKPaths
      * Make sure all the nodes in the path are created. NOTE: Unlike File.mkdirs(), Zookeeper doesn't distinguish
      * between directories and files. So, every node in the path is created. The data for each node is an empty blob
      *
-     * @param zookeeper the client
-     * @param path      path to ensure
+     * @param zookeeper    the client
+     * @param path         path to ensure
      * @param makeLastNode if true, all nodes are created. If false, only the parent nodes are created
      * @throws InterruptedException thread interruption
      * @throws org.apache.zookeeper.KeeperException
@@ -175,6 +176,44 @@ public class ZKPaths
 
         }
         while ( pos < path.length() );
+    }
+
+    /**
+     * Recursively deletes children of a node.
+     *
+     * @param zookeeper  the client
+     * @param path       path of the node to delete
+     * @param deleteSelf flag that indicates that the node should also get deleted
+     * @throws InterruptedException
+     * @throws KeeperException
+     */
+    public static void deleteChildren(ZooKeeper zookeeper, String path, boolean deleteSelf) throws InterruptedException, KeeperException
+    {
+        PathUtils.validatePath(path);
+
+        List<String> children = zookeeper.getChildren(path, false);
+        for ( String child : children )
+        {
+            String fullPath = makePath(path, child);
+            deleteChildren(zookeeper, fullPath, true);
+        }
+
+        if ( deleteSelf )
+        {
+            try
+            {
+                zookeeper.delete(path, -1);
+            }
+            catch ( KeeperException.NotEmptyException e )
+            {
+                //someone has created a new child since we checked ... delete again.
+                deleteChildren(zookeeper, path, deleteSelf);
+            }
+            catch ( KeeperException.NoNodeException e )
+            {
+                // ignore... someone else has deleted the node it since we checked
+            }
+        }
     }
 
     /**
