@@ -172,7 +172,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
         }
         else
         {
-            client.getZooKeeper().getChildren(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            client.getZooKeeper().getChildren(operationAndData.getData(), watching.getWatcher(operationAndData.getData()), callback, backgrounding.getContext());
         }
     }
 
@@ -211,7 +211,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                     }
                     else
                     {
-                        children = client.getZooKeeper().getChildren(path, watching.getWatcher(), responseStat);
+                        children = client.getZooKeeper().getChildren(path, watching.getWatcher(path), responseStat);
                     }
                     return children;
                 }

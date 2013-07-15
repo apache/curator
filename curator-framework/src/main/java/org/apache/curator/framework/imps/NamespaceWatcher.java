@@ -61,4 +61,29 @@ class NamespaceWatcher implements Watcher
             }
         }
     }
+
+    @SuppressWarnings("RedundantIfStatement")
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NamespaceWatcher that = (NamespaceWatcher) o;
+
+        if (actualWatcher != null ? !actualWatcher.equals(that.actualWatcher) : that.actualWatcher != null)
+            return false;
+        if (client != null ? !client.equals(that.client) : that.client != null) return false;
+        if (curatorWatcher != null ? !curatorWatcher.equals(that.curatorWatcher) : that.curatorWatcher != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = client != null ? client.hashCode() : 0;
+        result = 31 * result + (actualWatcher != null ? actualWatcher.hashCode() : 0);
+        result = 31 * result + (curatorWatcher != null ? curatorWatcher.hashCode() : 0);
+        return result;
+    }
 }

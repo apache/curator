@@ -260,7 +260,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
         }
         else
         {
-            client.getZooKeeper().getData(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            client.getZooKeeper().getData(operationAndData.getData(), watching.getWatcher(operationAndData.getData()), callback, backgrounding.getContext());
         }
     }
 
@@ -299,7 +299,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
                     }
                     else
                     {
-                        responseData = client.getZooKeeper().getData(path, watching.getWatcher(), responseStat);
+                        responseData = client.getZooKeeper().getData(path, watching.getWatcher(path), responseStat);
                     }
                     return responseData;
                 }

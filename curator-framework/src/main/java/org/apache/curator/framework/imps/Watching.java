@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -23,35 +24,48 @@ import org.apache.zookeeper.Watcher;
 
 class Watching
 {
-    private final Watcher       watcher;
-    private final boolean       watched;
+    private final CuratorFrameworkImpl client;
+    private final NamespaceWatcher watcher;
+    private final boolean watched;
 
     Watching(boolean watched)
     {
+        this.client = null;
         this.watcher = null;
         this.watched = watched;
     }
 
     Watching(CuratorFrameworkImpl client, Watcher watcher)
     {
-        this.watcher = (watcher != null) ? client.getNamespaceWatcherMap().getNamespaceWatcher(watcher) : null;
+        this.client = client;
+        this.watcher = new NamespaceWatcher(client, watcher);
         this.watched = false;
     }
 
-    Watching(CuratorFrameworkImpl client, CuratorWatcher watcher)
+    Watching(CuratorFrameworkImpl client, CuratorWatcher curatorWatcher)
     {
-        this.watcher = (watcher != null) ? client.getNamespaceWatcherMap().getNamespaceWatcher(watcher) : null;
+        this.client = client;
+        this.watcher = new NamespaceWatcher(client, curatorWatcher);
         this.watched = false;
     }
 
     Watching()
     {
+        client = null;
         watcher = null;
         watched = false;
     }
 
-    Watcher getWatcher()
+    Watcher getWatcher(String path)
     {
+        if ( client == null )
+        {
+            return null;
+        }
+        else if ( watcher != null )
+        {
+            return client.getDispatchingWatcher().addNamespaceWatcher(path, watcher);
+        }
         return watcher;
     }
 
