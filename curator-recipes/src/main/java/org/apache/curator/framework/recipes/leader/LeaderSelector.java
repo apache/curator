@@ -41,8 +41,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
- *     Abstraction select a "leader" amongst multiple contenders in a group of JMVs connected
- *     to a Zookeeper cluster. If a group of N thread/processes contend for leadership, one will
+ *     Abstraction to select a "leader" amongst multiple contenders in a group of JMVs connected
+ *     to a Zookeeper cluster. If a group of N thread/processes contends for leadership, one will
  *     be assigned leader until it releases leadership at which time another one from the group will
  *     be chosen.
  * </p>
