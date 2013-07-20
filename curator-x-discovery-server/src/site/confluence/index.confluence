@@ -29,8 +29,8 @@ use a context resolver to access the DiscoveryContext. Or, if you are using an I
 Here's a version that has no payload (i.e. a Void payload):
 {code}
    @Path("/")
-   public class MyResource extends DiscoveryResource&lt;Void> {
-       public MyResource(@Context ContextResolver&lt;DiscoveryContext&lt;Void>> resolver) {
+   public class MyResource extends DiscoveryResource<Void> {
+       public MyResource(@Context ContextResolver<DiscoveryContext<Void>> resolver) {
            // note: this may not work with all JAX-RS implementations
            super(resolver.getContext(DiscoveryContext.class));
        }
