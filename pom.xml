@@ -153,6 +153,16 @@
                 <role>ChedHeader</role>
             </roles>
         </developer>
+        <developer>
+            <id>iocanel</id>
+            <name>Ioannis Canellos</name>
+            <email>iocanel@apache.org</email>
+            <timezone>+2</timezone>
+            <roles>
+                <role>Committer</role>
+            </roles>
+            <url>http://iocanel.blogspot.com</url>
+        </developer>
     </developers>
 
     <contributors>
