@@ -41,11 +41,7 @@ public class Timing
      */
     public Timing()
     {
-        this
-        (
-            Integer.getInteger("timing-multiple", 1),
-            Integer.getInteger("timing-waiting-multiple", DEFAULT_WAITING_MULTIPLE)
-        );
+        this(Integer.getInteger("timing-multiple", 1), getWaitingMultiple());
     }
 
     /**
@@ -55,7 +51,7 @@ public class Timing
      */
     public Timing(double multiple)
     {
-        this((long)(DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, DEFAULT_WAITING_MULTIPLE);
+        this((long)(DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, getWaitingMultiple());
     }
 
     /**
@@ -75,7 +71,7 @@ public class Timing
      */
     public Timing(long value, TimeUnit unit)
     {
-        this(value, unit, DEFAULT_WAITING_MULTIPLE);
+        this(value, unit, getWaitingMultiple());
     }
 
     /**
@@ -221,5 +217,10 @@ public class Timing
     public int connection()
     {
         return milliseconds();
+    }
+
+    private static Integer getWaitingMultiple()
+    {
+        return Integer.getInteger("timing-waiting-multiple", DEFAULT_WAITING_MULTIPLE);
     }
 }
