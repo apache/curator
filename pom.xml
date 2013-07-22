@@ -150,6 +150,7 @@
             <timezone>-6</timezone>
             <roles>
                 <role>Committer</role>
+                <role>PPMC Member</role>
                 <role>ChedHeader</role>
             </roles>
         </developer>
@@ -160,6 +161,7 @@
             <timezone>+2</timezone>
             <roles>
                 <role>Committer</role>
+                <role>PPMC Member</role>
             </roles>
             <url>http://iocanel.blogspot.com</url>
         </developer>
