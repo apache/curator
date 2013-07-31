@@ -30,6 +30,7 @@
     <groupId>org.apache.curator</groupId>
     <artifactId>curator-x-discovery-server</artifactId>
     <version>2.1.1-incubating-SNAPSHOT</version>
+    <packaging>bundle</packaging>
 
     <name>Curator Service Discovery Server</name>
     <description>Bridges non-Java or legacy applications with the Curator Service Discovery.</description>
@@ -37,6 +38,12 @@
 
     <properties>
         <jersey.version>1.11</jersey.version>
+        <osgi.import.package>
+            *
+        </osgi.import.package>
+        <osgi.export.package>
+            org.apache.curator.x.discovery.server*;version="${project.version}";-noimport:=true
+        </osgi.export.package>
     </properties>
 
     <dependencies>

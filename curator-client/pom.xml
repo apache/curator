@@ -30,10 +30,20 @@
     <groupId>org.apache.curator</groupId>
     <artifactId>curator-client</artifactId>
     <version>2.1.1-incubating-SNAPSHOT</version>
+    <packaging>bundle</packaging>
 
     <name>Curator Client</name>
     <description>Low-level API</description>
     <inceptionYear>2011</inceptionYear>
+
+    <properties>
+        <osgi.import.package>
+            *
+        </osgi.import.package>
+        <osgi.export.package>
+            org.apache.curator*;version="${project.version}";-noimport:=true
+        </osgi.export.package>
+    </properties>
 
     <dependencies>
         <dependency>

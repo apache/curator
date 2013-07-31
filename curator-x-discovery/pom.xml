@@ -30,10 +30,20 @@
     <groupId>org.apache.curator</groupId>
     <artifactId>curator-x-discovery</artifactId>
     <version>2.1.1-incubating-SNAPSHOT</version>
+    <packaging>bundle</packaging>
 
     <name>Curator Service Discovery</name>
     <description>A service discovery recipe.</description>
     <inceptionYear>2011</inceptionYear>
+
+    <properties>
+        <osgi.import.package>
+            *
+        </osgi.import.package>
+        <osgi.export.package>
+            org.apache.curator.x.discovery*;version="${project.version}";-noimport:=true
+        </osgi.export.package>
+    </properties>
 
     <dependencies>
         <dependency>
