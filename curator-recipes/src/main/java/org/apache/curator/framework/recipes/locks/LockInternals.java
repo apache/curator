@@ -31,7 +31,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.common.PathUtils;
+import org.apache.curator.utils.PathUtils;
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
 import java.util.Collection;

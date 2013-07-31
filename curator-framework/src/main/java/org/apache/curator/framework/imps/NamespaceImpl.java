@@ -20,7 +20,7 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.common.PathUtils;
+import org.apache.curator.utils.PathUtils;
 
 class NamespaceImpl
 {
