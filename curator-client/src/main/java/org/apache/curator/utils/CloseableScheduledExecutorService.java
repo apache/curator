@@ -38,7 +38,17 @@ public class CloseableScheduledExecutorService extends CloseableExecutorService
      */
     public CloseableScheduledExecutorService(ScheduledExecutorService scheduledExecutorService)
     {
-        super(scheduledExecutorService);
+        super(scheduledExecutorService, false);
+        this.scheduledExecutorService = scheduledExecutorService;
+    }
+
+    /**
+     * @param scheduledExecutorService
+     * @param shutdownOnClose
+     */
+    public CloseableScheduledExecutorService(ScheduledExecutorService scheduledExecutorService, boolean shutdownOnClose)
+    {
+        super(scheduledExecutorService, shutdownOnClose);
         this.scheduledExecutorService = scheduledExecutorService;
     }
 
