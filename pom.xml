@@ -494,6 +494,7 @@
                     <excludes>
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/.gitignore</exclude>
+                        <exclude>**/.idea/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
                         <exclude>**/KEYS</exclude>
@@ -534,6 +535,7 @@
                     <excludes>
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/.gitignore</exclude>
+                        <exclude>**/.idea/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
                         <exclude>**/KEYS</exclude>
