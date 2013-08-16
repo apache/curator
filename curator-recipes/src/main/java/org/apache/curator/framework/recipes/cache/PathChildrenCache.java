@@ -143,7 +143,7 @@ public class PathChildrenCache implements Closeable
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode)
     {
-        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, Executors.newSingleThreadExecutor(defaultThreadFactory));
+        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory)));
     }
 
     /**
@@ -156,7 +156,7 @@ public class PathChildrenCache implements Closeable
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode, ThreadFactory threadFactory)
     {
-        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, Executors.newSingleThreadExecutor(threadFactory));
+        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory), true));
     }
 
     /**
@@ -166,7 +166,7 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData)
     {
-        this(client, path, cacheData, false, Executors.newSingleThreadExecutor(defaultThreadFactory));
+        this(client, path, cacheData, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
     }
 
     /**
@@ -177,7 +177,7 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, ThreadFactory threadFactory)
     {
-        this(client, path, cacheData, false, Executors.newSingleThreadExecutor(threadFactory));
+        this(client, path, cacheData, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory), true));
     }
 
     /**
@@ -189,7 +189,7 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, ThreadFactory threadFactory)
     {
-        this(client, path, cacheData, dataIsCompressed, Executors.newSingleThreadExecutor(threadFactory));
+        this(client, path, cacheData, dataIsCompressed, new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory), true));
     }
 
     /**
@@ -201,11 +201,23 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final ExecutorService executorService)
     {
+        this(client, path, cacheData, dataIsCompressed, new CloseableExecutorService(executorService));
+    }
+
+    /**
+     * @param client           the client
+     * @param path             path to watch
+     * @param cacheData        if true, node contents are cached in addition to the stat
+     * @param dataIsCompressed if true, data in the path is compressed
+     * @param executorService  Closeable ExecutorService to use for the PathChildrenCache's background thread
+     */
+    public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final CloseableExecutorService executorService)
+    {
         this.client = client;
         this.path = path;
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
-        this.executorService = new CloseableExecutorService(executorService);
+        this.executorService = executorService;
         ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 

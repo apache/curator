@@ -44,6 +44,7 @@ public class CloseableExecutorService implements Closeable
     private final Logger log = LoggerFactory.getLogger(CloseableExecutorService.class);
     private final Set<Future<?>> futures = Sets.newSetFromMap(Maps.<Future<?>, Boolean>newConcurrentMap());
     private final ExecutorService executorService;
+    private final boolean shutdownOnClose;
     protected final AtomicBoolean isOpen = new AtomicBoolean(true);
 
     protected class InternalFutureTask<T> extends FutureTask<T>
@@ -68,7 +69,17 @@ public class CloseableExecutorService implements Closeable
      */
     public CloseableExecutorService(ExecutorService executorService)
     {
+       this(executorService, false);
+    }
+
+    /**
+     * @param executorService the service to decorate
+     * @param shutdownOnClose
+     */
+    public CloseableExecutorService(ExecutorService executorService, boolean shutdownOnClose)
+    {
         this.executorService = executorService;
+        this.shutdownOnClose = shutdownOnClose;
     }
 
     /**
@@ -103,6 +114,9 @@ public class CloseableExecutorService implements Closeable
             {
                 log.warn("Could not cancel " + future);
             }
+        }
+        if (shutdownOnClose) {
+            this.executorService.shutdown();
         }
     }
 
