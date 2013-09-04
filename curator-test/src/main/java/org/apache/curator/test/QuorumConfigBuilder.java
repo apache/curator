@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.test;
 
 import com.google.common.collect.ImmutableList;
@@ -53,7 +54,7 @@ public class QuorumConfigBuilder
         return buildConfig(0);
     }
 
-    public InstanceSpec     getInstanceSpec(int index)
+    public InstanceSpec getInstanceSpec(int index)
     {
         return instanceSpecs.get(index);
     }
@@ -63,15 +64,15 @@ public class QuorumConfigBuilder
         return instanceSpecs;
     }
 
-    public int  size()
+    public int size()
     {
         return instanceSpecs.size();
     }
 
     public QuorumPeerConfig buildConfig(int instanceIndex) throws Exception
     {
-        boolean       isCluster = (instanceSpecs.size() > 1);
-        InstanceSpec  spec = instanceSpecs.get(instanceIndex);
+        boolean isCluster = (instanceSpecs.size() > 1);
+        InstanceSpec spec = instanceSpecs.get(instanceIndex);
 
         if ( isCluster )
         {
@@ -83,6 +84,17 @@ public class QuorumConfigBuilder
         properties.setProperty("syncLimit", "5");
         properties.setProperty("dataDir", spec.getDataDirectory().getCanonicalPath());
         properties.setProperty("clientPort", Integer.toString(spec.getPort()));
+        int tickTime = spec.getTickTime();
+        if ( tickTime >= 0 )
+        {
+            properties.setProperty("tickTime", Integer.toString(tickTime));
+        }
+        int maxClientCnxns = spec.getMaxClientCnxns();
+        if ( maxClientCnxns >= 0 )
+        {
+            properties.setProperty("maxClientCnxns", Integer.toString(maxClientCnxns));
+        }
+
         if ( isCluster )
         {
             for ( InstanceSpec thisSpec : instanceSpecs )

@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.test;
 
 import com.google.common.io.Files;
@@ -31,8 +32,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class InstanceSpec
 {
-    private static final AtomicInteger      nextServerId = new AtomicInteger(1);
-    private static final String             localhost;
+    private static final AtomicInteger nextServerId = new AtomicInteger(1);
+    private static final String localhost;
+
     static
     {
         String address = "localhost";
@@ -45,11 +47,11 @@ public class InstanceSpec
             // we'll fall back to the default lof just looking up 'localhost'.
             for ( InetAddress a : InetAddress.getAllByName("localhost") )
             {
-              if ( !a.isLinkLocalAddress() )
-              {
-                address = a.getHostAddress();
-                break;
-              }
+                if ( !a.isLinkLocalAddress() )
+                {
+                    address = a.getHostAddress();
+                    break;
+                }
             }
         }
         catch ( UnknownHostException e )
@@ -59,16 +61,18 @@ public class InstanceSpec
         localhost = address;
     }
 
-    private final File      dataDirectory;
-    private final int       port;
-    private final int       electionPort;
-    private final int       quorumPort;
-    private final boolean   deleteDataDirectoryOnClose;
+    private final File dataDirectory;
+    private final int port;
+    private final int electionPort;
+    private final int quorumPort;
+    private final boolean deleteDataDirectoryOnClose;
     private final int serverId;
+    private final int tickTime;
+    private final int maxClientCnxns;
 
-    public static InstanceSpec      newInstanceSpec()
+    public static InstanceSpec newInstanceSpec()
     {
-        return new InstanceSpec(null, -1, -1, -1, true, -1);
+        return new InstanceSpec(null, -1, -1, -1, true, -1, -1, -1);
     }
 
     public static int getRandomPort()
@@ -100,14 +104,29 @@ public class InstanceSpec
     }
 
     /**
-     * @param dataDirectory where to store data/logs/etc.
-     * @param port the port to listen on - each server in the ensemble must use a unique port
-     * @param electionPort the electionPort to listen on - each server in the ensemble must use a unique electionPort
-     * @param quorumPort the quorumPort to listen on - each server in the ensemble must use a unique quorumPort
+     * @param dataDirectory              where to store data/logs/etc.
+     * @param port                       the port to listen on - each server in the ensemble must use a unique port
+     * @param electionPort               the electionPort to listen on - each server in the ensemble must use a unique electionPort
+     * @param quorumPort                 the quorumPort to listen on - each server in the ensemble must use a unique quorumPort
      * @param deleteDataDirectoryOnClose if true, the data directory will be deleted when {@link TestingCluster#close()} is called
-     * @param serverId the server ID for the instance
+     * @param serverId                   the server ID for the instance
      */
     public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId)
+    {
+        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, -1, -1);
+    }
+
+    /**
+     * @param dataDirectory              where to store data/logs/etc.
+     * @param port                       the port to listen on - each server in the ensemble must use a unique port
+     * @param electionPort               the electionPort to listen on - each server in the ensemble must use a unique electionPort
+     * @param quorumPort                 the quorumPort to listen on - each server in the ensemble must use a unique quorumPort
+     * @param deleteDataDirectoryOnClose if true, the data directory will be deleted when {@link TestingCluster#close()} is called
+     * @param serverId                   the server ID for the instance
+     * @param tickTime                   tickTime. Set -1 to used fault server configuration
+     * @param maxClientCnxns             max number of client connections from the same IP. Set -1 to use default server configuration
+     */
+    public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns)
     {
         this.dataDirectory = (dataDirectory != null) ? dataDirectory : Files.createTempDir();
         this.port = (port >= 0) ? port : getRandomPort();
@@ -115,6 +134,8 @@ public class InstanceSpec
         this.quorumPort = (quorumPort >= 0) ? quorumPort : getRandomPort();
         this.deleteDataDirectoryOnClose = deleteDataDirectoryOnClose;
         this.serverId = (serverId >= 0) ? serverId : nextServerId.getAndIncrement();
+        this.tickTime = (tickTime > 0 ? tickTime : -1); // -1 to set default value
+        this.maxClientCnxns = (maxClientCnxns >= 0 ? maxClientCnxns : -1); // -1 to set default value
     }
 
     public int getServerId()
@@ -147,6 +168,16 @@ public class InstanceSpec
         return localhost + ":" + port;
     }
 
+    public int getTickTime()
+    {
+        return tickTime;
+    }
+
+    public int getMaxClientCnxns()
+    {
+        return maxClientCnxns;
+    }
+
     public boolean deleteDataDirectoryOnClose()
     {
         return deleteDataDirectoryOnClose;
@@ -162,7 +193,9 @@ public class InstanceSpec
             ", quorumPort=" + quorumPort +
             ", deleteDataDirectoryOnClose=" + deleteDataDirectoryOnClose +
             ", serverId=" + serverId +
-            '}';
+            ", tickTime=" + tickTime +
+            ", maxClientCnxns=" + maxClientCnxns +
+            "} " + super.toString();
     }
 
     @Override
