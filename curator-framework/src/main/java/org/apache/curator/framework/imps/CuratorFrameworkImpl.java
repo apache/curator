@@ -485,6 +485,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     {
                         operationAndData.getErrorCallback().retriesExhausted(operationAndData);
                     }
+                    
+                    if ( operationAndData.getCallback() != null )
+                    {
+                        sendToBackgroundCallback(operationAndData, event);
+                    }
 
                     KeeperException.Code    code = KeeperException.Code.get(event.getResultCode());
                     Exception               e = null;

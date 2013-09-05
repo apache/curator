@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
@@ -27,31 +28,33 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
+import org.apache.zookeeper.KeeperException.Code;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TestFrameworkBackground extends BaseClassForTests
 {
     @Test
-    public void         testRetries() throws Exception
+    public void testRetries() throws Exception
     {
         final int SLEEP = 1000;
         final int TIMES = 5;
 
-        Timing                  timing = new Timing();
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(TIMES, SLEEP));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(TIMES, SLEEP));
         try
         {
             client.start();
             client.getZookeeperClient().blockUntilConnectedOrTimedOut();
 
-            final CountDownLatch    latch = new CountDownLatch(TIMES);
-            final List<Long>        times = Lists.newArrayList();
-            final AtomicLong        start = new AtomicLong(System.currentTimeMillis());
+            final CountDownLatch latch = new CountDownLatch(TIMES);
+            final List<Long> times = Lists.newArrayList();
+            final AtomicLong start = new AtomicLong(System.currentTimeMillis());
             ((CuratorFrameworkImpl)client).debugListener = new CuratorFrameworkImpl.DebugBackgroundListener()
             {
                 @Override
@@ -84,17 +87,17 @@ public class TestFrameworkBackground extends BaseClassForTests
     }
 
     @Test
-    public void         testBasic() throws Exception
+    public void testBasic() throws Exception
     {
-        Timing              timing = new Timing();
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
             client.start();
 
-            final CountDownLatch    latch = new CountDownLatch(3);
-            final List<String>      paths = Lists.newArrayList();
-            BackgroundCallback      callback = new BackgroundCallback()
+            final CountDownLatch latch = new CountDownLatch(3);
+            final List<String> paths = Lists.newArrayList();
+            BackgroundCallback callback = new BackgroundCallback()
             {
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
@@ -115,5 +118,48 @@ public class TestFrameworkBackground extends BaseClassForTests
         {
             Closeables.closeQuietly(client);
         }
+    }
+
+    /**
+     * Attempt a background operation while Zookeeper server is down.
+     * Return code must be {@link Code#CONNECTIONLOSS}
+     */
+    @Test
+    public void testCuratorCallbackOnError() throws Exception
+    {
+
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .sessionTimeoutMs(60000)
+            .retryPolicy(new RetryNTimes(1, 1000)).build();
+        final CountDownLatch latch = new CountDownLatch(1);
+        try
+        {
+            client.start();
+            BackgroundCallback curatorCallback = new BackgroundCallback()
+            {
+
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event)
+                    throws Exception
+                {
+                    if ( event.getResultCode() == Code.CONNECTIONLOSS.intValue() )
+                    {
+                        latch.countDown();
+                    }
+                }
+            };
+            // Stop the Zookeeper server
+            server.stop();
+            // Attempt to retrieve children list
+            client.getChildren().inBackground(curatorCallback).forPath("/");
+            // Check if the callback has been called with a correct return code
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS), "Callback has not been called by curator !");
+        }
+        finally
+        {
+            client.close();
+        }
+
     }
 }
