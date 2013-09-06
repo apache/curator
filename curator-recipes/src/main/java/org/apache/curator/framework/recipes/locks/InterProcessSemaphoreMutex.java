@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class InterProcessSemaphoreMutex implements InterProcessLock
 {
-    private final InterProcessSemaphore semaphore;
+    private final InterProcessSemaphoreV2 semaphore;
     private volatile Lease lease;
 
     /**
@@ -37,7 +37,7 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
      */
     public InterProcessSemaphoreMutex(CuratorFramework client, String path)
     {
-        this.semaphore = new InterProcessSemaphore(client, path, 1);
+        this.semaphore = new InterProcessSemaphoreV2(client, path, 1);
     }
 
     @Override
