@@ -22,6 +22,7 @@ package org.apache.curator.framework.recipes.leader;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.utils.CloseableExecutorService;
@@ -100,10 +101,11 @@ public class LeaderSelector implements Closeable
      * @param listener      listener
      * @deprecated This constructor was poorly thought out. Custom executor is useless. Use this version instead: {@link #LeaderSelector(CuratorFramework, String, ExecutorService, LeaderSelectorListener)}
      */
+    @SuppressWarnings("UnusedParameters")
     @Deprecated
     public LeaderSelector(CuratorFramework client, String leaderPath, ThreadFactory threadFactory, Executor executor, LeaderSelectorListener listener)
     {
-        this(client, leaderPath, wrapExecutor(threadFactory, executor), listener);
+        this(client, leaderPath, wrapExecutor(executor), listener);
     }
 
     /**
@@ -415,45 +417,55 @@ public class LeaderSelector implements Closeable
     }
 
     // temporary wrapper for deprecated constructor
-    private static ExecutorService wrapExecutor(ThreadFactory threadFactory, final Executor executor)
+    private static ExecutorService wrapExecutor(final Executor executor)
     {
-        final ExecutorService service = Executors.newSingleThreadExecutor(threadFactory);
         return new AbstractExecutorService()
         {
+            private volatile boolean isShutdown = false;
+            private volatile boolean isTerminated = false;
+
             @Override
             public void shutdown()
             {
-                service.shutdown();
+                isShutdown = true;
             }
 
             @Override
             public List<Runnable> shutdownNow()
             {
-                return service.shutdownNow();
+                return Lists.newArrayList();
             }
 
             @Override
             public boolean isShutdown()
             {
-                return service.isShutdown();
+                return isShutdown;
             }
 
             @Override
             public boolean isTerminated()
             {
-                return service.isTerminated();
+                return isTerminated;
             }
 
             @Override
             public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException
             {
-                return service.awaitTermination(timeout, unit);
+                throw new UnsupportedOperationException();
             }
 
             @Override
             public void execute(Runnable command)
             {
-                executor.execute(command);
+                try
+                {
+                    executor.execute(command);
+                }
+                finally
+                {
+                    isShutdown = true;
+                    isTerminated = true;
+                }
             }
         };
     }
