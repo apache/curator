@@ -188,7 +188,7 @@ class ConnectionState implements Watcher, Closeable
                 }
                 else
                 {
-                    KeeperException.ConnectionLossException connectionLossException = new KeeperException.ConnectionLossException();
+                    KeeperException.ConnectionLossException connectionLossException = new CuratorConnectionLossException();
                     if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                     {
                         log.error(String.format("Connection timed out for connection string (%s) and timeout (%d) / elapsed (%d)", zooKeeper.getConnectionString(), connectionTimeoutMs, elapsed), connectionLossException);

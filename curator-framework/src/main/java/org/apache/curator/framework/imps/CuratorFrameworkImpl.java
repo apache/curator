@@ -20,6 +20,7 @@ package org.apache.curator.framework.imps;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
@@ -420,7 +421,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
-        performBackgroundOperation(new OperationAndData<String>(operation, path, null, null));
+        performBackgroundOperation(new OperationAndData<String>(operation, path, null, null, context));
     }
 
     @Override
@@ -460,7 +461,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return compressionProvider;
     }
 
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
     {
         boolean     isInitialExecution = (event == null);
@@ -475,37 +475,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             if ( RetryLoop.shouldRetry(event.getResultCode()) )
             {
-                if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
-                {
-                    doQueueOperation = true;
-                }
-                else
-                {
-                    if ( operationAndData.getErrorCallback() != null )
-                    {
-                        operationAndData.getErrorCallback().retriesExhausted(operationAndData);
-                    }
-                    
-                    if ( operationAndData.getCallback() != null )
-                    {
-                        sendToBackgroundCallback(operationAndData, event);
-                    }
-
-                    KeeperException.Code    code = KeeperException.Code.get(event.getResultCode());
-                    Exception               e = null;
-                    try
-                    {
-                        e = (code != null) ? KeeperException.create(code) : null;
-                    }
-                    catch ( Throwable ignore )
-                    {
-                    }
-                    if ( e == null )
-                    {
-                        e = new Exception("Unknown result code: " + event.getResultCode());
-                    }
-                    logError("Background operation retry gave up", e);
-                }
+                doQueueOperation = checkBackgroundRetry(operationAndData, event);
                 break;
             }
 
@@ -586,6 +556,44 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return namespaceWatcherMap;
     }
 
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
+    private <DATA_TYPE> boolean checkBackgroundRetry(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
+    {
+        boolean doRetry = false;
+        if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
+        {
+            doRetry = true;
+        }
+        else
+        {
+            if ( operationAndData.getErrorCallback() != null )
+            {
+                operationAndData.getErrorCallback().retriesExhausted(operationAndData);
+            }
+
+            if ( operationAndData.getCallback() != null )
+            {
+                sendToBackgroundCallback(operationAndData, event);
+            }
+
+            KeeperException.Code    code = KeeperException.Code.get(event.getResultCode());
+            Exception               e = null;
+            try
+            {
+                e = (code != null) ? KeeperException.create(code) : null;
+            }
+            catch ( Throwable ignore )
+            {
+            }
+            if ( e == null )
+            {
+                e = new Exception("Unknown result code: " + event.getResultCode());
+            }
+            logError("Background operation retry gave up", e);
+        }
+        return doRetry;
+    }
+
     private <DATA_TYPE> void sendToBackgroundCallback(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
     {
         try
@@ -659,13 +667,33 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void performBackgroundOperation(OperationAndData<?> operationAndData)
     {
-        try
+        boolean isDone = false;
+        while ( !isDone )
         {
-            operationAndData.callPerformBackgroundOperation();
-        }
-        catch ( Throwable e )
-        {
-            handleBackgroundOperationException(operationAndData, e);
+            try
+            {
+                operationAndData.callPerformBackgroundOperation();
+                isDone = true;
+            }
+            catch ( Throwable e )
+            {
+                /**
+                 * Fix edge case reported as CURATOR-52. ConnectionState.checkTimeouts() throws KeeperException.ConnectionLossException
+                 * when the initial (or previously failed) connection cannot be re-established. This needs to be run through the retry policy
+                 * and callbacks need to get invoked, etc.
+                 */
+                if ( e instanceof CuratorConnectionLossException )
+                {
+                    WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
+                    CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null);
+                    if ( checkBackgroundRetry(operationAndData, event) )
+                    {
+                        continue;
+                    }
+                }
+                handleBackgroundOperationException(operationAndData, e);
+                isDone = true;
+            }
         }
     }
 
