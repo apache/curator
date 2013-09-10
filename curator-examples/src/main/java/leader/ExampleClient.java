@@ -19,6 +19,7 @@
 package leader;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.state.ConnectionState;
@@ -35,8 +36,6 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
     private final String name;
     private final LeaderSelector leaderSelector;
     private final AtomicInteger leaderCount = new AtomicInteger();
-
-    private volatile Thread     ourThread = null;
 
     public ExampleClient(CuratorFramework client, String path, String name)
     {
@@ -71,7 +70,6 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
 
         final int         waitSeconds = (int)(5 * Math.random()) + 1;
 
-        ourThread = Thread.currentThread();
         System.out.println(name + " is now the leader. Waiting " + waitSeconds + " seconds...");
         System.out.println(name + " has been leader " + leaderCount.getAndIncrement() + " time(s) before.");
         try
@@ -85,7 +83,6 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
         }
         finally
         {
-            ourThread = null;
             System.out.println(name + " relinquishing leadership.\n");
         }
     }
@@ -97,10 +94,7 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
 
         if ( (newState == ConnectionState.LOST) || (newState == ConnectionState.SUSPENDED) )
         {
-            if ( ourThread != null )
-            {
-                ourThread.interrupt();
-            }
+            throw new CancelLeadershipException();
         }
     }
 }

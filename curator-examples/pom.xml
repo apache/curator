@@ -27,9 +27,7 @@
         <version>2.2.1-incubating-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.curator</groupId>
     <artifactId>curator-examples</artifactId>
-    <version>2.2.1-incubating-SNAPSHOT</version>
 
     <name>Curator Examples</name>
     <description>Example usages of various Curator features.</description>

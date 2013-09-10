@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
@@ -36,9 +37,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -67,9 +70,14 @@ public class LeaderSelector implements Closeable
     private final InterProcessMutex mutex;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean autoRequeue = new AtomicBoolean(false);
+    private final AtomicReference<Future<?>> ourTask = new AtomicReference<Future<?>>(null);
 
     private volatile boolean hasLeadership;
     private volatile String id = "";
+
+    @VisibleForTesting
+    volatile CountDownLatch debugLeadershipLatch = null;
+    volatile CountDownLatch debugLeadershipWaitLatch = null;
 
     private enum State
     {
@@ -121,7 +129,7 @@ public class LeaderSelector implements Closeable
         Preconditions.checkNotNull(listener, "listener cannot be null");
 
         this.client = client;
-        this.listener = listener;
+        this.listener = new WrappedListener(this, listener);
         hasLeadership = false;
 
         this.executorService = new CloseableExecutorService(executorService);
@@ -212,18 +220,19 @@ public class LeaderSelector implements Closeable
         if ( !isQueued )
         {
             isQueued = true;
-            executorService.submit
-                (
-                    new Callable<Object>()
+            Future<Void> task = executorService.submit
+            (
+                new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
                     {
-                        @Override
-                        public Object call() throws Exception
-                        {
-                            doWorkLoop();
-                            return null;
-                        }
+                        doWorkLoop();
+                        return null;
                     }
-                );
+                }
+            );
+            ourTask.set(task);
 
             return true;
         }
@@ -233,12 +242,13 @@ public class LeaderSelector implements Closeable
     /**
      * Shutdown this selector and remove yourself from the leadership group
      */
-    public void close()
+    public synchronized void close()
     {
         Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
 
         client.getConnectionStateListenable().removeListener(listener);
         executorService.close();
+        ourTask.set(null);
     }
 
     /**
@@ -325,6 +335,18 @@ public class LeaderSelector implements Closeable
         return hasLeadership;
     }
 
+    /**
+     * Attempt to cancel and interrupt the current leadership if this instance has leadership
+     */
+    public synchronized void interruptLeadership()
+    {
+        Future<?> task = ourTask.get();
+        if ( task != null )
+        {
+            task.cancel(true);
+        }
+    }
+
     private static Participant participantForPath(CuratorFramework client, String path, boolean markAsLeader) throws Exception
     {
         byte[] bytes = client.getData().forPath(path);
@@ -343,6 +365,14 @@ public class LeaderSelector implements Closeable
             hasLeadership = true;
             try
             {
+                if ( debugLeadershipLatch != null )
+                {
+                    debugLeadershipLatch.countDown();
+                }
+                if ( debugLeadershipWaitLatch != null )
+                {
+                    debugLeadershipWaitLatch.await();
+                }
                 listener.takeLeadership(client);
             }
             catch ( InterruptedException e )
@@ -400,7 +430,11 @@ public class LeaderSelector implements Closeable
             }
             catch ( InterruptedException ignore )
             {
-                Thread.currentThread().interrupt();
+                Future<?> task = ourTask.get();
+                if ( (task == null) || !task.isCancelled() )    // if interruptLeadership() was called, not re-set the interrupt state of the thread
+                {
+                    Thread.currentThread().interrupt();
+                }
                 break;
             }
             if ( (exception != null) && !autoRequeue.get() )   // autoRequeue should ignore connection loss or session expired and just keep trying
@@ -468,5 +502,36 @@ public class LeaderSelector implements Closeable
                 }
             }
         };
+    }
+
+    private static class WrappedListener implements LeaderSelectorListener
+    {
+        private final LeaderSelector leaderSelector;
+        private final LeaderSelectorListener listener;
+
+        public WrappedListener(LeaderSelector leaderSelector, LeaderSelectorListener listener)
+        {
+            this.leaderSelector = leaderSelector;
+            this.listener = listener;
+        }
+
+        @Override
+        public void takeLeadership(CuratorFramework client) throws Exception
+        {
+            listener.takeLeadership(client);
+        }
+
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            try
+            {
+                listener.stateChanged(client, newState);
+            }
+            catch ( CancelLeadershipException dummy )
+            {
+                leaderSelector.interruptLeadership();
+            }
+        }
     }
 }

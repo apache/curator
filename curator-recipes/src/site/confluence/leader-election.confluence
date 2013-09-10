@@ -8,6 +8,7 @@ NOTE: Curator has two leader election recipes. Which one to use depends on your 
 h2. Participating Classes
 * LeaderSelector
 * LeaderSelectorListener
+* CancelLeadershipException
 
 h2. Usage
 h3. Creating a LeaderSelector
@@ -49,6 +50,10 @@ leaderSelector.close();
 {code}
 
 h2. Error Handling
-The {{LeaderSelectorListener}} class extends {{ConnectionStateListener}}. When the LeaderSelector is started, it adds the listener to the Curator instance. Users of the {{LeaderSelector}} must pay attention to any connection state changes. If an instance becomes the leader, it should respond to notification of being SUSPENDED or LOST.
+The {{LeaderSelectorListener}} class extends {{ConnectionStateListener}}. When the LeaderSelector is started, it adds the listener to the Curator instance.
+Users of the {{LeaderSelector}} must pay attention to any connection state changes. If an instance becomes the leader, it should respond to notification of
+being SUSPENDED or LOST. If the SUSPENDED state is reported, the instance must assume that it might no longer be the leader until it receives a RECONNECTED state. If the LOST
+state is reported, the instance is no longer the leader and its {{takeLeadership}} method should exit.
 
-If the SUSPENDED state is reported, the instance must assume that it might no longer be the leader until it receives a RECONNECTED state. If the LOST state is reported, the instance is no longer the leader and its {{takeLeadership}} method should exit.
+IMPORTANT: The recommended action for receiving SUSPENDED or LOST is to throw {{CancelLeadershipException}}. This will cause the LeaderSelector instance to attempt
+to interrupt and cancel the thread that is executing the {{takeLeadership}} method.
