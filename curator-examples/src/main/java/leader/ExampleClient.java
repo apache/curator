@@ -19,19 +19,18 @@
 package leader;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
+import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
-import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
-import org.apache.curator.framework.state.ConnectionState;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * An example leader selector client
+ * An example leader selector client. Note that {@link LeaderSelectorListenerAdapter} which
+ * has the recommended handling for connection state issues
  */
-public class ExampleClient implements Closeable, LeaderSelectorListener
+public class ExampleClient extends LeaderSelectorListenerAdapter implements Closeable
 {
     private final String name;
     private final LeaderSelector leaderSelector;
@@ -84,17 +83,6 @@ public class ExampleClient implements Closeable, LeaderSelectorListener
         finally
         {
             System.out.println(name + " relinquishing leadership.\n");
-        }
-    }
-
-    @Override
-    public void stateChanged(CuratorFramework client, ConnectionState newState)
-    {
-        // you MUST handle connection state changes. This WILL happen in production code.
-
-        if ( (newState == ConnectionState.LOST) || (newState == ConnectionState.SUSPENDED) )
-        {
-            throw new CancelLeadershipException();
         }
     }
 }

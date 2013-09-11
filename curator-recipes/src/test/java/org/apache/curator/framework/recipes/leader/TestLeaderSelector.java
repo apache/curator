@@ -46,6 +46,43 @@ public class TestLeaderSelector extends BaseClassForTests
     private static final String PATH_NAME = "/one/two/me";
 
     @Test
+    public void testInterruptLeadershipWithRequeue() throws Exception
+    {
+        Timing timing = new Timing();
+        LeaderSelector selector = null;
+        CuratorFramework client = null;
+        try
+        {
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            client.start();
+
+            final Semaphore semaphore = new Semaphore(0);
+            LeaderSelectorListener listener = new LeaderSelectorListenerAdapter()
+            {
+                @Override
+                public void takeLeadership(CuratorFramework client) throws Exception
+                {
+                    semaphore.release();
+                    Thread.currentThread().join();
+                }
+            };
+            selector = new LeaderSelector(client, "/leader", listener);
+            selector.autoRequeue();
+            selector.start();
+
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            selector.interruptLeadership();
+
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+        }
+        finally
+        {
+            Closeables.closeQuietly(selector);
+            Closeables.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testInterruptLeadership() throws Exception
     {
         LeaderSelector selector = null;

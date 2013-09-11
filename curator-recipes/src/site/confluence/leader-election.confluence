@@ -8,6 +8,7 @@ NOTE: Curator has two leader election recipes. Which one to use depends on your 
 h2. Participating Classes
 * LeaderSelector
 * LeaderSelectorListener
+* LeaderSelectorListenerAdapter
 * CancelLeadershipException
 
 h2. Usage
@@ -56,4 +57,5 @@ being SUSPENDED or LOST. If the SUSPENDED state is reported, the instance must a
 state is reported, the instance is no longer the leader and its {{takeLeadership}} method should exit.
 
 IMPORTANT: The recommended action for receiving SUSPENDED or LOST is to throw {{CancelLeadershipException}}. This will cause the LeaderSelector instance to attempt
-to interrupt and cancel the thread that is executing the {{takeLeadership}} method.
+to interrupt and cancel the thread that is executing the {{takeLeadership}} method. Because this is so important, you should consider extending {{LeaderSelectorListenerAdapter}}.
+{{LeaderSelectorListenerAdapter}} has the recommended handling already written for you.
