@@ -108,6 +108,15 @@ public class EnsurePath
         this.helper = (helper != null) ? helper : new AtomicReference<Helper>(new InitialHelper());
     }
 
+    /**
+     * Returns the path being Ensured
+     *
+     * @return the path being ensured
+     */
+    public String getPath() {
+        return this.path;
+    }
+
     private class InitialHelper implements Helper
     {
         private boolean         isSet = false;  // guarded by synchronization
