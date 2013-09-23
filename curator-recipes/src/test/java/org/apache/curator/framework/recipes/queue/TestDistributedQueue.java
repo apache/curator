@@ -37,6 +37,7 @@ import org.apache.zookeeper.CreateMode;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -55,6 +56,67 @@ public class TestDistributedQueue extends BaseClassForTests
     private static final String     QUEUE_PATH = "/a/queue";
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
+
+    @Test
+    public void testRetryAfterFailure_Curator56() throws Exception
+    {
+        /*
+            https://issues.apache.org/jira/browse/CURATOR-56
+
+            This tests against ever growing node name bug
+         */
+
+        DistributedQueue<TestQueueItem> queue = null;
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final int RETRY_COUNT = 1;
+            final CountDownLatch retryCounter = new CountDownLatch(RETRY_COUNT + 1);
+            final List<String> names = new ArrayList<String>();
+
+            QueueConsumer<TestQueueItem> consumer = new QueueConsumer<TestQueueItem>()
+            {
+                @Override
+                public void consumeMessage(TestQueueItem messsage) throws Exception
+                {
+                    List<String> queueItems = client.getChildren().forPath(QUEUE_PATH);
+                    names.add(queueItems.get(0));
+
+                    if (retryCounter.getCount() > 1)
+                    {
+                        retryCounter.countDown();
+                        throw new Exception("Something went wrong");
+                    }
+                    else
+                    {
+                        retryCounter.countDown();
+                    }
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+
+            queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH)
+                .lockPath("/lock")
+                .buildQueue();
+            queue.start();
+            queue.put(new TestQueueItem("test"));
+
+            retryCounter.await(10, TimeUnit.SECONDS);
+            Assert.assertEquals(retryCounter.getCount(), 0, "Queue item was not consumed. Retry counter is " + retryCounter.getCount());
+            Assert.assertEquals(names.size(), 2);
+            Assert.assertEquals(names.get(0).length(), names.get(1).length());
+        }
+        finally
+        {
+            Closeables.closeQuietly(queue);
+            Closeables.closeQuietly(client);
+        }
+    }
 
     @Test
     public void     testCustomExecutor() throws Exception
