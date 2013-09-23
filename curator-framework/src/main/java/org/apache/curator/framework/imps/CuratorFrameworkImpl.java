@@ -667,32 +667,33 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void performBackgroundOperation(OperationAndData<?> operationAndData)
     {
-        boolean isDone = false;
-        while ( !isDone )
+        try
         {
-            try
+            operationAndData.callPerformBackgroundOperation();
+        }
+        catch ( Throwable e )
+        {
+            /**
+             * Fix edge case reported as CURATOR-52. ConnectionState.checkTimeouts() throws KeeperException.ConnectionLossException
+             * when the initial (or previously failed) connection cannot be re-established. This needs to be run through the retry policy
+             * and callbacks need to get invoked, etc.
+             */
+            if ( e instanceof CuratorConnectionLossException )
             {
-                operationAndData.callPerformBackgroundOperation();
-                isDone = true;
-            }
-            catch ( Throwable e )
-            {
-                /**
-                 * Fix edge case reported as CURATOR-52. ConnectionState.checkTimeouts() throws KeeperException.ConnectionLossException
-                 * when the initial (or previously failed) connection cannot be re-established. This needs to be run through the retry policy
-                 * and callbacks need to get invoked, etc.
-                 */
-                if ( e instanceof CuratorConnectionLossException )
+                WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
+                CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null);
+                if ( checkBackgroundRetry(operationAndData, event) )
                 {
-                    WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
-                    CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null);
-                    if ( checkBackgroundRetry(operationAndData, event) )
-                    {
-                        continue;
-                    }
+                    queueOperation(operationAndData);
                 }
+                else
+                {
+                    handleBackgroundOperationException(operationAndData, e);
+                }
+            }
+            else
+            {
                 handleBackgroundOperationException(operationAndData, e);
-                isDone = true;
             }
         }
     }
