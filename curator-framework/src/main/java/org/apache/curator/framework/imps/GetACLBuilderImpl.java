@@ -119,7 +119,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>
         List<ACL>       result = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext()), null);
         }
         else
         {

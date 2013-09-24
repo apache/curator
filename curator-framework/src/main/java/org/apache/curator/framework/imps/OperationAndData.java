@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -28,28 +29,35 @@ import java.util.concurrent.atomic.AtomicLong;
 
 class OperationAndData<T> implements Delayed, RetrySleeper
 {
-    private static final AtomicLong     nextOrdinal = new AtomicLong();
+    private static final AtomicLong nextOrdinal = new AtomicLong();
 
-    private final BackgroundOperation<T>    operation;
-    private final T                         data;
-    private final BackgroundCallback        callback;
-    private final long                      startTimeMs = System.currentTimeMillis();
-    private final ErrorCallback<T>          errorCallback;
-    private final AtomicInteger             retryCount = new AtomicInteger(0);
-    private final AtomicLong                sleepUntilTimeMs = new AtomicLong(0);
-    private final long                      ordinal = nextOrdinal.getAndIncrement();
+    private final BackgroundOperation<T> operation;
+    private final T data;
+    private final BackgroundCallback callback;
+    private final long startTimeMs = System.currentTimeMillis();
+    private final ErrorCallback<T> errorCallback;
+    private final AtomicInteger retryCount = new AtomicInteger(0);
+    private final AtomicLong sleepUntilTimeMs = new AtomicLong(0);
+    private final long ordinal = nextOrdinal.getAndIncrement();
+    private final Object context;
 
     interface ErrorCallback<T>
     {
         void retriesExhausted(OperationAndData<T> operationAndData);
     }
 
-    OperationAndData(BackgroundOperation<T> operation, T data, BackgroundCallback callback, ErrorCallback<T> errorCallback)
+    OperationAndData(BackgroundOperation<T> operation, T data, BackgroundCallback callback, ErrorCallback<T> errorCallback, Object context)
     {
         this.operation = operation;
         this.data = data;
         this.callback = callback;
         this.errorCallback = errorCallback;
+        this.context = context;
+    }
+
+    Object getContext()
+    {
+        return context;
     }
 
     void callPerformBackgroundOperation() throws Exception
@@ -108,7 +116,7 @@ class OperationAndData<T> implements Delayed, RetrySleeper
             return 0;
         }
 
-        long        diff = getDelay(TimeUnit.MILLISECONDS) - o.getDelay(TimeUnit.MILLISECONDS);
+        long diff = getDelay(TimeUnit.MILLISECONDS) - o.getDelay(TimeUnit.MILLISECONDS);
         if ( diff == 0 )
         {
             if ( o instanceof OperationAndData )

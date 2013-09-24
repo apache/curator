@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Queues;
@@ -52,16 +53,45 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestFrameworkEdges extends BaseClassForTests
 {
     @Test
-    public void     testReconnectAfterLoss() throws Exception
+    public void connectionLossWithBackgroundTest() throws Exception
     {
-        Timing                          timing = new Timing();
-        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryOneTime(1));
+        try
+        {
+            final CountDownLatch latch = new CountDownLatch(1);
+            client.start();
+            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
+            server.close();
+            client.getChildren().inBackground
+            (
+                new BackgroundCallback()
+                {
+                    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                    {
+                        latch.countDown();
+                    }
+                }
+            ).forPath("/");
+            Assert.assertTrue(timing.awaitLatch(latch));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void testReconnectAfterLoss() throws Exception
+    {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
             client.start();
 
-            final CountDownLatch            lostLatch = new CountDownLatch(1);
-            ConnectionStateListener         listener = new ConnectionStateListener()
+            final CountDownLatch lostLatch = new CountDownLatch(1);
+            ConnectionStateListener listener = new ConnectionStateListener()
             {
                 @Override
                 public void stateChanged(CuratorFramework client, ConnectionState newState)
@@ -100,10 +130,10 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void     testGetAclNoStat() throws Exception
+    public void testGetAclNoStat() throws Exception
     {
 
-        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -123,17 +153,17 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void     testMissedResponseOnBackgroundESCreate() throws Exception
+    public void testMissedResponseOnBackgroundESCreate() throws Exception
     {
-        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
         try
         {
-            CreateBuilderImpl               createBuilder = (CreateBuilderImpl)client.create();
+            CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.failNextCreateForTesting = true;
 
-            final BlockingQueue<String>     queue = Queues.newArrayBlockingQueue(1);
-            BackgroundCallback              callback = new BackgroundCallback()
+            final BlockingQueue<String> queue = Queues.newArrayBlockingQueue(1);
+            BackgroundCallback callback = new BackgroundCallback()
             {
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
@@ -142,7 +172,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             createBuilder.withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath("/");
-            String          ourPath = queue.poll(10, TimeUnit.SECONDS);
+            String ourPath = queue.poll(10, TimeUnit.SECONDS);
             Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
             Assert.assertFalse(createBuilder.failNextCreateForTesting);
         }
@@ -153,15 +183,15 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void     testMissedResponseOnESCreate() throws Exception
+    public void testMissedResponseOnESCreate() throws Exception
     {
-        CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
         try
         {
-            CreateBuilderImpl               createBuilder = (CreateBuilderImpl)client.create();
+            CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.failNextCreateForTesting = true;
-            String                          ourPath = createBuilder.withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/");
+            String ourPath = createBuilder.withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/");
             Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
             Assert.assertFalse(createBuilder.failNextCreateForTesting);
         }
@@ -172,7 +202,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void     testSessionKilled() throws Exception
+    public void testSessionKilled() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
@@ -180,8 +210,8 @@ public class TestFrameworkEdges extends BaseClassForTests
         {
             client.create().forPath("/sessionTest");
 
-            final AtomicBoolean     sessionDied = new AtomicBoolean(false);
-            Watcher         watcher = new Watcher()
+            final AtomicBoolean sessionDied = new AtomicBoolean(false);
+            Watcher watcher = new Watcher()
             {
                 @Override
                 public void process(WatchedEvent event)
@@ -204,35 +234,35 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void         testNestedCalls() throws Exception
+    public void testNestedCalls() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
         try
         {
             client.getCuratorListenable().addListener
-            (
-                new CuratorListener()
-                {
-                    @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                (
+                    new CuratorListener()
                     {
-                        if ( event.getType() == CuratorEventType.EXISTS )
+                        @Override
+                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
                         {
-                            Stat    stat = client.checkExists().forPath("/yo/yo/yo");
-                            Assert.assertNull(stat);
+                            if ( event.getType() == CuratorEventType.EXISTS )
+                            {
+                                Stat stat = client.checkExists().forPath("/yo/yo/yo");
+                                Assert.assertNull(stat);
 
-                            client.create().inBackground(event.getContext()).forPath("/what");
-                        }
-                        else if ( event.getType() == CuratorEventType.CREATE )
-                        {
-                            ((CountDownLatch)event.getContext()).countDown();
+                                client.create().inBackground(event.getContext()).forPath("/what");
+                            }
+                            else if ( event.getType() == CuratorEventType.CREATE )
+                            {
+                                ((CountDownLatch)event.getContext()).countDown();
+                            }
                         }
                     }
-                }
-            );
+                );
 
-            CountDownLatch        latch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(1);
             client.checkExists().inBackground(latch).forPath("/hey");
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
@@ -243,28 +273,28 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void         testBackgroundFailure() throws Exception
+    public void testBackgroundFailure() throws Exception
     {
-        Timing              timing = new Timing();
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
-            final CountDownLatch        latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(1);
             client.getConnectionStateListenable().addListener
-            (
-                new ConnectionStateListener()
-                {
-                    @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                (
+                    new ConnectionStateListener()
                     {
-                        if ( newState == ConnectionState.LOST )
+                        @Override
+                        public void stateChanged(CuratorFramework client, ConnectionState newState)
                         {
-                            latch.countDown();
+                            if ( newState == ConnectionState.LOST )
+                            {
+                                latch.countDown();
+                            }
                         }
                     }
-                }
-            );
+                );
 
             client.checkExists().forPath("/hey");
             client.checkExists().inBackground().forPath("/hey");
@@ -281,7 +311,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void         testFailure() throws Exception
+    public void testFailure() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(1));
         client.start();
@@ -306,40 +336,40 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void         testRetry() throws Exception
+    public void testRetry() throws Exception
     {
-        final int       MAX_RETRIES = 3;
-        final int       serverPort = server.getPort();
+        final int MAX_RETRIES = 3;
+        final int serverPort = server.getPort();
 
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 1000, 1000, new RetryOneTime(10));
         client.start();
         try
         {
-            final AtomicInteger     retries = new AtomicInteger(0);
-            final Semaphore         semaphore = new Semaphore(0);
+            final AtomicInteger retries = new AtomicInteger(0);
+            final Semaphore semaphore = new Semaphore(0);
             client.getZookeeperClient().setRetryPolicy
-            (
-                new RetryPolicy()
-                {
-                    @Override
-                    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
+                (
+                    new RetryPolicy()
                     {
-                        semaphore.release();
-                        if ( retries.incrementAndGet() == MAX_RETRIES )
+                        @Override
+                        public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
                         {
-                            try
+                            semaphore.release();
+                            if ( retries.incrementAndGet() == MAX_RETRIES )
                             {
-                                server = new TestingServer(serverPort);
+                                try
+                                {
+                                    server = new TestingServer(serverPort);
+                                }
+                                catch ( Exception e )
+                                {
+                                    throw new Error(e);
+                                }
                             }
-                            catch ( Exception e )
-                            {
-                                throw new Error(e);
-                            }
+                            return true;
                         }
-                        return true;
                     }
-                }
-            );
+                );
 
             server.stop();
 
@@ -367,7 +397,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void         testNotStarted() throws Exception
+    public void testNotStarted() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         try
@@ -386,7 +416,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void         testStopped() throws Exception
+    public void testStopped() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         try

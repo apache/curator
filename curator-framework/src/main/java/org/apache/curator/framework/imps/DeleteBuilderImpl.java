@@ -170,7 +170,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                     }
                 };
             }
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), errorCallback), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), errorCallback, backgrounding.getContext()), null);
         }
         else
         {

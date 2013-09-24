@@ -103,7 +103,7 @@ public class SyncBuilderImpl implements SyncBuilder, BackgroundOperation<String>
     @Override
     public Void forPath(String path) throws Exception
     {
-        OperationAndData<String> operationAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null);
+        OperationAndData<String> operationAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext());
         client.processBackgroundOperation(operationAndData, null);
         return null;
     }
