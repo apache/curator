@@ -164,7 +164,7 @@ public class InterProcessSemaphoreV2
      */
     public Collection<String> getParticipantNodes() throws Exception
     {
-        return client.getChildren().forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
+        return client.getChildren().forPath(leasesPath);
     }
 
     /**

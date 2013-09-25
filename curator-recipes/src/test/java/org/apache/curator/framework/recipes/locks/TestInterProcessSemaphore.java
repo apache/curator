@@ -491,4 +491,27 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             client.close();
         }
     }
+
+    @Test
+    public void testGetParticipantNodes() throws Exception
+    {
+        final int LEASES = 3;
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", LEASES);
+            for ( int i = 0; i < LEASES; ++i )
+            {
+                semaphore.acquire();
+            }
+
+            Assert.assertEquals(semaphore.getParticipantNodes().size(), LEASES);
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
 }
