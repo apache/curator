@@ -33,12 +33,18 @@ public class DefaultTracerDriver implements TracerDriver
     @Override
     public void addTrace(String name, long time, TimeUnit unit)
     {
-        log.trace("Trace: " + TimeUnit.MILLISECONDS.convert(time, unit) + " ms");
+        if ( log.isTraceEnabled() )
+        {
+            log.trace("Trace: " + TimeUnit.MILLISECONDS.convert(time, unit) + " ms");
+        }
     }
 
     @Override
     public void addCount(String name, int increment)
     {
-        log.trace("Counter " + name + ": " + increment);
+        if ( log.isTraceEnabled() )
+        {
+            log.trace("Counter " + name + ": " + increment);
+        }
     }
 }
