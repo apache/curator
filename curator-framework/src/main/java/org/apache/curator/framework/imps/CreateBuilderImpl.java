@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -23,6 +24,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
@@ -41,20 +43,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>
 {
-    private final CuratorFrameworkImpl      client;
-    private CreateMode                      createMode;
-    private Backgrounding                   backgrounding;
-    private boolean                         createParentsIfNeeded;
-    private boolean                         doProtected;
-    private boolean                         compress;
-    private String                          protectedId;
-    private ACLing                          acling;
+    private final CuratorFrameworkImpl client;
+    private CreateMode createMode;
+    private Backgrounding backgrounding;
+    private boolean createParentsIfNeeded;
+    private boolean doProtected;
+    private boolean compress;
+    private String protectedId;
+    private ACLing acling;
 
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
 
     @VisibleForTesting
-    static final String         PROTECTED_PREFIX = "_c_";
+    static final String PROTECTED_PREFIX = "_c_";
 
     CreateBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -68,7 +70,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         protectedId = null;
     }
 
-    TransactionCreateBuilder        asTransactionCreateBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
+    TransactionCreateBuilder asTransactionCreateBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
     {
         return new TransactionCreateBuilder()
         {
@@ -95,7 +97,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             @Override
             public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception
             {
-                String      fixedPath = client.fixForNamespace(path);
+                String fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
                 return curatorTransaction;
             }
@@ -417,60 +419,85 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             data = client.getCompressionProvider().compress(givenPath, data);
         }
 
-        final String    adjustedPath = adjustPath(client.fixForNamespace(givenPath));
+        final String adjustedPath = adjustPath(client.fixForNamespace(givenPath));
 
-        String  returnPath = null;
+        String returnPath = null;
         if ( backgrounding.inBackground() )
         {
             pathInBackground(adjustedPath, data, givenPath);
         }
         else
         {
-            returnPath = pathInForeground(adjustedPath, data);
-            returnPath = client.unfixForNamespace(returnPath);
+            String path = protectedPathInForeground(adjustedPath, data);
+            returnPath = client.unfixForNamespace(path);
         }
         return returnPath;
+    }
+
+    private String protectedPathInForeground(String adjustedPath, byte[] data) throws Exception
+    {
+        try
+        {
+            return pathInForeground(adjustedPath, data);
+        }
+        catch ( KeeperException.ConnectionLossException e )
+        {
+            if ( protectedId != null )
+            {
+                /*
+                 * CURATOR-45 : we don't know if the create operation was successful or not,
+                 * register the znode to be sure it is deleted later.
+                 */
+                findAndDeleteProtectedNodeInBackground(adjustedPath, protectedId, null);
+                /*
+                * The current UUID is scheduled to be deleted, it is not safe to use it again.
+                * If this builder is used again later create a new UUID
+                */
+                protectedId = UUID.randomUUID().toString();
+            }
+            throw e;
+        }
     }
 
     @Override
     public void performBackgroundOperation(final OperationAndData<PathAndBytes> operationAndData) throws Exception
     {
-        final TimeTrace   trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Background");
+        final TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Background");
         client.getZooKeeper().create
-        (
-            operationAndData.getData().getPath(),
-            operationAndData.getData().getData(),
-            acling.getAclList(operationAndData.getData().getPath()),
-            createMode,
-            new AsyncCallback.StringCallback()
-            {
-                @Override
-                public void processResult(int rc, String path, Object ctx, String name)
+            (
+                operationAndData.getData().getPath(),
+                operationAndData.getData().getData(),
+                acling.getAclList(operationAndData.getData().getPath()),
+                createMode,
+                new AsyncCallback.StringCallback()
                 {
-                    trace.commit();
+                    @Override
+                    public void processResult(int rc, String path, Object ctx, String name)
+                    {
+                        trace.commit();
 
-                    if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
-                    {
-                        backgroundCreateParentsThenNode(operationAndData);
+                        if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
+                        {
+                            backgroundCreateParentsThenNode(operationAndData);
+                        }
+                        else
+                        {
+                            sendBackgroundResponse(rc, path, ctx, name, operationAndData);
+                        }
                     }
-                    else
-                    {
-                        sendBackgroundResponse(rc, path, ctx, name, operationAndData);
-                    }
-                }
-            },
-            backgrounding.getContext()
-        );
+                },
+                backgrounding.getContext()
+            );
     }
 
-    private String getProtectedPrefix()
+    private static String getProtectedPrefix(String protectedId)
     {
         return PROTECTED_PREFIX + protectedId + "-";
     }
 
     private void backgroundCreateParentsThenNode(final OperationAndData<PathAndBytes> mainOperationAndData)
     {
-        BackgroundOperation<PathAndBytes>     operation = new BackgroundOperation<PathAndBytes>()
+        BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>()
         {
             @Override
             public void performBackgroundOperation(OperationAndData<PathAndBytes> dummy) throws Exception
@@ -486,7 +513,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 client.queueOperation(mainOperationAndData);
             }
         };
-        OperationAndData<PathAndBytes>        parentOperation = new OperationAndData<PathAndBytes>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
+        OperationAndData<PathAndBytes> parentOperation = new OperationAndData<PathAndBytes>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
         client.queueOperation(parentOperation);
     }
 
@@ -558,16 +585,39 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     private void pathInBackground(final String path, final byte[] data, final String givenPath)
     {
         final AtomicBoolean firstTime = new AtomicBoolean(true);
-        OperationAndData<PathAndBytes> operationAndData = new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null, backgrounding.getContext())
+        OperationAndData<PathAndBytes> operationAndData = new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback(),
+            new OperationAndData.ErrorCallback<PathAndBytes>()
+            {
+                public void retriesExhausted(OperationAndData<PathAndBytes> operationAndData)
+                {
+                    if ( doProtected )
+                    {
+                        // all retries have failed, findProtectedNodeInForeground(..) included, schedule a clean up
+                        findAndDeleteProtectedNodeInBackground(path, protectedId, null);
+                        // assign a new id if this builder is used again later
+                        protectedId = UUID.randomUUID().toString();
+                    }
+                }
+            },
+            backgrounding.getContext())
         {
             @Override
             void callPerformBackgroundOperation() throws Exception
             {
-                boolean   callSuper = true;
-                boolean   localFirstTime = firstTime.getAndSet(false);
+                boolean callSuper = true;
+                boolean localFirstTime = firstTime.getAndSet(false);
                 if ( !localFirstTime && doProtected )
                 {
-                    String      createdPath = findProtectedNodeInForeground(path);
+                    String createdPath = null;
+                    try
+                    {
+                        createdPath = findProtectedNodeInForeground(path);
+                    }
+                    catch ( KeeperException.ConnectionLossException e )
+                    {
+                        sendBackgroundResponse(KeeperException.Code.CONNECTIONLOSS.intValue(), path, backgrounding.getContext(), null, this);
+                        callSuper = false;
+                    }
                     if ( createdPath != null )
                     {
                         try
@@ -600,117 +650,187 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
     private String pathInForeground(final String path, final byte[] data) throws Exception
     {
-        TimeTrace               trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
+        TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
 
-        final AtomicBoolean     firstTime = new AtomicBoolean(true);
-        String                  returnPath = RetryLoop.callWithRetry
-        (
-            client.getZookeeperClient(),
-            new Callable<String>()
-            {
-                @Override
-                public String call() throws Exception
+        final AtomicBoolean firstTime = new AtomicBoolean(true);
+        String returnPath = RetryLoop.callWithRetry
+            (
+                client.getZookeeperClient(),
+                new Callable<String>()
                 {
-                    boolean   localFirstTime = firstTime.getAndSet(false);
-
-                    String    createdPath = null;
-                    if ( !localFirstTime && doProtected )
+                    @Override
+                    public String call() throws Exception
                     {
-                        createdPath = findProtectedNodeInForeground(path);
-                    }
+                        boolean localFirstTime = firstTime.getAndSet(false);
 
-                    if ( createdPath == null )
-                    {
-                        try
+                        String createdPath = null;
+                        if ( !localFirstTime && doProtected )
                         {
-                            createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
+                            createdPath = findProtectedNodeInForeground(path);
                         }
-                        catch ( KeeperException.NoNodeException e )
+
+                        if ( createdPath == null )
                         {
-                            if ( createParentsIfNeeded )
+                            try
                             {
-                                ZKPaths.mkdirs(client.getZooKeeper(), path, false);
                                 createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
                             }
-                            else
+                            catch ( KeeperException.NoNodeException e )
                             {
-                                throw e;
+                                if ( createParentsIfNeeded )
+                                {
+                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false);
+                                    createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
+                                }
+                                else
+                                {
+                                    throw e;
+                                }
                             }
                         }
-                    }
 
-                    if ( failNextCreateForTesting )
-                    {
-                        failNextCreateForTesting = false;
-                        throw new KeeperException.ConnectionLossException();
-                    }
-                    return createdPath;
-                }
-            }
-        );
-
-        trace.commit();
-        return returnPath;
-    }
-
-    private String  findProtectedNodeInForeground(final String path) throws Exception
-    {
-        TimeTrace       trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-findProtectedNodeInForeground");
-
-        String          returnPath = RetryLoop.callWithRetry
-        (
-            client.getZookeeperClient(),
-            new Callable<String>()
-            {
-                @Override
-                public String call() throws Exception
-                {
-                    String foundNode = null;
-                    try
-                    {
-                        final ZKPaths.PathAndNode   pathAndNode = ZKPaths.getPathAndNode(path);
-                        List<String>                children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
-
-                        final String                protectedPrefix = getProtectedPrefix();
-                        foundNode = Iterables.find
-                        (
-                            children,
-                            new Predicate<String>()
-                            {
-                                @Override
-                                public boolean apply(String node)
-                                {
-                                    return node.startsWith(protectedPrefix);
-                                }
-                            },
-                            null
-                        );
-                        if ( foundNode != null )
+                        if ( failNextCreateForTesting )
                         {
-                            foundNode = ZKPaths.makePath(pathAndNode.getPath(), foundNode);
+                            failNextCreateForTesting = false;
+                            throw new KeeperException.ConnectionLossException();
                         }
+                        return createdPath;
                     }
-                    catch ( KeeperException.NoNodeException ignore )
-                    {
-                        // ignore
-                    }
-                    return foundNode;
                 }
-            }
-        );
+            );
 
         trace.commit();
         return returnPath;
     }
 
-    private String  adjustPath(String path) throws Exception
+    private String findProtectedNodeInForeground(final String path) throws Exception
+    {
+        TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-findProtectedNodeInForeground");
+
+        String returnPath = RetryLoop.callWithRetry
+            (
+                client.getZookeeperClient(),
+                new Callable<String>()
+                {
+                    @Override
+                    public String call() throws Exception
+                    {
+                        String foundNode = null;
+                        try
+                        {
+                            final ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+                            List<String> children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
+
+                            foundNode = findNode(children, pathAndNode.getPath(), protectedId);
+                        }
+                        catch ( KeeperException.NoNodeException ignore )
+                        {
+                            // ignore
+                        }
+                        return foundNode;
+                    }
+                }
+            );
+
+        trace.commit();
+        return returnPath;
+    }
+
+    private String adjustPath(String path) throws Exception
     {
         if ( doProtected )
         {
-            ZKPaths.PathAndNode     pathAndNode = ZKPaths.getPathAndNode(path);
-            String                  name = getProtectedPrefix() + pathAndNode.getNode();
+            ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+            String name = getProtectedPrefix(protectedId) + pathAndNode.getNode();
             path = ZKPaths.makePath(pathAndNode.getPath(), name);
         }
         return path;
+    }
+
+    /**
+     * Attempt to delete a protected znode
+     *
+     * @param path        the path
+     * @param protectedId the protected id
+     * @param callback    callback to use, <code>null</code> to create a new one
+     */
+    private void findAndDeleteProtectedNodeInBackground(String path, String protectedId, FindProtectedNodeCB callback)
+    {
+        if ( client.isStarted() )
+        {
+            if ( callback == null )
+            {
+                callback = new FindProtectedNodeCB(path, protectedId);
+            }
+            try
+            {
+                client.getChildren().inBackground(callback).forPath(ZKPaths.getPathAndNode(path).getPath());
+            }
+            catch ( Exception e )
+            {
+                findAndDeleteProtectedNodeInBackground(path, protectedId, callback);
+            }
+        }
+    }
+
+    private class FindProtectedNodeCB implements BackgroundCallback
+    {
+        final String path;
+        final String protectedId;
+
+        private FindProtectedNodeCB(String path, String protectedId)
+        {
+            this.path = path;
+            this.protectedId = protectedId;
+        }
+
+        @Override
+        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+        {
+            if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+            {
+                final String node = findNode(event.getChildren(), ZKPaths.getPathAndNode(path).getPath(), protectedId);
+                if ( node != null )
+                {
+                    client.delete().guaranteed().inBackground().forPath(node);
+                }
+            }
+            else if ( event.getResultCode() == KeeperException.Code.CONNECTIONLOSS.intValue() )
+            {
+                // retry
+                findAndDeleteProtectedNodeInBackground(path, protectedId, this);
+            }
+        }
+    }
+
+    /**
+     * Attempt to find the znode that matches the given path and protected id
+     *
+     * @param children    a list of candidates znodes
+     * @param path        the path
+     * @param protectedId the protected id
+     * @return the absolute path of the znode or <code>null</code> if it is not found
+     */
+    private static String findNode(final List<String> children, final String path, final String protectedId)
+    {
+        final String protectedPrefix = getProtectedPrefix(protectedId);
+        String foundNode = Iterables.find
+            (
+                children,
+                new Predicate<String>()
+                {
+                    @Override
+                    public boolean apply(String node)
+                    {
+                        return node.startsWith(protectedPrefix);
+                    }
+                },
+                null
+            );
+        if ( foundNode != null )
+        {
+            foundNode = ZKPaths.makePath(path, foundNode);
+        }
+        return foundNode;
     }
 }
