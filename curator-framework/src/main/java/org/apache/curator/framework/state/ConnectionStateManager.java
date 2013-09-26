@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.state;
 
 import com.google.common.base.Function;
@@ -32,6 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -39,11 +41,12 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class ConnectionStateManager implements Closeable
 {
-    private static final int   QUEUE_SIZE;
+    private static final int QUEUE_SIZE;
+
     static
     {
-        int         size = 25;
-        String      property = System.getProperty("ConnectionStateManagerSize", null);
+        int size = 25;
+        String property = System.getProperty("ConnectionStateManagerSize", null);
         if ( property != null )
         {
             try
@@ -58,13 +61,14 @@ public class ConnectionStateManager implements Closeable
         QUEUE_SIZE = size;
     }
 
-    private final Logger                                        log = LoggerFactory.getLogger(getClass());
-    private final BlockingQueue<ConnectionState>                eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
-    private final CuratorFramework                              client;
-    private final ListenerContainer<ConnectionStateListener>    listeners = new ListenerContainer<ConnectionStateListener>();
-    private final AtomicReference<ConnectionState>              currentState = new AtomicReference<ConnectionState>();
-    private final ExecutorService                               service;
-    private final AtomicReference<State>                        state = new AtomicReference<State>(State.LATENT);
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final BlockingQueue<ConnectionState> eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
+    private final CuratorFramework client;
+    private final ListenerContainer<ConnectionStateListener> listeners = new ListenerContainer<ConnectionStateListener>();
+    private final AtomicReference<ConnectionState> currentState = new AtomicReference<ConnectionState>();
+    private final AtomicBoolean initialConnectMessageSent = new AtomicBoolean(false);
+    private final ExecutorService service;
+    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
     private enum State
     {
@@ -74,7 +78,7 @@ public class ConnectionStateManager implements Closeable
     }
 
     /**
-     * @param client the client
+     * @param client        the client
      * @param threadFactory thread factory to use or null for a default
      */
     public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory)
@@ -90,22 +94,22 @@ public class ConnectionStateManager implements Closeable
     /**
      * Start the manager
      */
-    public void     start()
+    public void start()
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         service.submit
-        (
-            new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
+            (
+                new Callable<Object>()
                 {
-                    processEvents();
-                    return null;
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        processEvents();
+                        return null;
+                    }
                 }
-            }
-        );
+            );
     }
 
     @Override
@@ -132,22 +136,28 @@ public class ConnectionStateManager implements Closeable
      * Post a state change. If the manager is already in that state the change
      * is ignored. Otherwise the change is queued for listeners.
      *
-     * @param newState new state
+     * @param newConnectionState new state
      */
-    public void addStateChange(ConnectionState newState)
+    public void addStateChange(ConnectionState newConnectionState)
     {
         if ( state.get() != State.STARTED )
         {
             return;
         }
 
-        ConnectionState     previousState = currentState.getAndSet(newState);
-        if ( previousState == newState )
+        ConnectionState previousState = currentState.getAndSet(newConnectionState);
+        if ( previousState == newConnectionState )
         {
             return;
         }
 
-        ConnectionState     localState = (previousState == null) ? ConnectionState.CONNECTED : newState;
+        ConnectionState localState = newConnectionState;
+        boolean isNegativeMessage = ((newConnectionState == ConnectionState.LOST) || (newConnectionState == ConnectionState.SUSPENDED));
+        if ( !isNegativeMessage && initialConnectMessageSent.compareAndSet(false, true) )
+        {
+            localState = ConnectionState.CONNECTED;
+        }
+
         log.info("State change: " + localState);
         while ( !eventQueue.offer(localState) )
         {
@@ -162,7 +172,7 @@ public class ConnectionStateManager implements Closeable
         {
             while ( !Thread.currentThread().isInterrupted() )
             {
-                final ConnectionState    newState = eventQueue.take();
+                final ConnectionState newState = eventQueue.take();
 
                 if ( listeners.size() == 0 )
                 {
@@ -170,17 +180,17 @@ public class ConnectionStateManager implements Closeable
                 }
 
                 listeners.forEach
-                (
-                    new Function<ConnectionStateListener, Void>()
-                    {
-                        @Override
-                        public Void apply(ConnectionStateListener listener)
+                    (
+                        new Function<ConnectionStateListener, Void>()
                         {
-                            listener.stateChanged(client, newState);
-                            return null;
+                            @Override
+                            public Void apply(ConnectionStateListener listener)
+                            {
+                                listener.stateChanged(client, newState);
+                                return null;
+                            }
                         }
-                    }
-                );
+                    );
             }
         }
         catch ( InterruptedException e )
