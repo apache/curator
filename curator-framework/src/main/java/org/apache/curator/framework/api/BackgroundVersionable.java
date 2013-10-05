@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.api;
 
-public interface DeleteBuilderBase extends
+public interface BackgroundVersionable extends
     BackgroundPathable<Void>,
     Versionable<BackgroundPathable<Void>>
 {

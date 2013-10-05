@@ -177,6 +177,36 @@ public class ZKPaths
     }
 
     /**
+     * Recursively deletes children of a node.
+     *
+     * @param zookeeper     the client
+     * @param path          path of the node to delete
+     * @param deleteSelf    flag that indicates that the node should also get deleted
+     * @throws InterruptedException
+     * @throws KeeperException
+     */
+    public static void deleteChildren(ZooKeeper zookeeper, String path, boolean deleteSelf) throws InterruptedException, KeeperException {
+        PathUtils.validatePath(path);
+
+        List<String> children = zookeeper.getChildren(path, null);
+        for (String child : children) {
+            String fullPath = makePath(path, child);
+            deleteChildren(zookeeper, fullPath, true);
+        }
+
+        if (deleteSelf) {
+            try {
+                zookeeper.delete(path, -1);
+            } catch (KeeperException.NotEmptyException e) {
+                //someone has created a new child since we checked ... delete again.
+                deleteChildren(zookeeper, path, deleteSelf);
+            } catch (KeeperException.NoNodeException e) {
+                // ignore... someone else has deleted the node it since we checked
+            }
+        }
+    }
+
+    /**
      * Return the children of the given path sorted by sequence number
      *
      * @param zookeeper the client

@@ -18,6 +18,14 @@
  */
 package org.apache.curator.framework.api;
 
-public interface DeleteBuilder extends Guaranteeable, ChildrenDeletable
+public interface ChildrenDeletable extends BackgroundVersionable
 {
+
+    /**
+     * <p>
+     *     Will also delete children if they exist.
+     * </p>
+     * @return
+     */
+    public BackgroundVersionable deletingChildrenIfNeeded();
 }
