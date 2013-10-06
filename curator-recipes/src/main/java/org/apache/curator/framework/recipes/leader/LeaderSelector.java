@@ -98,7 +98,7 @@ public class LeaderSelector implements Closeable
      */
     public LeaderSelector(CuratorFramework client, String leaderPath, LeaderSelectorListener listener)
     {
-        this(client, leaderPath, Executors.newSingleThreadExecutor(defaultThreadFactory), listener);
+        this(client, leaderPath, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true), listener);
     }
 
     /**
@@ -113,7 +113,7 @@ public class LeaderSelector implements Closeable
     @Deprecated
     public LeaderSelector(CuratorFramework client, String leaderPath, ThreadFactory threadFactory, Executor executor, LeaderSelectorListener listener)
     {
-        this(client, leaderPath, wrapExecutor(executor), listener);
+        this(client, leaderPath, new CloseableExecutorService(wrapExecutor(executor), true), listener);
     }
 
     /**
@@ -122,7 +122,17 @@ public class LeaderSelector implements Closeable
      * @param executorService thread pool to use
      * @param listener listener
      */
-    public LeaderSelector(CuratorFramework client, String leaderPath, ExecutorService executorService, LeaderSelectorListener listener)
+    public LeaderSelector(CuratorFramework client, String leaderPath, ExecutorService executorService, LeaderSelectorListener listener) {
+        this(client, leaderPath, new CloseableExecutorService(executorService), listener);
+    }
+
+    /**
+     * @param client the client
+     * @param leaderPath the path for this leadership group
+     * @param executorService thread pool to use
+     * @param listener listener
+     */
+    public LeaderSelector(CuratorFramework client, String leaderPath, CloseableExecutorService executorService, LeaderSelectorListener listener)
     {
         Preconditions.checkNotNull(client, "client cannot be null");
         Preconditions.checkNotNull(leaderPath, "leaderPath cannot be null");
@@ -132,7 +142,7 @@ public class LeaderSelector implements Closeable
         this.listener = new WrappedListener(this, listener);
         hasLeadership = false;
 
-        this.executorService = new CloseableExecutorService(executorService);
+        this.executorService = executorService;
         mutex = new InterProcessMutex(client, leaderPath)
         {
             @Override
