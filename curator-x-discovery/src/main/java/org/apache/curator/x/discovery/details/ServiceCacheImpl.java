@@ -56,6 +56,8 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
 
     ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory)
     {
+        Preconditions.checkNotNull(discovery, "discovery cannot be null");
+        Preconditions.checkNotNull(name, "name cannot be null");
         Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
 
         this.discovery = discovery;
