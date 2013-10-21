@@ -91,7 +91,7 @@ class NamespaceFacade extends CuratorFrameworkImpl
     @Override
     public Listenable<CuratorListener> getCuratorListenable()
     {
-        return client.getCuratorListenable();
+        throw new UnsupportedOperationException("getCuratorListenable() is only available from a non-namespaced CuratorFramework instance");
     }
 
     @Override
