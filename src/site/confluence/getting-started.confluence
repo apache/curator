@@ -79,7 +79,7 @@ LeaderSelectorListener listener = new LeaderSelectorListener()
 
     public void stateChanged(CuratorFramework client, ConnectionState newState)
     {
-        // see https://github.com/Netflix/curator/wiki/Errors
+        // see http://curator.incubator.apache.org/errors.html
         // You always need to be aware that connections to ZK can fail
     }
 }
