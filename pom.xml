@@ -181,8 +181,6 @@
             <name>Patrick Hunt</name>
             <email>phunt1@gmail.com</email>
             <roles>
-                <role>Champion</role>
-                <role>Mentor</role>
                 <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
@@ -193,7 +191,6 @@
             <name>Mahadev Konar</name>
             <email>mahadev@apache.org</email>
             <roles>
-                <role>Mentor</role>
                 <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
@@ -204,7 +201,6 @@
             <name>Luciano Resende</name>
             <email>lresende@apache.org</email>
             <roles>
-                <role>Mentor</role>
                 <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
@@ -215,7 +211,6 @@
             <name>Enis Söztutar</name>
             <email>enis@apache.org</email>
             <roles>
-                <role>Mentor</role>
                 <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
