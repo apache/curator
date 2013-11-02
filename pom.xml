@@ -135,7 +135,7 @@
             <timezone>-8</timezone>
             <roles>
                 <role>Committer</role>
-                <role>PPMC Member</role>
+                <role>PMC Chair</role>
             </roles>
             <url>https://people.apache.org/~randgalt</url>
         </developer>
@@ -147,7 +147,7 @@
             <timezone>-8</timezone>
             <roles>
                 <role>Committer</role>
-                <role>PPMC Member</role>
+                <role>PMC Member</role>
             </roles>
             <url>http://www.linkedin.com/pub/jay-zarfoss/34/56/a19</url>
         </developer>
@@ -159,7 +159,7 @@
             <timezone>-6</timezone>
             <roles>
                 <role>Committer</role>
-                <role>PPMC Member</role>
+                <role>PMC Member</role>
                 <role>ChedHeader</role>
             </roles>
         </developer>
@@ -170,7 +170,7 @@
             <timezone>+2</timezone>
             <roles>
                 <role>Committer</role>
-                <role>PPMC Member</role>
+                <role>PMC Member</role>
             </roles>
             <url>http://iocanel.blogspot.com</url>
         </developer>
@@ -183,7 +183,7 @@
             <roles>
                 <role>Champion</role>
                 <role>Mentor</role>
-                <role>PPMC Member</role>
+                <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
             <url>http://www.linkedin.com/pub/patrick-hunt/2/5b2/24a</url>
@@ -194,7 +194,7 @@
             <email>mahadev@apache.org</email>
             <roles>
                 <role>Mentor</role>
-                <role>PPMC Member</role>
+                <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
             <url>http://www.linkedin.com/in/mahadevkonar</url>
@@ -205,7 +205,7 @@
             <email>lresende@apache.org</email>
             <roles>
                 <role>Mentor</role>
-                <role>PPMC Member</role>
+                <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
             <url>https://people.apache.org/~lresende</url>
@@ -216,7 +216,7 @@
             <email>enis@apache.org</email>
             <roles>
                 <role>Mentor</role>
-                <role>PPMC Member</role>
+                <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
             <url>https://people.apache.org/~enis</url>
