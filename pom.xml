@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
     Licensed to the Apache Software Foundation (ASF) under one
     or more contributor license agreements.  See the NOTICE file
     distributed with this work for additional information
@@ -36,7 +35,7 @@
     <description>
         Curator is a set of Java libraries that make using Apache ZooKeeper much easier.
     </description>
-    <url>http://curator.incubator.apache.org</url>
+    <url>http://curator.apache.org</url>
     <inceptionYear>2011</inceptionYear>
 
     <licenses>
@@ -58,19 +57,20 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- OSGi Properties -->
-        <osgi.export.package />
-        <osgi.import.package />
-        <osgi.private.package />
-        <osgi.dynamic.import />
-        <osgi.require.bundle />
-        <osgi.export.service />
-        <osgi.activator />
+        <osgi.export.package/>
+        <osgi.import.package/>
+        <osgi.private.package/>
+        <osgi.dynamic.import/>
+        <osgi.require.bundle/>
+        <osgi.export.service/>
+        <osgi.activator/>
     </properties>
 
     <scm>
-        <url>https://git-wip-us.apache.org/repos/asf?p=incubator-curator.git</url>
-        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-curator.git</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-curator.git</developerConnection>
+        <url>https://git-wip-us.apache.org/repos/asf/curator.git</url>
+        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git</connection>
+        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git
+        </developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -90,7 +90,7 @@
                 <sendOnSuccess>false</sendOnSuccess>
                 <sendOnWarning>false</sendOnWarning>
                 <configuration>
-                    <address>dev@curator.incubator.apache.org</address>
+                    <address>dev@curator.apache.org</address>
                 </configuration>
             </notifier>
         </notifiers>
@@ -99,31 +99,31 @@
     <distributionManagement>
         <site>
             <id>apache.website.svnpub</id>
-            <url>scm:svn:https://svn.apache.org/repos/asf/incubator/curator/site/trunk</url>
+            <url>scm:svn:https://svn.apache.org/repos/asf/curator/site/trunk</url>
         </site>
     </distributionManagement>
 
     <mailingLists>
         <mailingList>
             <name>Users</name>
-            <post>user@curator.incubator.apache.org</post>
-            <subscribe>user-subscribe@curator.incubator.apache.org</subscribe>
-            <unsubscribe>user-unsubscribe@curator.incubator.apache.org</unsubscribe>
-            <archive>http://mail-archives.apache.org/mod_mbox/incubator-curator-user/</archive>
+            <post>user@curator.apache.org</post>
+            <subscribe>user-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>user-unsubscribe@curator.apache.org</unsubscribe>
+            <archive>http://mail-archives.apache.org/mod_mbox/curator-user/</archive>
         </mailingList>
         <mailingList>
             <name>Development</name>
-            <post>dev@curator.incubator.apache.org</post>
-            <subscribe>dev-subscribe@curator.incubator.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@curator.incubator.apache.org</unsubscribe>
-            <archive>http://mail-archives.apache.org/mod_mbox/incubator-curator-dev/</archive>
+            <post>dev@curator.apache.org</post>
+            <subscribe>dev-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@curator.apache.org</unsubscribe>
+            <archive>http://mail-archives.apache.org/mod_mbox/curator-dev/</archive>
         </mailingList>
         <mailingList>
             <name>Commits</name>
-            <post>commits@curator.incubator.apache.org</post>
-            <subscribe>commits-subscribe@curator.incubator.apache.org</subscribe>
-            <unsubscribe>commits-unsubscribe@curator.incubator.apache.org</unsubscribe>
-            <archive>http://mail-archives.apache.org/mod_mbox/incubator-curator-commits/</archive>
+            <post>commits@curator.apache.org</post>
+            <subscribe>commits-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>commits-unsubscribe@curator.apache.org</unsubscribe>
+            <archive>http://mail-archives.apache.org/mod_mbox/curator-commits/</archive>
         </mailingList>
     </mailingLists>
 
@@ -336,7 +336,16 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>2.6</version>
+                <version>2.7</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <configuration>
+                    <aggregate>true</aggregate>
+                </configuration>
             </plugin>
         </plugins>
     </reporting>
@@ -355,6 +364,12 @@
         </resources>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.8</version>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-install-plugin</artifactId>
@@ -432,7 +447,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>3.2</version>
+                <version>3.3</version>
                 <configuration>
                     <locales>en</locales>
                     <skipDeploy>true</skipDeploy>
@@ -450,18 +465,6 @@
                         <goals>
                             <goal>site</goal>
                         </goals>
-                        <configuration>
-                            <reportPlugins>
-                                <plugin>
-                                    <groupId>org.apache.maven.plugins</groupId>
-                                    <artifactId>maven-javadoc-plugin</artifactId>
-                                    <version>2.9</version>
-                                    <configuration>
-                                        <aggregate>true</aggregate>
-                                    </configuration>
-                                </plugin>
-                            </reportPlugins>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

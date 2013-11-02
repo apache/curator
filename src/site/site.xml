@@ -51,9 +51,9 @@
     </bannerLeft>
 
     <bannerRight>
-        <name>Apache Incubator</name>
-        <src>http://incubator.apache.org/images/apache-incubator-logo.png</src>
-        <href>http://incubator.apache.org</href>
+        <name>Apache</name>
+        <src>http://apache.org/images/feather-small.gif</src>
+        <href>http://apache.org</href>
     </bannerRight>
 
     <publishDate/>

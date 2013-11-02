@@ -21,7 +21,7 @@
 A REST server for use with Curator Service Discovery. This server can be used for non-Java applications
 that need to participate in the Curator Service Discovery.
 
-Full documentation: http://curator.incubator.apache.org/curator-x-discovery-server/index.html
+Full documentation: http://curator.apache.org/curator-x-discovery-server/index.html
 
 
 == JSON specifications for REST entities ==
