@@ -520,6 +520,7 @@
                 <version>2.4.1</version>
                 <configuration>
                     <arguments>-Dmaven.test.skip=true</arguments>
+                    <mavenExecutorId>forked-path</mavenExecutorId>
                 </configuration>
             </plugin>
 
