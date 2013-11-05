@@ -493,6 +493,7 @@
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
+                        <exclude>**/.rdf/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
                         <exclude>**/KEYS</exclude>
@@ -535,6 +536,7 @@
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
+                        <exclude>**/.rdf/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
                         <exclude>**/KEYS</exclude>
