@@ -68,19 +68,13 @@ if ( lock.acquire(maxWait, waitUnit) )
 h3. Leader Election
 
 {code}
-LeaderSelectorListener listener = new LeaderSelectorListener()
+LeaderSelectorListener listener = new LeaderSelectorListenerAdapter()
 {
     public void takeLeadership(CuratorFramework client) throws Exception
     {
         // this callback will get called when you are the leader
         // do whatever leader work you need to and only exit
         // this method when you want to relinquish leadership
-    }
-
-    public void stateChanged(CuratorFramework client, ConnectionState newState)
-    {
-        // see http://curator.apache.org/errors.html
-        // You always need to be aware that connections to ZK can fail
     }
 }
 
