@@ -34,7 +34,6 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TestFrameworkBackground extends BaseClassForTests
@@ -127,11 +126,12 @@ public class TestFrameworkBackground extends BaseClassForTests
     @Test
     public void testCuratorCallbackOnError() throws Exception
     {
-
+        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.builder()
             .connectString(server.getConnectString())
-            .sessionTimeoutMs(60000)
-            .retryPolicy(new RetryNTimes(1, 1000)).build();
+            .sessionTimeoutMs(timing.session())
+            .connectionTimeoutMs(timing.connection())
+            .retryPolicy(new RetryOneTime(1000)).build();
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
@@ -154,7 +154,7 @@ public class TestFrameworkBackground extends BaseClassForTests
             // Attempt to retrieve children list
             client.getChildren().inBackground(curatorCallback).forPath("/");
             // Check if the callback has been called with a correct return code
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS), "Callback has not been called by curator !");
+            Assert.assertTrue(timing.awaitLatch(latch), "Callback has not been called by curator !");
         }
         finally
         {
