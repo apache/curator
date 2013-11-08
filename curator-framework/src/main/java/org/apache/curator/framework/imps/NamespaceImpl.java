@@ -84,6 +84,6 @@ class NamespaceImpl
 
     EnsurePath newNamespaceAwareEnsurePath(String path)
     {
-        return new EnsurePath(fixForNamespace(path));
+        return new EnsurePath(fixForNamespace(path), client.getAclProvider());
     }
 }

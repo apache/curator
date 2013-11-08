@@ -16,21 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.api;
 
-import org.apache.curator.utils.InternalACLProvider;
+package org.apache.curator.utils;
+
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
 
-public interface ACLProvider extends InternalACLProvider
+public interface InternalACLProvider
 {
     /**
      * Return the ACL list to use by default (usually {@link ZooDefs.Ids#OPEN_ACL_UNSAFE}).
      *
      * @return default ACL list
      */
-    public List<ACL>        getDefaultAcl();
+    public List<ACL> getDefaultAcl();
 
     /**
      * Return the ACL list to use for the given path

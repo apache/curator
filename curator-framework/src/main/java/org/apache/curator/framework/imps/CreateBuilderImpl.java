@@ -504,7 +504,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             {
                 try
                 {
-                    ZKPaths.mkdirs(client.getZooKeeper(), mainOperationAndData.getData().getPath(), false);
+                    ZKPaths.mkdirs(client.getZooKeeper(), mainOperationAndData.getData().getPath(), false, client.getAclProvider());
                 }
                 catch ( KeeperException e )
                 {
@@ -679,7 +679,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                             {
                                 if ( createParentsIfNeeded )
                                 {
-                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false);
+                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider());
                                     createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
                                 }
                                 else
