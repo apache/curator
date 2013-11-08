@@ -491,9 +491,9 @@
                     <header>src/etc/header.txt</header>
                     <excludes>
                         <exclude>**/*.confluence</exclude>
+                        <exclude>**/*.rdf</exclude>
                         <exclude>**/.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
-                        <exclude>**/.rdf/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
                         <exclude>**/KEYS</exclude>
@@ -534,9 +534,9 @@
                     <excludeSubProjects>false</excludeSubProjects>
                     <excludes>
                         <exclude>**/*.confluence</exclude>
+                        <exclude>**/*.rdf</exclude>
                         <exclude>**/.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
-                        <exclude>**/.rdf/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
                         <exclude>**/KEYS</exclude>
