@@ -58,14 +58,12 @@ public class TestLockACLs extends BaseClassForTests
         CuratorFramework client = createClient();
         try
         {
-            // Create a path directly and verify that MyACLProvider is being used
             client.create().forPath("/foo");
             Assert.assertNotNull(client.checkExists().forPath("/foo"));
             Assert.assertEquals(ZooDefs.Perms.ALL, client.getACL().forPath("/foo").get(0).getPerms());
             Assert.assertEquals("ip", client.getACL().forPath("/foo").get(0).getId().getScheme());
             Assert.assertEquals("127.0.0.1", client.getACL().forPath("/foo").get(0).getId().getId());
 
-            // Now try creating a lock and we'll see that it incorrectly has the default world ACLs
             InterProcessReadWriteLock lock = new InterProcessReadWriteLock(client, "/bar");
             InterProcessMutex writeLock = lock.writeLock();
             writeLock.acquire();
