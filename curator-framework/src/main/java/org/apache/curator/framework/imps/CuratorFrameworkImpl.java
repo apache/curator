@@ -50,6 +50,7 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorFrameworkImpl implements CuratorFramework
@@ -669,7 +670,20 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         try
         {
-            operationAndData.callPerformBackgroundOperation();
+            if ( client.isConnected() )
+            {
+                operationAndData.callPerformBackgroundOperation();
+            }
+            else
+            {
+                client.getZooKeeper();  // important - allow connection resets, timeouts, etc. to occur
+                if ( operationAndData.getElapsedTimeMs() >= client.getConnectionTimeoutMs() )
+                {
+                    throw new CuratorConnectionLossException();
+                }
+                operationAndData.sleepFor(1, TimeUnit.SECONDS);
+                queueOperation(operationAndData);
+            }
         }
         catch ( Throwable e )
         {
