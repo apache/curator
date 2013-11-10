@@ -26,15 +26,19 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class TestNeverConnected
 {
     @Test
     public void testNeverConnected() throws Exception
     {
+        Timing timing = new Timing();
+
         // use a connection string to a non-existent server
         CuratorFramework client = CuratorFrameworkFactory.newClient("localhost:1111", 100, 100, new RetryOneTime(1));
         try
@@ -53,7 +57,8 @@ public class TestNeverConnected
 
             client.create().inBackground().forPath("/");
 
-            Assert.assertEquals(queue.take(), ConnectionState.LOST);
+            ConnectionState polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            Assert.assertEquals(polled, ConnectionState.LOST);
         }
         finally
         {
