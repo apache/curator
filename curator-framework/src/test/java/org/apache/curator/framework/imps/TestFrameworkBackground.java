@@ -25,8 +25,11 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.zookeeper.KeeperException.Code;
 import org.testng.Assert;
@@ -34,10 +37,59 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TestFrameworkBackground extends BaseClassForTests
 {
+    @Test
+    public void testListenerConnectedAtStart() throws Exception
+    {
+        server.close();
+
+        Timing timing = new Timing(2);
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(0, 0));
+        try
+        {
+            client.start();
+
+            final CountDownLatch connectedLatch = new CountDownLatch(1);
+            final AtomicBoolean firstListenerAction = new AtomicBoolean(true);
+            final AtomicReference<ConnectionState> firstListenerState = new AtomicReference<ConnectionState>();
+            ConnectionStateListener listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( firstListenerAction.compareAndSet(true, false) ) {
+                        firstListenerState.set(newState);
+                        System.out.println("First listener state is " + newState);
+                    }
+                    if ( newState == ConnectionState.CONNECTED )
+                    {
+                        connectedLatch.countDown();
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
+
+            // due to CURATOR-72, this was causing a LOST event to precede the CONNECTED event
+            client.create().inBackground().forPath("/foo");
+
+            server = new TestingServer(server.getPort());
+
+            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            Assert.assertFalse(firstListenerAction.get());
+            ConnectionState firstconnectionState = firstListenerState.get();
+            Assert.assertEquals(firstconnectionState, ConnectionState.CONNECTED, "First listener state MUST BE CONNECTED but is " + firstconnectionState);
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
+    }
+
     @Test
     public void testRetries() throws Exception
     {
