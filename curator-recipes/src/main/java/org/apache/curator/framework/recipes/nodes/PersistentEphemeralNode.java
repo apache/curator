@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -63,7 +62,6 @@ public class PersistentEphemeralNode implements Closeable
     private final Mode mode;
     private final AtomicReference<byte[]> data = new AtomicReference<byte[]>();
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final AtomicBoolean isSuspended = new AtomicBoolean(false);
     private final BackgroundCallback backgroundCallback;
     private final Watcher watcher = new Watcher()
     {
@@ -81,7 +79,6 @@ public class PersistentEphemeralNode implements Closeable
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
-            isSuspended.set((newState != ConnectionState.RECONNECTED) && (newState != ConnectionState.CONNECTED));
             if ( newState == ConnectionState.RECONNECTED )
             {
                 createNode();
@@ -378,6 +375,6 @@ public class PersistentEphemeralNode implements Closeable
 
     private boolean isActive()
     {
-        return (state.get() == State.STARTED) && !isSuspended.get();
+        return (state.get() == State.STARTED);
     }
 }
