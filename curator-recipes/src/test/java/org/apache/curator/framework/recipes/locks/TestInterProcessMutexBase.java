@@ -132,7 +132,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     {
         final Timing timing = new Timing();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
         client.start();
         try
         {
@@ -186,7 +186,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     {
         CuratorFramework client = CuratorFrameworkFactory.builder().
             connectString(server.getConnectString()).
-            retryPolicy(new RetryOneTime(1)).
+            retryPolicy(new ExponentialBackoffRetry(100, 3)).
             namespace("test").
             build();
         client.start();
@@ -208,7 +208,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     {
         final int THREAD_QTY = 10;
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(100, 3));
         client.start();
         try
         {
@@ -272,7 +272,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     @Test
     public void testReentrant2Threads() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(100, 3));
         client.start();
         try
         {
@@ -318,7 +318,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     @Test
     public void testReentrant() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(100, 3));
         client.start();
         try
         {
@@ -370,8 +370,8 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         CuratorFramework client2 = null;
         try
         {
-            client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(100, 3));
+            client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(100, 3));
             client1.start();
             client2.start();
 
