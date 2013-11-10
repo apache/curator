@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
@@ -64,7 +65,7 @@ public class TestLeaderLatchCluster
             List<InstanceSpec>      instances = Lists.newArrayList(cluster.getInstances());
             for ( int i = 0; i < PARTICIPANT_QTY; ++i )
             {
-                CuratorFramework        client = CuratorFrameworkFactory.newClient(instances.get(i).getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+                CuratorFramework        client = CuratorFrameworkFactory.newClient(instances.get(i).getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
                 LeaderLatch             latch = new LeaderLatch(client, "/latch");
 
                 clients.add(new ClientAndLatch(client, latch, i));
