@@ -269,6 +269,16 @@ public class CuratorZookeeperClient implements Closeable
         return state.getEnsembleProvider().getConnectionString();
     }
 
+    /**
+     * Return the configured connection timeout
+     *
+     * @return timeout
+     */
+    public int getConnectionTimeoutMs()
+    {
+        return connectionTimeoutMs;
+    }
+
     void        addParentWatcher(Watcher watcher)
     {
         state.addParentWatcher(watcher);
