@@ -30,6 +30,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -68,6 +69,56 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
 
         super.teardown();
+    }
+
+    @Test
+    public void testListenersReconnectedIsFast() throws Exception
+    {
+        System.setProperty(DebugUtils.PROPERTY_LOG_EVENTS, "true");
+
+        server.close();
+
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
+            node.start();
+
+            final CountDownLatch connectedLatch = new CountDownLatch(1);
+            final CountDownLatch reconnectedLatch = new CountDownLatch(1);
+            ConnectionStateListener listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.CONNECTED )
+                    {
+                        connectedLatch.countDown();
+                    }
+                    if ( newState == ConnectionState.RECONNECTED )
+                    {
+                        reconnectedLatch.countDown();
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
+            timing.sleepABit();
+            server = new TestingServer(server.getPort());
+            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            timing.sleepABit();
+            Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+            server.close();
+            timing.sleepABit();
+            server = new TestingServer(server.getPort());
+            timing.sleepABit();
+            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+        }
+        finally
+        {
+            Closeables.closeQuietly(client);
+        }
     }
 
     @Test

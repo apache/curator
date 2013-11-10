@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
@@ -68,10 +67,7 @@ public class PersistentEphemeralNode implements Closeable
         @Override
         public void process(WatchedEvent event)
         {
-            if ( Objects.equal(nodePath.get(), event.getPath()) )
-            {
-                createNode();
-            }
+            createNode();
         }
     };
     private final ConnectionStateListener listener = new ConnectionStateListener()
@@ -79,10 +75,7 @@ public class PersistentEphemeralNode implements Closeable
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
-            if ( newState == ConnectionState.RECONNECTED )
-            {
-                createNode();
-            }
+            createNode();
         }
     };
     private final BackgroundCallback checkExistsCallback = new BackgroundCallback()
