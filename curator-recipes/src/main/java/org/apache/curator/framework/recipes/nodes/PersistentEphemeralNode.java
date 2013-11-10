@@ -25,8 +25,6 @@ import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -66,14 +64,6 @@ public class PersistentEphemeralNode implements Closeable
     {
         @Override
         public void process(WatchedEvent event)
-        {
-            createNode();
-        }
-    };
-    private final ConnectionStateListener listener = new ConnectionStateListener()
-    {
-        @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
             createNode();
         }
@@ -236,7 +226,6 @@ public class PersistentEphemeralNode implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
-        client.getConnectionStateListenable().addListener(listener);
         createNode();
     }
 
@@ -264,8 +253,6 @@ public class PersistentEphemeralNode implements Closeable
         {
             return;
         }
-
-        client.getConnectionStateListenable().removeListener(listener);
 
         try
         {
