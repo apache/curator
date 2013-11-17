@@ -514,7 +514,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         if ( e instanceof KeeperException.ConnectionLossException )
         {
-            connectionStateManager.addStateChange(ConnectionState.LOST);
+            handleKeeperStateDisconnected();
         }
 
         final String        localReason = reason;
@@ -745,8 +745,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.Disconnected )
             {
-                connectionStateManager.addStateChange(ConnectionState.SUSPENDED);
-                internalSync(this, "/", null);  // we appear to have disconnected, force a new ZK event and see if we can connect to another server
+                handleKeeperStateDisconnected();
             }
             else if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.Expired )
             {
@@ -761,5 +760,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 connectionStateManager.addStateChange(ConnectionState.READ_ONLY);
             }
         }
+    }
+
+    private void handleKeeperStateDisconnected()
+    {
+        connectionStateManager.addStateChange(ConnectionState.SUSPENDED);
+        internalSync(this, "/", null);  // we appear to have disconnected, force a new ZK event and see if we can connect to another server
     }
 }
