@@ -107,7 +107,7 @@ public class InstanceCleanup implements Closeable
             Collection<ServiceInstance<Object>>     instances = discovery.queryForInstances(name);
             for ( ServiceInstance<Object> instance : instances )
             {
-                if ( instance.getServiceType() != ServiceType.PERMANENT )
+                if ( instance.getServiceType() == ServiceType.STATIC )
                 {
                     if ( (System.currentTimeMillis() - instance.getRegistrationTimeUTC()) > instanceRefreshMs )
                     {
