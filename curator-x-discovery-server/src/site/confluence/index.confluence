@@ -41,10 +41,10 @@ h2. REST
 Clients must make appropriate REST calls to register themselves and send periodic heartbeats. They can also find services via REST calls:
 
 h2. putService
-*Method:* PUT
-*Path:* v1/service/{name}/{id}
-*Request Entity:* ServiceInstance
-*Response Entity:* n/a
+*Method:* PUT \\
+*Path:* v1/service/{name}/{id} \\
+*Request Entity:* ServiceInstance \\
+*Response Entity:* n/a \\
 *Description:* {name} is the service name, {id} is the instance id. The request entity is a _ServiceInstance_. This
 method registers a service instance. If the ServiceType is STATIC, the instance is registered only for the pre-defined period
 (defined in the DiscoveryContext). STATIC services must call putService at least once per period. PERMANENT services are registered
