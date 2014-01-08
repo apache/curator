@@ -19,7 +19,6 @@
 
 package org.apache.curator.x.rest;
 
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.x.rest.system.Connection;
 import org.apache.curator.x.rest.system.ConnectionsManager;
 import org.apache.curator.x.rest.system.ThingKey;
@@ -30,6 +29,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
@@ -49,8 +49,8 @@ public class ConnectionResource
     }
 
     @POST
-    @Path("{id}/connection-state-change")
-    public void registerConnectionStateChange(@Suspended final AsyncResponse asyncResponse, @PathParam("id") String id)
+    @Path("{id}/block-on-state-change")
+    public void registerConnectionStateChange(@Suspended final AsyncResponse asyncResponse, @PathParam("id") String id, @QueryParam("state-count") String currentStateCountArg)
     {
         final Connection connection = connectionsManager.get(id);
         if ( connection == null )
@@ -59,6 +59,7 @@ public class ConnectionResource
             return;
         }
 
+        final long currentStateCount = (currentStateCountArg != null) ? Long.parseLong(currentStateCountArg) : -1;
         Future<?> future = connectionsManager.getExecutorService().submit(new Runnable()
         {
             @Override
@@ -66,8 +67,8 @@ public class ConnectionResource
             {
                 try
                 {
-                    ConnectionState state = connection.blockingPopStateChange();
-                    asyncResponse.resume(Response.ok(state.name()).build());
+                    connection.blockUntilStateChange(currentStateCount);
+                    asyncResponse.resume(Response.ok().build());
                 }
                 catch ( InterruptedException e )
                 {
@@ -90,7 +91,7 @@ public class ConnectionResource
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        return Response.ok(connection.getClient().getState().name()).build();
+        return Response.ok(connection.getState()).build();
     }
 
     @POST

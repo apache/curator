@@ -20,7 +20,7 @@
 package org.apache.curator.x.rest.system;
 
 import com.google.common.io.Closeables;
-import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import java.util.concurrent.Future;
 
@@ -41,18 +41,18 @@ public interface ThingType<T>
         }
     };
 
-    public static ThingType<LeaderLatch> LEADER = new ThingType<LeaderLatch>()
+    public static ThingType<PathChildrenCache> PATH_CACHE = new ThingType<PathChildrenCache>()
     {
         @Override
-        public Class<LeaderLatch> getThingClass()
+        public Class<PathChildrenCache> getThingClass()
         {
-            return LeaderLatch.class;
+            return PathChildrenCache.class;
         }
 
         @Override
-        public void closeFor(LeaderLatch latch)
+        public void closeFor(PathChildrenCache cache)
         {
-            Closeables.closeQuietly(latch);
+            Closeables.closeQuietly(cache);
         }
     };
 

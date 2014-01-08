@@ -19,14 +19,14 @@
 
 package org.apache.curator.x.rest.system;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.x.rest.entity.ConnectionStateEntity;
 import java.io.Closeable;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Connection implements Closeable, ConnectionStateListener
@@ -34,7 +34,8 @@ public class Connection implements Closeable, ConnectionStateListener
     private final CuratorFramework client;
     private final AtomicLong lastUseMs = new AtomicLong(System.currentTimeMillis());
     private final Map<ThingKey, Object> things = Maps.newConcurrentMap();
-    private final BlockingQueue<ConnectionState> states = Queues.newLinkedBlockingQueue();
+    private final Object stateLock = new Object();
+    private long stateCount = 0;  // guarded by stateLock
 
     public Connection(CuratorFramework client)
     {
@@ -51,12 +52,35 @@ public class Connection implements Closeable, ConnectionStateListener
     @Override
     public void stateChanged(CuratorFramework client, ConnectionState newState)
     {
-        states.add(newState);
+        synchronized(stateLock)
+        {
+            ++stateCount;
+            stateLock.notifyAll();
+        }
     }
 
-    public ConnectionState blockingPopStateChange() throws InterruptedException
+    public ConnectionStateEntity getState()
     {
-        return states.take();
+        synchronized(stateLock)
+        {
+            return new ConnectionStateEntity(client.getState().name(), stateCount);
+        }
+    }
+
+    public void blockUntilStateChange(long expectedStateCount) throws InterruptedException
+    {
+        synchronized(stateLock)
+        {
+            if ( expectedStateCount < 0 )
+            {
+                expectedStateCount = stateCount;
+            }
+
+            while ( stateCount == expectedStateCount )
+            {
+                stateLock.wait();
+            }
+        }
     }
 
     public void updateUse()
@@ -81,6 +105,7 @@ public class Connection implements Closeable, ConnectionStateListener
 
     public <T> void putThing(ThingKey<T> key, T thing)
     {
+        thing = Preconditions.checkNotNull(thing, "thing cannot be null");
         things.put(key, thing);
     }
 

@@ -39,12 +39,12 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ContextResolver;
 import java.util.concurrent.TimeUnit;
 
-@Path("zookeeper/recipes/leader/{connectionId}")
-public class LeaderRecipeResource
+@Path("zookeeper/recipes/path-cache/{connectionId}")
+public class PathCacheRecipeResource
 {
     private final ConnectionsManager connectionsManager;
 
-    public LeaderRecipeResource(@Context ContextResolver<ConnectionsManager> contextResolver)
+    public PathCacheRecipeResource(@Context ContextResolver<ConnectionsManager> contextResolver)
     {
         connectionsManager = contextResolver.getContext(ConnectionsManager.class);
     }
