@@ -224,6 +224,7 @@
         <module>curator-examples</module>
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
+        <module>curator-x-rest</module>
     </modules>
 
     <dependencyManagement>
