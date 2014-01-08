@@ -19,14 +19,22 @@
 
 package org.apache.curator.x.rest;
 
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
-import org.apache.curator.x.rest.entity.LockRequestEntity;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.x.rest.entity.PathChildrenCacheEntity;
+import org.apache.curator.x.rest.entity.PathChildrenCacheEventEntity;
+import org.apache.curator.x.rest.entity.StatEntity;
 import org.apache.curator.x.rest.system.Connection;
 import org.apache.curator.x.rest.system.ConnectionsManager;
+import org.apache.curator.x.rest.system.PathChildrenCacheThing;
 import org.apache.curator.x.rest.system.ThingKey;
 import org.apache.curator.x.rest.system.ThingType;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -34,10 +42,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ContextResolver;
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Future;
 
 @Path("zookeeper/recipes/path-cache/{connectionId}")
 public class PathCacheRecipeResource
@@ -50,9 +61,8 @@ public class PathCacheRecipeResource
     }
 
     @POST
-    @Path("{path:.*}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response reEntrantLockAllocate(@PathParam("connectionId") String connectionId, @PathParam("path") String path) throws Exception
+    public Response allocate(@PathParam("connectionId") String connectionId, PathChildrenCacheEntity spec) throws Exception
     {
         Connection connection = connectionsManager.get(connectionId);
         if ( connection == null )
@@ -60,16 +70,22 @@ public class PathCacheRecipeResource
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        InterProcessSemaphoreMutex mutex = new InterProcessSemaphoreMutex(connection.getClient(), path);
-        ThingKey<InterProcessSemaphoreMutex> key = new ThingKey<InterProcessSemaphoreMutex>(ThingType.MUTEX);
-        connection.putThing(key, mutex);
+        PathChildrenCache cache = new PathChildrenCache(connection.getClient(), spec.getPath(), spec.isCacheData(), spec.isDataIsCompressed());
+        PathChildrenCacheThing cacheThing = new PathChildrenCacheThing(cache);
+        cache.getListenable().addListener(new LocalListener(cacheThing));
+
+        ThingKey<PathChildrenCacheThing> key = new ThingKey<PathChildrenCacheThing>(ThingType.PATH_CACHE);
+        connection.putThing(key, cacheThing);
+
+        PathChildrenCache.StartMode startMode = spec.isBuildInitial() ? PathChildrenCache.StartMode.POST_INITIALIZED_EVENT : PathChildrenCache.StartMode.NORMAL;
+        cache.start(startMode);
 
         return Response.ok(key.getId()).build();
     }
 
     @DELETE
     @Path("{id}")
-    public Response reEntrantLockDelete(@PathParam("connectionId") String connectionId, @PathParam("id") String lockId) throws Exception
+    public Response delete(@PathParam("connectionId") String connectionId, @PathParam("id") String cacheId) throws IOException
     {
         Connection connection = connectionsManager.get(connectionId);
         if ( connection == null )
@@ -77,23 +93,20 @@ public class PathCacheRecipeResource
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        InterProcessSemaphoreMutex mutex = connection.removeThing(new ThingKey<InterProcessSemaphoreMutex>(lockId, ThingType.MUTEX));
-        if ( mutex == null )
+        PathChildrenCacheThing cacheThing = connection.removeThing(new ThingKey<PathChildrenCacheThing>(cacheId, ThingType.PATH_CACHE));
+        if ( cacheThing == null )
         {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        if ( mutex.isAcquiredInThisProcess() )
-        {
-            mutex.release();
-        }
+        cacheThing.getCache().close();
 
         return Response.ok().build();
     }
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public void reEntrantLockAcquire(@Suspended final AsyncResponse asyncResponse, @PathParam("connectionId") String connectionId, final LockRequestEntity lockRequest) throws Exception
+    @GET
+    @Path("{id}/block-on-events")
+    public void getEvents(@Suspended final AsyncResponse asyncResponse, @PathParam("connectionId") String connectionId, @PathParam("id") String cacheId)
     {
         Connection connection = connectionsManager.get(connectionId);
         if ( connection == null )
@@ -102,14 +115,14 @@ public class PathCacheRecipeResource
             return;
         }
 
-        final InterProcessSemaphoreMutex mutex = connection.getThing(new ThingKey<InterProcessSemaphoreMutex>(lockRequest.getLockId(), ThingType.MUTEX));
-        if ( mutex == null )
+        final PathChildrenCacheThing cacheThing = connection.removeThing(new ThingKey<PathChildrenCacheThing>(cacheId, ThingType.PATH_CACHE));
+        if ( cacheThing == null )
         {
             asyncResponse.resume(Response.status(Response.Status.NOT_FOUND).build());
             return;
         }
 
-        connectionsManager.getExecutorService().submit
+        Future<?> future = connectionsManager.getExecutorService().submit
         (
             new Runnable()
             {
@@ -118,15 +131,68 @@ public class PathCacheRecipeResource
                 {
                     try
                     {
-                        boolean success = mutex.acquire(lockRequest.getMaxWaitMs(), TimeUnit.MILLISECONDS);
-                        asyncResponse.resume(Response.status(success ? Response.Status.OK : Response.Status.REQUEST_TIMEOUT).build());
+                        List<PathChildrenCacheEvent> events = cacheThing.blockForPendingEvents();
+                        List<PathChildrenCacheEventEntity> transformed = Lists.transform(events, toEntity);
+                        GenericEntity<List<PathChildrenCacheEventEntity>> entity = new GenericEntity<List<PathChildrenCacheEventEntity>>(transformed){};
+                        asyncResponse.resume(Response.ok(entity).build());
                     }
-                    catch ( Exception e )
+                    catch ( InterruptedException e )
                     {
-                        asyncResponse.resume(e);
+                        Thread.currentThread().interrupt();
+                        asyncResponse.resume(Response.status(Response.Status.SERVICE_UNAVAILABLE).build());
                     }
                 }
             }
         );
+        connection.putThing(new ThingKey<Future>(ThingType.FUTURE), future);
+    }
+
+    private static final Function<PathChildrenCacheEvent, PathChildrenCacheEventEntity> toEntity = new Function<PathChildrenCacheEvent, PathChildrenCacheEventEntity>()
+    {
+        @Override
+        public PathChildrenCacheEventEntity apply(PathChildrenCacheEvent event)
+        {
+            String path = (event.getData() != null) ? event.getData().getPath() : null;
+            String data = ((event.getData() != null) && (event.getData().getData() != null)) ? new String((event.getData().getData())) : null;
+            StatEntity stat = ((event.getData() != null) && (event.getData().getStat() != null))
+                ? new StatEntity
+                (
+                    event.getData().getStat().getCzxid(),
+                    event.getData().getStat().getMzxid(),
+                    event.getData().getStat().getCtime(),
+                    event.getData().getStat().getMtime(),
+                    event.getData().getStat().getVersion(),
+                    event.getData().getStat().getCversion(),
+                    event.getData().getStat().getAversion(),
+                    event.getData().getStat().getEphemeralOwner(),
+                    event.getData().getStat().getDataLength(),
+                    event.getData().getStat().getNumChildren(),
+                    event.getData().getStat().getPzxid()
+                )
+                : null;
+            return new PathChildrenCacheEventEntity
+            (
+                event.getType().name(),
+                path,
+                data,
+                stat
+            );
+        }
+    };
+
+    private static class LocalListener implements PathChildrenCacheListener
+    {
+        private final PathChildrenCacheThing cacheThing;
+
+        public LocalListener(PathChildrenCacheThing cacheThing)
+        {
+            this.cacheThing = cacheThing;
+        }
+
+        @Override
+        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+        {
+            cacheThing.addEvent(event);
+        }
     }
 }

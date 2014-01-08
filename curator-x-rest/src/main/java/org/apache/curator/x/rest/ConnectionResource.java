@@ -48,7 +48,7 @@ public class ConnectionResource
         connectionsManager = contextResolver.getContext(ConnectionsManager.class);
     }
 
-    @POST
+    @GET
     @Path("{id}/block-on-state-change")
     public void registerConnectionStateChange(@Suspended final AsyncResponse asyncResponse, @PathParam("id") String id, @QueryParam("state-count") String currentStateCountArg)
     {

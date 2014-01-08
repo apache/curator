@@ -20,7 +20,6 @@
 package org.apache.curator.x.rest.system;
 
 import com.google.common.io.Closeables;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import java.util.concurrent.Future;
 
@@ -41,18 +40,18 @@ public interface ThingType<T>
         }
     };
 
-    public static ThingType<PathChildrenCache> PATH_CACHE = new ThingType<PathChildrenCache>()
+    public static ThingType<PathChildrenCacheThing> PATH_CACHE = new ThingType<PathChildrenCacheThing>()
     {
         @Override
-        public Class<PathChildrenCache> getThingClass()
+        public Class<PathChildrenCacheThing> getThingClass()
         {
-            return PathChildrenCache.class;
+            return PathChildrenCacheThing.class;
         }
 
         @Override
-        public void closeFor(PathChildrenCache cache)
+        public void closeFor(PathChildrenCacheThing cache)
         {
-            Closeables.closeQuietly(cache);
+            Closeables.closeQuietly(cache.getCache());
         }
     };
 
