@@ -22,9 +22,11 @@ package org.apache.curator.x.rest;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.x.rest.entity.PathChildrenCacheDataEntity;
 import org.apache.curator.x.rest.entity.PathChildrenCacheEntity;
 import org.apache.curator.x.rest.entity.PathChildrenCacheEventEntity;
 import org.apache.curator.x.rest.entity.StatEntity;
@@ -105,7 +107,8 @@ public class PathCacheRecipeResource
     }
 
     @GET
-    @Path("{id}/block-on-events")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("block-on-events/{id}")
     public void getEvents(@Suspended final AsyncResponse asyncResponse, @PathParam("connectionId") String connectionId, @PathParam("id") String cacheId)
     {
         Connection connection = connectionsManager.get(connectionId);
@@ -147,38 +150,104 @@ public class PathCacheRecipeResource
         connection.putThing(new ThingKey<Future>(ThingType.FUTURE), future);
     }
 
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("{id}")
+    public Response getCurrentData(@PathParam("connectionId") String connectionId, @PathParam("id") String cacheId)
+    {
+        Connection connection = connectionsManager.get(connectionId);
+        if ( connection == null )
+        {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        PathChildrenCacheThing cacheThing = connection.removeThing(new ThingKey<PathChildrenCacheThing>(cacheId, ThingType.PATH_CACHE));
+        if ( cacheThing == null )
+        {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        List<ChildData> currentData = cacheThing.getCache().getCurrentData();
+        List<PathChildrenCacheDataEntity> transformed = Lists.transform(currentData, new Function<ChildData, PathChildrenCacheDataEntity>()
+        {
+            @Override
+            public PathChildrenCacheDataEntity apply(ChildData data)
+            {
+                return toEntity(data);
+            }
+        });
+
+        GenericEntity<List<PathChildrenCacheDataEntity>> entity = new GenericEntity<List<PathChildrenCacheDataEntity>>(transformed){};
+        return Response.ok(entity).build();
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("{id}/{path:.*}")
+    public Response getCurrentData(@PathParam("connectionId") String connectionId, @PathParam("id") String cacheId, @PathParam("path") String fullPath)
+    {
+        Connection connection = connectionsManager.get(connectionId);
+        if ( connection == null )
+        {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        PathChildrenCacheThing cacheThing = connection.removeThing(new ThingKey<PathChildrenCacheThing>(cacheId, ThingType.PATH_CACHE));
+        if ( cacheThing == null )
+        {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        ChildData currentData = cacheThing.getCache().getCurrentData(fullPath);
+        if (currentData == null )
+        {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        return Response.ok(toEntity(currentData)).build();
+    }
+
     private static final Function<PathChildrenCacheEvent, PathChildrenCacheEventEntity> toEntity = new Function<PathChildrenCacheEvent, PathChildrenCacheEventEntity>()
     {
         @Override
         public PathChildrenCacheEventEntity apply(PathChildrenCacheEvent event)
         {
-            String path = (event.getData() != null) ? event.getData().getPath() : null;
-            String data = ((event.getData() != null) && (event.getData().getData() != null)) ? new String((event.getData().getData())) : null;
-            StatEntity stat = ((event.getData() != null) && (event.getData().getStat() != null))
-                ? new StatEntity
-                (
-                    event.getData().getStat().getCzxid(),
-                    event.getData().getStat().getMzxid(),
-                    event.getData().getStat().getCtime(),
-                    event.getData().getStat().getMtime(),
-                    event.getData().getStat().getVersion(),
-                    event.getData().getStat().getCversion(),
-                    event.getData().getStat().getAversion(),
-                    event.getData().getStat().getEphemeralOwner(),
-                    event.getData().getStat().getDataLength(),
-                    event.getData().getStat().getNumChildren(),
-                    event.getData().getStat().getPzxid()
-                )
-                : null;
-            return new PathChildrenCacheEventEntity
-            (
-                event.getType().name(),
-                path,
-                data,
-                stat
-            );
+            PathChildrenCacheDataEntity data = null;
+            ChildData childData = event.getData();
+            if ( childData != null )
+            {
+                data = toEntity(childData);
+            }
+            return new PathChildrenCacheEventEntity(event.getType().name(), data);
         }
     };
+
+    private static PathChildrenCacheDataEntity toEntity(ChildData childData)
+    {
+        PathChildrenCacheDataEntity data;StatEntity stat = (childData.getStat() != null)
+            ? new StatEntity
+            (
+                childData.getStat().getCzxid(),
+                childData.getStat().getMzxid(),
+                childData.getStat().getCtime(),
+                childData.getStat().getMtime(),
+                childData.getStat().getVersion(),
+                childData.getStat().getCversion(),
+                childData.getStat().getAversion(),
+                childData.getStat().getEphemeralOwner(),
+                childData.getStat().getDataLength(),
+                childData.getStat().getNumChildren(),
+                childData.getStat().getPzxid()
+            )
+            : null;
+        data = new PathChildrenCacheDataEntity
+        (
+            childData.getPath(),
+            (childData.getData() != null) ? new String((childData.getData())) : null,
+            stat
+        );
+        return data;
+    }
 
     private static class LocalListener implements PathChildrenCacheListener
     {

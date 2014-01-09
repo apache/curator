@@ -22,39 +22,51 @@ package org.apache.curator.x.rest.entity;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class PathChildrenCacheEventEntity
+public class PathChildrenCacheDataEntity
 {
-    private String eventType;
-    private PathChildrenCacheDataEntity data;
+    private String path;
+    private String data;
+    private StatEntity stat;
 
-    public PathChildrenCacheEventEntity()
+    public PathChildrenCacheDataEntity()
     {
-        this("", new PathChildrenCacheDataEntity());
+        this("", "", new StatEntity());
     }
 
-    public PathChildrenCacheEventEntity(String eventType, PathChildrenCacheDataEntity data)
+    public PathChildrenCacheDataEntity(String path, String data, StatEntity stat)
     {
-        this.eventType = eventType;
+        this.path = path;
         this.data = data;
+        this.stat = stat;
     }
 
-    public String getEventType()
+    public String getPath()
     {
-        return eventType;
+        return path;
     }
 
-    public void setEventType(String eventType)
+    public void setPath(String path)
     {
-        this.eventType = eventType;
+        this.path = path;
     }
 
-    public PathChildrenCacheDataEntity getData()
+    public String getData()
     {
         return data;
     }
 
-    public void setData(PathChildrenCacheDataEntity data)
+    public void setData(String data)
     {
         this.data = data;
+    }
+
+    public StatEntity getStat()
+    {
+        return stat;
+    }
+
+    public void setStat(StatEntity stat)
+    {
+        this.stat = stat;
     }
 }

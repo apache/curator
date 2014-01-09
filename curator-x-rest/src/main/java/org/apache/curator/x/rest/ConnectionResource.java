@@ -49,7 +49,7 @@ public class ConnectionResource
     }
 
     @GET
-    @Path("{id}/block-on-state-change")
+    @Path("block-on-state-change/{id}")
     public void registerConnectionStateChange(@Suspended final AsyncResponse asyncResponse, @PathParam("id") String id, @QueryParam("state-count") String currentStateCountArg)
     {
         final Connection connection = connectionsManager.get(id);
