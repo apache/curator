@@ -81,6 +81,7 @@ public class CuratorEndpoint extends Endpoint
         catch ( Exception e )
         {
             // TODO
+            e.printStackTrace();
         }
 
         MessageHandler handler = new MessageHandler.Whole<String>()

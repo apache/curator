@@ -19,9 +19,13 @@
 
 package org.apache.curator.x.websockets.api.zookeeper;
 
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.BackgroundPathAndBytesable;
 import org.apache.curator.framework.api.Compressible;
 import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CreateModable;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.x.websockets.api.ApiCommand;
 import org.apache.curator.x.websockets.api.JsonUtils;
@@ -33,6 +37,7 @@ import org.codehaus.jackson.map.ObjectWriter;
 
 public class Create implements ApiCommand
 {
+    @SuppressWarnings("unchecked")
     @Override
     public void process(String id, JsonNode input, CuratorWebsocketsSession session, ObjectReader reader, ObjectWriter writer) throws Exception
     {
@@ -67,14 +72,22 @@ public class Create implements ApiCommand
                 builder = ((CreateModable)builder).withMode(createMode);
             }
 
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    System.out.println();
+                }
+            };
             if ( payload != null )
             {
                 String payloadStr = writer.writeValueAsString(payload);
-                result = ((PathAndBytesable)builder).forPath(path, payloadStr.getBytes());
+                result = ((BackgroundPathAndBytesable<String>)builder).inBackground(callback).forPath(path, payloadStr.getBytes());
             }
             else
             {
-                result = ((PathAndBytesable)builder).forPath(path);
+                result = ((BackgroundPathAndBytesable<String>)builder).inBackground(callback).forPath(path);
             }
         }
         catch ( ClassCastException e )
