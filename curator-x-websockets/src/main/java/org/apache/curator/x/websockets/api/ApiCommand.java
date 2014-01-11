@@ -26,5 +26,5 @@ import org.codehaus.jackson.map.ObjectWriter;
 
 public interface ApiCommand
 {
-    public String process(JsonNode input, CuratorWebsocketsSession session, ObjectReader reader, ObjectWriter writer) throws Exception;
+    public void process(String id, JsonNode input, CuratorWebsocketsSession session, ObjectReader reader, ObjectWriter writer) throws Exception;
 }

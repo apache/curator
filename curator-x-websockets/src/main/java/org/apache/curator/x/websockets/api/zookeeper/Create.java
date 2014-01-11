@@ -19,9 +19,14 @@
 
 package org.apache.curator.x.websockets.api.zookeeper;
 
+import org.apache.curator.framework.api.Compressible;
+import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CreateModable;
+import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.x.websockets.api.ApiCommand;
 import org.apache.curator.x.websockets.api.JsonUtils;
 import org.apache.curator.x.websockets.details.CuratorWebsocketsSession;
+import org.apache.zookeeper.CreateMode;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectReader;
 import org.codehaus.jackson.map.ObjectWriter;
@@ -29,18 +34,54 @@ import org.codehaus.jackson.map.ObjectWriter;
 public class Create implements ApiCommand
 {
     @Override
-    public String process(JsonNode input, CuratorWebsocketsSession session, ObjectReader reader, ObjectWriter writer) throws Exception
+    public void process(String id, JsonNode input, CuratorWebsocketsSession session, ObjectReader reader, ObjectWriter writer) throws Exception
     {
         String path = JsonUtils.getRequiredString(input, "path");
         boolean withProtection = JsonUtils.getOptionalBoolean(input, "withProtection");
         boolean creatingParentsIfNeeded = JsonUtils.getOptionalBoolean(input, "creatingParentsIfNeeded");
         boolean compressed = JsonUtils.getOptionalBoolean(input, "compressed");
-        boolean async = JsonUtils.getOptionalBoolean(input, "async");
-        String mode = JsonUtils.getOptionalString(input, "mode", "persistent");
+        String mode = JsonUtils.getOptionalString(input, "mode");
 
         JsonNode payload = input.get("payload");
 
-        // TODO ACL
-        return null;
+        Object builder = session.getClient().create();
+        Object result;
+        try
+        {
+            if ( withProtection )
+            {
+                builder = ((CreateBuilder)builder).withProtection();
+            }
+            if ( creatingParentsIfNeeded )
+            {
+                builder = ((CreateBuilder)builder).creatingParentsIfNeeded();
+            }
+            if ( compressed )
+            {
+                builder = ((Compressible)builder).compressed();
+            }
+
+            if ( mode != null )
+            {
+                CreateMode createMode = CreateMode.valueOf(mode.toUpperCase());
+                builder = ((CreateModable)builder).withMode(createMode);
+            }
+
+            if ( payload != null )
+            {
+                String payloadStr = writer.writeValueAsString(payload);
+                result = ((PathAndBytesable)builder).forPath(path, payloadStr.getBytes());
+            }
+            else
+            {
+                result = ((PathAndBytesable)builder).forPath(path);
+            }
+        }
+        catch ( ClassCastException e )
+        {
+            throw new Exception("Bad combination of arguments to create()");
+        }
+
+        // TODO ACL, result
     }
 }

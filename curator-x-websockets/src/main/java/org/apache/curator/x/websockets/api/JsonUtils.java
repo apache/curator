@@ -20,9 +20,34 @@
 package org.apache.curator.x.websockets.api;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
+import org.codehaus.jackson.node.ObjectNode;
+import java.io.IOException;
+import java.util.UUID;
 
 public class JsonUtils
 {
+    public static final String FIELD_TYPE = "type";
+    public static final String FIELD_ID = "id";
+    public static final String FIELD_VALUE = "value";
+
+    public static final String SYSTEM_TYPE_CONNECTION_STATE_CHANGE = "system/connection-state-change";
+
+    public static String newMessage(ObjectMapper mapper, ObjectWriter writer, String type, ObjectNode value) throws IOException
+    {
+        return newMessage(mapper, writer, type, UUID.randomUUID().toString(), value);
+    }
+
+    public static String newMessage(ObjectMapper mapper, ObjectWriter writer, String type, String id, ObjectNode value) throws IOException
+    {
+        ObjectNode node = mapper.createObjectNode();
+        node.put(FIELD_TYPE, type);
+        node.put(FIELD_ID, id);
+        node.put(FIELD_VALUE, value);
+        return writer.writeValueAsString(node);
+    }
+
     public static String getRequiredString(JsonNode node, String name) throws Exception
     {
         JsonNode jsonNode = node.get(name);

@@ -20,11 +20,15 @@
 package org.apache.curator.x.websockets.details;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.x.websockets.api.ApiCommand;
+import org.apache.curator.x.websockets.api.JsonUtils;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectReader;
 import org.codehaus.jackson.map.ObjectWriter;
+import org.codehaus.jackson.node.ObjectNode;
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -35,8 +39,9 @@ import java.io.IOException;
 public class CuratorEndpoint extends Endpoint
 {
     private final SessionManager sessionManager;
-    private final ObjectReader reader = new ObjectMapper().reader();
-    private final ObjectWriter writer = new ObjectMapper().writer();
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectReader reader = mapper.reader();
+    private final ObjectWriter writer = mapper.writer();
 
     public CuratorEndpoint(SessionManager sessionManager)
     {
@@ -50,6 +55,26 @@ public class CuratorEndpoint extends Endpoint
         {
             CuratorFramework client = sessionManager.getClientCreator().newClient();
             sessionManager.put(session, new CuratorWebsocketsSession(client, session));
+
+            ConnectionStateListener listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    try
+                    {
+                        ObjectNode node = mapper.createObjectNode();
+                        node.put("newState", newState.name());
+                        String message = JsonUtils.newMessage(mapper, writer, JsonUtils.SYSTEM_TYPE_CONNECTION_STATE_CHANGE, node);
+                        session.getAsyncRemote().sendText(message);
+                    }
+                    catch ( Exception e )
+                    {
+                        // TODO
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
 
             client.start();
         }
@@ -90,14 +115,12 @@ public class CuratorEndpoint extends Endpoint
             }
 
             JsonNode jsonNode = reader.readTree(message);
-            JsonNode command = jsonNode.get("command");
-            if ( command == null )
-            {
-                throw new Exception("Missing field: \"command\"");
-            }
-            String commandName = command.asText();
-            ApiCommand apiCommand = sessionManager.getCommandManager().newCommand(commandName);
-            apiCommand.process(jsonNode, curatorWebsocketsSession, reader, writer);
+            String command = JsonUtils.getRequiredString(jsonNode, JsonUtils.FIELD_TYPE);
+            String id = JsonUtils.getRequiredString(jsonNode, JsonUtils.FIELD_ID);
+            JsonNode value = jsonNode.get(JsonUtils.FIELD_VALUE);
+
+            ApiCommand apiCommand = sessionManager.getCommandManager().newCommand(command);
+            apiCommand.process(id, value, curatorWebsocketsSession, reader, writer);
         }
         catch ( Exception e )
         {
