@@ -606,14 +606,27 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         connectionStateManager.setToSuspended();
 
+        final long instanceIndex = client.getInstanceIndex();
+
         // we appear to have disconnected, force a new ZK event and see if we can connect to another server
-        BackgroundOperation<String> operation = new BackgroundSyncImpl(this, null);
+        final BackgroundOperation<String> operation = new BackgroundSyncImpl(this, null);
         OperationAndData.ErrorCallback<String> errorCallback = new OperationAndData.ErrorCallback<String>()
         {
             @Override
             public void retriesExhausted(OperationAndData<String> operationAndData)
             {
-                connectionStateManager.addStateChange(ConnectionState.LOST);
+                // if instanceIndex != newInstanceIndex, the ZooKeeper instance was reset/reallocated
+                // so the pending background sync is no longer valid
+                long newInstanceIndex = client.getInstanceIndex();
+                if ( instanceIndex == newInstanceIndex )
+                {
+                    connectionStateManager.addStateChange(ConnectionState.LOST);
+                }
+                else
+                {
+                    log.debug("suspendConnection() failure ignored as the ZooKeeper instance was reset. Retrying.");
+                    performBackgroundOperation(new OperationAndData<String>(operation, "/", null, this, null));
+                }
             }
         };
         performBackgroundOperation(new OperationAndData<String>(operation, "/", null, errorCallback, null));
