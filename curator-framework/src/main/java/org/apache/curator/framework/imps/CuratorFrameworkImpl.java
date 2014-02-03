@@ -622,7 +622,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
             public void retriesExhausted(OperationAndData<String> operationAndData)
             {
                 // if instanceIndex != newInstanceIndex, the ZooKeeper instance was reset/reallocated
-                // so the pending background sync is no longer valid
+                // so the pending background sync is no longer valid.
+                // if instanceIndex is -1, this is the second try to sync - punt and mark the connection lost
                 if ( (instanceIndex < 0) || (instanceIndex == client.getInstanceIndex()) )
                 {
                     connectionStateManager.addStateChange(ConnectionState.LOST);
