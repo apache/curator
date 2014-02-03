@@ -624,14 +624,15 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 // if instanceIndex != newInstanceIndex, the ZooKeeper instance was reset/reallocated
                 // so the pending background sync is no longer valid
                 long newInstanceIndex = client.getInstanceIndex();
-                if ( instanceIndex == newInstanceIndex )
+                if ( (instanceIndex < 0) || (instanceIndex == newInstanceIndex) )
                 {
                     connectionStateManager.addStateChange(ConnectionState.LOST);
                 }
                 else
                 {
                     log.debug("suspendConnection() failure ignored as the ZooKeeper instance was reset. Retrying.");
-                    doSyncForSuspendedConnection(newInstanceIndex);
+                    // send -1 to signal that if it happens again, punt and mark the connection lost
+                    doSyncForSuspendedConnection(-1);
                 }
             }
         };
