@@ -18,7 +18,7 @@
  */
 package org.apache.curator.ensemble.exhibitor;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -61,7 +61,7 @@ public class DefaultExhibitorRestClient implements ExhibitorRestClient
         }
         finally
         {
-            Closeables.closeQuietly(in);
+            CloseableUtils.closeQuietly(in);
         }
         return str.toString();
     }

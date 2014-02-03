@@ -312,7 +312,7 @@ public class LeaderLatch implements Closeable
     /**
      * Returns this instances current state, this is the only way to verify that the object has been closed before
      * closing again.  If you try to close a latch multiple times, the close() method will throw an
-     * IllegalArgumentException which is often not caught and ignored (Closeables.closeQuietly() only looks for
+     * IllegalArgumentException which is often not caught and ignored (CloseableUtils.closeQuietly() only looks for
      * IOException).
      *
      * @return the state of the current instance

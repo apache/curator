@@ -20,7 +20,7 @@ package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -117,7 +117,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -160,7 +160,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 

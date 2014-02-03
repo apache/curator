@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.imps;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -60,8 +60,8 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client2);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client2);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -84,7 +84,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -101,7 +101,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -124,7 +124,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 

@@ -19,7 +19,7 @@
 package org.apache.curator.framework.recipes.leader;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -89,10 +89,10 @@ public class TestLeaderLatchCluster
         {
             for ( ClientAndLatch client : clients )
             {
-                Closeables.closeQuietly(client.latch);
-                Closeables.closeQuietly(client.client);
+                CloseableUtils.closeQuietly(client.latch);
+                CloseableUtils.closeQuietly(client.client);
             }
-            Closeables.closeQuietly(cluster);
+            CloseableUtils.closeQuietly(cluster);
         }
     }
 

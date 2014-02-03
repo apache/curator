@@ -18,7 +18,7 @@
  */
 package org.apache.curator;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.utils.DebugUtils;
@@ -108,7 +108,7 @@ class ConnectionState implements Watcher, Closeable
     {
         log.debug("Closing");
 
-        Closeables.closeQuietly(ensembleProvider);
+        CloseableUtils.closeQuietly(ensembleProvider);
         try
         {
             zooKeeper.closeAndClear();

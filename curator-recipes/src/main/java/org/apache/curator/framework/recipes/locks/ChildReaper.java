@@ -19,7 +19,7 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.CloseableScheduledExecutorService;
 import org.apache.curator.utils.ThreadUtils;
@@ -129,7 +129,7 @@ public class ChildReaper implements Closeable
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
-            Closeables.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(reaper);
             task.cancel(true);
         }
     }

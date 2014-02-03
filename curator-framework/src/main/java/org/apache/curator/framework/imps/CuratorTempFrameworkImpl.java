@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorTempFramework;
 import org.apache.curator.framework.api.TempGetDataBuilder;
@@ -133,7 +133,7 @@ public class CuratorTempFrameworkImpl implements CuratorTempFramework
 
         if ( client != null )
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
             client = null;
         }
     }

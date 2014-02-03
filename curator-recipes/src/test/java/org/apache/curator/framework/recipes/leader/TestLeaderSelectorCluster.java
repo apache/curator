@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.leader;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -79,8 +79,8 @@ public class TestLeaderSelectorCluster
         }
         finally
         {
-            Closeables.closeQuietly(client);
-            Closeables.closeQuietly(cluster);
+            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(cluster);
         }
     }
 
@@ -178,8 +178,8 @@ public class TestLeaderSelectorCluster
         }
         finally
         {
-            Closeables.closeQuietly(client);
-            Closeables.closeQuietly(cluster);
+            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(cluster);
         }
     }
 }

@@ -19,7 +19,7 @@
 package org.apache.curator.framework.recipes.barriers;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -92,7 +92,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
                         }
                         finally
                         {
-                            Closeables.closeQuietly(client);
+                            CloseableUtils.closeQuietly(client);
                         }
 
                         return null;
@@ -161,7 +161,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
         finally
         {
             service.shutdown();
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -233,7 +233,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
         {
             for ( Closeable c : closeables )
             {
-                Closeables.closeQuietly(c);
+                CloseableUtils.closeQuietly(c);
             }
         }
     }

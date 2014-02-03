@@ -20,7 +20,7 @@ package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.shared.SharedCountListener;
 import org.apache.curator.framework.recipes.shared.SharedCountReader;
@@ -124,7 +124,7 @@ public class InterProcessSemaphore
     {
         for ( Lease l : leases )
         {
-            Closeables.closeQuietly(l);
+            CloseableUtils.closeQuietly(l);
         }
     }
 
@@ -135,7 +135,7 @@ public class InterProcessSemaphore
      */
     public void     returnLease(Lease lease)
     {
-        Closeables.closeQuietly(lease);
+        CloseableUtils.closeQuietly(lease);
     }
 
     /**

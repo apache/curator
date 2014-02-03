@@ -18,7 +18,7 @@
  */
 package locking;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -71,7 +71,7 @@ public class LockingExample
                         }
                         finally
                         {
-                            Closeables.closeQuietly(client);
+                            CloseableUtils.closeQuietly(client);
                         }
                         return null;
                     }
@@ -84,7 +84,7 @@ public class LockingExample
         }
         finally
         {
-            Closeables.closeQuietly(server);
+            CloseableUtils.closeQuietly(server);
         }
     }
 }

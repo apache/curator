@@ -19,7 +19,7 @@
 package org.apache.curator.ensemble.exhibitor;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.BaseClassForTests;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
@@ -114,7 +114,7 @@ public class TestExhibitorEnsembleProvider extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(provider);
+            CloseableUtils.closeQuietly(provider);
         }
     }
 
@@ -188,7 +188,7 @@ public class TestExhibitorEnsembleProvider extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(secondServer);
+            CloseableUtils.closeQuietly(secondServer);
         }
     }
 

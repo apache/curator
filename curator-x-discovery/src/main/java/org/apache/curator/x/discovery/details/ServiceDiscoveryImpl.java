@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -115,11 +115,11 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         for ( ServiceCache<T> cache : Lists.newArrayList(caches) )
         {
-            Closeables.closeQuietly(cache);
+            CloseableUtils.closeQuietly(cache);
         }
         for ( ServiceProvider<T> provider : Lists.newArrayList(providers) )
         {
-            Closeables.closeQuietly(provider);
+            CloseableUtils.closeQuietly(provider);
         }
 
         for ( ServiceInstance<T> service : services.values() )

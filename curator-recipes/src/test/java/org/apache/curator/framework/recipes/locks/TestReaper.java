@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import junit.framework.Assert;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -67,7 +67,7 @@ public class TestReaper extends BaseClassForTests
                 }
                 finally
                 {
-                    Closeables.closeQuietly(reaper);
+                    CloseableUtils.closeQuietly(reaper);
                 }
             }
 
@@ -91,8 +91,8 @@ public class TestReaper extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(selector);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(selector);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -180,8 +180,8 @@ public class TestReaper extends BaseClassForTests
             {
                 watcher.cancel(true);
             }
-            Closeables.closeQuietly(reaper);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -283,8 +283,8 @@ public class TestReaper extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(reaper);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -313,8 +313,8 @@ public class TestReaper extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(reaper);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -361,8 +361,8 @@ public class TestReaper extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(reaper);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -428,8 +428,8 @@ public class TestReaper extends BaseClassForTests
         finally
         {
             service.shutdownNow();
-            Closeables.closeQuietly(reaper);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -471,9 +471,9 @@ public class TestReaper extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(reaper);
-            Closeables.closeQuietly(client2);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client2);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -499,8 +499,8 @@ public class TestReaper extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(reaper);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client);
         }
     }
 }

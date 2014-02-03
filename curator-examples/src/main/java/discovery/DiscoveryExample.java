@@ -22,7 +22,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -67,12 +67,12 @@ public class DiscoveryExample
         {
             for ( ServiceProvider<InstanceDetails> cache : providers.values() )
             {
-                Closeables.closeQuietly(cache);
+                CloseableUtils.closeQuietly(cache);
             }
 
-            Closeables.closeQuietly(serviceDiscovery);
-            Closeables.closeQuietly(client);
-            Closeables.closeQuietly(server);
+            CloseableUtils.closeQuietly(serviceDiscovery);
+            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(server);
         }
     }
 
@@ -130,7 +130,7 @@ public class DiscoveryExample
         {
             for ( ExampleServer server : servers )
             {
-                Closeables.closeQuietly(server);
+                CloseableUtils.closeQuietly(server);
             }
         }
     }
@@ -188,7 +188,7 @@ public class DiscoveryExample
         }
         finally
         {
-            Closeables.closeQuietly(serviceDiscovery);
+            CloseableUtils.closeQuietly(serviceDiscovery);
         }
     }
 
@@ -229,7 +229,7 @@ public class DiscoveryExample
         }
 
         servers.remove(server);
-        Closeables.closeQuietly(server);
+        CloseableUtils.closeQuietly(server);
         System.out.println("Removed a random instance of: " + serviceName);
     }
 

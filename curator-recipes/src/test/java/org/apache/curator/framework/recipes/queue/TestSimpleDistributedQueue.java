@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -413,7 +413,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         {
             for ( CuratorFramework c : clients )
             {
-                Closeables.closeQuietly(c);
+                CloseableUtils.closeQuietly(c);
             }
         }
     }

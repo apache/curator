@@ -19,7 +19,7 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -140,14 +140,14 @@ public class TestInterProcessSemaphoreCluster
                                         if ( lease != null )
                                         {
                                             acquireCount.decrementAndGet();
-                                            Closeables.closeQuietly(lease);
+                                            CloseableUtils.closeQuietly(lease);
                                         }
                                     }
                                 }
                             }
                             finally
                             {
-                                Closeables.closeQuietly(client);
+                                CloseableUtils.closeQuietly(client);
                             }
                             return null;
                         }
@@ -178,7 +178,7 @@ public class TestInterProcessSemaphoreCluster
             executorService.shutdown();
             executorService.awaitTermination(10, TimeUnit.SECONDS);
             executorService.shutdownNow();
-            Closeables.closeQuietly(cluster);
+            CloseableUtils.closeQuietly(cluster);
         }
     }
 
@@ -249,7 +249,7 @@ public class TestInterProcessSemaphoreCluster
             }
             finally
             {
-                Closeables.closeQuietly(client);
+                CloseableUtils.closeQuietly(client);
             }
 
             long        startTicks = System.currentTimeMillis();
@@ -286,9 +286,9 @@ public class TestInterProcessSemaphoreCluster
         {
             for ( SemaphoreClient semaphoreClient : semaphoreClients )
             {
-                Closeables.closeQuietly(semaphoreClient);
+                CloseableUtils.closeQuietly(semaphoreClient);
             }
-            Closeables.closeQuietly(cluster);
+            CloseableUtils.closeQuietly(cluster);
             executorService.shutdownNow();
         }
     }

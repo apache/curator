@@ -19,7 +19,7 @@
 package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -93,7 +93,7 @@ public class TestServiceCache
             Collections.reverse(closeables);
             for ( Closeable c : closeables )
             {
-                Closeables.closeQuietly(c);
+                CloseableUtils.closeQuietly(c);
             }
         }
     }
@@ -136,7 +136,7 @@ public class TestServiceCache
             Collections.reverse(closeables);
             for ( Closeable c : closeables )
             {
-                Closeables.closeQuietly(c);
+                CloseableUtils.closeQuietly(c);
             }
         }
     }
@@ -190,7 +190,7 @@ public class TestServiceCache
             Collections.reverse(closeables);
             for ( Closeable c : closeables )
             {
-                Closeables.closeQuietly(c);
+                CloseableUtils.closeQuietly(c);
             }
         }
     }
@@ -248,7 +248,7 @@ public class TestServiceCache
             Collections.reverse(closeables);
             for ( Closeable c : closeables )
             {
-                Closeables.closeQuietly(c);
+                CloseableUtils.closeQuietly(c);
             }
         }
     }
