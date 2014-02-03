@@ -133,6 +133,7 @@ public class InterProcessSemaphoreV2
                         public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception
                         {
                             InterProcessSemaphoreV2.this.maxLeases = newCount;
+                            notifyFromWatcher();
                         }
 
                         @Override

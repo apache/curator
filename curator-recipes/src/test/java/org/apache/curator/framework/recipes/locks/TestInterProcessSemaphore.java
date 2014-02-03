@@ -61,7 +61,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
 
             ExecutorService service = Executors.newCachedThreadPool();
 
-            final CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch latch1 = new CountDownLatch(1);
+            final CountDownLatch latch2 = new CountDownLatch(1);
             Future<Object> future1 = service.submit
                 (
                     new Callable<Object>()
@@ -71,9 +72,10 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         {
                             Lease lease = semaphore.acquire(timing.seconds(), TimeUnit.SECONDS);
                             Assert.assertNotNull(lease);
-                            latch.countDown();
+                            latch1.countDown();
                             lease = semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
                             Assert.assertNotNull(lease);
+                            latch2.countDown();
                             return null;
                         }
                     }
@@ -85,9 +87,12 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         @Override
                         public Object call() throws Exception
                         {
-                            Assert.assertTrue(latch.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+                            Assert.assertTrue(latch1.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
                             timing.sleepABit(); // make sure second acquire is waiting
                             Assert.assertTrue(count.trySetCount(2));
+                            //Make sure second acquire takes less than full waiting time:
+                            timing.sleepABit();
+                            Assert.assertTrue(latch2.await(0, TimeUnit.SECONDS));
                             return null;
                         }
                     }
