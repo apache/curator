@@ -604,7 +604,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void suspendConnection()
     {
-        connectionStateManager.setToSuspended();
+        if ( !connectionStateManager.setToSuspended() )
+        {
+            return;
+        }
 
         doSyncForSuspendedConnection(client.getInstanceIndex());
     }
@@ -782,7 +785,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
                 else
                 {
-                    handleBackgroundOperationException(operationAndData, e);
+                	logError("Background retry gave up", e);
                 }
             }
             else

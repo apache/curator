@@ -136,21 +136,24 @@ public class ConnectionStateManager implements Closeable
 
     /**
      * Change to {@link ConnectionState#SUSPENDED} only if not already suspended and not lost
+     * 
+     * @return true if connection is set to SUSPENDED
      */
-    public synchronized void setToSuspended()
+    public synchronized boolean setToSuspended()
     {
         if ( state.get() != State.STARTED )
         {
-            return;
+            return false;
         }
 
         if ( (currentConnectionState == ConnectionState.LOST) || (currentConnectionState == ConnectionState.SUSPENDED) )
         {
-            return;
+            return false;
         }
 
         currentConnectionState = ConnectionState.SUSPENDED;
         postState(ConnectionState.SUSPENDED);
+        return true;
     }
 
     /**
