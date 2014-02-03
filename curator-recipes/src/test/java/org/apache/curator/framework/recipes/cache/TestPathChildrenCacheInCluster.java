@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -93,9 +93,9 @@ public class TestPathChildrenCacheInCluster
         }
         finally
         {
-            Closeables.closeQuietly(cache);
-            Closeables.closeQuietly(client);
-            Closeables.closeQuietly(cluster);
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(cluster);
         }
     }
 }

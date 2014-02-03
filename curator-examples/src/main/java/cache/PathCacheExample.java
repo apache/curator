@@ -19,7 +19,7 @@
 package cache;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -63,9 +63,9 @@ public class PathCacheExample
         }
         finally
         {
-            Closeables.closeQuietly(cache);
-            Closeables.closeQuietly(client);
-            Closeables.closeQuietly(server);
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(server);
         }
     }
 
@@ -156,7 +156,7 @@ public class PathCacheExample
         {
             for ( ExampleServer server : servers )
             {
-                Closeables.closeQuietly(server);
+                CloseableUtils.closeQuietly(server);
             }
         }
     }

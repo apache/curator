@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -70,8 +70,8 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(queue);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(queue);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -115,8 +115,8 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(queue);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(queue);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -164,8 +164,8 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(queue);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(queue);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -226,8 +226,8 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(queue);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(queue);
+            CloseableUtils.closeQuietly(client);
         }
     }
 

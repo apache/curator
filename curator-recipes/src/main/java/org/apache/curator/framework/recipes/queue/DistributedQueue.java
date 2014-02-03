@@ -22,7 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -217,7 +217,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                 }
             }
 
-            Closeables.closeQuietly(childrenCache);
+            CloseableUtils.closeQuietly(childrenCache);
             putListenerContainer.clear();
             service.shutdownNow();
         }

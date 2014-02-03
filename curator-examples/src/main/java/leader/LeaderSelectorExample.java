@@ -19,7 +19,7 @@
 package leader;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -67,14 +67,14 @@ public class LeaderSelectorExample
 
             for ( ExampleClient exampleClient : examples )
             {
-                Closeables.closeQuietly(exampleClient);
+                CloseableUtils.closeQuietly(exampleClient);
             }
             for ( CuratorFramework client : clients )
             {
-                Closeables.closeQuietly(client);
+                CloseableUtils.closeQuietly(client);
             }
 
-            Closeables.closeQuietly(server);
+            CloseableUtils.closeQuietly(server);
         }
     }
 }

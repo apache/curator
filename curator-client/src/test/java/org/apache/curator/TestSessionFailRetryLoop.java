@@ -18,7 +18,7 @@
  */
 package org.apache.curator;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.Timing;
@@ -94,7 +94,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
         finally
         {
             retryLoop.close();
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -166,7 +166,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
         finally
         {
             retryLoop.close();
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -221,7 +221,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
         finally
         {
             retryLoop.close();
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -277,7 +277,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
         finally
         {
             retryLoop.close();
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 }

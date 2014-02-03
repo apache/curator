@@ -19,7 +19,7 @@
 package org.apache.curator.framework.recipes.leader;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -77,8 +77,8 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(selector);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(selector);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -165,9 +165,9 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
         {
             for ( LeaderSelector selector : selectors )
             {
-                Closeables.closeQuietly(selector);
+                CloseableUtils.closeQuietly(selector);
             }
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 }

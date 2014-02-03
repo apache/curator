@@ -18,7 +18,7 @@
  */
 package discovery;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
@@ -74,6 +74,6 @@ public class ExampleServer implements Closeable
     @Override
     public void close() throws IOException
     {
-        Closeables.closeQuietly(serviceDiscovery);
+        CloseableUtils.closeQuietly(serviceDiscovery);
     }
 }

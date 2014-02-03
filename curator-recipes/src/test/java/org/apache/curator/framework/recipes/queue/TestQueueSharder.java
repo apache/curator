@@ -19,7 +19,7 @@
 package org.apache.curator.framework.recipes.queue;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -90,8 +90,8 @@ public class TestQueueSharder extends BaseClassForTests
         finally
         {
             timing.sleepABit(); // let queue clear
-            Closeables.closeQuietly(sharder);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(sharder);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -126,9 +126,9 @@ public class TestQueueSharder extends BaseClassForTests
         finally
         {
             timing.sleepABit(); // let queues clear
-            Closeables.closeQuietly(sharder1);
-            Closeables.closeQuietly(sharder2);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(sharder1);
+            CloseableUtils.closeQuietly(sharder2);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -183,8 +183,8 @@ public class TestQueueSharder extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(sharder);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(sharder);
+            CloseableUtils.closeQuietly(client);
         }
     }
 

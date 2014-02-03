@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -97,8 +97,8 @@ public class TestNodeCache extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(cache);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -160,8 +160,8 @@ public class TestNodeCache extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(cache);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -203,8 +203,8 @@ public class TestNodeCache extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(cache);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -251,8 +251,8 @@ public class TestNodeCache extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(cache);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
         }
     }
 }

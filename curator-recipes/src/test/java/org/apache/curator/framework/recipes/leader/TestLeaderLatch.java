@@ -21,7 +21,7 @@ package org.apache.curator.framework.recipes.leader;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -74,8 +74,8 @@ public class TestLeaderLatch extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(latch);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(latch);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -105,7 +105,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -161,9 +161,9 @@ public class TestLeaderLatch extends BaseClassForTests
         {
             for ( LeaderLatch latch : latches )
             {
-                Closeables.closeQuietly(latch);
+                CloseableUtils.closeQuietly(latch);
             }
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -204,9 +204,9 @@ public class TestLeaderLatch extends BaseClassForTests
 
             for ( LeaderLatch latch : latches )
             {
-                Closeables.closeQuietly(latch);
+                CloseableUtils.closeQuietly(latch);
             }
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
 
     }
@@ -262,7 +262,7 @@ public class TestLeaderLatch extends BaseClassForTests
         finally
         {
             executorService.shutdown();
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -318,7 +318,7 @@ public class TestLeaderLatch extends BaseClassForTests
                         else
                         {
                             masterCounter.incrementAndGet();
-                            Closeables.closeQuietly(latch);
+                            CloseableUtils.closeQuietly(latch);
                             timesSquare.countDown();
                         }
                     }
@@ -358,10 +358,10 @@ public class TestLeaderLatch extends BaseClassForTests
             {
                 if ( latch.getState() != LeaderLatch.State.CLOSED )
                 {
-                    Closeables.closeQuietly(latch);
+                    CloseableUtils.closeQuietly(latch);
                 }
             }
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -431,9 +431,9 @@ public class TestLeaderLatch extends BaseClassForTests
         {
             for ( LeaderLatch latch : latches )
             {
-                Closeables.closeQuietly(latch);
+                CloseableUtils.closeQuietly(latch);
             }
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 

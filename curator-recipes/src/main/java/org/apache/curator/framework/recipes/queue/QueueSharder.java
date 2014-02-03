@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.utils.ZKPaths;
@@ -147,7 +147,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
             service.shutdownNow();
-            Closeables.closeQuietly(leaderLatch);
+            CloseableUtils.closeQuietly(leaderLatch);
 
             for ( T queue : queues.values() )
             {

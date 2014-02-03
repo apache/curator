@@ -20,7 +20,7 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -123,7 +123,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -463,8 +463,8 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client1);
-            Closeables.closeQuietly(client2);
+            CloseableUtils.closeQuietly(client1);
+            CloseableUtils.closeQuietly(client2);
         }
     }
 }

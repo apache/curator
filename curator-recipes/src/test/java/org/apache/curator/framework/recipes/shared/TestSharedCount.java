@@ -19,7 +19,7 @@
 package org.apache.curator.framework.recipes.shared;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
+import org.apache.curator.utils.CloseableUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -138,7 +138,7 @@ public class TestSharedCount extends BaseClassForTests
         {
             for ( CuratorFramework client : clients )
             {
-                Closeables.closeQuietly(client);
+                CloseableUtils.closeQuietly(client);
             }
         }
     }
