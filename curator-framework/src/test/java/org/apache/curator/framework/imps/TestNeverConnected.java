@@ -58,6 +58,8 @@ public class TestNeverConnected
             client.create().inBackground().forPath("/");
 
             ConnectionState polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            Assert.assertEquals(polled, ConnectionState.SUSPENDED);
+            polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             Assert.assertEquals(polled, ConnectionState.LOST);
         }
         finally
