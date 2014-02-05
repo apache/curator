@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 class ConnectionState implements Watcher, Closeable
@@ -49,6 +50,7 @@ class ConnectionState implements Watcher, Closeable
     private final AtomicReference<TracerDriver> tracer;
     private final Queue<Exception> backgroundExceptions = new ConcurrentLinkedQueue<Exception>();
     private final Queue<Watcher> parentWatchers = new ConcurrentLinkedQueue<Watcher>();
+    private final AtomicLong instanceIndex = new AtomicLong();
     private volatile long connectionStartMs = 0;
 
     ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer, boolean canBeReadOnly)
@@ -131,6 +133,11 @@ class ConnectionState implements Watcher, Closeable
         parentWatchers.remove(watcher);
     }
 
+    long getInstanceIndex()
+    {
+        return instanceIndex.get();
+    }
+
     @Override
     public void process(WatchedEvent event)
     {
@@ -203,6 +210,8 @@ class ConnectionState implements Watcher, Closeable
     private synchronized void reset() throws Exception
     {
         log.debug("reset");
+
+        instanceIndex.incrementAndGet();
 
         isConnected.set(false);
         connectionStartMs = System.currentTimeMillis();

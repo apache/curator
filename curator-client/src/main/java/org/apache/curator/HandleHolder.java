@@ -52,7 +52,7 @@ class HandleHolder
 
     ZooKeeper getZooKeeper() throws Exception
     {
-        return helper.getZooKeeper();
+        return (helper != null) ? helper.getZooKeeper() : null;
     }
 
     String  getConnectionString()

@@ -65,10 +65,12 @@ public class ConnectionStateManager implements Closeable
     private final BlockingQueue<ConnectionState> eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
     private final CuratorFramework client;
     private final ListenerContainer<ConnectionStateListener> listeners = new ListenerContainer<ConnectionStateListener>();
-    private final AtomicReference<ConnectionState> currentState = new AtomicReference<ConnectionState>();
     private final AtomicBoolean initialConnectMessageSent = new AtomicBoolean(false);
     private final ExecutorService service;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+
+    // guarded by sync
+    private ConnectionState currentConnectionState;
 
     private enum State
     {
@@ -133,23 +135,47 @@ public class ConnectionStateManager implements Closeable
     }
 
     /**
+     * Change to {@link ConnectionState#SUSPENDED} only if not already suspended and not lost
+     * 
+     * @return true if connection is set to SUSPENDED
+     */
+    public synchronized boolean setToSuspended()
+    {
+        if ( state.get() != State.STARTED )
+        {
+            return false;
+        }
+
+        if ( (currentConnectionState == ConnectionState.LOST) || (currentConnectionState == ConnectionState.SUSPENDED) )
+        {
+            return false;
+        }
+
+        currentConnectionState = ConnectionState.SUSPENDED;
+        postState(ConnectionState.SUSPENDED);
+        return true;
+    }
+
+    /**
      * Post a state change. If the manager is already in that state the change
      * is ignored. Otherwise the change is queued for listeners.
      *
      * @param newConnectionState new state
+     * @return true if the state actually changed, false if it was already at that state
      */
-    public void addStateChange(ConnectionState newConnectionState)
+    public synchronized boolean addStateChange(ConnectionState newConnectionState)
     {
         if ( state.get() != State.STARTED )
         {
-            return;
+            return false;
         }
 
-        ConnectionState previousState = currentState.getAndSet(newConnectionState);
+        ConnectionState previousState = currentConnectionState;
         if ( previousState == newConnectionState )
         {
-            return;
+            return false;
         }
+        currentConnectionState = newConnectionState;
 
         ConnectionState localState = newConnectionState;
         boolean isNegativeMessage = ((newConnectionState == ConnectionState.LOST) || (newConnectionState == ConnectionState.SUSPENDED));
@@ -158,8 +184,15 @@ public class ConnectionStateManager implements Closeable
             localState = ConnectionState.CONNECTED;
         }
 
-        log.info("State change: " + localState);
-        while ( !eventQueue.offer(localState) )
+        postState(localState);
+
+        return true;
+    }
+
+    private void postState(ConnectionState state)
+    {
+        log.info("State change: " + state);
+        while ( !eventQueue.offer(state) )
         {
             eventQueue.poll();
             log.warn("ConnectionStateManager queue full - dropping events to make room");

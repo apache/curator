@@ -512,24 +512,19 @@ public class CuratorFrameworkImpl implements CuratorFramework
             log.error(reason, e);
         }
 
-        if ( e instanceof KeeperException.ConnectionLossException )
-        {
-            connectionStateManager.addStateChange(ConnectionState.LOST);
-        }
-
         final String        localReason = reason;
         unhandledErrorListeners.forEach
-        (
-            new Function<UnhandledErrorListener, Void>()
-            {
-                @Override
-                public Void apply(UnhandledErrorListener listener)
+            (
+                new Function<UnhandledErrorListener, Void>()
                 {
-                    listener.unhandledError(localReason, e);
-                    return null;
+                    @Override
+                    public Void apply(UnhandledErrorListener listener)
+                    {
+                        listener.unhandledError(localReason, e);
+                        return null;
+                    }
                 }
-            }
-        );
+            );
     }
 
     String    unfixForNamespace(String path)
@@ -555,6 +550,93 @@ public class CuratorFrameworkImpl implements CuratorFramework
     NamespaceWatcherMap getNamespaceWatcherMap()
     {
         return namespaceWatcherMap;
+    }
+
+    void validateConnection(Watcher.Event.KeeperState state)
+    {
+        if ( state == Watcher.Event.KeeperState.Disconnected )
+        {
+            suspendConnection();
+        }
+        else if ( state == Watcher.Event.KeeperState.Expired )
+        {
+            connectionStateManager.addStateChange(ConnectionState.LOST);
+        }
+        else if ( state == Watcher.Event.KeeperState.SyncConnected )
+        {
+            connectionStateManager.addStateChange(ConnectionState.RECONNECTED);
+        }
+        else if ( state == Watcher.Event.KeeperState.ConnectedReadOnly )
+        {
+            connectionStateManager.addStateChange(ConnectionState.READ_ONLY);
+        }
+    }
+
+    Watcher.Event.KeeperState codeToState(KeeperException.Code code)
+    {
+        switch ( code )
+        {
+        case AUTHFAILED:
+        case NOAUTH:
+        {
+            return Watcher.Event.KeeperState.AuthFailed;
+        }
+
+        case CONNECTIONLOSS:
+        case OPERATIONTIMEOUT:
+        {
+            return Watcher.Event.KeeperState.Disconnected;
+        }
+
+        case SESSIONEXPIRED:
+        {
+            return Watcher.Event.KeeperState.Expired;
+        }
+
+        case OK:
+        case SESSIONMOVED:
+        {
+            return Watcher.Event.KeeperState.SyncConnected;
+        }
+        }
+        return Watcher.Event.KeeperState.fromInt(-1);
+    }
+
+    private void suspendConnection()
+    {
+        if ( !connectionStateManager.setToSuspended() )
+        {
+            return;
+        }
+
+        doSyncForSuspendedConnection(client.getInstanceIndex());
+    }
+
+    private void doSyncForSuspendedConnection(final long instanceIndex)
+    {
+        // we appear to have disconnected, force a new ZK event and see if we can connect to another server
+        final BackgroundOperation<String> operation = new BackgroundSyncImpl(this, null);
+        OperationAndData.ErrorCallback<String> errorCallback = new OperationAndData.ErrorCallback<String>()
+        {
+            @Override
+            public void retriesExhausted(OperationAndData<String> operationAndData)
+            {
+                // if instanceIndex != newInstanceIndex, the ZooKeeper instance was reset/reallocated
+                // so the pending background sync is no longer valid.
+                // if instanceIndex is -1, this is the second try to sync - punt and mark the connection lost
+                if ( (instanceIndex < 0) || (instanceIndex == client.getInstanceIndex()) )
+                {
+                    connectionStateManager.addStateChange(ConnectionState.LOST);
+                }
+                else
+                {
+                    log.debug("suspendConnection() failure ignored as the ZooKeeper instance was reset. Retrying.");
+                    // send -1 to signal that if it happens again, punt and mark the connection lost
+                    doSyncForSuspendedConnection(-1);
+                }
+            }
+        };
+        performBackgroundOperation(new OperationAndData<String>(operation, "/", null, errorCallback, null));
     }
 
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
@@ -588,8 +670,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
             if ( e == null )
             {
-                e = new Exception("Unknown result code: " + event.getResultCode());
+                e = new Exception("Unknown result codegetResultCode()");
             }
+
+            validateConnection(codeToState(code));
             logError("Background operation retry gave up", e);
         }
         return doRetry;
@@ -702,7 +786,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
                 else
                 {
-                    handleBackgroundOperationException(operationAndData, e);
+                	logError("Background retry gave up", e);
                 }
             }
             else
@@ -714,7 +798,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void processEvent(final CuratorEvent curatorEvent)
     {
-        validateConnection(curatorEvent);
+        if ( curatorEvent.getType() == CuratorEventType.WATCHED )
+        {
+            validateConnection(curatorEvent.getWatchedEvent().getState());
+        }
 
         listeners.forEach
         (
@@ -737,29 +824,5 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             }
         );
-    }
-
-    private void validateConnection(CuratorEvent curatorEvent)
-    {
-        if ( curatorEvent.getType() == CuratorEventType.WATCHED )
-        {
-            if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.Disconnected )
-            {
-                connectionStateManager.addStateChange(ConnectionState.SUSPENDED);
-                internalSync(this, "/", null);  // we appear to have disconnected, force a new ZK event and see if we can connect to another server
-            }
-            else if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.Expired )
-            {
-                connectionStateManager.addStateChange(ConnectionState.LOST);
-            }
-            else if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.SyncConnected )
-            {
-                connectionStateManager.addStateChange(ConnectionState.RECONNECTED);
-            }
-            else if ( curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.ConnectedReadOnly )
-            {
-                connectionStateManager.addStateChange(ConnectionState.READ_ONLY);
-            }
-        }
     }
 }
