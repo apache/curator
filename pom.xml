@@ -132,7 +132,7 @@
             <id>randgalt</id>
             <name>Jordan Zimmerman</name>
             <email>randgalt@apache.org</email>
-            <timezone>-8</timezone>
+            <timezone>-5</timezone>
             <roles>
                 <role>Committer</role>
                 <role>PMC Chair</role>
