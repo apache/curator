@@ -19,6 +19,7 @@
 package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -29,6 +30,7 @@ import org.apache.curator.x.discovery.details.ServiceCacheListener;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -101,6 +103,8 @@ public class TestServiceCache
     @Test
     public void     testViaProvider() throws Exception
     {
+        Timing timing = new Timing();
+
         List<Closeable> closeables = Lists.newArrayList();
         TestingServer server = new TestingServer();
         closeables.add(server);
@@ -127,9 +131,15 @@ public class TestServiceCache
             {
                 Assert.assertTrue(count++ < 5);
                 foundInstance = serviceProvider.getInstance();
-                Thread.sleep(1000);
+                timing.sleepABit();
             }
             Assert.assertEquals(foundInstance, instance);
+
+            ServiceInstance<String>     instance2 = ServiceInstance.<String>builder().address("foo").payload("thing").name("test").port(10064).build();
+            discovery.registerService(instance2);
+            timing.sleepABit();
+            Collection<ServiceInstance<String>> allInstances = serviceProvider.getAllInstances();
+            Assert.assertEquals(allInstances.size(), 2);
         }
         finally
         {

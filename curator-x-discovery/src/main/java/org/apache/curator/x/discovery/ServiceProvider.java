@@ -21,6 +21,7 @@ package org.apache.curator.x.discovery;
 
 import org.apache.curator.x.discovery.details.InstanceProvider;
 import java.io.Closeable;
+import java.util.Collection;
 
 /**
  * The main API for Discovery. This class is essentially a facade over a {@link ProviderStrategy}
@@ -43,6 +44,15 @@ public interface ServiceProvider<T> extends Closeable
      * @throws Exception any errors
      */
     public ServiceInstance<T> getInstance() throws Exception;
+
+    /**
+     * Return the current available set of instances <b>IMPORTANT: </b> users
+     * should not hold on to the instance returned. They should always get a fresh list.
+     *
+     * @return all known instances
+     * @throws Exception any errors
+     */
+    public Collection<ServiceInstance<T>> getAllInstances() throws Exception;
 
     /**
      * Take note of an error connecting to the given instance. The instance will potentially

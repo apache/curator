@@ -27,6 +27,7 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
@@ -75,6 +76,19 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
     {
         discovery.providerClosed(this);
         cache.close();
+    }
+
+    /**
+     * Return the current available set of instances <b>IMPORTANT: </b> users
+     * should not hold on to the instance returned. They should always get a fresh list.
+     *
+     * @return all known instances
+     * @throws Exception any errors
+     */
+    @Override
+    public Collection<ServiceInstance<T>> getAllInstances() throws Exception
+    {
+        return instanceProvider.getInstances();
     }
 
     /**
