@@ -21,8 +21,6 @@ package org.apache.curator.x.rest.api;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.x.rest.CuratorRestContext;
-import org.apache.curator.x.rest.details.Closer;
-import org.apache.curator.x.rest.details.Session;
 import org.apache.curator.x.rest.entities.NodeCacheSpec;
 import org.apache.curator.x.rest.entities.StatusMessage;
 import org.codehaus.jackson.node.ObjectNode;
@@ -40,7 +38,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
-@Path("/curator/v1/recipes/node-cache/{session-id}")
+@Path("/curator/v1/recipes/node-cache")
 public class NodeCacheResource
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -54,10 +52,8 @@ public class NodeCacheResource
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response newCache(@PathParam("session-id") String sessionId, final NodeCacheSpec spec) throws Exception
+    public Response newCache(final NodeCacheSpec spec) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-
         NodeCache cache = new NodeCache(context.getClient(), spec.getPath(), spec.isDataIsCompressed());
         cache.start(spec.isBuildInitial());
 
@@ -76,7 +72,7 @@ public class NodeCacheResource
                 }
             }
         };
-        final String id = session.addThing(cache, closer);
+        final String id = context.getSession().addThing(cache, closer);
 
         NodeCacheListener listener = new NodeCacheListener()
         {
@@ -94,10 +90,9 @@ public class NodeCacheResource
 
     @DELETE
     @Path("/{cache-id}")
-    public Response deleteCache(@PathParam("session-id") String sessionId, @PathParam("cache-id") String cacheId)
+    public Response deleteCache(@PathParam("cache-id") String cacheId)
     {
-        Session session = Constants.getSession(context, sessionId);
-        NodeCache cache = Constants.deleteThing(session, cacheId, NodeCache.class);
+        NodeCache cache = Constants.deleteThing(context.getSession(), cacheId, NodeCache.class);
         try
         {
             cache.close();
@@ -111,10 +106,9 @@ public class NodeCacheResource
 
     @GET
     @Path("/{cache-id}")
-    public Response getCacheData(@PathParam("session-id") String sessionId, @PathParam("cache-id") String cacheId) throws Exception
+    public Response getCacheData(@PathParam("cache-id") String cacheId) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-        NodeCache cache = Constants.getThing(session, cacheId, NodeCache.class);
+        NodeCache cache = Constants.getThing(context.getSession(), cacheId, NodeCache.class);
         return Response.ok(Constants.toNodeData(cache.getCurrentData())).build();
     }
 }

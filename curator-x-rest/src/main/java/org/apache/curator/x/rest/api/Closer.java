@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.rest.details;
+package org.apache.curator.x.rest.api;
 
-public interface Closer<T>
+interface Closer<T>
 {
     public void close(T thing);
 }

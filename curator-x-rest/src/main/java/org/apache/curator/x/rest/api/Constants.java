@@ -20,11 +20,11 @@ package org.apache.curator.x.rest.api;
 
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.x.rest.CuratorRestContext;
-import org.apache.curator.x.rest.details.Session;
 import org.apache.curator.x.rest.entities.NodeData;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.util.UUID;
 
 class Constants
 {
@@ -44,16 +44,6 @@ class Constants
         ObjectNode node = context.getMapper().createObjectNode();
         node.put("id", id);
         return node;
-    }
-
-    static Session getSession(CuratorRestContext context, String sessionId)
-    {
-        Session session = context.getSessionManager().getSession(sessionId);
-        if ( session == null )
-        {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        }
-        return session;
     }
 
     static <T> T getThing(Session session, String id, Class<T> clazz)
@@ -84,5 +74,10 @@ class Constants
     {
         String payload = (c.getData() != null) ? new String(c.getData()) : "";
         return new NodeData(c.getPath(), c.getStat(), payload);
+    }
+
+    public static String newId()
+    {
+        return UUID.randomUUID().toString();
     }
 }

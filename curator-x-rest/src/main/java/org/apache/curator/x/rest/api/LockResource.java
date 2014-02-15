@@ -20,8 +20,6 @@ package org.apache.curator.x.rest.api;
 
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.x.rest.CuratorRestContext;
-import org.apache.curator.x.rest.details.Closer;
-import org.apache.curator.x.rest.details.Session;
 import org.apache.curator.x.rest.entities.LockSpec;
 import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
@@ -37,7 +35,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.concurrent.TimeUnit;
 
-@Path("/curator/v1/recipes/lock/{session-id}")
+@Path("/curator/v1/recipes/lock")
 public class LockResource
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -51,9 +49,8 @@ public class LockResource
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response acquireLock(@PathParam("session-id") String sessionId, final LockSpec lockSpec) throws Exception
+    public Response acquireLock(final LockSpec lockSpec) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
         InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(context.getClient(), lockSpec.getPath());
         if ( !lock.acquire(lockSpec.getMaxWaitMs(), TimeUnit.MILLISECONDS) )
         {
@@ -78,17 +75,16 @@ public class LockResource
                 }
             }
         };
-        String id = session.addThing(lock, closer);
+        String id = context.getSession().addThing(lock, closer);
         ObjectNode node = Constants.makeIdNode(context, id);
         return Response.ok(context.getWriter().writeValueAsString(node)).build();
     }
 
     @DELETE
     @Path("{lock-id}")
-    public Response releaseLock(@PathParam("session-id") String sessionId, @PathParam("lock-id") String lockId) throws Exception
+    public Response releaseLock(@PathParam("lock-id") String lockId) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-        InterProcessSemaphoreMutex lock = Constants.deleteThing(session, lockId, InterProcessSemaphoreMutex.class);
+        InterProcessSemaphoreMutex lock = Constants.deleteThing(context.getSession(), lockId, InterProcessSemaphoreMutex.class);
         lock.release();
         return Response.ok().build();
     }

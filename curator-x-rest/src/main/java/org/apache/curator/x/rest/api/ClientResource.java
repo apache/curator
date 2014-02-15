@@ -30,18 +30,19 @@ import org.apache.curator.x.rest.entities.SetDataSpec;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.List;
 
-@Path("/curator/v1/client/{session-id}")
+@Path("/curator/v1/client")
 public class ClientResource
 {
     private final CuratorRestContext context;
@@ -51,13 +52,27 @@ public class ClientResource
         this.context = context;
     }
 
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/status")
+    public Response getStatus() throws IOException
+    {
+        context.getSession();   // update last use
+
+        ObjectNode node = context.getMapper().createObjectNode();
+        node.put("state", context.getClient().getState().name());
+        node.putPOJO("messages", context.drainMessages());
+
+        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/get-children")
-    public Response getChildren(@PathParam("session-id") String sessionId, final GetChildrenSpec getChildrenSpec) throws Exception
+    public Response getChildren(final GetChildrenSpec getChildrenSpec) throws Exception
     {
-        Constants.getSession(context, sessionId);
+        context.getSession();   // update last use
 
         Object builder = context.getClient().getChildren();
         if ( getChildrenSpec.isWatched() )
@@ -95,9 +110,9 @@ public class ClientResource
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/delete")
-    public Response delete(@PathParam("session-id") String sessionId, final DeleteSpec deleteSpec) throws Exception
+    public Response delete(final DeleteSpec deleteSpec) throws Exception
     {
-        Constants.getSession(context, sessionId);
+        context.getSession();   // update last use
 
         Object builder = context.getClient().delete();
         if ( deleteSpec.isGuaranteed() )
@@ -120,9 +135,9 @@ public class ClientResource
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/set-data")
-    public Response setData(@PathParam("session-id") String sessionId, final SetDataSpec setDataSpec) throws Exception
+    public Response setData(final SetDataSpec setDataSpec) throws Exception
     {
-        Constants.getSession(context, sessionId);
+        context.getSession();   // update last use
 
         Object builder = context.getClient().setData();
         if ( setDataSpec.isCompressed() )
@@ -149,9 +164,9 @@ public class ClientResource
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/create")
-    public Response create(@PathParam("session-id") String sessionId, final CreateSpec createSpec) throws Exception
+    public Response create(final CreateSpec createSpec) throws Exception
     {
-        Constants.getSession(context, sessionId);
+        context.getSession();   // update last use
 
         Object builder = context.getClient().create();
         if ( createSpec.isCreatingParentsIfNeeded() )
@@ -185,9 +200,9 @@ public class ClientResource
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/get-data")
-    public Response getData(@PathParam("session-id") String sessionId, final GetDataSpec getDataSpec) throws Exception
+    public Response getData(final GetDataSpec getDataSpec) throws Exception
     {
-        Constants.getSession(context, sessionId);
+        context.getSession();   // update last use
 
         Object builder = context.getClient().getData();
         if ( getDataSpec.isWatched() )
@@ -228,9 +243,9 @@ public class ClientResource
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/exists")
-    public Response exists(@PathParam("session-id") String sessionId, final ExistsSpec existsSpec) throws Exception
+    public Response exists(final ExistsSpec existsSpec) throws Exception
     {
-        Constants.getSession(context, sessionId);
+        context.getSession();   // update last use
 
         Object builder = context.getClient().checkExists();
         if ( existsSpec.isWatched() )

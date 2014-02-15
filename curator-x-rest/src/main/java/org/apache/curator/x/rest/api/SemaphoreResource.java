@@ -22,8 +22,6 @@ import com.google.common.collect.Lists;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2;
 import org.apache.curator.framework.recipes.locks.Lease;
 import org.apache.curator.x.rest.CuratorRestContext;
-import org.apache.curator.x.rest.details.Closer;
-import org.apache.curator.x.rest.details.Session;
 import org.apache.curator.x.rest.entities.SemaphoreSpec;
 import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
@@ -41,7 +39,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Path("/curator/v1/recipes/semaphore/{session-id}")
+@Path("/curator/v1/recipes/semaphore")
 public class SemaphoreResource
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -65,9 +63,8 @@ public class SemaphoreResource
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response acquireSemaphore(@PathParam("session-id") String sessionId, final SemaphoreSpec semaphoreSpec) throws Exception
+    public Response acquireSemaphore(final SemaphoreSpec semaphoreSpec) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
         final InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(context.getClient(), semaphoreSpec.getPath(), semaphoreSpec.getMaxLeases());
         final Collection<Lease> leases = semaphore.acquire(semaphoreSpec.getAcquireQty(), semaphoreSpec.getMaxWaitMs(), TimeUnit.MILLISECONDS);
         if ( leases == null )
@@ -90,17 +87,16 @@ public class SemaphoreResource
                 }
             }
         };
-        String id = session.addThing(new LeasesHolder(leases), closer);
+        String id = context.getSession().addThing(new LeasesHolder(leases), closer);
         ObjectNode node = Constants.makeIdNode(context, id);
         return Response.ok(context.getWriter().writeValueAsString(node)).build();
     }
 
     @DELETE
     @Path("{lease-id}/{release-qty}")
-    public Response releaseSemaphore(@PathParam("session-id") String sessionId, @PathParam("lease-id") String leaseId, @PathParam("release-qty") int releaseQty) throws Exception
+    public Response releaseSemaphore(@PathParam("lease-id") String leaseId, @PathParam("release-qty") int releaseQty) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-        LeasesHolder holder = Constants.getThing(session, leaseId, LeasesHolder.class);
+        LeasesHolder holder = Constants.getThing(context.getSession(), leaseId, LeasesHolder.class);
         if ( holder.leases.size() < releaseQty )
         {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -113,7 +109,7 @@ public class SemaphoreResource
         }
         if ( holder.leases.size() == 0 )
         {
-            session.deleteThing(leaseId, LeasesHolder.class);
+            context.getSession().deleteThing(leaseId, LeasesHolder.class);
         }
 
         return Response.ok().build();

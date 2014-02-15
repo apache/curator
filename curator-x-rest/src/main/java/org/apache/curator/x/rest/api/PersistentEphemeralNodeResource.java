@@ -20,8 +20,6 @@ package org.apache.curator.x.rest.api;
 
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.x.rest.CuratorRestContext;
-import org.apache.curator.x.rest.details.Closer;
-import org.apache.curator.x.rest.details.Session;
 import org.apache.curator.x.rest.entities.PersistentEphemeralNodeSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +33,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-@Path("/curator/v1/recipes/persistent-ephemeral-node/{session-id}")
+@Path("/curator/v1/recipes/persistent-ephemeral-node")
 public class PersistentEphemeralNodeResource
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -49,9 +47,8 @@ public class PersistentEphemeralNodeResource
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response start(@PathParam("session-id") String sessionId, final PersistentEphemeralNodeSpec spec) throws Exception
+    public Response start(final PersistentEphemeralNodeSpec spec) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
         PersistentEphemeralNode node = new PersistentEphemeralNode(context.getClient(), spec.getMode(), spec.getPath(), spec.getData().getBytes());
         node.start();
 
@@ -70,16 +67,15 @@ public class PersistentEphemeralNodeResource
                 }
             }
         };
-        String id = session.addThing(node, closer);
+        String id = context.getSession().addThing(node, closer);
         return Response.ok(context.getWriter().writeValueAsString(Constants.makeIdNode(context, id))).build();
     }
 
     @DELETE
     @Path("{node-id}")
-    public Response close(@PathParam("session-id") String sessionId, @PathParam("node-id") String nodeId) throws Exception
+    public Response close(@PathParam("node-id") String nodeId) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-        PersistentEphemeralNode node = Constants.deleteThing(session, nodeId, PersistentEphemeralNode.class);
+        PersistentEphemeralNode node = Constants.deleteThing(context.getSession(), nodeId, PersistentEphemeralNode.class);
         node.close();
         return Response.ok().build();
     }

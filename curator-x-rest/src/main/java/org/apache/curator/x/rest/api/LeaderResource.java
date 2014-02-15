@@ -21,8 +21,6 @@ package org.apache.curator.x.rest.api;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.x.rest.CuratorRestContext;
-import org.apache.curator.x.rest.details.Closer;
-import org.apache.curator.x.rest.details.Session;
 import org.apache.curator.x.rest.entities.LeaderSpec;
 import org.apache.curator.x.rest.entities.StatusMessage;
 import org.codehaus.jackson.node.ObjectNode;
@@ -39,7 +37,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
-@Path("/curator/v1/recipes/leader/{session-id}")
+@Path("/curator/v1/recipes/leader")
 public class LeaderResource
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -53,10 +51,8 @@ public class LeaderResource
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response startLeaderSelection(@PathParam("session-id") String sessionId, final LeaderSpec leaderSpec) throws Exception
+    public Response startLeaderSelection(final LeaderSpec leaderSpec) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-
         LeaderLatch leaderLatch = new LeaderLatch(context.getClient(), leaderSpec.getPath(), leaderSpec.getId());
         leaderLatch.start();
 
@@ -75,7 +71,7 @@ public class LeaderResource
                 }
             }
         };
-        final String id = session.addThing(leaderLatch, closer);
+        final String id = context.getSession().addThing(leaderLatch, closer);
 
         LeaderLatchListener listener = new LeaderLatchListener()
         {
@@ -99,10 +95,9 @@ public class LeaderResource
 
     @DELETE
     @Path("{leader-id}")
-    public Response closeLeader(@PathParam("session-id") String sessionId, @PathParam("leader-id") String leaderId) throws Exception
+    public Response closeLeader(@PathParam("leader-id") String leaderId) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-        LeaderLatch leaderLatch = Constants.deleteThing(session, leaderId, LeaderLatch.class);
+        LeaderLatch leaderLatch = Constants.deleteThing(context.getSession(), leaderId, LeaderLatch.class);
         leaderLatch.close();
         return Response.ok().build();
     }

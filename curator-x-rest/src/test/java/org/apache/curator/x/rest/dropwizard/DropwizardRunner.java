@@ -26,7 +26,6 @@ import io.dropwizard.setup.Environment;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.x.rest.CuratorRestContext;
 
 public class DropwizardRunner
 {
@@ -39,7 +38,7 @@ public class DropwizardRunner
             {
                 CuratorFramework client = CuratorFrameworkFactory.newClient("localhost:2181", new ExponentialBackoffRetry(100, 3));
                 client.start();
-                bootstrap.addBundle(new CuratorRestBundle(new CuratorRestContext(client, 60000)));
+                bootstrap.addBundle(new CuratorRestBundle(client, 60000));
             }
 
             @Override

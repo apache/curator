@@ -25,8 +25,6 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.rest.CuratorRestContext;
-import org.apache.curator.x.rest.details.Closer;
-import org.apache.curator.x.rest.details.Session;
 import org.apache.curator.x.rest.entities.PathChildrenCacheSpec;
 import org.apache.curator.x.rest.entities.StatusMessage;
 import org.codehaus.jackson.node.ArrayNode;
@@ -45,7 +43,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
-@Path("/curator/v1/recipes/path-cache/{session-id}")
+@Path("/curator/v1/recipes/path-cache")
 public class PathChildrenCacheResource
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -59,10 +57,8 @@ public class PathChildrenCacheResource
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response newCache(@PathParam("session-id") String sessionId, final PathChildrenCacheSpec spec) throws Exception
+    public Response newCache(final PathChildrenCacheSpec spec) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-
         PathChildrenCache cache = new PathChildrenCache(context.getClient(), spec.getPath(), spec.isCacheData(), spec.isDataIsCompressed(), ThreadUtils.newThreadFactory("PathChildrenCacheResource"));
         cache.start(spec.getStartMode());
 
@@ -81,7 +77,7 @@ public class PathChildrenCacheResource
                 }
             }
         };
-        final String id = session.addThing(cache, closer);
+        final String id = context.getSession().addThing(cache, closer);
 
         PathChildrenCacheListener listener = new PathChildrenCacheListener()
         {
@@ -99,10 +95,9 @@ public class PathChildrenCacheResource
 
     @DELETE
     @Path("/{cache-id}")
-    public Response deleteCache(@PathParam("session-id") String sessionId, @PathParam("cache-id") String cacheId)
+    public Response deleteCache(@PathParam("cache-id") String cacheId)
     {
-        Session session = Constants.getSession(context, sessionId);
-        PathChildrenCache cache = Constants.deleteThing(session, cacheId, PathChildrenCache.class);
+        PathChildrenCache cache = Constants.deleteThing(context.getSession(), cacheId, PathChildrenCache.class);
         try
         {
             cache.close();
@@ -116,10 +111,9 @@ public class PathChildrenCacheResource
 
     @GET
     @Path("/{cache-id}")
-    public Response getCacheData(@PathParam("session-id") String sessionId, @PathParam("cache-id") String cacheId) throws Exception
+    public Response getCacheData(@PathParam("cache-id") String cacheId) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-        PathChildrenCache cache = Constants.getThing(session, cacheId, PathChildrenCache.class);
+        PathChildrenCache cache = Constants.getThing(context.getSession(), cacheId, PathChildrenCache.class);
 
         ArrayNode data = context.getMapper().createArrayNode();
         for ( ChildData c : cache.getCurrentData() )
@@ -131,10 +125,9 @@ public class PathChildrenCacheResource
 
     @GET
     @Path("/{cache-id}/{path:.*}")
-    public Response getCacheDataForPath(@PathParam("session-id") String sessionId, @PathParam("cache-id") String cacheId, @PathParam("path") String path) throws Exception
+    public Response getCacheDataForPath(@PathParam("cache-id") String cacheId, @PathParam("path") String path) throws Exception
     {
-        Session session = Constants.getSession(context, sessionId);
-        PathChildrenCache cache = Constants.getThing(session, cacheId, PathChildrenCache.class);
+        PathChildrenCache cache = Constants.getThing(context.getSession(), cacheId, PathChildrenCache.class);
         ChildData currentData = cache.getCurrentData(path);
         if ( currentData == null )
         {

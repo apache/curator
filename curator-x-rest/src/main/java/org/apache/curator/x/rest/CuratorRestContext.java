@@ -25,7 +25,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.ThreadUtils;
-import org.apache.curator.x.rest.details.SessionManager;
+import org.apache.curator.x.rest.api.Session;
 import org.apache.curator.x.rest.entities.StatusMessage;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class CuratorRestContext implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final SessionManager sessionManager = new SessionManager();
+    private final Session session = new Session();
     private final ObjectMapper mapper = new ObjectMapper();
     private final ObjectWriter writer = mapper.writer();
     private final CuratorFramework client;
@@ -81,10 +81,11 @@ public class CuratorRestContext implements Closeable
         return client;
     }
 
-    public SessionManager getSessionManager()
+    public Session getSession()
     {
         Preconditions.checkState(state.get() == State.STARTED, "Not started");
-        return sessionManager;
+        session.updateLastUse();
+        return session;
     }
 
     public void start()
@@ -98,7 +99,7 @@ public class CuratorRestContext implements Closeable
             @Override
             public void run()
             {
-                checkSessions();
+                checkSession();
             }
         };
         executorService.scheduleAtFixedRate(runner, sessionLengthMs, sessionLengthMs, TimeUnit.MILLISECONDS);
@@ -116,9 +117,14 @@ public class CuratorRestContext implements Closeable
         return localMessages;
     }
 
-    private void checkSessions()
+    private void checkSession()
     {
-
+        long elapsedSinceLastUse = System.currentTimeMillis() - session.getLastUseMs();
+        if ( elapsedSinceLastUse > sessionLengthMs )
+        {
+            log.warn("Session has expired. Closing all open recipes. Milliseconds since last ping: " + elapsedSinceLastUse);
+            session.closeThings();
+        }
     }
 
     @Override
@@ -128,7 +134,7 @@ public class CuratorRestContext implements Closeable
         {
             client.getConnectionStateListenable().removeListener(connectionStateListener);
             executorService.shutdownNow();
-            sessionManager.close();
+            session.close();
         }
     }
 
@@ -145,6 +151,6 @@ public class CuratorRestContext implements Closeable
     private void handleLostConnection()
     {
         log.warn("Connection lost - closing all REST sessions");
-        sessionManager.deleteAllSessions();
+        session.closeThings();
     }
 }

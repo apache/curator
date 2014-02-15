@@ -27,7 +27,6 @@ import org.apache.curator.x.rest.api.PathChildrenCacheResource;
 import org.apache.curator.x.rest.api.PersistentEphemeralNodeResource;
 import org.apache.curator.x.rest.api.ReadWriteLockResource;
 import org.apache.curator.x.rest.api.SemaphoreResource;
-import org.apache.curator.x.rest.api.SessionResource;
 import java.util.List;
 
 public class CuratorRestClasses
@@ -35,7 +34,6 @@ public class CuratorRestClasses
     public static List<Class<?>> getClasses()
     {
         ImmutableList.Builder<Class<?>> builder = ImmutableList.builder();
-        builder.add(SessionResource.class);
         builder.add(ClientResource.class);
         builder.add(LockResource.class);
         builder.add(SemaphoreResource.class);

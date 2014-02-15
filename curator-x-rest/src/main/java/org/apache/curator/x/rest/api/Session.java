@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.rest.details;
+package org.apache.curator.x.rest.api;
 
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -56,6 +56,11 @@ public class Session implements Closeable
     @Override
     public void close()
     {
+        closeThings();
+    }
+
+    public void closeThings()
+    {
         for ( Map.Entry<String, Entry> mapEntry : things.entrySet() )
         {
             Entry entry = mapEntry.getValue();
@@ -68,25 +73,20 @@ public class Session implements Closeable
         }
     }
 
-    public String addThing(Object thing)
+    <T> String addThing(T thing, Closer<T> closer)
     {
-        return addThing(thing, null);
-    }
-
-    public <T> String addThing(T thing, Closer<T> closer)
-    {
-        String id = SessionManager.newId();
+        String id = Constants.newId();
         things.put(id, new Entry(thing, closer));
         return id;
     }
 
-    public <T> T getThing(String id, Class<T> clazz)
+    <T> T getThing(String id, Class<T> clazz)
     {
         Entry entry = things.get(id);
         return cast(clazz, entry);
     }
 
-    public <T> T deleteThing(String id, Class<T> clazz)
+    <T> T deleteThing(String id, Class<T> clazz)
     {
         Entry entry = things.remove(id);
         return cast(clazz, entry);

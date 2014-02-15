@@ -1,0 +1,8 @@
+h1. Curator REST Proxy
+
+h2. Packaging
+Curator REST Proxy is in its own package in Maven Central: {{curator-x-rest}}
+
+h2. Description
+The Curator REST module implements a proxy that bridges non-java environments with the Curator framework and recipes. *TBD*
+
