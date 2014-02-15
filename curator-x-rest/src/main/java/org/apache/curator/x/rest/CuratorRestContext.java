@@ -69,7 +69,7 @@ public class CuratorRestContext implements Closeable
         CLOSED
     }
 
-    public CuratorRestContext(CuratorFramework client, int sessionLengthMs) throws Exception
+    public CuratorRestContext(CuratorFramework client, int sessionLengthMs)
     {
         this.client = client;
         this.sessionLengthMs = sessionLengthMs;
