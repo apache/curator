@@ -35,13 +35,13 @@ public class Session implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final Map<String, Entry> things = Maps.newConcurrentMap();
-    private final AtomicLong lastUseMs = new AtomicLong(System.currentTimeMillis());
     private final BlockingQueue<StatusMessage> messages = Queues.newLinkedBlockingQueue();
 
     private static class Entry
     {
         final Object thing;
         final Closer closer;
+        final AtomicLong lastUseMs = new AtomicLong(System.currentTimeMillis());
 
         private Entry(Object thing, Closer closer)
         {
@@ -50,26 +50,9 @@ public class Session implements Closeable
         }
     }
 
-    public void updateLastUse()
-    {
-        lastUseMs.set(System.currentTimeMillis());
-    }
-
-    public long getLastUseMs()
-    {
-        return lastUseMs.get();
-    }
-
     @Override
-    public void close()
+    public synchronized void close()
     {
-        closeThings();
-    }
-
-    public void closeThings()
-    {
-        pushMessage(new StatusMessage(Constants.CLOSING, "", "", ""));
-        
         for ( Map.Entry<String, Entry> mapEntry : things.entrySet() )
         {
             Entry entry = mapEntry.getValue();
@@ -78,6 +61,29 @@ public class Session implements Closeable
                 log.debug(String.format("Closing left over thing. Type: %s - Id: %s", entry.thing.getClass(), mapEntry.getKey()));
                 //noinspection unchecked
                 entry.closer.close(entry.thing);    // lack of generics is safe because addThing() is type-safe
+            }
+        }
+        things.clear();
+    }
+
+    public synchronized void checkExpiredThings(long sessionLengthMs)
+    {
+        for ( Map.Entry<String, Entry> mapEntry : things.entrySet() )
+        {
+            Entry entry = mapEntry.getValue();
+            long elapsedSinceLastUse = System.currentTimeMillis() - entry.lastUseMs.get();
+            if ( elapsedSinceLastUse > sessionLengthMs )
+            {
+                String id = mapEntry.getKey();
+                pushMessage(new StatusMessage(Constants.EXPIRED, id, "expired", entry.thing.getClass().getName()));
+                log.warn(String.format("Expiring object. Elapsed time: %d, id: %s, Class: %s", elapsedSinceLastUse, id, entry.thing.getClass().getName()));
+
+                things.remove(id);
+                if ( entry.closer != null )
+                {
+                    //noinspection unchecked
+                    entry.closer.close(entry.thing);    // lack of generics is safe because addThing() is type-safe
+                }
             }
         }
     }
@@ -92,6 +98,17 @@ public class Session implements Closeable
         List<StatusMessage> localMessages = Lists.newArrayList();
         messages.drainTo(localMessages);
         return localMessages;
+    }
+
+    boolean updateThingLastUse(String id)
+    {
+        Entry entry = things.get(id);
+        if ( entry != null )
+        {
+            entry.lastUseMs.set(System.currentTimeMillis());
+            return true;
+        }
+        return false;
     }
 
     <T> String addThing(T thing, Closer<T> closer)

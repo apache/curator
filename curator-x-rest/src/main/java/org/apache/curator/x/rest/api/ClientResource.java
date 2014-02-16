@@ -34,6 +34,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
@@ -64,14 +65,23 @@ public class ClientResource
         return Response.ok(context.getWriter().writeValueAsString(node)).build();
     }
 
+    @GET
+    @Path("/touch/{id}")
+    public Response touchThing(@PathParam("id") String id)
+    {
+        if ( !context.getSession().updateThingLastUse(id) )
+        {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok().build();
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/get-children")
     public Response getChildren(final GetChildrenSpec getChildrenSpec) throws Exception
     {
-        context.getSession();   // update last use
-
         Object builder = context.getClient().getChildren();
         if ( getChildrenSpec.isWatched() )
         {
@@ -110,8 +120,6 @@ public class ClientResource
     @Path("/delete")
     public Response delete(final DeleteSpec deleteSpec) throws Exception
     {
-        context.getSession();   // update last use
-
         Object builder = context.getClient().delete();
         if ( deleteSpec.isGuaranteed() )
         {
@@ -135,8 +143,6 @@ public class ClientResource
     @Path("/set-data")
     public Response setData(final SetDataSpec setDataSpec) throws Exception
     {
-        context.getSession();   // update last use
-
         Object builder = context.getClient().setData();
         if ( setDataSpec.isCompressed() )
         {
@@ -164,8 +170,6 @@ public class ClientResource
     @Path("/create")
     public Response create(final CreateSpec createSpec) throws Exception
     {
-        context.getSession();   // update last use
-
         Object builder = context.getClient().create();
         if ( createSpec.isCreatingParentsIfNeeded() )
         {
@@ -200,8 +204,6 @@ public class ClientResource
     @Path("/get-data")
     public Response getData(final GetDataSpec getDataSpec) throws Exception
     {
-        context.getSession();   // update last use
-
         Object builder = context.getClient().getData();
         if ( getDataSpec.isWatched() )
         {
@@ -243,8 +245,6 @@ public class ClientResource
     @Path("/exists")
     public Response exists(final ExistsSpec existsSpec) throws Exception
     {
-        context.getSession();   // update last use
-
         Object builder = context.getClient().checkExists();
         if ( existsSpec.isWatched() )
         {
