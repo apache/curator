@@ -38,6 +38,7 @@ class Constants
     static final String PATH_CACHE = "path-cache";
     static final String NODE_CACHE = "node-cache";
     static final String LEADER = "leader";
+    static final String CLOSING = "closing";
 
     static ObjectNode makeIdNode(CuratorRestContext context, String id)
     {

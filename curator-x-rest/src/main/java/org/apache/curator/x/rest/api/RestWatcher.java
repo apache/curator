@@ -39,7 +39,7 @@ class RestWatcher implements Watcher
     {
         if ( event.getType() != Event.EventType.None )
         {
-            context.pushMessage(new StatusMessage(Constants.WATCH, watchId, event.getType().name(), String.valueOf(event.getPath())));
+            context.getSession().pushMessage(new StatusMessage(Constants.WATCH, watchId, event.getType().name(), String.valueOf(event.getPath())));
         }
     }
 }

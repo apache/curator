@@ -79,7 +79,7 @@ public class NodeCacheResource
             @Override
             public void nodeChanged() throws Exception
             {
-                context.pushMessage(new StatusMessage(Constants.NODE_CACHE, id, "", ""));
+                context.getSession().pushMessage(new StatusMessage(Constants.NODE_CACHE, id, "", ""));
             }
         };
         cache.getListenable().addListener(listener);

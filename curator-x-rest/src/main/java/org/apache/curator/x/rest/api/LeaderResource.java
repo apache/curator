@@ -78,13 +78,13 @@ public class LeaderResource
             @Override
             public void isLeader()
             {
-                context.pushMessage(new StatusMessage(Constants.LEADER, id, "true", ""));
+                context.getSession().pushMessage(new StatusMessage(Constants.LEADER, id, "true", ""));
             }
 
             @Override
             public void notLeader()
             {
-                context.pushMessage(new StatusMessage(Constants.LEADER, id, "false", ""));
+                context.getSession().pushMessage(new StatusMessage(Constants.LEADER, id, "false", ""));
             }
         };
         leaderLatch.addListener(listener);

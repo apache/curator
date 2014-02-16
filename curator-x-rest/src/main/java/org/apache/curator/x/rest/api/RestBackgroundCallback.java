@@ -40,7 +40,7 @@ class RestBackgroundCallback implements BackgroundCallback
     @Override
     public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
     {
-        context.pushMessage(new StatusMessage(type, asyncId, getMessage(event), Integer.toString(event.getResultCode())));
+        context.getSession().pushMessage(new StatusMessage(type, asyncId, getMessage(event), Integer.toString(event.getResultCode())));
     }
 
     protected String getMessage(CuratorEvent event)

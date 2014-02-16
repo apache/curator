@@ -19,22 +19,16 @@
 package org.apache.curator.x.rest;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.rest.api.Session;
-import org.apache.curator.x.rest.entities.StatusMessage;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,7 +54,6 @@ public class CuratorRestContext implements Closeable
             }
         }
     };
-    private final BlockingQueue<StatusMessage> messages = Queues.newLinkedBlockingQueue();
 
     private enum State
     {
@@ -103,18 +96,6 @@ public class CuratorRestContext implements Closeable
             }
         };
         executorService.scheduleAtFixedRate(runner, sessionLengthMs, sessionLengthMs, TimeUnit.MILLISECONDS);
-    }
-
-    public void pushMessage(StatusMessage message)
-    {
-        messages.add(message);
-    }
-
-    public Collection<StatusMessage> drainMessages()
-    {
-        List<StatusMessage> localMessages = Lists.newArrayList();
-        messages.drainTo(localMessages);
-        return localMessages;
     }
 
     private void checkSession()

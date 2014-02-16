@@ -18,11 +18,17 @@
  */
 package org.apache.curator.x.rest.api;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
+import org.apache.curator.x.rest.entities.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Session implements Closeable
@@ -30,6 +36,7 @@ public class Session implements Closeable
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final Map<String, Entry> things = Maps.newConcurrentMap();
     private final AtomicLong lastUseMs = new AtomicLong(System.currentTimeMillis());
+    private final BlockingQueue<StatusMessage> messages = Queues.newLinkedBlockingQueue();
 
     private static class Entry
     {
@@ -61,6 +68,8 @@ public class Session implements Closeable
 
     public void closeThings()
     {
+        pushMessage(new StatusMessage(Constants.CLOSING, "", "", ""));
+        
         for ( Map.Entry<String, Entry> mapEntry : things.entrySet() )
         {
             Entry entry = mapEntry.getValue();
@@ -71,6 +80,18 @@ public class Session implements Closeable
                 entry.closer.close(entry.thing);    // lack of generics is safe because addThing() is type-safe
             }
         }
+    }
+
+    void pushMessage(StatusMessage message)
+    {
+        messages.add(message);
+    }
+
+    Collection<StatusMessage> drainMessages()
+    {
+        List<StatusMessage> localMessages = Lists.newArrayList();
+        messages.drainTo(localMessages);
+        return localMessages;
     }
 
     <T> String addThing(T thing, Closer<T> closer)

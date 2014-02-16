@@ -57,11 +57,9 @@ public class ClientResource
     @Path("/status")
     public Response getStatus() throws IOException
     {
-        context.getSession();   // update last use
-
         ObjectNode node = context.getMapper().createObjectNode();
         node.put("state", context.getClient().getState().name());
-        node.putPOJO("messages", context.drainMessages());
+        node.putPOJO("messages", context.getSession().drainMessages());
 
         return Response.ok(context.getWriter().writeValueAsString(node)).build();
     }
