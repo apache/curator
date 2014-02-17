@@ -18,6 +18,9 @@
  */
 package org.apache.curator.x.rest.entities;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class LeaderSpec
 {
     private String path;

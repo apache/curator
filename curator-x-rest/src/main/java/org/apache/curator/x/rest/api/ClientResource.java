@@ -19,6 +19,8 @@
 package org.apache.curator.x.rest.api;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.x.rest.CuratorRestContext;
 import org.apache.curator.x.rest.entities.CreateSpec;
@@ -26,15 +28,18 @@ import org.apache.curator.x.rest.entities.DeleteSpec;
 import org.apache.curator.x.rest.entities.ExistsSpec;
 import org.apache.curator.x.rest.entities.GetChildrenSpec;
 import org.apache.curator.x.rest.entities.GetDataSpec;
+import org.apache.curator.x.rest.entities.PathAndId;
 import org.apache.curator.x.rest.entities.SetDataSpec;
+import org.apache.zookeeper.CreateMode;
 import org.codehaus.jackson.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
@@ -46,6 +51,7 @@ import java.util.List;
 @Path("/curator/v1/client")
 public class ClientResource
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorRestContext context;
 
     public ClientResource(@Context CuratorRestContext context)
@@ -58,22 +64,25 @@ public class ClientResource
     @Path("/status")
     public Response getStatus() throws IOException
     {
-        ObjectNode node = context.getMapper().createObjectNode();
-        node.put("state", context.getClient().getState().name());
-        node.putPOJO("messages", context.getSession().drainMessages());
-
-        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+        return getStatusWithTouch(ImmutableList.<String>of());
     }
 
-    @GET
-    @Path("/touch/{id}")
-    public Response touchThing(@PathParam("id") String id)
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/status")
+    public Response getStatusWithTouch(List<String> ids) throws IOException
     {
-        if ( !context.getSession().updateThingLastUse(id) )
+        ObjectNode node = context.getMapper().createObjectNode();
+        node.put("state", context.getConnectionState().name());
+        node.putPOJO("messages", context.getSession().drainMessages());
+
+        for ( String id : ids )
         {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            context.getSession().updateThingLastUse(id);
         }
-        return Response.ok().build();
+
+        return Response.ok(context.getWriter().writeValueAsString(node)).build();
     }
 
     @POST
@@ -185,17 +194,47 @@ public class ClientResource
         }
         builder = castBuilder(builder, CreateModable.class).withMode(createSpec.getMode());
 
+        final String id = Constants.newId();
         if ( createSpec.isAsync() )
         {
-            BackgroundCallback backgroundCallback = new RestBackgroundCallback(context, Constants.CLIENT_CREATE_ASYNC, createSpec.getAsyncId());
+            BackgroundCallback backgroundCallback = new RestBackgroundCallback(context, Constants.CLIENT_CREATE_ASYNC, createSpec.getAsyncId())
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    if ( event.getResultCode() == 0 )
+                    {
+                        checkEphemeralCreate(createSpec, id, event.getName());
+                    }
+                    super.processResult(client, event);
+                }
+
+                @Override
+                protected String getMessage(CuratorEvent event)
+                {
+                    if ( event.getResultCode() != 0 )
+                    {
+                        return Constants.ERROR;
+                    }
+                    return event.getName();
+                }
+
+                @Override
+                protected String getDetails(CuratorEvent event)
+                {
+                    if ( event.getResultCode() != 0 )
+                    {
+                        return super.getDetails(event);
+                    }
+                    return id;
+                }
+            };
             builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
         }
 
         String returnPath = String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.getPath(), createSpec.getData().getBytes()));
-
-        ObjectNode node = context.getMapper().createObjectNode();
-        node.put("path", returnPath);
-        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+        checkEphemeralCreate(createSpec, id, returnPath);
+        return Response.ok(new PathAndId(returnPath, id)).build();
     }
 
     @POST
@@ -275,4 +314,27 @@ public class ClientResource
         throw new WebApplicationException(Response.Status.BAD_REQUEST);
     }
 
+    private void checkEphemeralCreate(CreateSpec createSpec, String id, String ephemeralPath)
+    {
+        if ( (createSpec.getMode() == CreateMode.EPHEMERAL) || (createSpec.getMode() == CreateMode.EPHEMERAL_SEQUENTIAL) )
+        {
+            Closer<String> closer = new Closer<String>()
+            {
+                @Override
+                public void close(String path)
+                {
+                    log.warn("Ephemeral node has expired and is being deleted: " + path);
+                    try
+                    {
+                        context.getClient().delete().guaranteed().inBackground().forPath(path);
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error("Could not delete expired ephemeral node: " + path);
+                    }
+                }
+            };
+            context.getSession().addThing(id, ephemeralPath, closer);
+        }
+    }
 }

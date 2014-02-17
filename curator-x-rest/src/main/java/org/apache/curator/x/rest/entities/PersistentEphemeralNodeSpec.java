@@ -19,7 +19,9 @@
 package org.apache.curator.x.rest.entities;
 
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
+import javax.xml.bind.annotation.XmlRootElement;
 
+@XmlRootElement
 public class PersistentEphemeralNodeSpec
 {
     private String path;

@@ -19,10 +19,27 @@
 
 package org.apache.curator.x.rest.dropwizard;
 
-public class DropwizardRunner
+import com.codahale.metrics.health.HealthCheck;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.x.rest.CuratorRestContext;
+
+public class CuratorHealthCheck extends HealthCheck
 {
-    public static void main(String[] args) throws Exception
+    private final CuratorRestContext context;
+
+    public CuratorHealthCheck(CuratorRestContext context)
     {
-        CuratorApplication.main(args);
+        this.context = context;
+    }
+
+    @Override
+    protected Result check() throws Exception
+    {
+        ConnectionState state = context.getConnectionState();
+        if ( state != ConnectionState.CONNECTED )
+        {
+            return Result.unhealthy(state.name());
+        }
+        return Result.healthy();
     }
 }

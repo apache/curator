@@ -113,7 +113,11 @@ public class Session implements Closeable
 
     <T> String addThing(T thing, Closer<T> closer)
     {
-        String id = Constants.newId();
+        return addThing(Constants.newId(), thing, closer);
+    }
+
+    <T> String addThing(String id, T thing, Closer<T> closer)
+    {
         things.put(id, new Entry(thing, closer));
         return id;
     }

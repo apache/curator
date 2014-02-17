@@ -19,10 +19,34 @@
 
 package org.apache.curator.x.rest.dropwizard;
 
-public class DropwizardRunner
+import io.dropwizard.Application;
+import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.setup.Environment;
+
+public class CuratorApplication
 {
     public static void main(String[] args) throws Exception
     {
-        CuratorApplication.main(args);
+        Application application = new Application<CuratorConfiguration>()
+        {
+            @Override
+            public void initialize(Bootstrap<CuratorConfiguration> bootstrap)
+            {
+                bootstrap.addBundle(new CuratorRestBundle());
+            }
+
+            @Override
+            public void run(CuratorConfiguration configuration, Environment environment) throws Exception
+            {
+                // NOP
+            }
+        };
+
+        if ( args.length == 0 )
+        {
+            args = new String[]{"server"};
+        }
+
+        application.run(args);
     }
 }

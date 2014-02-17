@@ -34,6 +34,7 @@ class Constants
     static final String CLIENT_SET_DATA_ASYNC = "client-set-data-async";
     static final String CLIENT_EXISTS_ASYNC = "client-exists-async";
     static final String CLIENT_DELETE_ASYNC = "client-delete-async";
+    static final String ERROR = "error";
     static final String WATCH = "watch";
     static final String PATH_CACHE = "path-cache";
     static final String NODE_CACHE = "node-cache";

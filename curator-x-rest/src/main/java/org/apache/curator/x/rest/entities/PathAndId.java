@@ -17,12 +17,44 @@
  * under the License.
  */
 
-package org.apache.curator.x.rest.dropwizard;
+package org.apache.curator.x.rest.entities;
 
-public class DropwizardRunner
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
+public class PathAndId
 {
-    public static void main(String[] args) throws Exception
+    private String path;
+    private String id;
+
+    public PathAndId()
     {
-        CuratorApplication.main(args);
+        this("/", "");
+    }
+
+    public PathAndId(String path, String id)
+    {
+        this.path = path;
+        this.id = id;
+    }
+
+    public String getPath()
+    {
+        return path;
+    }
+
+    public void setPath(String path)
+    {
+        this.path = path;
+    }
+
+    public String getId()
+    {
+        return id;
+    }
+
+    public void setId(String id)
+    {
+        this.id = id;
     }
 }

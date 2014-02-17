@@ -20,6 +20,8 @@ package org.apache.curator.x.rest;
 
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.rest.api.Session;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -38,6 +40,19 @@ public class CuratorRestContext implements Closeable
     private final int sessionLengthMs;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final ScheduledExecutorService executorService = ThreadUtils.newSingleThreadScheduledExecutor("CuratorRestContext");
+    private final AtomicReference<ConnectionState> connectionState = new AtomicReference<ConnectionState>();
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    {
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            if ( newState == ConnectionState.RECONNECTED )
+            {
+                newState = ConnectionState.CONNECTED;
+            }
+            connectionState.set(newState);
+        }
+    };
 
     private enum State
     {
@@ -56,6 +71,11 @@ public class CuratorRestContext implements Closeable
     {
         Preconditions.checkState(state.get() == State.STARTED, "Not started");
         return client;
+    }
+
+    public ConnectionState getConnectionState()
+    {
+        return connectionState.get();
     }
 
     public Session getSession()
@@ -77,6 +97,8 @@ public class CuratorRestContext implements Closeable
             }
         };
         executorService.scheduleAtFixedRate(runner, sessionLengthMs, sessionLengthMs, TimeUnit.MILLISECONDS);
+        client.getConnectionStateListenable().addListener(connectionStateListener);
+        connectionState.set(client.getZookeeperClient().isConnected() ? ConnectionState.CONNECTED : ConnectionState.SUSPENDED);
     }
 
     @Override
@@ -84,6 +106,7 @@ public class CuratorRestContext implements Closeable
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
+            client.getConnectionStateListenable().removeListener(connectionStateListener);
             executorService.shutdownNow();
             session.close();
         }
