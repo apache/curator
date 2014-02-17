@@ -63,12 +63,18 @@ public class CuratorRestBundle implements ConfiguredBundle<CuratorConfiguration>
             @Override
             public void lifeCycleStopping(LifeCycle event)
             {
+                closeCuratorClient(context.getClient());
                 context.close();
             }
         };
         environment.lifecycle().addLifeCycleListener(listener);
 
         environment.healthChecks().register("Curator", new CuratorHealthCheck(context));
+    }
+
+    protected void closeCuratorClient(CuratorFramework client)
+    {
+        client.close();
     }
 
     protected CuratorRestContext newCuratorRestContext(CuratorConfiguration configuration)
@@ -80,11 +86,8 @@ public class CuratorRestBundle implements ConfiguredBundle<CuratorConfiguration>
     protected CuratorFramework newCuratorClient(CuratorConfiguration configuration)
     {
         ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(configuration.getRetryBaseSleepMs(), configuration.getRetryQty());
-        return CuratorFrameworkFactory.newClient
-        (
-            configuration.getZooKeeperConnectionString(),
-            configuration.getSessionLengthMs(),
-            configuration.getConnectionTimeoutMs(), retryPolicy
-        );
+        CuratorFramework client = CuratorFrameworkFactory.newClient(configuration.getZooKeeperConnectionString(), configuration.getSessionLengthMs(), configuration.getConnectionTimeoutMs(), retryPolicy);
+        client.start();
+        return client;
     }
 }
