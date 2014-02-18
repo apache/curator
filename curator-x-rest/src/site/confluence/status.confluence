@@ -1,0 +1,75 @@
+[[Curator REST Proxy|index.html]] / Status Messages
+
+h1. Status Messages
+
+h2. Status Messages
+
+|*Watchers*| |
+|Type|watch|
+|Source Id|The watchId passed in the original request|
+|Message|Either "NodeCreated", "NodeDeleted", "NodeDataChanged", or "NodeChildrenChanged"|
+|Details|The event path|
+| | |
+|*Expired Instances*| |
+|Type|expired|
+|Source Id|Generated Id of the instance that is expiring|
+|Message|Class name of the expiring instance. Either: "LeaderLatch.class", "InterProcessSemaphoreMutex.class", "NodeCache.class", "PathChildrenCache.class", "PersistentEphemeralNode.class", "InterProcessMutex.class", "LeasesHolder.class" (for semaphores)|
+|Details|n/a|
+
+h2. Asynchronous Client APIs
+
+|API: */curator/v1/client/create*| |
+|Type|client-create-async|
+|Source Id|The asyncId passed in the original request|
+|Message|PathAndId as a JSON string|
+|Details|The ZooKeeper "rc" result code|
+| | |
+|API: */curator/v1/client/delete*| |
+|Type|client-delete-async|
+|Source Id|The asyncId passed in the original request|
+|Message|n/a|
+|Details|The ZooKeeper "rc" result code|
+| | |
+|API: */curator/v1/client/get-children*| |
+|Type|client-get-children-async|
+|Source Id|The asyncId passed in the original request|
+|Message|List of children nodes separated by the value passed as asyncListSeparator in the original request|
+|Details|The ZooKeeper "rc" result code|
+| | |
+|API: */curator/v1/client/set-data*| |
+|Type|client-set-data-async|
+|Source Id|The asyncId passed in the original request|
+|Message|n/a|
+|Details|The ZooKeeper "rc" result code|
+| | |
+|API: */curator/v1/client/get-data*| |
+|Type|client-get-data-async|
+|Source Id|The asyncId passed in the original request|
+|Message|The data|
+|Details|The ZooKeeper "rc" result code|
+| | |
+|API: */curator/v1/client/exists*| |
+|Type|client-exists-async|
+|Source Id|The asyncId passed in the original request|
+|Message|ZK Stat as a JSON string|
+|Details|The ZooKeeper "rc" result code|
+
+h2. Recipe Messages
+
+|API: */curator/v1/recipes/leader*| |
+|Type|leader|
+|Source Id|generated leader Id|
+|Message|"true" if leader, "false" if leadership is lost|
+|Details|n/a|
+| | |
+|API: */curator/v1/recipes/path-cache*| |
+|Type|path-cache|
+|Source Id|generated leader Id|
+|Message|n/a|
+|Details|n/a|
+| | |
+|API: */curator/v1/recipes/node-cache*| |
+|Type|node-cache|
+|Source Id|generated leader Id|
+|Message|Either "child_added", "child_updated", "child_removed", "connection_suspended", "connection_reconnected", "connection_lost", or "initialized"|
+|Details|Node path|

@@ -1,0 +1,86 @@
+[[Curator REST Proxy|index.html]] / Entity Descriptions
+
+h1. Entity Descriptions
+
+Here are the entity descriptions for the entities used in the APIs:
+
+||Field||Type||Description||
+|*Status*| | |
+|state|string|This instance's Curator connection state. One of: "connected", "suspended", or "lost". If the state is other than "connected" you must assume that any open locks and/or watchers are no longer valid.|
+|messages|array of StatusMessages|Any pending messages from this instance.|
+| | | |
+|*StatusMessage*| | |
+|type|string|The status message type. See the Managing Status section for details.|
+|message|string|Type-dependent message|
+|details|string|Type-dependent details|
+|sourceId|string|Type-dependent sourceId|
+| | | |
+|*GetChildrenSpec*| | |
+|path|string|The ZK path|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|asyncListSeparator|string|for async, the separator to use for the child names. Usually you'd set this to ",".|
+|watched|boolean|if true, set a watch|
+|watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
+| | | |
+|*CreateSpec*| | |
+|path|string|The ZK path|
+|data|string|The data to store in the node|
+|mode|string|The create mode. One of: "persistent", "persistent_sequential", "ephemeral", or "ephemeral_sequential"|
+| | | |
+| *PathAndId* | | |
+|path|string|The created ZK Path (possibly with a sequence suffix)|
+|id|string|The internally generated id for this node (used for ephemerals)|
+| | | |
+| *DeleteSpec* | | |
+|path|string|The ZK path|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|guaranteed|boolean|if true, use Curator's guaranteed delete mechanism|
+|version|int|the expected version to delete or -1|
+| | | |
+| *SetDataSpec* | | |
+|path|string|The ZK path|
+|data|string|The data to set|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|watched|boolean|if true, set a watch|
+|watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
+|compressed|boolean|if true, compress the data using Curator's compression mechanism|
+|version|int|the expected version or -1|
+| | | |
+| *GetDataSpec* | | |
+|path|string|The ZK path|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|watched|boolean|if true, set a watch|
+|watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
+|decompressed|boolean|if true, decompress the data using Curator's compression mechanism|
+| | | |
+| *DataAndStat* | | |
+|data|string|the data from the node|
+|stat|ZK Stat|the ZooKeeper stat for the node|
+| | | |
+| *ExistsSpec* | | |
+|path|string|The ZK path|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|watched|boolean|if true, set a watch|
+|watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
+| | | |
+| *IdSpec* | | |
+|id|string|The ID of the created recipe, etc. Used for subsequent calls to delete, close, etc. the instance.|
+| | | |
+| *LockSpec* | | |
+|path|string|The ZK path|
+|maxWaitMs|int|Maximum time to wait to acquire the lock (in milliseconds)|
+| | | |
+| *LeaderSpec* | | |
+|path|string|The ZK path|
+|maxWaitMs|int|Maximum time to wait to acquire the lock (in milliseconds)|
+| | | |
+| *ParticipantSpec* | | |
+|participantId|string|The participant ID|
+|isLeader|boolean|true if this is the leader|
+
+*TBD*

@@ -16,35 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.rest.entities;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class LeaderSpec
+public class ParticipantSpec
 {
-    private String path;
     private String participantId;
+    private boolean isLeader;
 
-    public LeaderSpec()
+    public ParticipantSpec()
     {
-        this("/", "");
+        this("", false);
     }
 
-    public LeaderSpec(String path, String participantId)
+    public ParticipantSpec(String participantId, boolean isLeader)
     {
-        this.path = path;
         this.participantId = participantId;
-    }
-
-    public String getPath()
-    {
-        return path;
-    }
-
-    public void setPath(String path)
-    {
-        this.path = path;
+        this.isLeader = isLeader;
     }
 
     public String getParticipantId()
@@ -55,5 +46,15 @@ public class LeaderSpec
     public void setParticipantId(String participantId)
     {
         this.participantId = participantId;
+    }
+
+    public boolean isLeader()
+    {
+        return isLeader;
+    }
+
+    public void setLeader(boolean isLeader)
+    {
+        this.isLeader = isLeader;
     }
 }

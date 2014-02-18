@@ -75,7 +75,7 @@ public class Session implements Closeable
             if ( elapsedSinceLastUse > sessionLengthMs )
             {
                 String id = mapEntry.getKey();
-                pushMessage(new StatusMessage(Constants.EXPIRED, id, "expired", entry.thing.getClass().getName()));
+                pushMessage(new StatusMessage(Constants.EXPIRED, id, entry.thing.getClass().getSimpleName(), ""));
                 log.warn(String.format("Expiring object. Elapsed time: %d, id: %s, Class: %s", elapsedSinceLastUse, id, entry.thing.getClass().getName()));
 
                 things.remove(id);

@@ -43,13 +43,13 @@ class RestBackgroundCallback implements BackgroundCallback
         context.getSession().pushMessage(new StatusMessage(type, asyncId, getMessage(event), getDetails(event)));
     }
 
+    protected String getMessage(CuratorEvent event)
+    {
+        return String.valueOf(event.getPath());
+    }
+
     protected String getDetails(CuratorEvent event)
     {
         return Integer.toString(event.getResultCode());
-    }
-
-    protected String getMessage(CuratorEvent event)
-    {
-        return String.valueOf(event.getName());
     }
 }

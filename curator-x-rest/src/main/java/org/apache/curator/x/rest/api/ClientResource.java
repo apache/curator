@@ -75,7 +75,7 @@ public class ClientResource
     public Response getStatusWithTouch(List<String> ids) throws IOException
     {
         ObjectNode node = context.getMapper().createObjectNode();
-        node.put("state", context.getConnectionState().name());
+        node.put("state", context.getConnectionState().name().toLowerCase());
         node.putPOJO("messages", context.getSession().drainMessages());
 
         for ( String id : ids )
@@ -213,11 +213,16 @@ public class ClientResource
                 @Override
                 protected String getMessage(CuratorEvent event)
                 {
-                    if ( event.getResultCode() != 0 )
+                    PathAndId pathAndId = new PathAndId(String.valueOf(event.getName()), id);
+                    try
                     {
-                        return Constants.ERROR;
+                        return context.getWriter().writeValueAsString(pathAndId);
                     }
-                    return event.getName();
+                    catch ( IOException e )
+                    {
+                        log.error("Could not serialize PathAndId", e);
+                    }
+                    return "{}";
                 }
 
                 @Override
@@ -261,7 +266,11 @@ public class ClientResource
                 @Override
                 protected String getMessage(CuratorEvent event)
                 {
-                    return (event.getData() != null) ? new String(event.getData()) : "";
+                    if ( event.getResultCode() == 0 )
+                    {
+                        return (event.getData() != null) ? new String(event.getData()) : "";
+                    }
+                    return "";
                 }
             };
             castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
@@ -297,7 +306,26 @@ public class ClientResource
 
         if ( existsSpec.isAsync() )
         {
-            BackgroundCallback backgroundCallback = new RestBackgroundCallback(context, Constants.CLIENT_EXISTS_ASYNC, existsSpec.getAsyncId());
+            BackgroundCallback backgroundCallback = new RestBackgroundCallback(context, Constants.CLIENT_EXISTS_ASYNC, existsSpec.getAsyncId())
+            {
+                @Override
+                protected String getMessage(CuratorEvent event)
+                {
+                    Stat stat = event.getStat();
+                    if ( stat != null )
+                    {
+                        try
+                        {
+                            return context.getWriter().writeValueAsString(stat);
+                        }
+                        catch ( IOException e )
+                        {
+                            log.error("Could not serialize stat object", e);
+                        }
+                    }
+                    return "{}";
+                }
+            };
             castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
         }
 

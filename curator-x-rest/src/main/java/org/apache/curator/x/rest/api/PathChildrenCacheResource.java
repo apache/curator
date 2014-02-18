@@ -84,7 +84,7 @@ public class PathChildrenCacheResource
             @Override
             public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
             {
-                context.getSession().pushMessage(new StatusMessage(Constants.PATH_CACHE, id, event.getType().name(), ""));
+                context.getSession().pushMessage(new StatusMessage(Constants.PATH_CACHE, id, event.getType().name().toLowerCase(), event.getData().getPath()));
             }
         };
         cache.getListenable().addListener(listener);
