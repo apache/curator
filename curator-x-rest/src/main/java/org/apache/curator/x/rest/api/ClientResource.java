@@ -31,6 +31,7 @@ import org.apache.curator.x.rest.entities.GetDataSpec;
 import org.apache.curator.x.rest.entities.PathAndId;
 import org.apache.curator.x.rest.entities.SetDataSpec;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
 import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -266,6 +267,9 @@ public class ClientResource
             castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
         }
 
+        Stat stat = new Stat();
+        builder = castBuilder(builder, Statable.class).storingStatIn(stat);
+
         String result = "";
         Object bytes = castBuilder(builder, Pathable.class).forPath(getDataSpec.getPath());
         if ( bytes != null )
@@ -275,6 +279,7 @@ public class ClientResource
 
         ObjectNode node = context.getMapper().createObjectNode();
         node.put("data", result);
+        node.putPOJO("stat", stat);
         return Response.ok(context.getWriter().writeValueAsString(node)).build();
     }
 

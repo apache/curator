@@ -2,5 +2,141 @@ h1. Curator REST Proxy
 
 NOTE: Curator REST Proxy is in its own package in Maven Central: {{curator-x-rest}}
 
-The Curator REST module implements a proxy that bridges non-java environments with the Curator framework and recipes. *TBD*
+The Curator REST module implements a proxy that bridges non-java environments with the Curator framework and recipes. Every major language
+today has a REST library available. With the Curator REST Proxy, you can now take advantage of the Curator framework and its recipes in
+any language.
 
+*TBD*
+
+h2. Building and Packaging
+
+Dropwizard
+
+*TBD*
+
+h2. Deployment
+
+Ideally, co-locate a Curator REST Proxy instance on each ZooKeeper instance. While this isn't a requirement, it is the simplest way to deploy.
+
+*TBD*
+
+h2. Stateful vs Stateless
+
+Some of the Proxy's APIs are stateful and some are stateless. For the Client APIs, if you make a call that is either asynchronous, sets a watcher,
+or creates an ephemeral node, there is some state that is stored. In these cases, you must periodically send a status heartbeat and examine the
+resulting messages. This status heartbeat must be sent to the *same server* to which you originated the request. E.g. if you have 3 Curator REST
+Proxies A, B and C and execute a lock API to server B, you must periodically send a status with the lock's ID to server B. See the section
+below on Managing Status for more details.
+
+h2. Managing Status
+
+*TBD*
+
+h2. Status APIs
+
+||URL||METHOD||Request Entity||Response Entity||Description||
+|/curator/v1/client/status|GET|n/a|Status|Call to get the status of the Curator connection as well as any pending messages.|
+|/curator/v1/client/status|POST|List of string ids|Status|Call to get the status of the Curator connection as well as any pending messages. Additionally, stateful instances with the specified IDs are "touched" thus preventing timeout expiration.|
+
+h2. Client APIs
+
+NOTE: Not all combinations are valid *TBD*
+
+||URL||METHOD||Request Entity||Response Entity||Description||
+|/get-children|POST|GetChildrenSpec|Array of strings|This is the equivalent of CuratorFramework.getChildren().|
+|/create|POST|CreateSpec|PathAndId|This is the equivalent of CuratorFramework.create().|
+|/delete|POST|DeleteSpec|n/a|This is the equivalent of CuratorFramework.delete().|
+|/set-data|POST|SetDataSpec|n/a|This is the equivalent of CuratorFramework.setData().|
+|/get-data|POST|GetDataSpec|DataAndStat|This is the equivalent of CuratorFramework.setData().|
+|/exists|POST|ExistsSpec|ZK Stat or empty|This is the equivalent of CuratorFramework.exists().|
+
+h3. How Asynchronous APIs Are Handled
+
+*TBD*
+
+h3. How Watchers Are Handled
+
+*TBD*
+
+h3. How Ephemeral Nodes Are Handled
+
+*TBD*
+
+h2. Recipe APIs
+||URL||METHOD||Request Entity||Response Entity||Description||
+|/curator/v1/recipes/lock|POST|LockSpec|IdSpec|An InterProcessSemaphoreMutex. On successful return, your client will be holding the specified lock until you delete the lock via the delete API.|
+|/curator/v1/recipes/lock/{lock-id}|DELETE|n/a|n/a|Release and delete a lock.|
+|/curator/v1/recipes/leader|POST|LeaderSpec|IdSpec|Start a LeaderLatch instance. When you gain leadership, it will be notified via status.|
+|/curator/v1/recipes/leader/{leader-id}|DELETE|n/a|n/a|Release/delete leadership.|
+
+h3. Handling Timeouts, Status and Releasing
+
+*TBD - releases must go to same server, etc.
+
+h2. Entities
+
+||Field||Type||Description||
+|*Status*| | |
+|state|string|This instance's Curator connection state. One of: "connected", "suspended", or "lost". If the state is other than "connected" you must assume that any open locks and/or watchers are no longer valid.|
+|messages|array of StatusMessages|Any pending messages from this instance.|
+| | | |
+|*StatusMessage*| | |
+|type|string|The status message type. See the Managing Status section for details.|
+|message|string|Type-dependent message|
+|details|string|Type-dependent details|
+|sourceId|string|Type-dependent sourceId|
+| | | |
+|*GetChildrenSpec*| | |
+|path|string|The ZK path|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|asyncListSeparator|string|for async, the separator to use for the child names. Usually you'd set this to ",".|
+|watched|boolean|if true, set a watch|
+|watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
+| | | |
+|*CreateSpec*| | |
+|path|string|The ZK path|
+|data|string|The data to store in the node|
+|mode|string|The create mode. One of: "persistent", "persistent_sequential", "ephemeral", or "ephemeral_sequential"|
+| | | |
+| *PathAndId* | | |
+|path|string|The created ZK Path (possibly with a sequence suffix)|
+|id|string|The internally generated id for this node (used for ephemerals)|
+| | | |
+| *DeleteSpec* | | |
+|path|string|The ZK path|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|guaranteed|boolean|if true, use Curator's guaranteed delete mechanism|
+|version|int|the expected version to delete or -1|
+| | | |
+| *SetDataSpec* | | |
+|path|string|The ZK path|
+|data|string|The data to set|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|watched|boolean|if true, set a watch|
+|watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
+|compressed|boolean|if true, compress the data using Curator's compression mechanism|
+|version|int|the expected version or -1|
+| | | |
+| *GetDataSpec* | | |
+|path|string|The ZK path|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|watched|boolean|if true, set a watch|
+|watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
+|decompressed|boolean|if true, decompress the data using Curator's compression mechanism|
+| | | |
+| *DataAndStat* | | |
+|data|string|the data from the node|
+|stat|ZK Stat|the ZooKeeper stat for the node|
+| | | |
+| *ExistsSpec* | | |
+|path|string|The ZK path|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|watched|boolean|if true, set a watch|
+|watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
+
+*TBD*
