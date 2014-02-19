@@ -43,11 +43,21 @@ public class CuratorRestBundle implements ConfiguredBundle<CuratorConfiguration>
     @Override
     public void run(CuratorConfiguration configuration, Environment environment) throws Exception
     {
-        CuratorRestContext context = newCuratorRestContext(configuration);
+        final CuratorRestContext context = newCuratorRestContext(configuration);
         runFromContext(environment, context);
+
+        LifeCycle.Listener listener = new AbstractLifeCycle.AbstractLifeCycleListener()
+        {
+            @Override
+            public void lifeCycleStopping(LifeCycle event)
+            {
+                closeCuratorClient(context.getClient());
+            }
+        };
+        environment.lifecycle().addLifeCycleListener(listener);
     }
 
-    public void runFromContext(Environment environment, final CuratorRestContext context)
+    public static void runFromContext(Environment environment, final CuratorRestContext context)
     {
         SingletonTypeInjectableProvider<Context, CuratorRestContext> injectable = new SingletonTypeInjectableProvider<Context, CuratorRestContext>(CuratorRestContext.class, context){};
         environment.jersey().register(injectable);
@@ -67,7 +77,6 @@ public class CuratorRestBundle implements ConfiguredBundle<CuratorConfiguration>
             @Override
             public void lifeCycleStopping(LifeCycle event)
             {
-                closeCuratorClient(context.getClient());
                 context.close();
             }
         };
