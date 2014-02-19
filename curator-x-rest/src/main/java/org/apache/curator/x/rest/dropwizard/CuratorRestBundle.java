@@ -43,8 +43,12 @@ public class CuratorRestBundle implements ConfiguredBundle<CuratorConfiguration>
     @Override
     public void run(CuratorConfiguration configuration, Environment environment) throws Exception
     {
-        final CuratorRestContext context = newCuratorRestContext(configuration);
+        CuratorRestContext context = newCuratorRestContext(configuration);
+        runFromContext(environment, context);
+    }
 
+    public void runFromContext(Environment environment, final CuratorRestContext context)
+    {
         SingletonTypeInjectableProvider<Context, CuratorRestContext> injectable = new SingletonTypeInjectableProvider<Context, CuratorRestContext>(CuratorRestContext.class, context){};
         environment.jersey().register(injectable);
         for ( Class<?> clazz : CuratorRestClasses.getClasses() )
