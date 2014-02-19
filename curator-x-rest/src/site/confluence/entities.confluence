@@ -26,7 +26,7 @@ Here are the entity descriptions for the entities used in the APIs:
 |*CreateSpec*| | |
 |path|string|The ZK path|
 |data|string|The data to store in the node|
-|mode|string|The create mode. One of: "persistent", "persistent_sequential", "ephemeral", or "ephemeral_sequential"|
+|mode|string|The create mode. One of: "persistent", "persistent\_sequential", "ephemeral", or "ephemeral\_sequential"|
 | | | |
 | *PathAndId* | | |
 |path|string|The created ZK Path (possibly with a sequence suffix)|

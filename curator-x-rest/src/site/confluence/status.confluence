@@ -71,5 +71,5 @@ h2. Recipe Messages
 |API: */curator/v1/recipes/node-cache*| |
 |Type|node-cache|
 |Source Id|generated leader Id|
-|Message|Either "child_added", "child_updated", "child_removed", "connection_suspended", "connection_reconnected", "connection_lost", or "initialized"|
+|Message|Either "child\_added", "child\_updated", "child\_removed", "connection\_suspended", "connection\_reconnected", "connection\_lost", or "initialized"|
 |Details|Node path|
