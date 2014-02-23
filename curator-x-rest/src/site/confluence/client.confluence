@@ -44,9 +44,11 @@ Address address = ... # host and port of the Curator REST Proxy instance
 LockSpec lock = {path: "/lock/path", maxWaitMs: 5000}
 IdSpec lockId = restClient.post(address, "/curator/v1/recipes/lock", lock)
 statusMaintainer.add(address, lockId)
+
     ... do work here while in the acquired mutex ...
-restClient.delete(address, "/curator/v1/recipes/lock/" + lockId.id)
+    
 statusMaintainer.remove(address, lockId)
+restClient.delete(address, "/curator/v1/recipes/lock/" + lockId.id)
 {code}
 
 The statusMaintainer mechanism should iterate over any records it has and call the status API peridocially:
