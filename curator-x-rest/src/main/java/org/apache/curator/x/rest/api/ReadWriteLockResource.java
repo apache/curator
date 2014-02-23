@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -47,7 +48,7 @@ public class ReadWriteLockResource
         this.context = context;
     }
 
-    @PUT
+    @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/read")
@@ -56,13 +57,22 @@ public class ReadWriteLockResource
         return internalLock(lockSpec, false);
     }
 
-    @PUT
+    @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/write")
     public Response acquireWriteLock(final LockSpec lockSpec) throws Exception
     {
         return internalLock(lockSpec, true);
+    }
+
+    @DELETE
+    @Path("{lock-id}")
+    public Response releaseLock(@PathParam("lock-id") String lockId) throws Exception
+    {
+        InterProcessMutex lock = Constants.deleteThing(context.getSession(), lockId, InterProcessMutex.class);
+        lock.release();
+        return Response.ok().build();
     }
 
     private Response internalLock(final LockSpec lockSpec, boolean writeLock) throws Exception
@@ -95,14 +105,5 @@ public class ReadWriteLockResource
         String id = context.getSession().addThing(actualLock, closer);
         ObjectNode node = Constants.makeIdNode(context, id);
         return Response.ok(context.getWriter().writeValueAsString(node)).build();
-    }
-
-    @DELETE
-    @Path("{lock-id}")
-    public Response releaseLock(@PathParam("lock-id") String lockId) throws Exception
-    {
-        InterProcessMutex lock = Constants.deleteThing(context.getSession(), lockId, InterProcessMutex.class);
-        lock.release();
-        return Response.ok().build();
     }
 }

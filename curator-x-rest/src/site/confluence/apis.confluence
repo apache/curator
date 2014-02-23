@@ -37,13 +37,32 @@ session length, the Curator REST Proxy will delete the ephemeral node (sending a
 h2. Recipe APIs
 
 ||URL||Method||Request Entity||Response Entity||Description||
-|/curator/v1/recipes/lock|POST|LockSpec|IdSpec|An InterProcessSemaphoreMutex. On successful return, your client will be holding the specified lock until you delete the lock via the delete API.|
-|/curator/v1/recipes/lock/{lock-id}|DELETE|n/a|n/a|Release and delete a lock.|
+| *Leader* | | | | |
 |/curator/v1/recipes/leader|POST|LeaderSpec|IdSpec|Start a LeaderLatch instance. When you gain leadership, it will be notified via status.|
 |/curator/v1/recipes/leader/{leader-id}|DELETE|n/a|n/a|Release/delete leadership.|
 |/curator/v1/recipes/leader/{leader-id}|GET|n/a|array of ParticipantSpecs|List of participants in the leader election.|
-
-*MORE TBD*
+| *Lock* | | | | |
+|/curator/v1/recipes/lock|POST|LockSpec|IdSpec|An InterProcessSemaphoreMutex. On successful return, your client will be holding the specified lock until you delete the lock via the delete API.|
+|/curator/v1/recipes/lock/{lock-id}|DELETE|n/a|n/a|Release and delete a lock.|
+| *Read/Write Lock* | | | | |
+|/curator/v1/recipes/read-write-lock/read|POST|LockSpec|IdSpec|An InterProcessReadWriteLock. On successful return, your client will be holding the specified read lock until you delete the lock via the delete API.|
+|/curator/v1/recipes/read-write-lock/write|POST|LockSpec|IdSpec|An InterProcessReadWriteLock. On successful return, your client will be holding the specified write lock until you delete the lock via the delete API.|
+|/curator/v1/recipes/read-write-lock/{lock-id}|DELETE|n/a|n/a|Release and delete the read/write lock.|
+| *Semaphore* | | | | |
+|/curator/v1/recipes/semaphore|POST|SemaphoreSpec|IdSpec|An InterProcessSemaphoreV2. On successful return, your client will be holding the specified number of leases until you delete them via the delete API.|
+|/curator/v1/recipes/semaphore/{lock-id}/{release-qty}|DELETE|n/a|n/a|Release the specified number of leases.|
+| *Node Cache* | | | | |
+|/curator/v1/recipes/node-cache|POST|NodeCacheSpec|IdSpec|Start a NodeCache instance. NodeCache updates will be notified via status.|
+|/curator/v1/recipes/node-cache/{cache-id}|GET|n/a|NodeData|Stop and delete a node cache.|
+|/curator/v1/recipes/node-cache/{cache-id}|DELETE|n/a|n/a|Stop and delete a node cache.|
+| *Path Cache* | | | | |
+|/curator/v1/recipes/path-cache|POST|PathChildrenCacheSpec|IdSpec|Start a PathChildrenCache instance. PathChildrenCache updates will be notified via status.|
+|/curator/v1/recipes/path-cache/{cache-id}|GET|n/a|array of NodeData|Return the current cached values.|
+|/curator/v1/recipes/path-cache/{cache-id}/{full-path}|GET|n/a|NodeData|Return the current cached value for the node at the specified full path.|
+|/curator/v1/recipes/path-cache/{cache-id}|DELETE|n/a|n/a|Stop and delete a path cache.|
+| *Persistent Ephemeral Node* | | | | |
+|/curator/v1/recipes/persistent-ephemeral-node|POST|PersistentEphemeralNodeSpec|IdSpec|Start a PersistentEphemeralNode instance.|
+|/curator/v1/recipes/persistent-ephemeral-node/{node-id}|DELETE|n/a|n/a|Stop and delete a persistent ephemeral node.|
 
 h2. Entities
 

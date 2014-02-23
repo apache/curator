@@ -80,6 +80,12 @@ Here are the entity descriptions for the entities used in the APIs:
 |path|string|The ZK path|
 |maxWaitMs|int|Maximum time to wait to acquire the lock (in milliseconds)|
 | | | |
+| *SemaphoreSpec* | | |
+|path|string|The ZK path|
+|maxWaitMs|int|Maximum time to wait to acquire the locks (in milliseconds)|
+|acquireQty|int|The number of leases to acquire|
+|maxLeases|int|The maximum number of leases allowed|
+| | | |
 | *LeaderSpec* | | |
 |path|string|The ZK path|
 |maxWaitMs|int|Maximum time to wait to acquire the lock (in milliseconds)|
@@ -87,7 +93,29 @@ Here are the entity descriptions for the entities used in the APIs:
 | *ParticipantSpec* | | |
 |participantId|string|The participant ID|
 |isLeader|boolean|true if this is the leader|
+| | | |
+| *NodeCacheSpec* | | |
+|path|string|The ZK path|
+|dataIsCompressed|boolean|if true if the data should be compressed|
+|buildInitial|boolean|if true if the initial data should be populated without sending notifications|
+| | | |
+| *NodeData* | | |
+|path|string|The ZK path|
+|stat|ZK Stat|the ZooKeeper stat for the node|
+|buildInitial|boolean|true if the initial data should be populated without sending notifications|
+|data|string|the data from the node|
+| | | |
+| *PathChildrenCacheSpec* | | |
+|path|string|The ZK path|
+|cacheData|boolean|if true to cache node data|
+|dataIsCompressed|boolean|if true data is compressed|
+|startMode|string|one of "normal", "build_initial_cache", or "post_initialized_event"|
+| | | |
+| *PersistentEphemeralNodeSpec* | | |
+|path|string|The ZK path|
+|data|string|The data to set in the node|
+|mode|string|Type of node to create. One of "ephemeral", "ephemeral_sequential", "protected_ephemeral", "protected_ephemeral_sequential"|
 
 *NOTE* - for the entities above used in the Recipe APIs, not all combinations of values are valid. For example,
-in the CreateSpec, withProtection and creatingParentsIfNeeded cannot be used together. The rule is only combinations
+in the CreateSpec, withProtection and creatingParentsIfNeeded cannot be used together. Only combinations
 that Curator itself supports can be used.

@@ -147,7 +147,7 @@ public class ClientResource
         return Response.ok().build();
     }
 
-    @PUT
+    @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/set-data")
