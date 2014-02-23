@@ -51,17 +51,19 @@ statusMaintainer.remove(address, lockId)
 restClient.delete(address, "/curator/v1/recipes/lock/" + lockId.id)
 {code}
 
-The statusMaintainer mechanism should iterate over any records it has and call the status API peridocially:
+The statusMaintainer mechanism should iterate over any records it has and call the status API periodically:
 
 {code}
-do record in maintainedRecords
-    Status status = restClient.post(record.address, "/curator/v1/client/status", record.ids)
-    if status.state is not "connected"
-        ... assume you are not connected and handle accordingly ...
-    end
-    do message in status.messages
-        if message.type is "watch" ...
-        etc...
+loop
+    do record in maintainedRecords
+        Status status = restClient.post(record.address, "/curator/v1/client/status", record.ids)
+        if status.state is not "connected"
+            ... assume you are not connected and handle accordingly ...
+        end
+        do message in status.messages
+            if message.type is "watch" ...
+            etc...
+        end
     end
 
     sleep-for-a-bit
