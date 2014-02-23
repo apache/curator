@@ -10,7 +10,7 @@ Here are the entity descriptions for the entities used in the APIs:
 |messages|array of StatusMessages|Any pending messages from this instance.|
 | | | |
 |*StatusMessage*| | |
-|type|string|The status message type. See the Managing Status section for details.|
+|type|string|The status message type. See the [[Managing Status|client.html]] section for details.|
 |message|string|Type-dependent message|
 |details|string|Type-dependent details|
 |sourceId|string|Type-dependent sourceId|
@@ -27,6 +27,11 @@ Here are the entity descriptions for the entities used in the APIs:
 |path|string|The ZK path|
 |data|string|The data to store in the node|
 |mode|string|The create mode. One of: "persistent", "persistent\_sequential", "ephemeral", or "ephemeral\_sequential"|
+|async|boolean|If true, perform asynchronously|
+|asyncId|string|for async, a user-defined ID to return in the status message|
+|compressed|boolean|if true, compress the data using Curator's compression mechanism|
+|creatingParentsIfNeeded|boolean|if true, parent paths are created if needed|
+|withProtection|boolean|if true, the Curator protection mechanism is used|
 | | | |
 | *PathAndId* | | |
 |path|string|The created ZK Path (possibly with a sequence suffix)|
@@ -82,3 +87,7 @@ Here are the entity descriptions for the entities used in the APIs:
 | *ParticipantSpec* | | |
 |participantId|string|The participant ID|
 |isLeader|boolean|true if this is the leader|
+
+*NOTE* - for the entities above used in the Recipe APIs, not all combinations of values are valid. For example,
+in the CreateSpec, withProtection and creatingParentsIfNeeded cannot be used together. The rule is only combinations
+that Curator itself supports can be used.

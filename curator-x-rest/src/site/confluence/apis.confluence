@@ -12,8 +12,6 @@ h2. Status APIs
 
 h2. Client APIs
 
-NOTE: Not all combinations are valid *TBD*
-
 ||URL||Method||Request Entity||Response Entity||Description||
 |/get-children|POST|GetChildrenSpec|Array of strings|This is the equivalent of CuratorFramework.getChildren().|
 |/create|POST|CreateSpec|PathAndId|This is the equivalent of CuratorFramework.create().|
@@ -24,27 +22,28 @@ NOTE: Not all combinations are valid *TBD*
 
 h3. How Asynchronous APIs Are Handled
 
-*TBD*
+For async versions of the Client APIs, the result is returned via a Status Message. See the [[Managing Status|client.html]] section for details
+as well as the [[Status Messages|status.html]] page which details the Asynchronous Client APIs messages.
 
 h3. How Watchers Are Handled
 
-*TBD*
+If you set "isWatched" to true in a Client API, a status message is generated when the watcher fires. See the [[Managing Status|client.html]]
+section for details as well as the [[Status Messages|status.html]] page which details the Watchers message.
 
 h3. How Ephemeral Nodes Are Handled
 
-*TBD*
+If you create an ephemeral node using the Client APIs, you must periodically send a heartbeat with the ID of the ephemeral node (as
+returned by the API). See the [[Client Page|client.html]] for details. IMPORTANT: if you fail to send heartbeats within the configured
+session length, the Curator REST Proxy will delete the ephemeral node (sending an expiration status message).
 
 h2. Recipe APIs
+
 ||URL||Method||Request Entity||Response Entity||Description||
 |/curator/v1/recipes/lock|POST|LockSpec|IdSpec|An InterProcessSemaphoreMutex. On successful return, your client will be holding the specified lock until you delete the lock via the delete API.|
 |/curator/v1/recipes/lock/{lock-id}|DELETE|n/a|n/a|Release and delete a lock.|
 |/curator/v1/recipes/leader|POST|LeaderSpec|IdSpec|Start a LeaderLatch instance. When you gain leadership, it will be notified via status.|
 |/curator/v1/recipes/leader/{leader-id}|DELETE|n/a|n/a|Release/delete leadership.|
 |/curator/v1/recipes/leader/{leader-id}|GET|n/a|array of ParticipantSpecs|List of participants in the leader election.|
-
-h3. Handling Timeouts, Status and Releasing
-
-*TBD - releases must go to same server, etc.
 
 h2. Entities
 
