@@ -46,7 +46,7 @@ IdSpec lockId = restClient.post(address, "/curator/v1/recipes/lock", lock)
 statusMaintainer.add(address, lockId)
 
     ... do work here while in the acquired mutex ...
-    
+
 statusMaintainer.remove(address, lockId)
 restClient.delete(address, "/curator/v1/recipes/lock/" + lockId.id)
 {code}
