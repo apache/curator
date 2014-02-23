@@ -75,7 +75,7 @@ public class Session implements Closeable
             if ( elapsedSinceLastUse > sessionLengthMs )
             {
                 String id = mapEntry.getKey();
-                pushMessage(new StatusMessage(Constants.EXPIRED, id, entry.thing.getClass().getSimpleName(), ""));
+                pushMessage(new StatusMessage(Constants.EXPIRED, id, getSimpleName(entry), ""));
                 log.warn(String.format("Expiring object. Elapsed time: %d, id: %s, Class: %s", elapsedSinceLastUse, id, entry.thing.getClass().getName()));
 
                 things.remove(id);
@@ -141,5 +141,12 @@ public class Session implements Closeable
             return clazz.cast(entry.thing);
         }
         return null;
+    }
+
+    private static String getSimpleName(Entry entry)
+    {
+        String simpleName = entry.thing.getClass().getSimpleName();
+        String[] value = simpleName.split("\\.");
+        return (value.length > 0) ? value[0] : simpleName;
     }
 }

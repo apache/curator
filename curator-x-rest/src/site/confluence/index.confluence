@@ -4,37 +4,19 @@ NOTE: Curator REST Proxy is in its own package in Maven Central: {{curator-x-res
 
 The Curator REST module implements a proxy that bridges non-java environments with the Curator framework and recipes. Every major language
 today has a REST library available. With the Curator REST Proxy, you can now take advantage of the Curator framework and its recipes in
-any language.
-
-*TBD*
-
-!images/client.png!
+any language or environment.
 
 h2. Building and Packaging
 
-Dropwizard
-
-*TBD*
+See the [[Building and Packaging Page|build.html]] for details on building and packaging the REST proxy.
 
 h2. Deployment
 
-Ideally, co-locate a Curator REST Proxy instance on each ZooKeeper instance. While this isn't a requirement, it is the simplest way to deploy.
+See the [[Deployment Page|deploy.html]] for details on deploying the REST proxy.
 
-*TBD*
+h2. Your REST Client
 
-h2. Stateful vs Stateless
-
-Some of the Proxy's APIs are stateful and some are stateless. For the Client APIs, if you make a call that is either asynchronous, sets a watcher,
-or creates an ephemeral node, there is some state that is stored. In these cases, you must periodically send a status heartbeat and examine the
-resulting messages. This status heartbeat must be sent to the *same server* to which you originated the request. E.g. if you have 3 Curator REST
-Proxies A, B and C and execute a lock API to server B, you must periodically send a status with the lock's ID to server B. See the section
-below on Managing Status for more details.
-
-h2. Managing Status
-
-*TBD*
-
-See the [[Status Message Page|status.html]] for details of the status messages for each type.
+See the [[REST Client|client.html]] for details on how to write a REST client that interacts with the proxy.
 
 h2. APIs
 

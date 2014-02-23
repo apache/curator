@@ -1,0 +1,66 @@
+[[Curator REST Proxy|index.html]] / Writing Your REST Client
+
+h1. Writing Your REST Client
+
+The Curator REST Proxy is a standard REST server and, thus, you can use any standard REST client library. Many of the proxy APIs are stateless
+and, thus, it's not important which Curator REST Proxy instance you send requests to. However, some of the Proxy's APIs _are stateful_. For the Client APIs, if you
+make a call that is either asynchronous, sets a watcher, or creates an ephemeral node, there is some state that is stored. In these cases,
+you must periodically send a status heartbeat and examine the resulting messages. This status heartbeat must be sent to the *same server*
+to which you originated the request. E.g. if you have 3 Curator REST Proxies A, B and C and execute a lock API to server B, you must
+periodically send a status with the lock's ID to server B (see graphic for an illustration). See the section below on Managing
+Status for more details. Also, see the [[APIs|apis.html]] page for additional details.
+
+!images/client-requests.png!
+
+h2. Handling Stateful APIs
+
+For the stateful APIs, you should keep an record for each active API. The record should contain the Curator REST Proxy instance
+that fulfilled the API call and the response ID that was returned. You must periodically send these IDs using the POST version
+of the status API (see below) to avoid the Proxy expiring the APIs product (watcher, lock, etc.). See the lock example below.
+
+h2. Managing Status
+
+For each Curator REST Proxy in your cluster, you must periodically call the status API to get pending messages and examine the current connection
+state. The status APIs are:
+
+||URL||Method||Request Entity||Response Entity||Description||
+|/curator/v1/client/status|GET|n/a|Status|Call to get the status of the Curator connection as well as any pending messages.|
+|/curator/v1/client/status|POST|List of string ids|Status|Call to get the status of the Curator connection as well as any pending messages. Additionally, stateful instances with the specified IDs are "touched" thus preventing timeout expiration.|
+
+The returned Status entity schema is:
+
+||Field||Type||Description||
+|state|string|This instance's Curator connection state. One of: "connected", "suspended", or "lost". If the state is other than "connected" you must assume that any open locks and/or watchers are no longer valid.|
+|messages|array of StatusMessages|Any pending messages from this instance.|
+
+See the [[Status Message Page|status.html]] for complete details of the status messages for each type.
+
+h2. Lock Example
+
+Here is pseudo-code for doing a distributed lock using the Curator REST Proxy:
+
+{code}
+Address address = ... # host and port of the Curator REST Proxy instance
+LockSpec lock = {path: "/lock/path", maxWaitMs=5000}
+IdSpec lockId = restClient.post(address, "/curator/v1/recipes/lock", lock)
+statusMaintainer.add(address, lockId)
+    ... do work here while in the acquired mutex ...
+restClient.delete(address, "/curator/v1/recipes/lock/" + lockId.id)
+statusMaintainer.remove(address, lockId)
+{code}
+
+The statusMaintainer mechanism should iterate over any records it has and call the status API peridocially:
+
+{code}
+do record in maintainedRecords
+    Status status = restClient.post(record.address, "/curator/v1/client/status", record.ids)
+    if status.state is not "connected"
+        ... assume you are not connected and handle accordingly ...
+    end
+    do message in status.messages
+        if message.type is "watch" ...
+        etc...
+    end
+end
+{code}
+

@@ -2,6 +2,12 @@
 
 h1. Status Messages
 
+The Status entity schema is:
+
+||Field||Type||Description||
+|state|string|This instance's Curator connection state. One of: "connected", "suspended", or "lost". If the state is other than "connected" you must assume that any open locks and/or watchers are no longer valid.|
+|messages|array of StatusMessages|Any pending messages from this instance.|
+
 h2. Status Messages
 
 |*Watchers*| |
@@ -13,7 +19,7 @@ h2. Status Messages
 |*Expired Instances*| |
 |Type|expired|
 |Source Id|Generated Id of the instance that is expiring|
-|Message|Class name of the expiring instance. Either: "LeaderLatch.class", "InterProcessSemaphoreMutex.class", "NodeCache.class", "PathChildrenCache.class", "PersistentEphemeralNode.class", "InterProcessMutex.class", "LeasesHolder.class" (for semaphores)|
+|Message|Name of the expiring instance. Either: "LeaderLatch", "InterProcessSemaphoreMutex", "NodeCache", "PathChildrenCache", "PersistentEphemeralNode", "InterProcessMutex", "LeasesHolder" (for semaphores)|
 |Details|n/a|
 
 h2. Asynchronous Client APIs

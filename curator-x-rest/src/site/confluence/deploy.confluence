@@ -1,0 +1,12 @@
+[[Curator REST Proxy|index.html]] / Deployment
+
+h1. Deployment
+
+Ideally, co-locate a Curator REST Proxy instance on each ZooKeeper instance. While this isn't a requirement, it is the simplest way to deploy.
+It has the benefit of: easy configuration, easier management and simpler reasoning.
+
+!images/client.png!
+
+Alternatively, you can deploy a separate Curator REST Proxy cluster and have it connect to your ZooKeeper cluster:
+
+!images/client-all.png!

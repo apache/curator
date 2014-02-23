@@ -87,4 +87,5 @@ h2. getAny
 *Description:* {name} is the service name. Return a random instance from the given service or 404.
 
 h2. JSON specs
-The JSON specifications for the REST entities are documented here: https://git-wip-us.apache.org/repos/asf?p=curator.git;a=blob_plain;f=curator-x-discovery-server/README.txt;hb=HEAD
+The JSON specifications for the REST entities are documented here:
+[[https://git-wip-us.apache.org/repos/asf?p=curator.git;a=blob\_plain;f=curator-x-discovery-server/README.txt;hb=HEAD]]

@@ -1,0 +1,43 @@
+[[Curator REST Proxy|index.html]] / Building and Packaging
+
+h1. Building and Packaging
+
+The Curator REST Proxy can be packaged as a standalone application or incorporated into your own custom application.
+
+h2. Standalone
+
+For the standalone version, the excellent [[Dropwizard|http://dropwizard.codahale.com/]] is used. The standalone version
+is built via Apache Maven. To build:
+
+# Download this [[Maven pom file|https://git-wip-us.apache.org/repos/asf?p=curator.git;a=blob\_plain;f=curator-x-rest/src/main/resources/maven/pom.xml;hb=CURATOR-88]] to
+a new empty directory
+# cd to that directory
+# execute: {{mvn clean package}}
+# run the application: {{java -jar target/curator-rest-application-N.N.N.jar}} (replace N.N.N with the version)
+
+By default, the proxy tries to connect to a local ZooKeeper instance on port 2181. You can customize the proxy's configuration by using Dropwizard's
+configuration mechanism. These are the configuration values for the Curator REST Proxy:
+
+||Name||Default||Description||
+|connection-string|localhost:2181|The ZooKeeper connection string to use|
+|session-length-ms|1 minute|The max time in milliseconds before ephemerals, locks, etc. are expired. Also used for session length when creating the CuratorFramework instance.|
+|connection-timeout-ms|15 seconds|Used for connection timeout when creating the CuratorFramework instance.|
+|retry-base-sleep-ms|100|An ExponentialBackoffRetry is used. This is baseSleepTimeMs for that retry.|
+|retry-qty|3|An ExponentialBackoffRetry is used. This is retryQty for that retry.|
+
+To change the defaults, create either a JSON or YML file with the new values that you want. E.g.
+
+{code}
+{
+    "connection-string":"foo:2181,bar:2181"
+}
+{code}
+
+Then, pass the file to the application:
+
+{{java -jar target/curator-rest-application-N.N.N.jar server path/to/my.json}}
+
+h2. Integration
+
+The proxy must be combined with a JAX-RS implementation (Jersey, etc.) and a container (Tomcat, Jetty, etc.). Look at
+CuratorRestBundle.java for an example of how to do this.

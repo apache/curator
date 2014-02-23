@@ -82,5 +82,3 @@ Here are the entity descriptions for the entities used in the APIs:
 | *ParticipantSpec* | | |
 |participantId|string|The participant ID|
 |isLeader|boolean|true if this is the leader|
-
-*TBD*
