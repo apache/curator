@@ -2,8 +2,6 @@
 
 h1. APIs
 
-Here are the available APIs:
-
 h2. Status APIs
 
 ||URL||Method||Request Entity||Response Entity||Description||
@@ -44,6 +42,8 @@ h2. Recipe APIs
 |/curator/v1/recipes/leader|POST|LeaderSpec|IdSpec|Start a LeaderLatch instance. When you gain leadership, it will be notified via status.|
 |/curator/v1/recipes/leader/{leader-id}|DELETE|n/a|n/a|Release/delete leadership.|
 |/curator/v1/recipes/leader/{leader-id}|GET|n/a|array of ParticipantSpecs|List of participants in the leader election.|
+
+*MORE TBD*
 
 h2. Entities
 

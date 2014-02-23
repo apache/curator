@@ -14,7 +14,7 @@ Status for more details. Also, see the [[APIs|apis.html]] page for additional de
 
 h2. Handling Stateful APIs
 
-For the stateful APIs, you should keep an record for each active API. The record should contain the Curator REST Proxy instance
+For the stateful APIs, you should keep a record for each active API. The record should contain the Curator REST Proxy instance
 that fulfilled the API call and the response ID that was returned. You must periodically send these IDs using the POST version
 of the status API (see below) to avoid the Proxy expiring the APIs product (watcher, lock, etc.). See the lock example below.
 
@@ -61,6 +61,8 @@ do record in maintainedRecords
         if message.type is "watch" ...
         etc...
     end
+
+    sleep-for-a-bit
 end
 {code}
 
