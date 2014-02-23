@@ -117,20 +117,21 @@ public class LeaderSelector implements Closeable
     }
 
     /**
-     * @param client the client
-     * @param leaderPath the path for this leadership group
+     * @param client          the client
+     * @param leaderPath      the path for this leadership group
      * @param executorService thread pool to use
-     * @param listener listener
+     * @param listener        listener
      */
-    public LeaderSelector(CuratorFramework client, String leaderPath, ExecutorService executorService, LeaderSelectorListener listener) {
+    public LeaderSelector(CuratorFramework client, String leaderPath, ExecutorService executorService, LeaderSelectorListener listener)
+    {
         this(client, leaderPath, new CloseableExecutorService(executorService), listener);
     }
 
     /**
-     * @param client the client
-     * @param leaderPath the path for this leadership group
+     * @param client          the client
+     * @param leaderPath      the path for this leadership group
      * @param executorService thread pool to use
-     * @param listener listener
+     * @param listener        listener
      */
     public LeaderSelector(CuratorFramework client, String leaderPath, CloseableExecutorService executorService, LeaderSelectorListener listener)
     {
@@ -230,18 +231,22 @@ public class LeaderSelector implements Closeable
         if ( !isQueued )
         {
             isQueued = true;
-            Future<Void> task = executorService.submit
-            (
-                new Callable<Void>()
+            Future<Void> task = executorService.submit(new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
                 {
-                    @Override
-                    public Void call() throws Exception
+                    try
                     {
                         doWorkLoop();
-                        return null;
                     }
+                    finally
+                    {
+                        clearIsQueued();
+                    }
+                    return null;
                 }
-            );
+            });
             ourTask.set(task);
 
             return true;
