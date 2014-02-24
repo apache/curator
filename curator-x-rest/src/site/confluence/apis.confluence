@@ -11,12 +11,12 @@ h2. Status APIs
 h2. Client APIs
 
 ||URL||Method||Request Entity||Response Entity||Description||
-|/get-children|POST|GetChildrenSpec|Array of strings|This is the equivalent of CuratorFramework.getChildren().|
-|/create|POST|CreateSpec|PathAndId|This is the equivalent of CuratorFramework.create().|
-|/delete|POST|DeleteSpec|n/a|This is the equivalent of CuratorFramework.delete().|
-|/set-data|POST|SetDataSpec|n/a|This is the equivalent of CuratorFramework.setData().|
-|/get-data|POST|GetDataSpec|DataAndStat|This is the equivalent of CuratorFramework.setData().|
-|/exists|POST|ExistsSpec|ZK Stat or empty|This is the equivalent of CuratorFramework.exists().|
+|/curator/v1/client/get-children|POST|GetChildrenSpec|Array of strings|This is the equivalent of CuratorFramework.getChildren().|
+|/curator/v1/client/create|POST|CreateSpec|PathAndId|This is the equivalent of CuratorFramework.create().|
+|/curator/v1/client/delete|POST|DeleteSpec|n/a|This is the equivalent of CuratorFramework.delete().|
+|/curator/v1/client/set-data|POST|SetDataSpec|n/a|This is the equivalent of CuratorFramework.setData().|
+|/curator/v1/client/get-data|POST|GetDataSpec|DataAndStat|This is the equivalent of CuratorFramework.setData().|
+|/curator/v1/client/exists|POST|ExistsSpec|ZK Stat or empty|This is the equivalent of CuratorFramework.exists().|
 
 h3. How Asynchronous APIs Are Handled
 
