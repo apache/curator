@@ -28,11 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -46,6 +42,48 @@ public class CloseableExecutorService implements Closeable
     private final ExecutorService executorService;
     private final boolean shutdownOnClose;
     protected final AtomicBoolean isOpen = new AtomicBoolean(true);
+
+    protected class InternalScheduledFutureTask implements Future<Void>
+    {
+        private final ScheduledFuture<?> scheduledFuture;
+
+        public InternalScheduledFutureTask(ScheduledFuture<?> scheduledFuture)
+        {
+            this.scheduledFuture = scheduledFuture;
+            futures.add(scheduledFuture);
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning)
+        {
+            futures.remove(scheduledFuture);
+            return scheduledFuture.cancel(mayInterruptIfRunning);
+        }
+
+        @Override
+        public boolean isCancelled()
+        {
+            return scheduledFuture.isCancelled();
+        }
+
+        @Override
+        public boolean isDone()
+        {
+            return scheduledFuture.isDone();
+        }
+
+        @Override
+        public Void get() throws InterruptedException, ExecutionException
+        {
+            return null;
+        }
+
+        @Override
+        public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+        {
+            return null;
+        }
+    }
 
     protected class InternalFutureTask<T> extends FutureTask<T>
     {
@@ -74,7 +112,7 @@ public class CloseableExecutorService implements Closeable
 
     /**
      * @param executorService the service to decorate
-     * @param shutdownOnClose
+     * @param shutdownOnClose if true, shutdown the executor service when this is closed
      */
     public CloseableExecutorService(ExecutorService executorService, boolean shutdownOnClose)
     {

@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,8 +44,8 @@ public class CloseableScheduledExecutorService extends CloseableExecutorService
     }
 
     /**
-     * @param scheduledExecutorService
-     * @param shutdownOnClose
+     * @param scheduledExecutorService the service to decorate
+     * @param shutdownOnClose if true, shutdown the executor service when this is closed
      */
     public CloseableScheduledExecutorService(ScheduledExecutorService scheduledExecutorService, boolean shutdownOnClose)
     {
@@ -94,8 +95,7 @@ public class CloseableScheduledExecutorService extends CloseableExecutorService
     {
         Preconditions.checkState(isOpen.get(), "CloseableExecutorService is closed");
 
-        InternalFutureTask<Void> futureTask = new InternalFutureTask<Void>(new FutureTask<Void>(task, null));
-        scheduledExecutorService.scheduleWithFixedDelay(futureTask, initialDelay, delay, unit);
-        return futureTask;
+        ScheduledFuture<?> scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(task, initialDelay, delay, unit);
+        return new InternalScheduledFutureTask(scheduledFuture);
     }
 }
