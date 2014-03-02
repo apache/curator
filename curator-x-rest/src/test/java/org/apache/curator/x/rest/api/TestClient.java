@@ -24,15 +24,23 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
+import org.apache.curator.x.rest.entities.CreateSpec;
 import org.apache.curator.x.rest.entities.ExistsSpec;
+import org.apache.curator.x.rest.entities.PathAndId;
 import org.apache.curator.x.rest.entities.Status;
 import org.apache.curator.x.rest.entities.StatusMessage;
 import org.apache.curator.x.rest.support.BaseClassForTests;
+import org.apache.curator.x.rest.support.SessionManager;
+import org.apache.curator.x.rest.support.StatusListener;
+import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
+import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TestClient extends BaseClassForTests
 {
@@ -54,6 +62,68 @@ public class TestClient extends BaseClassForTests
     }
 
     @Test
+    public void testSession() throws Exception
+    {
+        final String path = "/my/path";
+
+        CuratorFramework client = null;
+        SessionManager sessionManager = new SessionManager(restClient, curatorConfiguration.getSessionLengthMs());
+        try
+        {
+            CreateSpec createSpec = new CreateSpec();
+            createSpec.setPath(path);
+            createSpec.setCreatingParentsIfNeeded(true);
+            createSpec.setMode(CreateMode.EPHEMERAL);
+            PathAndId pathAndId = restClient.resource(getMethodUri("create")).type(MediaType.APPLICATION_JSON).post(PathAndId.class, createSpec);
+
+            final AtomicReference<String> expiredId = new AtomicReference<String>();
+            StatusListener listener = new StatusListener()
+            {
+                @Override
+                public void statusUpdate(List<StatusMessage> messages)
+                {
+                    for ( StatusMessage statusMessage : messages )
+                    {
+                        if ( statusMessage.getType().equals("expired") )
+                        {
+                            if ( expiredId.get() != null )
+                            {
+                                expiredId.set("-1");
+                            }
+                            else
+                            {
+                                expiredId.set(statusMessage.getSourceId());
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void errorState(Status status)
+                {
+                }
+            };
+            sessionManager.addEntry(new InetSocketAddress("localhost", PORT), pathAndId.getId(), listener);
+
+            Thread.sleep(2 * curatorConfiguration.getSessionLengthMs());
+
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            client.start();
+            Assert.assertNotNull(client.checkExists().forPath(path));
+
+            sessionManager.removeEntry(new InetSocketAddress("localhost", PORT), pathAndId.getId());
+            Thread.sleep(2 * curatorConfiguration.getSessionLengthMs());
+            Assert.assertNull(client.checkExists().forPath(path));
+            Assert.assertEquals(pathAndId.getId(), expiredId.get());
+        }
+        finally
+        {
+            CloseUtil.closeQuietly(sessionManager);
+            CloseUtil.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testWatcher() throws Exception
     {
         final String path = "/a/path/to/a/node";
@@ -63,8 +133,7 @@ public class TestClient extends BaseClassForTests
         existsSpec.setPath(path);
         existsSpec.setWatched(true);
         existsSpec.setWatchId(watchId);
-        URI uri = UriBuilder.fromUri("http://localhost:" + PORT).path(ClientResource.class).path(ClientResource.class, "exists").build();
-        restClient.resource(uri).type(MediaType.APPLICATION_JSON).post(existsSpec);
+        restClient.resource(getMethodUri("exists")).type(MediaType.APPLICATION_JSON).post(existsSpec);
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         try
@@ -105,8 +174,13 @@ public class TestClient extends BaseClassForTests
         Assert.assertTrue(foundMessage);
     }
 
+    private URI getMethodUri(String method)
+    {
+        return UriBuilder.fromUri("http://localhost:" + PORT).path(ClientResource.class).path(ClientResource.class, method).build();
+    }
+
     private URI getStatusUri()
     {
-        return UriBuilder.fromUri("http://localhost:" + PORT).path(ClientResource.class).path(ClientResource.class, "getStatus").build();
+        return getMethodUri("getStatus");
     }
 }

@@ -33,6 +33,7 @@ import org.apache.curator.x.rest.dropwizard.CuratorRestBundle;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import java.io.File;
@@ -40,12 +41,15 @@ import java.nio.charset.Charset;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class BaseClassForTests
 {
     protected TestingServer server;
     protected Application<CuratorConfiguration> application;
     protected Client restClient;
+    protected CuratorConfiguration curatorConfiguration;
 
     protected static final int PORT = 8080;
 
@@ -60,9 +64,10 @@ public class BaseClassForTests
         server = new TestingServer();
 
         configFile = File.createTempFile("temp", ".tmp");
-        CharStreams.write("{\"connection-string\": \"" + server.getConnectString() + "\"}", Files.newWriterSupplier(configFile, Charset.defaultCharset()));
+        CharStreams.write("{\"connection-string\": \"" + server.getConnectString() + "\", \"session-length-ms\":5000}", Files.newWriterSupplier(configFile, Charset.defaultCharset()));
 
         final CountDownLatch startedLatch = new CountDownLatch(1);
+        final AtomicReference<CuratorConfiguration> curatorConfigurationAtomicReference = new AtomicReference<CuratorConfiguration>();
         application = new Application<CuratorConfiguration>()
         {
             @Override
@@ -74,6 +79,7 @@ public class BaseClassForTests
             @Override
             public void run(CuratorConfiguration configuration, Environment environment) throws Exception
             {
+                curatorConfigurationAtomicReference.set(configuration);
                 LifeCycle.Listener listener = new AbstractLifeCycle.AbstractLifeCycleListener()
                 {
                     @Override
@@ -100,7 +106,9 @@ public class BaseClassForTests
             }
         );
 
-        startedLatch.await();
+        Assert.assertTrue(startedLatch.await(5, TimeUnit.SECONDS));
+
+        curatorConfiguration = curatorConfigurationAtomicReference.get();
     }
 
     @AfterMethod
@@ -117,7 +125,8 @@ public class BaseClassForTests
             restClient.destroy();
         }
 
-        server.close();
         ShutdownThread.getInstance().run();
+
+        server.close();
     }
 }

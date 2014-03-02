@@ -69,7 +69,6 @@ public class CuratorRestContext implements Closeable
 
     public CuratorFramework getClient()
     {
-        Preconditions.checkState(state.get() == State.STARTED, "Not started");
         return client;
     }
 
