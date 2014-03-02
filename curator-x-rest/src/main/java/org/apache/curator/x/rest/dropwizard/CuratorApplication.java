@@ -27,7 +27,22 @@ public class CuratorApplication
 {
     public static void main(String[] args) throws Exception
     {
-        Application application = new Application<CuratorConfiguration>()
+        run(build(), args);
+    }
+
+    public static void run(Application<CuratorConfiguration> application, String[] args) throws Exception
+    {
+        if ( (args == null) || (args.length == 0) )
+        {
+            args = new String[]{"server"};
+        }
+
+        application.run(args);
+    }
+
+    public static Application<CuratorConfiguration> build()
+    {
+        return new Application<CuratorConfiguration>()
         {
             @Override
             public void initialize(Bootstrap<CuratorConfiguration> bootstrap)
@@ -41,12 +56,5 @@ public class CuratorApplication
                 // NOP
             }
         };
-
-        if ( args.length == 0 )
-        {
-            args = new String[]{"server"};
-        }
-
-        application.run(args);
     }
 }

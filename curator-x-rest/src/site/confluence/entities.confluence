@@ -7,7 +7,7 @@ Here are the entity descriptions for the entities used in the APIs:
 ||Field||Type||Description||
 |*Status*| | |
 |state|string|This instance's Curator connection state. One of: "connected", "suspended", or "lost". If the state is other than "connected" you must assume that any open locks and/or watchers are no longer valid.|
-|messages|array of StatusMessages|Any pending messages from this instance.|
+|messages|array of StatusMessage|Any pending messages from this instance.|
 | | | |
 |*StatusMessage*| | |
 |type|string|The status message type. See the [[Managing Status|client.html]] section for details.|

@@ -30,6 +30,7 @@
 
     <properties>
         <dropwizard-version>0.7.0-rc1</dropwizard-version>
+        <jersey-version>1.18</jersey-version> <!-- must match Dropwizard jersey version -->
     </properties>
 
     <dependencies>
@@ -59,6 +60,32 @@
             <artifactId>dropwizard-core</artifactId>
             <version>${dropwizard-version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-core</artifactId>
+            <version>${jersey-version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey-version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-json</artifactId>
+            <version>${jersey-version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

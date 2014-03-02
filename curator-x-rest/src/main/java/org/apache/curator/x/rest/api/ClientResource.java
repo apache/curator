@@ -30,6 +30,7 @@ import org.apache.curator.x.rest.entities.GetChildrenSpec;
 import org.apache.curator.x.rest.entities.GetDataSpec;
 import org.apache.curator.x.rest.entities.PathAndId;
 import org.apache.curator.x.rest.entities.SetDataSpec;
+import org.apache.curator.x.rest.entities.Status;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.codehaus.jackson.node.ObjectNode;
@@ -39,7 +40,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
@@ -74,16 +74,14 @@ public class ClientResource
     @Path("/status")
     public Response getStatusWithTouch(List<String> ids) throws IOException
     {
-        ObjectNode node = context.getMapper().createObjectNode();
-        node.put("state", context.getConnectionState().name().toLowerCase());
-        node.putPOJO("messages", context.getSession().drainMessages());
+        Status status = new Status(context.getConnectionState().name().toLowerCase(), context.getSession().drainMessages());
 
         for ( String id : ids )
         {
             context.getSession().updateThingLastUse(id);
         }
 
-        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+        return Response.ok(status).build();
     }
 
     @POST

@@ -27,7 +27,6 @@
         <version>2.4.1-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.curator</groupId>
     <artifactId>curator-x-discovery-server</artifactId>
     <version>2.4.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
@@ -37,7 +36,7 @@
     <inceptionYear>2011</inceptionYear>
 
     <properties>
-        <jersey.version>1.11</jersey.version>
+        <jersey.version>1.18</jersey.version>
         <osgi.import.package>
             *
         </osgi.import.package>

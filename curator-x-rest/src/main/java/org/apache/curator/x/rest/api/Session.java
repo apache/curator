@@ -93,7 +93,7 @@ public class Session implements Closeable
         messages.add(message);
     }
 
-    Collection<StatusMessage> drainMessages()
+    List<StatusMessage> drainMessages()
     {
         List<StatusMessage> localMessages = Lists.newArrayList();
         messages.drainTo(localMessages);
