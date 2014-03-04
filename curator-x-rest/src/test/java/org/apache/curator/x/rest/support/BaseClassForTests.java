@@ -30,6 +30,7 @@ import io.dropwizard.setup.Environment;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.utils.DebugUtils;
+import org.apache.curator.x.rest.CuratorRestContext;
 import org.apache.curator.x.rest.dropwizard.CuratorApplication;
 import org.apache.curator.x.rest.dropwizard.CuratorConfiguration;
 import org.apache.curator.x.rest.dropwizard.CuratorRestBundle;
@@ -58,22 +59,20 @@ public class BaseClassForTests
     protected UriMaker uriMaker;
 
     private File configFile;
+    private CuratorRestBundle bundle;
 
     @BeforeMethod
     public void     setup() throws Exception
     {
-        setup(5000);
-    }
+        bundle = new CuratorRestBundle();
 
-    protected void setup(int sessionLengthMs) throws Exception
-    {
         int port = InstanceSpec.getRandomPort();
         restClient = Client.create();
 
         System.setProperty(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
         server = new TestingServer();
 
-        configFile = makeConfigFile(server.getConnectString(), sessionLengthMs, port);
+        configFile = makeConfigFile(server.getConnectString(), 5000, port);
 
         final AtomicReference<CuratorConfiguration> curatorConfigurationAtomicReference = new AtomicReference<CuratorConfiguration>();
         makeAndStartApplication(curatorConfigurationAtomicReference, configFile);
@@ -104,6 +103,11 @@ public class BaseClassForTests
         }
     }
 
+    protected CuratorRestContext getCuratorRestContext()
+    {
+        return bundle.getCuratorRestContext();
+    }
+
     private Application<CuratorConfiguration> makeAndStartApplication(final AtomicReference<CuratorConfiguration> curatorConfigurationRef, final File configFile) throws InterruptedException
     {
         final CountDownLatch startedLatch = new CountDownLatch(1);
@@ -112,7 +116,7 @@ public class BaseClassForTests
             @Override
             public void initialize(Bootstrap<CuratorConfiguration> bootstrap)
             {
-                bootstrap.addBundle(new CuratorRestBundle());
+                bootstrap.addBundle(bundle);
             }
 
             @Override

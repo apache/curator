@@ -19,6 +19,7 @@
 
 package org.apache.curator.x.rest.dropwizard;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -34,6 +35,13 @@ import javax.ws.rs.core.Context;
 
 public class CuratorRestBundle implements ConfiguredBundle<CuratorConfiguration>
 {
+    private volatile CuratorRestContext curatorRestContext;
+
+    public CuratorRestContext getCuratorRestContext()
+    {
+        return curatorRestContext;
+    }
+
     @Override
     public void initialize(Bootstrap<?> bootstrap)
     {
@@ -43,15 +51,15 @@ public class CuratorRestBundle implements ConfiguredBundle<CuratorConfiguration>
     @Override
     public void run(CuratorConfiguration configuration, Environment environment) throws Exception
     {
-        final CuratorRestContext context = newCuratorRestContext(configuration);
-        runFromContext(environment, context);
+        curatorRestContext = newCuratorRestContext(configuration);
+        runFromContext(environment, curatorRestContext);
 
         LifeCycle.Listener listener = new AbstractLifeCycle.AbstractLifeCycleListener()
         {
             @Override
             public void lifeCycleStopping(LifeCycle event)
             {
-                closeCuratorClient(context.getClient());
+                closeCuratorClient(curatorRestContext.getClient());
             }
         };
         environment.lifecycle().addLifeCycleListener(listener);

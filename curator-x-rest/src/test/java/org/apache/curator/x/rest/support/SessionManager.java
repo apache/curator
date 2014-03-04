@@ -49,6 +49,8 @@ public class SessionManager implements Closeable
     private final Future<?> task;
     private final ConcurrentMap<InetSocketAddress, Entry> entries = Maps.newConcurrentMap();
 
+    private volatile StatusListener statusListener;
+
     private static class Entry
     {
         private final StatusListener listener;
@@ -104,6 +106,12 @@ public class SessionManager implements Closeable
         task.cancel(true);
     }
 
+    public void setStatusListener(StatusListener statusListener)
+    {
+        Preconditions.checkState(this.statusListener == null, "statusListener already set");
+        this.statusListener = statusListener;
+    }
+
     private void processEntries()
     {
         for ( Map.Entry<InetSocketAddress, Entry> mapEntry : entries.entrySet() )
@@ -122,14 +130,28 @@ public class SessionManager implements Closeable
             if ( status.getState().equals("connected") )
             {
                 List<StatusMessage> messages = status.getMessages();
-                if ( (messages.size() > 0) && (entry.listener != null) )
+                if ( messages.size() > 0 )
                 {
-                    entry.listener.statusUpdate(status.getMessages());
+                    if ( statusListener != null )
+                    {
+                        statusListener.statusUpdate(status.getMessages());
+                    }
+                    if ( entry.listener != null )
+                    {
+                        entry.listener.statusUpdate(status.getMessages());
+                    }
                 }
             }
-            else if ( entry.listener != null )
+            else
             {
-                entry.listener.errorState(status);
+                if ( statusListener != null )
+                {
+                    statusListener.errorState(status);
+                }
+                if ( entry.listener != null )
+                {
+                    entry.listener.errorState(status);
+                }
             }
         }
     }
