@@ -19,6 +19,7 @@
 
 package org.apache.curator.x.rest.api;
 
+import com.google.common.collect.Lists;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
@@ -265,5 +266,62 @@ public class TestLocks extends BaseClassForTests
         Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
         KillSession.kill(getCuratorRestContext().getClient().getZookeeperClient().getZooKeeper(), server.getConnectString());
         Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+    }
+
+    @Test
+    public void testThreading() throws Exception
+    {
+        final int THREAD_QTY = 10;
+
+        final AtomicBoolean hasLock = new AtomicBoolean(false);
+        final AtomicBoolean isFirst = new AtomicBoolean(true);
+        final Semaphore semaphore = new Semaphore(1);
+
+        List<Future<Object>> threads = Lists.newArrayList();
+        ExecutorService service = Executors.newCachedThreadPool();
+        for ( int i = 0; i < THREAD_QTY; ++i )
+        {
+            final InterProcessLock mutex = new InterProcessLockBridge(restClient, sessionManager, uriMaker);
+            Future<Object> t = service.submit
+                (
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            semaphore.acquire();
+                            mutex.acquire();
+                            Assert.assertTrue(hasLock.compareAndSet(false, true));
+                            try
+                            {
+                                if ( isFirst.compareAndSet(true, false) )
+                                {
+                                    semaphore.release(THREAD_QTY - 1);
+                                    while ( semaphore.availablePermits() > 0 )
+                                    {
+                                        Thread.sleep(100);
+                                    }
+                                }
+                                else
+                                {
+                                    Thread.sleep(100);
+                                }
+                            }
+                            finally
+                            {
+                                mutex.release();
+                                hasLock.set(false);
+                            }
+                            return null;
+                        }
+                    }
+                );
+            threads.add(t);
+        }
+
+        for ( Future<Object> t : threads )
+        {
+            t.get();
+        }
     }
 }
