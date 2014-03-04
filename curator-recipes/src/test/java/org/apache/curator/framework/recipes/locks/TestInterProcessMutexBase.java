@@ -20,17 +20,16 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -395,9 +394,15 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                         {
                             try
                             {
-                                mutexForClient1.acquire(10, TimeUnit.SECONDS);
+                                if ( !mutexForClient1.acquire(10, TimeUnit.SECONDS) )
+                                {
+                                    throw new Exception("mutexForClient1.acquire timed out");
+                                }
                                 acquiredLatchForClient1.countDown();
-                                latchForClient1.await(10, TimeUnit.SECONDS);
+                                if ( !latchForClient1.await(10, TimeUnit.SECONDS) )
+                                {
+                                    throw new Exception("latchForClient1 timed out");
+                                }
                                 mutexForClient1.release();
                             }
                             catch ( Exception e )
@@ -417,9 +422,15 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                         {
                             try
                             {
-                                mutexForClient2.acquire(10, TimeUnit.SECONDS);
+                                if ( !mutexForClient2.acquire(10, TimeUnit.SECONDS) )
+                                {
+                                    throw new Exception("mutexForClient2.acquire timed out");
+                                }
                                 acquiredLatchForClient2.countDown();
-                                latchForClient2.await(10, TimeUnit.SECONDS);
+                                if ( !latchForClient2.await(10, TimeUnit.SECONDS) )
+                                {
+                                    throw new Exception("latchForClient2 timed out");
+                                }
                                 mutexForClient2.release();
                             }
                             catch ( Exception e )
@@ -434,6 +445,11 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
             while ( !mutexForClient1.isAcquiredInThisProcess() && !mutexForClient2.isAcquiredInThisProcess() )
             {
                 Thread.sleep(1000);
+                Exception exception = exceptionRef.get();
+                if ( exception != null )
+                {
+                    throw exception;
+                }
                 Assert.assertFalse(future1.isDone() && future2.isDone());
             }
 

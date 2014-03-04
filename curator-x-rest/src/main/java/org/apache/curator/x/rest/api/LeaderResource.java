@@ -24,10 +24,10 @@ import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.leader.Participant;
 import org.apache.curator.x.rest.CuratorRestContext;
+import org.apache.curator.x.rest.entities.Id;
 import org.apache.curator.x.rest.entities.LeaderSpec;
 import org.apache.curator.x.rest.entities.ParticipantSpec;
 import org.apache.curator.x.rest.entities.StatusMessage;
-import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
@@ -98,8 +98,7 @@ public class LeaderResource
         };
         leaderLatch.addListener(listener);
 
-        ObjectNode node = Constants.makeIdNode(context, id);
-        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+        return Response.ok(new Id(id)).build();
     }
 
     @DELETE

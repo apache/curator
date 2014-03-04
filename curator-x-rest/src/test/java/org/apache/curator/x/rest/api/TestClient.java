@@ -36,9 +36,6 @@ import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.UriBuilder;
-import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -50,7 +47,7 @@ public class TestClient extends BaseClassForTests
         boolean connected = false;
         for ( int i = 0; i < 10; ++i )
         {
-            Status status = restClient.resource(getStatusUri()).get(Status.class);
+            Status status = restClient.resource(uriMaker.getStatusUri()).get(Status.class);
             if ( status.getState().equals("connected") )
             {
                 connected = true;
@@ -74,7 +71,7 @@ public class TestClient extends BaseClassForTests
             createSpec.setPath(path);
             createSpec.setCreatingParentsIfNeeded(true);
             createSpec.setMode(CreateMode.EPHEMERAL);
-            PathAndId pathAndId = restClient.resource(getMethodUri("create")).type(MediaType.APPLICATION_JSON).post(PathAndId.class, createSpec);
+            PathAndId pathAndId = restClient.resource(uriMaker.getMethodUri("create")).type(MediaType.APPLICATION_JSON).post(PathAndId.class, createSpec);
 
             final AtomicReference<String> expiredId = new AtomicReference<String>();
             StatusListener listener = new StatusListener()
@@ -103,7 +100,7 @@ public class TestClient extends BaseClassForTests
                 {
                 }
             };
-            sessionManager.addEntry(new InetSocketAddress("localhost", PORT), pathAndId.getId(), listener);
+            sessionManager.addEntry(uriMaker.getLocalhost(), pathAndId.getId(), listener);
 
             Thread.sleep(2 * curatorConfiguration.getSessionLengthMs());
 
@@ -111,7 +108,7 @@ public class TestClient extends BaseClassForTests
             client.start();
             Assert.assertNotNull(client.checkExists().forPath(path));
 
-            sessionManager.removeEntry(new InetSocketAddress("localhost", PORT), pathAndId.getId());
+            sessionManager.removeEntry(uriMaker.getLocalhost(), pathAndId.getId());
             Thread.sleep(2 * curatorConfiguration.getSessionLengthMs());
             Assert.assertNull(client.checkExists().forPath(path));
             Assert.assertEquals(pathAndId.getId(), expiredId.get());
@@ -133,7 +130,7 @@ public class TestClient extends BaseClassForTests
         existsSpec.setPath(path);
         existsSpec.setWatched(true);
         existsSpec.setWatchId(watchId);
-        restClient.resource(getMethodUri("exists")).type(MediaType.APPLICATION_JSON).post(existsSpec);
+        restClient.resource(uriMaker.getMethodUri("exists")).type(MediaType.APPLICATION_JSON).post(existsSpec);
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         try
@@ -148,7 +145,7 @@ public class TestClient extends BaseClassForTests
 
         new Timing().sleepABit();
 
-        Status status = restClient.resource(getStatusUri()).get(Status.class);
+        Status status = restClient.resource(uriMaker.getStatusUri()).get(Status.class);
         boolean foundWatch = false;
         boolean foundWatchId = false;
         boolean foundMessage = false;
@@ -172,15 +169,5 @@ public class TestClient extends BaseClassForTests
         Assert.assertTrue(foundWatch);
         Assert.assertTrue(foundWatchId);
         Assert.assertTrue(foundMessage);
-    }
-
-    private URI getMethodUri(String method)
-    {
-        return UriBuilder.fromUri("http://localhost:" + PORT).path(ClientResource.class).path(ClientResource.class, method).build();
-    }
-
-    private URI getStatusUri()
-    {
-        return getMethodUri("getStatus");
     }
 }

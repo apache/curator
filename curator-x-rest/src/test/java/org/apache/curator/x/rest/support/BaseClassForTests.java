@@ -19,12 +19,15 @@
 
 package org.apache.curator.x.rest.support;
 
+import ch.qos.logback.core.util.CloseUtil;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import com.sun.jersey.api.client.Client;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.x.rest.dropwizard.CuratorApplication;
@@ -37,6 +40,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -50,25 +54,60 @@ public class BaseClassForTests
     protected Application<CuratorConfiguration> application;
     protected Client restClient;
     protected CuratorConfiguration curatorConfiguration;
-
-    protected static final int PORT = 8080;
+    protected SessionManager sessionManager;
+    protected UriMaker uriMaker;
 
     private File configFile;
 
     @BeforeMethod
     public void     setup() throws Exception
     {
+        setup(5000);
+    }
+
+    protected void setup(int sessionLengthMs) throws Exception
+    {
+        int port = InstanceSpec.getRandomPort();
         restClient = Client.create();
 
         System.setProperty(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
         server = new TestingServer();
 
-        configFile = File.createTempFile("temp", ".tmp");
-        CharStreams.write("{\"connection-string\": \"" + server.getConnectString() + "\", \"session-length-ms\":5000}", Files.newWriterSupplier(configFile, Charset.defaultCharset()));
+        configFile = makeConfigFile(server.getConnectString(), sessionLengthMs, port);
 
-        final CountDownLatch startedLatch = new CountDownLatch(1);
         final AtomicReference<CuratorConfiguration> curatorConfigurationAtomicReference = new AtomicReference<CuratorConfiguration>();
-        application = new Application<CuratorConfiguration>()
+        makeAndStartApplication(curatorConfigurationAtomicReference, configFile);
+
+        curatorConfiguration = curatorConfigurationAtomicReference.get();
+        sessionManager = new SessionManager(restClient, curatorConfiguration.getSessionLengthMs());
+        uriMaker = new UriMaker(port);
+    }
+
+    @AfterMethod
+    public void     teardown() throws Exception
+    {
+        if ( configFile != null )
+        {
+            //noinspection ResultOfMethodCallIgnored
+            configFile.delete();
+        }
+
+        CloseUtil.closeQuietly(sessionManager);
+
+        ShutdownThread.getInstance().run();
+
+        CloseUtil.closeQuietly(server);
+
+        if ( restClient != null )
+        {
+            restClient.destroy();
+        }
+    }
+
+    private Application<CuratorConfiguration> makeAndStartApplication(final AtomicReference<CuratorConfiguration> curatorConfigurationRef, final File configFile) throws InterruptedException
+    {
+        final CountDownLatch startedLatch = new CountDownLatch(1);
+        final Application<CuratorConfiguration> application = new Application<CuratorConfiguration>()
         {
             @Override
             public void initialize(Bootstrap<CuratorConfiguration> bootstrap)
@@ -79,7 +118,7 @@ public class BaseClassForTests
             @Override
             public void run(CuratorConfiguration configuration, Environment environment) throws Exception
             {
-                curatorConfigurationAtomicReference.set(configuration);
+                curatorConfigurationRef.set(configuration);
                 LifeCycle.Listener listener = new AbstractLifeCycle.AbstractLifeCycleListener()
                 {
                     @Override
@@ -107,26 +146,17 @@ public class BaseClassForTests
         );
 
         Assert.assertTrue(startedLatch.await(5, TimeUnit.SECONDS));
-
-        curatorConfiguration = curatorConfigurationAtomicReference.get();
+        return application;
     }
 
-    @AfterMethod
-    public void     teardown() throws Exception
+    private static File makeConfigFile(String connectString, int sessionLengthMs, int port) throws IOException
     {
-        if ( configFile != null )
-        {
-            //noinspection ResultOfMethodCallIgnored
-            configFile.delete();
-        }
-
-        if ( restClient != null )
-        {
-            restClient.destroy();
-        }
-
-        ShutdownThread.getInstance().run();
-
-        server.close();
+        String config = Resources.toString(Resources.getResource("test-config.json"), Charset.defaultCharset());
+        config = config.replace("$CONNECT$", connectString);
+        config = config.replace("$SESSION$", Integer.toString(sessionLengthMs));
+        config = config.replace("$PORT$", Integer.toString(port));
+        File configFile = File.createTempFile("temp", ".tmp");
+        CharStreams.write(config, Files.newWriterSupplier(configFile, Charset.defaultCharset()));
+        return configFile;
     }
 }

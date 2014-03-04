@@ -42,7 +42,7 @@ Here is pseudo-code for doing a distributed lock using the Curator REST Proxy:
 {code}
 Address address = ... # host and port of the Curator REST Proxy instance
 LockSpec lock = {path: "/lock/path", maxWaitMs: 5000}
-IdSpec lockId = restClient.post(address, "/curator/v1/recipes/lock", lock)
+Id lockId = restClient.post(address, "/curator/v1/recipes/lock", lock)
 statusMaintainer.add(address, lockId)
 
     ... do work here while in the acquired mutex ...

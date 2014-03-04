@@ -20,8 +20,8 @@ package org.apache.curator.x.rest.api;
 
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.x.rest.CuratorRestContext;
+import org.apache.curator.x.rest.entities.Id;
 import org.apache.curator.x.rest.entities.LockSpec;
-import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.ws.rs.Consumes;
@@ -76,8 +76,7 @@ public class LockResource
             }
         };
         String id = context.getSession().addThing(lock, closer);
-        ObjectNode node = Constants.makeIdNode(context, id);
-        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+        return Response.ok(new Id(id)).build();
     }
 
     @DELETE

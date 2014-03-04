@@ -21,9 +21,9 @@ package org.apache.curator.x.rest.api;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.x.rest.CuratorRestContext;
+import org.apache.curator.x.rest.entities.Id;
 import org.apache.curator.x.rest.entities.NodeCacheSpec;
 import org.apache.curator.x.rest.entities.StatusMessage;
-import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.ws.rs.Consumes;
@@ -84,8 +84,7 @@ public class NodeCacheResource
         };
         cache.getListenable().addListener(listener);
 
-        ObjectNode node = Constants.makeIdNode(context, id);
-        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+        return Response.ok(new Id(id)).build();
     }
 
     @DELETE

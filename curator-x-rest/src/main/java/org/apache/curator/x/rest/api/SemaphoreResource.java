@@ -22,14 +22,13 @@ import com.google.common.collect.Lists;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2;
 import org.apache.curator.framework.recipes.locks.Lease;
 import org.apache.curator.x.rest.CuratorRestContext;
+import org.apache.curator.x.rest.entities.Id;
 import org.apache.curator.x.rest.entities.SemaphoreSpec;
-import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -89,8 +88,7 @@ public class SemaphoreResource
             }
         };
         String id = context.getSession().addThing(new LeasesHolder(leases), closer);
-        ObjectNode node = Constants.makeIdNode(context, id);
-        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+        return Response.ok(new Id(id)).build();
     }
 
     @DELETE

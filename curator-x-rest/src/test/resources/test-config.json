@@ -1,0 +1,13 @@
+{
+    "connection-string": "$CONNECT$",
+    "session-length-ms": $SESSION$,
+
+    "server": {
+        "applicationConnectors": [
+            {
+                "type": "http",
+                "port": $PORT$
+            }
+        ]
+    }
+}
