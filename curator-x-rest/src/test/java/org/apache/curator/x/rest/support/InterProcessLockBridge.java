@@ -36,16 +36,16 @@ public class InterProcessLockBridge implements InterProcessLock
     private final Client restClient;
     private final SessionManager sessionManager;
     private final UriMaker uriMaker;
+    private final String path;
 
     private volatile String id = null;
 
-    private static final String PATH = "/lock";
-
-    public InterProcessLockBridge(Client restClient, SessionManager sessionManager, UriMaker uriMaker)
+    public InterProcessLockBridge(Client restClient, SessionManager sessionManager, UriMaker uriMaker, String path)
     {
         this.restClient = restClient;
         this.sessionManager = sessionManager;
         this.uriMaker = uriMaker;
+        this.path = path;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class InterProcessLockBridge implements InterProcessLock
 
         URI uri = uriMaker.getMethodUri(LockResource.class, null);
         LockSpec lockSpec = new LockSpec();
-        lockSpec.setPath(PATH);
+        lockSpec.setPath(path);
         lockSpec.setMaxWaitMs((int)unit.toMillis(time));
         try
         {

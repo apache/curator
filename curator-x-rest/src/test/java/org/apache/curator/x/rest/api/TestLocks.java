@@ -28,10 +28,12 @@ import org.apache.curator.x.rest.entities.Status;
 import org.apache.curator.x.rest.entities.StatusMessage;
 import org.apache.curator.x.rest.support.BaseClassForTests;
 import org.apache.curator.x.rest.support.InterProcessLockBridge;
+import org.apache.curator.x.rest.support.InterProcessReadWriteLockBridge;
 import org.apache.curator.x.rest.support.StatusListener;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
@@ -41,6 +43,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TestLocks extends BaseClassForTests
@@ -48,8 +51,8 @@ public class TestLocks extends BaseClassForTests
     @Test
     public void test2Clients() throws Exception
     {
-        final InterProcessLock mutexForClient1 = new InterProcessLockBridge(restClient, sessionManager, uriMaker);
-        final InterProcessLock mutexForClient2 = new InterProcessLockBridge(restClient, sessionManager, uriMaker);
+        final InterProcessLock mutexForClient1 = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
+        final InterProcessLock mutexForClient2 = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
 
         final CountDownLatch latchForClient1 = new CountDownLatch(1);
         final CountDownLatch latchForClient2 = new CountDownLatch(1);
@@ -187,7 +190,7 @@ public class TestLocks extends BaseClassForTests
                         @Override
                         public Object call() throws Exception
                         {
-                            InterProcessLock lock = new InterProcessLockBridge(restClient, sessionManager, uriMaker);
+                            InterProcessLock lock = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
                             lock.acquire();
                             try
                             {
@@ -228,8 +231,8 @@ public class TestLocks extends BaseClassForTests
     {
         final Timing timing = new Timing();
 
-        final InterProcessLock mutex1 = new InterProcessLockBridge(restClient, sessionManager, uriMaker);
-        final InterProcessLock mutex2 = new InterProcessLockBridge(restClient, sessionManager, uriMaker);
+        final InterProcessLock mutex1 = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
+        final InterProcessLock mutex2 = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
 
         final Semaphore semaphore = new Semaphore(0);
         ExecutorCompletionService<Object> service = new ExecutorCompletionService<Object>(Executors.newFixedThreadPool(2));
@@ -281,7 +284,7 @@ public class TestLocks extends BaseClassForTests
         ExecutorService service = Executors.newCachedThreadPool();
         for ( int i = 0; i < THREAD_QTY; ++i )
         {
-            final InterProcessLock mutex = new InterProcessLockBridge(restClient, sessionManager, uriMaker);
+            final InterProcessLock mutex = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
             Future<Object> t = service.submit
                 (
                     new Callable<Object>()
@@ -322,6 +325,91 @@ public class TestLocks extends BaseClassForTests
         for ( Future<Object> t : threads )
         {
             t.get();
+        }
+    }
+
+    @Test
+    public void     testBasicReadWriteLock() throws Exception
+    {
+        final int               CONCURRENCY = 8;
+        final int               ITERATIONS = 100;
+
+        final Random random = new Random();
+        final AtomicInteger concurrentCount = new AtomicInteger(0);
+        final AtomicInteger     maxConcurrentCount = new AtomicInteger(0);
+        final AtomicInteger     writeCount = new AtomicInteger(0);
+        final AtomicInteger     readCount = new AtomicInteger(0);
+
+        List<Future<Void>>  futures = Lists.newArrayList();
+        ExecutorService     service = Executors.newCachedThreadPool();
+        for ( int i = 0; i < CONCURRENCY; ++i )
+        {
+            Future<Void>    future = service.submit
+                (
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            InterProcessReadWriteLockBridge lock = new InterProcessReadWriteLockBridge(restClient, sessionManager, uriMaker, "/lock");
+                            for ( int i = 0; i < ITERATIONS; ++i )
+                            {
+                                if ( random.nextInt(100) < 10 )
+                                {
+                                    doLocking(lock.writeLock(), concurrentCount, maxConcurrentCount, random, 1);
+                                    writeCount.incrementAndGet();
+                                }
+                                else
+                                {
+                                    doLocking(lock.readLock(), concurrentCount, maxConcurrentCount, random, Integer.MAX_VALUE);
+                                    readCount.incrementAndGet();
+                                }
+                            }
+                            return null;
+                        }
+                    }
+                );
+            futures.add(future);
+        }
+
+        for ( Future<Void> future : futures )
+        {
+            future.get();
+        }
+
+        System.out.println("Writes: " + writeCount.get() + " - Reads: " + readCount.get() + " - Max Reads: " + maxConcurrentCount.get());
+
+        Assert.assertTrue(writeCount.get() > 0);
+        Assert.assertTrue(readCount.get() > 0);
+        Assert.assertTrue(maxConcurrentCount.get() > 1);
+    }
+
+    private void doLocking(InterProcessLock lock, AtomicInteger concurrentCount, AtomicInteger maxConcurrentCount, Random random, int maxAllowed) throws Exception
+    {
+        try
+        {
+            Assert.assertTrue(lock.acquire(10, TimeUnit.SECONDS));
+            int     localConcurrentCount;
+            synchronized(this)
+            {
+                localConcurrentCount = concurrentCount.incrementAndGet();
+                if ( localConcurrentCount > maxConcurrentCount.get() )
+                {
+                    maxConcurrentCount.set(localConcurrentCount);
+                }
+            }
+
+            Assert.assertTrue(localConcurrentCount <= maxAllowed, "" + localConcurrentCount);
+
+            Thread.sleep(random.nextInt(9) + 1);
+        }
+        finally
+        {
+            synchronized(this)
+            {
+                concurrentCount.decrementAndGet();
+                lock.release();
+            }
         }
     }
 }
