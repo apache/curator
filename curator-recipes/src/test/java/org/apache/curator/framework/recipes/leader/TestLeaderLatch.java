@@ -365,6 +365,177 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
+    @Test
+    public void testCallbackNotifyLeader() throws Exception
+    {
+        final int PARTICIPANT_QTY = 10;
+        final int SILENT_QTY = 3;
+
+        final CountDownLatch timesSquare = new CountDownLatch(PARTICIPANT_QTY);
+        final AtomicLong masterCounter = new AtomicLong(0);
+        final AtomicLong dunceCounter = new AtomicLong(0);
+
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        ExecutorService exec = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(true).setNameFormat("callbackNotifyLeader-%s").build());
+
+        List<LeaderLatch> latches = Lists.newArrayList();
+        for ( int i = 0; i < PARTICIPANT_QTY; ++i )
+        {
+            LeaderLatch.CloseMode closeMode = i < SILENT_QTY ?
+                    LeaderLatch.CloseMode.SILENT :
+                    LeaderLatch.CloseMode.NOTIFY_LEADER;
+
+            final LeaderLatch latch = new LeaderLatch(client, PATH_NAME, "", closeMode);
+            latch.addListener(
+                new LeaderLatchListener()
+                {
+                    boolean beenLeader = false;
+
+                    @Override
+                    public void isLeader()
+                    {
+                        if ( !beenLeader )
+                        {
+                            masterCounter.incrementAndGet();
+                            beenLeader = true;
+                            try
+                            {
+                                latch.reset();
+                            }
+                            catch ( Exception e )
+                            {
+                                throw Throwables.propagate(e);
+                            }
+                        }
+                        else
+                        {
+                            masterCounter.incrementAndGet();
+                            CloseableUtils.closeQuietly(latch);
+                            timesSquare.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void notLeader()
+                    {
+                        dunceCounter.incrementAndGet();
+                    }
+                },
+                exec
+            );
+            latches.add(latch);
+        }
+
+        try
+        {
+            client.start();
+
+            for ( LeaderLatch latch : latches )
+            {
+                latch.start();
+            }
+
+            timesSquare.await();
+
+            Assert.assertEquals(masterCounter.get(), PARTICIPANT_QTY * 2);
+            Assert.assertEquals(dunceCounter.get(), PARTICIPANT_QTY * 2 - SILENT_QTY);
+            for ( LeaderLatch latch : latches )
+            {
+                Assert.assertEquals(latch.getState(), LeaderLatch.State.CLOSED);
+            }
+        }
+        finally
+        {
+            for ( LeaderLatch latch : latches )
+            {
+                if ( latch.getState() != LeaderLatch.State.CLOSED )
+                {
+                    CloseableUtils.closeQuietly(latch);
+                }
+            }
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testCallbackDontNotifyDunce() throws Exception {
+        final AtomicLong masterCounter = new AtomicLong(0);
+        final AtomicLong dunceCounter = new AtomicLong(0);
+
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+
+        final LeaderLatch leader = new LeaderLatch(client, PATH_NAME);
+        final LeaderLatch dunce = new LeaderLatch(client, PATH_NAME, "", LeaderLatch.CloseMode.NOTIFY_LEADER);
+
+        leader.addListener(new LeaderLatchListener()
+        {
+            @Override
+            public void isLeader()
+            {
+            }
+
+            @Override
+            public void notLeader()
+            {
+                masterCounter.incrementAndGet();
+            }
+        });
+
+        dunce.addListener(new LeaderLatchListener()
+        {
+            @Override
+            public void isLeader()
+            {
+            }
+
+            @Override
+            public void notLeader()
+            {
+                dunceCounter.incrementAndGet();
+            }
+        });
+
+        try
+        {
+            client.start();
+
+            leader.start();
+
+            timing.sleepABit();
+
+            dunce.start();
+
+            timing.sleepABit();
+
+            dunce.close();
+
+            timing.sleepABit();
+
+            // Test the close override
+            leader.close(LeaderLatch.CloseMode.NOTIFY_LEADER);
+
+            Assert.assertEquals(leader.getState(), LeaderLatch.State.CLOSED);
+            Assert.assertEquals(dunce.getState(), LeaderLatch.State.CLOSED);
+
+            Assert.assertEquals(masterCounter.get(), 1);
+            Assert.assertEquals(dunceCounter.get(), 0);
+        }
+        finally
+        {
+            if (leader.getState() != LeaderLatch.State.CLOSED)
+            {
+                CloseableUtils.closeQuietly(leader);
+            }
+            if (dunce.getState() != LeaderLatch.State.CLOSED)
+            {
+                CloseableUtils.closeQuietly(dunce);
+            }
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     private enum Mode
     {
         START_IMMEDIATELY,
