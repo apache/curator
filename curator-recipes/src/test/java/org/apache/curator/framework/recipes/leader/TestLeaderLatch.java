@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.leader;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -31,6 +30,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Collection;
@@ -123,20 +123,17 @@ public class TestLeaderLatch extends BaseClassForTests
             client.start();
 
             final CountDownLatch countDownLatch = new CountDownLatch(1);
-            client.getConnectionStateListenable().addListener
-            (
-                new ConnectionStateListener()
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
-                    @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                    if ( newState == ConnectionState.LOST )
                     {
-                        if ( newState == ConnectionState.LOST )
-                        {
-                            countDownLatch.countDown();
-                        }
+                        countDownLatch.countDown();
                     }
                 }
-            );
+            });
 
             for ( int i = 0; i < PARTICIPANT_QTY; ++i )
             {
@@ -228,30 +225,27 @@ public class TestLeaderLatch extends BaseClassForTests
             final AtomicBoolean thereIsALeader = new AtomicBoolean(false);
             for ( int i = 0; i < PARTICIPANT_QTY; ++i )
             {
-                service.submit
-                    (
-                        new Callable<Void>()
+                service.submit(new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
+                        try
                         {
-                            @Override
-                            public Void call() throws Exception
-                            {
-                                LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
-                                try
-                                {
-                                    latch.start();
-                                    Assert.assertTrue(latch.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-                                    Assert.assertTrue(thereIsALeader.compareAndSet(false, true));
-                                    Thread.sleep((int)(10 * Math.random()));
-                                }
-                                finally
-                                {
-                                    thereIsALeader.set(false);
-                                    latch.close();
-                                }
-                                return null;
-                            }
+                            latch.start();
+                            Assert.assertTrue(latch.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+                            Assert.assertTrue(thereIsALeader.compareAndSet(false, true));
+                            Thread.sleep((int)(10 * Math.random()));
                         }
-                    );
+                        finally
+                        {
+                            thereIsALeader.set(false);
+                            latch.close();
+                        }
+                        return null;
+                    }
+                });
             }
 
             for ( int i = 0; i < PARTICIPANT_QTY; ++i )
@@ -284,7 +278,7 @@ public class TestLeaderLatch extends BaseClassForTests
         final int PARTICIPANT_QTY = 10;
         final CountDownLatch timesSquare = new CountDownLatch(PARTICIPANT_QTY);
         final AtomicLong masterCounter = new AtomicLong(0);
-        final AtomicLong dunceCounter = new AtomicLong(0);
+        final AtomicLong notLeaderCounter = new AtomicLong(0);
 
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
@@ -294,43 +288,40 @@ public class TestLeaderLatch extends BaseClassForTests
         for ( int i = 0; i < PARTICIPANT_QTY; ++i )
         {
             final LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
-            latch.addListener(
-                new LeaderLatchListener()
+            latch.addListener(new LeaderLatchListener()
+            {
+                boolean beenLeader = false;
+
+                @Override
+                public void isLeader()
                 {
-                    boolean beenLeader = false;
-
-                    @Override
-                    public void isLeader()
+                    if ( !beenLeader )
                     {
-                        if ( !beenLeader )
+                        masterCounter.incrementAndGet();
+                        beenLeader = true;
+                        try
                         {
-                            masterCounter.incrementAndGet();
-                            beenLeader = true;
-                            try
-                            {
-                                latch.reset();
-                            }
-                            catch ( Exception e )
-                            {
-                                throw Throwables.propagate(e);
-                            }
+                            latch.reset();
                         }
-                        else
+                        catch ( Exception e )
                         {
-                            masterCounter.incrementAndGet();
-                            CloseableUtils.closeQuietly(latch);
-                            timesSquare.countDown();
+                            throw Throwables.propagate(e);
                         }
                     }
-
-                    @Override
-                    public void notLeader()
+                    else
                     {
-                        dunceCounter.incrementAndGet();
+                        masterCounter.incrementAndGet();
+                        CloseableUtils.closeQuietly(latch);
+                        timesSquare.countDown();
                     }
-                },
-                exec
-            );
+                }
+
+                @Override
+                public void notLeader()
+                {
+                    notLeaderCounter.incrementAndGet();
+                }
+            }, exec);
             latches.add(latch);
         }
 
@@ -346,7 +337,7 @@ public class TestLeaderLatch extends BaseClassForTests
             timesSquare.await();
 
             Assert.assertEquals(masterCounter.get(), PARTICIPANT_QTY * 2);
-            Assert.assertEquals(dunceCounter.get(), PARTICIPANT_QTY);
+            Assert.assertEquals(notLeaderCounter.get(), PARTICIPANT_QTY);
             for ( LeaderLatch latch : latches )
             {
                 Assert.assertEquals(latch.getState(), LeaderLatch.State.CLOSED);
@@ -373,7 +364,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
         final CountDownLatch timesSquare = new CountDownLatch(PARTICIPANT_QTY);
         final AtomicLong masterCounter = new AtomicLong(0);
-        final AtomicLong dunceCounter = new AtomicLong(0);
+        final AtomicLong notLeaderCounter = new AtomicLong(0);
 
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
@@ -382,48 +373,43 @@ public class TestLeaderLatch extends BaseClassForTests
         List<LeaderLatch> latches = Lists.newArrayList();
         for ( int i = 0; i < PARTICIPANT_QTY; ++i )
         {
-            LeaderLatch.CloseMode closeMode = i < SILENT_QTY ?
-                    LeaderLatch.CloseMode.SILENT :
-                    LeaderLatch.CloseMode.NOTIFY_LEADER;
+            LeaderLatch.CloseMode closeMode = i < SILENT_QTY ? LeaderLatch.CloseMode.SILENT : LeaderLatch.CloseMode.NOTIFY_LEADER;
 
             final LeaderLatch latch = new LeaderLatch(client, PATH_NAME, "", closeMode);
-            latch.addListener(
-                new LeaderLatchListener()
+            latch.addListener(new LeaderLatchListener()
+            {
+                boolean beenLeader = false;
+
+                @Override
+                public void isLeader()
                 {
-                    boolean beenLeader = false;
-
-                    @Override
-                    public void isLeader()
+                    if ( !beenLeader )
                     {
-                        if ( !beenLeader )
+                        masterCounter.incrementAndGet();
+                        beenLeader = true;
+                        try
                         {
-                            masterCounter.incrementAndGet();
-                            beenLeader = true;
-                            try
-                            {
-                                latch.reset();
-                            }
-                            catch ( Exception e )
-                            {
-                                throw Throwables.propagate(e);
-                            }
+                            latch.reset();
                         }
-                        else
+                        catch ( Exception e )
                         {
-                            masterCounter.incrementAndGet();
-                            CloseableUtils.closeQuietly(latch);
-                            timesSquare.countDown();
+                            throw Throwables.propagate(e);
                         }
                     }
-
-                    @Override
-                    public void notLeader()
+                    else
                     {
-                        dunceCounter.incrementAndGet();
+                        masterCounter.incrementAndGet();
+                        CloseableUtils.closeQuietly(latch);
+                        timesSquare.countDown();
                     }
-                },
-                exec
-            );
+                }
+
+                @Override
+                public void notLeader()
+                {
+                    notLeaderCounter.incrementAndGet();
+                }
+            }, exec);
             latches.add(latch);
         }
 
@@ -439,7 +425,7 @@ public class TestLeaderLatch extends BaseClassForTests
             timesSquare.await();
 
             Assert.assertEquals(masterCounter.get(), PARTICIPANT_QTY * 2);
-            Assert.assertEquals(dunceCounter.get(), PARTICIPANT_QTY * 2 - SILENT_QTY);
+            Assert.assertEquals(notLeaderCounter.get(), PARTICIPANT_QTY * 2 - SILENT_QTY);
             for ( LeaderLatch latch : latches )
             {
                 Assert.assertEquals(latch.getState(), LeaderLatch.State.CLOSED);
@@ -459,15 +445,16 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
-    public void testCallbackDontNotifyDunce() throws Exception {
+    public void testCallbackDontNotify() throws Exception
+    {
         final AtomicLong masterCounter = new AtomicLong(0);
-        final AtomicLong dunceCounter = new AtomicLong(0);
+        final AtomicLong notLeaderCounter = new AtomicLong(0);
 
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
 
         final LeaderLatch leader = new LeaderLatch(client, PATH_NAME);
-        final LeaderLatch dunce = new LeaderLatch(client, PATH_NAME, "", LeaderLatch.CloseMode.NOTIFY_LEADER);
+        final LeaderLatch notifiedLeader = new LeaderLatch(client, PATH_NAME, "", LeaderLatch.CloseMode.NOTIFY_LEADER);
 
         leader.addListener(new LeaderLatchListener()
         {
@@ -483,7 +470,7 @@ public class TestLeaderLatch extends BaseClassForTests
             }
         });
 
-        dunce.addListener(new LeaderLatchListener()
+        notifiedLeader.addListener(new LeaderLatchListener()
         {
             @Override
             public void isLeader()
@@ -493,7 +480,7 @@ public class TestLeaderLatch extends BaseClassForTests
             @Override
             public void notLeader()
             {
-                dunceCounter.incrementAndGet();
+                notLeaderCounter.incrementAndGet();
             }
         });
 
@@ -505,11 +492,11 @@ public class TestLeaderLatch extends BaseClassForTests
 
             timing.sleepABit();
 
-            dunce.start();
+            notifiedLeader.start();
 
             timing.sleepABit();
 
-            dunce.close();
+            notifiedLeader.close();
 
             timing.sleepABit();
 
@@ -517,20 +504,20 @@ public class TestLeaderLatch extends BaseClassForTests
             leader.close(LeaderLatch.CloseMode.NOTIFY_LEADER);
 
             Assert.assertEquals(leader.getState(), LeaderLatch.State.CLOSED);
-            Assert.assertEquals(dunce.getState(), LeaderLatch.State.CLOSED);
+            Assert.assertEquals(notifiedLeader.getState(), LeaderLatch.State.CLOSED);
 
             Assert.assertEquals(masterCounter.get(), 1);
-            Assert.assertEquals(dunceCounter.get(), 0);
+            Assert.assertEquals(notLeaderCounter.get(), 0);
         }
         finally
         {
-            if (leader.getState() != LeaderLatch.State.CLOSED)
+            if ( leader.getState() != LeaderLatch.State.CLOSED )
             {
                 CloseableUtils.closeQuietly(leader);
             }
-            if (dunce.getState() != LeaderLatch.State.CLOSED)
+            if ( notifiedLeader.getState() != LeaderLatch.State.CLOSED )
             {
-                CloseableUtils.closeQuietly(dunce);
+                CloseableUtils.closeQuietly(notifiedLeader);
             }
             CloseableUtils.closeQuietly(client);
         }
@@ -568,19 +555,16 @@ public class TestLeaderLatch extends BaseClassForTests
                 ExecutorService service = Executors.newFixedThreadPool(latches.size());
                 for ( final LeaderLatch latch : latches )
                 {
-                    service.submit
-                        (
-                            new Callable<Object>()
-                            {
-                                @Override
-                                public Object call() throws Exception
-                                {
-                                    Thread.sleep((int)(100 * Math.random()));
-                                    latch.start();
-                                    return null;
-                                }
-                            }
-                        );
+                    service.submit(new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            Thread.sleep((int)(100 * Math.random()));
+                            latch.start();
+                            return null;
+                        }
+                    });
                 }
                 service.shutdown();
             }
