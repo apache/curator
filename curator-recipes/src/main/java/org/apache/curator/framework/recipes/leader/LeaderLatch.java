@@ -96,9 +96,19 @@ public class LeaderLatch implements Closeable
         CLOSED
     }
 
+    /**
+     * How to handle listeners when the latch is closed
+     */
     public enum CloseMode
     {
+        /**
+         * When the latch is closed, listeners will *not* be notified
+         */
         SILENT,
+
+        /**
+         * When the latch is closed, listeners *will* be notified
+         */
         NOTIFY_LEADER
     }
 
