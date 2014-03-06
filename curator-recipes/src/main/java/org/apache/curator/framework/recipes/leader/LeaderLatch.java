@@ -102,7 +102,7 @@ public class LeaderLatch implements Closeable
     public enum CloseMode
     {
         /**
-         * When the latch is closed, listeners will *not* be notified
+         * When the latch is closed, listeners will *not* be notified (default behavior)
          */
         SILENT,
 
@@ -168,7 +168,7 @@ public class LeaderLatch implements Closeable
     @Override
     public void close() throws IOException
     {
-        close(this.closeMode);
+        close(closeMode);
     }
 
     /**
@@ -197,16 +197,21 @@ public class LeaderLatch implements Closeable
         {
             client.getConnectionStateListenable().removeListener(listener);
 
-            switch(closeMode)
+            switch ( closeMode )
             {
                 case NOTIFY_LEADER:
+                {
                     setLeadership(false);
                     listeners.clear();
                     break;
+                }
+
                 default:
+                {
                     listeners.clear();
                     setLeadership(false);
                     break;
+                }
             }
         }
     }
