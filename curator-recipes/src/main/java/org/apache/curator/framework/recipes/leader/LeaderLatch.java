@@ -67,6 +67,7 @@ public class LeaderLatch implements Closeable
     private final AtomicBoolean hasLeadership = new AtomicBoolean(false);
     private final AtomicReference<String> ourPath = new AtomicReference<String>();
     private final ListenerContainer<LeaderLatchListener> listeners = new ListenerContainer<LeaderLatchListener>();
+    private final CloseMode closeMode;
 
     private final ConnectionStateListener listener = new ConnectionStateListener()
     {
@@ -95,13 +96,19 @@ public class LeaderLatch implements Closeable
         CLOSED
     }
 
+    public enum CloseMode
+    {
+        SILENT,
+        NOTIFY_LEADER
+    }
+
     /**
      * @param client    the client
      * @param latchPath the path for this leadership group
      */
     public LeaderLatch(CuratorFramework client, String latchPath)
     {
-        this(client, latchPath, "");
+        this(client, latchPath, "", CloseMode.SILENT);
     }
 
     /**
@@ -111,9 +118,21 @@ public class LeaderLatch implements Closeable
      */
     public LeaderLatch(CuratorFramework client, String latchPath, String id)
     {
+        this(client, latchPath, id, CloseMode.SILENT);
+    }
+
+    /**
+     * @param client    the client
+     * @param latchPath the path for this leadership group
+     * @param id        participant ID
+     * @param closeMode behaviour of listener on explicit close.
+     */
+    public LeaderLatch(CuratorFramework client, String latchPath, String id, CloseMode closeMode)
+    {
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
         this.latchPath = Preconditions.checkNotNull(latchPath, "mutexPath cannot be null");
         this.id = Preconditions.checkNotNull(id, "id cannot be null");
+        this.closeMode = Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
     }
 
     /**
@@ -139,7 +158,22 @@ public class LeaderLatch implements Closeable
     @Override
     public void close() throws IOException
     {
+        close(this.closeMode);
+    }
+
+    /**
+     * Remove this instance from the leadership election. If this instance is the leader, leadership
+     * is released. IMPORTANT: the only way to release leadership is by calling close(). All LeaderLatch
+     * instances must eventually be closed.
+     *
+     * @param closeMode allows the default close mode to be overridden at the time the latch is closed.
+     *
+     * @throws IOException errors
+     */
+    public void close(CloseMode closeMode) throws IOException
+    {
         Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
+        Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
 
         try
         {
@@ -152,8 +186,18 @@ public class LeaderLatch implements Closeable
         finally
         {
             client.getConnectionStateListenable().removeListener(listener);
-            listeners.clear();
-            setLeadership(false);
+
+            switch(closeMode)
+            {
+                case NOTIFY_LEADER:
+                    setLeadership(false);
+                    listeners.clear();
+                    break;
+                default:
+                    listeners.clear();
+                    setLeadership(false);
+                    break;
+            }
         }
     }
 
