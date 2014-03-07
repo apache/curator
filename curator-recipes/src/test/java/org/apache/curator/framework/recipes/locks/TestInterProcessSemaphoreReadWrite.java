@@ -20,30 +20,12 @@
 package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.testng.annotations.Test;
 
-public class TestInterProcessSemaphoreReadWrite
+public class TestInterProcessSemaphoreReadWrite extends TestInterProcessReadWriteLockBase
 {
-    @Test
-    public void testBasic() throws Exception
+    @Override
+    protected InterProcessReadWriteLockBase newLock(CuratorFramework client, String path)
     {
-        TestInterProcessReadWriteLockBase base = new TestInterProcessReadWriteLockBase()
-        {
-            @Override
-            protected InterProcessReadWriteLockBase newLock(CuratorFramework client, String path)
-            {
-                return new InterProcessSemaphoreReadWrite(client, path);
-            }
-        };
-
-        base.setup();
-        try
-        {
-            base.testBasic();
-        }
-        finally
-        {
-            base.teardown();
-        }
+        return new InterProcessSemaphoreReadWrite(client, path);
     }
 }
