@@ -62,62 +62,56 @@ public class TestLocks extends BaseClassForTests
         final AtomicReference<Exception> exceptionRef = new AtomicReference<Exception>();
 
         ExecutorService service = Executors.newCachedThreadPool();
-        Future<Object> future1 = service.submit
-            (
-                new Callable<Object>()
+        Future<Object> future1 = service.submit(new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                try
                 {
-                    @Override
-                    public Object call() throws Exception
+                    if ( !mutexForClient1.acquire(10, TimeUnit.SECONDS) )
                     {
-                        try
-                        {
-                            if ( !mutexForClient1.acquire(10, TimeUnit.SECONDS) )
-                            {
-                                throw new Exception("mutexForClient1.acquire timed out");
-                            }
-                            acquiredLatchForClient1.countDown();
-                            if ( !latchForClient1.await(10, TimeUnit.SECONDS) )
-                            {
-                                throw new Exception("latchForClient1 timed out");
-                            }
-                            mutexForClient1.release();
-                        }
-                        catch ( Exception e )
-                        {
-                            exceptionRef.set(e);
-                        }
-                        return null;
+                        throw new Exception("mutexForClient1.acquire timed out");
                     }
+                    acquiredLatchForClient1.countDown();
+                    if ( !latchForClient1.await(10, TimeUnit.SECONDS) )
+                    {
+                        throw new Exception("latchForClient1 timed out");
+                    }
+                    mutexForClient1.release();
                 }
-            );
-        Future<Object> future2 = service.submit
-            (
-                new Callable<Object>()
+                catch ( Exception e )
                 {
-                    @Override
-                    public Object call() throws Exception
-                    {
-                        try
-                        {
-                            if ( !mutexForClient2.acquire(10, TimeUnit.SECONDS) )
-                            {
-                                throw new Exception("mutexForClient2.acquire timed out");
-                            }
-                            acquiredLatchForClient2.countDown();
-                            if ( !latchForClient2.await(10, TimeUnit.SECONDS) )
-                            {
-                                throw new Exception("latchForClient2 timed out");
-                            }
-                            mutexForClient2.release();
-                        }
-                        catch ( Exception e )
-                        {
-                            exceptionRef.set(e);
-                        }
-                        return null;
-                    }
+                    exceptionRef.set(e);
                 }
-            );
+                return null;
+            }
+        });
+        Future<Object> future2 = service.submit(new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                try
+                {
+                    if ( !mutexForClient2.acquire(10, TimeUnit.SECONDS) )
+                    {
+                        throw new Exception("mutexForClient2.acquire timed out");
+                    }
+                    acquiredLatchForClient2.countDown();
+                    if ( !latchForClient2.await(10, TimeUnit.SECONDS) )
+                    {
+                        throw new Exception("latchForClient2 timed out");
+                    }
+                    mutexForClient2.release();
+                }
+                catch ( Exception e )
+                {
+                    exceptionRef.set(e);
+                }
+                return null;
+            }
+        });
 
         while ( !mutexForClient1.isAcquiredInThisProcess() && !mutexForClient2.isAcquiredInThisProcess() )
         {
@@ -183,41 +177,38 @@ public class TestLocks extends BaseClassForTests
         ExecutorCompletionService<Object> service = new ExecutorCompletionService<Object>(Executors.newFixedThreadPool(2));
         for ( int i = 0; i < 2; ++i )
         {
-            service.submit
-                (
-                    new Callable<Object>()
+            service.submit(new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    InterProcessLock lock = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
+                    lock.acquire();
+                    try
                     {
-                        @Override
-                        public Object call() throws Exception
+                        if ( isFirst.compareAndSet(true, false) )
                         {
-                            InterProcessLock lock = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
-                            lock.acquire();
-                            try
-                            {
-                                if ( isFirst.compareAndSet(true, false) )
-                                {
-                                    timing.sleepABit();
+                            timing.sleepABit();
 
-                                    server.stop();
-                                    Assert.assertTrue(timing.awaitLatch(latch));
-                                    server = new TestingServer(server.getPort(), server.getTempDirectory());
-                                }
-                            }
-                            finally
-                            {
-                                try
-                                {
-                                    lock.release();
-                                }
-                                catch ( Exception e )
-                                {
-                                    // ignore
-                                }
-                            }
-                            return null;
+                            server.stop();
+                            Assert.assertTrue(timing.awaitLatch(latch));
+                            server = new TestingServer(server.getPort(), server.getTempDirectory());
                         }
                     }
-                );
+                    finally
+                    {
+                        try
+                        {
+                            lock.release();
+                        }
+                        catch ( Exception e )
+                        {
+                            // ignore
+                        }
+                    }
+                    return null;
+                }
+            });
         }
 
         for ( int i = 0; i < 2; ++i )
@@ -236,35 +227,29 @@ public class TestLocks extends BaseClassForTests
 
         final Semaphore semaphore = new Semaphore(0);
         ExecutorCompletionService<Object> service = new ExecutorCompletionService<Object>(Executors.newFixedThreadPool(2));
-        service.submit
-            (
-                new Callable<Object>()
-                {
-                    @Override
-                    public Object call() throws Exception
-                    {
-                        mutex1.acquire();
-                        semaphore.release();
-                        Thread.sleep(1000000);
-                        return null;
-                    }
-                }
-            );
+        service.submit(new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                mutex1.acquire();
+                semaphore.release();
+                Thread.sleep(1000000);
+                return null;
+            }
+        });
 
-        service.submit
-            (
-                new Callable<Object>()
-                {
-                    @Override
-                    public Object call() throws Exception
-                    {
-                        mutex2.acquire();
-                        semaphore.release();
-                        Thread.sleep(1000000);
-                        return null;
-                    }
-                }
-            );
+        service.submit(new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                mutex2.acquire();
+                semaphore.release();
+                Thread.sleep(1000000);
+                return null;
+            }
+        });
 
         Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
         KillSession.kill(getCuratorRestContext().getClient().getZookeeperClient().getZooKeeper(), server.getConnectString());
@@ -285,40 +270,37 @@ public class TestLocks extends BaseClassForTests
         for ( int i = 0; i < THREAD_QTY; ++i )
         {
             final InterProcessLock mutex = new InterProcessLockBridge(restClient, sessionManager, uriMaker, "/lock");
-            Future<Object> t = service.submit
-                (
-                    new Callable<Object>()
+            Future<Object> t = service.submit(new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    semaphore.acquire();
+                    mutex.acquire();
+                    Assert.assertTrue(hasLock.compareAndSet(false, true));
+                    try
                     {
-                        @Override
-                        public Object call() throws Exception
+                        if ( isFirst.compareAndSet(true, false) )
                         {
-                            semaphore.acquire();
-                            mutex.acquire();
-                            Assert.assertTrue(hasLock.compareAndSet(false, true));
-                            try
+                            semaphore.release(THREAD_QTY - 1);
+                            while ( semaphore.availablePermits() > 0 )
                             {
-                                if ( isFirst.compareAndSet(true, false) )
-                                {
-                                    semaphore.release(THREAD_QTY - 1);
-                                    while ( semaphore.availablePermits() > 0 )
-                                    {
-                                        Thread.sleep(100);
-                                    }
-                                }
-                                else
-                                {
-                                    Thread.sleep(100);
-                                }
+                                Thread.sleep(100);
                             }
-                            finally
-                            {
-                                mutex.release();
-                                hasLock.set(false);
-                            }
-                            return null;
+                        }
+                        else
+                        {
+                            Thread.sleep(100);
                         }
                     }
-                );
+                    finally
+                    {
+                        mutex.release();
+                        hasLock.set(false);
+                    }
+                    return null;
+                }
+            });
             threads.add(t);
         }
 
@@ -329,46 +311,43 @@ public class TestLocks extends BaseClassForTests
     }
 
     @Test
-    public void     testBasicReadWriteLock() throws Exception
+    public void testBasicReadWriteLock() throws Exception
     {
-        final int               CONCURRENCY = 8;
-        final int               ITERATIONS = 100;
+        final int CONCURRENCY = 8;
+        final int ITERATIONS = 100;
 
         final Random random = new Random();
         final AtomicInteger concurrentCount = new AtomicInteger(0);
-        final AtomicInteger     maxConcurrentCount = new AtomicInteger(0);
-        final AtomicInteger     writeCount = new AtomicInteger(0);
-        final AtomicInteger     readCount = new AtomicInteger(0);
+        final AtomicInteger maxConcurrentCount = new AtomicInteger(0);
+        final AtomicInteger writeCount = new AtomicInteger(0);
+        final AtomicInteger readCount = new AtomicInteger(0);
 
-        List<Future<Void>>  futures = Lists.newArrayList();
-        ExecutorService     service = Executors.newCachedThreadPool();
+        List<Future<Void>> futures = Lists.newArrayList();
+        ExecutorService service = Executors.newCachedThreadPool();
         for ( int i = 0; i < CONCURRENCY; ++i )
         {
-            Future<Void>    future = service.submit
-                (
-                    new Callable<Void>()
+            Future<Void> future = service.submit(new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    InterProcessReadWriteLockBridge lock = new InterProcessReadWriteLockBridge(restClient, sessionManager, uriMaker, "/lock");
+                    for ( int i = 0; i < ITERATIONS; ++i )
                     {
-                        @Override
-                        public Void call() throws Exception
+                        if ( random.nextInt(100) < 10 )
                         {
-                            InterProcessReadWriteLockBridge lock = new InterProcessReadWriteLockBridge(restClient, sessionManager, uriMaker, "/lock");
-                            for ( int i = 0; i < ITERATIONS; ++i )
-                            {
-                                if ( random.nextInt(100) < 10 )
-                                {
-                                    doLocking(lock.writeLock(), concurrentCount, maxConcurrentCount, random, 1);
-                                    writeCount.incrementAndGet();
-                                }
-                                else
-                                {
-                                    doLocking(lock.readLock(), concurrentCount, maxConcurrentCount, random, Integer.MAX_VALUE);
-                                    readCount.incrementAndGet();
-                                }
-                            }
-                            return null;
+                            doLocking(lock.writeLock(), concurrentCount, maxConcurrentCount, random, 1);
+                            writeCount.incrementAndGet();
+                        }
+                        else
+                        {
+                            doLocking(lock.readLock(), concurrentCount, maxConcurrentCount, random, Integer.MAX_VALUE);
+                            readCount.incrementAndGet();
                         }
                     }
-                );
+                    return null;
+                }
+            });
             futures.add(future);
         }
 
@@ -389,7 +368,7 @@ public class TestLocks extends BaseClassForTests
         try
         {
             Assert.assertTrue(lock.acquire(10, TimeUnit.SECONDS));
-            int     localConcurrentCount;
+            int localConcurrentCount;
             synchronized(this)
             {
                 localConcurrentCount = concurrentCount.incrementAndGet();

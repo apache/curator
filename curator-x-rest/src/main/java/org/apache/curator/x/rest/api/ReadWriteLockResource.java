@@ -18,8 +18,8 @@
  */
 package org.apache.curator.x.rest.api;
 
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreReadWrite;
 import org.apache.curator.x.rest.CuratorRestContext;
 import org.apache.curator.x.rest.entities.Id;
 import org.apache.curator.x.rest.entities.LockSpec;
@@ -69,24 +69,24 @@ public class ReadWriteLockResource
     @Path("{lock-id}")
     public Response releaseLock(@PathParam("lock-id") String lockId) throws Exception
     {
-        InterProcessMutex lock = Constants.deleteThing(context.getSession(), lockId, InterProcessMutex.class);
+        InterProcessLock lock = Constants.deleteThing(context.getSession(), lockId, InterProcessLock.class);
         lock.release();
         return Response.ok().build();
     }
 
     private Response internalLock(final LockSpec lockSpec, boolean writeLock) throws Exception
     {
-        InterProcessReadWriteLock lock = new InterProcessReadWriteLock(context.getClient(), lockSpec.getPath());
-        InterProcessMutex actualLock = writeLock ? lock.writeLock() : lock.readLock();
+        InterProcessSemaphoreReadWrite lock = new InterProcessSemaphoreReadWrite(context.getClient(), lockSpec.getPath());
+        InterProcessLock actualLock = writeLock ? lock.writeLock() : lock.readLock();
         if ( !actualLock.acquire(lockSpec.getMaxWaitMs(), TimeUnit.MILLISECONDS) )
         {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
         }
 
-        Closer<InterProcessMutex> closer = new Closer<InterProcessMutex>()
+        Closer<InterProcessLock> closer = new Closer<InterProcessLock>()
         {
             @Override
-            public void close(InterProcessMutex lock)
+            public void close(InterProcessLock lock)
             {
                 if ( lock.isAcquiredInThisProcess() )
                 {
