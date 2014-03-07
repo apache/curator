@@ -145,6 +145,10 @@ public class InterProcessSemaphoreReadWrite implements InterProcessReadWriteLock
     private static final String READ_BASE_NAME = "read" + SUFFIX;
     private static final String WRITE_BASE_NAME = "write" + SUFFIX;
 
+    /**
+     * @param client the client
+     * @param path path to use for locking
+     */
     public InterProcessSemaphoreReadWrite(CuratorFramework client, String path)
     {
         lock = new InterProcessSemaphoreV2(client, path, Integer.MAX_VALUE);

@@ -1,0 +1,39 @@
+h1. Shared Reentrant Read Write Lock
+
+h2. Description
+A NON re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all
+JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is "fair" -
+each user will get the mutex in the order requested (from ZK's point of view).
+
+A read write lock maintains a pair of associated locks, one for read-only operations and one for writing. The read
+lock may be held simultaneously by multiple reader processes, so long as there are no writers. The write lock is exclusive.
+
+Lock upgrading/downgrading is NOT supported by this implementation.
+
+h2. Participating Classes
+* InterProcessSemaphoreReadWrite
+* InterProcessLock
+
+h2. Usage
+h3. Create an InterProcessReadWriteLock
+{code}
+public InterProcessSemaphoreReadWrite(CuratorFramework client,
+                                 String basePath)
+Parameters:
+client - the client
+basePath - path to use for locking
+{code}
+
+h3. General Usage
+Access either the read lock or the write lock and then use the methods as described for [[Shared lock|shared-lock.html]].
+
+{code}
+public InterProcessLock readLock()
+
+public InterProcessLock writeLock()
+{code}
+
+h2. Error Handling
+It is strongly recommended that you add a {{ConnectionStateListener}} and watch for SUSPENDED and
+LOST state changes. If a SUSPENDED state is reported you cannot be certain that you still hold the lock unless you
+subsequently receive a RECONNECTED state. If a LOST state is reported it is certain that you no longer hold the lock.
