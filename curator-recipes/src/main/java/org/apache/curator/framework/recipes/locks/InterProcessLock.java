@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 public interface InterProcessLock
@@ -56,5 +57,13 @@ public interface InterProcessLock
      *
      * @return true/false
      */
-    boolean isAcquiredInThisProcess();
+    public boolean isAcquiredInThisProcess();
+
+    /**
+     * Return a sorted list of all current nodes participating in the lock
+     *
+     * @return list of nodes
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Collection<String> getParticipantNodes() throws Exception;
 }

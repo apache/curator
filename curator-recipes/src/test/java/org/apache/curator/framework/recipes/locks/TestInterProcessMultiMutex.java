@@ -25,6 +25,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -66,6 +67,12 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
                 public void release() throws Exception
                 {
                     throw new Exception("foo");
+                }
+
+                @Override
+                public Collection<String> getParticipantNodes() throws Exception
+                {
+                    throw new UnsupportedOperationException();
                 }
 
                 @Override
@@ -113,6 +120,12 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
                         goodLockWasLocked.set(true);
                     }
                     throw new Exception("foo");
+                }
+
+                @Override
+                public Collection<String> getParticipantNodes() throws Exception
+                {
+                    throw new UnsupportedOperationException();
                 }
 
                 @Override

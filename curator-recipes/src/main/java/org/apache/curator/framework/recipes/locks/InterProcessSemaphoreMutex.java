@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -77,5 +78,11 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
     public boolean isAcquiredInThisProcess()
     {
         return (lease != null);
+    }
+
+    @Override
+    public Collection<String> getParticipantNodes() throws Exception
+    {
+        return semaphore.getParticipantNodes();
     }
 }

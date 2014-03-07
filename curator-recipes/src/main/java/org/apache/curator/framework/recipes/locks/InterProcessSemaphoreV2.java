@@ -96,6 +96,15 @@ public class InterProcessSemaphoreV2
     private static final String LEASE_PARENT = "leases";
     private static final String LEASE_BASE_NAME = "lease-";
 
+    private static final LeaseAcquirePredicate defaultLeaseAcquirePredicate = new LeaseAcquirePredicate()
+    {
+        @Override
+        public boolean shouldGetLease(String ourNodeName, List<String> children, int maxLeases)
+        {
+            return children.size() <= maxLeases;
+        }
+    };
+
     /**
      * @param client    the client
      * @param path      path for the semaphore
@@ -203,7 +212,7 @@ public class InterProcessSemaphoreV2
      */
     public Lease acquire() throws Exception
     {
-        Collection<Lease> leases = acquire(1, 0, null);
+        Collection<Lease> leases = internalAcquire(1, 0, null, LEASE_BASE_NAME, defaultLeaseAcquirePredicate);
         return leases.iterator().next();
     }
 
@@ -221,7 +230,7 @@ public class InterProcessSemaphoreV2
      */
     public Collection<Lease> acquire(int qty) throws Exception
     {
-        return acquire(qty, 0, null);
+        return internalAcquire(qty, 0, null, LEASE_BASE_NAME, defaultLeaseAcquirePredicate);
     }
 
     /**
@@ -239,7 +248,7 @@ public class InterProcessSemaphoreV2
      */
     public Lease acquire(long time, TimeUnit unit) throws Exception
     {
-        Collection<Lease> leases = acquire(1, time, unit);
+        Collection<Lease> leases = internalAcquire(1, time, unit, LEASE_BASE_NAME, defaultLeaseAcquirePredicate);
         return (leases != null) ? leases.iterator().next() : null;
     }
 
@@ -261,6 +270,16 @@ public class InterProcessSemaphoreV2
      */
     public Collection<Lease> acquire(int qty, long time, TimeUnit unit) throws Exception
     {
+        return internalAcquire(qty, time, unit, LEASE_BASE_NAME, defaultLeaseAcquirePredicate);
+    }
+
+    interface LeaseAcquirePredicate
+    {
+        boolean shouldGetLease(String ourNodeName, List<String> children, int maxLeases);
+    }
+
+    protected Collection<Lease> internalAcquire(int qty, long time, TimeUnit unit, String leaseBaseName, LeaseAcquirePredicate acquireFilter) throws Exception
+    {
         long startMs = System.currentTimeMillis();
         boolean hasWait = (unit != null);
         long waitMs = hasWait ? TimeUnit.MILLISECONDS.convert(time, unit) : 0;
@@ -278,7 +297,7 @@ public class InterProcessSemaphoreV2
                 boolean isDone = false;
                 while ( !isDone )
                 {
-                    switch ( internalAcquire1Lease(builder, startMs, hasWait, waitMs) )
+                    switch ( internalAcquire1Lease(builder, startMs, hasWait, waitMs, leaseBaseName, acquireFilter) )
                     {
                         case CONTINUE:
                         {
@@ -325,7 +344,7 @@ public class InterProcessSemaphoreV2
         RETRY_DUE_TO_MISSING_NODE
     }
 
-    private InternalAcquireResult internalAcquire1Lease(ImmutableList.Builder<Lease> builder, long startMs, boolean hasWait, long waitMs) throws Exception
+    private InternalAcquireResult internalAcquire1Lease(ImmutableList.Builder<Lease> builder, long startMs, boolean hasWait, long waitMs, String leaseBaseName, LeaseAcquirePredicate acquireFilter) throws Exception
     {
         if ( client.getState() != CuratorFrameworkState.STARTED )
         {
@@ -347,8 +366,8 @@ public class InterProcessSemaphoreV2
         try
         {
             PathAndBytesable<String> createBuilder = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
-            String path = (nodeData != null) ? createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME), nodeData) : createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
-            String nodeName = ZKPaths.getNodeFromPath(path);
+            String path = (nodeData != null) ? createBuilder.forPath(ZKPaths.makePath(leasesPath, leaseBaseName), nodeData) : createBuilder.forPath(ZKPaths.makePath(leasesPath, leaseBaseName));
+            String ourNodeName = ZKPaths.getNodeFromPath(path);
             builder.add(makeLease(path));
 
             synchronized(this)
@@ -356,13 +375,13 @@ public class InterProcessSemaphoreV2
                 for(;;)
                 {
                     List<String> children = client.getChildren().usingWatcher(watcher).forPath(leasesPath);
-                    if ( !children.contains(nodeName) )
+                    if ( !children.contains(ourNodeName) )
                     {
                         log.error("Sequential path not found: " + path);
                         return InternalAcquireResult.RETRY_DUE_TO_MISSING_NODE;
                     }
 
-                    if ( children.size() <= maxLeases )
+                    if ( acquireFilter.shouldGetLease(ourNodeName, children, maxLeases) )
                     {
                         break;
                     }

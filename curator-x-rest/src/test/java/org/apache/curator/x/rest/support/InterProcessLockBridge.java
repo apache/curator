@@ -29,6 +29,7 @@ import org.apache.curator.x.rest.entities.LockSpec;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 public class InterProcessLockBridge implements InterProcessLock
@@ -89,6 +90,12 @@ public class InterProcessLockBridge implements InterProcessLock
 
         sessionManager.removeEntry(uriMaker.getLocalhost(), id);
         id = null;
+    }
+
+    @Override
+    public Collection<String> getParticipantNodes() throws Exception
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override

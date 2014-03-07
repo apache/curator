@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.locks;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -170,6 +171,20 @@ public class InterProcessMultiLock implements InterProcessLock
         {
             throw baseException;
         }
+    }
+
+    @Override
+    public Collection<String> getParticipantNodes() throws Exception
+    {
+        List<String> participants = Lists.newArrayList();
+        for ( InterProcessLock lock : locks )
+        {
+            if ( !lock.isAcquiredInThisProcess() )
+            {
+                participants.addAll(lock.getParticipantNodes());
+            }
+        }
+        return participants;
     }
 
     @Override

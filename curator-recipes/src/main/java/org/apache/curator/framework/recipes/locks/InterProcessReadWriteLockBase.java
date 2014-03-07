@@ -19,13 +19,19 @@
 
 package org.apache.curator.framework.recipes.locks;
 
-import org.apache.curator.framework.CuratorFramework;
-
-public class TestInterProcessReadWriteLock extends TestInterProcessReadWriteLockBase
+public interface InterProcessReadWriteLockBase
 {
-    @Override
-    protected InterProcessReadWriteLockBase newLock(CuratorFramework client, String path)
-    {
-        return new InterProcessReadWriteLock(client, path);
-    }
+    /**
+     * Returns the lock used for reading.
+     *
+     * @return read lock
+     */
+    InterProcessLock     readLock();
+
+    /**
+     * Returns the lock used for writing.
+     *
+     * @return write lock
+     */
+    InterProcessLock     writeLock();
 }

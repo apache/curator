@@ -51,7 +51,7 @@ import java.util.List;
  *    lock to the write lock is not possible.
  * </p>
  */
-public class InterProcessReadWriteLock
+public class InterProcessReadWriteLock implements InterProcessReadWriteLockBase
 {
     private final InterProcessMutex readMutex;
     private final InterProcessMutex writeMutex;
@@ -145,6 +145,7 @@ public class InterProcessReadWriteLock
      *
      * @return read lock
      */
+    @Override
     public InterProcessMutex     readLock()
     {
         return readMutex;
@@ -155,6 +156,7 @@ public class InterProcessReadWriteLock
      *
      * @return write lock
      */
+    @Override
     public InterProcessMutex     writeLock()
     {
         return writeMutex;
