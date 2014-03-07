@@ -29,6 +29,24 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * <p>
+ *     A NON re-entrant read-write lock that works across JVMs. Uses Zookeeper to hold
+ *     the lock. All processes in all JVMs that use the same lock path will achieve an
+ *     inter-process critical section. Further, this mutex is "fair" - each user will
+ *     get the mutex in the order requested (from ZK's point of view).
+ * </p>
+ *
+ * <p>
+ *    A read write lock maintains a pair of associated locks, one for read-only operations and one
+ *    for writing. The read lock may be held simultaneously by multiple reader processes, so long as
+ *    there are no writers. The write lock is exclusive.
+ * </p>
+ *
+ * <p>
+ *    Note: lock upgrading/downgrading is NOT supported by this implementation.
+ * </p>
+ */
 public class InterProcessSemaphoreReadWrite implements InterProcessReadWriteLockBase
 {
     private final InterProcessSemaphoreV2 lock;
