@@ -146,7 +146,10 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void registerService(ServiceInstance<T> service) throws Exception
     {
-        services.put(service.getId(), service);
+        if (service.getServiceType() != ServiceType.PERMANENT)
+        {
+            services.put(service.getId(), service);
+        }
         internalRegisterService(service);
     }
 

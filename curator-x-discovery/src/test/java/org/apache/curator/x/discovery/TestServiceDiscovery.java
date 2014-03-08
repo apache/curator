@@ -273,4 +273,97 @@ public class TestServiceDiscovery
             }
         }
     }
+
+    @Test
+    public void testCloseBehavior() throws Exception
+    {
+
+        TestingServer server = new TestingServer();
+        try
+        {
+            List<Closeable> closeables = Lists.newArrayList();
+
+            ServiceInstance<String> testReg = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+
+            ServiceInstance<String> dynamicReg = ServiceInstance.<String>builder().payload("dynamic").name("dynamic").port(1111).serviceType(ServiceType.DYNAMIC).build();
+            ServiceInstance<String> staticReg = ServiceInstance.<String>builder().payload("static").name("static").port(1112).serviceType(ServiceType.STATIC).build();
+            ServiceInstance<String> permanentReg = ServiceInstance.<String>builder().payload("permanent").name("permanent").port(1113).serviceType(ServiceType.PERMANENT).build();
+
+            try
+            {
+                CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+                closeables.add(client);
+                client.start();
+
+                final ServiceDiscoveryBuilder<String> builder = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(testReg);
+                ServiceDiscovery<String> discovery = builder.build();
+                closeables.add(discovery);
+                discovery.start();
+
+                Assert.assertEquals(discovery.queryForNames(), Arrays.asList("test"));
+
+                List<ServiceInstance<String>> list = Lists.newArrayList();
+                list.add(testReg);
+                Assert.assertEquals(discovery.queryForInstances("test"), list);
+
+                discovery.registerService(dynamicReg);
+                discovery.registerService(staticReg);
+                discovery.registerService(permanentReg);
+            }
+            finally
+            {
+                Collections.reverse(closeables);
+                for (Closeable c : closeables)
+                {
+                    CloseableUtils.closeQuietly(c);
+                }
+            }
+
+            closeables.clear();
+
+            try
+            {
+                CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+                closeables.add(client);
+                client.start();
+
+                ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(testReg).build();
+                closeables.add(discovery);
+                discovery.start();
+
+                Assert.assertEquals(Sets.newHashSet(discovery.queryForNames()), Sets.newHashSet("test", "dynamic", "static", "permanent"));
+
+                List<ServiceInstance<String>> testRegistrations = Lists.newArrayList();
+                testRegistrations.add(testReg);
+
+                final List<ServiceInstance<String>> emptyList = Lists.newArrayList();
+
+
+                List<ServiceInstance<String>> permanentRegistrations = Lists.newArrayList();
+                permanentRegistrations.add(permanentReg);
+
+                Assert.assertEquals(discovery.queryForInstances("test"), testRegistrations);
+                Assert.assertEquals(discovery.queryForInstances("dynamic"), emptyList);
+                Assert.assertEquals(discovery.queryForInstances("static"), emptyList);
+                Assert.assertEquals(discovery.queryForInstances("permanent"), permanentRegistrations);
+
+                // Ensure Unregister works too.
+                discovery.unregisterService(permanentReg);
+                Assert.assertEquals(discovery.queryForInstances("permanent"), emptyList);
+            }
+            finally
+            {
+                Collections.reverse(closeables);
+                for (Closeable c : closeables)
+                {
+                    CloseableUtils.closeQuietly(c);
+                }
+            }
+
+
+        } finally
+        {
+            CloseableUtils.closeQuietly(server);
+        }
+    }
 }
