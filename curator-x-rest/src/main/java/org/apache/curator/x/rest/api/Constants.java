@@ -73,8 +73,12 @@ class Constants
 
     static NodeData toNodeData(ChildData c)
     {
+        if ( c == null )
+        {
+            return new NodeData();
+        }
         String payload = (c.getData() != null) ? new String(c.getData()) : "";
-        return new NodeData(c.getPath(), c.getStat(), payload);
+        return new NodeData(c.getPath(), c.getStat(), payload, true);
     }
 
     public static String newId()

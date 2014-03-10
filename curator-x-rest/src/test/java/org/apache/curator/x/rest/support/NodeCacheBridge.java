@@ -22,10 +22,10 @@ package org.apache.curator.x.rest.support;
 import com.google.common.base.Function;
 import com.sun.jersey.api.client.Client;
 import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.x.rest.api.NodeCacheResource;
 import org.apache.curator.x.rest.entities.NodeCacheSpec;
+import org.apache.curator.x.rest.entities.NodeData;
 import org.apache.curator.x.rest.entities.PathAndId;
 import org.apache.curator.x.rest.entities.Status;
 import org.apache.curator.x.rest.entities.StatusMessage;
@@ -36,13 +36,11 @@ import javax.ws.rs.core.MediaType;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class NodeCacheBridge implements Closeable, StatusListener
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final ListenerContainer<NodeCacheListener> listeners = new ListenerContainer<NodeCacheListener>();
-    private final AtomicReference<ChildData> data = new AtomicReference<ChildData>(null);
     private final Client restClient;
     private final SessionManager sessionManager;
     private final UriMaker uriMaker;
@@ -79,9 +77,9 @@ public class NodeCacheBridge implements Closeable, StatusListener
         return listeners;
     }
 
-    public ChildData getCurrentData()
+    public NodeData getCurrentData() throws Exception
     {
-        return data.get();
+        return restClient.resource(uriMaker.getMethodUri(NodeCacheResource.class, null)).path(id).type(MediaType.APPLICATION_JSON).get(NodeData.class);
     }
 
     @Override
@@ -91,8 +89,6 @@ public class NodeCacheBridge implements Closeable, StatusListener
         {
             if ( statusMessage.getType().equals("node-cache") && statusMessage.getSourceId().equals(id) )
             {
-                ChildData newData = (statusMessage.getMessage().length() > 0) ? new ChildData(path, null, statusMessage.getMessage().getBytes()) : null;
-                data.set(newData);
                 listeners.forEach(new Function<NodeCacheListener, Void>()
                 {
                     @Nullable
