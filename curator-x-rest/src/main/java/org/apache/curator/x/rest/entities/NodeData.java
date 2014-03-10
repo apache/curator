@@ -27,19 +27,17 @@ public class NodeData
     private String path;
     private Stat stat;
     private String data;
-    private boolean created;
 
     public NodeData()
     {
-        this("/", new Stat(), "", false);
+        this("/", new Stat(), "");
     }
 
-    public NodeData(String path, Stat stat, String data, boolean created)
+    public NodeData(String path, Stat stat, String data)
     {
         this.path = path;
         this.stat = stat;
         this.data = data;
-        this.created = created;
     }
 
     public String getPath()
@@ -70,15 +68,5 @@ public class NodeData
     public void setData(String data)
     {
         this.data = data;
-    }
-
-    public boolean isCreated()
-    {
-        return created;
-    }
-
-    public void setCreated(boolean created)
-    {
-        this.created = created;
     }
 }

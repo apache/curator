@@ -21,6 +21,7 @@ package org.apache.curator.x.rest.api;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.x.rest.CuratorRestContext;
 import org.apache.curator.x.rest.entities.NodeData;
+import org.apache.curator.x.rest.entities.OptionalNodeData;
 import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -71,14 +72,14 @@ class Constants
     {
     }
 
-    static NodeData toNodeData(ChildData c)
+    static OptionalNodeData toNodeData(ChildData c)
     {
         if ( c == null )
         {
-            return new NodeData();
+            return new OptionalNodeData(null);
         }
         String payload = (c.getData() != null) ? new String(c.getData()) : "";
-        return new NodeData(c.getPath(), c.getStat(), payload, true);
+        return new OptionalNodeData(new NodeData(c.getPath(), c.getStat(), payload));
     }
 
     public static String newId()

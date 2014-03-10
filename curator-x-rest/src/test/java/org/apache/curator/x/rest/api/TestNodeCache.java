@@ -60,25 +60,27 @@ public class TestNodeCache extends BaseClassForTests
                 }
             );
 
-        Assert.assertFalse(cache.getCurrentData().isCreated());
+        Assert.assertNull(cache.getCurrentData().getNodeData());
 
         createSpec.setPath("/test/node");
         createSpec.setData("a");
         restClient.resource(uriMaker.getMethodUri("create")).type(MediaType.APPLICATION_JSON).post(PathAndId.class, createSpec);
         Assert.assertTrue(timing.acquireSemaphore(semaphore));
-        Assert.assertEquals(cache.getCurrentData().getData(), "a");
+        Assert.assertNotNull(cache.getCurrentData().getNodeData());
+        Assert.assertEquals(cache.getCurrentData().getNodeData().getData(), "a");
 
         SetDataSpec setDataSpec = new SetDataSpec();
         setDataSpec.setPath("/test/node");
         setDataSpec.setData("b");
         restClient.resource(uriMaker.getMethodUri("setData")).type(MediaType.APPLICATION_JSON).post(setDataSpec);
         Assert.assertTrue(timing.acquireSemaphore(semaphore));
-        Assert.assertEquals(cache.getCurrentData().getData(), "b");
+        Assert.assertNotNull(cache.getCurrentData().getNodeData());
+        Assert.assertEquals(cache.getCurrentData().getNodeData().getData(), "b");
 
         DeleteSpec deleteSpec = new DeleteSpec();
         deleteSpec.setPath("/test/node");
         restClient.resource(uriMaker.getMethodUri("delete")).type(MediaType.APPLICATION_JSON).post(deleteSpec);
         Assert.assertTrue(timing.acquireSemaphore(semaphore));
-        Assert.assertFalse(cache.getCurrentData().isCreated());
+        Assert.assertNull(cache.getCurrentData().getNodeData());
     }
 }

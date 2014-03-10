@@ -53,12 +53,12 @@ h2. Recipe APIs
 |/curator/v1/recipes/semaphore/{lock-id}/{release-qty}|DELETE|n/a|n/a|Release the specified number of leases.|
 | *Node Cache* | | | | |
 |/curator/v1/recipes/node-cache|POST|NodeCacheSpec|Id|Start a NodeCache instance. NodeCache updates will be notified via status.|
-|/curator/v1/recipes/node-cache/{cache-id}|GET|n/a|NodeData|Stop and delete a node cache.|
+|/curator/v1/recipes/node-cache/{cache-id}|GET|n/a|OptionalNodeData|Get the current node value.|
 |/curator/v1/recipes/node-cache/{cache-id}|DELETE|n/a|n/a|Stop and delete a node cache.|
 | *Path Cache* | | | | |
 |/curator/v1/recipes/path-cache|POST|PathChildrenCacheSpec|Id|Start a PathChildrenCache instance. PathChildrenCache updates will be notified via status.|
 |/curator/v1/recipes/path-cache/{cache-id}|GET|n/a|array of NodeData|Return the current cached values.|
-|/curator/v1/recipes/path-cache/{cache-id}/{full-path}|GET|n/a|NodeData|Return the current cached value for the node at the specified full path.|
+|/curator/v1/recipes/path-cache/{cache-id}/{full-path}|GET|n/a|OptionalNodeData|Return the current cached value for the node at the specified full path.|
 |/curator/v1/recipes/path-cache/{cache-id}|DELETE|n/a|n/a|Stop and delete a path cache.|
 | *Persistent Ephemeral Node* | | | | |
 |/curator/v1/recipes/persistent-ephemeral-node|POST|PersistentEphemeralNodeSpec|Id|Start a PersistentEphemeralNode instance.|

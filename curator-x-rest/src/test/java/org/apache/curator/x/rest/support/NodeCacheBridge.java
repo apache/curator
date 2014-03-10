@@ -26,6 +26,7 @@ import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.x.rest.api.NodeCacheResource;
 import org.apache.curator.x.rest.entities.NodeCacheSpec;
 import org.apache.curator.x.rest.entities.NodeData;
+import org.apache.curator.x.rest.entities.OptionalNodeData;
 import org.apache.curator.x.rest.entities.PathAndId;
 import org.apache.curator.x.rest.entities.Status;
 import org.apache.curator.x.rest.entities.StatusMessage;
@@ -77,9 +78,9 @@ public class NodeCacheBridge implements Closeable, StatusListener
         return listeners;
     }
 
-    public NodeData getCurrentData() throws Exception
+    public OptionalNodeData getCurrentData() throws Exception
     {
-        return restClient.resource(uriMaker.getMethodUri(NodeCacheResource.class, null)).path(id).type(MediaType.APPLICATION_JSON).get(NodeData.class);
+        return restClient.resource(uriMaker.getMethodUri(NodeCacheResource.class, null)).path(id).type(MediaType.APPLICATION_JSON).get(OptionalNodeData.class);
     }
 
     @Override
