@@ -54,7 +54,7 @@ public class NodeCacheResource
     @Produces(MediaType.APPLICATION_JSON)
     public Response newCache(final NodeCacheSpec spec) throws Exception
     {
-        NodeCache cache = new NodeCache(context.getClient(), spec.getPath(), spec.isDataIsCompressed());
+        final NodeCache cache = new NodeCache(context.getClient(), spec.getPath(), spec.isDataIsCompressed());
         cache.start(spec.isBuildInitial());
 
         Closer<NodeCache> closer = new Closer<NodeCache>()
@@ -79,7 +79,8 @@ public class NodeCacheResource
             @Override
             public void nodeChanged() throws Exception
             {
-                context.getSession().pushMessage(new StatusMessage(Constants.NODE_CACHE, id, "", ""));
+                String data = (cache.getCurrentData() != null) ? new String(cache.getCurrentData().getData()) : "";
+                context.getSession().pushMessage(new StatusMessage(Constants.NODE_CACHE, id, data, ""));
             }
         };
         cache.getListenable().addListener(listener);

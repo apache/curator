@@ -28,7 +28,7 @@ public class ChildData implements Comparable<ChildData>
     private final Stat      stat;
     private final AtomicReference<byte[]>    data;
 
-    ChildData(String path, Stat stat, byte[] data)
+    public ChildData(String path, Stat stat, byte[] data)
     {
         this.path = path;
         this.stat = stat;
@@ -91,7 +91,7 @@ public class ChildData implements Comparable<ChildData>
     {
         int result = path != null ? path.hashCode() : 0;
         result = 31 * result + (stat != null ? stat.hashCode() : 0);
-        result = 31 * result + (data != null ? Arrays.hashCode(data.get()) : 0);
+        result = 31 * result + Arrays.hashCode(data.get());
         return result;
     }
 
