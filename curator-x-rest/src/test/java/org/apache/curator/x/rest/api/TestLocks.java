@@ -171,7 +171,7 @@ public class TestLocks extends BaseClassForTests
                 }
             }
         };
-        sessionManager.setStatusListener(statusListener);
+        sessionManager.addStatusListener(statusListener);
 
         final AtomicBoolean isFirst = new AtomicBoolean(true);
         ExecutorCompletionService<Object> service = new ExecutorCompletionService<Object>(Executors.newFixedThreadPool(2));

@@ -373,7 +373,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
     private void basic(Mode mode) throws Exception
     {
-        final int PARTICIPANT_QTY = 1;//0;
+        final int PARTICIPANT_QTY = 10;
 
         List<LeaderLatch> latches = Lists.newArrayList();
 

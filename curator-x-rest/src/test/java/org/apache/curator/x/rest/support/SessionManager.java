@@ -23,6 +23,7 @@ import com.google.common.base.Equivalence;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.jersey.api.client.Client;
 import org.apache.curator.x.rest.api.ClientResource;
@@ -36,6 +37,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -48,8 +50,7 @@ public class SessionManager implements Closeable
     private final Client restClient;
     private final Future<?> task;
     private final ConcurrentMap<InetSocketAddress, Entry> entries = Maps.newConcurrentMap();
-
-    private volatile StatusListener statusListener;
+    private final Set<StatusListener> statusListeners = Sets.newSetFromMap(Maps.<StatusListener, Boolean>newConcurrentMap());
 
     private static class Entry
     {
@@ -106,10 +107,14 @@ public class SessionManager implements Closeable
         task.cancel(true);
     }
 
-    public void setStatusListener(StatusListener statusListener)
+    public void addStatusListener(StatusListener statusListener)
     {
-        Preconditions.checkState(this.statusListener == null, "statusListener already set");
-        this.statusListener = statusListener;
+        statusListeners.add(statusListener);
+    }
+
+    public void removeStatusListener(StatusListener statusListener)
+    {
+        statusListeners.remove(statusListener);
     }
 
     private void processEntries()
@@ -132,9 +137,9 @@ public class SessionManager implements Closeable
                 List<StatusMessage> messages = status.getMessages();
                 if ( messages.size() > 0 )
                 {
-                    if ( statusListener != null )
+                    for ( StatusListener listener : statusListeners )
                     {
-                        statusListener.statusUpdate(status.getMessages());
+                        listener.statusUpdate(status.getMessages());
                     }
                     if ( entry.listener != null )
                     {
@@ -144,9 +149,9 @@ public class SessionManager implements Closeable
             }
             else
             {
-                if ( statusListener != null )
+                for ( StatusListener listener : statusListeners )
                 {
-                    statusListener.errorState(status);
+                    listener.errorState(status);
                 }
                 if ( entry.listener != null )
                 {
