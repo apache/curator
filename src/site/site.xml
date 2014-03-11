@@ -94,7 +94,7 @@
         </menu>
 
         <menu name="Community" inherit="top">
-            <item name="Submitting Patches" href="https://cwiki.apache.org/confluence/display/CURATOR/Submitting+Patches"/>
+            <item name="Submitting Pull Requests" href="https://cwiki.apache.org/confluence/display/CURATOR/Submitting+Pull+Requests"/>
             <item name="History" href="https://cwiki.apache.org/confluence/display/CURATOR/Curator's+History"/>
             <item name="Third Party Articles" href="https://cwiki.apache.org/confluence/display/CURATOR/Third+Party+Articles"/>
             <item name="Third Party Contributions" href="https://cwiki.apache.org/confluence/display/CURATOR/Contributions+to+Curator"/>
