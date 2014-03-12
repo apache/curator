@@ -127,7 +127,7 @@ public class PathChildrenCacheResource
     public Response getCacheDataForPath(@PathParam("cache-id") String cacheId, @PathParam("path") String path) throws Exception
     {
         PathChildrenCache cache = Constants.getThing(context.getSession(), cacheId, PathChildrenCache.class);
-        ChildData currentData = cache.getCurrentData(path);
+        ChildData currentData = cache.getCurrentData("/" + path);
         if ( currentData == null )
         {
             return Response.status(Response.Status.NOT_FOUND).build();

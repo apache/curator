@@ -19,17 +19,16 @@
 
 package org.apache.curator.x.rest.api;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.x.rest.entities.CreateSpec;
+import org.apache.curator.x.rest.entities.DeleteSpec;
+import org.apache.curator.x.rest.entities.PathAndId;
+import org.apache.curator.x.rest.entities.SetDataSpec;
 import org.apache.curator.x.rest.support.BaseClassForTests;
 import org.apache.curator.x.rest.support.PathChildrenCacheBridge;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import javax.ws.rs.core.MediaType;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -39,43 +38,51 @@ public class TestPathCache extends BaseClassForTests
     @Test
     public void testBasics() throws Exception
     {
-/*
-        client.create().forPath("/test");
+        CreateSpec createSpec = new CreateSpec();
 
-        final BlockingQueue<PathChildrenCacheEvent.Type> events = new LinkedBlockingQueue<PathChildrenCacheEvent.Type>();
+        createSpec.setPath("/test");
+        restClient.resource(uriMaker.getMethodUri("create")).type(MediaType.APPLICATION_JSON).post(PathAndId.class, createSpec);
+
+        final BlockingQueue<String> events = new LinkedBlockingQueue<String>();
         PathChildrenCacheBridge cache = new PathChildrenCacheBridge(restClient, sessionManager, uriMaker, "/test", true, false);
         try
         {
             cache.getListenable().addListener
-                (
-                    new PathChildrenCacheListener()
+            (
+                new PathChildrenCacheBridge.Listener()
+                {
+                    @Override
+                    public void childEvent(String event, String path) throws Exception
                     {
-                        @Override
-                        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                        if ( path.equals("/test/one") )
                         {
-                            if ( event.getData().getPath().equals("/test/one") )
-                            {
-                                events.offer(event.getType());
-                            }
+                            events.offer(event);
                         }
                     }
-                );
+                }
+            );
             cache.start();
 
-            client.create().forPath("/test/one", "hey there".getBytes());
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            createSpec.setPath("/test/one");
+            createSpec.setData("hey there");
+            restClient.resource(uriMaker.getMethodUri("create")).type(MediaType.APPLICATION_JSON).post(PathAndId.class, createSpec);
+            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), "child_added");
 
-            client.setData().forPath("/test/one", "sup!".getBytes());
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
-            Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
+            SetDataSpec setDataSpec = new SetDataSpec();
+            setDataSpec.setPath("/test/one");
+            setDataSpec.setData("sup!");
+            restClient.resource(uriMaker.getMethodUri("setData")).type(MediaType.APPLICATION_JSON).post(setDataSpec);
+            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), "child_updated");
+            Assert.assertEquals(cache.getCurrentData("/test/one").getNodeData().getData(), "sup!");
 
-            client.delete().forPath("/test/one");
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+            DeleteSpec deleteSpec = new DeleteSpec();
+            deleteSpec.setPath("/test/one");
+            restClient.resource(uriMaker.getMethodUri("delete")).type(MediaType.APPLICATION_JSON).post(deleteSpec);
+            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), "child_removed");
         }
         finally
         {
             CloseableUtils.closeQuietly(cache);
         }
-*/
     }
 }
