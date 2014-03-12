@@ -5,17 +5,17 @@ h1. Entity Descriptions
 Here are the entity descriptions for the entities used in the APIs:
 
 ||Field||Type||Description||
-|*Status*| | |
+| *Status*| | |
 |state|string|This instance's Curator connection state. One of: "connected", "suspended", or "lost". If the state is other than "connected" you must assume that any open locks and/or watchers are no longer valid.|
 |messages|array of StatusMessage|Any pending messages from this instance.|
 | | | |
-|*StatusMessage*| | |
+| *StatusMessage*| | |
 |type|string|The status message type. See the [[Managing Status|client.html]] section for details.|
 |message|string|Type-dependent message|
 |details|string|Type-dependent details|
 |sourceId|string|Type-dependent sourceId|
 | | | |
-|*GetChildrenSpec*| | |
+| *GetChildrenSpec*| | |
 |path|string|The ZK path|
 |async|boolean|If true, perform asynchronously|
 |asyncId|string|for async, a user-defined ID to return in the status message|
@@ -23,7 +23,7 @@ Here are the entity descriptions for the entities used in the APIs:
 |watched|boolean|if true, set a watch|
 |watchId|string|if watched, a user-defined ID to return in the status when the watch triggers|
 | | | |
-|*CreateSpec*| | |
+| *CreateSpec*| | |
 |path|string|The ZK path|
 |data|string|The data to store in the node|
 |mode|string|The create mode. One of: "persistent", "persistent\_sequential", "ephemeral", or "ephemeral\_sequential"|

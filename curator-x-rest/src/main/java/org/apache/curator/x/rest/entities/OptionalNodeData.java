@@ -19,7 +19,6 @@
 
 package org.apache.curator.x.rest.entities;
 
-import org.apache.zookeeper.data.Stat;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement

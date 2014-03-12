@@ -25,7 +25,6 @@ import org.apache.curator.x.rest.entities.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;

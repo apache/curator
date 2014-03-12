@@ -19,7 +19,6 @@
 
 package org.apache.curator.x.rest.dropwizard;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.setup.Bootstrap;

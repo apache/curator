@@ -24,6 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.x.rest.CuratorRestContext;
 import org.apache.curator.x.rest.entities.CreateSpec;
+import org.apache.curator.x.rest.entities.DataAndStat;
 import org.apache.curator.x.rest.entities.DeleteSpec;
 import org.apache.curator.x.rest.entities.ExistsSpec;
 import org.apache.curator.x.rest.entities.GetChildrenSpec;
@@ -33,7 +34,6 @@ import org.apache.curator.x.rest.entities.SetDataSpec;
 import org.apache.curator.x.rest.entities.Status;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
-import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.ws.rs.Consumes;
@@ -282,11 +282,7 @@ public class ClientResource
         {
             result = new String((byte[])bytes);
         }
-
-        ObjectNode node = context.getMapper().createObjectNode();
-        node.put("data", result);
-        node.putPOJO("stat", stat);
-        return Response.ok(context.getWriter().writeValueAsString(node)).build();
+        return Response.ok(new DataAndStat(result, stat)).build();
     }
 
     @POST

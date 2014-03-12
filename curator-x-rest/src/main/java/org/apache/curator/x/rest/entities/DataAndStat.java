@@ -16,56 +16,47 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.rest.entities;
 
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class NodeCacheSpec
+public class DataAndStat
 {
-    private String path;
-    private boolean dataIsCompressed;
-    private boolean buildInitial;
+    private String data;
+    private Stat stat;
 
-    public NodeCacheSpec()
+    public DataAndStat()
     {
-        this("/", false, false);
+        this("", new Stat());
     }
 
-    public NodeCacheSpec(String path, boolean dataIsCompressed, boolean buildInitial)
+    public DataAndStat(String data, Stat stat)
     {
-        this.path = path;
-        this.dataIsCompressed = dataIsCompressed;
-        this.buildInitial = buildInitial;
+        this.data = data;
+        this.stat = stat;
     }
 
-    public String getPath()
+    public String getData()
     {
-        return path;
+        return data;
     }
 
-    public void setPath(String path)
+    public void setData(String data)
     {
-        this.path = path;
+        this.data = data;
     }
 
-    public boolean isDataIsCompressed()
+    public Stat getStat()
     {
-        return dataIsCompressed;
+        return stat;
     }
 
-    public void setDataIsCompressed(boolean dataIsCompressed)
+    public void setStat(Stat stat)
     {
-        this.dataIsCompressed = dataIsCompressed;
-    }
-
-    public boolean isBuildInitial()
-    {
-        return buildInitial;
-    }
-
-    public void setBuildInitial(boolean buildInitial)
-    {
-        this.buildInitial = buildInitial;
+        this.stat = stat;
     }
 }

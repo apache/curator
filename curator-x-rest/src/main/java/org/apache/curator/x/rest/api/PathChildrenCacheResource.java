@@ -128,11 +128,6 @@ public class PathChildrenCacheResource
     {
         PathChildrenCache cache = Constants.getThing(context.getSession(), cacheId, PathChildrenCache.class);
         ChildData currentData = cache.getCurrentData("/" + path);
-        if ( currentData == null )
-        {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-
         return Response.ok(Constants.toNodeData(currentData)).build();
     }
 }
