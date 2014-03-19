@@ -148,7 +148,7 @@ public class CloseableExecutorService implements Closeable
         {
             Future<?> future = iterator.next();
             iterator.remove();
-            if ( !future.cancel(true) )
+            if ( !future.isDone() && !future.isCancelled() && !future.cancel(true) )
             {
                 log.warn("Could not cancel " + future);
             }
