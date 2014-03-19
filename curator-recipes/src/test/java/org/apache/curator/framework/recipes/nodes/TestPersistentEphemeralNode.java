@@ -20,7 +20,6 @@ package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -30,7 +29,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.DebugUtils;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -72,10 +71,57 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
 
     @Test
+    public void testRetriesExpireAndReconnect() throws Exception
+    {
+        Timing timing = new Timing();
+        PersistentEphemeralNode node = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
+            node.start();
+            Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+
+            final CountDownLatch lostLatch = new CountDownLatch(1);
+            ConnectionStateListener listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.LOST )
+                    {
+                        lostLatch.countDown();
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
+
+            server.stop();
+
+            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            CountDownLatch recreateLatch = new CountDownLatch(1);
+            node.initialCreateLatch.set(recreateLatch);
+
+            TimeUnit.MILLISECONDS.sleep(2 * timing.session());  // make sure session expires
+
+            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            timing.sleepABit();
+            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            timing.sleepABit();
+            Assert.assertTrue(timing.awaitLatch(recreateLatch));
+            Assert.assertNotNull(client.checkExists().forPath("/abc/node"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(node);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testListenersReconnectedIsFast() throws Exception
     {
-        System.setProperty(DebugUtils.PROPERTY_LOG_EVENTS, "true");
-
         server.close();
 
         Timing timing = new Timing();

@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
@@ -50,7 +51,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class PersistentEphemeralNode implements Closeable
 {
-    private final AtomicReference<CountDownLatch> initialCreateLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+    @VisibleForTesting
+    final AtomicReference<CountDownLatch> initialCreateLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final CreateModable<ACLBackgroundPathAndBytesable<String>> createMethod;
