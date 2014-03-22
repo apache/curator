@@ -97,8 +97,6 @@ public class TestBackgroundStates extends BaseClassForTests
     @Test
     public void testConnectionStateListener() throws Exception
     {
-        System.setProperty(DebugUtils.PROPERTY_LOG_EVENTS, "true");
-
         server.close();
 
         Timing timing = new Timing();

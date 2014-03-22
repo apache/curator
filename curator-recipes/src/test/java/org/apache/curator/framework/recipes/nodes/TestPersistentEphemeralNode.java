@@ -74,8 +74,6 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     @Test
     public void testListenersReconnectedIsFast() throws Exception
     {
-        System.setProperty(DebugUtils.PROPERTY_LOG_EVENTS, "true");
-
         server.close();
 
         Timing timing = new Timing();
