@@ -22,7 +22,7 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.Timing;
-import junit.framework.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;

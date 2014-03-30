@@ -18,8 +18,6 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
-import org.apache.curator.utils.CloseableUtils;
-import junit.framework.Assert;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -28,8 +26,10 @@ import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Queue;
@@ -103,7 +103,6 @@ public class TestReaper extends BaseClassForTests
 
         Timing                  timing = new Timing();
         Reaper                  reaper = null;
-        Future<Void>            watcher = null;
         CuratorFramework        client = makeClient(timing, null);
         try
         {
@@ -176,10 +175,6 @@ public class TestReaper extends BaseClassForTests
         }
         finally
         {
-            if ( watcher != null )
-            {
-                watcher.cancel(true);
-            }
             CloseableUtils.closeQuietly(reaper);
             CloseableUtils.closeQuietly(client);
         }
@@ -423,7 +418,7 @@ public class TestReaper extends BaseClassForTests
             timing.sleepABit();
 
             Stat stat = client.checkExists().forPath("/a/b");
-            Assert.assertNull("Child qty: " + ((stat != null) ? stat.getNumChildren() : 0), stat);
+            Assert.assertNull(stat, "Child qty: " + ((stat != null) ? stat.getNumChildren() : 0));
         }
         finally
         {

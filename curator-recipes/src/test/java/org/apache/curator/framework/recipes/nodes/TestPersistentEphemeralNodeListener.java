@@ -19,8 +19,6 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
-import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -29,10 +27,9 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -88,7 +85,7 @@ public class TestPersistentEphemeralNodeListener extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 }

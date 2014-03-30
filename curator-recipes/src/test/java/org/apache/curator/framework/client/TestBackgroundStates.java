@@ -20,7 +20,6 @@
 package org.apache.curator.framework.client;
 
 import com.google.common.collect.Queues;
-import com.google.common.io.Closeables;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -30,7 +29,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.DebugUtils;
+import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.BlockingQueue;
@@ -90,7 +89,7 @@ public class TestBackgroundStates extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -133,7 +132,7 @@ public class TestBackgroundStates extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
