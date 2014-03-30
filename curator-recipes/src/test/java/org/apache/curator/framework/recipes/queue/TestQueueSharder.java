@@ -117,7 +117,7 @@ public class TestQueueSharder extends BaseClassForTests
             {
                 sharder1.getQueue().put(Integer.toString(i));
             }
-            timing.forWaiting().sleepABit();
+            timing.sleepABit();
 
             Assert.assertTrue((sharder1.getShardQty() > 1) || (sharder2.getShardQty() > 1));
             timing.forWaiting().sleepABit();
