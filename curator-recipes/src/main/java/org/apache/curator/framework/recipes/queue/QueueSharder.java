@@ -242,7 +242,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     {
         try
         {
-            boolean             addAQueue = false;
+            boolean             addAQueueIfLeader = false;
             int                 size = 0;
             List<String>        children = client.getChildren().forPath(queuePath);
             for ( String child : children )
@@ -253,12 +253,9 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
                 Stat    stat = client.checkExists().forPath(queuePath);
                 if ( stat.getNumChildren() >= policies.getNewQueueThreshold() )
                 {
-                    if ( preferredQueues.contains(queuePath) )  // otherwise a queue has already been added for this
-                    {
-                        size = stat.getNumChildren();
-                        addAQueue = true;
-                        preferredQueues.remove(queuePath);
-                    }
+                    size = stat.getNumChildren();
+                    addAQueueIfLeader = true;
+                    preferredQueues.remove(queuePath);
                 }
                 else if ( stat.getNumChildren() <= (policies.getNewQueueThreshold() / 2) )
                 {
@@ -266,7 +263,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
                 }
             }
 
-            if ( addAQueue && leaderLatch.hasLeadership() )
+            if ( addAQueueIfLeader && leaderLatch.hasLeadership() )
             {
                 if ( queues.size() < policies.getMaxQueues() )
                 {
