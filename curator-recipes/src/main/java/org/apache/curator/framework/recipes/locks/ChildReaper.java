@@ -66,7 +66,7 @@ public class ChildReaper implements Closeable
      */
     public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode)
     {
-        this(client, path, mode, newExecutorService(), Reaper.DEFAULT_REAPING_THRESHOLD_MS);
+        this(client, path, mode, newExecutorService(), Reaper.DEFAULT_REAPING_THRESHOLD_MS, null);
     }
 
     /**
@@ -77,7 +77,7 @@ public class ChildReaper implements Closeable
      */
     public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, int reapingThresholdMs)
     {
-        this(client, path, mode, newExecutorService(), reapingThresholdMs);
+        this(client, path, mode, newExecutorService(), reapingThresholdMs, null);
     }
 
     /**
@@ -89,12 +89,25 @@ public class ChildReaper implements Closeable
      */
     public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs)
     {
+        this(client, path, mode, executor, reapingThresholdMs, null);
+    }
+
+    /**
+     * @param client the client
+     * @param path path to reap children from
+     * @param executor executor to use for background tasks
+     * @param reapingThresholdMs threshold in milliseconds that determines that a path can be deleted
+     * @param mode reaping mode
+     * @param leaderPath if not null, uses a leader selection so that only 1 reaper is active in the cluster
+     */
+    public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath)
+    {
         this.client = client;
         this.path = path;
         this.mode = mode;
         this.executor = new CloseableScheduledExecutorService(executor);
         this.reapingThresholdMs = reapingThresholdMs;
-        this.reaper = new Reaper(client, executor, reapingThresholdMs);
+        this.reaper = new Reaper(client, executor, reapingThresholdMs, leaderPath);
     }
 
     /**
