@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework.recipes.locks;
 
-import junit.framework.Assert;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -31,6 +30,7 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Queue;
@@ -476,7 +476,7 @@ public class TestReaper extends BaseClassForTests
             timing.sleepABit();
 
             Stat stat = client.checkExists().forPath("/a/b");
-            Assert.assertNull("Child qty: " + ((stat != null) ? stat.getNumChildren() : 0), stat);
+            Assert.assertNull(stat, "Child qty: " + ((stat != null) ? stat.getNumChildren() : 0));
         }
         finally
         {
