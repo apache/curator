@@ -69,7 +69,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * can call acquire re-entrantly. Each call to acquire must be balanced by a call
      * to {@link #release()}
      *
-     * @throws Exception ZK errors, interruptions, another thread owns the lock
+     * @throws Exception ZK errors, connection interruptions
      */
     @Override
     public void acquire() throws Exception
@@ -88,7 +88,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @param time time to wait
      * @param unit time unit
      * @return true if the mutex was acquired, false if not
-     * @throws Exception ZK errors, interruptions, another thread owns the lock
+     * @throws Exception ZK errors, connection interruptions
      */
     @Override
     public boolean acquire(long time, TimeUnit unit) throws Exception
