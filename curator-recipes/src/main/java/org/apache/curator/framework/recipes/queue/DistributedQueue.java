@@ -431,6 +431,11 @@ public class DistributedQueue<T> implements QueueBase<T>
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
+                if ( event.getResultCode() != KeeperException.Code.OK.intValue() )
+                {
+                    return;
+                }
+
                 if ( event.getType() == CuratorEventType.CREATE )
                 {
                     synchronized(putCount)

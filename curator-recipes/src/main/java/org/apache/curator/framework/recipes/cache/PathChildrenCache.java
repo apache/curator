@@ -473,7 +473,10 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                processChildren(event.getChildren(), mode);
+                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
+                    processChildren(event.getChildren(), mode);
+                }
             }
         };
 
