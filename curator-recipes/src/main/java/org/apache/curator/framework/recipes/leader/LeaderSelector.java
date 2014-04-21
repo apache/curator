@@ -224,11 +224,15 @@ public class LeaderSelector implements Closeable
      *
      * @return true if re-queue is successful
      */
-    public synchronized boolean requeue()
+    public boolean requeue()
     {
         Preconditions.checkState(state.get() == State.STARTED, "close() has already been called");
+        return internalRequeue();
+    }
 
-        if ( !isQueued )
+    public synchronized boolean internalRequeue()
+    {
+        if ( !isQueued && (state.get() == State.STARTED) )
         {
             isQueued = true;
             Future<Void> task = executorService.submit(new Callable<Void>()
@@ -243,6 +247,10 @@ public class LeaderSelector implements Closeable
                     finally
                     {
                         clearIsQueued();
+                        if ( autoRequeue.get() )
+                        {
+                            internalRequeue();
+                        }
                     }
                     return null;
                 }
@@ -393,6 +401,7 @@ public class LeaderSelector implements Closeable
             catch ( InterruptedException e )
             {
                 Thread.currentThread().interrupt();
+                throw e;
             }
             catch ( Throwable e )
             {
@@ -406,6 +415,7 @@ public class LeaderSelector implements Closeable
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
+            throw e;
         }
         catch ( Exception e )
         {
@@ -428,36 +438,27 @@ public class LeaderSelector implements Closeable
 
     private void doWorkLoop() throws Exception
     {
-        do
+        KeeperException exception = null;
+        try
         {
-            KeeperException exception = null;
-            try
-            {
-                doWork();
-            }
-            catch ( KeeperException.ConnectionLossException e )
-            {
-                exception = e;
-            }
-            catch ( KeeperException.SessionExpiredException e )
-            {
-                exception = e;
-            }
-            catch ( InterruptedException ignore )
-            {
-                Future<?> task = ourTask.get();
-                if ( (task == null) || !task.isCancelled() )    // if interruptLeadership() was called, not re-set the interrupt state of the thread
-                {
-                    Thread.currentThread().interrupt();
-                }
-                break;
-            }
-            if ( (exception != null) && !autoRequeue.get() )   // autoRequeue should ignore connection loss or session expired and just keep trying
-            {
-                throw exception;
-            }
+            doWork();
         }
-        while ( autoRequeue.get() && (state.get() == State.STARTED) && !Thread.currentThread().isInterrupted() );
+        catch ( KeeperException.ConnectionLossException e )
+        {
+            exception = e;
+        }
+        catch ( KeeperException.SessionExpiredException e )
+        {
+            exception = e;
+        }
+        catch ( InterruptedException ignore )
+        {
+            Thread.currentThread().interrupt();
+        }
+        if ( (exception != null) && !autoRequeue.get() )   // autoRequeue should ignore connection loss or session expired and just keep trying
+        {
+            throw exception;
+        }
     }
 
     private synchronized void clearIsQueued()
