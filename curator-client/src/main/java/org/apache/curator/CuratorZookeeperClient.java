@@ -110,6 +110,8 @@ public class CuratorZookeeperClient implements Closeable
      */
     public ZooKeeper getZooKeeper() throws Exception
     {
+        Preconditions.checkState(started.get(), "Client is not started");
+
         return state.getZooKeeper();
     }
 

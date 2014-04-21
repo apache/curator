@@ -24,6 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import java.io.Closeable;
 import java.io.IOException;
@@ -56,7 +57,10 @@ class ChildrenCache implements Closeable
         @Override
         public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
         {
-            setNewChildren(event.getChildren());
+            if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+            {
+                setNewChildren(event.getChildren());
+            }
         }
     };
 

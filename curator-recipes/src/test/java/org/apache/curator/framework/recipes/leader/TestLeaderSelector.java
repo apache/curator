@@ -371,6 +371,107 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
+    /**
+     * This is similar to TestLeaderSelector.testKillSessionThenCloseShouldElectNewLeader
+     * The differences are:
+     * it restarts the TestingServer instead of killing the session
+     * it uses autoRequeue instead of explicitly calling requeue
+     */
+    @Test
+    public void testKillServerThenCloseShouldElectNewLeader() throws Exception
+    {
+        final Timing timing = new Timing();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final Semaphore semaphore = new Semaphore(0);
+            final CountDownLatch interruptedLatch = new CountDownLatch(1);
+            final AtomicInteger leaderCount = new AtomicInteger(0);
+            LeaderSelectorListener listener = new LeaderSelectorListenerAdapter()
+            {
+                @Override
+                public void takeLeadership(CuratorFramework client) throws Exception
+                {
+                    leaderCount.incrementAndGet();
+                    try
+                    {
+                        semaphore.release();
+                        try
+                        {
+                            Thread.currentThread().join();
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
+                            interruptedLatch.countDown();
+                        }
+                    }
+                    finally
+                    {
+                        leaderCount.decrementAndGet();
+                    }
+                }
+            };
+            LeaderSelector leaderSelector1 = new LeaderSelector(client, PATH_NAME, listener);
+            LeaderSelector leaderSelector2 = new LeaderSelector(client, PATH_NAME, listener);
+
+            boolean leaderSelector1Closed = false;
+            boolean leaderSelector2Closed = false;
+
+            leaderSelector1.autoRequeue();
+            leaderSelector2.autoRequeue();
+
+            leaderSelector1.start();
+            leaderSelector2.start();
+
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+
+            int port = server.getPort();
+            server.stop();
+            timing.sleepABit();
+            server = new TestingServer(port);
+            Assert.assertTrue(timing.awaitLatch(interruptedLatch));
+            timing.sleepABit();
+
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            Assert.assertEquals(leaderCount.get(), 1);
+
+            if ( leaderSelector1.hasLeadership() )
+            {
+                leaderSelector1.close();
+                leaderSelector1Closed = true;
+            }
+            else if ( leaderSelector2.hasLeadership() )
+            {
+                leaderSelector2.close();
+                leaderSelector2Closed = true;
+            }
+            else
+            {
+                fail("No leaderselector has leadership!");
+            }
+
+            // Verify that the other leader took over leadership.
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            Assert.assertEquals(leaderCount.get(), 1);
+
+            if ( !leaderSelector1Closed )
+            {
+                leaderSelector1.close();
+            }
+            if ( !leaderSelector2Closed )
+            {
+                leaderSelector2.close();
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     @Test
     public void testClosing() throws Exception
     {

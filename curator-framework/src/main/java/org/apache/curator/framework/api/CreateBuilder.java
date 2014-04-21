@@ -33,9 +33,9 @@ public interface CreateBuilder extends
 
     /**
      * @deprecated this has been generalized to support all create modes. Instead, use:
-     * <code><pre>
+     * <pre>
      *     client.create().withProtection().withMode(CreateMode.PERSISTENT_SEQUENTIAL)...
-     * </pre></code>
+     * </pre>
      * @return this
      */
     public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();

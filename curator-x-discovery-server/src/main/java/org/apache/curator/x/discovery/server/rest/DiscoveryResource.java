@@ -56,7 +56,7 @@ import java.util.List;
  * Here's a version that has no payload (i.e.
  * a Void payload):
  * </p>
- * <code><pre>
+ * <pre>
  * &#64;Path("/")
  * public class MyResource extends DiscoveryResource&lt;Void&gt; {
  *     public MyResource(@Context ContextResolver&lt;DiscoveryContext&lt;Void&gt;&gt; resolver) {
@@ -64,7 +64,7 @@ import java.util.List;
  *         super(resolver.getContext(DiscoveryContext.class));
  *     }
  * }
- * </pre></code>
+ * </pre>
  */
 public abstract class DiscoveryResource<T>
 {

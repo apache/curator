@@ -92,7 +92,7 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
 
     /**
      * Add an item into the queue. Adding is done in the background - thus, this method will
-     * return quickly.<br/><br/>
+     * return quickly.<br><br>
      * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
      * block until there is available space in the queue.
      *
@@ -126,7 +126,7 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
 
     /**
      * Add a set of items with the same priority into the queue. Adding is done in the background - thus, this method will
-     * return quickly.<br/><br/>
+     * return quickly.<br><br>
      * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
      * block until there is available space in the queue.
      *

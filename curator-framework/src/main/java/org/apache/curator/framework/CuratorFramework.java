@@ -74,7 +74,7 @@ public interface CuratorFramework extends Closeable
 
     /**
      * Start an exists builder
-     * <p/>
+     * <p>
      * The builder will return a Stat object as if org.apache.zookeeper.ZooKeeper.exists() were called.  Thus, a null
      * means that it does not exist and an actual Stat object means it does exist.
      *

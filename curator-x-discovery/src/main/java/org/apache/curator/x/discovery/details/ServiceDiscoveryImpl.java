@@ -206,7 +206,6 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 
     /**
      * Allocate a new builder. {@link ServiceProviderBuilder#providerStrategy} is set to {@link RoundRobinStrategy}
-     * and {@link ServiceProviderBuilder#refreshPaddingMs} is set to 1 second.
      *
      * @return the builder
      */

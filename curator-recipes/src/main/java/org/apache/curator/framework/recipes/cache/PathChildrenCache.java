@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
  * will watch the ZK path, respond to update/create/delete events, pull down the data, etc. You can
  * register a listener that will get notified when changes occur.</p>
- * <p/>
+ * <p></p>
  * <p><b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must
  * be prepared for false-positives and false-negatives. Additionally, always use the version number
  * when updating data to avoid overwriting another process' change.</p>
@@ -473,7 +473,10 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                processChildren(event.getChildren(), mode);
+                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
+                    processChildren(event.getChildren(), mode);
+                }
             }
         };
 
@@ -766,11 +769,11 @@ public class PathChildrenCache implements Closeable
 
     /**
      * Submits a runnable to the executor.
-     * <p/>
+     * <p>
      * This method is synchronized because it has to check state about whether this instance is still open.  Without this check
      * there is a race condition with the dataWatchers that get set.  Even after this object is closed() it can still be
      * called by those watchers, because the close() method cannot actually disable the watcher.
-     * <p/>
+     * <p>
      * The synchronization overhead should be minimal if non-existant as this is generally only called from the
      * ZK client thread and will only contend if close() is called in parallel with an update, and that's the exact state
      * we want to protect from.

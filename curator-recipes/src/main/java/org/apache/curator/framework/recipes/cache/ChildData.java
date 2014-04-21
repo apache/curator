@@ -28,7 +28,7 @@ public class ChildData implements Comparable<ChildData>
     private final Stat      stat;
     private final AtomicReference<byte[]>    data;
 
-    ChildData(String path, Stat stat, byte[] data)
+    public ChildData(String path, Stat stat, byte[] data)
     {
         this.path = path;
         this.stat = stat;
@@ -36,7 +36,7 @@ public class ChildData implements Comparable<ChildData>
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      *
      * Note: this class has a natural ordering that is inconsistent with equals.
      */

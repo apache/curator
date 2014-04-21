@@ -33,9 +33,9 @@ public class CuratorTransactionResult
 
     /**
      * Utility that can be passed to Google Guava to find a particular result. E.g.
-     * <code><pre>
+     * <pre>
      * Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, path))
-     * </pre></code>
+     * </pre>
      *
      * @param type operation type
      * @param forPath path
