@@ -24,12 +24,12 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>2.4.2-SNAPSHOT</version>
+        <version>2.4.2</version>
     </parent>
 
     <groupId>org.apache.curator</groupId>
     <artifactId>curator-recipes</artifactId>
-    <version>2.4.2-SNAPSHOT</version>
+    <version>2.4.2</version>
     <packaging>bundle</packaging>
 
     <name>Curator Recipes</name>
