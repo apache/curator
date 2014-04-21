@@ -54,7 +54,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * be assigned leader until it releases leadership at which time another one from the group will
  * be chosen.
  * </p>
- * <p/>
  * <p>
  * Note that this class uses an underlying {@link InterProcessMutex} and as a result leader
  * election is "fair" - each user will become leader in the order originally requested
@@ -202,7 +201,7 @@ public class LeaderSelector implements Closeable
 
     /**
      * Attempt leadership. This attempt is done in the background - i.e. this method returns
-     * immediately.<br/><br/>
+     * immediately.<br><br>
      * <b>IMPORTANT: </b> previous versions allowed this method to be called multiple times. This
      * is no longer supported. Use {@link #requeue()} for this purpose.
      */
@@ -278,7 +277,7 @@ public class LeaderSelector implements Closeable
      * <p>
      * Returns the set of current participants in the leader selection
      * </p>
-     * <p/>
+     * <p>
      * <p>
      * <B>NOTE</B> - this method polls the ZK server. Therefore it can possibly
      * return a value that does not match {@link #hasLeadership()} as hasLeadership
@@ -323,7 +322,7 @@ public class LeaderSelector implements Closeable
      * Return the id for the current leader. If for some reason there is no
      * current leader, a dummy participant is returned.
      * </p>
-     * <p/>
+     * <p>
      * <p>
      * <B>NOTE</B> - this method polls the ZK server. Therefore it can possibly
      * return a value that does not match {@link #hasLeadership()} as hasLeadership

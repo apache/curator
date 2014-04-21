@@ -45,18 +45,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>
  *     Here's an example:
+ * </p>
  *     <ul>
  *         <li>You create an ephemeral/sequential node as a kind of lock/marker</li>
  *         <li>You perform some other operations</li>
  *         <li>The session fails for some reason</li>
- *         <li>You attempt to create a node assuming that the lock/marker still exists</li>
+ *         <li>You attempt to create a node assuming that the lock/marker still exists
  *         <ul>
  *             <li>Curator will notice the session failure and try to reconnect</li>
  *             <li>In most cases, the reconnect will succeed and, thus, the node creation will succeed
  *             even though the ephemeral node will have been deleted by ZooKeeper.</li>
  *         </ul>
+ *         </li>
  *     </ul>
- * </p>
  *
  * <p>
  *     The SessionFailRetryLoop prevents this type of scenario. When a session failure is detected,
@@ -65,8 +66,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *     set of operations or fail (depending on {@link SessionFailRetryLoop.Mode})
  * </p>
  *
- * Canonical usage:<br/>
- * <code><pre>
+ * Canonical usage:<br>
+ * <pre>
  * SessionFailRetryLoop    retryLoop = client.newSessionFailRetryLoop(mode);
  * retryLoop.start();
  * try
@@ -87,7 +88,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {
  *     retryLoop.close();
  * }
- * </pre></code>
+ * </pre>
  */
 public class SessionFailRetryLoop implements Closeable
 {

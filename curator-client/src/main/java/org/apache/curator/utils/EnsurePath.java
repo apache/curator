@@ -29,16 +29,15 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Utility to ensure that a particular path is created.
  * </p>
- * <p/>
  * <p>
  * The first time it is used, a synchronized call to {@link ZKPaths#mkdirs(ZooKeeper, String)} is made to
  * ensure that the entire path has been created (with an empty byte array if needed). Subsequent
  * calls with the instance are un-synchronized NOPs.
  * </p>
- * <p/>
  * <p>
- * Usage:<br/>
- * <code><pre>
+ * Usage:<br>
+ * </p>
+ * <pre>
  *         EnsurePath       ensurePath = new EnsurePath(aFullPathToEnsure);
  *         ...
  *         String           nodePath = aFullPathToEnsure + "/foo";
@@ -47,8 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *         ...
  *         ensurePath.ensure(zk);   // subsequent times are NOPs
  *         zk.create(nodePath, ...);
- *     </pre></code>
- * </p>
+ * </pre>
  */
 public class EnsurePath
 {

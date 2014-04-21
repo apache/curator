@@ -28,21 +28,23 @@ import org.apache.zookeeper.ZooKeeper;
  *
  * <p>
  *     The general form for this interface is:
- *     <code><pre>
+ * </p>
+ *     <pre>
  *         curator.inTransaction().operation().arguments().forPath(...).
  *             and().more-operations.
  *             and().commit();
- *     </pre></code>
+ *     </pre>
  *
+ * <p>
  *     Here's an example that creates two nodes in a transaction
- *     <code><pre>
+ * </p>
+ *     <pre>
  *         curator.inTransaction().
  *             create().forPath("/path-one", path-one-data).
  *             and().create().forPath("/path-two", path-two-data).
  *             and().commit();
- *     </pre></code>
- * </p>
- * 
+ *     </pre>
+ *
  * <p>
  *     <b>Important:</b> the operations are not submitted until
  *     {@link CuratorTransactionFinal#commit()} is called.
@@ -73,7 +75,7 @@ public interface CuratorTransaction
 
     /**
      * Start a check builder in the transaction
-     *
+     *ChildData
      * @return builder object
      */
     public TransactionCheckBuilder check();

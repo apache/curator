@@ -122,7 +122,7 @@ public class DistributedIdQueue<T> implements QueueBase<T>
     }
 
     /**
-     * Put an item into the queue with the given Id<br/><br/>
+     * Put an item into the queue with the given Id<br><br>
      * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
      * block until there is available space in the queue.
      *

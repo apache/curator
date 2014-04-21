@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * A persistent ephemeral node is an ephemeral node that attempts to stay present in
  * ZooKeeper, even through connection and session interruptions.
  * </p>
- * <p/>
  * <p>
  * Thanks to bbeck (https://github.com/bbeck) for the initial coding and design
  * </p>

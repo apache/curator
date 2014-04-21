@@ -91,7 +91,6 @@ public interface ServiceDiscovery<T> extends Closeable
 
     /**
      * Allocate a new builder. {@link ServiceProviderBuilder#providerStrategy} is set to {@link RoundRobinStrategy}
-     * and {@link ServiceProviderBuilder#refreshPaddingMs} is set to 1 second.
      *
      * @return the builder
      */

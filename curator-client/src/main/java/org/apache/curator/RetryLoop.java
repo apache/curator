@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * the exception
  * </p>
  *
- * Canonical usage:<br/>
- * <code><pre>
+ * Canonical usage:<br>
+ * <pre>
  * RetryLoop retryLoop = client.newRetryLoop();
  * while ( retryLoop.shouldContinue() )
  * {
@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *         retryLoop.takeException(e);
  *     }
  * }
- * </pre></code>
+ * </pre>
  */
 public class RetryLoop
 {

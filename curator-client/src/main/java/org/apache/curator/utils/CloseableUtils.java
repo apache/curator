@@ -26,9 +26,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * @author Andy Boothe <andy@sigpwned.com>
- *         <p/>
- *         This class adds back functionality that was removed in Guava v16.0.
+ * This class adds back functionality that was removed in Guava v16.0.
  */
 public class CloseableUtils
 {

@@ -53,13 +53,14 @@ import java.util.concurrent.atomic.AtomicReference;
  * are guaranteed to be ordered (by means of ZK's PERSISTENT_SEQUENTIAL node).</p>
  *
  * <p>
- * Guarantees:<br/>
+ * Guarantees:</p>
+ * <ul>
  * <li>If a single consumer takes items out of the queue, they will be ordered FIFO. i.e. if ordering is important,
  * use a {@link LeaderSelector} to nominate a single consumer.</li>
  * <li>Unless a {@link QueueBuilder#lockPath(String)} is used, there is only guaranteed processing of each message to the point of receipt by a given instance.
- * If an instance receives an item from the queue but dies while processing it, the item will be lost. If you need message recoverability, use
+ * <li>If an instance receives an item from the queue but dies while processing it, the item will be lost. If you need message recoverability, use
  * a {@link QueueBuilder#lockPath(String)}</li>
- * </p>
+ * </ul>
  */
 public class DistributedQueue<T> implements QueueBase<T>
 {
@@ -287,7 +288,7 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     /**
      * Add an item into the queue. Adding is done in the background - thus, this method will
-     * return quickly.<br/><br/>
+     * return quickly.<br><br>
      * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
      * block until there is available space in the queue.
      *
@@ -319,7 +320,7 @@ public class DistributedQueue<T> implements QueueBase<T>
 
     /**
      * Add a set of items into the queue. Adding is done in the background - thus, this method will
-     * return quickly.<br/><br/>
+     * return quickly.<br><br>
      * NOTE: if an upper bound was set via {@link QueueBuilder#maxItems}, this method will
      * block until there is available space in the queue.
      *
