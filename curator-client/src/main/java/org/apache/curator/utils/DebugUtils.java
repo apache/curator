@@ -22,6 +22,7 @@ public class DebugUtils
 {
     public static final String          PROPERTY_LOG_EVENTS = "curator-log-events";
     public static final String          PROPERTY_DONT_LOG_CONNECTION_ISSUES = "curator-dont-log-connection-problems";
+    public static final String          PROPERTY_LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL = "curator-log-all-connection-issues-as-error-level";
 
     private DebugUtils()
     {
