@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class CuratorFrameworkImpl implements CuratorFramework
 {
 
-	private final Logger                                                log = LoggerFactory.getLogger(getClass());
+    private final Logger                                                log = LoggerFactory.getLogger(getClass());
     private final CuratorZookeeperClient                                client;
     private final ListenerContainer<CuratorListener>                    listeners;
     private final ListenerContainer<UnhandledErrorListener>             unhandledErrorListeners;
