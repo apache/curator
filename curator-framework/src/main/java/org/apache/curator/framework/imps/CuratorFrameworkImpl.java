@@ -76,7 +76,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private volatile ExecutorService                                    executorService;
     private final AtomicBoolean                                         logAsErrorConnectionErrors = new AtomicBoolean(false);
 
-    private static final boolean                                        LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL = Boolean.getBoolean(DebugUtils.PROPERTY_LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL);
+    private static final boolean                                        LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL = !Boolean.getBoolean(DebugUtils.PROPERTY_LOG_ONLY_FIRST_CONNECTION_ISSUE_AS_ERROR_LEVEL);
 
     interface DebugBackgroundListener
     {
