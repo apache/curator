@@ -89,7 +89,7 @@ public class PathChildrenCache implements Closeable
 
     private static final ChildData NULL_CHILD_DATA = new ChildData(null, null, null);
 
-    private final Watcher childrenWatcher = new Watcher()
+    private volatile Watcher childrenWatcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
@@ -98,7 +98,7 @@ public class PathChildrenCache implements Closeable
         }
     };
 
-    private final Watcher dataWatcher = new Watcher()
+    private volatile Watcher dataWatcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
@@ -124,7 +124,7 @@ public class PathChildrenCache implements Closeable
     @VisibleForTesting
     volatile Exchanger<Object> rebuildTestExchanger;
 
-    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    private volatile ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState)
@@ -366,7 +366,18 @@ public class PathChildrenCache implements Closeable
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
             client.getConnectionStateListenable().removeListener(connectionStateListener);
+            listeners.clear();
             executorService.close();
+            client.clearWatcherReferences(childrenWatcher);
+            client.clearWatcherReferences(dataWatcher);
+
+/*
+            This seems to enable even more GC - I'm not sure why yet
+
+            connectionStateListener = null;
+            childrenWatcher = null;
+            dataWatcher = null;
+*/
         }
     }
 

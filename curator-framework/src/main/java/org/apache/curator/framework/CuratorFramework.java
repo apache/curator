@@ -26,6 +26,7 @@ import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
+import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
 
 /**
@@ -201,4 +202,12 @@ public interface CuratorFramework extends Closeable
      * @return new EnsurePath instance
      */
     public EnsurePath newNamespaceAwareEnsurePath(String path);
+
+    /**
+     * Curator can hold internal references to watchers that may inhibit garbage collection.
+     * Call this method on watchers you are no longer interested in.
+     *
+     * @param watcher the watcher
+     */
+    public void clearWatcherReferences(Watcher watcher);
 }

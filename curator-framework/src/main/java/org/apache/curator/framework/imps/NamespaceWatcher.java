@@ -21,12 +21,13 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import java.io.Closeable;
 
-class NamespaceWatcher implements Watcher
+class NamespaceWatcher implements Watcher, Closeable
 {
-    private final CuratorFrameworkImpl client;
-    private final Watcher actualWatcher;
-    private final CuratorWatcher curatorWatcher;
+    private volatile CuratorFrameworkImpl client;
+    private volatile Watcher actualWatcher;
+    private volatile CuratorWatcher curatorWatcher;
 
     NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher)
     {
@@ -43,21 +44,32 @@ class NamespaceWatcher implements Watcher
     }
 
     @Override
+    public void close()
+    {
+        client = null;
+        actualWatcher = null;
+        curatorWatcher = null;
+    }
+
+    @Override
     public void process(WatchedEvent event)
     {
-        if ( actualWatcher != null )
+        if ( client != null )
         {
-            actualWatcher.process(new NamespaceWatchedEvent(client, event));
-        }
-        else if ( curatorWatcher != null )
-        {
-            try
+            if ( actualWatcher != null )
             {
-                curatorWatcher.process(new NamespaceWatchedEvent(client, event));
+                actualWatcher.process(new NamespaceWatchedEvent(client, event));
             }
-            catch ( Exception e )
+            else if ( curatorWatcher != null )
             {
-                client.logError("Watcher exception", e);
+                try
+                {
+                    curatorWatcher.process(new NamespaceWatchedEvent(client, event));
+                }
+                catch ( Exception e )
+                {
+                    client.logError("Watcher exception", e);
+                }
             }
         }
     }

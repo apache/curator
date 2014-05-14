@@ -206,6 +206,16 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
+    public void clearWatcherReferences(Watcher watcher)
+    {
+        NamespaceWatcher namespaceWatcher = namespaceWatcherMap.remove(watcher);
+        if ( namespaceWatcher != null )
+        {
+            namespaceWatcher.close();
+        }
+    }
+
+    @Override
     public CuratorFrameworkState getState()
     {
         return state.get();
