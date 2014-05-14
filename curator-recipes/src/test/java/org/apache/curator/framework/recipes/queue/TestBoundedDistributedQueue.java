@@ -18,16 +18,16 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
-import junit.framework.Assert;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
@@ -180,7 +180,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
 
             for ( int count : counts )
             {
-                Assert.assertTrue(counts.toString(), count <= (MAX_ITEMS * SLOP_FACTOR));
+                Assert.assertTrue(count <= (MAX_ITEMS * SLOP_FACTOR), counts.toString());
             }
         }
         finally

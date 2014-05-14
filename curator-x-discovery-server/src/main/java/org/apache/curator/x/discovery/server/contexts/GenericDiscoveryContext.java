@@ -18,17 +18,15 @@
  */
 package org.apache.curator.x.discovery.server.contexts;
 
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
-
-import com.google.inject.TypeLiteral;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ObjectNode;
-
+import com.google.common.reflect.TypeToken;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
 
 /**
  * For convenience, a version of {@link DiscoveryContext} that uses any generic type as the payload
@@ -39,14 +37,14 @@ public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextR
     private final ServiceDiscovery<T> serviceDiscovery;
     private final ProviderStrategy<T> providerStrategy;
     private final int instanceRefreshMs;
-    private final TypeLiteral<T> payloadType;   // in the future - replace TypeLiteral with corresponding api from Guava 13
+    private final TypeToken<T> payloadType;
 
     public GenericDiscoveryContext(ServiceDiscovery<T> serviceDiscovery, ProviderStrategy<T> providerStrategy, int instanceRefreshMs, Class<T> payloadType)
     {
-        this(serviceDiscovery, providerStrategy, instanceRefreshMs, TypeLiteral.get(payloadType));
+        this(serviceDiscovery, providerStrategy, instanceRefreshMs, TypeToken.of(payloadType));
     }
 
-    public GenericDiscoveryContext(ServiceDiscovery<T> serviceDiscovery, ProviderStrategy<T> providerStrategy, int instanceRefreshMs, TypeLiteral<T> payloadType)
+    public GenericDiscoveryContext(ServiceDiscovery<T> serviceDiscovery, ProviderStrategy<T> providerStrategy, int instanceRefreshMs, TypeToken<T> payloadType)
     {
         this.serviceDiscovery = serviceDiscovery;
         this.providerStrategy = providerStrategy;

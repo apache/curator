@@ -19,7 +19,6 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -29,7 +28,8 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
-import junit.framework.Assert;
+import org.apache.curator.utils.CloseableUtils;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Iterator;

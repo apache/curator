@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework.client;
 
-import com.google.common.io.Closeables;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -31,14 +30,23 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
+
+    @BeforeMethod
+    @Override
+    public void setup() throws Exception
+    {
+        super.setup();
+    }
 
     @Test
     public void testConnectionStateListener() throws Exception
@@ -96,8 +104,8 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
         }
         finally
         {
-            Closeables.closeQuietly(selector);
-            Closeables.closeQuietly(client);
+            CloseableUtils.closeQuietly(selector);
+            CloseableUtils.closeQuietly(client);
         }
     }
 

@@ -19,7 +19,7 @@
 package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Maps;
-import junit.framework.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Iterator;
 import java.util.Map;
