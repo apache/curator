@@ -117,8 +117,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         InterProcessSemaphoreV2 semaphore2;
         try
         {
-            client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
 
             client1.start();
             client2.start();
@@ -270,7 +270,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         @Override
                         public Object call() throws Exception
                         {
-                            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+                            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
                             client.start();
                             try
                             {
@@ -324,7 +324,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         final int MAX_LEASES = 11;
         final int THREADS = 100;
 
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -390,6 +390,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                 completionService.take();
             }
 
+            timing.sleepABit();
             synchronized(counter)
             {
                 Assert.assertTrue(counter.currentCount == 0);
@@ -409,7 +410,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     {
         final int THREAD_QTY = 10;
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -451,7 +452,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     public void testSimple() throws Exception
     {
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -471,7 +472,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         final int MAX_LEASES = 3;
         Timing timing = new Timing();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -502,7 +503,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     {
         final int LEASES = 3;
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
