@@ -20,7 +20,6 @@ package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.BaseClassForTests;
@@ -30,7 +29,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.DebugUtils;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -55,6 +54,8 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     private final Collection<CuratorFramework> curatorInstances = Lists.newArrayList();
     private final Collection<PersistentEphemeralNode> createdNodes = Lists.newArrayList();
 
+    private final Timing timing = new Timing();
+
     @AfterMethod
     public void teardown() throws Exception
     {
@@ -76,7 +77,6 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         server.close();
 
-        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
@@ -124,7 +124,6 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         server.close();
 
-        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
@@ -193,14 +192,13 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     public void testSettingData() throws Exception
     {
         PersistentEphemeralNode node = null;
-        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
             client.start();
             node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, "a".getBytes());
             node.start();
-            Assert.assertTrue(node.waitForInitialCreate(5, TimeUnit.SECONDS));
+            Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS));
 
             Assert.assertEquals(node.getActualPath(), PATH);
             Assert.assertEquals(client.getData().forPath(PATH), "a".getBytes());
@@ -266,7 +264,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         node.start();
-        node.waitForInitialCreate(5, TimeUnit.SECONDS);
+        node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
 
         String path = node.getActualPath();
         node.close();
@@ -286,7 +284,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         node.start();
         try
         {
-            node.waitForInitialCreate(5, TimeUnit.SECONDS);
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertNodeExists(observer, node.getActualPath());
 
             // Register a watch that will fire when the node is deleted...
@@ -296,7 +294,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             killSession(curator);
 
             // Make sure the node got deleted
-            assertTrue(deletedTrigger.firedWithin(10, TimeUnit.SECONDS));
+            assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
@@ -323,12 +321,12 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             killSession(curator);
 
             // Make sure the node got deleted...
-            assertTrue(deletedTrigger.firedWithin(10, TimeUnit.SECONDS));
+            assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
 
             // Check for it to be recreated...
             Trigger createdTrigger = Trigger.created();
             Stat stat = observer.checkExists().usingWatcher(createdTrigger).forPath(node.getActualPath());
-            assertTrue(stat != null || createdTrigger.firedWithin(10, TimeUnit.SECONDS));
+            assertTrue(stat != null || createdTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
@@ -346,7 +344,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         node.start();
         try
         {
-            node.waitForInitialCreate(5, TimeUnit.SECONDS);
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String path = node.getActualPath();
             assertNodeExists(observer, path);
 
@@ -360,12 +358,12 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
                 killSession(curator);
 
                 // Make sure the node ended up getting deleted...
-                assertTrue(deletionTrigger.firedWithin(10, TimeUnit.SECONDS));
+                assertTrue(deletionTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
 
                 // Now put a watch in the background looking to see if it gets created...
                 Trigger creationTrigger = Trigger.created();
                 Stat stat = observer.checkExists().usingWatcher(creationTrigger).forPath(path);
-                assertTrue(stat != null || creationTrigger.firedWithin(10, TimeUnit.SECONDS));
+                assertTrue(stat != null || creationTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
             }
         }
         finally
@@ -383,7 +381,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         node.start();
         try
         {
-            node.waitForInitialCreate(5, TimeUnit.SECONDS);
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String originalNode = node.getActualPath();
             assertNodeExists(curator, originalNode);
 
@@ -394,7 +392,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             // node that gets created is going to be exactly the same as the original.
             Trigger createdWatchTrigger = Trigger.created();
             Stat stat = curator.checkExists().usingWatcher(createdWatchTrigger).forPath(originalNode);
-            assertTrue(stat != null || createdWatchTrigger.firedWithin(10, TimeUnit.SECONDS));
+            assertTrue(stat != null || createdWatchTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
@@ -411,14 +409,14 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         node1.start();
         try
         {
-            node1.waitForInitialCreate(5, TimeUnit.SECONDS);
+            node1.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String path1 = node1.getActualPath();
 
             PersistentEphemeralNode node2 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]);
             node2.start();
             try
             {
-                node2.waitForInitialCreate(5, TimeUnit.SECONDS);
+                node2.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
                 String path2 = node2.getActualPath();
 
                 assertFalse(path1.equals(path2));
@@ -444,7 +442,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         node.start();
         try
         {
-            node.waitForInitialCreate(5, TimeUnit.SECONDS);
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));
         }
         finally
@@ -466,7 +464,6 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
     private CuratorFramework newCurator() throws IOException
     {
-        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
 
