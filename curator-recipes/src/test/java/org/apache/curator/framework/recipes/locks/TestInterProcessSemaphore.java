@@ -473,11 +473,11 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         final int MAX_LEASES = 3;
         Timing timing = new Timing();
 
+        List<Lease> leases = Lists.newArrayList();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
-            List<Lease> leases = Lists.newArrayList();
             for ( int i = 0; i < MAX_LEASES; ++i )
             {
                 InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", MAX_LEASES);
@@ -495,7 +495,11 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            for ( Lease l : leases )
+            {
+                CloseableUtils.closeQuietly(l);
+            }
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -506,19 +510,24 @@ public class TestInterProcessSemaphore extends BaseClassForTests
 
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        List<Lease> leases = Lists.newArrayList();
         client.start();
         try
         {
             InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", LEASES);
             for ( int i = 0; i < LEASES; ++i )
             {
-                semaphore.acquire();
+                leases.add(semaphore.acquire());
             }
 
             Assert.assertEquals(semaphore.getParticipantNodes().size(), LEASES);
         }
         finally
         {
+            for ( Lease l : leases )
+            {
+                CloseableUtils.closeQuietly(l);
+            }
             CloseableUtils.closeQuietly(client);
         }
     }
