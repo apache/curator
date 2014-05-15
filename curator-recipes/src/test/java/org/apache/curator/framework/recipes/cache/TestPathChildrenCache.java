@@ -19,7 +19,6 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -27,6 +26,7 @@ import org.apache.curator.framework.recipes.BaseClassForTests;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
@@ -78,8 +78,9 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testAsyncInitialPopulation() throws Exception
     {
+        Timing timing = new Timing();
         PathChildrenCache cache = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
             client.start();
@@ -102,10 +103,10 @@ public class TestPathChildrenCache extends BaseClassForTests
                 );
             cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
 
-            PathChildrenCacheEvent event = events.poll(10, TimeUnit.SECONDS);
+            PathChildrenCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             Assert.assertEquals(event.getType(), PathChildrenCacheEvent.Type.CHILD_ADDED);
 
-            event = events.poll(10, TimeUnit.SECONDS);
+            event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             Assert.assertEquals(event.getType(), PathChildrenCacheEvent.Type.INITIALIZED);
             Assert.assertEquals(event.getInitialData().size(), 1);
         }
@@ -220,7 +221,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     {
         Timing timing = new Timing();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -246,7 +247,8 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testDeleteThenCreate() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -299,10 +301,10 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
 
             client.delete().forPath("/test/foo");
-            Assert.assertTrue(removedLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.awaitLatch(removedLatch));
             client.create().forPath("/test/foo", "two".getBytes());
             postRemovedLatch.countDown();
-            Assert.assertTrue(dataLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.awaitLatch(dataLatch));
 
             Throwable t = error.get();
             if ( t != null )
@@ -321,7 +323,8 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testRebuildAgainstOtherProcesses() throws Exception
     {
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -398,7 +401,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
             future.get();
 
-            Assert.assertTrue(addedLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.awaitLatch(addedLatch));
             Assert.assertNotNull(cache.getCurrentData("/test/test"));
             Assert.assertNull(cache.getCurrentData(deletedPath.get()));
             Assert.assertEquals(cache.getCurrentData("/test/snafu").getData(), "grilled".getBytes());
@@ -415,7 +418,8 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testIssue27() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -443,13 +447,13 @@ public class TestPathChildrenCache extends BaseClassForTests
                 );
             cache.start();
 
-            Assert.assertTrue(semaphore.tryAcquire(3, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 3));
 
             client.delete().forPath("/base/a");
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             client.create().forPath("/base/a");
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             List<PathChildrenCacheEvent.Type> expected = Lists.newArrayList
                 (
@@ -471,7 +475,8 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testIssue27Alt() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -500,10 +505,10 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
 
             client.delete().forPath("/base/a");
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             client.create().forPath("/base/a");
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             List<PathChildrenCacheEvent.Type> expected = Lists.newArrayList
                 (
@@ -580,7 +585,8 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testModes() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -603,8 +609,9 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testRebuildNode() throws Exception
     {
+        Timing timing = new Timing();
         PathChildrenCache cache = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -688,7 +695,8 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testBasics() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -713,14 +721,14 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.start();
 
             client.create().forPath("/test/one", "hey there".getBytes());
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
 
             client.setData().forPath("/test/one", "sup!".getBytes());
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
             Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
 
             client.delete().forPath("/test/one");
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
 
             cache.close();
         }
@@ -733,7 +741,8 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testBasicsOnTwoCachesWithSameExecutor() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -776,18 +785,18 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache2.start();
 
             client.create().forPath("/test/one", "hey there".getBytes());
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
-            Assert.assertEquals(events2.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            Assert.assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
 
             client.setData().forPath("/test/one", "sup!".getBytes());
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
-            Assert.assertEquals(events2.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+            Assert.assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
             Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
             Assert.assertEquals(new String(cache2.getCurrentData("/test/one").getData()), "sup!");
 
             client.delete().forPath("/test/one");
-            Assert.assertEquals(events.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
-            Assert.assertEquals(events2.poll(10, TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+            Assert.assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
 
             cache.close();
             cache2.close();
@@ -802,7 +811,8 @@ public class TestPathChildrenCache extends BaseClassForTests
     public void testDeleteNodeAfterCloseDoesntCallExecutor()
             throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -823,7 +833,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             Assert.assertFalse(exec.isExecuteCalled());
 
             client.delete().forPath("/test/one");
-            Thread.sleep(100);
+            timing.sleepABit();
             Assert.assertFalse(exec.isExecuteCalled());
         }
         finally {
