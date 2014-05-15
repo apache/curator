@@ -410,6 +410,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     {
         final int THREAD_QTY = 10;
 
+        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
