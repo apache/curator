@@ -19,8 +19,8 @@
 package org.apache.curator.ensemble.exhibitor;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.BaseClassForTests;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.retry.ExponentialBackoffRetry;

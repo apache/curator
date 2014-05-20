@@ -18,6 +18,7 @@
  */
 package org.apache.curator;
 
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;

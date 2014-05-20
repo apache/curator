@@ -20,6 +20,7 @@ package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -38,7 +39,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-public class TestServiceDiscovery
+public class TestServiceDiscovery extends BaseClassForTests
 {
     private static final Comparator<ServiceInstance<Void>>      comparator = new Comparator<ServiceInstance<Void>>()
     {
@@ -53,8 +54,6 @@ public class TestServiceDiscovery
     public void         testCrashedServerMultiInstances() throws Exception
     {
         List<Closeable>     closeables = Lists.newArrayList();
-        TestingServer       server = new TestingServer();
-        closeables.add(server);
         try
         {
             Timing              timing = new Timing();
@@ -103,8 +102,6 @@ public class TestServiceDiscovery
     public void         testCrashedServer() throws Exception
     {
         List<Closeable>     closeables = Lists.newArrayList();
-        TestingServer       server = new TestingServer();
-        closeables.add(server);
         try
         {
             Timing              timing = new Timing();
@@ -151,8 +148,6 @@ public class TestServiceDiscovery
     public void         testCrashedInstance() throws Exception
     {
         List<Closeable>     closeables = Lists.newArrayList();
-        TestingServer       server = new TestingServer();
-        closeables.add(server);
         try
         {
             Timing              timing = new Timing();
@@ -190,8 +185,6 @@ public class TestServiceDiscovery
         final String        SERVICE_TWO = "two";
 
         List<Closeable>     closeables = Lists.newArrayList();
-        TestingServer       server = new TestingServer();
-        closeables.add(server);
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -245,8 +238,6 @@ public class TestServiceDiscovery
     public void         testBasic() throws Exception
     {
         List<Closeable>     closeables = Lists.newArrayList();
-        TestingServer       server = new TestingServer();
-        closeables.add(server);
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));

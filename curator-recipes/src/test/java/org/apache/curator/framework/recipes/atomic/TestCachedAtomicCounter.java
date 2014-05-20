@@ -20,8 +20,8 @@ package org.apache.curator.framework.recipes.atomic;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.BaseClassForTests;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.atomic.AtomicReference;
