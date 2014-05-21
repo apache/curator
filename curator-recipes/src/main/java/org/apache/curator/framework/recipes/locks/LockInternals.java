@@ -295,8 +295,8 @@ public class LockInternals
 
                     synchronized(this)
                     {
-                        Stat stat = client.checkExists().usingWatcher(watcher).forPath(previousSequencePath);
-                        if ( stat != null )
+                        byte[] data = client.getData().usingWatcher(watcher).forPath(previousSequencePath);
+                        if ( data != null )
                         {
                             if ( millisToWait != null )
                             {
