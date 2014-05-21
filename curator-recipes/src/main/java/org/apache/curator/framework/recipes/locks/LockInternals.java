@@ -298,24 +298,21 @@ public class LockInternals
                         try 
                         {
                             byte[] data = client.getData().usingWatcher(watcher).forPath(previousSequencePath);
-                            if ( data != null )
+                            if ( millisToWait != null )
                             {
-                                if ( millisToWait != null )
+                                millisToWait -= (System.currentTimeMillis() - startMillis);
+                                startMillis = System.currentTimeMillis();
+                                if ( millisToWait <= 0 )
                                 {
-                                    millisToWait -= (System.currentTimeMillis() - startMillis);
-                                    startMillis = System.currentTimeMillis();
-                                    if ( millisToWait <= 0 )
-                                    {
-                                        doDelete = true;    // timed out - delete our node
-                                        break;
-                                    }
+                                    doDelete = true;    // timed out - delete our node
+                                    break;
+                                }
 
-                                    wait(millisToWait);
-                                }
-                                else
-                                {
-                                    wait();
-                                }
+                                wait(millisToWait);
+                            }
+                            else
+                            {
+                                wait();
                             }
                         }
                         catch ( KeeperException.NoNodeException e ) 
