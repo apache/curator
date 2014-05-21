@@ -295,29 +295,41 @@ public class LockInternals
 
                     synchronized(this)
                     {
-                        byte[] data = client.getData().usingWatcher(watcher).forPath(previousSequencePath);
-                        if ( data != null )
+                        try 
                         {
-                            if ( millisToWait != null )
+                            byte[] data = client.getData().usingWatcher(watcher).forPath(previousSequencePath);
+                            if ( data != null )
                             {
-                                millisToWait -= (System.currentTimeMillis() - startMillis);
-                                startMillis = System.currentTimeMillis();
-                                if ( millisToWait <= 0 )
+                                if ( millisToWait != null )
                                 {
-                                    doDelete = true;    // timed out - delete our node
-                                    break;
-                                }
+                                    millisToWait -= (System.currentTimeMillis() - startMillis);
+                                    startMillis = System.currentTimeMillis();
+                                    if ( millisToWait <= 0 )
+                                    {
+                                        doDelete = true;    // timed out - delete our node
+                                        break;
+                                    }
 
-                                wait(millisToWait);
-                            }
-                            else
-                            {
-                                wait();
+                                    wait(millisToWait);
+                                }
+                                else
+                                {
+                                    wait();
+                                }
                             }
                         }
+                        catch ( KeeperException.NoNodeException e ) 
+                        {
+                            // ignore - clearly already deleted
+                        }
+                        catch ( Exception e) 
+                        {
+                            // bubble it up
+                            throw e;
+                        }
                     }
-                    // else it may have been deleted (i.e. lock released). Try to acquire again
                 }
+                // else it may have been deleted (i.e. lock released). Try to acquire again
             }
         }
         catch ( Exception e )
