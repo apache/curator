@@ -134,7 +134,7 @@ public class DistributedAtomicValue
         Stat                        stat = new Stat();
         MutableAtomicValue<byte[]>  result = new MutableAtomicValue<byte[]>(null, null, false);
         boolean                     createIt = getCurrentValue(result, stat);
-        if ( !createIt && Arrays.equals(expectedValue, result.preValue) )
+        if ( !createIt && valuesEquals(expectedValue, result.preValue))
         {
             try
             {
@@ -156,6 +156,21 @@ public class DistributedAtomicValue
             result.succeeded = false;
         }
         return result;
+    }
+
+    private boolean valuesEquals(byte[] first, byte[] second) {
+        if (Arrays.equals(first, second))
+            return true;
+        else if (first.length == 0 || second.length == 0) {
+            for (byte element : first)
+                if (element != 0)
+                    return false;
+            for (byte element : second)
+                if (element != 0)
+                    return false;
+            return true;
+        }
+        return false;
     }
 
     /**
