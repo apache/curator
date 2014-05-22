@@ -26,13 +26,12 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.curator.utils.PathUtils;
-import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -297,7 +296,7 @@ public class LockInternals
                     {
                         try 
                         {
-                            byte[] data = client.getData().usingWatcher(watcher).forPath(previousSequencePath);
+                            client.getData().usingWatcher(watcher).forPath(previousSequencePath);
                             if ( millisToWait != null )
                             {
                                 millisToWait -= (System.currentTimeMillis() - startMillis);
