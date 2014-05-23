@@ -8,7 +8,7 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
 import org.testng.annotations.Test;
 
-public class ServiceCacheLeakTest
+public class ServiceCacheLeakTester
 {
     @Test
     public void serviceCacheInstancesLeaked() throws Exception

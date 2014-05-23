@@ -91,7 +91,7 @@ public class PathChildrenCache implements Closeable
 
     private static final boolean USE_EXISTS = Boolean.getBoolean("curator-path-children-cache-use-exists");
 
-    private final Watcher childrenWatcher = new Watcher()
+    private volatile Watcher childrenWatcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
@@ -373,13 +373,12 @@ public class PathChildrenCache implements Closeable
             client.clearWatcherReferences(childrenWatcher);
             client.clearWatcherReferences(dataWatcher);
 
-/*
-            This seems to enable even more GC - I'm not sure why yet
-
+            // TODO
+            // This seems to enable even more GC - I'm not sure why yet - it
+            // has something to do with Guava's cache and circular references
             connectionStateListener = null;
             childrenWatcher = null;
             dataWatcher = null;
-*/
         }
     }
 
