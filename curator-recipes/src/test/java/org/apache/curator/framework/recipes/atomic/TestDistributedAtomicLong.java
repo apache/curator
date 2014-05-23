@@ -26,6 +26,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math.stat.descriptive.SynchronizedSummaryStatistics;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
@@ -71,6 +72,29 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    public void testCompareAndSetWithFreshInstance() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            DistributedAtomicLong dal = new DistributedAtomicLong(client, "/counter", new RetryOneTime(1));
+            AtomicValue<Long> result = dal.compareAndSet(0L, 1L);
+            Assert.assertFalse(result.succeeded());
+
+            Assert.assertTrue(dal.initialize(0L));
+            result = dal.compareAndSet(0L, 1L);
+            Assert.assertTrue(result.succeeded());
+
+            Assert.assertFalse(dal.initialize(0L));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
         }
     }
 

@@ -187,6 +187,29 @@ public class DistributedAtomicValue
         return result;
     }
 
+    /**
+     * Atomic values are initially set to the equivalent of <code>NULL</code> in a database.
+     * Use this method to initialize the value. The value will be set if and only iff the node does not exist.
+     *
+     * @param value the initial value to set
+     * @return true if the value was set, false if the node already existed
+     * @throws Exception ZooKeeper errors
+     */
+    public boolean initialize(byte[] value) throws Exception
+    {
+        ensurePath.ensure(client.getZookeeperClient());
+        try
+        {
+            client.create().forPath(path, value);
+        }
+        catch ( KeeperException.NodeExistsException ignore )
+        {
+            // ignore
+            return false;
+        }
+        return true;
+    }
+
     AtomicValue<byte[]>   trySet(MakeValue makeValue) throws Exception
     {
         MutableAtomicValue<byte[]>  result = new MutableAtomicValue<byte[]>(null, null, false);

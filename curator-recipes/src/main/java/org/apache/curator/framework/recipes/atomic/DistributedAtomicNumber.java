@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.atomic;
 
 public interface DistributedAtomicNumber<T>
@@ -27,20 +28,19 @@ public interface DistributedAtomicNumber<T>
      * @return value info
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<T>     get() throws Exception;
+    public AtomicValue<T> get() throws Exception;
 
     /**
      * Atomically sets the value to the given updated value
      * if the current value {@code ==} the expected value.
      * Remember to always check {@link AtomicValue#succeeded()}.
      *
-     *
      * @param expectedValue the expected value
-     * @param newValue the new value for the counter
+     * @param newValue      the new value for the counter
      * @return value info
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<T>    compareAndSet(T expectedValue, T newValue) throws Exception;
+    public AtomicValue<T> compareAndSet(T expectedValue, T newValue) throws Exception;
 
     /**
      * Attempt to atomically set the value to the given value. Remember to always
@@ -50,7 +50,17 @@ public interface DistributedAtomicNumber<T>
      * @return value info
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<T>    trySet(T newValue) throws Exception;
+    public AtomicValue<T> trySet(T newValue) throws Exception;
+
+    /**
+     * Atomic values are initially set to the equivalent of <code>NULL</code> in a database.
+     * Use this method to initialize the value. The value will be set if and only iff the node does not exist.
+     *
+     * @param value the initial value to set
+     * @return true if the value was set, false if the node already existed
+     * @throws Exception ZooKeeper errors
+     */
+    public boolean initialize(T value) throws Exception;
 
     /**
      * Forcibly sets the value of the counter without any guarantees of atomicity.
@@ -58,7 +68,7 @@ public interface DistributedAtomicNumber<T>
      * @param newValue the new value
      * @throws Exception ZooKeeper errors
      */
-    public void              forceSet(T newValue) throws Exception;
+    public void forceSet(T newValue) throws Exception;
 
     /**
      * Add 1 to the current value and return the new value information. Remember to always
@@ -67,7 +77,7 @@ public interface DistributedAtomicNumber<T>
      * @return value info
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<T>    increment() throws Exception;
+    public AtomicValue<T> increment() throws Exception;
 
     /**
      * Subtract 1 from the current value and return the new value information. Remember to always
@@ -76,7 +86,7 @@ public interface DistributedAtomicNumber<T>
      * @return value info
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<T>    decrement() throws Exception;
+    public AtomicValue<T> decrement() throws Exception;
 
     /**
      * Add delta to the current value and return the new value information. Remember to always
@@ -86,7 +96,7 @@ public interface DistributedAtomicNumber<T>
      * @return value info
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<T>    add(T delta) throws Exception;
+    public AtomicValue<T> add(T delta) throws Exception;
 
     /**
      * Subtract delta from the current value and return the new value information. Remember to always
@@ -96,5 +106,5 @@ public interface DistributedAtomicNumber<T>
      * @return value info
      * @throws Exception ZooKeeper errors
      */
-    public AtomicValue<T>    subtract(T delta) throws Exception;
+    public AtomicValue<T> subtract(T delta) throws Exception;
 }

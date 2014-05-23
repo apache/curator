@@ -90,6 +90,12 @@ public class DistributedAtomicInteger implements DistributedAtomicNumber<Integer
         return new AtomicInteger(value.trySet(valueToBytes(newValue)));
     }
 
+    @Override
+    public boolean initialize(Integer initialize) throws Exception
+    {
+        return value.initialize(valueToBytes(initialize));
+    }
+
     /**
      * Add 1 to the current value and return the new value information. Remember to always
      * check {@link AtomicValue#succeeded()}.
