@@ -519,7 +519,8 @@ public class LeaderLatch implements Closeable
                     }
                 }
             };
-            client.checkExists().usingWatcher(watcher).inBackground(callback).forPath(ZKPaths.makePath(latchPath, watchPath));
+            // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
+            client.getData().usingWatcher(watcher).inBackground(callback).forPath(ZKPaths.makePath(latchPath, watchPath));
         }
     }
 
