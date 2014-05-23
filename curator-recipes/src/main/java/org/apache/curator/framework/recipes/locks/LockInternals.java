@@ -296,6 +296,7 @@ public class LockInternals
                     {
                         try 
                         {
+                            // use getData instead of exists to avoid leaving unneeded watchers which is a type of resource leak
                             client.getData().usingWatcher(watcher).forPath(previousSequencePath);
                             if ( millisToWait != null )
                             {
@@ -316,16 +317,10 @@ public class LockInternals
                         }
                         catch ( KeeperException.NoNodeException e ) 
                         {
-                            // ignore - clearly already deleted
-                        }
-                        catch ( Exception e) 
-                        {
-                            // bubble it up
-                            throw e;
+                            // it has been deleted (i.e. lock released). Try to acquire again
                         }
                     }
                 }
-                // else it may have been deleted (i.e. lock released). Try to acquire again
             }
         }
         catch ( Exception e )
