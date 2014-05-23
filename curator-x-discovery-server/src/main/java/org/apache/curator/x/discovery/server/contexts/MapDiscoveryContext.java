@@ -18,7 +18,7 @@
  */
 package org.apache.curator.x.discovery.server.contexts;
 
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
@@ -35,6 +35,6 @@ public class MapDiscoveryContext extends GenericDiscoveryContext<Map<String, Str
 {
     public MapDiscoveryContext(ServiceDiscovery<Map<String, String>> serviceDiscovery, ProviderStrategy<Map<String, String>> providerStrategy, int instanceRefreshMs)
     {
-    	super(serviceDiscovery, providerStrategy, instanceRefreshMs, new TypeLiteral<Map<String, String>>(){});
+    	super(serviceDiscovery, providerStrategy, instanceRefreshMs, new TypeToken<Map<String, String>>(){});
     }
 }

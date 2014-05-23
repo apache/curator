@@ -20,7 +20,6 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Queues;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.CuratorFramework;
@@ -32,9 +31,11 @@ import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -52,10 +53,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
+    private final Timing timing = new Timing();
+
     @Test
     public void connectionLossWithBackgroundTest() throws Exception
     {
-        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryOneTime(1));
         try
         {
@@ -84,7 +86,6 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void testReconnectAfterLoss() throws Exception
     {
-        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
@@ -133,7 +134,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     public void testGetAclNoStat() throws Exception
     {
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -155,7 +156,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void testMissedResponseOnBackgroundESCreate() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -172,7 +173,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             createBuilder.withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath("/");
-            String ourPath = queue.poll(10, TimeUnit.SECONDS);
+            String ourPath = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
             Assert.assertFalse(createBuilder.failNextCreateForTesting);
         }
@@ -185,7 +186,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void testMissedResponseOnESCreate() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -204,7 +205,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void testSessionKilled() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -236,7 +237,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void testNestedCalls() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
@@ -275,7 +276,6 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void testBackgroundFailure() throws Exception
     {
-        Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
@@ -341,7 +341,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         final int MAX_RETRIES = 3;
         final int serverPort = server.getPort();
 
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 1000, 1000, new RetryOneTime(10));
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(10));
         client.start();
         try
         {
@@ -375,7 +375,7 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             // test foreground retry
             client.checkExists().forPath("/hey");
-            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, timing.forWaiting().seconds(), TimeUnit.SECONDS));
 
             semaphore.drainPermits();
             retries.set(0);
@@ -384,7 +384,7 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             // test background retry
             client.checkExists().inBackground().forPath("/hey");
-            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, 10, TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         catch ( Throwable e )
         {

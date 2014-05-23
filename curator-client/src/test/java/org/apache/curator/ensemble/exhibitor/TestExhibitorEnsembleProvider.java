@@ -19,8 +19,8 @@
 package org.apache.curator.ensemble.exhibitor;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.BaseClassForTests;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -207,7 +207,7 @@ public class TestExhibitorEnsembleProvider extends BaseClassForTests
         ExhibitorEnsembleProvider   provider = new ExhibitorEnsembleProvider(exhibitors, mockRestClient, "/foo", 10, new RetryOneTime(1));
         provider.pollForInitialEnsemble();
 
-        Timing                      timing = new Timing(4);
+        Timing                      timing = new Timing();
         CuratorZookeeperClient      client = new CuratorZookeeperClient(provider, timing.session(), timing.connection(), null, new ExponentialBackoffRetry(timing.milliseconds(), 3));
         client.start();
         try
@@ -217,10 +217,7 @@ public class TestExhibitorEnsembleProvider extends BaseClassForTests
         }
         catch ( Exception e )
         {
-            System.out.println("provider.getConnectionString(): " + provider.getConnectionString() + " server.getPort(): " + server.getPort());
-            e.printStackTrace();
-            Assert.fail();
-            throw e;
+            Assert.fail("provider.getConnectionString(): " + provider.getConnectionString() + " server.getPort(): " + server.getPort(), e);
         }
         finally
         {

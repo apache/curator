@@ -89,7 +89,9 @@ public class PathChildrenCache implements Closeable
 
     private static final ChildData NULL_CHILD_DATA = new ChildData(null, null, null);
 
-    private volatile Watcher childrenWatcher = new Watcher()
+    private static final boolean USE_EXISTS = Boolean.getBoolean("curator-path-children-cache-use-exists");
+
+    private final Watcher childrenWatcher = new Watcher()
     {
         @Override
         public void process(WatchedEvent event)
@@ -519,38 +521,30 @@ public class PathChildrenCache implements Closeable
 
     void getDataAndStat(final String fullPath) throws Exception
     {
-        BackgroundCallback existsCallback = new BackgroundCallback()
+        BackgroundCallback callback = new BackgroundCallback()
         {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                applyNewData(fullPath, event.getResultCode(), event.getStat(), null);
+                applyNewData(fullPath, event.getResultCode(), event.getStat(), cacheData ? event.getData() : null);
             }
         };
 
-        BackgroundCallback getDataCallback = new BackgroundCallback()
+        if ( USE_EXISTS && !cacheData )
         {
-            @Override
-            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-            {
-                applyNewData(fullPath, event.getResultCode(), event.getStat(), event.getData());
-            }
-        };
-
-        if ( cacheData )
-        {
-            if ( dataIsCompressed )
-            {
-                client.getData().decompressed().usingWatcher(dataWatcher).inBackground(getDataCallback).forPath(fullPath);
-            }
-            else
-            {
-                client.getData().usingWatcher(dataWatcher).inBackground(getDataCallback).forPath(fullPath);
-            }
+            client.checkExists().usingWatcher(dataWatcher).inBackground(callback).forPath(fullPath);
         }
         else
         {
-            client.checkExists().usingWatcher(dataWatcher).inBackground(existsCallback).forPath(fullPath);
+            // always use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
+            if ( dataIsCompressed && cacheData )
+            {
+                client.getData().decompressed().usingWatcher(dataWatcher).inBackground(callback).forPath(fullPath);
+            }
+            else
+            {
+                client.getData().usingWatcher(dataWatcher).inBackground(callback).forPath(fullPath);
+            }
         }
     }
 

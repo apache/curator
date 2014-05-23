@@ -19,6 +19,7 @@
 package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -37,14 +38,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class TestServiceCache
+public class TestServiceCache extends BaseClassForTests
 {
     @Test
     public void     testInitialLoad() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
-        TestingServer server = new TestingServer();
-        closeables.add(server);
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -106,8 +105,6 @@ public class TestServiceCache
         Timing timing = new Timing();
 
         List<Closeable> closeables = Lists.newArrayList();
-        TestingServer server = new TestingServer();
-        closeables.add(server);
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -155,8 +152,6 @@ public class TestServiceCache
     public void     testUpdate() throws Exception
     {
         List<Closeable>     closeables = Lists.newArrayList();
-        TestingServer       server = new TestingServer();
-        closeables.add(server);
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -209,8 +204,6 @@ public class TestServiceCache
     public void testCache() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
-        TestingServer server = new TestingServer();
-        closeables.add(server);
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));

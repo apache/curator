@@ -27,7 +27,6 @@
         <version>2.4.3-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.curator</groupId>
     <artifactId>curator-client</artifactId>
     <version>2.4.3-SNAPSHOT</version>
     <packaging>bundle</packaging>

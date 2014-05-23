@@ -51,10 +51,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorFrameworkImpl implements CuratorFramework
 {
+
     private final Logger                                                log = LoggerFactory.getLogger(getClass());
     private final CuratorZookeeperClient                                client;
     private final ListenerContainer<CuratorListener>                    listeners;
@@ -72,6 +74,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final NamespaceWatcherMap                                   namespaceWatcherMap = new NamespaceWatcherMap(this);
 
     private volatile ExecutorService                                    executorService;
+    private final AtomicBoolean                                         logAsErrorConnectionErrors = new AtomicBoolean(false);
+
+    private static final boolean                                        LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL = !Boolean.getBoolean(DebugUtils.PROPERTY_LOG_ONLY_FIRST_CONNECTION_ISSUE_AS_ERROR_LEVEL);
 
     interface DebugBackgroundListener
     {
@@ -241,7 +246,23 @@ public class CuratorFrameworkImpl implements CuratorFramework
         try
         {
             connectionStateManager.start(); // ordering dependency - must be called before client.start()
+            
+            final ConnectionStateListener listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( ConnectionState.CONNECTED == newState || ConnectionState.RECONNECTED == newState )
+                    {
+                        logAsErrorConnectionErrors.set(true);
+                    }
+                }
+            };
+            
+            this.getConnectionStateListenable().addListener(listener);
+
             client.start();
+
             executorService = Executors.newFixedThreadPool(2, threadFactory);  // 1 for listeners, 1 for background ops
 
             executorService.submit
@@ -519,7 +540,20 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) || !(e instanceof KeeperException) )
         {
-            log.error(reason, e);
+            if ( e instanceof KeeperException.ConnectionLossException || e instanceof CuratorConnectionLossException ) {
+                if ( LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL || logAsErrorConnectionErrors.compareAndSet(true, false) )
+                {
+                    log.error(reason, e);
+                }
+                else
+                {
+                    log.debug(reason, e);
+                }
+            }
+            else
+            {
+                log.error(reason, e);
+            }
         }
 
         final String        localReason = reason;

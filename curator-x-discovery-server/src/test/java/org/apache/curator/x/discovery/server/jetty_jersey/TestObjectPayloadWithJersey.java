@@ -18,20 +18,16 @@
  */
 package org.apache.curator.x.discovery.server.jetty_jersey;
 
-import java.util.Set;
-
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-
-import junit.framework.Assert;
-
-import org.apache.curator.test.InstanceSpec;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.core.DefaultResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
+import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.server.entity.JsonServiceInstanceMarshaller;
@@ -41,16 +37,16 @@ import org.apache.curator.x.discovery.server.entity.ServiceInstances;
 import org.apache.curator.x.discovery.server.entity.ServiceNames;
 import org.apache.curator.x.discovery.server.mocks.MockServiceDiscovery;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.GenericType;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.api.core.DefaultResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.ServletHolder;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
+import java.util.Set;
 
 public class TestObjectPayloadWithJersey
 {

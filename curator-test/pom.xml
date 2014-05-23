@@ -27,7 +27,6 @@
         <version>2.4.3-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.curator</groupId>
     <artifactId>curator-test</artifactId>
     <version>2.4.3-SNAPSHOT</version>
 
@@ -39,13 +38,17 @@
         <dependency>
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
-            <version>3.15.0-GA</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>
-            <version>2.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>
