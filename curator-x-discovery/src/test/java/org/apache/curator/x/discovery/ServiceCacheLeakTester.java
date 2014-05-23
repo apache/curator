@@ -6,12 +6,10 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
-import org.testng.annotations.Test;
 
 public class ServiceCacheLeakTester
 {
-    @Test
-    public void serviceCacheInstancesLeaked() throws Exception
+    public static void main(String[] args) throws Exception
     {
         TestingServer testingServer = new TestingServer();
 
@@ -33,7 +31,7 @@ public class ServiceCacheLeakTester
         }
     }
 
-    private void doWork(CuratorFramework curatorFramework) throws Exception
+    private static void doWork(CuratorFramework curatorFramework) throws Exception
     {
         ServiceInstance<Void> thisInstance = ServiceInstance.<Void>builder().name("myservice").build();
         final ServiceDiscovery<Void> serviceDiscovery = ServiceDiscoveryBuilder.builder(Void.class).client(curatorFramework.usingNamespace("dev")).basePath("/instances").thisInstance(thisInstance).build();
@@ -54,7 +52,7 @@ public class ServiceCacheLeakTester
         }
     }
 
-    private ServiceProvider<Void> serviceProvider(ServiceDiscovery<Void> serviceDiscovery, String name) throws Exception
+    private static ServiceProvider<Void> serviceProvider(ServiceDiscovery<Void> serviceDiscovery, String name) throws Exception
     {
         return serviceDiscovery.serviceProviderBuilder().serviceName(name).providerStrategy(new RandomStrategy<Void>()).build();
     }
