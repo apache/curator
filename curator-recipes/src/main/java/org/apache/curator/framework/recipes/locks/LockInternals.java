@@ -296,7 +296,7 @@ public class LockInternals
                     {
                         try 
                         {
-                            // use getData instead of exists to avoid leaving unneeded watchers which is a type of resource leak
+                            // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
                             client.getData().usingWatcher(watcher).forPath(previousSequencePath);
                             if ( millisToWait != null )
                             {
