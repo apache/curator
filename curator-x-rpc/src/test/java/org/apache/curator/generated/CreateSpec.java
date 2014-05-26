@@ -50,7 +50,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
   }
 
   public String path; // required
-  public String data; // required
+  public ByteBuffer data; // required
   /**
    * 
    * @see CreateMode
@@ -153,7 +153,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     tmpMap.put(_Fields.PATH, new org.apache.thrift.meta_data.FieldMetaData("path", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.DATA, new org.apache.thrift.meta_data.FieldMetaData("data", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
     tmpMap.put(_Fields.MODE, new org.apache.thrift.meta_data.FieldMetaData("mode", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, CreateMode.class)));
     tmpMap.put(_Fields.DO_ASYNC, new org.apache.thrift.meta_data.FieldMetaData("doAsync", org.apache.thrift.TFieldRequirementType.DEFAULT, 
@@ -173,7 +173,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
 
   public CreateSpec(
     String path,
-    String data,
+    ByteBuffer data,
     CreateMode mode,
     boolean doAsync,
     boolean compressed,
@@ -203,7 +203,8 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
       this.path = other.path;
     }
     if (other.isSetData()) {
-      this.data = other.data;
+      this.data = org.apache.thrift.TBaseHelper.copyBinary(other.data);
+;
     }
     if (other.isSetMode()) {
       this.mode = other.mode;
@@ -257,11 +258,21 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     }
   }
 
-  public String getData() {
-    return this.data;
+  public byte[] getData() {
+    setData(org.apache.thrift.TBaseHelper.rightSize(data));
+    return data == null ? null : data.array();
   }
 
-  public CreateSpec setData(String data) {
+  public ByteBuffer bufferForData() {
+    return data;
+  }
+
+  public CreateSpec setData(byte[] data) {
+    setData(data == null ? (ByteBuffer)null : ByteBuffer.wrap(data));
+    return this;
+  }
+
+  public CreateSpec setData(ByteBuffer data) {
     this.data = data;
     return this;
   }
@@ -419,7 +430,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
       if (value == null) {
         unsetData();
       } else {
-        setData((String)value);
+        setData((ByteBuffer)value);
       }
       break;
 
@@ -712,7 +723,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     if (this.data == null) {
       sb.append("null");
     } else {
-      sb.append(this.data);
+      org.apache.thrift.TBaseHelper.toString(this.data, sb);
     }
     first = false;
     if (!first) sb.append(", ");
@@ -794,7 +805,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
             break;
           case 2: // DATA
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.data = iprot.readString();
+              struct.data = iprot.readBinary();
               struct.setDataIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -862,7 +873,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
       }
       if (struct.data != null) {
         oprot.writeFieldBegin(DATA_FIELD_DESC);
-        oprot.writeString(struct.data);
+        oprot.writeBinary(struct.data);
         oprot.writeFieldEnd();
       }
       if (struct.mode != null) {
@@ -926,7 +937,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
         oprot.writeString(struct.path);
       }
       if (struct.isSetData()) {
-        oprot.writeString(struct.data);
+        oprot.writeBinary(struct.data);
       }
       if (struct.isSetMode()) {
         oprot.writeI32(struct.mode.getValue());
@@ -954,7 +965,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
         struct.setPathIsSet(true);
       }
       if (incoming.get(1)) {
-        struct.data = iprot.readString();
+        struct.data = iprot.readBinary();
         struct.setDataIsSet(true);
       }
       if (incoming.get(2)) {

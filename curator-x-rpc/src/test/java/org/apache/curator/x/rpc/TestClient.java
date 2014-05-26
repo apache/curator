@@ -18,21 +18,26 @@
  */
 package org.apache.curator.x.rpc;
 
+import org.apache.curator.generated.CreateSpec;
 import org.apache.curator.generated.CuratorEvent;
 import org.apache.curator.generated.CuratorProjection;
 import org.apache.curator.generated.CuratorProjectionSpec;
 import org.apache.curator.generated.CuratorService;
 import org.apache.curator.generated.EventService;
+import org.apache.curator.test.TestingServer;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
+import java.util.Arrays;
 import java.util.concurrent.Executors;
 
 public class TestClient
 {
-    public static void main(String[] args) throws TException
+    public static void main(String[] args) throws Exception
     {
+        new TestingServer(2181);
+
         TSocket clientTransport = new TSocket("localhost", 8899);
         clientTransport.open();
         TProtocol clientProtocol = new TBinaryProtocol(clientTransport);
@@ -43,24 +48,36 @@ public class TestClient
         TProtocol eventProtocol = new TBinaryProtocol(eventTransport);
         final EventService.Client serviceClient = new EventService.Client(eventProtocol);
 
+        final CuratorProjection curatorProjection = client.newCuratorProjection(new CuratorProjectionSpec());
+
         Executors.newSingleThreadExecutor().submit
-        (new Runnable()
+        (
+            new Runnable()
             {
                 @Override
                 public void run()
                 {
                     try
                     {
-                        CuratorEvent nextEvent = serviceClient.getNextEvent();
-                        System.out.println(nextEvent.type);
+                        //noinspection InfiniteLoopStatement
+                        for(;;)
+                        {
+                            CuratorEvent nextEvent = serviceClient.getNextEvent(Arrays.asList(curatorProjection));
+                            System.out.println(nextEvent.type);
+                        }
                     }
                     catch ( TException e )
                     {
                         e.printStackTrace();
                     }
                 }
-            });
+            }
+        );
 
-        CuratorProjection curatorProjection = client.newCuratorProjection(new CuratorProjectionSpec());
+        CreateSpec createSpec = new CreateSpec();
+        createSpec.path = "/a/b/c";
+        createSpec.creatingParentsIfNeeded = true;
+        String path = client.create(curatorProjection, createSpec);
+        System.out.println(path);
     }
 }

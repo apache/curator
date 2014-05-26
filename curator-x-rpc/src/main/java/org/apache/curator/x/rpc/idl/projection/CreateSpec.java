@@ -28,7 +28,7 @@ public class CreateSpec
     public String path;
 
     @ThriftField(2)
-    public String data;
+    public byte[] data;
 
     @ThriftField(3)
     public CreateMode mode;
@@ -49,7 +49,7 @@ public class CreateSpec
     {
     }
 
-    public CreateSpec(String path, String data, CreateMode mode, boolean doAsync, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection)
+    public CreateSpec(String path, byte[] data, CreateMode mode, boolean doAsync, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection)
     {
         this.path = path;
         this.data = data;

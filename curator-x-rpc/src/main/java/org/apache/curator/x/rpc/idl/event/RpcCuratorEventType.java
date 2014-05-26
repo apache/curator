@@ -23,6 +23,7 @@ import com.facebook.swift.codec.ThriftEnum;
 @ThriftEnum("CuratorEventType")
 public enum RpcCuratorEventType
 {
+    PING,
     CREATE,
     DELETE,
     EXISTS,
@@ -33,5 +34,10 @@ public enum RpcCuratorEventType
     GET_ACL,
     SET_ACL,
     WATCHED,
-    CLOSING
+    CLOSING,
+    CONNECTION_CONNECTED,
+    CONNECTION_SUSPENDED,
+    CONNECTION_RECONNECTED,
+    CONNECTION_LOST,
+    CONNECTION_READ_ONLY
 }

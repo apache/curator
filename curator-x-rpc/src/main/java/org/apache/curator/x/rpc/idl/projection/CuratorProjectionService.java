@@ -1,3 +1,4 @@
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -29,6 +30,8 @@ import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.PathAndBytesable;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.x.rpc.RpcManager;
 import org.apache.curator.x.rpc.idl.event.EventService;
@@ -38,11 +41,12 @@ import java.util.UUID;
 @ThriftService("CuratorService")
 public class CuratorProjectionService
 {
-    private final RpcManager rpcManager = new RpcManager();
+    private final RpcManager rpcManager;
     private final EventService eventService;
 
-    public CuratorProjectionService(EventService eventService)
+    public CuratorProjectionService(RpcManager rpcManager, EventService eventService)
     {
+        this.rpcManager = rpcManager;
         this.eventService = eventService;
     }
 
@@ -53,7 +57,19 @@ public class CuratorProjectionService
         String id = UUID.randomUUID().toString();
         client.start();
         rpcManager.add(id, client);
-        return new CuratorProjection(id);
+        final CuratorProjection projection = new CuratorProjection(id);
+
+        ConnectionStateListener listener = new ConnectionStateListener()
+        {
+            @Override
+            public void stateChanged(CuratorFramework client, ConnectionState newState)
+            {
+                eventService.addEvent(new RpcCuratorEvent(projection, newState));
+            }
+        };
+        client.getConnectionStateListenable().addListener(listener);
+
+        return projection;
     }
 
     @ThriftMethod
@@ -84,7 +100,10 @@ public class CuratorProjectionService
         {
             builder = castBuilder(builder, CreateBuilder.class).withProtection();
         }
-        builder = castBuilder(builder, CreateModable.class).withMode(getRealMode(createSpec.mode));
+        if ( createSpec.mode != null )
+        {
+            builder = castBuilder(builder, CreateModable.class).withMode(getRealMode(createSpec.mode));
+        }
 
         if ( createSpec.doAsync )
         {
@@ -99,7 +118,7 @@ public class CuratorProjectionService
             builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
         }
 
-        return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.path, createSpec.data.getBytes()));
+        return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.path, createSpec.data));
     }
 
     private org.apache.zookeeper.CreateMode getRealMode(CreateMode mode)

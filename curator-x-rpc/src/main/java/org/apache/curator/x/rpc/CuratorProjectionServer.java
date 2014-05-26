@@ -31,8 +31,9 @@ public class CuratorProjectionServer
 {
     public static void main(String[] args)
     {
-        EventService eventService = new EventService();
-        CuratorProjectionService projectionService = new CuratorProjectionService(eventService);
+        RpcManager rpcManager = new RpcManager();
+        EventService eventService = new EventService(rpcManager, 5000); // TODO
+        CuratorProjectionService projectionService = new CuratorProjectionService(rpcManager, eventService);
         ThriftServiceProcessor processor = new ThriftServiceProcessor(new ThriftCodecManager(), Lists.<ThriftEventHandler>newArrayList(), projectionService, eventService);
         ThriftServer server = new ThriftServer(processor, new ThriftServerConfig().setPort(8899));  // TODO
         server.start();

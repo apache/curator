@@ -12,17 +12,23 @@ import java.util.HashMap;
 import org.apache.thrift.TEnum;
 
 public enum CuratorEventType implements org.apache.thrift.TEnum {
-  CREATE(0),
-  DELETE(1),
-  EXISTS(2),
-  GET_DATA(3),
-  SET_DATA(4),
-  CHILDREN(5),
-  SYNC(6),
-  GET_ACL(7),
-  SET_ACL(8),
-  WATCHED(9),
-  CLOSING(10);
+  PING(0),
+  CREATE(1),
+  DELETE(2),
+  EXISTS(3),
+  GET_DATA(4),
+  SET_DATA(5),
+  CHILDREN(6),
+  SYNC(7),
+  GET_ACL(8),
+  SET_ACL(9),
+  WATCHED(10),
+  CLOSING(11),
+  CONNECTION_CONNECTED(12),
+  CONNECTION_SUSPENDED(13),
+  CONNECTION_RECONNECTED(14),
+  CONNECTION_LOST(15),
+  CONNECTION_READ_ONLY(16);
 
   private final int value;
 
@@ -44,27 +50,39 @@ public enum CuratorEventType implements org.apache.thrift.TEnum {
   public static CuratorEventType findByValue(int value) { 
     switch (value) {
       case 0:
-        return CREATE;
+        return PING;
       case 1:
-        return DELETE;
+        return CREATE;
       case 2:
-        return EXISTS;
+        return DELETE;
       case 3:
-        return GET_DATA;
+        return EXISTS;
       case 4:
-        return SET_DATA;
+        return GET_DATA;
       case 5:
-        return CHILDREN;
+        return SET_DATA;
       case 6:
-        return SYNC;
+        return CHILDREN;
       case 7:
-        return GET_ACL;
+        return SYNC;
       case 8:
-        return SET_ACL;
+        return GET_ACL;
       case 9:
-        return WATCHED;
+        return SET_ACL;
       case 10:
+        return WATCHED;
+      case 11:
         return CLOSING;
+      case 12:
+        return CONNECTION_CONNECTED;
+      case 13:
+        return CONNECTION_SUSPENDED;
+      case 14:
+        return CONNECTION_RECONNECTED;
+      case 15:
+        return CONNECTION_LOST;
+      case 16:
+        return CONNECTION_READ_ONLY;
       default:
         return null;
     }

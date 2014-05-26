@@ -8,7 +8,7 @@ enum CreateMode {
 }
 
 enum CuratorEventType {
-  CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING
+  PING, CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING, CONNECTION_CONNECTED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, CONNECTION_READ_ONLY
 }
 
 enum EventType {
@@ -21,7 +21,7 @@ enum KeeperState {
 
 struct CreateSpec {
   1: string path;
-  2: string data;
+  2: binary data;
   3: CreateMode mode;
   4: bool doAsync;
   5: bool compressed;
@@ -87,5 +87,5 @@ service CuratorService {
 }
 
 service EventService {
-  CuratorEvent getNextEvent();
+  CuratorEvent getNextEvent(1: list<CuratorProjection> projections);
 }

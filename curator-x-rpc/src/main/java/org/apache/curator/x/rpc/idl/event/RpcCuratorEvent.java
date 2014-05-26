@@ -24,6 +24,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjection;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -71,7 +72,17 @@ public class RpcCuratorEvent
 
     public RpcCuratorEvent()
     {
-        throw new UnsupportedOperationException();
+        this.projection = null;
+        this.type = RpcCuratorEventType.PING;
+        this.resultCode = 0;
+        this.path = null;
+        this.context = null;
+        this.stat = null;
+        this.data = null;
+        this.name = null;
+        this.children = null;
+        this.aclList = null;
+        this.watchedEvent = null;
     }
 
     public RpcCuratorEvent(CuratorProjection projection, CuratorEvent event)
@@ -87,6 +98,53 @@ public class RpcCuratorEvent
         this.children = event.getChildren();
         this.aclList = toRpcAclList(event.getACLList());
         this.watchedEvent = toRpcWatchedEvent(event.getWatchedEvent());
+    }
+
+    public RpcCuratorEvent(CuratorProjection projection, ConnectionState newState)
+    {
+        this.projection = projection;
+        this.type = toRpcCuratorEventType(newState);
+        this.resultCode = 0;
+        this.path = null;
+        this.context = null;
+        this.stat = null;
+        this.data = null;
+        this.name = null;
+        this.children = null;
+        this.aclList = null;
+        this.watchedEvent = null;
+    }
+
+    private RpcCuratorEventType toRpcCuratorEventType(ConnectionState state)
+    {
+        switch ( state )
+        {
+            case CONNECTED:
+            {
+                return RpcCuratorEventType.CONNECTION_CONNECTED;
+            }
+
+            case SUSPENDED:
+            {
+                return RpcCuratorEventType.CONNECTION_SUSPENDED;
+            }
+
+            case RECONNECTED:
+            {
+                return RpcCuratorEventType.CONNECTION_RECONNECTED;
+            }
+
+            case LOST:
+            {
+                return RpcCuratorEventType.CONNECTION_LOST;
+            }
+
+            case READ_ONLY:
+            {
+                return RpcCuratorEventType.CONNECTION_READ_ONLY;
+            }
+        }
+        throw new IllegalStateException("Unknown state: " + state);
     }
 
     private RpcCuratorEventType toRpcCuratorEventType(CuratorEventType eventType)

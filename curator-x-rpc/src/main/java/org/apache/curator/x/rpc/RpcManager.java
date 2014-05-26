@@ -2,6 +2,7 @@ package org.apache.curator.x.rpc;
 
 import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -55,5 +56,13 @@ public class RpcManager
     {
         CuratorEntry entry = projections.remove(id);
         return (entry != null) ? entry.client : null;
+    }
+
+    public void touch(List<String> ids)
+    {
+        for ( String id : ids )
+        {
+            getClient(id);
+        }
     }
 }
