@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if (( $# != 1 )); then
-    echo "missing argument: path to swift2thrift-generator-cli-N.N.N-standalone.jar"
+if (( $# != 2 )); then
+    echo "usage:\ngenerate.sh <path to swift2thrift-generator-cli-N.N.N-standalone.jar> <path to zookeeper-N.N.N.jar>"
     exit
 fi
 
@@ -10,11 +10,16 @@ BASE_DIR="$( cd "$DIR/../../../.." && pwd )"
 
 RPC_PATH="$BASE_DIR/curator-x-rpc/target/classes"
 CLASSES=""
-for f in `ls -m1 $RPC_PATH/org/apache/curator/x/rpc/idl/*.class | xargs -n 1 basename | sed s/\.[^\.]*$//`; do CLASSES="$CLASSES $f"; done;
+for f in `ls -m1 $RPC_PATH/org/apache/curator/x/rpc/idl/*.class | xargs -n 1 basename | sed s/\.[^\.]*$//`;
+    do
+        if [[ $f != *[\$]* ]]; then
+            CLASSES="$CLASSES $f";
+        fi;
+done;
 
 THRIFT_DIR="$BASE_DIR/curator-x-rpc/src/main/thrift"
 
-PATHS="$1"
+PATHS="$1:$2"
 PATHS="$PATHS:$BASE_DIR/curator-client/target/classes"
 PATHS="$PATHS:$BASE_DIR/curator-framework/target/classes"
 PATHS="$PATHS:$BASE_DIR/curator-recipes/target/classes"
