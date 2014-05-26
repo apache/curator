@@ -1,4 +1,4 @@
-namespace java.swift org.apache.curator.x.rpc.idl
+namespace java.swift org.apache.curator.x.rpc.idl.projection
 namespace cpp org.apache.curator
 
 
@@ -24,7 +24,8 @@ struct CuratorProjection {
 struct CuratorProjectionSpec {
 }
 
-service curator {
+service CuratorService {
   void closeCuratorProjection(1: CuratorProjection projection);
+  string create(1: CuratorProjection projection, 2: CreateSpec createSpec);
   CuratorProjection newCuratorProjection(1: CuratorProjectionSpec spec);
 }

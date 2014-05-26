@@ -1,4 +1,4 @@
-package org.apache.curator.x.rpc.idl;
+package org.apache.curator.x.rpc.idl.projection;
 
 public enum CreateMode
 {

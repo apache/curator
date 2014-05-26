@@ -1,4 +1,4 @@
-package org.apache.curator.x.rpc.idl;
+package org.apache.curator.x.rpc.idl.projection;
 
 import com.facebook.swift.codec.ThriftConstructor;
 import com.facebook.swift.codec.ThriftField;

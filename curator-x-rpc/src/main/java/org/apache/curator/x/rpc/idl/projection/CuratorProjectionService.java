@@ -1,22 +1,33 @@
-package org.apache.curator.x.rpc.idl;
+package org.apache.curator.x.rpc.idl.projection;
 
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.Backgroundable;
 import org.apache.curator.framework.api.Compressible;
 import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CreateModable;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.x.rpc.idl.event.CuratorEventService;
+import org.apache.curator.x.rpc.idl.event.CuratorRpcEvent;
 import java.util.Map;
 import java.util.UUID;
 
-@ThriftService("curator")
+@ThriftService("CuratorService")
 public class CuratorProjectionService
 {
     private final Map<String, CuratorFramework> projections = Maps.newConcurrentMap();
+    private final CuratorEventService eventService;
+
+    public CuratorProjectionService(CuratorEventService eventService)
+    {
+        this.eventService = eventService;
+    }
 
     @ThriftMethod
     public CuratorProjection newCuratorProjection(CuratorProjectionSpec spec)
@@ -38,8 +49,8 @@ public class CuratorProjectionService
         }
     }
 
-    //@ThriftMethod
-    public String create(CuratorProjection projection, CreateSpec createSpec) throws Exception
+    @ThriftMethod
+    public String create(final CuratorProjection projection, CreateSpec createSpec) throws Exception
     {
         CuratorFramework client = getClient(projection);
 
@@ -60,47 +71,15 @@ public class CuratorProjectionService
 
         if ( createSpec.isAsync() )
         {
-/*
-TODO
-            BackgroundCallback backgroundCallback = new RestBackgroundCallback(context, Constants.CLIENT_CREATE_ASYNC, createSpec.getAsyncId())
+            BackgroundCallback backgroundCallback = new BackgroundCallback()
             {
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                 {
-                    if ( event.getResultCode() == 0 )
-                    {
-                        checkEphemeralCreate(createSpec, id, event.getName());
-                    }
-                    super.processResult(client, event);
-                }
-
-                @Override
-                protected String getMessage(CuratorEvent event)
-                {
-                    PathAndId pathAndId = new PathAndId(String.valueOf(event.getName()), id);
-                    try
-                    {
-                        return context.getWriter().writeValueAsString(pathAndId);
-                    }
-                    catch ( IOException e )
-                    {
-                        log.error("Could not serialize PathAndId", e);
-                    }
-                    return "{}";
-                }
-
-                @Override
-                protected String getDetails(CuratorEvent event)
-                {
-                    if ( event.getResultCode() != 0 )
-                    {
-                        return super.getDetails(event);
-                    }
-                    return id;
+                    eventService.addEvent(new CuratorRpcEvent(projection, event));
                 }
             };
             builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
-*/
         }
 
         return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.getPath(), createSpec.getData().getBytes()));
