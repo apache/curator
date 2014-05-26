@@ -83,6 +83,9 @@ struct CuratorEvent {
 service CuratorService {
   void closeCuratorProjection(1: CuratorProjection projection);
   string create(1: CuratorProjection projection, 2: CreateSpec createSpec);
-  CuratorEvent getNextEvent();
   CuratorProjection newCuratorProjection(1: CuratorProjectionSpec spec);
+}
+
+service EventService {
+  CuratorEvent getNextEvent();
 }

@@ -21,7 +21,6 @@ package org.apache.curator.x.rpc.idl.projection;
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -30,22 +29,97 @@ import org.apache.curator.framework.api.Compressible;
 import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 
 @ThriftService("CuratorService")
 public class CuratorProjectionService
 {
     private final Map<String, CuratorFramework> projections = Maps.newConcurrentMap();
-    private final BlockingQueue<RpcCuratorEvent> events = Queues.newLinkedBlockingQueue();
+    private final EventService eventService;
+
+    public CuratorProjectionService(EventService eventService)
+    {
+        this.eventService = eventService;
+    }
 
     @ThriftMethod
     public CuratorProjection newCuratorProjection(CuratorProjectionSpec spec)   // TODO
     {
+        System.out.println(Thread.currentThread() + "newCuratorProjection");
+
+        eventService.addEvent(new RpcCuratorEvent(null, new CuratorEvent()
+        {
+            @Override
+            public CuratorEventType getType()
+            {
+                return CuratorEventType.CHILDREN;
+            }
+
+            @Override
+            public int getResultCode()
+            {
+                return 1;
+            }
+
+            @Override
+            public String getPath()
+            {
+                return null;
+            }
+
+            @Override
+            public Object getContext()
+            {
+                return null;
+            }
+
+            @Override
+            public Stat getStat()
+            {
+                return null;
+            }
+
+            @Override
+            public byte[] getData()
+            {
+                return new byte[0];
+            }
+
+            @Override
+            public String getName()
+            {
+                return null;
+            }
+
+            @Override
+            public List<String> getChildren()
+            {
+                return null;
+            }
+
+            @Override
+            public List<ACL> getACLList()
+            {
+                return null;
+            }
+
+            @Override
+            public WatchedEvent getWatchedEvent()
+            {
+                return null;
+            }
+        }));
+
         CuratorFramework client = CuratorFrameworkFactory.newClient("localhost:2181", new RetryOneTime(1));
         String id = UUID.randomUUID().toString();
         client.start();
@@ -90,19 +164,13 @@ public class CuratorProjectionService
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                 {
-                    events.offer(new RpcCuratorEvent(projection, event));
+                    eventService.addEvent(new RpcCuratorEvent(projection, event));
                 }
             };
             builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
         }
 
         return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.path, createSpec.data.getBytes()));
-    }
-
-    @ThriftMethod
-    public RpcCuratorEvent getNextEvent() throws InterruptedException
-    {
-        return events.take();
     }
 
     private org.apache.zookeeper.CreateMode getRealMode(CreateMode mode)

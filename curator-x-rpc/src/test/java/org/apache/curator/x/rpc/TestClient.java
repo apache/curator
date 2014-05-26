@@ -18,31 +18,49 @@
  */
 package org.apache.curator.x.rpc;
 
-import org.apache.curator.generated.CreateSpec;
+import org.apache.curator.generated.CuratorEvent;
 import org.apache.curator.generated.CuratorProjection;
 import org.apache.curator.generated.CuratorProjectionSpec;
 import org.apache.curator.generated.CuratorService;
+import org.apache.curator.generated.EventService;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
+import java.util.concurrent.Executors;
 
 public class TestClient
 {
     public static void main(String[] args) throws TException
     {
-        TSocket transport = new TSocket("localhost", 8899);
-        transport.open();
-        TProtocol protocol = new TBinaryProtocol(transport);
-        CuratorService.Client client = new CuratorService.Client(protocol);
-        CuratorProjection curatorProjection = client.newCuratorProjection(new CuratorProjectionSpec());
-        System.out.println(curatorProjection);
+        TSocket clientTransport = new TSocket("localhost", 8899);
+        clientTransport.open();
+        TProtocol clientProtocol = new TBinaryProtocol(clientTransport);
+        final CuratorService.Client client = new CuratorService.Client(clientProtocol);
 
-        CreateSpec createSpec = new CreateSpec();
-        createSpec.setPath("/a/b/c");
-        createSpec.setCreatingParentsIfNeeded(true);
-        createSpec.setData("");
-        String s = client.create(curatorProjection, createSpec);
-        System.out.println(s);
+        TSocket eventTransport = new TSocket("localhost", 8899);
+        eventTransport.open();
+        TProtocol eventProtocol = new TBinaryProtocol(eventTransport);
+        final EventService.Client serviceClient = new EventService.Client(eventProtocol);
+
+        Executors.newSingleThreadExecutor().submit
+        (new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        CuratorEvent nextEvent = serviceClient.getNextEvent();
+                        System.out.println(nextEvent.type);
+                    }
+                    catch ( TException e )
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+        CuratorProjection curatorProjection = client.newCuratorProjection(new CuratorProjectionSpec());
     }
 }
