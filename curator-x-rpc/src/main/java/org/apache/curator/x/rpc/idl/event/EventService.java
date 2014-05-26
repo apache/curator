@@ -18,7 +18,6 @@ public class EventService
     @ThriftMethod
     public RpcCuratorEvent getNextEvent() throws InterruptedException
     {
-        System.out.println(Thread.currentThread() + "getNextEvent");
         return events.take();
     }
 }

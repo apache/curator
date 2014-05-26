@@ -20,7 +20,6 @@ package org.apache.curator.x.rpc.idl.projection;
 
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
-import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -29,22 +28,17 @@ import org.apache.curator.framework.api.Compressible;
 import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.x.rpc.RpcManager;
 import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Stat;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @ThriftService("CuratorService")
 public class CuratorProjectionService
 {
-    private final Map<String, CuratorFramework> projections = Maps.newConcurrentMap();
+    private final RpcManager rpcManager = new RpcManager();
     private final EventService eventService;
 
     public CuratorProjectionService(EventService eventService)
@@ -55,82 +49,17 @@ public class CuratorProjectionService
     @ThriftMethod
     public CuratorProjection newCuratorProjection(CuratorProjectionSpec spec)   // TODO
     {
-        System.out.println(Thread.currentThread() + "newCuratorProjection");
-
-        eventService.addEvent(new RpcCuratorEvent(null, new CuratorEvent()
-        {
-            @Override
-            public CuratorEventType getType()
-            {
-                return CuratorEventType.CHILDREN;
-            }
-
-            @Override
-            public int getResultCode()
-            {
-                return 1;
-            }
-
-            @Override
-            public String getPath()
-            {
-                return null;
-            }
-
-            @Override
-            public Object getContext()
-            {
-                return null;
-            }
-
-            @Override
-            public Stat getStat()
-            {
-                return null;
-            }
-
-            @Override
-            public byte[] getData()
-            {
-                return new byte[0];
-            }
-
-            @Override
-            public String getName()
-            {
-                return null;
-            }
-
-            @Override
-            public List<String> getChildren()
-            {
-                return null;
-            }
-
-            @Override
-            public List<ACL> getACLList()
-            {
-                return null;
-            }
-
-            @Override
-            public WatchedEvent getWatchedEvent()
-            {
-                return null;
-            }
-        }));
-
         CuratorFramework client = CuratorFrameworkFactory.newClient("localhost:2181", new RetryOneTime(1));
         String id = UUID.randomUUID().toString();
         client.start();
-        projections.put(id, client);
+        rpcManager.add(id, client);
         return new CuratorProjection(id);
     }
 
     @ThriftMethod
     public void closeCuratorProjection(CuratorProjection projection)
     {
-        CuratorFramework client = projections.remove(projection.id);
+        CuratorFramework client = rpcManager.removeClient(projection.id);
         if ( client != null )
         {
             client.close();
@@ -202,7 +131,7 @@ public class CuratorProjectionService
 
     private CuratorFramework getClient(CuratorProjection projection) throws Exception
     {
-        CuratorFramework client = projections.get(projection.id);
+        CuratorFramework client = rpcManager.getClient(projection.id);
         if ( client == null )
         {
             throw new Exception("No client found with id: " + projection.id);
