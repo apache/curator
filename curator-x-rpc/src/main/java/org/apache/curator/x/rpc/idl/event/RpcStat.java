@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.curator.x.rpc.idl.event;
 
 import com.facebook.swift.codec.ThriftField;
@@ -6,17 +24,38 @@ import com.facebook.swift.codec.ThriftStruct;
 @ThriftStruct("Stat")
 public class RpcStat
 {
-    private long czxid;
-    private long mzxid;
-    private long ctime;
-    private long mtime;
-    private int version;
-    private int cversion;
-    private int aversion;
-    private long ephemeralOwner;
-    private int dataLength;
-    private int numChildren;
-    private long pzxid;
+    @ThriftField(1)
+    public long czxid;
+
+    @ThriftField(2)
+    public long mzxid;
+
+    @ThriftField(3)
+    public long ctime;
+
+    @ThriftField(4)
+    public long mtime;
+
+    @ThriftField(5)
+    public int version;
+
+    @ThriftField(6)
+    public int cversion;
+
+    @ThriftField(7)
+    public int aversion;
+
+    @ThriftField(8)
+    public long ephemeralOwner;
+
+    @ThriftField(9)
+    public int dataLength;
+
+    @ThriftField(10)
+    public int numChildren;
+
+    @ThriftField(11)
+    public long pzxid;
 
     public RpcStat()
     {
@@ -34,127 +73,6 @@ public class RpcStat
         this.ephemeralOwner = ephemeralOwner;
         this.dataLength = dataLength;
         this.numChildren = numChildren;
-        this.pzxid = pzxid;
-    }
-
-    @ThriftField(1)
-    public long getCzxid()
-    {
-        return czxid;
-    }
-
-    public void setCzxid(long czxid)
-    {
-        this.czxid = czxid;
-    }
-
-    @ThriftField(2)
-    public long getMzxid()
-    {
-        return mzxid;
-    }
-
-    public void setMzxid(long mzxid)
-    {
-        this.mzxid = mzxid;
-    }
-
-    @ThriftField(3)
-    public long getCtime()
-    {
-        return ctime;
-    }
-
-    public void setCtime(long ctime)
-    {
-        this.ctime = ctime;
-    }
-
-    @ThriftField(4)
-    public long getMtime()
-    {
-        return mtime;
-    }
-
-    public void setMtime(long mtime)
-    {
-        this.mtime = mtime;
-    }
-
-    @ThriftField(5)
-    public int getVersion()
-    {
-        return version;
-    }
-
-    public void setVersion(int version)
-    {
-        this.version = version;
-    }
-
-    @ThriftField(6)
-    public int getCversion()
-    {
-        return cversion;
-    }
-
-    public void setCversion(int cversion)
-    {
-        this.cversion = cversion;
-    }
-
-    @ThriftField(7)
-    public int getAversion()
-    {
-        return aversion;
-    }
-
-    public void setAversion(int aversion)
-    {
-        this.aversion = aversion;
-    }
-
-    @ThriftField(8)
-    public long getEphemeralOwner()
-    {
-        return ephemeralOwner;
-    }
-
-    public void setEphemeralOwner(long ephemeralOwner)
-    {
-        this.ephemeralOwner = ephemeralOwner;
-    }
-
-    @ThriftField(9)
-    public int getDataLength()
-    {
-        return dataLength;
-    }
-
-    public void setDataLength(int dataLength)
-    {
-        this.dataLength = dataLength;
-    }
-
-    @ThriftField(10)
-    public int getNumChildren()
-    {
-        return numChildren;
-    }
-
-    public void setNumChildren(int numChildren)
-    {
-        this.numChildren = numChildren;
-    }
-
-    @ThriftField(11)
-    public long getPzxid()
-    {
-        return pzxid;
-    }
-
-    public void setPzxid(long pzxid)
-    {
         this.pzxid = pzxid;
     }
 }

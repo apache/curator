@@ -687,6 +687,7 @@
                         <exclude>**/README</exclude>
                         <exclude>**/CHANGES</exclude>
                         <exclude>**/RELEASE-NOTES</exclude>
+                        <exclude>**/generated/**</exclude>
                     </excludes>
                     <strictCheck>true</strictCheck>
                 </configuration>
@@ -728,6 +729,7 @@
                         <exclude>**/README</exclude>
                         <exclude>**/CHANGES</exclude>
                         <exclude>**/RELEASE-NOTES</exclude>
+                        <exclude>**/generated/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>

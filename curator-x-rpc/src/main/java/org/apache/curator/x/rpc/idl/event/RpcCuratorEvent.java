@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.curator.x.rpc.idl.event;
 
 import com.facebook.swift.codec.ThriftField;
@@ -5,6 +23,7 @@ import com.facebook.swift.codec.ThriftStruct;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjection;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -17,8 +36,38 @@ import java.util.List;
 @ThriftStruct("CuratorEvent")
 public class RpcCuratorEvent
 {
-    private final CuratorProjection projection;
-    private final CuratorEvent event;
+    @ThriftField(1)
+    public CuratorProjection projection;
+
+    @ThriftField(2)
+    public RpcCuratorEventType type;
+
+    @ThriftField(3)
+    public int resultCode;
+
+    @ThriftField(4)
+    public String path;
+
+    @ThriftField(5)
+    public String context;
+
+    @ThriftField(6)
+    public RpcStat stat;
+
+    @ThriftField(7)
+    public byte[] data;
+
+    @ThriftField(8)
+    public String name;
+
+    @ThriftField(9)
+    public List<String> children;
+
+    @ThriftField(10)
+    public List<RpcAcl> aclList;
+
+    @ThriftField(11)
+    public RpcWatchedEvent watchedEvent;
 
     public RpcCuratorEvent()
     {
@@ -28,19 +77,21 @@ public class RpcCuratorEvent
     public RpcCuratorEvent(CuratorProjection projection, CuratorEvent event)
     {
         this.projection = projection;
-        this.event = event;
+        this.type = toRpcCuratorEventType(event.getType());
+        this.resultCode = event.getResultCode();
+        this.path = event.getPath();
+        this.context = (event.getContext() != null) ? String.valueOf(event.getContext()) : null;
+        this.stat = toRpcStat(event.getStat());
+        this.data = event.getData();
+        this.name = event.getName();
+        this.children = event.getChildren();
+        this.aclList = toRpcAclList(event.getACLList());
+        this.watchedEvent = toRpcWatchedEvent(event.getWatchedEvent());
     }
 
-    @ThriftField(1)
-    public CuratorProjection getProjection()
+    private RpcCuratorEventType toRpcCuratorEventType(CuratorEventType eventType)
     {
-        return projection;
-    }
-
-    @ThriftField(2)
-    public RpcCuratorEventType getType()
-    {
-        switch ( event.getType() )
+        switch ( eventType )
         {
             case CREATE:
             {
@@ -98,31 +149,11 @@ public class RpcCuratorEvent
             }
         }
 
-        throw new IllegalStateException("Unknown type: " + event.getType());
+        throw new IllegalStateException("Unknown type: " + eventType);
     }
 
-    @ThriftField(3)
-    public int getResultCode()
+    private RpcStat toRpcStat(Stat stat)
     {
-        return event.getResultCode();
-    }
-
-    @ThriftField(4)
-    public String getPath()
-    {
-        return event.getPath();
-    }
-
-    @ThriftField(5)
-    public String getContext()
-    {
-        return String.valueOf(event.getContext());
-    }
-
-    @ThriftField(6)
-    public RpcStat getStat()
-    {
-        Stat stat = event.getStat();
         if ( stat != null )
         {
             return new RpcStat
@@ -143,28 +174,8 @@ public class RpcCuratorEvent
         return null;
     }
 
-    @ThriftField(7)
-    public byte[] getData()
+    private List<RpcAcl> toRpcAclList(List<ACL> aclList)
     {
-        return event.getData();
-    }
-
-    @ThriftField(8)
-    public String getName()
-    {
-        return event.getPath();
-    }
-
-    @ThriftField(9)
-    public List<String> getChildren()
-    {
-        return event.getChildren();
-    }
-
-    @ThriftField(10)
-    public List<RpcAcl> getACLList()
-    {
-        List<ACL> aclList = event.getACLList();
         if ( aclList != null )
         {
             return Lists.transform
@@ -185,10 +196,8 @@ public class RpcCuratorEvent
         return null;
     }
 
-    @ThriftField(11)
-    public RpcWatchedEvent getWatchedEvent()
+    private RpcWatchedEvent toRpcWatchedEvent(WatchedEvent watchedEvent)
     {
-        WatchedEvent watchedEvent = event.getWatchedEvent();
         if ( watchedEvent != null )
         {
             RpcKeeperState keeperState = toRpcKeeperState(watchedEvent.getState());

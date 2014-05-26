@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.curator.x.rpc.idl.projection;
 
 import com.facebook.swift.service.ThriftMethod;
@@ -38,7 +56,7 @@ public class CuratorProjectionService
     @ThriftMethod
     public void closeCuratorProjection(CuratorProjection projection)
     {
-        CuratorFramework client = projections.remove(projection.getId());
+        CuratorFramework client = projections.remove(projection.id);
         if ( client != null )
         {
             client.close();
@@ -51,21 +69,21 @@ public class CuratorProjectionService
         CuratorFramework client = getClient(projection);
 
         Object builder = client.create();
-        if ( createSpec.isCreatingParentsIfNeeded() )
+        if ( createSpec.creatingParentsIfNeeded )
         {
             builder = castBuilder(builder, CreateBuilder.class).creatingParentsIfNeeded();
         }
-        if ( createSpec.isCompressed() )
+        if ( createSpec.compressed )
         {
             builder = castBuilder(builder, Compressible.class).compressed();
         }
-        if ( createSpec.isWithProtection() )
+        if ( createSpec.withProtection )
         {
             builder = castBuilder(builder, CreateBuilder.class).withProtection();
         }
-        builder = castBuilder(builder, CreateModable.class).withMode(getRealMode(createSpec.getMode()));
+        builder = castBuilder(builder, CreateModable.class).withMode(getRealMode(createSpec.mode));
 
-        if ( createSpec.isAsync() )
+        if ( createSpec.doAsync )
         {
             BackgroundCallback backgroundCallback = new BackgroundCallback()
             {
@@ -78,7 +96,7 @@ public class CuratorProjectionService
             builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
         }
 
-        return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.getPath(), createSpec.getData().getBytes()));
+        return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.path, createSpec.data.getBytes()));
     }
 
     @ThriftMethod
@@ -116,10 +134,10 @@ public class CuratorProjectionService
 
     private CuratorFramework getClient(CuratorProjection projection) throws Exception
     {
-        CuratorFramework client = projections.get(projection.getId());
+        CuratorFramework client = projections.get(projection.id);
         if ( client == null )
         {
-            throw new Exception("No client found with id: " + projection.getId());
+            throw new Exception("No client found with id: " + projection.id);
         }
         return client;
     }

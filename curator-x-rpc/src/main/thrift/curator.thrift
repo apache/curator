@@ -1,5 +1,6 @@
 namespace java.swift org.apache.curator
-namespace cpp org.apache.curator
+namespace cpp org.apache.curator.generated
+namespace java org.apache.curator.generated
 
 
 enum CreateMode {
@@ -20,13 +21,12 @@ enum KeeperState {
 
 struct CreateSpec {
   1: string path;
-  2: string asyncId;
-  3: string data;
-  4: CreateMode mode;
-  5: bool async;
-  6: bool compressed;
-  7: bool creatingParentsIfNeeded;
-  8: bool withProtection;
+  2: string data;
+  3: CreateMode mode;
+  4: bool doAsync;
+  5: bool compressed;
+  6: bool creatingParentsIfNeeded;
+  7: bool withProtection;
 }
 
 struct CuratorProjection {
@@ -76,7 +76,7 @@ struct CuratorEvent {
   7: binary data;
   8: string name;
   9: list<string> children;
-  10: list<Acl> aCLList;
+  10: list<Acl> aclList;
   11: WatchedEvent watchedEvent;
 }
 
