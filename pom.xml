@@ -84,6 +84,7 @@
         <zookeeper-version>3.4.6</zookeeper-version>
         <guava-version>16.0.1</guava-version>
         <testng-version>6.8.8</testng-version>
+        <swift-version>0.12.0</swift-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -253,6 +254,7 @@
         <module>curator-examples</module>
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
+        <module>curator-x-rpc</module>
     </modules>
 
     <dependencyManagement>
@@ -411,6 +413,18 @@
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
                 <version>${testng-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.facebook.swift</groupId>
+                <artifactId>swift-codec</artifactId>
+                <version>${swift-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.facebook.swift</groupId>
+                <artifactId>swift-service</artifactId>
+                <version>${swift-version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
