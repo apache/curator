@@ -15,17 +15,17 @@ import java.util.List;
 
 @SuppressWarnings("deprecation")
 @ThriftStruct("CuratorEvent")
-public class CuratorRpcEvent
+public class RpcCuratorEvent
 {
     private final CuratorProjection projection;
     private final CuratorEvent event;
 
-    public CuratorRpcEvent()
+    public RpcCuratorEvent()
     {
         throw new UnsupportedOperationException();
     }
 
-    public CuratorRpcEvent(CuratorProjection projection, CuratorEvent event)
+    public RpcCuratorEvent(CuratorProjection projection, CuratorEvent event)
     {
         this.projection = projection;
         this.event = event;
@@ -38,63 +38,63 @@ public class CuratorRpcEvent
     }
 
     @ThriftField(2)
-    public CuratorRpcEventType getType()
+    public RpcCuratorEventType getType()
     {
         switch ( event.getType() )
         {
             case CREATE:
             {
-                return CuratorRpcEventType.CREATE;
+                return RpcCuratorEventType.CREATE;
             }
 
             case DELETE:
             {
-                return CuratorRpcEventType.DELETE;
+                return RpcCuratorEventType.DELETE;
             }
 
             case EXISTS:
             {
-                return CuratorRpcEventType.EXISTS;
+                return RpcCuratorEventType.EXISTS;
             }
 
             case GET_DATA:
             {
-                return CuratorRpcEventType.GET_DATA;
+                return RpcCuratorEventType.GET_DATA;
             }
 
             case SET_DATA:
             {
-                return CuratorRpcEventType.SET_DATA;
+                return RpcCuratorEventType.SET_DATA;
             }
 
             case CHILDREN:
             {
-                return CuratorRpcEventType.CHILDREN;
+                return RpcCuratorEventType.CHILDREN;
             }
 
             case SYNC:
             {
-                return CuratorRpcEventType.SYNC;
+                return RpcCuratorEventType.SYNC;
             }
 
             case GET_ACL:
             {
-                return CuratorRpcEventType.GET_ACL;
+                return RpcCuratorEventType.GET_ACL;
             }
 
             case SET_ACL:
             {
-                return CuratorRpcEventType.SET_ACL;
+                return RpcCuratorEventType.SET_ACL;
             }
 
             case WATCHED:
             {
-                return CuratorRpcEventType.WATCHED;
+                return RpcCuratorEventType.WATCHED;
             }
 
             case CLOSING:
             {
-                return CuratorRpcEventType.CLOSING;
+                return RpcCuratorEventType.CLOSING;
             }
         }
 
