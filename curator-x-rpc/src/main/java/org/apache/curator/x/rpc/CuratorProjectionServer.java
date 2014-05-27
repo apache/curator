@@ -24,22 +24,18 @@ import com.facebook.swift.service.ThriftServer;
 import com.facebook.swift.service.ThriftServiceProcessor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
-import io.airlift.configuration.Config;
+import com.google.common.collect.Maps;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationLoader;
+import io.airlift.configuration.ConfigurationMetadata;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjectionService;
-import org.codehaus.jackson.map.AnnotationIntrospector;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.introspect.AnnotatedMethod;
-import org.codehaus.jackson.map.introspect.NopAnnotationIntrospector;
-import org.codehaus.jackson.node.ObjectNode;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -64,31 +60,20 @@ public class CuratorProjectionServer
             return;
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String options;
+        Map<String, String> options;
         File f = new File(args[0]);
         if ( f.exists() )
         {
-            options = Files.toString(f, Charset.defaultCharset());
+            options = new ConfigurationLoader().loadPropertiesFrom(f.getPath());
         }
         else
         {
             System.out.println("First argument is not a file. Treating the command line as a list of field/values");
-            options = buildOptions(objectMapper, args);
+            options = buildOptions(args);
         }
 
-        AnnotationIntrospector introspector = new NopAnnotationIntrospector()
-        {
-            @Override
-            public String findSettablePropertyName(AnnotatedMethod am)
-            {
-                Config config = am.getAnnotated().getAnnotation(Config.class);
-                return (config != null) ? config.value() : super.findSettablePropertyName(am);
-            }
-        };
-        DeserializationConfig deserializationConfig = objectMapper.getDeserializationConfig().withAnnotationIntrospector(introspector);
-        objectMapper.setDeserializationConfig(deserializationConfig);
-        Configuration configuration = objectMapper.reader().withType(Configuration.class).readValue(options);
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(options);
+        Configuration configuration = configurationFactory.build(Configuration.class);
 
         final CuratorProjectionServer server = new CuratorProjectionServer(configuration);
         server.start();
@@ -141,19 +126,17 @@ public class CuratorProjectionServer
         System.out.println();
         System.out.println("Values:");
 
-        for ( Method method : Configuration.class.getMethods() )
+        ConfigurationMetadata<Configuration> metadata = ConfigurationMetadata.getConfigurationMetadata(Configuration.class);
+        for ( ConfigurationMetadata.AttributeMetadata attributeMetadata : metadata.getAttributes().values() )
         {
-            Config config = method.getAnnotation(Config.class);
-            if ( (config != null) && (method.getParameterTypes().length == 1) )
-            {
-                System.out.println("\t" + config.value() + ": " + getType(method));
-            }
+            ConfigurationMetadata.InjectionPointMetaData injectionPoint = attributeMetadata.getInjectionPoint();
+            System.out.println("\t" + injectionPoint.getProperty() + ": " + getType(attributeMetadata.getGetter()));
         }
     }
 
     private static String getType(Method method)
     {
-        Class<?> type = method.getParameterTypes()[0];
+        Class<?> type = method.getReturnType();
         String result = type.getSimpleName();
         if ( type.equals(Duration.class) )
         {
@@ -171,17 +154,17 @@ public class CuratorProjectionServer
         return " (e.g. \"" + s + "\")";
     }
 
-    private static String buildOptions(ObjectMapper objectMapper, String[] args) throws IOException
+    private static Map<String, String> buildOptions(String[] args) throws IOException
     {
-        ObjectNode node = objectMapper.createObjectNode();
+        Map<String, String> options = Maps.newHashMap();
         for ( int i = 0; i < args.length; i += 2 )
         {
             if ( (i + 1) >= args.length )
             {
                 throw new IOException("Bad command line. Must be list of fields and values of the form: \"field1 value1 ... fieldN valueN\"");
             }
-            node.put(args[i], args[i + 1]);
+            options.put(args[i], args[i + 1]);
         }
-        return objectMapper.writeValueAsString(node);
+        return options;
     }
 }
