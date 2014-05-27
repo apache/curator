@@ -38,7 +38,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
   private static final org.apache.thrift.protocol.TField PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("path", org.apache.thrift.protocol.TType.STRING, (short)1);
   private static final org.apache.thrift.protocol.TField DATA_FIELD_DESC = new org.apache.thrift.protocol.TField("data", org.apache.thrift.protocol.TType.STRING, (short)2);
   private static final org.apache.thrift.protocol.TField MODE_FIELD_DESC = new org.apache.thrift.protocol.TField("mode", org.apache.thrift.protocol.TType.I32, (short)3);
-  private static final org.apache.thrift.protocol.TField DO_ASYNC_FIELD_DESC = new org.apache.thrift.protocol.TField("doAsync", org.apache.thrift.protocol.TType.BOOL, (short)4);
+  private static final org.apache.thrift.protocol.TField ASYNC_CONTEXT_FIELD_DESC = new org.apache.thrift.protocol.TField("asyncContext", org.apache.thrift.protocol.TType.STRING, (short)4);
   private static final org.apache.thrift.protocol.TField COMPRESSED_FIELD_DESC = new org.apache.thrift.protocol.TField("compressed", org.apache.thrift.protocol.TType.BOOL, (short)5);
   private static final org.apache.thrift.protocol.TField CREATING_PARENTS_IF_NEEDED_FIELD_DESC = new org.apache.thrift.protocol.TField("creatingParentsIfNeeded", org.apache.thrift.protocol.TType.BOOL, (short)6);
   private static final org.apache.thrift.protocol.TField WITH_PROTECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("withProtection", org.apache.thrift.protocol.TType.BOOL, (short)7);
@@ -56,7 +56,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
    * @see CreateMode
    */
   public CreateMode mode; // required
-  public boolean doAsync; // required
+  public String asyncContext; // required
   public boolean compressed; // required
   public boolean creatingParentsIfNeeded; // required
   public boolean withProtection; // required
@@ -70,7 +70,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
      * @see CreateMode
      */
     MODE((short)3, "mode"),
-    DO_ASYNC((short)4, "doAsync"),
+    ASYNC_CONTEXT((short)4, "asyncContext"),
     COMPRESSED((short)5, "compressed"),
     CREATING_PARENTS_IF_NEEDED((short)6, "creatingParentsIfNeeded"),
     WITH_PROTECTION((short)7, "withProtection");
@@ -94,8 +94,8 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
           return DATA;
         case 3: // MODE
           return MODE;
-        case 4: // DO_ASYNC
-          return DO_ASYNC;
+        case 4: // ASYNC_CONTEXT
+          return ASYNC_CONTEXT;
         case 5: // COMPRESSED
           return COMPRESSED;
         case 6: // CREATING_PARENTS_IF_NEEDED
@@ -142,10 +142,9 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
   }
 
   // isset id assignments
-  private static final int __DOASYNC_ISSET_ID = 0;
-  private static final int __COMPRESSED_ISSET_ID = 1;
-  private static final int __CREATINGPARENTSIFNEEDED_ISSET_ID = 2;
-  private static final int __WITHPROTECTION_ISSET_ID = 3;
+  private static final int __COMPRESSED_ISSET_ID = 0;
+  private static final int __CREATINGPARENTSIFNEEDED_ISSET_ID = 1;
+  private static final int __WITHPROTECTION_ISSET_ID = 2;
   private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
@@ -156,8 +155,8 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
     tmpMap.put(_Fields.MODE, new org.apache.thrift.meta_data.FieldMetaData("mode", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, CreateMode.class)));
-    tmpMap.put(_Fields.DO_ASYNC, new org.apache.thrift.meta_data.FieldMetaData("doAsync", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
+    tmpMap.put(_Fields.ASYNC_CONTEXT, new org.apache.thrift.meta_data.FieldMetaData("asyncContext", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.COMPRESSED, new org.apache.thrift.meta_data.FieldMetaData("compressed", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
     tmpMap.put(_Fields.CREATING_PARENTS_IF_NEEDED, new org.apache.thrift.meta_data.FieldMetaData("creatingParentsIfNeeded", org.apache.thrift.TFieldRequirementType.DEFAULT, 
@@ -175,7 +174,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     String path,
     ByteBuffer data,
     CreateMode mode,
-    boolean doAsync,
+    String asyncContext,
     boolean compressed,
     boolean creatingParentsIfNeeded,
     boolean withProtection)
@@ -184,8 +183,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     this.path = path;
     this.data = data;
     this.mode = mode;
-    this.doAsync = doAsync;
-    setDoAsyncIsSet(true);
+    this.asyncContext = asyncContext;
     this.compressed = compressed;
     setCompressedIsSet(true);
     this.creatingParentsIfNeeded = creatingParentsIfNeeded;
@@ -209,7 +207,9 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     if (other.isSetMode()) {
       this.mode = other.mode;
     }
-    this.doAsync = other.doAsync;
+    if (other.isSetAsyncContext()) {
+      this.asyncContext = other.asyncContext;
+    }
     this.compressed = other.compressed;
     this.creatingParentsIfNeeded = other.creatingParentsIfNeeded;
     this.withProtection = other.withProtection;
@@ -224,8 +224,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     this.path = null;
     this.data = null;
     this.mode = null;
-    setDoAsyncIsSet(false);
-    this.doAsync = false;
+    this.asyncContext = null;
     setCompressedIsSet(false);
     this.compressed = false;
     setCreatingParentsIfNeededIsSet(false);
@@ -324,27 +323,28 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     }
   }
 
-  public boolean isDoAsync() {
-    return this.doAsync;
+  public String getAsyncContext() {
+    return this.asyncContext;
   }
 
-  public CreateSpec setDoAsync(boolean doAsync) {
-    this.doAsync = doAsync;
-    setDoAsyncIsSet(true);
+  public CreateSpec setAsyncContext(String asyncContext) {
+    this.asyncContext = asyncContext;
     return this;
   }
 
-  public void unsetDoAsync() {
-    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __DOASYNC_ISSET_ID);
+  public void unsetAsyncContext() {
+    this.asyncContext = null;
   }
 
-  /** Returns true if field doAsync is set (has been assigned a value) and false otherwise */
-  public boolean isSetDoAsync() {
-    return EncodingUtils.testBit(__isset_bitfield, __DOASYNC_ISSET_ID);
+  /** Returns true if field asyncContext is set (has been assigned a value) and false otherwise */
+  public boolean isSetAsyncContext() {
+    return this.asyncContext != null;
   }
 
-  public void setDoAsyncIsSet(boolean value) {
-    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __DOASYNC_ISSET_ID, value);
+  public void setAsyncContextIsSet(boolean value) {
+    if (!value) {
+      this.asyncContext = null;
+    }
   }
 
   public boolean isCompressed() {
@@ -442,11 +442,11 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
       }
       break;
 
-    case DO_ASYNC:
+    case ASYNC_CONTEXT:
       if (value == null) {
-        unsetDoAsync();
+        unsetAsyncContext();
       } else {
-        setDoAsync((Boolean)value);
+        setAsyncContext((String)value);
       }
       break;
 
@@ -488,8 +488,8 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     case MODE:
       return getMode();
 
-    case DO_ASYNC:
-      return Boolean.valueOf(isDoAsync());
+    case ASYNC_CONTEXT:
+      return getAsyncContext();
 
     case COMPRESSED:
       return Boolean.valueOf(isCompressed());
@@ -517,8 +517,8 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
       return isSetData();
     case MODE:
       return isSetMode();
-    case DO_ASYNC:
-      return isSetDoAsync();
+    case ASYNC_CONTEXT:
+      return isSetAsyncContext();
     case COMPRESSED:
       return isSetCompressed();
     case CREATING_PARENTS_IF_NEEDED:
@@ -569,12 +569,12 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
         return false;
     }
 
-    boolean this_present_doAsync = true;
-    boolean that_present_doAsync = true;
-    if (this_present_doAsync || that_present_doAsync) {
-      if (!(this_present_doAsync && that_present_doAsync))
+    boolean this_present_asyncContext = true && this.isSetAsyncContext();
+    boolean that_present_asyncContext = true && that.isSetAsyncContext();
+    if (this_present_asyncContext || that_present_asyncContext) {
+      if (!(this_present_asyncContext && that_present_asyncContext))
         return false;
-      if (this.doAsync != that.doAsync)
+      if (!this.asyncContext.equals(that.asyncContext))
         return false;
     }
 
@@ -651,12 +651,12 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetDoAsync()).compareTo(other.isSetDoAsync());
+    lastComparison = Boolean.valueOf(isSetAsyncContext()).compareTo(other.isSetAsyncContext());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetDoAsync()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.doAsync, other.doAsync);
+    if (isSetAsyncContext()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.asyncContext, other.asyncContext);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -735,8 +735,12 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
     }
     first = false;
     if (!first) sb.append(", ");
-    sb.append("doAsync:");
-    sb.append(this.doAsync);
+    sb.append("asyncContext:");
+    if (this.asyncContext == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.asyncContext);
+    }
     first = false;
     if (!first) sb.append(", ");
     sb.append("compressed:");
@@ -819,10 +823,10 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 4: // DO_ASYNC
-            if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
-              struct.doAsync = iprot.readBool();
-              struct.setDoAsyncIsSet(true);
+          case 4: // ASYNC_CONTEXT
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.asyncContext = iprot.readString();
+              struct.setAsyncContextIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -881,9 +885,11 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
         oprot.writeI32(struct.mode.getValue());
         oprot.writeFieldEnd();
       }
-      oprot.writeFieldBegin(DO_ASYNC_FIELD_DESC);
-      oprot.writeBool(struct.doAsync);
-      oprot.writeFieldEnd();
+      if (struct.asyncContext != null) {
+        oprot.writeFieldBegin(ASYNC_CONTEXT_FIELD_DESC);
+        oprot.writeString(struct.asyncContext);
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldBegin(COMPRESSED_FIELD_DESC);
       oprot.writeBool(struct.compressed);
       oprot.writeFieldEnd();
@@ -920,7 +926,7 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
       if (struct.isSetMode()) {
         optionals.set(2);
       }
-      if (struct.isSetDoAsync()) {
+      if (struct.isSetAsyncContext()) {
         optionals.set(3);
       }
       if (struct.isSetCompressed()) {
@@ -942,8 +948,8 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
       if (struct.isSetMode()) {
         oprot.writeI32(struct.mode.getValue());
       }
-      if (struct.isSetDoAsync()) {
-        oprot.writeBool(struct.doAsync);
+      if (struct.isSetAsyncContext()) {
+        oprot.writeString(struct.asyncContext);
       }
       if (struct.isSetCompressed()) {
         oprot.writeBool(struct.compressed);
@@ -973,8 +979,8 @@ public class CreateSpec implements org.apache.thrift.TBase<CreateSpec, CreateSpe
         struct.setModeIsSet(true);
       }
       if (incoming.get(3)) {
-        struct.doAsync = iprot.readBool();
-        struct.setDoAsyncIsSet(true);
+        struct.asyncContext = iprot.readString();
+        struct.setAsyncContextIsSet(true);
       }
       if (incoming.get(4)) {
         struct.compressed = iprot.readBool();

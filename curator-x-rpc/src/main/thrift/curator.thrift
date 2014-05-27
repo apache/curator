@@ -23,7 +23,7 @@ struct CreateSpec {
   1: string path;
   2: binary data;
   3: CreateMode mode;
-  4: bool doAsync;
+  4: string asyncContext;
   5: bool compressed;
   6: bool creatingParentsIfNeeded;
   7: bool withProtection;

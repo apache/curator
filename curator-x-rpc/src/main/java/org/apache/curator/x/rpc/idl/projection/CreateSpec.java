@@ -20,28 +20,50 @@ package org.apache.curator.x.rpc.idl.projection;
 
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
+import org.apache.curator.framework.api.CreateBuilder;
 
 @ThriftStruct
 public class CreateSpec
 {
+    /**
+     * Path to create
+     */
     @ThriftField(1)
     public String path;
 
+    /**
+     * Data for the new node
+     */
     @ThriftField(2)
     public byte[] data;
 
+    /**
+     * Create mode. Default is {@link CreateMode#PERSISTENT}
+     */
     @ThriftField(3)
     public CreateMode mode;
 
+    /**
+     * If non-null, do the create asynchronously and use this value as the event context
+     */
     @ThriftField(4)
-    public boolean doAsync;
+    public String asyncContext;
 
+    /**
+     * If true, compress the data
+     */
     @ThriftField(5)
     public boolean compressed;
 
+    /**
+     * If true, create parents as in {@link CreateBuilder#creatingParentsIfNeeded()}
+     */
     @ThriftField(6)
     public boolean creatingParentsIfNeeded;
 
+    /**
+     * If true, use protection as in {@link CreateBuilder#withProtection()}
+     */
     @ThriftField(7)
     public boolean withProtection;
 
@@ -49,12 +71,12 @@ public class CreateSpec
     {
     }
 
-    public CreateSpec(String path, byte[] data, CreateMode mode, boolean doAsync, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection)
+    public CreateSpec(String path, byte[] data, CreateMode mode, String asyncContext, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection)
     {
         this.path = path;
         this.data = data;
         this.mode = mode;
-        this.doAsync = doAsync;
+        this.asyncContext = asyncContext;
         this.compressed = compressed;
         this.creatingParentsIfNeeded = creatingParentsIfNeeded;
         this.withProtection = withProtection;

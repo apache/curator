@@ -20,6 +20,7 @@ package org.apache.curator.x.rpc;
 
 import org.apache.curator.generated.CreateSpec;
 import org.apache.curator.generated.CuratorEvent;
+import org.apache.curator.generated.CuratorEventType;
 import org.apache.curator.generated.CuratorProjection;
 import org.apache.curator.generated.CuratorProjectionSpec;
 import org.apache.curator.generated.CuratorService;
@@ -63,6 +64,11 @@ public class TestClient
                         {
                             CuratorEvent nextEvent = serviceClient.getNextEvent(curatorProjection);
                             System.out.println(nextEvent.type);
+                            if ( nextEvent.type == CuratorEventType.CREATE )
+                            {
+                                System.out.println("Async context: " + nextEvent.context);
+                                System.out.println("Async path: " + nextEvent.path);
+                            }
                         }
                     }
                     catch ( TException e )
@@ -76,7 +82,8 @@ public class TestClient
         CreateSpec createSpec = new CreateSpec();
         createSpec.path = "/a/b/c";
         createSpec.creatingParentsIfNeeded = true;
+        createSpec.asyncContext = "foo";
         String path = client.create(curatorProjection, createSpec);
-        System.out.println(path);
+        System.out.println("Path: " + path);
     }
 }

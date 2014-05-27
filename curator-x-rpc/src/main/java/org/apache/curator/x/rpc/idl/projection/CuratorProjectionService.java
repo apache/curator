@@ -112,7 +112,7 @@ public class CuratorProjectionService
             builder = castBuilder(builder, CreateModable.class).withMode(getRealMode(createSpec.mode));
         }
 
-        if ( createSpec.doAsync )
+        if ( createSpec.asyncContext != null )
         {
             BackgroundCallback backgroundCallback = new BackgroundCallback()
             {
@@ -122,7 +122,7 @@ public class CuratorProjectionService
                     addEvent(projection, new RpcCuratorEvent(event));
                 }
             };
-            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, createSpec.asyncContext);
         }
 
         return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.path, createSpec.data));
