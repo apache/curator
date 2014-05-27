@@ -70,15 +70,6 @@ public class CuratorProjectionService
         return projection;
     }
 
-    private void addEvent(CuratorProjection projection, RpcCuratorEvent event)
-    {
-        CuratorEntry entry = rpcManager.get(projection.id);
-        if ( entry != null )
-        {
-            entry.addEvent(event);
-        }
-    }
-
     @ThriftMethod
     public void closeCuratorProjection(CuratorProjection projection)
     {
@@ -126,6 +117,15 @@ public class CuratorProjectionService
         }
 
         return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.path, createSpec.data));
+    }
+
+    private void addEvent(CuratorProjection projection, RpcCuratorEvent event)
+    {
+        CuratorEntry entry = rpcManager.get(projection.id);
+        if ( entry != null )
+        {
+            entry.addEvent(event);
+        }
     }
 
     private org.apache.zookeeper.CreateMode getRealMode(CreateMode mode)
