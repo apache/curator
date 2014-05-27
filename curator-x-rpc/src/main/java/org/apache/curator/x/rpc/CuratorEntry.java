@@ -6,13 +6,11 @@ import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
 import java.io.Closeable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorEntry implements Closeable
 {
     private final CuratorFramework client;
-    private final AtomicLong lastAccessEpoch = new AtomicLong(0);
     private final BlockingQueue<RpcCuratorEvent> events = Queues.newLinkedBlockingQueue();
     private final AtomicReference<State> state = new AtomicReference<State>(State.OPEN);
 
@@ -25,7 +23,6 @@ public class CuratorEntry implements Closeable
     public CuratorEntry(CuratorFramework client)
     {
         this.client = client;
-        updateLastAccess();
     }
 
     @Override
@@ -55,18 +52,8 @@ public class CuratorEntry implements Closeable
         }
     }
 
-    public void updateLastAccess()
-    {
-        lastAccessEpoch.set(System.currentTimeMillis());
-    }
-
     public CuratorFramework getClient()
     {
         return (state.get() == State.OPEN) ? client : null;
-    }
-
-    public long getLastAccessEpoch()
-    {
-        return lastAccessEpoch.get();
     }
 }

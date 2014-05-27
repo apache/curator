@@ -26,12 +26,13 @@ import com.facebook.swift.service.ThriftServiceProcessor;
 import com.google.common.collect.Lists;
 import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjectionService;
+import java.util.concurrent.TimeUnit;
 
 public class CuratorProjectionServer
 {
     public static void main(String[] args)
     {
-        RpcManager rpcManager = new RpcManager();
+        RpcManager rpcManager = new RpcManager(TimeUnit.SECONDS.toMillis(10));   // TODO
         EventService eventService = new EventService(rpcManager, 5000); // TODO
         CuratorProjectionService projectionService = new CuratorProjectionService(rpcManager);
         ThriftServiceProcessor processor = new ThriftServiceProcessor(new ThriftCodecManager(), Lists.<ThriftEventHandler>newArrayList(), projectionService, eventService);
