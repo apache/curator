@@ -36,6 +36,10 @@ struct CuratorProjection {
 struct CuratorProjectionSpec {
 }
 
+struct GenericProjection {
+  1: string id;
+}
+
 struct id {
   1: string scheme;
   2: string id;
@@ -80,7 +84,9 @@ struct CuratorEvent {
 }
 
 service CuratorService {
+  GenericProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs);
   void closeCuratorProjection(1: CuratorProjection projection);
+  bool closeGenericProjection(1: CuratorProjection curatorProjection, 2: GenericProjection genericProjection);
   string create(1: CuratorProjection projection, 2: CreateSpec createSpec);
   CuratorProjection newCuratorProjection(1: CuratorProjectionSpec spec);
 }

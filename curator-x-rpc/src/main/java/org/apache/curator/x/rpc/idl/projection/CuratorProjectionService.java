@@ -30,17 +30,23 @@ import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.PathAndBytesable;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.x.rpc.Closer;
 import org.apache.curator.x.rpc.CuratorEntry;
 import org.apache.curator.x.rpc.RpcManager;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @ThriftService("CuratorService")
 public class CuratorProjectionService
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final RpcManager rpcManager;
 
     public CuratorProjectionService(RpcManager rpcManager)
@@ -83,7 +89,7 @@ public class CuratorProjectionService
     @ThriftMethod
     public String create(final CuratorProjection projection, CreateSpec createSpec) throws Exception
     {
-        CuratorFramework client = getClient(projection);
+        CuratorFramework client = getEntry(projection).getClient();
 
         Object builder = client.create();
         if ( createSpec.creatingParentsIfNeeded )
@@ -117,6 +123,45 @@ public class CuratorProjectionService
         }
 
         return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.path, createSpec.data));
+    }
+
+    @ThriftMethod
+    public boolean closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection) throws Exception
+    {
+        CuratorEntry entry = getEntry(curatorProjection);
+        return entry.closeThing(genericProjection.id);
+    }
+
+    @ThriftMethod
+    public GenericProjection acquireLock(CuratorProjection projection, final String path, int maxWaitMs) throws Exception
+    {
+        CuratorEntry entry = getEntry(projection);
+        InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(entry.getClient(), path);
+        if ( !lock.acquire(maxWaitMs, TimeUnit.MILLISECONDS) )
+        {
+            return null;    // TODO
+        }
+
+        Closer<InterProcessSemaphoreMutex> closer = new Closer<InterProcessSemaphoreMutex>()
+        {
+            @Override
+            public void close(InterProcessSemaphoreMutex mutex)
+            {
+                if ( mutex.isAcquiredInThisProcess() )
+                {
+                    try
+                    {
+                        mutex.release();
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error("Could not release left-over lock for path: " + path, e);
+                    }
+                }
+            }
+        };
+        String id = entry.addThing(lock, closer);
+        return new GenericProjection(id);
     }
 
     private void addEvent(CuratorProjection projection, RpcCuratorEvent event)
@@ -155,14 +200,14 @@ public class CuratorProjectionService
         throw new UnsupportedOperationException("Bad mode: " + mode.toString());
     }
 
-    private CuratorFramework getClient(CuratorProjection projection) throws Exception
+    private CuratorEntry getEntry(CuratorProjection projection) throws Exception
     {
         CuratorEntry entry = rpcManager.get(projection.id);
         if ( entry == null )
         {
             throw new Exception("No client found with id: " + projection.id);
         }
-        return entry.getClient();
+        return entry;
     }
 
     private static <T> T castBuilder(Object createBuilder, Class<T> clazz) throws Exception
