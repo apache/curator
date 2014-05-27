@@ -28,6 +28,8 @@ import com.google.common.collect.Maps;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationLoader;
 import io.airlift.configuration.ConfigurationMetadata;
+import io.airlift.log.Logging;
+import io.airlift.log.LoggingConfiguration;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.apache.curator.x.rpc.idl.event.EventService;
@@ -76,6 +78,8 @@ public class CuratorProjectionServer
         }
 
         ConfigurationFactory configurationFactory = new ConfigurationFactory(options);
+        initLogging(configurationFactory);
+
         Configuration configuration = configurationFactory.build(Configuration.class);
 
         final CuratorProjectionServer server = new CuratorProjectionServer(configuration);
@@ -91,6 +95,12 @@ public class CuratorProjectionServer
         };
         Thread hook = new Thread(shutdown);
         Runtime.getRuntime().addShutdownHook(hook);
+    }
+
+    private static void initLogging(ConfigurationFactory configurationFactory) throws IOException
+    {
+        LoggingConfiguration loggingConfiguration = configurationFactory.build(LoggingConfiguration.class);
+        Logging.initialize().configure(loggingConfiguration);
     }
 
     public CuratorProjectionServer(Configuration configuration)
@@ -135,17 +145,15 @@ public class CuratorProjectionServer
         System.out.println("\t<field value> ...   list of values that would be in the JSON configuration file");
         System.out.println();
 
+        Map<String, String> valuesMap = Maps.newTreeMap();
+
+        buildMetaData(valuesMap, ConfigurationMetadata.getConfigurationMetadata(Configuration.class));
+        buildMetaData(valuesMap, ConfigurationMetadata.getConfigurationMetadata(LoggingConfiguration.class));
+
         System.out.println("Values:");
-        ConfigurationMetadata<Configuration> metadata = ConfigurationMetadata.getConfigurationMetadata(Configuration.class);
-        for ( ConfigurationMetadata.AttributeMetadata attributeMetadata : metadata.getAttributes().values() )
+        for ( String s : valuesMap.values() )
         {
-            ConfigurationMetadata.InjectionPointMetaData injectionPoint = attributeMetadata.getInjectionPoint();
-            System.out.println("\t" + injectionPoint.getProperty() + ": " + attributeMetadata.getGetter().getReturnType().getSimpleName());
-            if ( attributeMetadata.getDescription() != null )
-            {
-                System.out.println("\t\t" + attributeMetadata.getDescription());
-            }
-            System.out.println();
+            System.out.println(s);
         }
 
         System.out.println("Special Types Examples:");
@@ -158,6 +166,21 @@ public class CuratorProjectionServer
         System.out.println("\t\t" + new DataSize(10, DataSize.Unit.BYTE));
         System.out.println("\t\t" + new DataSize(.4, DataSize.Unit.MEGABYTE));
         System.out.println();
+    }
+
+    private static void buildMetaData(Map<String, String> valuesMap, ConfigurationMetadata<?> metadata)
+    {
+        for ( ConfigurationMetadata.AttributeMetadata attributeMetadata : metadata.getAttributes().values() )
+        {
+            int index = 0;
+            ConfigurationMetadata.InjectionPointMetaData injectionPoint = attributeMetadata.getInjectionPoint();
+            valuesMap.put(injectionPoint.getProperty() + index++, "\t" + injectionPoint.getProperty() + ": " + attributeMetadata.getGetter().getReturnType().getSimpleName());
+            if ( attributeMetadata.getDescription() != null )
+            {
+                valuesMap.put(injectionPoint.getProperty() + index++, "\t\t" + attributeMetadata.getDescription());
+            }
+            valuesMap.put(injectionPoint.getProperty() + index, "");
+        }
     }
 
     private static Map<String, String> buildOptions(String[] args) throws IOException
