@@ -34,7 +34,6 @@ import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjectionService;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -90,13 +89,13 @@ public class CuratorProjectionServer
         Runtime.getRuntime().addShutdownHook(hook);
     }
 
-    public CuratorProjectionServer(Configuration thriftServerConfig)
+    public CuratorProjectionServer(Configuration configuration)
     {
-        rpcManager = new RpcManager(TimeUnit.SECONDS.toMillis(10));
-        EventService eventService = new EventService(rpcManager, 5000); // TODO
+        rpcManager = new RpcManager(configuration.getProjectionExpiration().toMillis());
+        EventService eventService = new EventService(rpcManager, configuration.getPingTime().toMillis());
         CuratorProjectionService projectionService = new CuratorProjectionService(rpcManager);
         ThriftServiceProcessor processor = new ThriftServiceProcessor(new ThriftCodecManager(), Lists.<ThriftEventHandler>newArrayList(), projectionService, eventService);
-        server = new ThriftServer(processor, thriftServerConfig);
+        server = new ThriftServer(processor, configuration);
     }
 
     public void start()
@@ -121,37 +120,33 @@ public class CuratorProjectionServer
         System.out.println();
         System.out.println("Arguments:");
         System.out.println("\t<none>              show this help");
-        System.out.println("\t<path>              path to a JSON configuration file");
+        System.out.println("\t<path>              path to a properties configuration file");
         System.out.println("\t<field value> ...   list of values that would be in the JSON configuration file");
         System.out.println();
-        System.out.println("Values:");
 
+        System.out.println("Values:");
         ConfigurationMetadata<Configuration> metadata = ConfigurationMetadata.getConfigurationMetadata(Configuration.class);
         for ( ConfigurationMetadata.AttributeMetadata attributeMetadata : metadata.getAttributes().values() )
         {
             ConfigurationMetadata.InjectionPointMetaData injectionPoint = attributeMetadata.getInjectionPoint();
-            System.out.println("\t" + injectionPoint.getProperty() + ": " + getType(attributeMetadata.getGetter()));
+            System.out.println("\t" + injectionPoint.getProperty() + ": " + attributeMetadata.getGetter().getReturnType().getSimpleName());
+            if ( attributeMetadata.getDescription() != null )
+            {
+                System.out.println("\t\t" + attributeMetadata.getDescription());
+            }
+            System.out.println();
         }
-    }
 
-    private static String getType(Method method)
-    {
-        Class<?> type = method.getReturnType();
-        String result = type.getSimpleName();
-        if ( type.equals(Duration.class) )
-        {
-            result += example(new Duration(10, TimeUnit.MINUTES));
-        }
-        else if ( type.equals(DataSize.class) )
-        {
-            result += example(new DataSize(1.5, DataSize.Unit.GIGABYTE));
-        }
-        return result;
-    }
-
-    private static String example(Object s)
-    {
-        return " (e.g. \"" + s + "\")";
+        System.out.println("Special Types Examples:");
+        System.out.println("\t" + Duration.class.getSimpleName());
+        System.out.println("\t\t" + new Duration(10, TimeUnit.MINUTES));
+        System.out.println("\t\t" + new Duration(5, TimeUnit.MILLISECONDS));
+        System.out.println("\t\t" + new Duration(1.5, TimeUnit.HOURS));
+        System.out.println("\t" + DataSize.class.getSimpleName());
+        System.out.println("\t\t" + new DataSize(1.5, DataSize.Unit.GIGABYTE));
+        System.out.println("\t\t" + new DataSize(10, DataSize.Unit.BYTE));
+        System.out.println("\t\t" + new DataSize(.4, DataSize.Unit.MEGABYTE));
+        System.out.println();
     }
 
     private static Map<String, String> buildOptions(String[] args) throws IOException

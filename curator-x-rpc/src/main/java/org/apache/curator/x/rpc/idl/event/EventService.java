@@ -10,9 +10,9 @@ import org.apache.curator.x.rpc.idl.projection.CuratorProjection;
 public class EventService
 {
     private final RpcManager rpcManager;
-    private final int pingTimeMs;
+    private final long pingTimeMs;
 
-    public EventService(RpcManager rpcManager, int pingTimeMs)
+    public EventService(RpcManager rpcManager, long pingTimeMs)
     {
         this.rpcManager = rpcManager;
         this.pingTimeMs = pingTimeMs;

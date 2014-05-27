@@ -66,7 +66,7 @@ public class CuratorEntry implements Closeable
         }
     }
 
-    public RpcCuratorEvent pollForEvent(int maxWaitMs) throws InterruptedException
+    public RpcCuratorEvent pollForEvent(long maxWaitMs) throws InterruptedException
     {
         if ( state.get() == State.OPEN )
         {
