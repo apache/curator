@@ -32,6 +32,8 @@ import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjectionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -40,9 +42,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorProjectionServer
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final RpcManager rpcManager;
     private final ThriftServer server;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+    private final Configuration configuration;
 
     private enum State
     {
@@ -91,6 +95,7 @@ public class CuratorProjectionServer
 
     public CuratorProjectionServer(Configuration configuration)
     {
+        this.configuration = configuration;
         rpcManager = new RpcManager(configuration.getProjectionExpiration().toMillis());
         EventService eventService = new EventService(rpcManager, configuration.getPingTime().toMillis());
         CuratorProjectionService projectionService = new CuratorProjectionService(rpcManager);
@@ -103,14 +108,20 @@ public class CuratorProjectionServer
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
         server.start();
+
+        log.info("Server listening on port: " + configuration.getPort());
     }
 
     public void stop()
     {
         if ( state.compareAndSet(State.STARTED, State.STOPPED) )
         {
+            log.info("Stopping...");
+
             rpcManager.close();
             server.close();
+
+            log.info("Stopped");
         }
     }
 
