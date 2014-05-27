@@ -142,7 +142,7 @@ public class CuratorProjectionServer
         System.out.println("Arguments:");
         System.out.println("\t<none>              show this help");
         System.out.println("\t<path>              path to a properties configuration file");
-        System.out.println("\t<field value> ...   list of values that would be in the JSON configuration file");
+        System.out.println("\t<field value> ...   list of properties of the form: \"field1 value1 ... fieldN valueN\"");
         System.out.println();
 
         Map<String, String> valuesMap = Maps.newTreeMap();
