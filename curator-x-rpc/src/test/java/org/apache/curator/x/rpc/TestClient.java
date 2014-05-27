@@ -29,7 +29,6 @@ import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
-import java.util.Arrays;
 import java.util.concurrent.Executors;
 
 public class TestClient
@@ -62,7 +61,7 @@ public class TestClient
                         //noinspection InfiniteLoopStatement
                         for(;;)
                         {
-                            CuratorEvent nextEvent = serviceClient.getNextEvent(Arrays.asList(curatorProjection));
+                            CuratorEvent nextEvent = serviceClient.getNextEvent(curatorProjection);
                             System.out.println(nextEvent.type);
                         }
                     }

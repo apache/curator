@@ -67,7 +67,6 @@ struct Acl {
 }
 
 struct CuratorEvent {
-  1: CuratorProjection projection;
   2: CuratorEventType type;
   3: i32 resultCode;
   4: string path;
@@ -87,5 +86,5 @@ service CuratorService {
 }
 
 service EventService {
-  CuratorEvent getNextEvent(1: list<CuratorProjection> projections);
+  CuratorEvent getNextEvent(1: CuratorProjection projection);
 }

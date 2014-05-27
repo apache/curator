@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, CuratorEvent._Fields>, java.io.Serializable, Cloneable, Comparable<CuratorEvent> {
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("CuratorEvent");
 
-  private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
   private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.I32, (short)2);
   private static final org.apache.thrift.protocol.TField RESULT_CODE_FIELD_DESC = new org.apache.thrift.protocol.TField("resultCode", org.apache.thrift.protocol.TType.I32, (short)3);
   private static final org.apache.thrift.protocol.TField PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("path", org.apache.thrift.protocol.TType.STRING, (short)4);
@@ -53,7 +52,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     schemes.put(TupleScheme.class, new CuratorEventTupleSchemeFactory());
   }
 
-  public CuratorProjection projection; // required
   /**
    * 
    * @see CuratorEventType
@@ -71,7 +69,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    PROJECTION((short)1, "projection"),
     /**
      * 
      * @see CuratorEventType
@@ -100,8 +97,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // PROJECTION
-          return PROJECTION;
         case 2: // TYPE
           return TYPE;
         case 3: // RESULT_CODE
@@ -167,8 +162,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
     tmpMap.put(_Fields.TYPE, new org.apache.thrift.meta_data.FieldMetaData("type", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, CuratorEventType.class)));
     tmpMap.put(_Fields.RESULT_CODE, new org.apache.thrift.meta_data.FieldMetaData("resultCode", org.apache.thrift.TFieldRequirementType.DEFAULT, 
@@ -199,7 +192,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
   }
 
   public CuratorEvent(
-    CuratorProjection projection,
     CuratorEventType type,
     int resultCode,
     String path,
@@ -212,7 +204,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     WatchedEvent watchedEvent)
   {
     this();
-    this.projection = projection;
     this.type = type;
     this.resultCode = resultCode;
     setResultCodeIsSet(true);
@@ -231,9 +222,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
    */
   public CuratorEvent(CuratorEvent other) {
     __isset_bitfield = other.__isset_bitfield;
-    if (other.isSetProjection()) {
-      this.projection = new CuratorProjection(other.projection);
-    }
     if (other.isSetType()) {
       this.type = other.type;
     }
@@ -276,7 +264,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
 
   @Override
   public void clear() {
-    this.projection = null;
     this.type = null;
     setResultCodeIsSet(false);
     this.resultCode = 0;
@@ -288,30 +275,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     this.children = null;
     this.aclList = null;
     this.watchedEvent = null;
-  }
-
-  public CuratorProjection getProjection() {
-    return this.projection;
-  }
-
-  public CuratorEvent setProjection(CuratorProjection projection) {
-    this.projection = projection;
-    return this;
-  }
-
-  public void unsetProjection() {
-    this.projection = null;
-  }
-
-  /** Returns true if field projection is set (has been assigned a value) and false otherwise */
-  public boolean isSetProjection() {
-    return this.projection != null;
-  }
-
-  public void setProjectionIsSet(boolean value) {
-    if (!value) {
-      this.projection = null;
-    }
   }
 
   /**
@@ -603,14 +566,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case PROJECTION:
-      if (value == null) {
-        unsetProjection();
-      } else {
-        setProjection((CuratorProjection)value);
-      }
-      break;
-
     case TYPE:
       if (value == null) {
         unsetType();
@@ -696,9 +651,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case PROJECTION:
-      return getProjection();
-
     case TYPE:
       return getType();
 
@@ -740,8 +692,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     }
 
     switch (field) {
-    case PROJECTION:
-      return isSetProjection();
     case TYPE:
       return isSetType();
     case RESULT_CODE:
@@ -778,15 +728,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
   public boolean equals(CuratorEvent that) {
     if (that == null)
       return false;
-
-    boolean this_present_projection = true && this.isSetProjection();
-    boolean that_present_projection = true && that.isSetProjection();
-    if (this_present_projection || that_present_projection) {
-      if (!(this_present_projection && that_present_projection))
-        return false;
-      if (!this.projection.equals(that.projection))
-        return false;
-    }
 
     boolean this_present_type = true && this.isSetType();
     boolean that_present_type = true && that.isSetType();
@@ -894,16 +835,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
 
     int lastComparison = 0;
 
-    lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetProjection()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetType()).compareTo(other.isSetType());
     if (lastComparison != 0) {
       return lastComparison;
@@ -1024,14 +955,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     StringBuilder sb = new StringBuilder("CuratorEvent(");
     boolean first = true;
 
-    sb.append("projection:");
-    if (this.projection == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.projection);
-    }
-    first = false;
-    if (!first) sb.append(", ");
     sb.append("type:");
     if (this.type == null) {
       sb.append("null");
@@ -1114,9 +1037,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
     // check for sub-struct validity
-    if (projection != null) {
-      projection.validate();
-    }
     if (stat != null) {
       stat.validate();
     }
@@ -1161,15 +1081,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
           break;
         }
         switch (schemeField.id) {
-          case 1: // PROJECTION
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-              struct.projection = new CuratorProjection();
-              struct.projection.read(iprot);
-              struct.setProjectionIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
           case 2: // TYPE
             if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
               struct.type = CuratorEventType.findByValue(iprot.readI32());
@@ -1288,11 +1199,6 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      if (struct.projection != null) {
-        oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
-        struct.projection.write(oprot);
-        oprot.writeFieldEnd();
-      }
       if (struct.type != null) {
         oprot.writeFieldBegin(TYPE_FIELD_DESC);
         oprot.writeI32(struct.type.getValue());
@@ -1373,43 +1279,37 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     public void write(org.apache.thrift.protocol.TProtocol prot, CuratorEvent struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       BitSet optionals = new BitSet();
-      if (struct.isSetProjection()) {
+      if (struct.isSetType()) {
         optionals.set(0);
       }
-      if (struct.isSetType()) {
+      if (struct.isSetResultCode()) {
         optionals.set(1);
       }
-      if (struct.isSetResultCode()) {
+      if (struct.isSetPath()) {
         optionals.set(2);
       }
-      if (struct.isSetPath()) {
+      if (struct.isSetContext()) {
         optionals.set(3);
       }
-      if (struct.isSetContext()) {
+      if (struct.isSetStat()) {
         optionals.set(4);
       }
-      if (struct.isSetStat()) {
+      if (struct.isSetData()) {
         optionals.set(5);
       }
-      if (struct.isSetData()) {
+      if (struct.isSetName()) {
         optionals.set(6);
       }
-      if (struct.isSetName()) {
+      if (struct.isSetChildren()) {
         optionals.set(7);
       }
-      if (struct.isSetChildren()) {
+      if (struct.isSetAclList()) {
         optionals.set(8);
       }
-      if (struct.isSetAclList()) {
+      if (struct.isSetWatchedEvent()) {
         optionals.set(9);
       }
-      if (struct.isSetWatchedEvent()) {
-        optionals.set(10);
-      }
-      oprot.writeBitSet(optionals, 11);
-      if (struct.isSetProjection()) {
-        struct.projection.write(oprot);
-      }
+      oprot.writeBitSet(optionals, 10);
       if (struct.isSetType()) {
         oprot.writeI32(struct.type.getValue());
       }
@@ -1457,42 +1357,37 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, CuratorEvent struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(11);
+      BitSet incoming = iprot.readBitSet(10);
       if (incoming.get(0)) {
-        struct.projection = new CuratorProjection();
-        struct.projection.read(iprot);
-        struct.setProjectionIsSet(true);
-      }
-      if (incoming.get(1)) {
         struct.type = CuratorEventType.findByValue(iprot.readI32());
         struct.setTypeIsSet(true);
       }
-      if (incoming.get(2)) {
+      if (incoming.get(1)) {
         struct.resultCode = iprot.readI32();
         struct.setResultCodeIsSet(true);
       }
-      if (incoming.get(3)) {
+      if (incoming.get(2)) {
         struct.path = iprot.readString();
         struct.setPathIsSet(true);
       }
-      if (incoming.get(4)) {
+      if (incoming.get(3)) {
         struct.context = iprot.readString();
         struct.setContextIsSet(true);
       }
-      if (incoming.get(5)) {
+      if (incoming.get(4)) {
         struct.stat = new Stat();
         struct.stat.read(iprot);
         struct.setStatIsSet(true);
       }
-      if (incoming.get(6)) {
+      if (incoming.get(5)) {
         struct.data = iprot.readBinary();
         struct.setDataIsSet(true);
       }
-      if (incoming.get(7)) {
+      if (incoming.get(6)) {
         struct.name = iprot.readString();
         struct.setNameIsSet(true);
       }
-      if (incoming.get(8)) {
+      if (incoming.get(7)) {
         {
           org.apache.thrift.protocol.TList _list10 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
           struct.children = new ArrayList<String>(_list10.size);
@@ -1505,7 +1400,7 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
         }
         struct.setChildrenIsSet(true);
       }
-      if (incoming.get(9)) {
+      if (incoming.get(8)) {
         {
           org.apache.thrift.protocol.TList _list13 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
           struct.aclList = new ArrayList<Acl>(_list13.size);
@@ -1519,7 +1414,7 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
         }
         struct.setAclListIsSet(true);
       }
-      if (incoming.get(10)) {
+      if (incoming.get(9)) {
         struct.watchedEvent = new WatchedEvent();
         struct.watchedEvent.read(iprot);
         struct.setWatchedEventIsSet(true);

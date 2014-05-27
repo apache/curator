@@ -25,7 +25,6 @@ import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.x.rpc.idl.projection.CuratorProjection;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
@@ -37,9 +36,6 @@ import java.util.List;
 @ThriftStruct("CuratorEvent")
 public class RpcCuratorEvent
 {
-    @ThriftField(1)
-    public CuratorProjection projection;
-
     @ThriftField(2)
     public RpcCuratorEventType type;
 
@@ -72,7 +68,6 @@ public class RpcCuratorEvent
 
     public RpcCuratorEvent()
     {
-        this.projection = null;
         this.type = RpcCuratorEventType.PING;
         this.resultCode = 0;
         this.path = null;
@@ -85,9 +80,8 @@ public class RpcCuratorEvent
         this.watchedEvent = null;
     }
 
-    public RpcCuratorEvent(CuratorProjection projection, CuratorEvent event)
+    public RpcCuratorEvent(CuratorEvent event)
     {
-        this.projection = projection;
         this.type = toRpcCuratorEventType(event.getType());
         this.resultCode = event.getResultCode();
         this.path = event.getPath();
@@ -100,9 +94,8 @@ public class RpcCuratorEvent
         this.watchedEvent = toRpcWatchedEvent(event.getWatchedEvent());
     }
 
-    public RpcCuratorEvent(CuratorProjection projection, ConnectionState newState)
+    public RpcCuratorEvent(ConnectionState newState)
     {
-        this.projection = projection;
         this.type = toRpcCuratorEventType(newState);
         this.resultCode = 0;
         this.path = null;

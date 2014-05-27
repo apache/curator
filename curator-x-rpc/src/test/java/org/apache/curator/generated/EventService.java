@@ -36,13 +36,13 @@ public class EventService {
 
   public interface Iface {
 
-    public CuratorEvent getNextEvent(List<CuratorProjection> projections) throws org.apache.thrift.TException;
+    public CuratorEvent getNextEvent(CuratorProjection projection) throws org.apache.thrift.TException;
 
   }
 
   public interface AsyncIface {
 
-    public void getNextEvent(List<CuratorProjection> projections, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+    public void getNextEvent(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -66,16 +66,16 @@ public class EventService {
       super(iprot, oprot);
     }
 
-    public CuratorEvent getNextEvent(List<CuratorProjection> projections) throws org.apache.thrift.TException
+    public CuratorEvent getNextEvent(CuratorProjection projection) throws org.apache.thrift.TException
     {
-      send_getNextEvent(projections);
+      send_getNextEvent(projection);
       return recv_getNextEvent();
     }
 
-    public void send_getNextEvent(List<CuratorProjection> projections) throws org.apache.thrift.TException
+    public void send_getNextEvent(CuratorProjection projection) throws org.apache.thrift.TException
     {
       getNextEvent_args args = new getNextEvent_args();
-      args.setProjections(projections);
+      args.setProjection(projection);
       sendBase("getNextEvent", args);
     }
 
@@ -107,24 +107,24 @@ public class EventService {
       super(protocolFactory, clientManager, transport);
     }
 
-    public void getNextEvent(List<CuratorProjection> projections, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+    public void getNextEvent(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      getNextEvent_call method_call = new getNextEvent_call(projections, resultHandler, this, ___protocolFactory, ___transport);
+      getNextEvent_call method_call = new getNextEvent_call(projection, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
     public static class getNextEvent_call extends org.apache.thrift.async.TAsyncMethodCall {
-      private List<CuratorProjection> projections;
-      public getNextEvent_call(List<CuratorProjection> projections, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      private CuratorProjection projection;
+      public getNextEvent_call(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
-        this.projections = projections;
+        this.projection = projection;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("getNextEvent", org.apache.thrift.protocol.TMessageType.CALL, 0));
         getNextEvent_args args = new getNextEvent_args();
-        args.setProjections(projections);
+        args.setProjection(projection);
         args.write(prot);
         prot.writeMessageEnd();
       }
@@ -171,7 +171,7 @@ public class EventService {
 
       public getNextEvent_result getResult(I iface, getNextEvent_args args) throws org.apache.thrift.TException {
         getNextEvent_result result = new getNextEvent_result();
-        result.success = iface.getNextEvent(args.projections);
+        result.success = iface.getNextEvent(args.projection);
         return result;
       }
     }
@@ -240,7 +240,7 @@ public class EventService {
       }
 
       public void start(I iface, getNextEvent_args args, org.apache.thrift.async.AsyncMethodCallback<CuratorEvent> resultHandler) throws TException {
-        iface.getNextEvent(args.projections,resultHandler);
+        iface.getNextEvent(args.projection,resultHandler);
       }
     }
 
@@ -249,7 +249,7 @@ public class EventService {
   public static class getNextEvent_args implements org.apache.thrift.TBase<getNextEvent_args, getNextEvent_args._Fields>, java.io.Serializable, Cloneable, Comparable<getNextEvent_args>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getNextEvent_args");
 
-    private static final org.apache.thrift.protocol.TField PROJECTIONS_FIELD_DESC = new org.apache.thrift.protocol.TField("projections", org.apache.thrift.protocol.TType.LIST, (short)1);
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -257,11 +257,11 @@ public class EventService {
       schemes.put(TupleScheme.class, new getNextEvent_argsTupleSchemeFactory());
     }
 
-    public List<CuratorProjection> projections; // required
+    public CuratorProjection projection; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      PROJECTIONS((short)1, "projections");
+      PROJECTION((short)1, "projection");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -276,8 +276,8 @@ public class EventService {
        */
       public static _Fields findByThriftId(int fieldId) {
         switch(fieldId) {
-          case 1: // PROJECTIONS
-            return PROJECTIONS;
+          case 1: // PROJECTION
+            return PROJECTION;
           default:
             return null;
         }
@@ -321,9 +321,8 @@ public class EventService {
     public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.PROJECTIONS, new org.apache.thrift.meta_data.FieldMetaData("projections", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
-              new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class))));
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getNextEvent_args.class, metaDataMap);
     }
@@ -332,22 +331,18 @@ public class EventService {
     }
 
     public getNextEvent_args(
-      List<CuratorProjection> projections)
+      CuratorProjection projection)
     {
       this();
-      this.projections = projections;
+      this.projection = projection;
     }
 
     /**
      * Performs a deep copy on <i>other</i>.
      */
     public getNextEvent_args(getNextEvent_args other) {
-      if (other.isSetProjections()) {
-        List<CuratorProjection> __this__projections = new ArrayList<CuratorProjection>(other.projections.size());
-        for (CuratorProjection other_element : other.projections) {
-          __this__projections.add(new CuratorProjection(other_element));
-        }
-        this.projections = __this__projections;
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
       }
     }
 
@@ -357,55 +352,40 @@ public class EventService {
 
     @Override
     public void clear() {
-      this.projections = null;
+      this.projection = null;
     }
 
-    public int getProjectionsSize() {
-      return (this.projections == null) ? 0 : this.projections.size();
+    public CuratorProjection getProjection() {
+      return this.projection;
     }
 
-    public java.util.Iterator<CuratorProjection> getProjectionsIterator() {
-      return (this.projections == null) ? null : this.projections.iterator();
-    }
-
-    public void addToProjections(CuratorProjection elem) {
-      if (this.projections == null) {
-        this.projections = new ArrayList<CuratorProjection>();
-      }
-      this.projections.add(elem);
-    }
-
-    public List<CuratorProjection> getProjections() {
-      return this.projections;
-    }
-
-    public getNextEvent_args setProjections(List<CuratorProjection> projections) {
-      this.projections = projections;
+    public getNextEvent_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
       return this;
     }
 
-    public void unsetProjections() {
-      this.projections = null;
+    public void unsetProjection() {
+      this.projection = null;
     }
 
-    /** Returns true if field projections is set (has been assigned a value) and false otherwise */
-    public boolean isSetProjections() {
-      return this.projections != null;
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
     }
 
-    public void setProjectionsIsSet(boolean value) {
+    public void setProjectionIsSet(boolean value) {
       if (!value) {
-        this.projections = null;
+        this.projection = null;
       }
     }
 
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
-      case PROJECTIONS:
+      case PROJECTION:
         if (value == null) {
-          unsetProjections();
+          unsetProjection();
         } else {
-          setProjections((List<CuratorProjection>)value);
+          setProjection((CuratorProjection)value);
         }
         break;
 
@@ -414,8 +394,8 @@ public class EventService {
 
     public Object getFieldValue(_Fields field) {
       switch (field) {
-      case PROJECTIONS:
-        return getProjections();
+      case PROJECTION:
+        return getProjection();
 
       }
       throw new IllegalStateException();
@@ -428,8 +408,8 @@ public class EventService {
       }
 
       switch (field) {
-      case PROJECTIONS:
-        return isSetProjections();
+      case PROJECTION:
+        return isSetProjection();
       }
       throw new IllegalStateException();
     }
@@ -447,12 +427,12 @@ public class EventService {
       if (that == null)
         return false;
 
-      boolean this_present_projections = true && this.isSetProjections();
-      boolean that_present_projections = true && that.isSetProjections();
-      if (this_present_projections || that_present_projections) {
-        if (!(this_present_projections && that_present_projections))
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
           return false;
-        if (!this.projections.equals(that.projections))
+        if (!this.projection.equals(that.projection))
           return false;
       }
 
@@ -472,12 +452,12 @@ public class EventService {
 
       int lastComparison = 0;
 
-      lastComparison = Boolean.valueOf(isSetProjections()).compareTo(other.isSetProjections());
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
       if (lastComparison != 0) {
         return lastComparison;
       }
-      if (isSetProjections()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projections, other.projections);
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -502,11 +482,11 @@ public class EventService {
       StringBuilder sb = new StringBuilder("getNextEvent_args(");
       boolean first = true;
 
-      sb.append("projections:");
-      if (this.projections == null) {
+      sb.append("projection:");
+      if (this.projection == null) {
         sb.append("null");
       } else {
-        sb.append(this.projections);
+        sb.append(this.projection);
       }
       first = false;
       sb.append(")");
@@ -516,6 +496,9 @@ public class EventService {
     public void validate() throws org.apache.thrift.TException {
       // check for required fields
       // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -552,21 +535,11 @@ public class EventService {
             break;
           }
           switch (schemeField.id) {
-            case 1: // PROJECTIONS
-              if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
-                {
-                  org.apache.thrift.protocol.TList _list16 = iprot.readListBegin();
-                  struct.projections = new ArrayList<CuratorProjection>(_list16.size);
-                  for (int _i17 = 0; _i17 < _list16.size; ++_i17)
-                  {
-                    CuratorProjection _elem18;
-                    _elem18 = new CuratorProjection();
-                    _elem18.read(iprot);
-                    struct.projections.add(_elem18);
-                  }
-                  iprot.readListEnd();
-                }
-                struct.setProjectionsIsSet(true);
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
@@ -586,16 +559,9 @@ public class EventService {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
-        if (struct.projections != null) {
-          oprot.writeFieldBegin(PROJECTIONS_FIELD_DESC);
-          {
-            oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, struct.projections.size()));
-            for (CuratorProjection _iter19 : struct.projections)
-            {
-              _iter19.write(oprot);
-            }
-            oprot.writeListEnd();
-          }
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -616,18 +582,12 @@ public class EventService {
       public void write(org.apache.thrift.protocol.TProtocol prot, getNextEvent_args struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
-        if (struct.isSetProjections()) {
+        if (struct.isSetProjection()) {
           optionals.set(0);
         }
         oprot.writeBitSet(optionals, 1);
-        if (struct.isSetProjections()) {
-          {
-            oprot.writeI32(struct.projections.size());
-            for (CuratorProjection _iter20 : struct.projections)
-            {
-              _iter20.write(oprot);
-            }
-          }
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
         }
       }
 
@@ -636,18 +596,9 @@ public class EventService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          {
-            org.apache.thrift.protocol.TList _list21 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-            struct.projections = new ArrayList<CuratorProjection>(_list21.size);
-            for (int _i22 = 0; _i22 < _list21.size; ++_i22)
-            {
-              CuratorProjection _elem23;
-              _elem23 = new CuratorProjection();
-              _elem23.read(iprot);
-              struct.projections.add(_elem23);
-            }
-          }
-          struct.setProjectionsIsSet(true);
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
         }
       }
     }

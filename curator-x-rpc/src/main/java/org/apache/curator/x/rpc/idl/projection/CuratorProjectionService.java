@@ -33,8 +33,8 @@ import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.x.rpc.CuratorEntry;
 import org.apache.curator.x.rpc.RpcManager;
-import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
 import java.util.UUID;
 
@@ -42,12 +42,10 @@ import java.util.UUID;
 public class CuratorProjectionService
 {
     private final RpcManager rpcManager;
-    private final EventService eventService;
 
-    public CuratorProjectionService(RpcManager rpcManager, EventService eventService)
+    public CuratorProjectionService(RpcManager rpcManager)
     {
         this.rpcManager = rpcManager;
-        this.eventService = eventService;
     }
 
     @ThriftMethod
@@ -64,7 +62,7 @@ public class CuratorProjectionService
             @Override
             public void stateChanged(CuratorFramework client, ConnectionState newState)
             {
-                eventService.addEvent(new RpcCuratorEvent(projection, newState));
+                addEvent(projection, new RpcCuratorEvent(newState));
             }
         };
         client.getConnectionStateListenable().addListener(listener);
@@ -72,13 +70,22 @@ public class CuratorProjectionService
         return projection;
     }
 
+    private void addEvent(CuratorProjection projection, RpcCuratorEvent event)
+    {
+        CuratorEntry entry = rpcManager.get(projection.id);
+        if ( entry != null )
+        {
+            entry.addEvent(event);
+        }
+    }
+
     @ThriftMethod
     public void closeCuratorProjection(CuratorProjection projection)
     {
-        CuratorFramework client = rpcManager.removeClient(projection.id);
-        if ( client != null )
+        CuratorEntry entry = rpcManager.remove(projection.id);
+        if ( entry != null )
         {
-            client.close();
+            entry.close();
         }
     }
 
@@ -112,7 +119,7 @@ public class CuratorProjectionService
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                 {
-                    eventService.addEvent(new RpcCuratorEvent(projection, event));
+                    addEvent(projection, new RpcCuratorEvent(event));
                 }
             };
             builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
@@ -150,12 +157,12 @@ public class CuratorProjectionService
 
     private CuratorFramework getClient(CuratorProjection projection) throws Exception
     {
-        CuratorFramework client = rpcManager.getClient(projection.id);
-        if ( client == null )
+        CuratorEntry entry = rpcManager.get(projection.id);
+        if ( entry == null )
         {
             throw new Exception("No client found with id: " + projection.id);
         }
-        return client;
+        return entry.getClient();
     }
 
     private static <T> T castBuilder(Object createBuilder, Class<T> clazz) throws Exception
