@@ -101,13 +101,13 @@ public class CuratorEntry implements Closeable
 
     public <T> T getThing(String id, Class<T> clazz)
     {
-        Entry entry = things.get(id);
+        Entry entry = (id != null) ? things.get(id) : null;
         return cast(clazz, entry);
     }
 
     public boolean closeThing(String id)
     {
-        Entry entry = things.remove(id);
+        Entry entry = (id != null) ? things.remove(id) : null;
         if ( entry != null )
         {
             //noinspection unchecked
