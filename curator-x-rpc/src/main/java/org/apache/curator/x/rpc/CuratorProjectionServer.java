@@ -32,6 +32,7 @@ import io.airlift.log.Logging;
 import io.airlift.log.LoggingConfiguration;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import org.apache.curator.x.rpc.configuration.Configuration;
 import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjectionService;
 import org.slf4j.Logger;
