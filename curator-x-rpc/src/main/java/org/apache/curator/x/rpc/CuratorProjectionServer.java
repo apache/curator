@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.rpc;
 
+import com.codahale.metrics.MetricRegistry;
 import com.facebook.swift.codec.ThriftCodecManager;
 import com.facebook.swift.service.ThriftEventHandler;
 import com.facebook.swift.service.ThriftServer;
@@ -104,6 +105,7 @@ public class CuratorProjectionServer
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
+        configuration.getLogging().configure(new MetricRegistry(), "curator-rpc");
         server.start();
 
         log.info("Server listening on port: " + configuration.getThrift().getPort());
@@ -117,6 +119,7 @@ public class CuratorProjectionServer
 
             rpcManager.close();
             server.close();
+            configuration.getLogging().stop();
 
             log.info("Stopped");
         }

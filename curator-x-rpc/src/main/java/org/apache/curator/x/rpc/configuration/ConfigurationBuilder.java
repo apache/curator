@@ -13,6 +13,8 @@ import io.dropwizard.logging.ConsoleAppenderFactory;
 import io.dropwizard.logging.FileAppenderFactory;
 import io.dropwizard.logging.LoggingFactory;
 import io.dropwizard.logging.SyslogAppenderFactory;
+import org.jboss.netty.logging.InternalLoggerFactory;
+import org.jboss.netty.logging.Slf4JLoggerFactory;
 import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 import java.io.ByteArrayInputStream;
@@ -27,6 +29,7 @@ public class ConfigurationBuilder
     static
     {
         LoggingFactory.bootstrap();
+        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
     }
 
     public ConfigurationBuilder(String configurationSource)
