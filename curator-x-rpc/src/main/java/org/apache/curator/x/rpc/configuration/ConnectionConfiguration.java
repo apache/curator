@@ -1,24 +1,34 @@
 package org.apache.curator.x.rpc.configuration;
 
-import io.airlift.configuration.Config;
-import io.airlift.configuration.ConfigDescription;
 import io.airlift.units.Duration;
+import javax.validation.constraints.NotNull;
 import java.util.concurrent.TimeUnit;
 
 public class ConnectionConfiguration
 {
+    @NotNull private String name;
     private String connectionString = "localhost:2181";
     private Duration sessionLength = new Duration(1, TimeUnit.MINUTES);
     private Duration connectionTimeout = new Duration(15, TimeUnit.SECONDS);
-    private RetryType retryType;
+    private AuthorizationConfiguration authorization = null;
+    private String namespace = null;
+    private RetryPolicyConfiguration retry = new ExponentialBackoffRetryConfiguration();
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
 
     public String getConnectionString()
     {
         return connectionString;
     }
 
-    @Config("curator.connection.$CONNECTION-NAME$.connection-string")
-    @ConfigDescription("Default ZooKeeper connection string. E.g. \"foo.com:2181,bar.com:2181\"")
     public void setConnectionString(String connectionString)
     {
         this.connectionString = connectionString;
@@ -29,8 +39,6 @@ public class ConnectionConfiguration
         return sessionLength;
     }
 
-    @Config("curator.connection.$CONNECTION-NAME$.session-length")
-    @ConfigDescription("Session length. Default is 1 minute")
     public void setSessionLength(Duration sessionLength)
     {
         this.sessionLength = sessionLength;
@@ -41,21 +49,38 @@ public class ConnectionConfiguration
         return connectionTimeout;
     }
 
-    @Config("curator.connection.$CONNECTION-NAME$.connection-timeout")
-    @ConfigDescription("Connection timeout. Default is 15 seconds")
     public void setConnectionTimeout(Duration connectionTimeout)
     {
         this.connectionTimeout = connectionTimeout;
     }
 
-    public RetryType getRetryType()
+    public AuthorizationConfiguration getAuthorization()
     {
-        return retryType;
+        return authorization;
     }
 
-    @Config("curator.connection.$CONNECTION-NAME$.retry.type")
-    public void setRetryType(RetryType retryType)
+    public void setAuthorization(AuthorizationConfiguration authorization)
     {
-        this.retryType = retryType;
+        this.authorization = authorization;
+    }
+
+    public String getNamespace()
+    {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace)
+    {
+        this.namespace = namespace;
+    }
+
+    public RetryPolicyConfiguration getRetry()
+    {
+        return retry;
+    }
+
+    public void setRetry(RetryPolicyConfiguration retry)
+    {
+        this.retry = retry;
     }
 }

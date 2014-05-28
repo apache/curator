@@ -1,28 +1,45 @@
 package org.apache.curator.x.rpc.configuration;
 
 import com.facebook.swift.service.ThriftServerConfig;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import io.airlift.configuration.Config;
-import io.airlift.configuration.ConfigDescription;
+import com.google.common.collect.Lists;
 import io.airlift.units.Duration;
+import io.dropwizard.logging.LoggingFactory;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class Configuration extends ThriftServerConfig
+public class Configuration
 {
+    private ThriftServerConfig thrift = new ThriftServerConfig();
+    private LoggingFactory logging = new LoggingFactory();
     private Duration projectionExpiration = new Duration(3, TimeUnit.MINUTES);
     private Duration pingTime = new Duration(5, TimeUnit.SECONDS);
-    private List<String> connectionNames = ImmutableList.of();
+    private List<ConnectionConfiguration> connections = Lists.newArrayList();
+
+    public LoggingFactory getLogging()
+    {
+        return logging;
+    }
+
+    public void setLogging(LoggingFactory logging)
+    {
+        this.logging = logging;
+    }
+
+    public ThriftServerConfig getThrift()
+    {
+        return thrift;
+    }
+
+    public void setThrift(ThriftServerConfig thrift)
+    {
+        this.thrift = thrift;
+    }
 
     public Duration getProjectionExpiration()
     {
         return projectionExpiration;
     }
 
-    @Config("curator.projection-expiration")
-    @ConfigDescription("Curator projection instances will be expired after this amount of inactivity - default is 3 minutes")
     public void setProjectionExpiration(Duration projectionExpiration)
     {
         this.projectionExpiration = projectionExpiration;
@@ -33,21 +50,18 @@ public class Configuration extends ThriftServerConfig
         return pingTime;
     }
 
-    @Config("curator.ping-time")
-    @ConfigDescription("Calls to getNextEvent() will return PING after this duration - default is 5 seconds")
     public void setPingTime(Duration pingTime)
     {
         this.pingTime = pingTime;
     }
 
-    public List<String> getConnectionNames()
+    public List<ConnectionConfiguration> getConnections()
     {
-        return connectionNames;
+        return connections;
     }
 
-    @Config("curator.connection.names")
-    public void setConnectionNames(String connectionNames)
+    public void setConnections(List<ConnectionConfiguration> connections)
     {
-        this.connectionNames = Splitter.on(",").trimResults().splitToList(connectionNames);
+        this.connections = connections;
     }
 }

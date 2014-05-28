@@ -1,0 +1,13 @@
+Curator RPC - an RPC server for using Apache Curator APIs and recipes from non JVM languages.
+
+Arguments:
+    <none>    show this help
+    <path>    path to a JSON or YAML configuration file
+    <string>  JSON or YAML object for configuration
+
+Curator RPC uses Dropwizard for configuration. The format is JSON or YAML (your choice).
+
+Curator also uses Dropwizard's logging module. The configuration for it is described here:
+http://dropwizard.readthedocs.org/en/latest/manual/configuration.html#logging
+
+TODO - more details to follow

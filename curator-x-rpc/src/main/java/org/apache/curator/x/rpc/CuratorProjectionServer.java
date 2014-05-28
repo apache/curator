@@ -24,21 +24,18 @@ import com.facebook.swift.service.ThriftServer;
 import com.facebook.swift.service.ThriftServiceProcessor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationLoader;
-import io.airlift.configuration.ConfigurationMetadata;
-import io.airlift.units.DataSize;
-import io.airlift.units.Duration;
+import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import org.apache.curator.x.rpc.configuration.Configuration;
+import org.apache.curator.x.rpc.configuration.ConfigurationBuilder;
 import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorProjectionServer
@@ -56,29 +53,27 @@ public class CuratorProjectionServer
         STOPPED
     }
 
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args) throws Exception
     {
-        if ( (args.length == 0) || args[0].equalsIgnoreCase("?") || args[0].equalsIgnoreCase("-h") || args[0].equalsIgnoreCase("--help") )
+        if ( (args.length != 1) || args[0].equalsIgnoreCase("?") || args[0].equalsIgnoreCase("-h") || args[0].equalsIgnoreCase("--help") )
         {
             printHelp();
             return;
         }
 
-        Map<String, String> options;
+        String configurationSource;
         File f = new File(args[0]);
         if ( f.exists() )
         {
-            options = new ConfigurationLoader().loadPropertiesFrom(f.getPath());
+            configurationSource = Files.toString(f, Charset.defaultCharset());
         }
         else
         {
-            System.out.println("First argument is not a file. Treating the command line as a list of field/values");
-            options = buildOptions(args);
+            System.out.println("First argument is not a file. Treating the command line as a json object");
+            configurationSource = args[0];
         }
 
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(options);
-
-        Configuration configuration = configurationFactory.build(Configuration.class);
+        Configuration configuration = new ConfigurationBuilder(configurationSource).build();
 
         final CuratorProjectionServer server = new CuratorProjectionServer(configuration);
         server.start();
@@ -102,7 +97,7 @@ public class CuratorProjectionServer
         EventService eventService = new EventService(rpcManager, configuration.getPingTime().toMillis());
         CuratorProjectionService projectionService = new CuratorProjectionService(rpcManager);
         ThriftServiceProcessor processor = new ThriftServiceProcessor(new ThriftCodecManager(), Lists.<ThriftEventHandler>newArrayList(), projectionService, eventService);
-        server = new ThriftServer(processor, configuration);
+        server = new ThriftServer(processor, configuration.getThrift());
     }
 
     public void start()
@@ -111,7 +106,7 @@ public class CuratorProjectionServer
 
         server.start();
 
-        log.info("Server listening on port: " + configuration.getPort());
+        log.info("Server listening on port: " + configuration.getThrift().getPort());
     }
 
     public void stop()
@@ -127,64 +122,9 @@ public class CuratorProjectionServer
         }
     }
 
-    private static void printHelp()
+    private static void printHelp() throws IOException
     {
-        System.out.println("Curator RPC - an RPC server for using Apache Curator APIs and recipes from non JVM languages.");
-        System.out.println();
-        System.out.println("Arguments:");
-        System.out.println("\t<none>              show this help");
-        System.out.println("\t<path>              path to a properties configuration file");
-        System.out.println("\t<field value> ...   list of properties of the form: \"field1 value1 ... fieldN valueN\"");
-        System.out.println();
-
-        Map<String, String> valuesMap = Maps.newTreeMap();
-
-        buildMetaData(valuesMap, ConfigurationMetadata.getConfigurationMetadata(Configuration.class));
-
-        System.out.println("Values:");
-        for ( String s : valuesMap.values() )
-        {
-            System.out.println(s);
-        }
-
-        System.out.println("Special Types Examples:");
-        System.out.println("\t" + Duration.class.getSimpleName());
-        System.out.println("\t\t" + new Duration(10, TimeUnit.MINUTES));
-        System.out.println("\t\t" + new Duration(5, TimeUnit.MILLISECONDS));
-        System.out.println("\t\t" + new Duration(1.5, TimeUnit.HOURS));
-        System.out.println("\t" + DataSize.class.getSimpleName());
-        System.out.println("\t\t" + new DataSize(1.5, DataSize.Unit.GIGABYTE));
-        System.out.println("\t\t" + new DataSize(10, DataSize.Unit.BYTE));
-        System.out.println("\t\t" + new DataSize(.4, DataSize.Unit.MEGABYTE));
-        System.out.println();
-    }
-
-    private static void buildMetaData(Map<String, String> valuesMap, ConfigurationMetadata<?> metadata)
-    {
-        for ( ConfigurationMetadata.AttributeMetadata attributeMetadata : metadata.getAttributes().values() )
-        {
-            int index = 0;
-            ConfigurationMetadata.InjectionPointMetaData injectionPoint = attributeMetadata.getInjectionPoint();
-            valuesMap.put(injectionPoint.getProperty() + index++, "\t" + injectionPoint.getProperty() + ": " + attributeMetadata.getGetter().getReturnType().getSimpleName());
-            if ( attributeMetadata.getDescription() != null )
-            {
-                valuesMap.put(injectionPoint.getProperty() + index++, "\t\t" + attributeMetadata.getDescription());
-            }
-            valuesMap.put(injectionPoint.getProperty() + index, "");
-        }
-    }
-
-    private static Map<String, String> buildOptions(String[] args) throws IOException
-    {
-        Map<String, String> options = Maps.newHashMap();
-        for ( int i = 0; i < args.length; i += 2 )
-        {
-            if ( (i + 1) >= args.length )
-            {
-                throw new IOException("Bad command line. Must be list of fields and values of the form: \"field1 value1 ... fieldN valueN\"");
-            }
-            options.put(args[i], args[i + 1]);
-        }
-        return options;
+        URL helpUrl = Resources.getResource("curator/help.txt");
+        System.out.println(Resources.toString(helpUrl, Charset.defaultCharset()));
     }
 }

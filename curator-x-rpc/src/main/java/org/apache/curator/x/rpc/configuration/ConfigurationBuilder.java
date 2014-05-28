@@ -3,7 +3,6 @@ package org.apache.curator.x.rpc.configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.SubtypeResolver;
 import com.fasterxml.jackson.databind.jsontype.impl.StdSubtypeResolver;
-import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.configuration.ConfigurationFactory;
 import io.dropwizard.configuration.ConfigurationFactoryFactory;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
@@ -21,7 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-class ConfigurationBuilder
+public class ConfigurationBuilder
 {
     private final String configurationSource;
 
@@ -30,23 +29,30 @@ class ConfigurationBuilder
         LoggingFactory.bootstrap();
     }
 
-    ConfigurationBuilder(String configurationSource)
+    public ConfigurationBuilder(String configurationSource)
     {
         this.configurationSource = configurationSource;
     }
 
-    ConfigurationX build() throws IOException, ConfigurationException
+    public Configuration build() throws Exception
     {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new LogbackModule());
         mapper.setPropertyNamingStrategy(new AnnotationSensitivePropertyNamingStrategy());
         SubtypeResolver subtypeResolver = new StdSubtypeResolver();
-        subtypeResolver.registerSubtypes(ConsoleAppenderFactory.class, FileAppenderFactory.class, SyslogAppenderFactory.class);
+        subtypeResolver.registerSubtypes
+        (
+            ConsoleAppenderFactory.class,
+            FileAppenderFactory.class,
+            SyslogAppenderFactory.class,
+            ExponentialBackoffRetryConfiguration.class,
+            RetryNTimesConfiguration.class
+        );
         mapper.setSubtypeResolver(subtypeResolver);
 
         ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
-        ConfigurationFactoryFactory<ConfigurationX> factoryFactory = new DefaultConfigurationFactoryFactory<ConfigurationX>();
-        ConfigurationFactory<ConfigurationX> configurationFactory = factoryFactory.create(ConfigurationX.class, validatorFactory.getValidator(), mapper, "curator");
+        ConfigurationFactoryFactory<Configuration> factoryFactory = new DefaultConfigurationFactoryFactory<Configuration>();
+        ConfigurationFactory<Configuration> configurationFactory = factoryFactory.create(Configuration.class, validatorFactory.getValidator(), mapper, "curator");
         ConfigurationSourceProvider provider = new ConfigurationSourceProvider()
         {
             @Override
