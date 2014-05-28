@@ -1,4 +1,4 @@
-package org.apache.curator.x.rpc;
+package org.apache.curator.x.rpc.connections;
 
 public interface Closer<T>
 {

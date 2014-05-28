@@ -1,6 +1,7 @@
 package org.apache.curator.x.rpc.configuration;
 
 import com.facebook.swift.service.ThriftServerConfig;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.airlift.units.Duration;
 import io.dropwizard.logging.LoggingFactory;
@@ -57,7 +58,7 @@ public class Configuration
 
     public List<ConnectionConfiguration> getConnections()
     {
-        return connections;
+        return ImmutableList.copyOf(connections);
     }
 
     public void setConnections(List<ConnectionConfiguration> connections)

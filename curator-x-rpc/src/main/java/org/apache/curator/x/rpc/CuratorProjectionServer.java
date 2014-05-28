@@ -29,6 +29,7 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import org.apache.curator.x.rpc.configuration.Configuration;
 import org.apache.curator.x.rpc.configuration.ConfigurationBuilder;
+import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.idl.event.EventService;
 import org.apache.curator.x.rpc.idl.projection.CuratorProjectionService;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class CuratorProjectionServer
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final RpcManager rpcManager;
+    private final ConnectionManager connectionManager;
     private final ThriftServer server;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final Configuration configuration;
@@ -94,9 +95,9 @@ public class CuratorProjectionServer
     public CuratorProjectionServer(Configuration configuration)
     {
         this.configuration = configuration;
-        rpcManager = new RpcManager(configuration.getProjectionExpiration().toMillis());
-        EventService eventService = new EventService(rpcManager, configuration.getPingTime().toMillis());
-        CuratorProjectionService projectionService = new CuratorProjectionService(rpcManager);
+        connectionManager = new ConnectionManager(configuration.getConnections(), configuration.getProjectionExpiration().toMillis());
+        EventService eventService = new EventService(connectionManager, configuration.getPingTime().toMillis());
+        CuratorProjectionService projectionService = new CuratorProjectionService(connectionManager);
         ThriftServiceProcessor processor = new ThriftServiceProcessor(new ThriftCodecManager(), Lists.<ThriftEventHandler>newArrayList(), projectionService, eventService);
         server = new ThriftServer(processor, configuration.getThrift());
     }
@@ -106,6 +107,7 @@ public class CuratorProjectionServer
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
 
         configuration.getLogging().configure(new MetricRegistry(), "curator-rpc");
+        connectionManager.start();
         server.start();
 
         log.info("Server listening on port: " + configuration.getThrift().getPort());
@@ -117,8 +119,8 @@ public class CuratorProjectionServer
         {
             log.info("Stopping...");
 
-            rpcManager.close();
             server.close();
+            connectionManager.close();
             configuration.getLogging().stop();
 
             log.info("Stopped");

@@ -34,9 +34,9 @@ import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.x.rpc.Closer;
-import org.apache.curator.x.rpc.CuratorEntry;
-import org.apache.curator.x.rpc.RpcManager;
+import org.apache.curator.x.rpc.connections.Closer;
+import org.apache.curator.x.rpc.connections.CuratorEntry;
+import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +47,11 @@ import java.util.concurrent.TimeUnit;
 public class CuratorProjectionService
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final RpcManager rpcManager;
+    private final ConnectionManager connectionManager;
 
-    public CuratorProjectionService(RpcManager rpcManager)
+    public CuratorProjectionService(ConnectionManager connectionManager)
     {
-        this.rpcManager = rpcManager;
+        this.connectionManager = connectionManager;
     }
 
     @ThriftMethod
@@ -60,7 +60,7 @@ public class CuratorProjectionService
         CuratorFramework client = CuratorFrameworkFactory.newClient("localhost:2181", new RetryOneTime(1));
         String id = UUID.randomUUID().toString();
         client.start();
-        rpcManager.add(id, client);
+        connectionManager.add(id, client);
         final CuratorProjection projection = new CuratorProjection(id);
 
         ConnectionStateListener listener = new ConnectionStateListener()
@@ -79,7 +79,7 @@ public class CuratorProjectionService
     @ThriftMethod
     public void closeCuratorProjection(CuratorProjection projection)
     {
-        CuratorEntry entry = rpcManager.remove(projection.id);
+        CuratorEntry entry = connectionManager.remove(projection.id);
         if ( entry != null )
         {
             entry.close();
@@ -166,7 +166,7 @@ public class CuratorProjectionService
 
     private void addEvent(CuratorProjection projection, RpcCuratorEvent event)
     {
-        CuratorEntry entry = rpcManager.get(projection.id);
+        CuratorEntry entry = connectionManager.get(projection.id);
         if ( entry != null )
         {
             entry.addEvent(event);
@@ -202,7 +202,7 @@ public class CuratorProjectionService
 
     private CuratorEntry getEntry(CuratorProjection projection) throws Exception
     {
-        CuratorEntry entry = rpcManager.get(projection.id);
+        CuratorEntry entry = connectionManager.get(projection.id);
         if ( entry == null )
         {
             throw new Exception("No client found with id: " + projection.id);

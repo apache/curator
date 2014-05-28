@@ -1,4 +1,4 @@
-package org.apache.curator.x.rpc;
+package org.apache.curator.x.rpc.connections;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
