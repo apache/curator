@@ -85,7 +85,7 @@
         <guava-version>16.0.1</guava-version>
         <testng-version>6.8.8</testng-version>
         <swift-version>0.12.0</swift-version>
-        <airlift-version>0.88</airlift-version>
+        <dropwizard-version>0.7.0</dropwizard-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -433,9 +433,15 @@
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
-                <artifactId>log-manager</artifactId>
-                <version>${airlift-version}</version>
+                <groupId>io.dropwizard</groupId>
+                <artifactId>dropwizard-configuration</artifactId>
+                <version>${dropwizard-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.dropwizard</groupId>
+                <artifactId>dropwizard-logging</artifactId>
+                <version>${dropwizard-version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

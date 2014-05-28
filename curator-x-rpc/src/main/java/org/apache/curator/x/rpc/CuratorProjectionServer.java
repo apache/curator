@@ -28,8 +28,6 @@ import com.google.common.collect.Maps;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationLoader;
 import io.airlift.configuration.ConfigurationMetadata;
-import io.airlift.log.Logging;
-import io.airlift.log.LoggingConfiguration;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.apache.curator.x.rpc.configuration.Configuration;
@@ -79,7 +77,6 @@ public class CuratorProjectionServer
         }
 
         ConfigurationFactory configurationFactory = new ConfigurationFactory(options);
-        initLogging(configurationFactory);
 
         Configuration configuration = configurationFactory.build(Configuration.class);
 
@@ -96,12 +93,6 @@ public class CuratorProjectionServer
         };
         Thread hook = new Thread(shutdown);
         Runtime.getRuntime().addShutdownHook(hook);
-    }
-
-    private static void initLogging(ConfigurationFactory configurationFactory) throws IOException
-    {
-        LoggingConfiguration loggingConfiguration = configurationFactory.build(LoggingConfiguration.class);
-        Logging.initialize().configure(loggingConfiguration);
     }
 
     public CuratorProjectionServer(Configuration configuration)
@@ -149,7 +140,6 @@ public class CuratorProjectionServer
         Map<String, String> valuesMap = Maps.newTreeMap();
 
         buildMetaData(valuesMap, ConfigurationMetadata.getConfigurationMetadata(Configuration.class));
-        buildMetaData(valuesMap, ConfigurationMetadata.getConfigurationMetadata(LoggingConfiguration.class));
 
         System.out.println("Values:");
         for ( String s : valuesMap.values() )

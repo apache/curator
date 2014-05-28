@@ -1,0 +1,19 @@
+{
+    "logging": {
+        "level": "INFO",
+
+        "appenders": [
+            {
+                "type": "file",
+                "currentLogFilename": "logs/foo.log",
+                "archivedLogFilenamePattern": "logs/foo-%d.log.gz",
+                "archivedFileCount": 10,
+                "timeZone": "UTC"
+            },
+
+            {
+                "type": "console"
+            }
+        ]
+    }
+}
