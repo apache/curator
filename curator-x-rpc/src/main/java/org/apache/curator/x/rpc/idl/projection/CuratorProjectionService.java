@@ -31,6 +31,8 @@ import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.details.RpcBackgroundCallback;
 import org.apache.curator.x.rpc.details.RpcWatcher;
+import org.apache.curator.x.rpc.idl.event.OptionalPath;
+import org.apache.curator.x.rpc.idl.event.OptionalRpcStat;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
 import org.apache.curator.x.rpc.idl.event.RpcStat;
 import org.apache.zookeeper.data.Stat;
@@ -84,7 +86,7 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public String createNode(CuratorProjection projection, CreateSpec spec) throws Exception
+    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws Exception
     {
         CuratorFramework client = getEntry(projection).getClient();
 
@@ -112,7 +114,8 @@ public class CuratorProjectionService
             builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, spec.asyncContext);
         }
 
-        return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data));
+        Object path = castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data);
+        return new OptionalPath((path != null) ? String.valueOf(path) : null);
     }
 
     @ThriftMethod
@@ -195,6 +198,27 @@ public class CuratorProjectionService
 
         Stat stat = (Stat)castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data);
         return RpcCuratorEvent.toRpcStat(stat);
+    }
+
+    @ThriftMethod
+    public OptionalRpcStat exists(CuratorProjection projection, ExistsSpec spec) throws Exception
+    {
+        CuratorFramework client = getEntry(projection).getClient();
+
+        Object builder = client.checkExists();
+        if ( spec.watched )
+        {
+            builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
+        }
+
+        if ( spec.asyncContext != null )
+        {
+            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+            castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+        }
+
+        Stat stat = (Stat)castBuilder(builder, Pathable.class).forPath(spec.path);
+        return new OptionalRpcStat((stat != null) ? RpcCuratorEvent.toRpcStat(stat) : null);
     }
 
     @ThriftMethod

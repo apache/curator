@@ -24,6 +24,7 @@ import org.apache.curator.generated.CuratorProjection;
 import org.apache.curator.generated.CuratorService;
 import org.apache.curator.generated.DeleteSpec;
 import org.apache.curator.generated.EventService;
+import org.apache.curator.generated.ExistsSpec;
 import org.apache.curator.generated.GenericProjection;
 import org.apache.curator.generated.GetDataSpec;
 import org.apache.curator.test.TestingServer;
@@ -93,8 +94,14 @@ public class TestClient
         ByteBuffer data = client.getData(curatorProjection, getDataSpec);
         System.out.println("getData: " + new String(data.array()));
 
+        ExistsSpec existsSpec = new ExistsSpec();
+        existsSpec.path = "/a/b/c";
+        System.out.println("exists: " + client.exists(curatorProjection, existsSpec));
+
         DeleteSpec deleteSpec = new DeleteSpec();
         deleteSpec.path = "/a/b/c";
         client.deleteNode(curatorProjection, deleteSpec);
+
+        System.out.println("exists: " + client.exists(curatorProjection, existsSpec));
     }
 }
