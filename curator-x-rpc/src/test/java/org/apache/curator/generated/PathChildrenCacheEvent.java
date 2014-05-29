@@ -35,8 +35,9 @@ import org.slf4j.LoggerFactory;
 public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChildrenCacheEvent, PathChildrenCacheEvent._Fields>, java.io.Serializable, Cloneable, Comparable<PathChildrenCacheEvent> {
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("PathChildrenCacheEvent");
 
-  private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.I32, (short)1);
-  private static final org.apache.thrift.protocol.TField DATA_FIELD_DESC = new org.apache.thrift.protocol.TField("data", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+  private static final org.apache.thrift.protocol.TField CACHED_PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("cachedPath", org.apache.thrift.protocol.TType.STRING, (short)1);
+  private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.I32, (short)2);
+  private static final org.apache.thrift.protocol.TField DATA_FIELD_DESC = new org.apache.thrift.protocol.TField("data", org.apache.thrift.protocol.TType.STRUCT, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -44,6 +45,7 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
     schemes.put(TupleScheme.class, new PathChildrenCacheEventTupleSchemeFactory());
   }
 
+  public String cachedPath; // required
   /**
    * 
    * @see PathChildrenCacheEventType
@@ -53,12 +55,13 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+    CACHED_PATH((short)1, "cachedPath"),
     /**
      * 
      * @see PathChildrenCacheEventType
      */
-    TYPE((short)1, "type"),
-    DATA((short)2, "data");
+    TYPE((short)2, "type"),
+    DATA((short)3, "data");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -73,9 +76,11 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // TYPE
+        case 1: // CACHED_PATH
+          return CACHED_PATH;
+        case 2: // TYPE
           return TYPE;
-        case 2: // DATA
+        case 3: // DATA
           return DATA;
         default:
           return null;
@@ -120,6 +125,8 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+    tmpMap.put(_Fields.CACHED_PATH, new org.apache.thrift.meta_data.FieldMetaData("cachedPath", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.TYPE, new org.apache.thrift.meta_data.FieldMetaData("type", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, PathChildrenCacheEventType.class)));
     tmpMap.put(_Fields.DATA, new org.apache.thrift.meta_data.FieldMetaData("data", org.apache.thrift.TFieldRequirementType.DEFAULT, 
@@ -132,10 +139,12 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
   }
 
   public PathChildrenCacheEvent(
+    String cachedPath,
     PathChildrenCacheEventType type,
     ChildData data)
   {
     this();
+    this.cachedPath = cachedPath;
     this.type = type;
     this.data = data;
   }
@@ -144,6 +153,9 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
    * Performs a deep copy on <i>other</i>.
    */
   public PathChildrenCacheEvent(PathChildrenCacheEvent other) {
+    if (other.isSetCachedPath()) {
+      this.cachedPath = other.cachedPath;
+    }
     if (other.isSetType()) {
       this.type = other.type;
     }
@@ -158,8 +170,33 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
 
   @Override
   public void clear() {
+    this.cachedPath = null;
     this.type = null;
     this.data = null;
+  }
+
+  public String getCachedPath() {
+    return this.cachedPath;
+  }
+
+  public PathChildrenCacheEvent setCachedPath(String cachedPath) {
+    this.cachedPath = cachedPath;
+    return this;
+  }
+
+  public void unsetCachedPath() {
+    this.cachedPath = null;
+  }
+
+  /** Returns true if field cachedPath is set (has been assigned a value) and false otherwise */
+  public boolean isSetCachedPath() {
+    return this.cachedPath != null;
+  }
+
+  public void setCachedPathIsSet(boolean value) {
+    if (!value) {
+      this.cachedPath = null;
+    }
   }
 
   /**
@@ -220,6 +257,14 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
+    case CACHED_PATH:
+      if (value == null) {
+        unsetCachedPath();
+      } else {
+        setCachedPath((String)value);
+      }
+      break;
+
     case TYPE:
       if (value == null) {
         unsetType();
@@ -241,6 +286,9 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
+    case CACHED_PATH:
+      return getCachedPath();
+
     case TYPE:
       return getType();
 
@@ -258,6 +306,8 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
     }
 
     switch (field) {
+    case CACHED_PATH:
+      return isSetCachedPath();
     case TYPE:
       return isSetType();
     case DATA:
@@ -278,6 +328,15 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
   public boolean equals(PathChildrenCacheEvent that) {
     if (that == null)
       return false;
+
+    boolean this_present_cachedPath = true && this.isSetCachedPath();
+    boolean that_present_cachedPath = true && that.isSetCachedPath();
+    if (this_present_cachedPath || that_present_cachedPath) {
+      if (!(this_present_cachedPath && that_present_cachedPath))
+        return false;
+      if (!this.cachedPath.equals(that.cachedPath))
+        return false;
+    }
 
     boolean this_present_type = true && this.isSetType();
     boolean that_present_type = true && that.isSetType();
@@ -313,6 +372,16 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
 
     int lastComparison = 0;
 
+    lastComparison = Boolean.valueOf(isSetCachedPath()).compareTo(other.isSetCachedPath());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCachedPath()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cachedPath, other.cachedPath);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     lastComparison = Boolean.valueOf(isSetType()).compareTo(other.isSetType());
     if (lastComparison != 0) {
       return lastComparison;
@@ -353,6 +422,14 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
     StringBuilder sb = new StringBuilder("PathChildrenCacheEvent(");
     boolean first = true;
 
+    sb.append("cachedPath:");
+    if (this.cachedPath == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.cachedPath);
+    }
+    first = false;
+    if (!first) sb.append(", ");
     sb.append("type:");
     if (this.type == null) {
       sb.append("null");
@@ -414,7 +491,15 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
           break;
         }
         switch (schemeField.id) {
-          case 1: // TYPE
+          case 1: // CACHED_PATH
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.cachedPath = iprot.readString();
+              struct.setCachedPathIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 2: // TYPE
             if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
               struct.type = PathChildrenCacheEventType.findByValue(iprot.readI32());
               struct.setTypeIsSet(true);
@@ -422,7 +507,7 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // DATA
+          case 3: // DATA
             if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
               struct.data = new ChildData();
               struct.data.read(iprot);
@@ -446,6 +531,11 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
+      if (struct.cachedPath != null) {
+        oprot.writeFieldBegin(CACHED_PATH_FIELD_DESC);
+        oprot.writeString(struct.cachedPath);
+        oprot.writeFieldEnd();
+      }
       if (struct.type != null) {
         oprot.writeFieldBegin(TYPE_FIELD_DESC);
         oprot.writeI32(struct.type.getValue());
@@ -474,13 +564,19 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
     public void write(org.apache.thrift.protocol.TProtocol prot, PathChildrenCacheEvent struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       BitSet optionals = new BitSet();
-      if (struct.isSetType()) {
+      if (struct.isSetCachedPath()) {
         optionals.set(0);
       }
-      if (struct.isSetData()) {
+      if (struct.isSetType()) {
         optionals.set(1);
       }
-      oprot.writeBitSet(optionals, 2);
+      if (struct.isSetData()) {
+        optionals.set(2);
+      }
+      oprot.writeBitSet(optionals, 3);
+      if (struct.isSetCachedPath()) {
+        oprot.writeString(struct.cachedPath);
+      }
       if (struct.isSetType()) {
         oprot.writeI32(struct.type.getValue());
       }
@@ -492,12 +588,16 @@ public class PathChildrenCacheEvent implements org.apache.thrift.TBase<PathChild
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, PathChildrenCacheEvent struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(2);
+      BitSet incoming = iprot.readBitSet(3);
       if (incoming.get(0)) {
+        struct.cachedPath = iprot.readString();
+        struct.setCachedPathIsSet(true);
+      }
+      if (incoming.get(1)) {
         struct.type = PathChildrenCacheEventType.findByValue(iprot.readI32());
         struct.setTypeIsSet(true);
       }
-      if (incoming.get(1)) {
+      if (incoming.get(2)) {
         struct.data = new ChildData();
         struct.data.read(iprot);
         struct.setDataIsSet(true);

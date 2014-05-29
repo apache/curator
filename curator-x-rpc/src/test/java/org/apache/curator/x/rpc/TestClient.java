@@ -70,10 +70,11 @@ public class TestClient
         CreateSpec createSpec = new CreateSpec();
         createSpec.path = "/a/b/c";
         createSpec.creatingParentsIfNeeded = true;
-        createSpec.asyncContext = "foo";
         createSpec.data = ByteBuffer.wrap("hey".getBytes());
         OptionalPath path = client.createNode(curatorProjection, createSpec);
         System.out.println("Path: " + path);
+
+        PathChildrenCacheProjection pathChildrenCacheProjection = client.startPathChildrenCache(curatorProjection, "/a/b", true, false, PathChildrenCacheStartMode.BUILD_INITIAL_CACHE);
 
         GetChildrenSpec getChildrenSpec = new GetChildrenSpec();
         getChildrenSpec.path = "/a";

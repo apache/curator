@@ -67,6 +67,9 @@ public class RpcCuratorEvent
     @ThriftField(12)
     public LeaderEvent leaderEvent;
 
+    @ThriftField(13)
+    public RpcPathChildrenCacheEvent childrenCacheEvent;
+
     public RpcCuratorEvent()
     {
         this.type = RpcCuratorEventType.PING;
@@ -80,6 +83,23 @@ public class RpcCuratorEvent
         this.aclList = null;
         this.watchedEvent = null;
         this.leaderEvent = null;
+        this.childrenCacheEvent = null;
+    }
+
+    public RpcCuratorEvent(RpcPathChildrenCacheEvent childrenCacheEvent)
+    {
+        this.type = RpcCuratorEventType.PATH_CHILDREN_CACHE;
+        this.resultCode = 0;
+        this.path = null;
+        this.context = null;
+        this.stat = null;
+        this.data = null;
+        this.name = null;
+        this.children = null;
+        this.aclList = null;
+        this.watchedEvent = null;
+        this.leaderEvent = null;
+        this.childrenCacheEvent = childrenCacheEvent;
     }
 
     public RpcCuratorEvent(CuratorEvent event)
@@ -95,6 +115,7 @@ public class RpcCuratorEvent
         this.aclList = toRpcAclList(event.getACLList());
         this.watchedEvent = toRpcWatchedEvent(event.getWatchedEvent());
         this.leaderEvent = null;
+        this.childrenCacheEvent = null;
     }
 
     public RpcCuratorEvent(ConnectionState newState)
@@ -110,6 +131,7 @@ public class RpcCuratorEvent
         this.aclList = null;
         this.watchedEvent = null;
         this.leaderEvent = null;
+        this.childrenCacheEvent = null;
     }
 
     public RpcCuratorEvent(WatchedEvent event)
@@ -125,6 +147,7 @@ public class RpcCuratorEvent
         this.aclList = null;
         this.watchedEvent = new RpcWatchedEvent(RpcKeeperState.valueOf(event.getState().name()), RpcEventType.valueOf(event.getType().name()), event.getPath());
         this.leaderEvent = null;
+        this.childrenCacheEvent = null;
     }
 
     public RpcCuratorEvent(LeaderEvent event)
@@ -140,6 +163,7 @@ public class RpcCuratorEvent
         this.aclList = null;
         this.watchedEvent = null;
         this.leaderEvent = event;
+        this.childrenCacheEvent = null;
     }
 
     public static RpcStat toRpcStat(Stat stat)

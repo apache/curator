@@ -12,7 +12,7 @@ enum CreateMode {
 }
 
 enum CuratorEventType {
-  PING, CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING, CONNECTION_CONNECTED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, CONNECTION_READ_ONLY, LEADER
+  PING, CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING, CONNECTION_CONNECTED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, CONNECTION_READ_ONLY, LEADER, PATH_CHILDREN_CACHE
 }
 
 enum EventType {
@@ -157,6 +157,12 @@ struct ChildData {
   3: binary data;
 }
 
+struct PathChildrenCacheEvent {
+  1: string cachedPath;
+  2: PathChildrenCacheEventType type;
+  3: ChildData data;
+}
+
 struct CuratorEvent {
   2: CuratorEventType type;
   3: i32 resultCode;
@@ -169,11 +175,7 @@ struct CuratorEvent {
   10: list<Acl> aclList;
   11: WatchedEvent watchedEvent;
   12: LeaderEvent leaderEvent;
-}
-
-struct PathChildrenCacheEvent {
-  1: PathChildrenCacheEventType type;
-  2: ChildData data;
+  13: PathChildrenCacheEvent childrenCacheEvent;
 }
 
 service CuratorService {

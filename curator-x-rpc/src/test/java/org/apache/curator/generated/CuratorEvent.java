@@ -46,6 +46,7 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
   private static final org.apache.thrift.protocol.TField ACL_LIST_FIELD_DESC = new org.apache.thrift.protocol.TField("aclList", org.apache.thrift.protocol.TType.LIST, (short)10);
   private static final org.apache.thrift.protocol.TField WATCHED_EVENT_FIELD_DESC = new org.apache.thrift.protocol.TField("watchedEvent", org.apache.thrift.protocol.TType.STRUCT, (short)11);
   private static final org.apache.thrift.protocol.TField LEADER_EVENT_FIELD_DESC = new org.apache.thrift.protocol.TField("leaderEvent", org.apache.thrift.protocol.TType.STRUCT, (short)12);
+  private static final org.apache.thrift.protocol.TField CHILDREN_CACHE_EVENT_FIELD_DESC = new org.apache.thrift.protocol.TField("childrenCacheEvent", org.apache.thrift.protocol.TType.STRUCT, (short)13);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -68,6 +69,7 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
   public List<Acl> aclList; // required
   public WatchedEvent watchedEvent; // required
   public LeaderEvent leaderEvent; // required
+  public PathChildrenCacheEvent childrenCacheEvent; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -85,7 +87,8 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     CHILDREN((short)9, "children"),
     ACL_LIST((short)10, "aclList"),
     WATCHED_EVENT((short)11, "watchedEvent"),
-    LEADER_EVENT((short)12, "leaderEvent");
+    LEADER_EVENT((short)12, "leaderEvent"),
+    CHILDREN_CACHE_EVENT((short)13, "childrenCacheEvent");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -122,6 +125,8 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
           return WATCHED_EVENT;
         case 12: // LEADER_EVENT
           return LEADER_EVENT;
+        case 13: // CHILDREN_CACHE_EVENT
+          return CHILDREN_CACHE_EVENT;
         default:
           return null;
       }
@@ -191,6 +196,8 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, WatchedEvent.class)));
     tmpMap.put(_Fields.LEADER_EVENT, new org.apache.thrift.meta_data.FieldMetaData("leaderEvent", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LeaderEvent.class)));
+    tmpMap.put(_Fields.CHILDREN_CACHE_EVENT, new org.apache.thrift.meta_data.FieldMetaData("childrenCacheEvent", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, PathChildrenCacheEvent.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(CuratorEvent.class, metaDataMap);
   }
@@ -209,7 +216,8 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     List<String> children,
     List<Acl> aclList,
     WatchedEvent watchedEvent,
-    LeaderEvent leaderEvent)
+    LeaderEvent leaderEvent,
+    PathChildrenCacheEvent childrenCacheEvent)
   {
     this();
     this.type = type;
@@ -224,6 +232,7 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     this.aclList = aclList;
     this.watchedEvent = watchedEvent;
     this.leaderEvent = leaderEvent;
+    this.childrenCacheEvent = childrenCacheEvent;
   }
 
   /**
@@ -268,6 +277,9 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     if (other.isSetLeaderEvent()) {
       this.leaderEvent = new LeaderEvent(other.leaderEvent);
     }
+    if (other.isSetChildrenCacheEvent()) {
+      this.childrenCacheEvent = new PathChildrenCacheEvent(other.childrenCacheEvent);
+    }
   }
 
   public CuratorEvent deepCopy() {
@@ -288,6 +300,7 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     this.aclList = null;
     this.watchedEvent = null;
     this.leaderEvent = null;
+    this.childrenCacheEvent = null;
   }
 
   /**
@@ -601,6 +614,30 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     }
   }
 
+  public PathChildrenCacheEvent getChildrenCacheEvent() {
+    return this.childrenCacheEvent;
+  }
+
+  public CuratorEvent setChildrenCacheEvent(PathChildrenCacheEvent childrenCacheEvent) {
+    this.childrenCacheEvent = childrenCacheEvent;
+    return this;
+  }
+
+  public void unsetChildrenCacheEvent() {
+    this.childrenCacheEvent = null;
+  }
+
+  /** Returns true if field childrenCacheEvent is set (has been assigned a value) and false otherwise */
+  public boolean isSetChildrenCacheEvent() {
+    return this.childrenCacheEvent != null;
+  }
+
+  public void setChildrenCacheEventIsSet(boolean value) {
+    if (!value) {
+      this.childrenCacheEvent = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case TYPE:
@@ -691,6 +728,14 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       }
       break;
 
+    case CHILDREN_CACHE_EVENT:
+      if (value == null) {
+        unsetChildrenCacheEvent();
+      } else {
+        setChildrenCacheEvent((PathChildrenCacheEvent)value);
+      }
+      break;
+
     }
   }
 
@@ -729,6 +774,9 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     case LEADER_EVENT:
       return getLeaderEvent();
 
+    case CHILDREN_CACHE_EVENT:
+      return getChildrenCacheEvent();
+
     }
     throw new IllegalStateException();
   }
@@ -762,6 +810,8 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       return isSetWatchedEvent();
     case LEADER_EVENT:
       return isSetLeaderEvent();
+    case CHILDREN_CACHE_EVENT:
+      return isSetChildrenCacheEvent();
     }
     throw new IllegalStateException();
   }
@@ -875,6 +925,15 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       if (!(this_present_leaderEvent && that_present_leaderEvent))
         return false;
       if (!this.leaderEvent.equals(that.leaderEvent))
+        return false;
+    }
+
+    boolean this_present_childrenCacheEvent = true && this.isSetChildrenCacheEvent();
+    boolean that_present_childrenCacheEvent = true && that.isSetChildrenCacheEvent();
+    if (this_present_childrenCacheEvent || that_present_childrenCacheEvent) {
+      if (!(this_present_childrenCacheEvent && that_present_childrenCacheEvent))
+        return false;
+      if (!this.childrenCacheEvent.equals(that.childrenCacheEvent))
         return false;
     }
 
@@ -1004,6 +1063,16 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetChildrenCacheEvent()).compareTo(other.isSetChildrenCacheEvent());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetChildrenCacheEvent()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.childrenCacheEvent, other.childrenCacheEvent);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1107,6 +1176,14 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       sb.append(this.leaderEvent);
     }
     first = false;
+    if (!first) sb.append(", ");
+    sb.append("childrenCacheEvent:");
+    if (this.childrenCacheEvent == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.childrenCacheEvent);
+    }
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -1122,6 +1199,9 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
     }
     if (leaderEvent != null) {
       leaderEvent.validate();
+    }
+    if (childrenCacheEvent != null) {
+      childrenCacheEvent.validate();
     }
   }
 
@@ -1273,6 +1353,15 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 13: // CHILDREN_CACHE_EVENT
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.childrenCacheEvent = new PathChildrenCacheEvent();
+              struct.childrenCacheEvent.read(iprot);
+              struct.setChildrenCacheEventIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -1355,6 +1444,11 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
         struct.leaderEvent.write(oprot);
         oprot.writeFieldEnd();
       }
+      if (struct.childrenCacheEvent != null) {
+        oprot.writeFieldBegin(CHILDREN_CACHE_EVENT_FIELD_DESC);
+        struct.childrenCacheEvent.write(oprot);
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -1406,7 +1500,10 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       if (struct.isSetLeaderEvent()) {
         optionals.set(10);
       }
-      oprot.writeBitSet(optionals, 11);
+      if (struct.isSetChildrenCacheEvent()) {
+        optionals.set(11);
+      }
+      oprot.writeBitSet(optionals, 12);
       if (struct.isSetType()) {
         oprot.writeI32(struct.type.getValue());
       }
@@ -1452,12 +1549,15 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       if (struct.isSetLeaderEvent()) {
         struct.leaderEvent.write(oprot);
       }
+      if (struct.isSetChildrenCacheEvent()) {
+        struct.childrenCacheEvent.write(oprot);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, CuratorEvent struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(11);
+      BitSet incoming = iprot.readBitSet(12);
       if (incoming.get(0)) {
         struct.type = CuratorEventType.findByValue(iprot.readI32());
         struct.setTypeIsSet(true);
@@ -1523,6 +1623,11 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
         struct.leaderEvent = new LeaderEvent();
         struct.leaderEvent.read(iprot);
         struct.setLeaderEventIsSet(true);
+      }
+      if (incoming.get(11)) {
+        struct.childrenCacheEvent = new PathChildrenCacheEvent();
+        struct.childrenCacheEvent.read(iprot);
+        struct.setChildrenCacheEventIsSet(true);
       }
     }
   }

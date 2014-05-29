@@ -8,23 +8,28 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 public class RpcPathChildrenCacheEvent
 {
     @ThriftField(1)
-    public RpcPathChildrenCacheEventType type;
+    public String cachedPath;
 
     @ThriftField(2)
+    public RpcPathChildrenCacheEventType type;
+
+    @ThriftField(3)
     public RpcChildData data;
 
     public RpcPathChildrenCacheEvent()
     {
     }
 
-    public RpcPathChildrenCacheEvent(PathChildrenCacheEvent event)
+    public RpcPathChildrenCacheEvent(String cachedPath, PathChildrenCacheEvent event)
     {
+        this.cachedPath = cachedPath;
         type = RpcPathChildrenCacheEventType.valueOf(event.getType().name());
         data = (event.getData() != null) ? new RpcChildData(event.getData().getPath(), RpcCuratorEvent.toRpcStat(event.getData().getStat()), event.getData().getData()) : null;
     }
 
-    public RpcPathChildrenCacheEvent(RpcPathChildrenCacheEventType type, RpcChildData data)
+    public RpcPathChildrenCacheEvent(String cachedPath, RpcPathChildrenCacheEventType type, RpcChildData data)
     {
+        this.cachedPath = cachedPath;
         this.type = type;
         this.data = data;
     }

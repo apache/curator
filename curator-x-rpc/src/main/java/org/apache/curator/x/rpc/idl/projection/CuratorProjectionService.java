@@ -48,6 +48,7 @@ import org.apache.curator.x.rpc.idl.event.OptionalPath;
 import org.apache.curator.x.rpc.idl.event.OptionalRpcStat;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
 import org.apache.curator.x.rpc.idl.event.RpcParticipant;
+import org.apache.curator.x.rpc.idl.event.RpcPathChildrenCacheEvent;
 import org.apache.curator.x.rpc.idl.event.RpcStat;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
@@ -274,7 +275,7 @@ public class CuratorProjectionService
         InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(entry.getClient(), path);
         if ( !lock.acquire(maxWaitMs, TimeUnit.MILLISECONDS) )
         {
-            return null;    // TODO
+            return new GenericProjection();
         }
 
         Closer<InterProcessSemaphoreMutex> closer = new Closer<InterProcessSemaphoreMutex>()
@@ -379,9 +380,9 @@ public class CuratorProjectionService
     @ThriftMethod
     public PathChildrenCacheProjection startPathChildrenCache(final CuratorProjection projection, final String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws Exception
     {
-        CuratorEntry entry = getEntry(projection);
+        final CuratorEntry entry = getEntry(projection);
 
-        PathChildrenCache cache = new PathChildrenCache(entry.getClient(), path, cacheData, dataIsCompressed, ThreadUtils.newThreadFactory("PathChildrenCacheResource-%d"));
+        PathChildrenCache cache = new PathChildrenCache(entry.getClient(), path, cacheData, dataIsCompressed, ThreadUtils.newThreadFactory("PathChildrenCacheResource"));
         cache.start(PathChildrenCache.StartMode.valueOf(startMode.name()));
 
         Closer<PathChildrenCache> closer = new Closer<PathChildrenCache>()
@@ -407,7 +408,7 @@ public class CuratorProjectionService
             @Override
             public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
             {
-                // TODO
+                entry.addEvent(new RpcCuratorEvent(new RpcPathChildrenCacheEvent(path, event)));
             }
         };
         cache.getListenable().addListener(listener);
@@ -440,7 +441,7 @@ public class CuratorProjectionService
         {
             return clazz.cast(createBuilder);
         }
-        throw new Exception("That operation is not available"); // TODO
+        throw new Exception("That operation is not available");
     }
 
     private <T> T getThis(CuratorEntry entry, String id, Class<T> clazz)
