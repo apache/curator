@@ -21,13 +21,21 @@ package org.apache.curator.x.rpc.idl.projection;
 
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
+import org.apache.curator.framework.recipes.leader.Participant;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.rpc.connections.Closer;
 import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
@@ -39,11 +47,13 @@ import org.apache.curator.x.rpc.idl.event.OptionalChildrenList;
 import org.apache.curator.x.rpc.idl.event.OptionalPath;
 import org.apache.curator.x.rpc.idl.event.OptionalRpcStat;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
+import org.apache.curator.x.rpc.idl.event.RpcParticipant;
 import org.apache.curator.x.rpc.idl.event.RpcStat;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -336,7 +346,97 @@ public class CuratorProjectionService
         }
 
         GenericProjection leaderProjection = new GenericProjection(id);
-        return new LeaderResult(leaderProjection, leaderLatch.hasLeadership());
+        return new LeaderResult(new LeaderProjection(leaderProjection), leaderLatch.hasLeadership());
+    }
+
+    @ThriftMethod
+    public List<RpcParticipant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws Exception
+    {
+        CuratorEntry entry = getEntry(projection);
+
+        LeaderLatch leaderLatch = getThis(entry, leaderProjection.projection.id, LeaderLatch.class);
+        Collection<Participant> participants = leaderLatch.getParticipants();
+        return Lists.transform
+        (
+            Lists.newArrayList(participants),
+            new Function<Participant, RpcParticipant>()
+            {
+                @Override
+                public RpcParticipant apply(Participant participant)
+                {
+                    return new RpcParticipant(participant.getId(), participant.isLeader());
+                }
+            }
+        );
+    }
+
+    @ThriftMethod
+    public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws Exception
+    {
+        CuratorEntry entry = getEntry(projection);
+
+        LeaderLatch leaderLatch = getThis(entry, leaderProjection.projection.id, LeaderLatch.class);
+        return leaderLatch.hasLeadership();
+    }
+
+    @ThriftMethod
+    public PathChildrenCacheProjection startPathChildrenCache(final CuratorProjection projection, final String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws Exception
+    {
+        CuratorEntry entry = getEntry(projection);
+
+        PathChildrenCache cache = new PathChildrenCache(entry.getClient(), path, cacheData, dataIsCompressed, ThreadUtils.newThreadFactory("PathChildrenCacheResource-%d"));
+        PathChildrenCache.StartMode actualStartMode = PathChildrenCache.StartMode.NORMAL;
+        switch ( startMode )
+        {
+            case NORMAL:
+            {
+                actualStartMode = PathChildrenCache.StartMode.NORMAL;
+                break;
+            }
+
+            case BUILD_INITIAL_CACHE:
+            {
+                actualStartMode = PathChildrenCache.StartMode.BUILD_INITIAL_CACHE;
+                break;
+            }
+
+            case POST_INITIALIZED_EVENT:
+            {
+                actualStartMode = PathChildrenCache.StartMode.POST_INITIALIZED_EVENT;
+                break;
+            }
+        }
+        cache.start(actualStartMode);
+
+        Closer<PathChildrenCache> closer = new Closer<PathChildrenCache>()
+        {
+            @Override
+            public void close(PathChildrenCache cache)
+            {
+                try
+                {
+                    cache.close();
+                }
+                catch ( IOException e )
+                {
+                    log.error("Could not close left-over PathChildrenCache for path: " + path, e);
+                }
+            }
+        };
+        final String id = CuratorEntry.newId();
+        entry.addThing(id, cache, closer);
+
+        PathChildrenCacheListener listener = new PathChildrenCacheListener()
+        {
+            @Override
+            public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+            {
+                // TODO
+            }
+        };
+        cache.getListenable().addListener(listener);
+
+        return new PathChildrenCacheProjection(new GenericProjection(id));
     }
 
     public void addEvent(CuratorProjection projection, RpcCuratorEvent event)
@@ -394,4 +494,10 @@ public class CuratorProjectionService
         throw new Exception("That operation is not available"); // TODO
     }
 
+    private <T> T getThis(CuratorEntry entry, String id, Class<T> clazz)
+    {
+        T thing = entry.getThing(id, clazz);
+        Preconditions.checkNotNull(thing, "No item of type " + clazz.getSimpleName() + " found with id " + id);
+        return thing;
+    }
 }

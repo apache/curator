@@ -44,7 +44,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
     schemes.put(TupleScheme.class, new LeaderResultTupleSchemeFactory());
   }
 
-  public GenericProjection projection; // required
+  public LeaderProjection projection; // required
   public boolean hasLeadership; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -115,7 +115,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, GenericProjection.class)));
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LeaderProjection.class)));
     tmpMap.put(_Fields.HAS_LEADERSHIP, new org.apache.thrift.meta_data.FieldMetaData("hasLeadership", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -126,7 +126,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
   }
 
   public LeaderResult(
-    GenericProjection projection,
+    LeaderProjection projection,
     boolean hasLeadership)
   {
     this();
@@ -141,7 +141,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
   public LeaderResult(LeaderResult other) {
     __isset_bitfield = other.__isset_bitfield;
     if (other.isSetProjection()) {
-      this.projection = new GenericProjection(other.projection);
+      this.projection = new LeaderProjection(other.projection);
     }
     this.hasLeadership = other.hasLeadership;
   }
@@ -157,11 +157,11 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
     this.hasLeadership = false;
   }
 
-  public GenericProjection getProjection() {
+  public LeaderProjection getProjection() {
     return this.projection;
   }
 
-  public LeaderResult setProjection(GenericProjection projection) {
+  public LeaderResult setProjection(LeaderProjection projection) {
     this.projection = projection;
     return this;
   }
@@ -210,7 +210,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
       if (value == null) {
         unsetProjection();
       } else {
-        setProjection((GenericProjection)value);
+        setProjection((LeaderProjection)value);
       }
       break;
 
@@ -400,7 +400,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
         switch (schemeField.id) {
           case 1: // PROJECTION
             if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-              struct.projection = new GenericProjection();
+              struct.projection = new LeaderProjection();
               struct.projection.read(iprot);
               struct.setProjectionIsSet(true);
             } else { 
@@ -476,7 +476,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
       TTupleProtocol iprot = (TTupleProtocol) prot;
       BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
-        struct.projection = new GenericProjection();
+        struct.projection = new LeaderProjection();
         struct.projection.read(iprot);
         struct.setProjectionIsSet(true);
       }

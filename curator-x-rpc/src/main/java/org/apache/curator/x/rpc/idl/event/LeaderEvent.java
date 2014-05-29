@@ -3,7 +3,7 @@ package org.apache.curator.x.rpc.idl.event;
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
 
-@ThriftStruct("LeaderEvent")
+@ThriftStruct
 public class LeaderEvent
 {
     @ThriftField(1)

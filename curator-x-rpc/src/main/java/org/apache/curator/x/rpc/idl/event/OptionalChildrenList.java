@@ -4,7 +4,7 @@ import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
 import java.util.List;
 
-@ThriftStruct("OptionalChildrenList")
+@ThriftStruct
 public class OptionalChildrenList
 {
     @ThriftField(1)

@@ -32,25 +32,22 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Serializable, Cloneable, Comparable<Id> {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Id");
+public class PathChildrenCacheProjection implements org.apache.thrift.TBase<PathChildrenCacheProjection, PathChildrenCacheProjection._Fields>, java.io.Serializable, Cloneable, Comparable<PathChildrenCacheProjection> {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("PathChildrenCacheProjection");
 
-  private static final org.apache.thrift.protocol.TField SCHEME_FIELD_DESC = new org.apache.thrift.protocol.TField("scheme", org.apache.thrift.protocol.TType.STRING, (short)1);
-  private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.STRING, (short)2);
+  private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new IdStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new IdTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new PathChildrenCacheProjectionStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new PathChildrenCacheProjectionTupleSchemeFactory());
   }
 
-  public String scheme; // required
-  public String id; // required
+  public GenericProjection projection; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    SCHEME((short)1, "scheme"),
-    ID((short)2, "id");
+    PROJECTION((short)1, "projection");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -65,10 +62,8 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // SCHEME
-          return SCHEME;
-        case 2: // ID
-          return ID;
+        case 1: // PROJECTION
+          return PROJECTION;
         default:
           return null;
       }
@@ -112,111 +107,71 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.SCHEME, new org.apache.thrift.meta_data.FieldMetaData("scheme", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, GenericProjection.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Id.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(PathChildrenCacheProjection.class, metaDataMap);
   }
 
-  public Id() {
+  public PathChildrenCacheProjection() {
   }
 
-  public Id(
-    String scheme,
-    String id)
+  public PathChildrenCacheProjection(
+    GenericProjection projection)
   {
     this();
-    this.scheme = scheme;
-    this.id = id;
+    this.projection = projection;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public Id(Id other) {
-    if (other.isSetScheme()) {
-      this.scheme = other.scheme;
-    }
-    if (other.isSetId()) {
-      this.id = other.id;
+  public PathChildrenCacheProjection(PathChildrenCacheProjection other) {
+    if (other.isSetProjection()) {
+      this.projection = new GenericProjection(other.projection);
     }
   }
 
-  public Id deepCopy() {
-    return new Id(this);
+  public PathChildrenCacheProjection deepCopy() {
+    return new PathChildrenCacheProjection(this);
   }
 
   @Override
   public void clear() {
-    this.scheme = null;
-    this.id = null;
+    this.projection = null;
   }
 
-  public String getScheme() {
-    return this.scheme;
+  public GenericProjection getProjection() {
+    return this.projection;
   }
 
-  public Id setScheme(String scheme) {
-    this.scheme = scheme;
+  public PathChildrenCacheProjection setProjection(GenericProjection projection) {
+    this.projection = projection;
     return this;
   }
 
-  public void unsetScheme() {
-    this.scheme = null;
+  public void unsetProjection() {
+    this.projection = null;
   }
 
-  /** Returns true if field scheme is set (has been assigned a value) and false otherwise */
-  public boolean isSetScheme() {
-    return this.scheme != null;
+  /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+  public boolean isSetProjection() {
+    return this.projection != null;
   }
 
-  public void setSchemeIsSet(boolean value) {
+  public void setProjectionIsSet(boolean value) {
     if (!value) {
-      this.scheme = null;
-    }
-  }
-
-  public String getId() {
-    return this.id;
-  }
-
-  public Id setId(String id) {
-    this.id = id;
-    return this;
-  }
-
-  public void unsetId() {
-    this.id = null;
-  }
-
-  /** Returns true if field id is set (has been assigned a value) and false otherwise */
-  public boolean isSetId() {
-    return this.id != null;
-  }
-
-  public void setIdIsSet(boolean value) {
-    if (!value) {
-      this.id = null;
+      this.projection = null;
     }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case SCHEME:
+    case PROJECTION:
       if (value == null) {
-        unsetScheme();
+        unsetProjection();
       } else {
-        setScheme((String)value);
-      }
-      break;
-
-    case ID:
-      if (value == null) {
-        unsetId();
-      } else {
-        setId((String)value);
+        setProjection((GenericProjection)value);
       }
       break;
 
@@ -225,11 +180,8 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case SCHEME:
-      return getScheme();
-
-    case ID:
-      return getId();
+    case PROJECTION:
+      return getProjection();
 
     }
     throw new IllegalStateException();
@@ -242,10 +194,8 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
     }
 
     switch (field) {
-    case SCHEME:
-      return isSetScheme();
-    case ID:
-      return isSetId();
+    case PROJECTION:
+      return isSetProjection();
     }
     throw new IllegalStateException();
   }
@@ -254,30 +204,21 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof Id)
-      return this.equals((Id)that);
+    if (that instanceof PathChildrenCacheProjection)
+      return this.equals((PathChildrenCacheProjection)that);
     return false;
   }
 
-  public boolean equals(Id that) {
+  public boolean equals(PathChildrenCacheProjection that) {
     if (that == null)
       return false;
 
-    boolean this_present_scheme = true && this.isSetScheme();
-    boolean that_present_scheme = true && that.isSetScheme();
-    if (this_present_scheme || that_present_scheme) {
-      if (!(this_present_scheme && that_present_scheme))
+    boolean this_present_projection = true && this.isSetProjection();
+    boolean that_present_projection = true && that.isSetProjection();
+    if (this_present_projection || that_present_projection) {
+      if (!(this_present_projection && that_present_projection))
         return false;
-      if (!this.scheme.equals(that.scheme))
-        return false;
-    }
-
-    boolean this_present_id = true && this.isSetId();
-    boolean that_present_id = true && that.isSetId();
-    if (this_present_id || that_present_id) {
-      if (!(this_present_id && that_present_id))
-        return false;
-      if (!this.id.equals(that.id))
+      if (!this.projection.equals(that.projection))
         return false;
     }
 
@@ -290,29 +231,19 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
   }
 
   @Override
-  public int compareTo(Id other) {
+  public int compareTo(PathChildrenCacheProjection other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
 
-    lastComparison = Boolean.valueOf(isSetScheme()).compareTo(other.isSetScheme());
+    lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetScheme()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.scheme, other.scheme);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetId()).compareTo(other.isSetId());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetId()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.id, other.id);
+    if (isSetProjection()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -334,22 +265,14 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("Id(");
+    StringBuilder sb = new StringBuilder("PathChildrenCacheProjection(");
     boolean first = true;
 
-    sb.append("scheme:");
-    if (this.scheme == null) {
+    sb.append("projection:");
+    if (this.projection == null) {
       sb.append("null");
     } else {
-      sb.append(this.scheme);
-    }
-    first = false;
-    if (!first) sb.append(", ");
-    sb.append("id:");
-    if (this.id == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.id);
+      sb.append(this.projection);
     }
     first = false;
     sb.append(")");
@@ -359,6 +282,9 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
     // check for sub-struct validity
+    if (projection != null) {
+      projection.validate();
+    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -377,15 +303,15 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
     }
   }
 
-  private static class IdStandardSchemeFactory implements SchemeFactory {
-    public IdStandardScheme getScheme() {
-      return new IdStandardScheme();
+  private static class PathChildrenCacheProjectionStandardSchemeFactory implements SchemeFactory {
+    public PathChildrenCacheProjectionStandardScheme getScheme() {
+      return new PathChildrenCacheProjectionStandardScheme();
     }
   }
 
-  private static class IdStandardScheme extends StandardScheme<Id> {
+  private static class PathChildrenCacheProjectionStandardScheme extends StandardScheme<PathChildrenCacheProjection> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, Id struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, PathChildrenCacheProjection struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -395,18 +321,11 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
           break;
         }
         switch (schemeField.id) {
-          case 1: // SCHEME
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.scheme = iprot.readString();
-              struct.setSchemeIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
-          case 2: // ID
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.id = iprot.readString();
-              struct.setIdIsSet(true);
+          case 1: // PROJECTION
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.projection = new GenericProjection();
+              struct.projection.read(iprot);
+              struct.setProjectionIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -422,18 +341,13 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, Id struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, PathChildrenCacheProjection struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      if (struct.scheme != null) {
-        oprot.writeFieldBegin(SCHEME_FIELD_DESC);
-        oprot.writeString(struct.scheme);
-        oprot.writeFieldEnd();
-      }
-      if (struct.id != null) {
-        oprot.writeFieldBegin(ID_FIELD_DESC);
-        oprot.writeString(struct.id);
+      if (struct.projection != null) {
+        oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+        struct.projection.write(oprot);
         oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
@@ -442,44 +356,35 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
 
   }
 
-  private static class IdTupleSchemeFactory implements SchemeFactory {
-    public IdTupleScheme getScheme() {
-      return new IdTupleScheme();
+  private static class PathChildrenCacheProjectionTupleSchemeFactory implements SchemeFactory {
+    public PathChildrenCacheProjectionTupleScheme getScheme() {
+      return new PathChildrenCacheProjectionTupleScheme();
     }
   }
 
-  private static class IdTupleScheme extends TupleScheme<Id> {
+  private static class PathChildrenCacheProjectionTupleScheme extends TupleScheme<PathChildrenCacheProjection> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, Id struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, PathChildrenCacheProjection struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       BitSet optionals = new BitSet();
-      if (struct.isSetScheme()) {
+      if (struct.isSetProjection()) {
         optionals.set(0);
       }
-      if (struct.isSetId()) {
-        optionals.set(1);
-      }
-      oprot.writeBitSet(optionals, 2);
-      if (struct.isSetScheme()) {
-        oprot.writeString(struct.scheme);
-      }
-      if (struct.isSetId()) {
-        oprot.writeString(struct.id);
+      oprot.writeBitSet(optionals, 1);
+      if (struct.isSetProjection()) {
+        struct.projection.write(oprot);
       }
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, Id struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, PathChildrenCacheProjection struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(2);
+      BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {
-        struct.scheme = iprot.readString();
-        struct.setSchemeIsSet(true);
-      }
-      if (incoming.get(1)) {
-        struct.id = iprot.readString();
-        struct.setIdIsSet(true);
+        struct.projection = new GenericProjection();
+        struct.projection.read(iprot);
+        struct.setProjectionIsSet(true);
       }
     }
   }

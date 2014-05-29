@@ -45,7 +45,7 @@ public class Acl implements org.apache.thrift.TBase<Acl, Acl._Fields>, java.io.S
   }
 
   public int perms; // required
-  public id id; // required
+  public Id id; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -117,7 +117,7 @@ public class Acl implements org.apache.thrift.TBase<Acl, Acl._Fields>, java.io.S
     tmpMap.put(_Fields.PERMS, new org.apache.thrift.meta_data.FieldMetaData("perms", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, id.class)));
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Id.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Acl.class, metaDataMap);
   }
@@ -127,7 +127,7 @@ public class Acl implements org.apache.thrift.TBase<Acl, Acl._Fields>, java.io.S
 
   public Acl(
     int perms,
-    id id)
+    Id id)
   {
     this();
     this.perms = perms;
@@ -142,7 +142,7 @@ public class Acl implements org.apache.thrift.TBase<Acl, Acl._Fields>, java.io.S
     __isset_bitfield = other.__isset_bitfield;
     this.perms = other.perms;
     if (other.isSetId()) {
-      this.id = new id(other.id);
+      this.id = new Id(other.id);
     }
   }
 
@@ -180,11 +180,11 @@ public class Acl implements org.apache.thrift.TBase<Acl, Acl._Fields>, java.io.S
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PERMS_ISSET_ID, value);
   }
 
-  public id getId() {
+  public Id getId() {
     return this.id;
   }
 
-  public Acl setId(id id) {
+  public Acl setId(Id id) {
     this.id = id;
     return this;
   }
@@ -218,7 +218,7 @@ public class Acl implements org.apache.thrift.TBase<Acl, Acl._Fields>, java.io.S
       if (value == null) {
         unsetId();
       } else {
-        setId((id)value);
+        setId((Id)value);
       }
       break;
 
@@ -408,7 +408,7 @@ public class Acl implements org.apache.thrift.TBase<Acl, Acl._Fields>, java.io.S
             break;
           case 2: // ID
             if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-              struct.id = new id();
+              struct.id = new Id();
               struct.id.read(iprot);
               struct.setIdIsSet(true);
             } else { 
@@ -480,7 +480,7 @@ public class Acl implements org.apache.thrift.TBase<Acl, Acl._Fields>, java.io.S
         struct.setPermsIsSet(true);
       }
       if (incoming.get(1)) {
-        struct.id = new id();
+        struct.id = new Id();
         struct.id.read(iprot);
         struct.setIdIsSet(true);
       }

@@ -7,6 +7,10 @@ enum CreateMode {
   PERSISTENT, PERSISTENT_SEQUENTIAL, EPHEMERAL, EPHEMERAL_SEQUENTIAL
 }
 
+enum PathChildrenCacheStartMode {
+  NORMAL, BUILD_INITIAL_CACHE, POST_INITIALIZED_EVENT
+}
+
 enum CuratorEventType {
   PING, CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING, CONNECTION_CONNECTED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, CONNECTION_READ_ONLY, LEADER
 }
@@ -56,6 +60,14 @@ struct GetDataSpec {
   4: bool decompressed;
 }
 
+struct LeaderProjection {
+  1: GenericProjection projection;
+}
+
+struct PathChildrenCacheProjection {
+  1: GenericProjection projection;
+}
+
 struct Version {
   1: i32 version;
 }
@@ -67,7 +79,7 @@ struct LeaderEvent {
 }
 
 struct LeaderResult {
-  1: GenericProjection projection;
+  1: LeaderProjection projection;
   2: bool hasLeadership;
 }
 
@@ -79,9 +91,14 @@ struct OptionalPath {
   1: string path;
 }
 
-struct id {
+struct Id {
   1: string scheme;
   2: string id;
+}
+
+struct Participant {
+  1: string id;
+  2: bool isLeader;
 }
 
 struct Stat {
@@ -127,7 +144,7 @@ struct OptionalStat {
 
 struct Acl {
   1: i32 perms;
-  2: id id;
+  2: Id id;
 }
 
 struct CuratorEvent {
@@ -153,9 +170,12 @@ service CuratorService {
   OptionalStat exists(1: CuratorProjection projection, 2: ExistsSpec spec);
   OptionalChildrenList getChildren(1: CuratorProjection projection, 2: GetChildrenSpec spec);
   binary getData(1: CuratorProjection projection, 2: GetDataSpec spec);
+  list<Participant> getLeaderParticipants(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
+  bool isLeader(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
   CuratorProjection newCuratorProjection(1: string connectionName);
   Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec);
   LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs);
+  PathChildrenCacheProjection startPathChildrenCache(1: CuratorProjection projection, 2: string path, 3: bool cacheData, 4: bool dataIsCompressed, 5: PathChildrenCacheStartMode startMode);
 }
 
 service EventService {

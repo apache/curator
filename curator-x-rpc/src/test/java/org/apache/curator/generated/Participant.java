@@ -32,25 +32,25 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Serializable, Cloneable, Comparable<Id> {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Id");
+public class Participant implements org.apache.thrift.TBase<Participant, Participant._Fields>, java.io.Serializable, Cloneable, Comparable<Participant> {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Participant");
 
-  private static final org.apache.thrift.protocol.TField SCHEME_FIELD_DESC = new org.apache.thrift.protocol.TField("scheme", org.apache.thrift.protocol.TType.STRING, (short)1);
-  private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.STRING, (short)2);
+  private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.STRING, (short)1);
+  private static final org.apache.thrift.protocol.TField IS_LEADER_FIELD_DESC = new org.apache.thrift.protocol.TField("isLeader", org.apache.thrift.protocol.TType.BOOL, (short)2);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new IdStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new IdTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new ParticipantStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new ParticipantTupleSchemeFactory());
   }
 
-  public String scheme; // required
   public String id; // required
+  public boolean isLeader; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    SCHEME((short)1, "scheme"),
-    ID((short)2, "id");
+    ID((short)1, "id"),
+    IS_LEADER((short)2, "isLeader");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -65,10 +65,10 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // SCHEME
-          return SCHEME;
-        case 2: // ID
+        case 1: // ID
           return ID;
+        case 2: // IS_LEADER
+          return IS_LEADER;
         default:
           return null;
       }
@@ -109,80 +109,59 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
   }
 
   // isset id assignments
+  private static final int __ISLEADER_ISSET_ID = 0;
+  private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.SCHEME, new org.apache.thrift.meta_data.FieldMetaData("scheme", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.IS_LEADER, new org.apache.thrift.meta_data.FieldMetaData("isLeader", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Id.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Participant.class, metaDataMap);
   }
 
-  public Id() {
+  public Participant() {
   }
 
-  public Id(
-    String scheme,
-    String id)
+  public Participant(
+    String id,
+    boolean isLeader)
   {
     this();
-    this.scheme = scheme;
     this.id = id;
+    this.isLeader = isLeader;
+    setIsLeaderIsSet(true);
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public Id(Id other) {
-    if (other.isSetScheme()) {
-      this.scheme = other.scheme;
-    }
+  public Participant(Participant other) {
+    __isset_bitfield = other.__isset_bitfield;
     if (other.isSetId()) {
       this.id = other.id;
     }
+    this.isLeader = other.isLeader;
   }
 
-  public Id deepCopy() {
-    return new Id(this);
+  public Participant deepCopy() {
+    return new Participant(this);
   }
 
   @Override
   public void clear() {
-    this.scheme = null;
     this.id = null;
-  }
-
-  public String getScheme() {
-    return this.scheme;
-  }
-
-  public Id setScheme(String scheme) {
-    this.scheme = scheme;
-    return this;
-  }
-
-  public void unsetScheme() {
-    this.scheme = null;
-  }
-
-  /** Returns true if field scheme is set (has been assigned a value) and false otherwise */
-  public boolean isSetScheme() {
-    return this.scheme != null;
-  }
-
-  public void setSchemeIsSet(boolean value) {
-    if (!value) {
-      this.scheme = null;
-    }
+    setIsLeaderIsSet(false);
+    this.isLeader = false;
   }
 
   public String getId() {
     return this.id;
   }
 
-  public Id setId(String id) {
+  public Participant setId(String id) {
     this.id = id;
     return this;
   }
@@ -202,16 +181,31 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
     }
   }
 
+  public boolean isIsLeader() {
+    return this.isLeader;
+  }
+
+  public Participant setIsLeader(boolean isLeader) {
+    this.isLeader = isLeader;
+    setIsLeaderIsSet(true);
+    return this;
+  }
+
+  public void unsetIsLeader() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __ISLEADER_ISSET_ID);
+  }
+
+  /** Returns true if field isLeader is set (has been assigned a value) and false otherwise */
+  public boolean isSetIsLeader() {
+    return EncodingUtils.testBit(__isset_bitfield, __ISLEADER_ISSET_ID);
+  }
+
+  public void setIsLeaderIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __ISLEADER_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case SCHEME:
-      if (value == null) {
-        unsetScheme();
-      } else {
-        setScheme((String)value);
-      }
-      break;
-
     case ID:
       if (value == null) {
         unsetId();
@@ -220,16 +214,24 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
       }
       break;
 
+    case IS_LEADER:
+      if (value == null) {
+        unsetIsLeader();
+      } else {
+        setIsLeader((Boolean)value);
+      }
+      break;
+
     }
   }
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case SCHEME:
-      return getScheme();
-
     case ID:
       return getId();
+
+    case IS_LEADER:
+      return Boolean.valueOf(isIsLeader());
 
     }
     throw new IllegalStateException();
@@ -242,10 +244,10 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
     }
 
     switch (field) {
-    case SCHEME:
-      return isSetScheme();
     case ID:
       return isSetId();
+    case IS_LEADER:
+      return isSetIsLeader();
     }
     throw new IllegalStateException();
   }
@@ -254,23 +256,14 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof Id)
-      return this.equals((Id)that);
+    if (that instanceof Participant)
+      return this.equals((Participant)that);
     return false;
   }
 
-  public boolean equals(Id that) {
+  public boolean equals(Participant that) {
     if (that == null)
       return false;
-
-    boolean this_present_scheme = true && this.isSetScheme();
-    boolean that_present_scheme = true && that.isSetScheme();
-    if (this_present_scheme || that_present_scheme) {
-      if (!(this_present_scheme && that_present_scheme))
-        return false;
-      if (!this.scheme.equals(that.scheme))
-        return false;
-    }
 
     boolean this_present_id = true && this.isSetId();
     boolean that_present_id = true && that.isSetId();
@@ -278,6 +271,15 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
       if (!(this_present_id && that_present_id))
         return false;
       if (!this.id.equals(that.id))
+        return false;
+    }
+
+    boolean this_present_isLeader = true;
+    boolean that_present_isLeader = true;
+    if (this_present_isLeader || that_present_isLeader) {
+      if (!(this_present_isLeader && that_present_isLeader))
+        return false;
+      if (this.isLeader != that.isLeader)
         return false;
     }
 
@@ -290,29 +292,29 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
   }
 
   @Override
-  public int compareTo(Id other) {
+  public int compareTo(Participant other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
 
-    lastComparison = Boolean.valueOf(isSetScheme()).compareTo(other.isSetScheme());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetScheme()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.scheme, other.scheme);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetId()).compareTo(other.isSetId());
     if (lastComparison != 0) {
       return lastComparison;
     }
     if (isSetId()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.id, other.id);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetIsLeader()).compareTo(other.isSetIsLeader());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetIsLeader()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.isLeader, other.isLeader);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -334,23 +336,19 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("Id(");
+    StringBuilder sb = new StringBuilder("Participant(");
     boolean first = true;
 
-    sb.append("scheme:");
-    if (this.scheme == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.scheme);
-    }
-    first = false;
-    if (!first) sb.append(", ");
     sb.append("id:");
     if (this.id == null) {
       sb.append("null");
     } else {
       sb.append(this.id);
     }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("isLeader:");
+    sb.append(this.isLeader);
     first = false;
     sb.append(")");
     return sb.toString();
@@ -371,21 +369,23 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
 
   private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
     try {
+      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+      __isset_bitfield = 0;
       read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
     } catch (org.apache.thrift.TException te) {
       throw new java.io.IOException(te);
     }
   }
 
-  private static class IdStandardSchemeFactory implements SchemeFactory {
-    public IdStandardScheme getScheme() {
-      return new IdStandardScheme();
+  private static class ParticipantStandardSchemeFactory implements SchemeFactory {
+    public ParticipantStandardScheme getScheme() {
+      return new ParticipantStandardScheme();
     }
   }
 
-  private static class IdStandardScheme extends StandardScheme<Id> {
+  private static class ParticipantStandardScheme extends StandardScheme<Participant> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, Id struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, Participant struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -395,18 +395,18 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
           break;
         }
         switch (schemeField.id) {
-          case 1: // SCHEME
+          case 1: // ID
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.scheme = iprot.readString();
-              struct.setSchemeIsSet(true);
+              struct.id = iprot.readString();
+              struct.setIdIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // ID
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.id = iprot.readString();
-              struct.setIdIsSet(true);
+          case 2: // IS_LEADER
+            if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
+              struct.isLeader = iprot.readBool();
+              struct.setIsLeaderIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -422,64 +422,62 @@ public class Id implements org.apache.thrift.TBase<Id, Id._Fields>, java.io.Seri
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, Id struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, Participant struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      if (struct.scheme != null) {
-        oprot.writeFieldBegin(SCHEME_FIELD_DESC);
-        oprot.writeString(struct.scheme);
-        oprot.writeFieldEnd();
-      }
       if (struct.id != null) {
         oprot.writeFieldBegin(ID_FIELD_DESC);
         oprot.writeString(struct.id);
         oprot.writeFieldEnd();
       }
+      oprot.writeFieldBegin(IS_LEADER_FIELD_DESC);
+      oprot.writeBool(struct.isLeader);
+      oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
 
   }
 
-  private static class IdTupleSchemeFactory implements SchemeFactory {
-    public IdTupleScheme getScheme() {
-      return new IdTupleScheme();
+  private static class ParticipantTupleSchemeFactory implements SchemeFactory {
+    public ParticipantTupleScheme getScheme() {
+      return new ParticipantTupleScheme();
     }
   }
 
-  private static class IdTupleScheme extends TupleScheme<Id> {
+  private static class ParticipantTupleScheme extends TupleScheme<Participant> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, Id struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, Participant struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       BitSet optionals = new BitSet();
-      if (struct.isSetScheme()) {
+      if (struct.isSetId()) {
         optionals.set(0);
       }
-      if (struct.isSetId()) {
+      if (struct.isSetIsLeader()) {
         optionals.set(1);
       }
       oprot.writeBitSet(optionals, 2);
-      if (struct.isSetScheme()) {
-        oprot.writeString(struct.scheme);
-      }
       if (struct.isSetId()) {
         oprot.writeString(struct.id);
+      }
+      if (struct.isSetIsLeader()) {
+        oprot.writeBool(struct.isLeader);
       }
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, Id struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, Participant struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
-        struct.scheme = iprot.readString();
-        struct.setSchemeIsSet(true);
-      }
-      if (incoming.get(1)) {
         struct.id = iprot.readString();
         struct.setIdIsSet(true);
+      }
+      if (incoming.get(1)) {
+        struct.isLeader = iprot.readBool();
+        struct.setIsLeaderIsSet(true);
       }
     }
   }
