@@ -20,16 +20,19 @@ package org.apache.curator.x.rpc;
 
 import org.apache.curator.generated.CreateSpec;
 import org.apache.curator.generated.CuratorEvent;
-import org.apache.curator.generated.CuratorEventType;
 import org.apache.curator.generated.CuratorProjection;
 import org.apache.curator.generated.CuratorService;
 import org.apache.curator.generated.EventService;
 import org.apache.curator.generated.GenericProjection;
+import org.apache.curator.generated.GetDataSpec;
+import org.apache.curator.generated.SetDataSpec;
+import org.apache.curator.generated.Stat;
 import org.apache.curator.test.TestingServer;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
+import java.nio.ByteBuffer;
 import java.util.concurrent.Executors;
 
 public class TestClient
@@ -63,12 +66,7 @@ public class TestClient
                         for(;;)
                         {
                             CuratorEvent nextEvent = serviceClient.getNextEvent(curatorProjection);
-                            System.out.println(nextEvent.type);
-                            if ( nextEvent.type == CuratorEventType.CREATE )
-                            {
-                                System.out.println("Async context: " + nextEvent.context);
-                                System.out.println("Async path: " + nextEvent.path);
-                            }
+                            System.out.println(nextEvent);
                         }
                     }
                     catch ( TException e )
@@ -83,10 +81,23 @@ public class TestClient
         createSpec.path = "/a/b/c";
         createSpec.creatingParentsIfNeeded = true;
         createSpec.asyncContext = "foo";
+        createSpec.data = ByteBuffer.wrap("hey".getBytes());
         String path = client.create(curatorProjection, createSpec);
         System.out.println("Path: " + path);
 
         GenericProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);
         client.closeGenericProjection(curatorProjection, lockId);
+
+        GetDataSpec getDataSpec = new GetDataSpec();
+        getDataSpec.watched = true;
+        getDataSpec.path = "/a/b/c";
+        ByteBuffer data = client.getData(curatorProjection, getDataSpec);
+        System.out.println("getData: " + new String(data.array()));
+
+        SetDataSpec setDataSpec = new SetDataSpec();
+        setDataSpec.path = "/a/b/c";
+        setDataSpec.data = ByteBuffer.wrap("another".getBytes());
+        Stat stat = client.setData(curatorProjection, setDataSpec);
+        System.out.println("Stat: " + stat);
     }
 }

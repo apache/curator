@@ -42,9 +42,13 @@ public class CuratorService {
 
     public boolean closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection) throws org.apache.thrift.TException;
 
-    public String create(CuratorProjection projection, CreateSpec createSpec) throws org.apache.thrift.TException;
+    public String create(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException;
+
+    public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws org.apache.thrift.TException;
 
     public CuratorProjection newCuratorProjection(String connectionName) throws org.apache.thrift.TException;
+
+    public Stat setData(CuratorProjection projection, SetDataSpec spec) throws org.apache.thrift.TException;
 
   }
 
@@ -56,9 +60,13 @@ public class CuratorService {
 
     public void closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
-    public void create(CuratorProjection projection, CreateSpec createSpec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+    public void create(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void getData(CuratorProjection projection, GetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void newCuratorProjection(String connectionName, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void setData(CuratorProjection projection, SetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -151,17 +159,17 @@ public class CuratorService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "closeGenericProjection failed: unknown result");
     }
 
-    public String create(CuratorProjection projection, CreateSpec createSpec) throws org.apache.thrift.TException
+    public String create(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
     {
-      send_create(projection, createSpec);
+      send_create(projection, spec);
       return recv_create();
     }
 
-    public void send_create(CuratorProjection projection, CreateSpec createSpec) throws org.apache.thrift.TException
+    public void send_create(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
     {
       create_args args = new create_args();
       args.setProjection(projection);
-      args.setCreateSpec(createSpec);
+      args.setSpec(spec);
       sendBase("create", args);
     }
 
@@ -173,6 +181,30 @@ public class CuratorService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "create failed: unknown result");
+    }
+
+    public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws org.apache.thrift.TException
+    {
+      send_getData(projection, spec);
+      return recv_getData();
+    }
+
+    public void send_getData(CuratorProjection projection, GetDataSpec spec) throws org.apache.thrift.TException
+    {
+      getData_args args = new getData_args();
+      args.setProjection(projection);
+      args.setSpec(spec);
+      sendBase("getData", args);
+    }
+
+    public ByteBuffer recv_getData() throws org.apache.thrift.TException
+    {
+      getData_result result = new getData_result();
+      receiveBase(result, "getData");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getData failed: unknown result");
     }
 
     public CuratorProjection newCuratorProjection(String connectionName) throws org.apache.thrift.TException
@@ -196,6 +228,30 @@ public class CuratorService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "newCuratorProjection failed: unknown result");
+    }
+
+    public Stat setData(CuratorProjection projection, SetDataSpec spec) throws org.apache.thrift.TException
+    {
+      send_setData(projection, spec);
+      return recv_setData();
+    }
+
+    public void send_setData(CuratorProjection projection, SetDataSpec spec) throws org.apache.thrift.TException
+    {
+      setData_args args = new setData_args();
+      args.setProjection(projection);
+      args.setSpec(spec);
+      sendBase("setData", args);
+    }
+
+    public Stat recv_setData() throws org.apache.thrift.TException
+    {
+      setData_result result = new setData_result();
+      receiveBase(result, "setData");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "setData failed: unknown result");
     }
 
   }
@@ -321,27 +377,27 @@ public class CuratorService {
       }
     }
 
-    public void create(CuratorProjection projection, CreateSpec createSpec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+    public void create(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      create_call method_call = new create_call(projection, createSpec, resultHandler, this, ___protocolFactory, ___transport);
+      create_call method_call = new create_call(projection, spec, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
     public static class create_call extends org.apache.thrift.async.TAsyncMethodCall {
       private CuratorProjection projection;
-      private CreateSpec createSpec;
-      public create_call(CuratorProjection projection, CreateSpec createSpec, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      private CreateSpec spec;
+      public create_call(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.projection = projection;
-        this.createSpec = createSpec;
+        this.spec = spec;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("create", org.apache.thrift.protocol.TMessageType.CALL, 0));
         create_args args = new create_args();
         args.setProjection(projection);
-        args.setCreateSpec(createSpec);
+        args.setSpec(spec);
         args.write(prot);
         prot.writeMessageEnd();
       }
@@ -353,6 +409,41 @@ public class CuratorService {
         org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
         org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
         return (new Client(prot)).recv_create();
+      }
+    }
+
+    public void getData(CuratorProjection projection, GetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      getData_call method_call = new getData_call(projection, spec, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class getData_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      private GetDataSpec spec;
+      public getData_call(CuratorProjection projection, GetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.projection = projection;
+        this.spec = spec;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("getData", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        getData_args args = new getData_args();
+        args.setProjection(projection);
+        args.setSpec(spec);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public ByteBuffer getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_getData();
       }
     }
 
@@ -388,6 +479,41 @@ public class CuratorService {
       }
     }
 
+    public void setData(CuratorProjection projection, SetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      setData_call method_call = new setData_call(projection, spec, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class setData_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      private SetDataSpec spec;
+      public setData_call(CuratorProjection projection, SetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.projection = projection;
+        this.spec = spec;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("setData", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        setData_args args = new setData_args();
+        args.setProjection(projection);
+        args.setSpec(spec);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public Stat getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_setData();
+      }
+    }
+
   }
 
   public static class Processor<I extends Iface> extends org.apache.thrift.TBaseProcessor<I> implements org.apache.thrift.TProcessor {
@@ -405,7 +531,9 @@ public class CuratorService {
       processMap.put("closeCuratorProjection", new closeCuratorProjection());
       processMap.put("closeGenericProjection", new closeGenericProjection());
       processMap.put("create", new create());
+      processMap.put("getData", new getData());
       processMap.put("newCuratorProjection", new newCuratorProjection());
+      processMap.put("setData", new setData());
       return processMap;
     }
 
@@ -485,7 +613,27 @@ public class CuratorService {
 
       public create_result getResult(I iface, create_args args) throws org.apache.thrift.TException {
         create_result result = new create_result();
-        result.success = iface.create(args.projection, args.createSpec);
+        result.success = iface.create(args.projection, args.spec);
+        return result;
+      }
+    }
+
+    public static class getData<I extends Iface> extends org.apache.thrift.ProcessFunction<I, getData_args> {
+      public getData() {
+        super("getData");
+      }
+
+      public getData_args getEmptyArgsInstance() {
+        return new getData_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public getData_result getResult(I iface, getData_args args) throws org.apache.thrift.TException {
+        getData_result result = new getData_result();
+        result.success = iface.getData(args.projection, args.spec);
         return result;
       }
     }
@@ -510,6 +658,26 @@ public class CuratorService {
       }
     }
 
+    public static class setData<I extends Iface> extends org.apache.thrift.ProcessFunction<I, setData_args> {
+      public setData() {
+        super("setData");
+      }
+
+      public setData_args getEmptyArgsInstance() {
+        return new setData_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public setData_result getResult(I iface, setData_args args) throws org.apache.thrift.TException {
+        setData_result result = new setData_result();
+        result.success = iface.setData(args.projection, args.spec);
+        return result;
+      }
+    }
+
   }
 
   public static class AsyncProcessor<I extends AsyncIface> extends org.apache.thrift.TBaseAsyncProcessor<I> {
@@ -527,7 +695,9 @@ public class CuratorService {
       processMap.put("closeCuratorProjection", new closeCuratorProjection());
       processMap.put("closeGenericProjection", new closeGenericProjection());
       processMap.put("create", new create());
+      processMap.put("getData", new getData());
       processMap.put("newCuratorProjection", new newCuratorProjection());
+      processMap.put("setData", new setData());
       return processMap;
     }
 
@@ -731,7 +901,58 @@ public class CuratorService {
       }
 
       public void start(I iface, create_args args, org.apache.thrift.async.AsyncMethodCallback<String> resultHandler) throws TException {
-        iface.create(args.projection, args.createSpec,resultHandler);
+        iface.create(args.projection, args.spec,resultHandler);
+      }
+    }
+
+    public static class getData<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, getData_args, ByteBuffer> {
+      public getData() {
+        super("getData");
+      }
+
+      public getData_args getEmptyArgsInstance() {
+        return new getData_args();
+      }
+
+      public AsyncMethodCallback<ByteBuffer> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<ByteBuffer>() { 
+          public void onComplete(ByteBuffer o) {
+            getData_result result = new getData_result();
+            result.success = o;
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            getData_result result = new getData_result();
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, getData_args args, org.apache.thrift.async.AsyncMethodCallback<ByteBuffer> resultHandler) throws TException {
+        iface.getData(args.projection, args.spec,resultHandler);
       }
     }
 
@@ -783,6 +1004,57 @@ public class CuratorService {
 
       public void start(I iface, newCuratorProjection_args args, org.apache.thrift.async.AsyncMethodCallback<CuratorProjection> resultHandler) throws TException {
         iface.newCuratorProjection(args.connectionName,resultHandler);
+      }
+    }
+
+    public static class setData<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, setData_args, Stat> {
+      public setData() {
+        super("setData");
+      }
+
+      public setData_args getEmptyArgsInstance() {
+        return new setData_args();
+      }
+
+      public AsyncMethodCallback<Stat> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<Stat>() { 
+          public void onComplete(Stat o) {
+            setData_result result = new setData_result();
+            result.success = o;
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            setData_result result = new setData_result();
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, setData_args args, org.apache.thrift.async.AsyncMethodCallback<Stat> resultHandler) throws TException {
+        iface.setData(args.projection, args.spec,resultHandler);
       }
     }
 
@@ -3131,7 +3403,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("create_args");
 
     private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
-    private static final org.apache.thrift.protocol.TField CREATE_SPEC_FIELD_DESC = new org.apache.thrift.protocol.TField("createSpec", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+    private static final org.apache.thrift.protocol.TField SPEC_FIELD_DESC = new org.apache.thrift.protocol.TField("spec", org.apache.thrift.protocol.TType.STRUCT, (short)2);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -3140,12 +3412,12 @@ public class CuratorService {
     }
 
     public CuratorProjection projection; // required
-    public CreateSpec createSpec; // required
+    public CreateSpec spec; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
       PROJECTION((short)1, "projection"),
-      CREATE_SPEC((short)2, "createSpec");
+      SPEC((short)2, "spec");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -3162,8 +3434,8 @@ public class CuratorService {
         switch(fieldId) {
           case 1: // PROJECTION
             return PROJECTION;
-          case 2: // CREATE_SPEC
-            return CREATE_SPEC;
+          case 2: // SPEC
+            return SPEC;
           default:
             return null;
         }
@@ -3209,7 +3481,7 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
-      tmpMap.put(_Fields.CREATE_SPEC, new org.apache.thrift.meta_data.FieldMetaData("createSpec", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.SPEC, new org.apache.thrift.meta_data.FieldMetaData("spec", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CreateSpec.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(create_args.class, metaDataMap);
@@ -3220,11 +3492,11 @@ public class CuratorService {
 
     public create_args(
       CuratorProjection projection,
-      CreateSpec createSpec)
+      CreateSpec spec)
     {
       this();
       this.projection = projection;
-      this.createSpec = createSpec;
+      this.spec = spec;
     }
 
     /**
@@ -3234,8 +3506,8 @@ public class CuratorService {
       if (other.isSetProjection()) {
         this.projection = new CuratorProjection(other.projection);
       }
-      if (other.isSetCreateSpec()) {
-        this.createSpec = new CreateSpec(other.createSpec);
+      if (other.isSetSpec()) {
+        this.spec = new CreateSpec(other.spec);
       }
     }
 
@@ -3246,7 +3518,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.projection = null;
-      this.createSpec = null;
+      this.spec = null;
     }
 
     public CuratorProjection getProjection() {
@@ -3273,27 +3545,27 @@ public class CuratorService {
       }
     }
 
-    public CreateSpec getCreateSpec() {
-      return this.createSpec;
+    public CreateSpec getSpec() {
+      return this.spec;
     }
 
-    public create_args setCreateSpec(CreateSpec createSpec) {
-      this.createSpec = createSpec;
+    public create_args setSpec(CreateSpec spec) {
+      this.spec = spec;
       return this;
     }
 
-    public void unsetCreateSpec() {
-      this.createSpec = null;
+    public void unsetSpec() {
+      this.spec = null;
     }
 
-    /** Returns true if field createSpec is set (has been assigned a value) and false otherwise */
-    public boolean isSetCreateSpec() {
-      return this.createSpec != null;
+    /** Returns true if field spec is set (has been assigned a value) and false otherwise */
+    public boolean isSetSpec() {
+      return this.spec != null;
     }
 
-    public void setCreateSpecIsSet(boolean value) {
+    public void setSpecIsSet(boolean value) {
       if (!value) {
-        this.createSpec = null;
+        this.spec = null;
       }
     }
 
@@ -3307,11 +3579,11 @@ public class CuratorService {
         }
         break;
 
-      case CREATE_SPEC:
+      case SPEC:
         if (value == null) {
-          unsetCreateSpec();
+          unsetSpec();
         } else {
-          setCreateSpec((CreateSpec)value);
+          setSpec((CreateSpec)value);
         }
         break;
 
@@ -3323,8 +3595,8 @@ public class CuratorService {
       case PROJECTION:
         return getProjection();
 
-      case CREATE_SPEC:
-        return getCreateSpec();
+      case SPEC:
+        return getSpec();
 
       }
       throw new IllegalStateException();
@@ -3339,8 +3611,8 @@ public class CuratorService {
       switch (field) {
       case PROJECTION:
         return isSetProjection();
-      case CREATE_SPEC:
-        return isSetCreateSpec();
+      case SPEC:
+        return isSetSpec();
       }
       throw new IllegalStateException();
     }
@@ -3367,12 +3639,12 @@ public class CuratorService {
           return false;
       }
 
-      boolean this_present_createSpec = true && this.isSetCreateSpec();
-      boolean that_present_createSpec = true && that.isSetCreateSpec();
-      if (this_present_createSpec || that_present_createSpec) {
-        if (!(this_present_createSpec && that_present_createSpec))
+      boolean this_present_spec = true && this.isSetSpec();
+      boolean that_present_spec = true && that.isSetSpec();
+      if (this_present_spec || that_present_spec) {
+        if (!(this_present_spec && that_present_spec))
           return false;
-        if (!this.createSpec.equals(that.createSpec))
+        if (!this.spec.equals(that.spec))
           return false;
       }
 
@@ -3402,12 +3674,12 @@ public class CuratorService {
           return lastComparison;
         }
       }
-      lastComparison = Boolean.valueOf(isSetCreateSpec()).compareTo(other.isSetCreateSpec());
+      lastComparison = Boolean.valueOf(isSetSpec()).compareTo(other.isSetSpec());
       if (lastComparison != 0) {
         return lastComparison;
       }
-      if (isSetCreateSpec()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.createSpec, other.createSpec);
+      if (isSetSpec()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.spec, other.spec);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -3440,11 +3712,11 @@ public class CuratorService {
       }
       first = false;
       if (!first) sb.append(", ");
-      sb.append("createSpec:");
-      if (this.createSpec == null) {
+      sb.append("spec:");
+      if (this.spec == null) {
         sb.append("null");
       } else {
-        sb.append(this.createSpec);
+        sb.append(this.spec);
       }
       first = false;
       sb.append(")");
@@ -3457,8 +3729,8 @@ public class CuratorService {
       if (projection != null) {
         projection.validate();
       }
-      if (createSpec != null) {
-        createSpec.validate();
+      if (spec != null) {
+        spec.validate();
       }
     }
 
@@ -3505,11 +3777,11 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
-            case 2: // CREATE_SPEC
+            case 2: // SPEC
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.createSpec = new CreateSpec();
-                struct.createSpec.read(iprot);
-                struct.setCreateSpecIsSet(true);
+                struct.spec = new CreateSpec();
+                struct.spec.read(iprot);
+                struct.setSpecIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
@@ -3534,9 +3806,9 @@ public class CuratorService {
           struct.projection.write(oprot);
           oprot.writeFieldEnd();
         }
-        if (struct.createSpec != null) {
-          oprot.writeFieldBegin(CREATE_SPEC_FIELD_DESC);
-          struct.createSpec.write(oprot);
+        if (struct.spec != null) {
+          oprot.writeFieldBegin(SPEC_FIELD_DESC);
+          struct.spec.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -3560,15 +3832,15 @@ public class CuratorService {
         if (struct.isSetProjection()) {
           optionals.set(0);
         }
-        if (struct.isSetCreateSpec()) {
+        if (struct.isSetSpec()) {
           optionals.set(1);
         }
         oprot.writeBitSet(optionals, 2);
         if (struct.isSetProjection()) {
           struct.projection.write(oprot);
         }
-        if (struct.isSetCreateSpec()) {
-          struct.createSpec.write(oprot);
+        if (struct.isSetSpec()) {
+          struct.spec.write(oprot);
         }
       }
 
@@ -3582,9 +3854,9 @@ public class CuratorService {
           struct.setProjectionIsSet(true);
         }
         if (incoming.get(1)) {
-          struct.createSpec = new CreateSpec();
-          struct.createSpec.read(iprot);
-          struct.setCreateSpecIsSet(true);
+          struct.spec = new CreateSpec();
+          struct.spec.read(iprot);
+          struct.setSpecIsSet(true);
         }
       }
     }
@@ -3938,6 +4210,835 @@ public class CuratorService {
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = iprot.readString();
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class getData_args implements org.apache.thrift.TBase<getData_args, getData_args._Fields>, java.io.Serializable, Cloneable, Comparable<getData_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getData_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField SPEC_FIELD_DESC = new org.apache.thrift.protocol.TField("spec", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new getData_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new getData_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+    public GetDataSpec spec; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection"),
+      SPEC((short)2, "spec");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          case 2: // SPEC
+            return SPEC;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      tmpMap.put(_Fields.SPEC, new org.apache.thrift.meta_data.FieldMetaData("spec", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, GetDataSpec.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getData_args.class, metaDataMap);
+    }
+
+    public getData_args() {
+    }
+
+    public getData_args(
+      CuratorProjection projection,
+      GetDataSpec spec)
+    {
+      this();
+      this.projection = projection;
+      this.spec = spec;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public getData_args(getData_args other) {
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+      if (other.isSetSpec()) {
+        this.spec = new GetDataSpec(other.spec);
+      }
+    }
+
+    public getData_args deepCopy() {
+      return new getData_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+      this.spec = null;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public getData_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public GetDataSpec getSpec() {
+      return this.spec;
+    }
+
+    public getData_args setSpec(GetDataSpec spec) {
+      this.spec = spec;
+      return this;
+    }
+
+    public void unsetSpec() {
+      this.spec = null;
+    }
+
+    /** Returns true if field spec is set (has been assigned a value) and false otherwise */
+    public boolean isSetSpec() {
+      return this.spec != null;
+    }
+
+    public void setSpecIsSet(boolean value) {
+      if (!value) {
+        this.spec = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      case SPEC:
+        if (value == null) {
+          unsetSpec();
+        } else {
+          setSpec((GetDataSpec)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      case SPEC:
+        return getSpec();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      case SPEC:
+        return isSetSpec();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof getData_args)
+        return this.equals((getData_args)that);
+      return false;
+    }
+
+    public boolean equals(getData_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      boolean this_present_spec = true && this.isSetSpec();
+      boolean that_present_spec = true && that.isSetSpec();
+      if (this_present_spec || that_present_spec) {
+        if (!(this_present_spec && that_present_spec))
+          return false;
+        if (!this.spec.equals(that.spec))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(getData_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetSpec()).compareTo(other.isSetSpec());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSpec()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.spec, other.spec);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("getData_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("spec:");
+      if (this.spec == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.spec);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+      if (spec != null) {
+        spec.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class getData_argsStandardSchemeFactory implements SchemeFactory {
+      public getData_argsStandardScheme getScheme() {
+        return new getData_argsStandardScheme();
+      }
+    }
+
+    private static class getData_argsStandardScheme extends StandardScheme<getData_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, getData_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // SPEC
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.spec = new GetDataSpec();
+                struct.spec.read(iprot);
+                struct.setSpecIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, getData_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.spec != null) {
+          oprot.writeFieldBegin(SPEC_FIELD_DESC);
+          struct.spec.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class getData_argsTupleSchemeFactory implements SchemeFactory {
+      public getData_argsTupleScheme getScheme() {
+        return new getData_argsTupleScheme();
+      }
+    }
+
+    private static class getData_argsTupleScheme extends TupleScheme<getData_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, getData_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        if (struct.isSetSpec()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+        if (struct.isSetSpec()) {
+          struct.spec.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, getData_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(2);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.spec = new GetDataSpec();
+          struct.spec.read(iprot);
+          struct.setSpecIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class getData_result implements org.apache.thrift.TBase<getData_result, getData_result._Fields>, java.io.Serializable, Cloneable, Comparable<getData_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getData_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRING, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new getData_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new getData_resultTupleSchemeFactory());
+    }
+
+    public ByteBuffer success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING          , true)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getData_result.class, metaDataMap);
+    }
+
+    public getData_result() {
+    }
+
+    public getData_result(
+      ByteBuffer success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public getData_result(getData_result other) {
+      if (other.isSetSuccess()) {
+        this.success = org.apache.thrift.TBaseHelper.copyBinary(other.success);
+;
+      }
+    }
+
+    public getData_result deepCopy() {
+      return new getData_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public byte[] getSuccess() {
+      setSuccess(org.apache.thrift.TBaseHelper.rightSize(success));
+      return success == null ? null : success.array();
+    }
+
+    public ByteBuffer bufferForSuccess() {
+      return success;
+    }
+
+    public getData_result setSuccess(byte[] success) {
+      setSuccess(success == null ? (ByteBuffer)null : ByteBuffer.wrap(success));
+      return this;
+    }
+
+    public getData_result setSuccess(ByteBuffer success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((ByteBuffer)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof getData_result)
+        return this.equals((getData_result)that);
+      return false;
+    }
+
+    public boolean equals(getData_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(getData_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(other.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, other.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("getData_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        org.apache.thrift.TBaseHelper.toString(this.success, sb);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class getData_resultStandardSchemeFactory implements SchemeFactory {
+      public getData_resultStandardScheme getScheme() {
+        return new getData_resultStandardScheme();
+      }
+    }
+
+    private static class getData_resultStandardScheme extends StandardScheme<getData_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, getData_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.success = iprot.readBinary();
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, getData_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          oprot.writeBinary(struct.success);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class getData_resultTupleSchemeFactory implements SchemeFactory {
+      public getData_resultTupleScheme getScheme() {
+        return new getData_resultTupleScheme();
+      }
+    }
+
+    private static class getData_resultTupleScheme extends TupleScheme<getData_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, getData_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          oprot.writeBinary(struct.success);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, getData_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = iprot.readBinary();
           struct.setSuccessIsSet(true);
         }
       }
@@ -4650,6 +5751,829 @@ public class CuratorService {
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new CuratorProjection();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class setData_args implements org.apache.thrift.TBase<setData_args, setData_args._Fields>, java.io.Serializable, Cloneable, Comparable<setData_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("setData_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField SPEC_FIELD_DESC = new org.apache.thrift.protocol.TField("spec", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new setData_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new setData_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+    public SetDataSpec spec; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection"),
+      SPEC((short)2, "spec");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          case 2: // SPEC
+            return SPEC;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      tmpMap.put(_Fields.SPEC, new org.apache.thrift.meta_data.FieldMetaData("spec", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, SetDataSpec.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(setData_args.class, metaDataMap);
+    }
+
+    public setData_args() {
+    }
+
+    public setData_args(
+      CuratorProjection projection,
+      SetDataSpec spec)
+    {
+      this();
+      this.projection = projection;
+      this.spec = spec;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public setData_args(setData_args other) {
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+      if (other.isSetSpec()) {
+        this.spec = new SetDataSpec(other.spec);
+      }
+    }
+
+    public setData_args deepCopy() {
+      return new setData_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+      this.spec = null;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public setData_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public SetDataSpec getSpec() {
+      return this.spec;
+    }
+
+    public setData_args setSpec(SetDataSpec spec) {
+      this.spec = spec;
+      return this;
+    }
+
+    public void unsetSpec() {
+      this.spec = null;
+    }
+
+    /** Returns true if field spec is set (has been assigned a value) and false otherwise */
+    public boolean isSetSpec() {
+      return this.spec != null;
+    }
+
+    public void setSpecIsSet(boolean value) {
+      if (!value) {
+        this.spec = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      case SPEC:
+        if (value == null) {
+          unsetSpec();
+        } else {
+          setSpec((SetDataSpec)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      case SPEC:
+        return getSpec();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      case SPEC:
+        return isSetSpec();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof setData_args)
+        return this.equals((setData_args)that);
+      return false;
+    }
+
+    public boolean equals(setData_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      boolean this_present_spec = true && this.isSetSpec();
+      boolean that_present_spec = true && that.isSetSpec();
+      if (this_present_spec || that_present_spec) {
+        if (!(this_present_spec && that_present_spec))
+          return false;
+        if (!this.spec.equals(that.spec))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(setData_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetSpec()).compareTo(other.isSetSpec());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSpec()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.spec, other.spec);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("setData_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("spec:");
+      if (this.spec == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.spec);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+      if (spec != null) {
+        spec.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class setData_argsStandardSchemeFactory implements SchemeFactory {
+      public setData_argsStandardScheme getScheme() {
+        return new setData_argsStandardScheme();
+      }
+    }
+
+    private static class setData_argsStandardScheme extends StandardScheme<setData_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, setData_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // SPEC
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.spec = new SetDataSpec();
+                struct.spec.read(iprot);
+                struct.setSpecIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, setData_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.spec != null) {
+          oprot.writeFieldBegin(SPEC_FIELD_DESC);
+          struct.spec.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class setData_argsTupleSchemeFactory implements SchemeFactory {
+      public setData_argsTupleScheme getScheme() {
+        return new setData_argsTupleScheme();
+      }
+    }
+
+    private static class setData_argsTupleScheme extends TupleScheme<setData_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, setData_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        if (struct.isSetSpec()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+        if (struct.isSetSpec()) {
+          struct.spec.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, setData_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(2);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.spec = new SetDataSpec();
+          struct.spec.read(iprot);
+          struct.setSpecIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class setData_result implements org.apache.thrift.TBase<setData_result, setData_result._Fields>, java.io.Serializable, Cloneable, Comparable<setData_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("setData_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new setData_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new setData_resultTupleSchemeFactory());
+    }
+
+    public Stat success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Stat.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(setData_result.class, metaDataMap);
+    }
+
+    public setData_result() {
+    }
+
+    public setData_result(
+      Stat success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public setData_result(setData_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new Stat(other.success);
+      }
+    }
+
+    public setData_result deepCopy() {
+      return new setData_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public Stat getSuccess() {
+      return this.success;
+    }
+
+    public setData_result setSuccess(Stat success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((Stat)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof setData_result)
+        return this.equals((setData_result)that);
+      return false;
+    }
+
+    public boolean equals(setData_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(setData_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(other.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, other.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("setData_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class setData_resultStandardSchemeFactory implements SchemeFactory {
+      public setData_resultStandardScheme getScheme() {
+        return new setData_resultStandardScheme();
+      }
+    }
+
+    private static class setData_resultStandardScheme extends StandardScheme<setData_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, setData_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new Stat();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, setData_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class setData_resultTupleSchemeFactory implements SchemeFactory {
+      public setData_resultTupleScheme getScheme() {
+        return new setData_resultTupleScheme();
+      }
+    }
+
+    private static class setData_resultTupleScheme extends TupleScheme<setData_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, setData_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, setData_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new Stat();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }

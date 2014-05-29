@@ -22,20 +22,18 @@ package org.apache.curator.x.rpc.idl.projection;
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.Backgroundable;
-import org.apache.curator.framework.api.Compressible;
-import org.apache.curator.framework.api.CreateBuilder;
-import org.apache.curator.framework.api.CreateModable;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.PathAndBytesable;
+import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.x.rpc.connections.Closer;
 import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
+import org.apache.curator.x.rpc.details.RpcBackgroundCallback;
+import org.apache.curator.x.rpc.details.RpcWatcher;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
+import org.apache.curator.x.rpc.idl.event.RpcStat;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.UUID;
@@ -86,42 +84,93 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public String create(final CuratorProjection projection, CreateSpec createSpec) throws Exception
+    public String create(final CuratorProjection projection, CreateSpec spec) throws Exception
     {
         CuratorFramework client = getEntry(projection).getClient();
 
         Object builder = client.create();
-        if ( createSpec.creatingParentsIfNeeded )
+        if ( spec.creatingParentsIfNeeded )
         {
             builder = castBuilder(builder, CreateBuilder.class).creatingParentsIfNeeded();
         }
-        if ( createSpec.compressed )
+        if ( spec.compressed )
         {
             builder = castBuilder(builder, Compressible.class).compressed();
         }
-        if ( createSpec.withProtection )
+        if ( spec.withProtection )
         {
             builder = castBuilder(builder, CreateBuilder.class).withProtection();
         }
-        if ( createSpec.mode != null )
+        if ( spec.mode != null )
         {
-            builder = castBuilder(builder, CreateModable.class).withMode(getRealMode(createSpec.mode));
+            builder = castBuilder(builder, CreateModable.class).withMode(getRealMode(spec.mode));
         }
 
-        if ( createSpec.asyncContext != null )
+        if ( spec.asyncContext != null )
         {
-            BackgroundCallback backgroundCallback = new BackgroundCallback()
-            {
-                @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
-                    addEvent(projection, new RpcCuratorEvent(event));
-                }
-            };
-            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, createSpec.asyncContext);
+            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, spec.asyncContext);
         }
 
-        return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(createSpec.path, createSpec.data));
+        return String.valueOf(castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data));
+    }
+
+    @ThriftMethod
+    public byte[] getData(final CuratorProjection projection, GetDataSpec spec) throws Exception
+    {
+        CuratorFramework client = getEntry(projection).getClient();
+
+        Object builder = client.getData();
+        if ( spec.watched )
+        {
+            builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
+        }
+
+        if ( spec.decompressed )
+        {
+            builder = castBuilder(builder, Decompressible.class).decompressed();
+        }
+
+        if ( spec.asyncContext != null )
+        {
+            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+        }
+
+        Stat stat = new Stat();
+        builder = castBuilder(builder, Statable.class).storingStatIn(stat);
+
+        return (byte[])castBuilder(builder, Pathable.class).forPath(spec.path);
+    }
+
+    @ThriftMethod
+    public RpcStat setData(final CuratorProjection projection, SetDataSpec spec) throws Exception
+    {
+        CuratorFramework client = getEntry(projection).getClient();
+
+        Object builder = client.setData();
+        if ( spec.watched )
+        {
+            builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
+        }
+        if ( spec.version != null )
+        {
+            builder = castBuilder(builder, Versionable.class).withVersion(spec.version.version);
+        }
+
+        if ( spec.compressed )
+        {
+            builder = castBuilder(builder, Compressible.class).compressed();
+        }
+
+        if ( spec.asyncContext != null )
+        {
+            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+        }
+
+        Stat stat = (Stat)castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data);
+        return RpcCuratorEvent.toRpcStat(stat);
     }
 
     @ThriftMethod
@@ -163,7 +212,7 @@ public class CuratorProjectionService
         return new GenericProjection(id);
     }
 
-    private void addEvent(CuratorProjection projection, RpcCuratorEvent event)
+    public void addEvent(CuratorProjection projection, RpcCuratorEvent event)
     {
         CuratorEntry entry = connectionManager.get(projection.id);
         if ( entry != null )
@@ -217,4 +266,5 @@ public class CuratorProjectionService
         }
         throw new Exception("That operation is not available"); // TODO
     }
+
 }

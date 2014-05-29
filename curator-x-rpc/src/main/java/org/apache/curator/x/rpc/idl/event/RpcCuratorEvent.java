@@ -108,6 +108,20 @@ public class RpcCuratorEvent
         this.watchedEvent = null;
     }
 
+    public RpcCuratorEvent(WatchedEvent event)
+    {
+        this.type = RpcCuratorEventType.WATCHED;
+        this.resultCode = 0;
+        this.path = event.getPath();
+        this.context = null;
+        this.stat = null;
+        this.data = null;
+        this.name = null;
+        this.children = null;
+        this.aclList = null;
+        this.watchedEvent = new RpcWatchedEvent(toRpcKeeperState(event.getState()), toRpcEventType(event.getType()), event.getPath());
+    }
+
     private RpcCuratorEventType toRpcCuratorEventType(ConnectionState state)
     {
         switch ( state )
@@ -203,7 +217,7 @@ public class RpcCuratorEvent
         throw new IllegalStateException("Unknown type: " + eventType);
     }
 
-    private RpcStat toRpcStat(Stat stat)
+    public static RpcStat toRpcStat(Stat stat)
     {
         if ( stat != null )
         {
