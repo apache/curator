@@ -1141,13 +1141,13 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
           case 9: // CHILDREN
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
-                org.apache.thrift.protocol.TList _list0 = iprot.readListBegin();
-                struct.children = new ArrayList<String>(_list0.size);
-                for (int _i1 = 0; _i1 < _list0.size; ++_i1)
+                org.apache.thrift.protocol.TList _list8 = iprot.readListBegin();
+                struct.children = new ArrayList<String>(_list8.size);
+                for (int _i9 = 0; _i9 < _list8.size; ++_i9)
                 {
-                  String _elem2;
-                  _elem2 = iprot.readString();
-                  struct.children.add(_elem2);
+                  String _elem10;
+                  _elem10 = iprot.readString();
+                  struct.children.add(_elem10);
                 }
                 iprot.readListEnd();
               }
@@ -1159,14 +1159,14 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
           case 10: // ACL_LIST
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
-                org.apache.thrift.protocol.TList _list3 = iprot.readListBegin();
-                struct.aclList = new ArrayList<Acl>(_list3.size);
-                for (int _i4 = 0; _i4 < _list3.size; ++_i4)
+                org.apache.thrift.protocol.TList _list11 = iprot.readListBegin();
+                struct.aclList = new ArrayList<Acl>(_list11.size);
+                for (int _i12 = 0; _i12 < _list11.size; ++_i12)
                 {
-                  Acl _elem5;
-                  _elem5 = new Acl();
-                  _elem5.read(iprot);
-                  struct.aclList.add(_elem5);
+                  Acl _elem13;
+                  _elem13 = new Acl();
+                  _elem13.read(iprot);
+                  struct.aclList.add(_elem13);
                 }
                 iprot.readListEnd();
               }
@@ -1236,9 +1236,9 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
         oprot.writeFieldBegin(CHILDREN_FIELD_DESC);
         {
           oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, struct.children.size()));
-          for (String _iter6 : struct.children)
+          for (String _iter14 : struct.children)
           {
-            oprot.writeString(_iter6);
+            oprot.writeString(_iter14);
           }
           oprot.writeListEnd();
         }
@@ -1248,9 +1248,9 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
         oprot.writeFieldBegin(ACL_LIST_FIELD_DESC);
         {
           oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, struct.aclList.size()));
-          for (Acl _iter7 : struct.aclList)
+          for (Acl _iter15 : struct.aclList)
           {
-            _iter7.write(oprot);
+            _iter15.write(oprot);
           }
           oprot.writeListEnd();
         }
@@ -1334,18 +1334,18 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       if (struct.isSetChildren()) {
         {
           oprot.writeI32(struct.children.size());
-          for (String _iter8 : struct.children)
+          for (String _iter16 : struct.children)
           {
-            oprot.writeString(_iter8);
+            oprot.writeString(_iter16);
           }
         }
       }
       if (struct.isSetAclList()) {
         {
           oprot.writeI32(struct.aclList.size());
-          for (Acl _iter9 : struct.aclList)
+          for (Acl _iter17 : struct.aclList)
           {
-            _iter9.write(oprot);
+            _iter17.write(oprot);
           }
         }
       }
@@ -1389,27 +1389,27 @@ public class CuratorEvent implements org.apache.thrift.TBase<CuratorEvent, Curat
       }
       if (incoming.get(7)) {
         {
-          org.apache.thrift.protocol.TList _list10 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-          struct.children = new ArrayList<String>(_list10.size);
-          for (int _i11 = 0; _i11 < _list10.size; ++_i11)
+          org.apache.thrift.protocol.TList _list18 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+          struct.children = new ArrayList<String>(_list18.size);
+          for (int _i19 = 0; _i19 < _list18.size; ++_i19)
           {
-            String _elem12;
-            _elem12 = iprot.readString();
-            struct.children.add(_elem12);
+            String _elem20;
+            _elem20 = iprot.readString();
+            struct.children.add(_elem20);
           }
         }
         struct.setChildrenIsSet(true);
       }
       if (incoming.get(8)) {
         {
-          org.apache.thrift.protocol.TList _list13 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-          struct.aclList = new ArrayList<Acl>(_list13.size);
-          for (int _i14 = 0; _i14 < _list13.size; ++_i14)
+          org.apache.thrift.protocol.TList _list21 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.aclList = new ArrayList<Acl>(_list21.size);
+          for (int _i22 = 0; _i22 < _list21.size; ++_i22)
           {
-            Acl _elem15;
-            _elem15 = new Acl();
-            _elem15.read(iprot);
-            struct.aclList.add(_elem15);
+            Acl _elem23;
+            _elem23 = new Acl();
+            _elem23.read(iprot);
+            struct.aclList.add(_elem23);
           }
         }
         struct.setAclListIsSet(true);

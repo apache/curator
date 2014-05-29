@@ -77,6 +77,11 @@ public class TestClient
         OptionalPath path = client.createNode(curatorProjection, createSpec);
         System.out.println("Path: " + path);
 
+        GetChildrenSpec getChildrenSpec = new GetChildrenSpec();
+        getChildrenSpec.path = "/a";
+        OptionalChildrenList children = client.getChildren(curatorProjection, getChildrenSpec);
+        System.out.println("Children: " + children);
+
         GenericProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);
         client.closeGenericProjection(curatorProjection, lockId);
 

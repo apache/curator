@@ -31,6 +31,7 @@ import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.details.RpcBackgroundCallback;
 import org.apache.curator.x.rpc.details.RpcWatcher;
+import org.apache.curator.x.rpc.idl.event.OptionalChildrenList;
 import org.apache.curator.x.rpc.idl.event.OptionalPath;
 import org.apache.curator.x.rpc.idl.event.OptionalRpcStat;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
@@ -38,6 +39,7 @@ import org.apache.curator.x.rpc.idl.event.RpcStat;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -219,6 +221,28 @@ public class CuratorProjectionService
 
         Stat stat = (Stat)castBuilder(builder, Pathable.class).forPath(spec.path);
         return new OptionalRpcStat((stat != null) ? RpcCuratorEvent.toRpcStat(stat) : null);
+    }
+
+    @ThriftMethod
+    public OptionalChildrenList getChildren(CuratorProjection projection, GetChildrenSpec spec) throws Exception
+    {
+        CuratorFramework client = getEntry(projection).getClient();
+
+        Object builder = client.getChildren();
+        if ( spec.watched )
+        {
+            builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
+        }
+
+        if ( spec.asyncContext != null )
+        {
+            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+        }
+
+        @SuppressWarnings("unchecked")
+        List<String> children = (List<String>)castBuilder(builder, Pathable.class).forPath(spec.path);
+        return new OptionalChildrenList(children);
     }
 
     @ThriftMethod

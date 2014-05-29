@@ -43,6 +43,12 @@ struct GenericProjection {
   1: string id;
 }
 
+struct GetChildrenSpec {
+  1: string path;
+  2: bool watched;
+  3: string asyncContext;
+}
+
 struct GetDataSpec {
   1: string path;
   2: bool watched;
@@ -52,6 +58,10 @@ struct GetDataSpec {
 
 struct Version {
   1: i32 version;
+}
+
+struct OptionalChildrenList {
+  1: list<string> children;
 }
 
 struct OptionalPath {
@@ -129,6 +139,7 @@ service CuratorService {
   OptionalPath createNode(1: CuratorProjection projection, 2: CreateSpec spec);
   void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec);
   OptionalStat exists(1: CuratorProjection projection, 2: ExistsSpec spec);
+  OptionalChildrenList getChildren(1: CuratorProjection projection, 2: GetChildrenSpec spec);
   binary getData(1: CuratorProjection projection, 2: GetDataSpec spec);
   CuratorProjection newCuratorProjection(1: string connectionName);
   Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec);
