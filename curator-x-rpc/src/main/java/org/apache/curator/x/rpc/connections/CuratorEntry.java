@@ -98,12 +98,6 @@ public class CuratorEntry implements Closeable
         return UUID.randomUUID().toString();
     }
 
-    public <T> String addThing(String id, T thing, Closer<T> closer)
-    {
-        things.put(id, new Entry(thing, closer));
-        return id;
-    }
-
     public <T> T getThing(String id, Class<T> clazz)
     {
         Entry entry = (id != null) ? things.get(id) : null;
@@ -119,6 +113,12 @@ public class CuratorEntry implements Closeable
             entry.closer.close(entry.thing);
         }
         return false;
+    }
+
+    private <T> String addThing(String id, T thing, Closer<T> closer)
+    {
+        things.put(id, new Entry(thing, closer));
+        return id;
     }
 
     private <T> T cast(Class<T> clazz, Entry entry)

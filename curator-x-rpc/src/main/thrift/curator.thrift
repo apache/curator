@@ -12,7 +12,7 @@ enum CreateMode {
 }
 
 enum CuratorEventType {
-  PING, CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING, CONNECTION_CONNECTED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, CONNECTION_READ_ONLY, LEADER, PATH_CHILDREN_CACHE
+  PING, CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING, CONNECTION_CONNECTED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, CONNECTION_READ_ONLY, LEADER, PATH_CHILDREN_CACHE, NODE_CACHE
 }
 
 enum EventType {
@@ -55,6 +55,10 @@ struct GetDataSpec {
 }
 
 struct LeaderProjection {
+  1: GenericProjection projection;
+}
+
+struct NodeCacheProjection {
   1: GenericProjection projection;
 }
 
@@ -188,12 +192,14 @@ service CuratorService {
   OptionalChildrenList getChildren(1: CuratorProjection projection, 2: GetChildrenSpec spec);
   binary getData(1: CuratorProjection projection, 2: GetDataSpec spec);
   list<Participant> getLeaderParticipants(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
+  ChildData getNodeCacheData(1: CuratorProjection projection, 2: NodeCacheProjection cacheProjection);
   list<ChildData> getPathChildrenCacheData(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection);
   ChildData getPathChildrenCacheDataForPath(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection, 3: string path);
   bool isLeader(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
   CuratorProjection newCuratorProjection(1: string connectionName);
   Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec);
   LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs);
+  NodeCacheProjection startNodeCache(1: CuratorProjection projection, 2: string path, 3: bool dataIsCompressed, 4: bool buildInitial);
   PathChildrenCacheProjection startPathChildrenCache(1: CuratorProjection projection, 2: string path, 3: bool cacheData, 4: bool dataIsCompressed, 5: PathChildrenCacheStartMode startMode);
 }
 

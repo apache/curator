@@ -41,5 +41,6 @@ public enum RpcCuratorEventType
     CONNECTION_LOST,
     CONNECTION_READ_ONLY,
     LEADER,
-    PATH_CHILDREN_CACHE
+    PATH_CHILDREN_CACHE,
+    NODE_CACHE
 }

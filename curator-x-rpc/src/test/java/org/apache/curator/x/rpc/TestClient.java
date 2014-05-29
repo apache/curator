@@ -76,6 +76,10 @@ public class TestClient
 
         PathChildrenCacheProjection pathChildrenCacheProjection = client.startPathChildrenCache(curatorProjection, "/a/b", true, false, PathChildrenCacheStartMode.BUILD_INITIAL_CACHE);
 
+        NodeCacheProjection nodeCache = client.startNodeCache(curatorProjection, "/a/b/c", false, true);
+        ChildData nodeCacheData = client.getNodeCacheData(curatorProjection, nodeCache);
+        System.out.println("nodeCacheData: " + nodeCacheData);
+
         List<ChildData> pathChildrenCacheData = client.getPathChildrenCacheData(curatorProjection, pathChildrenCacheProjection);
         System.out.println("Child data: " + pathChildrenCacheData);
 
@@ -119,5 +123,8 @@ public class TestClient
 
         pathChildrenCacheData = client.getPathChildrenCacheData(curatorProjection, pathChildrenCacheProjection);
         System.out.println("Child data: " + pathChildrenCacheData);
+
+        nodeCacheData = client.getNodeCacheData(curatorProjection, nodeCache);
+        System.out.println("nodeCacheData: " + nodeCacheData);
     }
 }

@@ -86,6 +86,22 @@ public class RpcCuratorEvent
         this.childrenCacheEvent = null;
     }
 
+    public RpcCuratorEvent(RpcCuratorEventType type, String path)
+    {
+        this.type = type;
+        this.resultCode = 0;
+        this.path = path;
+        this.context = null;
+        this.stat = null;
+        this.data = null;
+        this.name = null;
+        this.children = null;
+        this.aclList = null;
+        this.watchedEvent = null;
+        this.leaderEvent = null;
+        this.childrenCacheEvent = null;
+    }
+
     public RpcCuratorEvent(RpcPathChildrenCacheEvent childrenCacheEvent)
     {
         this.type = RpcCuratorEventType.PATH_CHILDREN_CACHE;

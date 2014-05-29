@@ -27,6 +27,8 @@ import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.NodeCache;
+import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
@@ -316,8 +318,7 @@ public class CuratorProjectionService
                 }
             }
         };
-        final String id = CuratorEntry.newId();
-        entry.addThing(id, leaderLatch, closer);
+        String id = entry.addThing(leaderLatch, closer);
 
         LeaderLatchListener listener = new LeaderLatchListener()
         {
@@ -393,8 +394,7 @@ public class CuratorProjectionService
                 }
             }
         };
-        final String id = CuratorEntry.newId();
-        entry.addThing(id, cache, closer);
+        String id = entry.addThing(cache, closer);
 
         PathChildrenCacheListener listener = new PathChildrenCacheListener()
         {
@@ -436,6 +436,53 @@ public class CuratorProjectionService
 
         PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.projection.id, PathChildrenCache.class);
         return new RpcChildData(pathChildrenCache.getCurrentData(path));
+    }
+
+    @ThriftMethod
+    public NodeCacheProjection startNodeCache(CuratorProjection projection, final String path, boolean dataIsCompressed, boolean buildInitial) throws Exception
+    {
+        final CuratorEntry entry = getEntry(projection);
+
+        final NodeCache cache = new NodeCache(entry.getClient(), path, dataIsCompressed);
+        cache.start(buildInitial);
+
+        Closer<NodeCache> closer = new Closer<NodeCache>()
+        {
+            @Override
+            public void close(NodeCache cache)
+            {
+                try
+                {
+                    cache.close();
+                }
+                catch ( IOException e )
+                {
+                    log.error("Could not close left-over NodeCache for path: " + path, e);
+                }
+            }
+        };
+        String id = entry.addThing(cache, closer);
+
+        NodeCacheListener listener = new NodeCacheListener()
+        {
+            @Override
+            public void nodeChanged() throws Exception
+            {
+                entry.addEvent(new RpcCuratorEvent(RpcCuratorEventType.NODE_CACHE, path));
+            }
+        };
+        cache.getListenable().addListener(listener);
+
+        return new NodeCacheProjection(new GenericProjection(id));
+    }
+
+    @ThriftMethod
+    public RpcChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws Exception
+    {
+        final CuratorEntry entry = getEntry(projection);
+
+        NodeCache nodeCache = getThing(entry, cacheProjection.projection.id, NodeCache.class);
+        return new RpcChildData(nodeCache.getCurrentData());
     }
 
     public void addEvent(CuratorProjection projection, RpcCuratorEvent event)

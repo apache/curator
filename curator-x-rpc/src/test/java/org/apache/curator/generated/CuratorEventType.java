@@ -30,7 +30,8 @@ public enum CuratorEventType implements org.apache.thrift.TEnum {
   CONNECTION_LOST(15),
   CONNECTION_READ_ONLY(16),
   LEADER(17),
-  PATH_CHILDREN_CACHE(18);
+  PATH_CHILDREN_CACHE(18),
+  NODE_CACHE(19);
 
   private final int value;
 
@@ -89,6 +90,8 @@ public enum CuratorEventType implements org.apache.thrift.TEnum {
         return LEADER;
       case 18:
         return PATH_CHILDREN_CACHE;
+      case 19:
+        return NODE_CACHE;
       default:
         return null;
     }
