@@ -26,6 +26,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
@@ -41,15 +42,7 @@ import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.details.RpcBackgroundCallback;
 import org.apache.curator.x.rpc.details.RpcWatcher;
-import org.apache.curator.x.rpc.idl.event.LeaderEvent;
-import org.apache.curator.x.rpc.idl.event.LeaderResult;
-import org.apache.curator.x.rpc.idl.event.OptionalChildrenList;
-import org.apache.curator.x.rpc.idl.event.OptionalPath;
-import org.apache.curator.x.rpc.idl.event.OptionalRpcStat;
-import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
-import org.apache.curator.x.rpc.idl.event.RpcParticipant;
-import org.apache.curator.x.rpc.idl.event.RpcPathChildrenCacheEvent;
-import org.apache.curator.x.rpc.idl.event.RpcStat;
+import org.apache.curator.x.rpc.idl.event.*;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -356,7 +349,7 @@ public class CuratorProjectionService
     {
         CuratorEntry entry = getEntry(projection);
 
-        LeaderLatch leaderLatch = getThis(entry, leaderProjection.projection.id, LeaderLatch.class);
+        LeaderLatch leaderLatch = getThing(entry, leaderProjection.projection.id, LeaderLatch.class);
         Collection<Participant> participants = leaderLatch.getParticipants();
         return Lists.transform(Lists.newArrayList(participants), new Function<Participant, RpcParticipant>()
             {
@@ -373,7 +366,7 @@ public class CuratorProjectionService
     {
         CuratorEntry entry = getEntry(projection);
 
-        LeaderLatch leaderLatch = getThis(entry, leaderProjection.projection.id, LeaderLatch.class);
+        LeaderLatch leaderLatch = getThing(entry, leaderProjection.projection.id, LeaderLatch.class);
         return leaderLatch.hasLeadership();
     }
 
@@ -416,6 +409,35 @@ public class CuratorProjectionService
         return new PathChildrenCacheProjection(new GenericProjection(id));
     }
 
+    @ThriftMethod
+    public List<RpcChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws Exception
+    {
+        CuratorEntry entry = getEntry(projection);
+
+        PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.projection.id, PathChildrenCache.class);
+        return Lists.transform
+        (
+            pathChildrenCache.getCurrentData(),
+            new Function<ChildData, RpcChildData>()
+            {
+                @Override
+                public RpcChildData apply(ChildData childData)
+                {
+                    return new RpcChildData(childData);
+                }
+            }
+        );
+    }
+
+    @ThriftMethod
+    public RpcChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws Exception
+    {
+        CuratorEntry entry = getEntry(projection);
+
+        PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.projection.id, PathChildrenCache.class);
+        return new RpcChildData(pathChildrenCache.getCurrentData(path));
+    }
+
     public void addEvent(CuratorProjection projection, RpcCuratorEvent event)
     {
         CuratorEntry entry = connectionManager.get(projection.id);
@@ -444,7 +466,7 @@ public class CuratorProjectionService
         throw new Exception("That operation is not available");
     }
 
-    private <T> T getThis(CuratorEntry entry, String id, Class<T> clazz)
+    private <T> T getThing(CuratorEntry entry, String id, Class<T> clazz)
     {
         T thing = entry.getThing(id, clazz);
         Preconditions.checkNotNull(thing, "No item of type " + clazz.getSimpleName() + " found with id " + id);

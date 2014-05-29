@@ -54,6 +54,10 @@ public class CuratorService {
 
     public List<Participant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws org.apache.thrift.TException;
 
+    public List<ChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws org.apache.thrift.TException;
+
+    public ChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws org.apache.thrift.TException;
+
     public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws org.apache.thrift.TException;
 
     public CuratorProjection newCuratorProjection(String connectionName) throws org.apache.thrift.TException;
@@ -85,6 +89,10 @@ public class CuratorService {
     public void getData(CuratorProjection projection, GetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void isLeader(CuratorProjection projection, LeaderProjection leaderProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -326,6 +334,55 @@ public class CuratorService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getLeaderParticipants failed: unknown result");
+    }
+
+    public List<ChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws org.apache.thrift.TException
+    {
+      send_getPathChildrenCacheData(projection, cacheProjection);
+      return recv_getPathChildrenCacheData();
+    }
+
+    public void send_getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws org.apache.thrift.TException
+    {
+      getPathChildrenCacheData_args args = new getPathChildrenCacheData_args();
+      args.setProjection(projection);
+      args.setCacheProjection(cacheProjection);
+      sendBase("getPathChildrenCacheData", args);
+    }
+
+    public List<ChildData> recv_getPathChildrenCacheData() throws org.apache.thrift.TException
+    {
+      getPathChildrenCacheData_result result = new getPathChildrenCacheData_result();
+      receiveBase(result, "getPathChildrenCacheData");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getPathChildrenCacheData failed: unknown result");
+    }
+
+    public ChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws org.apache.thrift.TException
+    {
+      send_getPathChildrenCacheDataForPath(projection, cacheProjection, path);
+      return recv_getPathChildrenCacheDataForPath();
+    }
+
+    public void send_getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws org.apache.thrift.TException
+    {
+      getPathChildrenCacheDataForPath_args args = new getPathChildrenCacheDataForPath_args();
+      args.setProjection(projection);
+      args.setCacheProjection(cacheProjection);
+      args.setPath(path);
+      sendBase("getPathChildrenCacheDataForPath", args);
+    }
+
+    public ChildData recv_getPathChildrenCacheDataForPath() throws org.apache.thrift.TException
+    {
+      getPathChildrenCacheDataForPath_result result = new getPathChildrenCacheDataForPath_result();
+      receiveBase(result, "getPathChildrenCacheDataForPath");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getPathChildrenCacheDataForPath failed: unknown result");
     }
 
     public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws org.apache.thrift.TException
@@ -785,6 +842,79 @@ public class CuratorService {
       }
     }
 
+    public void getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      getPathChildrenCacheData_call method_call = new getPathChildrenCacheData_call(projection, cacheProjection, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class getPathChildrenCacheData_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      private PathChildrenCacheProjection cacheProjection;
+      public getPathChildrenCacheData_call(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.projection = projection;
+        this.cacheProjection = cacheProjection;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("getPathChildrenCacheData", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        getPathChildrenCacheData_args args = new getPathChildrenCacheData_args();
+        args.setProjection(projection);
+        args.setCacheProjection(cacheProjection);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public List<ChildData> getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_getPathChildrenCacheData();
+      }
+    }
+
+    public void getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      getPathChildrenCacheDataForPath_call method_call = new getPathChildrenCacheDataForPath_call(projection, cacheProjection, path, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class getPathChildrenCacheDataForPath_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      private PathChildrenCacheProjection cacheProjection;
+      private String path;
+      public getPathChildrenCacheDataForPath_call(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.projection = projection;
+        this.cacheProjection = cacheProjection;
+        this.path = path;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("getPathChildrenCacheDataForPath", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        getPathChildrenCacheDataForPath_args args = new getPathChildrenCacheDataForPath_args();
+        args.setProjection(projection);
+        args.setCacheProjection(cacheProjection);
+        args.setPath(path);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public ChildData getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_getPathChildrenCacheDataForPath();
+      }
+    }
+
     public void isLeader(CuratorProjection projection, LeaderProjection leaderProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
       isLeader_call method_call = new isLeader_call(projection, leaderProjection, resultHandler, this, ___protocolFactory, ___transport);
@@ -994,6 +1124,8 @@ public class CuratorService {
       processMap.put("getChildren", new getChildren());
       processMap.put("getData", new getData());
       processMap.put("getLeaderParticipants", new getLeaderParticipants());
+      processMap.put("getPathChildrenCacheData", new getPathChildrenCacheData());
+      processMap.put("getPathChildrenCacheDataForPath", new getPathChildrenCacheDataForPath());
       processMap.put("isLeader", new isLeader());
       processMap.put("newCuratorProjection", new newCuratorProjection());
       processMap.put("setData", new setData());
@@ -1183,6 +1315,46 @@ public class CuratorService {
       }
     }
 
+    public static class getPathChildrenCacheData<I extends Iface> extends org.apache.thrift.ProcessFunction<I, getPathChildrenCacheData_args> {
+      public getPathChildrenCacheData() {
+        super("getPathChildrenCacheData");
+      }
+
+      public getPathChildrenCacheData_args getEmptyArgsInstance() {
+        return new getPathChildrenCacheData_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public getPathChildrenCacheData_result getResult(I iface, getPathChildrenCacheData_args args) throws org.apache.thrift.TException {
+        getPathChildrenCacheData_result result = new getPathChildrenCacheData_result();
+        result.success = iface.getPathChildrenCacheData(args.projection, args.cacheProjection);
+        return result;
+      }
+    }
+
+    public static class getPathChildrenCacheDataForPath<I extends Iface> extends org.apache.thrift.ProcessFunction<I, getPathChildrenCacheDataForPath_args> {
+      public getPathChildrenCacheDataForPath() {
+        super("getPathChildrenCacheDataForPath");
+      }
+
+      public getPathChildrenCacheDataForPath_args getEmptyArgsInstance() {
+        return new getPathChildrenCacheDataForPath_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public getPathChildrenCacheDataForPath_result getResult(I iface, getPathChildrenCacheDataForPath_args args) throws org.apache.thrift.TException {
+        getPathChildrenCacheDataForPath_result result = new getPathChildrenCacheDataForPath_result();
+        result.success = iface.getPathChildrenCacheDataForPath(args.projection, args.cacheProjection, args.path);
+        return result;
+      }
+    }
+
     public static class isLeader<I extends Iface> extends org.apache.thrift.ProcessFunction<I, isLeader_args> {
       public isLeader() {
         super("isLeader");
@@ -1306,6 +1478,8 @@ public class CuratorService {
       processMap.put("getChildren", new getChildren());
       processMap.put("getData", new getData());
       processMap.put("getLeaderParticipants", new getLeaderParticipants());
+      processMap.put("getPathChildrenCacheData", new getPathChildrenCacheData());
+      processMap.put("getPathChildrenCacheDataForPath", new getPathChildrenCacheDataForPath());
       processMap.put("isLeader", new isLeader());
       processMap.put("newCuratorProjection", new newCuratorProjection());
       processMap.put("setData", new setData());
@@ -1769,6 +1943,108 @@ public class CuratorService {
 
       public void start(I iface, getLeaderParticipants_args args, org.apache.thrift.async.AsyncMethodCallback<List<Participant>> resultHandler) throws TException {
         iface.getLeaderParticipants(args.projection, args.leaderProjection,resultHandler);
+      }
+    }
+
+    public static class getPathChildrenCacheData<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, getPathChildrenCacheData_args, List<ChildData>> {
+      public getPathChildrenCacheData() {
+        super("getPathChildrenCacheData");
+      }
+
+      public getPathChildrenCacheData_args getEmptyArgsInstance() {
+        return new getPathChildrenCacheData_args();
+      }
+
+      public AsyncMethodCallback<List<ChildData>> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<List<ChildData>>() { 
+          public void onComplete(List<ChildData> o) {
+            getPathChildrenCacheData_result result = new getPathChildrenCacheData_result();
+            result.success = o;
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            getPathChildrenCacheData_result result = new getPathChildrenCacheData_result();
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, getPathChildrenCacheData_args args, org.apache.thrift.async.AsyncMethodCallback<List<ChildData>> resultHandler) throws TException {
+        iface.getPathChildrenCacheData(args.projection, args.cacheProjection,resultHandler);
+      }
+    }
+
+    public static class getPathChildrenCacheDataForPath<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, getPathChildrenCacheDataForPath_args, ChildData> {
+      public getPathChildrenCacheDataForPath() {
+        super("getPathChildrenCacheDataForPath");
+      }
+
+      public getPathChildrenCacheDataForPath_args getEmptyArgsInstance() {
+        return new getPathChildrenCacheDataForPath_args();
+      }
+
+      public AsyncMethodCallback<ChildData> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<ChildData>() { 
+          public void onComplete(ChildData o) {
+            getPathChildrenCacheDataForPath_result result = new getPathChildrenCacheDataForPath_result();
+            result.success = o;
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            getPathChildrenCacheDataForPath_result result = new getPathChildrenCacheDataForPath_result();
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, getPathChildrenCacheDataForPath_args args, org.apache.thrift.async.AsyncMethodCallback<ChildData> resultHandler) throws TException {
+        iface.getPathChildrenCacheDataForPath(args.projection, args.cacheProjection, args.path,resultHandler);
       }
     }
 
@@ -9242,6 +9518,1801 @@ public class CuratorService {
               struct.success.add(_elem31);
             }
           }
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class getPathChildrenCacheData_args implements org.apache.thrift.TBase<getPathChildrenCacheData_args, getPathChildrenCacheData_args._Fields>, java.io.Serializable, Cloneable, Comparable<getPathChildrenCacheData_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPathChildrenCacheData_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField CACHE_PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("cacheProjection", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new getPathChildrenCacheData_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new getPathChildrenCacheData_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+    public PathChildrenCacheProjection cacheProjection; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection"),
+      CACHE_PROJECTION((short)2, "cacheProjection");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          case 2: // CACHE_PROJECTION
+            return CACHE_PROJECTION;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      tmpMap.put(_Fields.CACHE_PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("cacheProjection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, PathChildrenCacheProjection.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPathChildrenCacheData_args.class, metaDataMap);
+    }
+
+    public getPathChildrenCacheData_args() {
+    }
+
+    public getPathChildrenCacheData_args(
+      CuratorProjection projection,
+      PathChildrenCacheProjection cacheProjection)
+    {
+      this();
+      this.projection = projection;
+      this.cacheProjection = cacheProjection;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public getPathChildrenCacheData_args(getPathChildrenCacheData_args other) {
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+      if (other.isSetCacheProjection()) {
+        this.cacheProjection = new PathChildrenCacheProjection(other.cacheProjection);
+      }
+    }
+
+    public getPathChildrenCacheData_args deepCopy() {
+      return new getPathChildrenCacheData_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+      this.cacheProjection = null;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public getPathChildrenCacheData_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public PathChildrenCacheProjection getCacheProjection() {
+      return this.cacheProjection;
+    }
+
+    public getPathChildrenCacheData_args setCacheProjection(PathChildrenCacheProjection cacheProjection) {
+      this.cacheProjection = cacheProjection;
+      return this;
+    }
+
+    public void unsetCacheProjection() {
+      this.cacheProjection = null;
+    }
+
+    /** Returns true if field cacheProjection is set (has been assigned a value) and false otherwise */
+    public boolean isSetCacheProjection() {
+      return this.cacheProjection != null;
+    }
+
+    public void setCacheProjectionIsSet(boolean value) {
+      if (!value) {
+        this.cacheProjection = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      case CACHE_PROJECTION:
+        if (value == null) {
+          unsetCacheProjection();
+        } else {
+          setCacheProjection((PathChildrenCacheProjection)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      case CACHE_PROJECTION:
+        return getCacheProjection();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      case CACHE_PROJECTION:
+        return isSetCacheProjection();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof getPathChildrenCacheData_args)
+        return this.equals((getPathChildrenCacheData_args)that);
+      return false;
+    }
+
+    public boolean equals(getPathChildrenCacheData_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      boolean this_present_cacheProjection = true && this.isSetCacheProjection();
+      boolean that_present_cacheProjection = true && that.isSetCacheProjection();
+      if (this_present_cacheProjection || that_present_cacheProjection) {
+        if (!(this_present_cacheProjection && that_present_cacheProjection))
+          return false;
+        if (!this.cacheProjection.equals(that.cacheProjection))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(getPathChildrenCacheData_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetCacheProjection()).compareTo(other.isSetCacheProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetCacheProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cacheProjection, other.cacheProjection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("getPathChildrenCacheData_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("cacheProjection:");
+      if (this.cacheProjection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.cacheProjection);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+      if (cacheProjection != null) {
+        cacheProjection.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class getPathChildrenCacheData_argsStandardSchemeFactory implements SchemeFactory {
+      public getPathChildrenCacheData_argsStandardScheme getScheme() {
+        return new getPathChildrenCacheData_argsStandardScheme();
+      }
+    }
+
+    private static class getPathChildrenCacheData_argsStandardScheme extends StandardScheme<getPathChildrenCacheData_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, getPathChildrenCacheData_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // CACHE_PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.cacheProjection = new PathChildrenCacheProjection();
+                struct.cacheProjection.read(iprot);
+                struct.setCacheProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, getPathChildrenCacheData_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.cacheProjection != null) {
+          oprot.writeFieldBegin(CACHE_PROJECTION_FIELD_DESC);
+          struct.cacheProjection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class getPathChildrenCacheData_argsTupleSchemeFactory implements SchemeFactory {
+      public getPathChildrenCacheData_argsTupleScheme getScheme() {
+        return new getPathChildrenCacheData_argsTupleScheme();
+      }
+    }
+
+    private static class getPathChildrenCacheData_argsTupleScheme extends TupleScheme<getPathChildrenCacheData_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheData_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        if (struct.isSetCacheProjection()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+        if (struct.isSetCacheProjection()) {
+          struct.cacheProjection.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheData_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(2);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.cacheProjection = new PathChildrenCacheProjection();
+          struct.cacheProjection.read(iprot);
+          struct.setCacheProjectionIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class getPathChildrenCacheData_result implements org.apache.thrift.TBase<getPathChildrenCacheData_result, getPathChildrenCacheData_result._Fields>, java.io.Serializable, Cloneable, Comparable<getPathChildrenCacheData_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPathChildrenCacheData_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.LIST, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new getPathChildrenCacheData_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new getPathChildrenCacheData_resultTupleSchemeFactory());
+    }
+
+    public List<ChildData> success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
+              new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, ChildData.class))));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPathChildrenCacheData_result.class, metaDataMap);
+    }
+
+    public getPathChildrenCacheData_result() {
+    }
+
+    public getPathChildrenCacheData_result(
+      List<ChildData> success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public getPathChildrenCacheData_result(getPathChildrenCacheData_result other) {
+      if (other.isSetSuccess()) {
+        List<ChildData> __this__success = new ArrayList<ChildData>(other.success.size());
+        for (ChildData other_element : other.success) {
+          __this__success.add(new ChildData(other_element));
+        }
+        this.success = __this__success;
+      }
+    }
+
+    public getPathChildrenCacheData_result deepCopy() {
+      return new getPathChildrenCacheData_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public int getSuccessSize() {
+      return (this.success == null) ? 0 : this.success.size();
+    }
+
+    public java.util.Iterator<ChildData> getSuccessIterator() {
+      return (this.success == null) ? null : this.success.iterator();
+    }
+
+    public void addToSuccess(ChildData elem) {
+      if (this.success == null) {
+        this.success = new ArrayList<ChildData>();
+      }
+      this.success.add(elem);
+    }
+
+    public List<ChildData> getSuccess() {
+      return this.success;
+    }
+
+    public getPathChildrenCacheData_result setSuccess(List<ChildData> success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((List<ChildData>)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof getPathChildrenCacheData_result)
+        return this.equals((getPathChildrenCacheData_result)that);
+      return false;
+    }
+
+    public boolean equals(getPathChildrenCacheData_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(getPathChildrenCacheData_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(other.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, other.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("getPathChildrenCacheData_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class getPathChildrenCacheData_resultStandardSchemeFactory implements SchemeFactory {
+      public getPathChildrenCacheData_resultStandardScheme getScheme() {
+        return new getPathChildrenCacheData_resultStandardScheme();
+      }
+    }
+
+    private static class getPathChildrenCacheData_resultStandardScheme extends StandardScheme<getPathChildrenCacheData_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, getPathChildrenCacheData_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
+                {
+                  org.apache.thrift.protocol.TList _list32 = iprot.readListBegin();
+                  struct.success = new ArrayList<ChildData>(_list32.size);
+                  for (int _i33 = 0; _i33 < _list32.size; ++_i33)
+                  {
+                    ChildData _elem34;
+                    _elem34 = new ChildData();
+                    _elem34.read(iprot);
+                    struct.success.add(_elem34);
+                  }
+                  iprot.readListEnd();
+                }
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, getPathChildrenCacheData_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          {
+            oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, struct.success.size()));
+            for (ChildData _iter35 : struct.success)
+            {
+              _iter35.write(oprot);
+            }
+            oprot.writeListEnd();
+          }
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class getPathChildrenCacheData_resultTupleSchemeFactory implements SchemeFactory {
+      public getPathChildrenCacheData_resultTupleScheme getScheme() {
+        return new getPathChildrenCacheData_resultTupleScheme();
+      }
+    }
+
+    private static class getPathChildrenCacheData_resultTupleScheme extends TupleScheme<getPathChildrenCacheData_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheData_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          {
+            oprot.writeI32(struct.success.size());
+            for (ChildData _iter36 : struct.success)
+            {
+              _iter36.write(oprot);
+            }
+          }
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheData_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          {
+            org.apache.thrift.protocol.TList _list37 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+            struct.success = new ArrayList<ChildData>(_list37.size);
+            for (int _i38 = 0; _i38 < _list37.size; ++_i38)
+            {
+              ChildData _elem39;
+              _elem39 = new ChildData();
+              _elem39.read(iprot);
+              struct.success.add(_elem39);
+            }
+          }
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class getPathChildrenCacheDataForPath_args implements org.apache.thrift.TBase<getPathChildrenCacheDataForPath_args, getPathChildrenCacheDataForPath_args._Fields>, java.io.Serializable, Cloneable, Comparable<getPathChildrenCacheDataForPath_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPathChildrenCacheDataForPath_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField CACHE_PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("cacheProjection", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+    private static final org.apache.thrift.protocol.TField PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("path", org.apache.thrift.protocol.TType.STRING, (short)3);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new getPathChildrenCacheDataForPath_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new getPathChildrenCacheDataForPath_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+    public PathChildrenCacheProjection cacheProjection; // required
+    public String path; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection"),
+      CACHE_PROJECTION((short)2, "cacheProjection"),
+      PATH((short)3, "path");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          case 2: // CACHE_PROJECTION
+            return CACHE_PROJECTION;
+          case 3: // PATH
+            return PATH;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      tmpMap.put(_Fields.CACHE_PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("cacheProjection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, PathChildrenCacheProjection.class)));
+      tmpMap.put(_Fields.PATH, new org.apache.thrift.meta_data.FieldMetaData("path", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPathChildrenCacheDataForPath_args.class, metaDataMap);
+    }
+
+    public getPathChildrenCacheDataForPath_args() {
+    }
+
+    public getPathChildrenCacheDataForPath_args(
+      CuratorProjection projection,
+      PathChildrenCacheProjection cacheProjection,
+      String path)
+    {
+      this();
+      this.projection = projection;
+      this.cacheProjection = cacheProjection;
+      this.path = path;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public getPathChildrenCacheDataForPath_args(getPathChildrenCacheDataForPath_args other) {
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+      if (other.isSetCacheProjection()) {
+        this.cacheProjection = new PathChildrenCacheProjection(other.cacheProjection);
+      }
+      if (other.isSetPath()) {
+        this.path = other.path;
+      }
+    }
+
+    public getPathChildrenCacheDataForPath_args deepCopy() {
+      return new getPathChildrenCacheDataForPath_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+      this.cacheProjection = null;
+      this.path = null;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public getPathChildrenCacheDataForPath_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public PathChildrenCacheProjection getCacheProjection() {
+      return this.cacheProjection;
+    }
+
+    public getPathChildrenCacheDataForPath_args setCacheProjection(PathChildrenCacheProjection cacheProjection) {
+      this.cacheProjection = cacheProjection;
+      return this;
+    }
+
+    public void unsetCacheProjection() {
+      this.cacheProjection = null;
+    }
+
+    /** Returns true if field cacheProjection is set (has been assigned a value) and false otherwise */
+    public boolean isSetCacheProjection() {
+      return this.cacheProjection != null;
+    }
+
+    public void setCacheProjectionIsSet(boolean value) {
+      if (!value) {
+        this.cacheProjection = null;
+      }
+    }
+
+    public String getPath() {
+      return this.path;
+    }
+
+    public getPathChildrenCacheDataForPath_args setPath(String path) {
+      this.path = path;
+      return this;
+    }
+
+    public void unsetPath() {
+      this.path = null;
+    }
+
+    /** Returns true if field path is set (has been assigned a value) and false otherwise */
+    public boolean isSetPath() {
+      return this.path != null;
+    }
+
+    public void setPathIsSet(boolean value) {
+      if (!value) {
+        this.path = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      case CACHE_PROJECTION:
+        if (value == null) {
+          unsetCacheProjection();
+        } else {
+          setCacheProjection((PathChildrenCacheProjection)value);
+        }
+        break;
+
+      case PATH:
+        if (value == null) {
+          unsetPath();
+        } else {
+          setPath((String)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      case CACHE_PROJECTION:
+        return getCacheProjection();
+
+      case PATH:
+        return getPath();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      case CACHE_PROJECTION:
+        return isSetCacheProjection();
+      case PATH:
+        return isSetPath();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof getPathChildrenCacheDataForPath_args)
+        return this.equals((getPathChildrenCacheDataForPath_args)that);
+      return false;
+    }
+
+    public boolean equals(getPathChildrenCacheDataForPath_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      boolean this_present_cacheProjection = true && this.isSetCacheProjection();
+      boolean that_present_cacheProjection = true && that.isSetCacheProjection();
+      if (this_present_cacheProjection || that_present_cacheProjection) {
+        if (!(this_present_cacheProjection && that_present_cacheProjection))
+          return false;
+        if (!this.cacheProjection.equals(that.cacheProjection))
+          return false;
+      }
+
+      boolean this_present_path = true && this.isSetPath();
+      boolean that_present_path = true && that.isSetPath();
+      if (this_present_path || that_present_path) {
+        if (!(this_present_path && that_present_path))
+          return false;
+        if (!this.path.equals(that.path))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(getPathChildrenCacheDataForPath_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetCacheProjection()).compareTo(other.isSetCacheProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetCacheProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cacheProjection, other.cacheProjection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetPath()).compareTo(other.isSetPath());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetPath()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.path, other.path);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("getPathChildrenCacheDataForPath_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("cacheProjection:");
+      if (this.cacheProjection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.cacheProjection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("path:");
+      if (this.path == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.path);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+      if (cacheProjection != null) {
+        cacheProjection.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class getPathChildrenCacheDataForPath_argsStandardSchemeFactory implements SchemeFactory {
+      public getPathChildrenCacheDataForPath_argsStandardScheme getScheme() {
+        return new getPathChildrenCacheDataForPath_argsStandardScheme();
+      }
+    }
+
+    private static class getPathChildrenCacheDataForPath_argsStandardScheme extends StandardScheme<getPathChildrenCacheDataForPath_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, getPathChildrenCacheDataForPath_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // CACHE_PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.cacheProjection = new PathChildrenCacheProjection();
+                struct.cacheProjection.read(iprot);
+                struct.setCacheProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 3: // PATH
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.path = iprot.readString();
+                struct.setPathIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, getPathChildrenCacheDataForPath_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.cacheProjection != null) {
+          oprot.writeFieldBegin(CACHE_PROJECTION_FIELD_DESC);
+          struct.cacheProjection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.path != null) {
+          oprot.writeFieldBegin(PATH_FIELD_DESC);
+          oprot.writeString(struct.path);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class getPathChildrenCacheDataForPath_argsTupleSchemeFactory implements SchemeFactory {
+      public getPathChildrenCacheDataForPath_argsTupleScheme getScheme() {
+        return new getPathChildrenCacheDataForPath_argsTupleScheme();
+      }
+    }
+
+    private static class getPathChildrenCacheDataForPath_argsTupleScheme extends TupleScheme<getPathChildrenCacheDataForPath_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheDataForPath_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        if (struct.isSetCacheProjection()) {
+          optionals.set(1);
+        }
+        if (struct.isSetPath()) {
+          optionals.set(2);
+        }
+        oprot.writeBitSet(optionals, 3);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+        if (struct.isSetCacheProjection()) {
+          struct.cacheProjection.write(oprot);
+        }
+        if (struct.isSetPath()) {
+          oprot.writeString(struct.path);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheDataForPath_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(3);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.cacheProjection = new PathChildrenCacheProjection();
+          struct.cacheProjection.read(iprot);
+          struct.setCacheProjectionIsSet(true);
+        }
+        if (incoming.get(2)) {
+          struct.path = iprot.readString();
+          struct.setPathIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class getPathChildrenCacheDataForPath_result implements org.apache.thrift.TBase<getPathChildrenCacheDataForPath_result, getPathChildrenCacheDataForPath_result._Fields>, java.io.Serializable, Cloneable, Comparable<getPathChildrenCacheDataForPath_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPathChildrenCacheDataForPath_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new getPathChildrenCacheDataForPath_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new getPathChildrenCacheDataForPath_resultTupleSchemeFactory());
+    }
+
+    public ChildData success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, ChildData.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPathChildrenCacheDataForPath_result.class, metaDataMap);
+    }
+
+    public getPathChildrenCacheDataForPath_result() {
+    }
+
+    public getPathChildrenCacheDataForPath_result(
+      ChildData success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public getPathChildrenCacheDataForPath_result(getPathChildrenCacheDataForPath_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new ChildData(other.success);
+      }
+    }
+
+    public getPathChildrenCacheDataForPath_result deepCopy() {
+      return new getPathChildrenCacheDataForPath_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public ChildData getSuccess() {
+      return this.success;
+    }
+
+    public getPathChildrenCacheDataForPath_result setSuccess(ChildData success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((ChildData)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof getPathChildrenCacheDataForPath_result)
+        return this.equals((getPathChildrenCacheDataForPath_result)that);
+      return false;
+    }
+
+    public boolean equals(getPathChildrenCacheDataForPath_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(getPathChildrenCacheDataForPath_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(other.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, other.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("getPathChildrenCacheDataForPath_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class getPathChildrenCacheDataForPath_resultStandardSchemeFactory implements SchemeFactory {
+      public getPathChildrenCacheDataForPath_resultStandardScheme getScheme() {
+        return new getPathChildrenCacheDataForPath_resultStandardScheme();
+      }
+    }
+
+    private static class getPathChildrenCacheDataForPath_resultStandardScheme extends StandardScheme<getPathChildrenCacheDataForPath_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, getPathChildrenCacheDataForPath_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new ChildData();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, getPathChildrenCacheDataForPath_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class getPathChildrenCacheDataForPath_resultTupleSchemeFactory implements SchemeFactory {
+      public getPathChildrenCacheDataForPath_resultTupleScheme getScheme() {
+        return new getPathChildrenCacheDataForPath_resultTupleScheme();
+      }
+    }
+
+    private static class getPathChildrenCacheDataForPath_resultTupleScheme extends TupleScheme<getPathChildrenCacheDataForPath_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheDataForPath_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheDataForPath_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new ChildData();
+          struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }
       }

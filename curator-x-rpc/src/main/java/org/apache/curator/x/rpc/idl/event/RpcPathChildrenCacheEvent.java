@@ -24,7 +24,7 @@ public class RpcPathChildrenCacheEvent
     {
         this.cachedPath = cachedPath;
         type = RpcPathChildrenCacheEventType.valueOf(event.getType().name());
-        data = (event.getData() != null) ? new RpcChildData(event.getData().getPath(), RpcCuratorEvent.toRpcStat(event.getData().getStat()), event.getData().getData()) : null;
+        data = (event.getData() != null) ? new RpcChildData(event.getData()) : null;
     }
 
     public RpcPathChildrenCacheEvent(String cachedPath, RpcPathChildrenCacheEventType type, RpcChildData data)

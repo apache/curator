@@ -188,6 +188,8 @@ service CuratorService {
   OptionalChildrenList getChildren(1: CuratorProjection projection, 2: GetChildrenSpec spec);
   binary getData(1: CuratorProjection projection, 2: GetDataSpec spec);
   list<Participant> getLeaderParticipants(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
+  list<ChildData> getPathChildrenCacheData(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection);
+  ChildData getPathChildrenCacheDataForPath(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection, 3: string path);
   bool isLeader(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
   CuratorProjection newCuratorProjection(1: string connectionName);
   Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec);

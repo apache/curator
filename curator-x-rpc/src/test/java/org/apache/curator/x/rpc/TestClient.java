@@ -76,10 +76,16 @@ public class TestClient
 
         PathChildrenCacheProjection pathChildrenCacheProjection = client.startPathChildrenCache(curatorProjection, "/a/b", true, false, PathChildrenCacheStartMode.BUILD_INITIAL_CACHE);
 
+        List<ChildData> pathChildrenCacheData = client.getPathChildrenCacheData(curatorProjection, pathChildrenCacheProjection);
+        System.out.println("Child data: " + pathChildrenCacheData);
+
         GetChildrenSpec getChildrenSpec = new GetChildrenSpec();
         getChildrenSpec.path = "/a";
         OptionalChildrenList children = client.getChildren(curatorProjection, getChildrenSpec);
         System.out.println("Children: " + children);
+
+        ChildData pathChildrenCacheDataForPath = client.getPathChildrenCacheDataForPath(curatorProjection, pathChildrenCacheProjection, "/a/b/c");
+        System.out.println(pathChildrenCacheDataForPath);
 
         GenericProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);
         client.closeGenericProjection(curatorProjection, lockId);
@@ -110,5 +116,8 @@ public class TestClient
         System.out.println("isLeader: " + isLeader);
 
         client.closeGenericProjection(curatorProjection, leader.projection.projection);
+
+        pathChildrenCacheData = client.getPathChildrenCacheData(curatorProjection, pathChildrenCacheProjection);
+        System.out.println("Child data: " + pathChildrenCacheData);
     }
 }
