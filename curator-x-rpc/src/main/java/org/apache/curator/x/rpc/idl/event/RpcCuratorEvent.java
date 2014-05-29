@@ -66,6 +66,9 @@ public class RpcCuratorEvent
     @ThriftField(11)
     public RpcWatchedEvent watchedEvent;
 
+    @ThriftField(12)
+    public LeaderEvent leaderEvent;
+
     public RpcCuratorEvent()
     {
         this.type = RpcCuratorEventType.PING;
@@ -78,6 +81,7 @@ public class RpcCuratorEvent
         this.children = null;
         this.aclList = null;
         this.watchedEvent = null;
+        this.leaderEvent = null;
     }
 
     public RpcCuratorEvent(CuratorEvent event)
@@ -92,6 +96,7 @@ public class RpcCuratorEvent
         this.children = event.getChildren();
         this.aclList = toRpcAclList(event.getACLList());
         this.watchedEvent = toRpcWatchedEvent(event.getWatchedEvent());
+        this.leaderEvent = null;
     }
 
     public RpcCuratorEvent(ConnectionState newState)
@@ -106,6 +111,7 @@ public class RpcCuratorEvent
         this.children = null;
         this.aclList = null;
         this.watchedEvent = null;
+        this.leaderEvent = null;
     }
 
     public RpcCuratorEvent(WatchedEvent event)
@@ -120,6 +126,22 @@ public class RpcCuratorEvent
         this.children = null;
         this.aclList = null;
         this.watchedEvent = new RpcWatchedEvent(toRpcKeeperState(event.getState()), toRpcEventType(event.getType()), event.getPath());
+        this.leaderEvent = null;
+    }
+
+    public RpcCuratorEvent(LeaderEvent event)
+    {
+        this.type = RpcCuratorEventType.LEADER;
+        this.resultCode = 0;
+        this.path = event.path;
+        this.context = null;
+        this.stat = null;
+        this.data = null;
+        this.name = null;
+        this.children = null;
+        this.aclList = null;
+        this.watchedEvent = null;
+        this.leaderEvent = event;
     }
 
     private RpcCuratorEventType toRpcCuratorEventType(ConnectionState state)

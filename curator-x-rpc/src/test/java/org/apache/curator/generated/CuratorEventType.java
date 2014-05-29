@@ -28,7 +28,8 @@ public enum CuratorEventType implements org.apache.thrift.TEnum {
   CONNECTION_SUSPENDED(13),
   CONNECTION_RECONNECTED(14),
   CONNECTION_LOST(15),
-  CONNECTION_READ_ONLY(16);
+  CONNECTION_READ_ONLY(16),
+  LEADER(17);
 
   private final int value;
 
@@ -83,6 +84,8 @@ public enum CuratorEventType implements org.apache.thrift.TEnum {
         return CONNECTION_LOST;
       case 16:
         return CONNECTION_READ_ONLY;
+      case 17:
+        return LEADER;
       default:
         return null;
     }

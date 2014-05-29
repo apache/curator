@@ -23,6 +23,8 @@ import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -31,6 +33,8 @@ import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.details.RpcBackgroundCallback;
 import org.apache.curator.x.rpc.details.RpcWatcher;
+import org.apache.curator.x.rpc.idl.event.LeaderEvent;
+import org.apache.curator.x.rpc.idl.event.LeaderResult;
 import org.apache.curator.x.rpc.idl.event.OptionalChildrenList;
 import org.apache.curator.x.rpc.idl.event.OptionalPath;
 import org.apache.curator.x.rpc.idl.event.OptionalRpcStat;
@@ -39,8 +43,8 @@ import org.apache.curator.x.rpc.idl.event.RpcStat;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @ThriftService("CuratorService")
@@ -59,7 +63,7 @@ public class CuratorProjectionService
     {
         CuratorFramework client = connectionManager.newConnection(connectionName);
 
-        String id = UUID.randomUUID().toString();
+        String id = CuratorEntry.newId();
         client.start();
         connectionManager.add(id, client);
         final CuratorProjection projection = new CuratorProjection(id);
@@ -282,6 +286,57 @@ public class CuratorProjectionService
         };
         String id = entry.addThing(lock, closer);
         return new GenericProjection(id);
+    }
+
+    @ThriftMethod
+    public LeaderResult startLeaderSelector(final CuratorProjection projection, final String path, final String participantId, int waitForLeadershipMs) throws Exception
+    {
+        CuratorEntry entry = getEntry(projection);
+
+        LeaderLatch leaderLatch = new LeaderLatch(entry.getClient(), path, participantId);
+        leaderLatch.start();
+
+        Closer<LeaderLatch> closer = new Closer<LeaderLatch>()
+        {
+            @Override
+            public void close(LeaderLatch latch)
+            {
+                try
+                {
+                    latch.close();
+                }
+                catch ( IOException e )
+                {
+                    log.error("Could not close left-over leader latch for path: " + path, e);
+                }
+            }
+        };
+        final String id = CuratorEntry.newId();
+        entry.addThing(id, leaderLatch, closer);
+
+        LeaderLatchListener listener = new LeaderLatchListener()
+        {
+            @Override
+            public void isLeader()
+            {
+                addEvent(projection, new RpcCuratorEvent(new LeaderEvent(path, participantId, true)));
+            }
+
+            @Override
+            public void notLeader()
+            {
+                addEvent(projection, new RpcCuratorEvent(new LeaderEvent(path, participantId, false)));
+            }
+        };
+        leaderLatch.addListener(listener);
+
+        if ( waitForLeadershipMs > 0 )
+        {
+            leaderLatch.await(waitForLeadershipMs, TimeUnit.MILLISECONDS);
+        }
+
+        GenericProjection leaderProjection = new GenericProjection(id);
+        return new LeaderResult(leaderProjection, leaderLatch.hasLeadership());
     }
 
     public void addEvent(CuratorProjection projection, RpcCuratorEvent event)

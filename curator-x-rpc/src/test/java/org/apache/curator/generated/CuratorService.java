@@ -56,6 +56,8 @@ public class CuratorService {
 
     public Stat setData(CuratorProjection projection, SetDataSpec spec) throws org.apache.thrift.TException;
 
+    public LeaderResult startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws org.apache.thrift.TException;
+
   }
 
   public interface AsyncIface {
@@ -79,6 +81,8 @@ public class CuratorService {
     public void newCuratorProjection(String connectionName, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void setData(CuratorProjection projection, SetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -333,6 +337,32 @@ public class CuratorService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "setData failed: unknown result");
+    }
+
+    public LeaderResult startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws org.apache.thrift.TException
+    {
+      send_startLeaderSelector(projection, path, participantId, waitForLeadershipMs);
+      return recv_startLeaderSelector();
+    }
+
+    public void send_startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws org.apache.thrift.TException
+    {
+      startLeaderSelector_args args = new startLeaderSelector_args();
+      args.setProjection(projection);
+      args.setPath(path);
+      args.setParticipantId(participantId);
+      args.setWaitForLeadershipMs(waitForLeadershipMs);
+      sendBase("startLeaderSelector", args);
+    }
+
+    public LeaderResult recv_startLeaderSelector() throws org.apache.thrift.TException
+    {
+      startLeaderSelector_result result = new startLeaderSelector_result();
+      receiveBase(result, "startLeaderSelector");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startLeaderSelector failed: unknown result");
     }
 
   }
@@ -700,6 +730,47 @@ public class CuratorService {
       }
     }
 
+    public void startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      startLeaderSelector_call method_call = new startLeaderSelector_call(projection, path, participantId, waitForLeadershipMs, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class startLeaderSelector_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      private String path;
+      private String participantId;
+      private int waitForLeadershipMs;
+      public startLeaderSelector_call(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.projection = projection;
+        this.path = path;
+        this.participantId = participantId;
+        this.waitForLeadershipMs = waitForLeadershipMs;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("startLeaderSelector", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        startLeaderSelector_args args = new startLeaderSelector_args();
+        args.setProjection(projection);
+        args.setPath(path);
+        args.setParticipantId(participantId);
+        args.setWaitForLeadershipMs(waitForLeadershipMs);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public LeaderResult getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_startLeaderSelector();
+      }
+    }
+
   }
 
   public static class Processor<I extends Iface> extends org.apache.thrift.TBaseProcessor<I> implements org.apache.thrift.TProcessor {
@@ -723,6 +794,7 @@ public class CuratorService {
       processMap.put("getData", new getData());
       processMap.put("newCuratorProjection", new newCuratorProjection());
       processMap.put("setData", new setData());
+      processMap.put("startLeaderSelector", new startLeaderSelector());
       return processMap;
     }
 
@@ -927,6 +999,26 @@ public class CuratorService {
       }
     }
 
+    public static class startLeaderSelector<I extends Iface> extends org.apache.thrift.ProcessFunction<I, startLeaderSelector_args> {
+      public startLeaderSelector() {
+        super("startLeaderSelector");
+      }
+
+      public startLeaderSelector_args getEmptyArgsInstance() {
+        return new startLeaderSelector_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public startLeaderSelector_result getResult(I iface, startLeaderSelector_args args) throws org.apache.thrift.TException {
+        startLeaderSelector_result result = new startLeaderSelector_result();
+        result.success = iface.startLeaderSelector(args.projection, args.path, args.participantId, args.waitForLeadershipMs);
+        return result;
+      }
+    }
+
   }
 
   public static class AsyncProcessor<I extends AsyncIface> extends org.apache.thrift.TBaseAsyncProcessor<I> {
@@ -950,6 +1042,7 @@ public class CuratorService {
       processMap.put("getData", new getData());
       processMap.put("newCuratorProjection", new newCuratorProjection());
       processMap.put("setData", new setData());
+      processMap.put("startLeaderSelector", new startLeaderSelector());
       return processMap;
     }
 
@@ -1459,6 +1552,57 @@ public class CuratorService {
 
       public void start(I iface, setData_args args, org.apache.thrift.async.AsyncMethodCallback<Stat> resultHandler) throws TException {
         iface.setData(args.projection, args.spec,resultHandler);
+      }
+    }
+
+    public static class startLeaderSelector<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, startLeaderSelector_args, LeaderResult> {
+      public startLeaderSelector() {
+        super("startLeaderSelector");
+      }
+
+      public startLeaderSelector_args getEmptyArgsInstance() {
+        return new startLeaderSelector_args();
+      }
+
+      public AsyncMethodCallback<LeaderResult> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<LeaderResult>() { 
+          public void onComplete(LeaderResult o) {
+            startLeaderSelector_result result = new startLeaderSelector_result();
+            result.success = o;
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            startLeaderSelector_result result = new startLeaderSelector_result();
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, startLeaderSelector_args args, org.apache.thrift.async.AsyncMethodCallback<LeaderResult> resultHandler) throws TException {
+        iface.startLeaderSelector(args.projection, args.path, args.participantId, args.waitForLeadershipMs,resultHandler);
       }
     }
 
@@ -9339,6 +9483,1022 @@ public class CuratorService {
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new Stat();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class startLeaderSelector_args implements org.apache.thrift.TBase<startLeaderSelector_args, startLeaderSelector_args._Fields>, java.io.Serializable, Cloneable, Comparable<startLeaderSelector_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startLeaderSelector_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("path", org.apache.thrift.protocol.TType.STRING, (short)2);
+    private static final org.apache.thrift.protocol.TField PARTICIPANT_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("participantId", org.apache.thrift.protocol.TType.STRING, (short)3);
+    private static final org.apache.thrift.protocol.TField WAIT_FOR_LEADERSHIP_MS_FIELD_DESC = new org.apache.thrift.protocol.TField("waitForLeadershipMs", org.apache.thrift.protocol.TType.I32, (short)4);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new startLeaderSelector_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new startLeaderSelector_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+    public String path; // required
+    public String participantId; // required
+    public int waitForLeadershipMs; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection"),
+      PATH((short)2, "path"),
+      PARTICIPANT_ID((short)3, "participantId"),
+      WAIT_FOR_LEADERSHIP_MS((short)4, "waitForLeadershipMs");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          case 2: // PATH
+            return PATH;
+          case 3: // PARTICIPANT_ID
+            return PARTICIPANT_ID;
+          case 4: // WAIT_FOR_LEADERSHIP_MS
+            return WAIT_FOR_LEADERSHIP_MS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    private static final int __WAITFORLEADERSHIPMS_ISSET_ID = 0;
+    private byte __isset_bitfield = 0;
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      tmpMap.put(_Fields.PATH, new org.apache.thrift.meta_data.FieldMetaData("path", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      tmpMap.put(_Fields.PARTICIPANT_ID, new org.apache.thrift.meta_data.FieldMetaData("participantId", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      tmpMap.put(_Fields.WAIT_FOR_LEADERSHIP_MS, new org.apache.thrift.meta_data.FieldMetaData("waitForLeadershipMs", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startLeaderSelector_args.class, metaDataMap);
+    }
+
+    public startLeaderSelector_args() {
+    }
+
+    public startLeaderSelector_args(
+      CuratorProjection projection,
+      String path,
+      String participantId,
+      int waitForLeadershipMs)
+    {
+      this();
+      this.projection = projection;
+      this.path = path;
+      this.participantId = participantId;
+      this.waitForLeadershipMs = waitForLeadershipMs;
+      setWaitForLeadershipMsIsSet(true);
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public startLeaderSelector_args(startLeaderSelector_args other) {
+      __isset_bitfield = other.__isset_bitfield;
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+      if (other.isSetPath()) {
+        this.path = other.path;
+      }
+      if (other.isSetParticipantId()) {
+        this.participantId = other.participantId;
+      }
+      this.waitForLeadershipMs = other.waitForLeadershipMs;
+    }
+
+    public startLeaderSelector_args deepCopy() {
+      return new startLeaderSelector_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+      this.path = null;
+      this.participantId = null;
+      setWaitForLeadershipMsIsSet(false);
+      this.waitForLeadershipMs = 0;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public startLeaderSelector_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public String getPath() {
+      return this.path;
+    }
+
+    public startLeaderSelector_args setPath(String path) {
+      this.path = path;
+      return this;
+    }
+
+    public void unsetPath() {
+      this.path = null;
+    }
+
+    /** Returns true if field path is set (has been assigned a value) and false otherwise */
+    public boolean isSetPath() {
+      return this.path != null;
+    }
+
+    public void setPathIsSet(boolean value) {
+      if (!value) {
+        this.path = null;
+      }
+    }
+
+    public String getParticipantId() {
+      return this.participantId;
+    }
+
+    public startLeaderSelector_args setParticipantId(String participantId) {
+      this.participantId = participantId;
+      return this;
+    }
+
+    public void unsetParticipantId() {
+      this.participantId = null;
+    }
+
+    /** Returns true if field participantId is set (has been assigned a value) and false otherwise */
+    public boolean isSetParticipantId() {
+      return this.participantId != null;
+    }
+
+    public void setParticipantIdIsSet(boolean value) {
+      if (!value) {
+        this.participantId = null;
+      }
+    }
+
+    public int getWaitForLeadershipMs() {
+      return this.waitForLeadershipMs;
+    }
+
+    public startLeaderSelector_args setWaitForLeadershipMs(int waitForLeadershipMs) {
+      this.waitForLeadershipMs = waitForLeadershipMs;
+      setWaitForLeadershipMsIsSet(true);
+      return this;
+    }
+
+    public void unsetWaitForLeadershipMs() {
+      __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __WAITFORLEADERSHIPMS_ISSET_ID);
+    }
+
+    /** Returns true if field waitForLeadershipMs is set (has been assigned a value) and false otherwise */
+    public boolean isSetWaitForLeadershipMs() {
+      return EncodingUtils.testBit(__isset_bitfield, __WAITFORLEADERSHIPMS_ISSET_ID);
+    }
+
+    public void setWaitForLeadershipMsIsSet(boolean value) {
+      __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __WAITFORLEADERSHIPMS_ISSET_ID, value);
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      case PATH:
+        if (value == null) {
+          unsetPath();
+        } else {
+          setPath((String)value);
+        }
+        break;
+
+      case PARTICIPANT_ID:
+        if (value == null) {
+          unsetParticipantId();
+        } else {
+          setParticipantId((String)value);
+        }
+        break;
+
+      case WAIT_FOR_LEADERSHIP_MS:
+        if (value == null) {
+          unsetWaitForLeadershipMs();
+        } else {
+          setWaitForLeadershipMs((Integer)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      case PATH:
+        return getPath();
+
+      case PARTICIPANT_ID:
+        return getParticipantId();
+
+      case WAIT_FOR_LEADERSHIP_MS:
+        return Integer.valueOf(getWaitForLeadershipMs());
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      case PATH:
+        return isSetPath();
+      case PARTICIPANT_ID:
+        return isSetParticipantId();
+      case WAIT_FOR_LEADERSHIP_MS:
+        return isSetWaitForLeadershipMs();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof startLeaderSelector_args)
+        return this.equals((startLeaderSelector_args)that);
+      return false;
+    }
+
+    public boolean equals(startLeaderSelector_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      boolean this_present_path = true && this.isSetPath();
+      boolean that_present_path = true && that.isSetPath();
+      if (this_present_path || that_present_path) {
+        if (!(this_present_path && that_present_path))
+          return false;
+        if (!this.path.equals(that.path))
+          return false;
+      }
+
+      boolean this_present_participantId = true && this.isSetParticipantId();
+      boolean that_present_participantId = true && that.isSetParticipantId();
+      if (this_present_participantId || that_present_participantId) {
+        if (!(this_present_participantId && that_present_participantId))
+          return false;
+        if (!this.participantId.equals(that.participantId))
+          return false;
+      }
+
+      boolean this_present_waitForLeadershipMs = true;
+      boolean that_present_waitForLeadershipMs = true;
+      if (this_present_waitForLeadershipMs || that_present_waitForLeadershipMs) {
+        if (!(this_present_waitForLeadershipMs && that_present_waitForLeadershipMs))
+          return false;
+        if (this.waitForLeadershipMs != that.waitForLeadershipMs)
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(startLeaderSelector_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetPath()).compareTo(other.isSetPath());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetPath()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.path, other.path);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetParticipantId()).compareTo(other.isSetParticipantId());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetParticipantId()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.participantId, other.participantId);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetWaitForLeadershipMs()).compareTo(other.isSetWaitForLeadershipMs());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetWaitForLeadershipMs()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.waitForLeadershipMs, other.waitForLeadershipMs);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("startLeaderSelector_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("path:");
+      if (this.path == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.path);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("participantId:");
+      if (this.participantId == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.participantId);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("waitForLeadershipMs:");
+      sb.append(this.waitForLeadershipMs);
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+        __isset_bitfield = 0;
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class startLeaderSelector_argsStandardSchemeFactory implements SchemeFactory {
+      public startLeaderSelector_argsStandardScheme getScheme() {
+        return new startLeaderSelector_argsStandardScheme();
+      }
+    }
+
+    private static class startLeaderSelector_argsStandardScheme extends StandardScheme<startLeaderSelector_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, startLeaderSelector_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // PATH
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.path = iprot.readString();
+                struct.setPathIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 3: // PARTICIPANT_ID
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.participantId = iprot.readString();
+                struct.setParticipantIdIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 4: // WAIT_FOR_LEADERSHIP_MS
+              if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+                struct.waitForLeadershipMs = iprot.readI32();
+                struct.setWaitForLeadershipMsIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, startLeaderSelector_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.path != null) {
+          oprot.writeFieldBegin(PATH_FIELD_DESC);
+          oprot.writeString(struct.path);
+          oprot.writeFieldEnd();
+        }
+        if (struct.participantId != null) {
+          oprot.writeFieldBegin(PARTICIPANT_ID_FIELD_DESC);
+          oprot.writeString(struct.participantId);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldBegin(WAIT_FOR_LEADERSHIP_MS_FIELD_DESC);
+        oprot.writeI32(struct.waitForLeadershipMs);
+        oprot.writeFieldEnd();
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class startLeaderSelector_argsTupleSchemeFactory implements SchemeFactory {
+      public startLeaderSelector_argsTupleScheme getScheme() {
+        return new startLeaderSelector_argsTupleScheme();
+      }
+    }
+
+    private static class startLeaderSelector_argsTupleScheme extends TupleScheme<startLeaderSelector_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, startLeaderSelector_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        if (struct.isSetPath()) {
+          optionals.set(1);
+        }
+        if (struct.isSetParticipantId()) {
+          optionals.set(2);
+        }
+        if (struct.isSetWaitForLeadershipMs()) {
+          optionals.set(3);
+        }
+        oprot.writeBitSet(optionals, 4);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+        if (struct.isSetPath()) {
+          oprot.writeString(struct.path);
+        }
+        if (struct.isSetParticipantId()) {
+          oprot.writeString(struct.participantId);
+        }
+        if (struct.isSetWaitForLeadershipMs()) {
+          oprot.writeI32(struct.waitForLeadershipMs);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, startLeaderSelector_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(4);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.path = iprot.readString();
+          struct.setPathIsSet(true);
+        }
+        if (incoming.get(2)) {
+          struct.participantId = iprot.readString();
+          struct.setParticipantIdIsSet(true);
+        }
+        if (incoming.get(3)) {
+          struct.waitForLeadershipMs = iprot.readI32();
+          struct.setWaitForLeadershipMsIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class startLeaderSelector_result implements org.apache.thrift.TBase<startLeaderSelector_result, startLeaderSelector_result._Fields>, java.io.Serializable, Cloneable, Comparable<startLeaderSelector_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startLeaderSelector_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new startLeaderSelector_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new startLeaderSelector_resultTupleSchemeFactory());
+    }
+
+    public LeaderResult success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LeaderResult.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startLeaderSelector_result.class, metaDataMap);
+    }
+
+    public startLeaderSelector_result() {
+    }
+
+    public startLeaderSelector_result(
+      LeaderResult success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public startLeaderSelector_result(startLeaderSelector_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new LeaderResult(other.success);
+      }
+    }
+
+    public startLeaderSelector_result deepCopy() {
+      return new startLeaderSelector_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public LeaderResult getSuccess() {
+      return this.success;
+    }
+
+    public startLeaderSelector_result setSuccess(LeaderResult success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((LeaderResult)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof startLeaderSelector_result)
+        return this.equals((startLeaderSelector_result)that);
+      return false;
+    }
+
+    public boolean equals(startLeaderSelector_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(startLeaderSelector_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(other.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, other.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("startLeaderSelector_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class startLeaderSelector_resultStandardSchemeFactory implements SchemeFactory {
+      public startLeaderSelector_resultStandardScheme getScheme() {
+        return new startLeaderSelector_resultStandardScheme();
+      }
+    }
+
+    private static class startLeaderSelector_resultStandardScheme extends StandardScheme<startLeaderSelector_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, startLeaderSelector_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new LeaderResult();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, startLeaderSelector_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class startLeaderSelector_resultTupleSchemeFactory implements SchemeFactory {
+      public startLeaderSelector_resultTupleScheme getScheme() {
+        return new startLeaderSelector_resultTupleScheme();
+      }
+    }
+
+    private static class startLeaderSelector_resultTupleScheme extends TupleScheme<startLeaderSelector_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, startLeaderSelector_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, startLeaderSelector_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new LeaderResult();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }

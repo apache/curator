@@ -90,7 +90,12 @@ public class CuratorEntry implements Closeable
 
     public <T> String addThing(T thing, Closer<T> closer)
     {
-        return addThing(UUID.randomUUID().toString(), thing, closer);
+        return addThing(newId(), thing, closer);
+    }
+
+    public static String newId()
+    {
+        return UUID.randomUUID().toString();
     }
 
     public <T> String addThing(String id, T thing, Closer<T> closer)

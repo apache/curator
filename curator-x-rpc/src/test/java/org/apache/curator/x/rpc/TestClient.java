@@ -100,5 +100,9 @@ public class TestClient
         client.deleteNode(curatorProjection, deleteSpec);
 
         System.out.println("exists: " + client.exists(curatorProjection, existsSpec));
+
+        LeaderResult leader = client.startLeaderSelector(curatorProjection, "/leader", "me", 10000);
+        System.out.println("Has Leader: " + leader.hasLeadership);
+        client.closeGenericProjection(curatorProjection, leader.projection);
     }
 }

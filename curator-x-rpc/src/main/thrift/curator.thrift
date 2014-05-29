@@ -8,7 +8,7 @@ enum CreateMode {
 }
 
 enum CuratorEventType {
-  PING, CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING, CONNECTION_CONNECTED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, CONNECTION_READ_ONLY
+  PING, CREATE, DELETE, EXISTS, GET_DATA, SET_DATA, CHILDREN, SYNC, GET_ACL, SET_ACL, WATCHED, CLOSING, CONNECTION_CONNECTED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, CONNECTION_READ_ONLY, LEADER
 }
 
 enum EventType {
@@ -58,6 +58,17 @@ struct GetDataSpec {
 
 struct Version {
   1: i32 version;
+}
+
+struct LeaderEvent {
+  1: string path;
+  2: string participantId;
+  3: bool isLeader;
+}
+
+struct LeaderResult {
+  1: GenericProjection projection;
+  2: bool hasLeadership;
 }
 
 struct OptionalChildrenList {
@@ -130,6 +141,7 @@ struct CuratorEvent {
   9: list<string> children;
   10: list<Acl> aclList;
   11: WatchedEvent watchedEvent;
+  12: LeaderEvent leaderEvent;
 }
 
 service CuratorService {
@@ -143,6 +155,7 @@ service CuratorService {
   binary getData(1: CuratorProjection projection, 2: GetDataSpec spec);
   CuratorProjection newCuratorProjection(1: string connectionName);
   Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec);
+  LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs);
 }
 
 service EventService {
