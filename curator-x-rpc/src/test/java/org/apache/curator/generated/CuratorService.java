@@ -42,7 +42,9 @@ public class CuratorService {
 
     public boolean closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection) throws org.apache.thrift.TException;
 
-    public String create(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException;
+    public String createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException;
+
+    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws org.apache.thrift.TException;
 
     public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws org.apache.thrift.TException;
 
@@ -60,7 +62,9 @@ public class CuratorService {
 
     public void closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
-    public void create(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+    public void createNode(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void deleteNode(CuratorProjection projection, DeleteSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void getData(CuratorProjection projection, GetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -159,28 +163,49 @@ public class CuratorService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "closeGenericProjection failed: unknown result");
     }
 
-    public String create(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
+    public String createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
     {
-      send_create(projection, spec);
-      return recv_create();
+      send_createNode(projection, spec);
+      return recv_createNode();
     }
 
-    public void send_create(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
+    public void send_createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
     {
-      create_args args = new create_args();
+      createNode_args args = new createNode_args();
       args.setProjection(projection);
       args.setSpec(spec);
-      sendBase("create", args);
+      sendBase("createNode", args);
     }
 
-    public String recv_create() throws org.apache.thrift.TException
+    public String recv_createNode() throws org.apache.thrift.TException
     {
-      create_result result = new create_result();
-      receiveBase(result, "create");
+      createNode_result result = new createNode_result();
+      receiveBase(result, "createNode");
       if (result.isSetSuccess()) {
         return result.success;
       }
-      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "create failed: unknown result");
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "createNode failed: unknown result");
+    }
+
+    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws org.apache.thrift.TException
+    {
+      send_deleteNode(projection, spec);
+      recv_deleteNode();
+    }
+
+    public void send_deleteNode(CuratorProjection projection, DeleteSpec spec) throws org.apache.thrift.TException
+    {
+      deleteNode_args args = new deleteNode_args();
+      args.setProjection(projection);
+      args.setSpec(spec);
+      sendBase("deleteNode", args);
+    }
+
+    public void recv_deleteNode() throws org.apache.thrift.TException
+    {
+      deleteNode_result result = new deleteNode_result();
+      receiveBase(result, "deleteNode");
+      return;
     }
 
     public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws org.apache.thrift.TException
@@ -377,25 +402,25 @@ public class CuratorService {
       }
     }
 
-    public void create(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+    public void createNode(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      create_call method_call = new create_call(projection, spec, resultHandler, this, ___protocolFactory, ___transport);
+      createNode_call method_call = new createNode_call(projection, spec, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
-    public static class create_call extends org.apache.thrift.async.TAsyncMethodCall {
+    public static class createNode_call extends org.apache.thrift.async.TAsyncMethodCall {
       private CuratorProjection projection;
       private CreateSpec spec;
-      public create_call(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      public createNode_call(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.projection = projection;
         this.spec = spec;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
-        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("create", org.apache.thrift.protocol.TMessageType.CALL, 0));
-        create_args args = new create_args();
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("createNode", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        createNode_args args = new createNode_args();
         args.setProjection(projection);
         args.setSpec(spec);
         args.write(prot);
@@ -408,7 +433,42 @@ public class CuratorService {
         }
         org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
         org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
-        return (new Client(prot)).recv_create();
+        return (new Client(prot)).recv_createNode();
+      }
+    }
+
+    public void deleteNode(CuratorProjection projection, DeleteSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      deleteNode_call method_call = new deleteNode_call(projection, spec, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class deleteNode_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      private DeleteSpec spec;
+      public deleteNode_call(CuratorProjection projection, DeleteSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.projection = projection;
+        this.spec = spec;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("deleteNode", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        deleteNode_args args = new deleteNode_args();
+        args.setProjection(projection);
+        args.setSpec(spec);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public void getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        (new Client(prot)).recv_deleteNode();
       }
     }
 
@@ -530,7 +590,8 @@ public class CuratorService {
       processMap.put("acquireLock", new acquireLock());
       processMap.put("closeCuratorProjection", new closeCuratorProjection());
       processMap.put("closeGenericProjection", new closeGenericProjection());
-      processMap.put("create", new create());
+      processMap.put("createNode", new createNode());
+      processMap.put("deleteNode", new deleteNode());
       processMap.put("getData", new getData());
       processMap.put("newCuratorProjection", new newCuratorProjection());
       processMap.put("setData", new setData());
@@ -598,22 +659,42 @@ public class CuratorService {
       }
     }
 
-    public static class create<I extends Iface> extends org.apache.thrift.ProcessFunction<I, create_args> {
-      public create() {
-        super("create");
+    public static class createNode<I extends Iface> extends org.apache.thrift.ProcessFunction<I, createNode_args> {
+      public createNode() {
+        super("createNode");
       }
 
-      public create_args getEmptyArgsInstance() {
-        return new create_args();
+      public createNode_args getEmptyArgsInstance() {
+        return new createNode_args();
       }
 
       protected boolean isOneway() {
         return false;
       }
 
-      public create_result getResult(I iface, create_args args) throws org.apache.thrift.TException {
-        create_result result = new create_result();
-        result.success = iface.create(args.projection, args.spec);
+      public createNode_result getResult(I iface, createNode_args args) throws org.apache.thrift.TException {
+        createNode_result result = new createNode_result();
+        result.success = iface.createNode(args.projection, args.spec);
+        return result;
+      }
+    }
+
+    public static class deleteNode<I extends Iface> extends org.apache.thrift.ProcessFunction<I, deleteNode_args> {
+      public deleteNode() {
+        super("deleteNode");
+      }
+
+      public deleteNode_args getEmptyArgsInstance() {
+        return new deleteNode_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public deleteNode_result getResult(I iface, deleteNode_args args) throws org.apache.thrift.TException {
+        deleteNode_result result = new deleteNode_result();
+        iface.deleteNode(args.projection, args.spec);
         return result;
       }
     }
@@ -694,7 +775,8 @@ public class CuratorService {
       processMap.put("acquireLock", new acquireLock());
       processMap.put("closeCuratorProjection", new closeCuratorProjection());
       processMap.put("closeGenericProjection", new closeGenericProjection());
-      processMap.put("create", new create());
+      processMap.put("createNode", new createNode());
+      processMap.put("deleteNode", new deleteNode());
       processMap.put("getData", new getData());
       processMap.put("newCuratorProjection", new newCuratorProjection());
       processMap.put("setData", new setData());
@@ -854,20 +936,20 @@ public class CuratorService {
       }
     }
 
-    public static class create<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, create_args, String> {
-      public create() {
-        super("create");
+    public static class createNode<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, createNode_args, String> {
+      public createNode() {
+        super("createNode");
       }
 
-      public create_args getEmptyArgsInstance() {
-        return new create_args();
+      public createNode_args getEmptyArgsInstance() {
+        return new createNode_args();
       }
 
       public AsyncMethodCallback<String> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
         return new AsyncMethodCallback<String>() { 
           public void onComplete(String o) {
-            create_result result = new create_result();
+            createNode_result result = new createNode_result();
             result.success = o;
             try {
               fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
@@ -880,7 +962,7 @@ public class CuratorService {
           public void onError(Exception e) {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
-            create_result result = new create_result();
+            createNode_result result = new createNode_result();
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -900,8 +982,58 @@ public class CuratorService {
         return false;
       }
 
-      public void start(I iface, create_args args, org.apache.thrift.async.AsyncMethodCallback<String> resultHandler) throws TException {
-        iface.create(args.projection, args.spec,resultHandler);
+      public void start(I iface, createNode_args args, org.apache.thrift.async.AsyncMethodCallback<String> resultHandler) throws TException {
+        iface.createNode(args.projection, args.spec,resultHandler);
+      }
+    }
+
+    public static class deleteNode<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, deleteNode_args, Void> {
+      public deleteNode() {
+        super("deleteNode");
+      }
+
+      public deleteNode_args getEmptyArgsInstance() {
+        return new deleteNode_args();
+      }
+
+      public AsyncMethodCallback<Void> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<Void>() { 
+          public void onComplete(Void o) {
+            deleteNode_result result = new deleteNode_result();
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            deleteNode_result result = new deleteNode_result();
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, deleteNode_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws TException {
+        iface.deleteNode(args.projection, args.spec,resultHandler);
       }
     }
 
@@ -3399,16 +3531,16 @@ public class CuratorService {
 
   }
 
-  public static class create_args implements org.apache.thrift.TBase<create_args, create_args._Fields>, java.io.Serializable, Cloneable, Comparable<create_args>   {
-    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("create_args");
+  public static class createNode_args implements org.apache.thrift.TBase<createNode_args, createNode_args._Fields>, java.io.Serializable, Cloneable, Comparable<createNode_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("createNode_args");
 
     private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
     private static final org.apache.thrift.protocol.TField SPEC_FIELD_DESC = new org.apache.thrift.protocol.TField("spec", org.apache.thrift.protocol.TType.STRUCT, (short)2);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
-      schemes.put(StandardScheme.class, new create_argsStandardSchemeFactory());
-      schemes.put(TupleScheme.class, new create_argsTupleSchemeFactory());
+      schemes.put(StandardScheme.class, new createNode_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new createNode_argsTupleSchemeFactory());
     }
 
     public CuratorProjection projection; // required
@@ -3484,13 +3616,13 @@ public class CuratorService {
       tmpMap.put(_Fields.SPEC, new org.apache.thrift.meta_data.FieldMetaData("spec", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CreateSpec.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
-      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(create_args.class, metaDataMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(createNode_args.class, metaDataMap);
     }
 
-    public create_args() {
+    public createNode_args() {
     }
 
-    public create_args(
+    public createNode_args(
       CuratorProjection projection,
       CreateSpec spec)
     {
@@ -3502,7 +3634,7 @@ public class CuratorService {
     /**
      * Performs a deep copy on <i>other</i>.
      */
-    public create_args(create_args other) {
+    public createNode_args(createNode_args other) {
       if (other.isSetProjection()) {
         this.projection = new CuratorProjection(other.projection);
       }
@@ -3511,8 +3643,8 @@ public class CuratorService {
       }
     }
 
-    public create_args deepCopy() {
-      return new create_args(this);
+    public createNode_args deepCopy() {
+      return new createNode_args(this);
     }
 
     @Override
@@ -3525,7 +3657,7 @@ public class CuratorService {
       return this.projection;
     }
 
-    public create_args setProjection(CuratorProjection projection) {
+    public createNode_args setProjection(CuratorProjection projection) {
       this.projection = projection;
       return this;
     }
@@ -3549,7 +3681,7 @@ public class CuratorService {
       return this.spec;
     }
 
-    public create_args setSpec(CreateSpec spec) {
+    public createNode_args setSpec(CreateSpec spec) {
       this.spec = spec;
       return this;
     }
@@ -3621,12 +3753,12 @@ public class CuratorService {
     public boolean equals(Object that) {
       if (that == null)
         return false;
-      if (that instanceof create_args)
-        return this.equals((create_args)that);
+      if (that instanceof createNode_args)
+        return this.equals((createNode_args)that);
       return false;
     }
 
-    public boolean equals(create_args that) {
+    public boolean equals(createNode_args that) {
       if (that == null)
         return false;
 
@@ -3657,7 +3789,7 @@ public class CuratorService {
     }
 
     @Override
-    public int compareTo(create_args other) {
+    public int compareTo(createNode_args other) {
       if (!getClass().equals(other.getClass())) {
         return getClass().getName().compareTo(other.getClass().getName());
       }
@@ -3701,7 +3833,7 @@ public class CuratorService {
 
     @Override
     public String toString() {
-      StringBuilder sb = new StringBuilder("create_args(");
+      StringBuilder sb = new StringBuilder("createNode_args(");
       boolean first = true;
 
       sb.append("projection:");
@@ -3750,15 +3882,15 @@ public class CuratorService {
       }
     }
 
-    private static class create_argsStandardSchemeFactory implements SchemeFactory {
-      public create_argsStandardScheme getScheme() {
-        return new create_argsStandardScheme();
+    private static class createNode_argsStandardSchemeFactory implements SchemeFactory {
+      public createNode_argsStandardScheme getScheme() {
+        return new createNode_argsStandardScheme();
       }
     }
 
-    private static class create_argsStandardScheme extends StandardScheme<create_args> {
+    private static class createNode_argsStandardScheme extends StandardScheme<createNode_args> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, create_args struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol iprot, createNode_args struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
@@ -3797,7 +3929,7 @@ public class CuratorService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, create_args struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol oprot, createNode_args struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -3817,16 +3949,16 @@ public class CuratorService {
 
     }
 
-    private static class create_argsTupleSchemeFactory implements SchemeFactory {
-      public create_argsTupleScheme getScheme() {
-        return new create_argsTupleScheme();
+    private static class createNode_argsTupleSchemeFactory implements SchemeFactory {
+      public createNode_argsTupleScheme getScheme() {
+        return new createNode_argsTupleScheme();
       }
     }
 
-    private static class create_argsTupleScheme extends TupleScheme<create_args> {
+    private static class createNode_argsTupleScheme extends TupleScheme<createNode_args> {
 
       @Override
-      public void write(org.apache.thrift.protocol.TProtocol prot, create_args struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol prot, createNode_args struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
         if (struct.isSetProjection()) {
@@ -3845,7 +3977,7 @@ public class CuratorService {
       }
 
       @Override
-      public void read(org.apache.thrift.protocol.TProtocol prot, create_args struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol prot, createNode_args struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
@@ -3863,15 +3995,15 @@ public class CuratorService {
 
   }
 
-  public static class create_result implements org.apache.thrift.TBase<create_result, create_result._Fields>, java.io.Serializable, Cloneable, Comparable<create_result>   {
-    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("create_result");
+  public static class createNode_result implements org.apache.thrift.TBase<createNode_result, createNode_result._Fields>, java.io.Serializable, Cloneable, Comparable<createNode_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("createNode_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRING, (short)0);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
-      schemes.put(StandardScheme.class, new create_resultStandardSchemeFactory());
-      schemes.put(TupleScheme.class, new create_resultTupleSchemeFactory());
+      schemes.put(StandardScheme.class, new createNode_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new createNode_resultTupleSchemeFactory());
     }
 
     public String success; // required
@@ -3941,13 +4073,13 @@ public class CuratorService {
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
-      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(create_result.class, metaDataMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(createNode_result.class, metaDataMap);
     }
 
-    public create_result() {
+    public createNode_result() {
     }
 
-    public create_result(
+    public createNode_result(
       String success)
     {
       this();
@@ -3957,14 +4089,14 @@ public class CuratorService {
     /**
      * Performs a deep copy on <i>other</i>.
      */
-    public create_result(create_result other) {
+    public createNode_result(createNode_result other) {
       if (other.isSetSuccess()) {
         this.success = other.success;
       }
     }
 
-    public create_result deepCopy() {
-      return new create_result(this);
+    public createNode_result deepCopy() {
+      return new createNode_result(this);
     }
 
     @Override
@@ -3976,7 +4108,7 @@ public class CuratorService {
       return this.success;
     }
 
-    public create_result setSuccess(String success) {
+    public createNode_result setSuccess(String success) {
       this.success = success;
       return this;
     }
@@ -4035,12 +4167,12 @@ public class CuratorService {
     public boolean equals(Object that) {
       if (that == null)
         return false;
-      if (that instanceof create_result)
-        return this.equals((create_result)that);
+      if (that instanceof createNode_result)
+        return this.equals((createNode_result)that);
       return false;
     }
 
-    public boolean equals(create_result that) {
+    public boolean equals(createNode_result that) {
       if (that == null)
         return false;
 
@@ -4062,7 +4194,7 @@ public class CuratorService {
     }
 
     @Override
-    public int compareTo(create_result other) {
+    public int compareTo(createNode_result other) {
       if (!getClass().equals(other.getClass())) {
         return getClass().getName().compareTo(other.getClass().getName());
       }
@@ -4096,7 +4228,7 @@ public class CuratorService {
 
     @Override
     public String toString() {
-      StringBuilder sb = new StringBuilder("create_result(");
+      StringBuilder sb = new StringBuilder("createNode_result(");
       boolean first = true;
 
       sb.append("success:");
@@ -4131,15 +4263,15 @@ public class CuratorService {
       }
     }
 
-    private static class create_resultStandardSchemeFactory implements SchemeFactory {
-      public create_resultStandardScheme getScheme() {
-        return new create_resultStandardScheme();
+    private static class createNode_resultStandardSchemeFactory implements SchemeFactory {
+      public createNode_resultStandardScheme getScheme() {
+        return new createNode_resultStandardScheme();
       }
     }
 
-    private static class create_resultStandardScheme extends StandardScheme<create_result> {
+    private static class createNode_resultStandardScheme extends StandardScheme<createNode_result> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, create_result struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol iprot, createNode_result struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
@@ -4168,7 +4300,7 @@ public class CuratorService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, create_result struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol oprot, createNode_result struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -4183,16 +4315,16 @@ public class CuratorService {
 
     }
 
-    private static class create_resultTupleSchemeFactory implements SchemeFactory {
-      public create_resultTupleScheme getScheme() {
-        return new create_resultTupleScheme();
+    private static class createNode_resultTupleSchemeFactory implements SchemeFactory {
+      public createNode_resultTupleScheme getScheme() {
+        return new createNode_resultTupleScheme();
       }
     }
 
-    private static class create_resultTupleScheme extends TupleScheme<create_result> {
+    private static class createNode_resultTupleScheme extends TupleScheme<createNode_result> {
 
       @Override
-      public void write(org.apache.thrift.protocol.TProtocol prot, create_result struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol prot, createNode_result struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
         if (struct.isSetSuccess()) {
@@ -4205,13 +4337,723 @@ public class CuratorService {
       }
 
       @Override
-      public void read(org.apache.thrift.protocol.TProtocol prot, create_result struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol prot, createNode_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = iprot.readString();
           struct.setSuccessIsSet(true);
         }
+      }
+    }
+
+  }
+
+  public static class deleteNode_args implements org.apache.thrift.TBase<deleteNode_args, deleteNode_args._Fields>, java.io.Serializable, Cloneable, Comparable<deleteNode_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("deleteNode_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField SPEC_FIELD_DESC = new org.apache.thrift.protocol.TField("spec", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new deleteNode_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new deleteNode_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+    public DeleteSpec spec; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection"),
+      SPEC((short)2, "spec");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          case 2: // SPEC
+            return SPEC;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      tmpMap.put(_Fields.SPEC, new org.apache.thrift.meta_data.FieldMetaData("spec", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, DeleteSpec.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(deleteNode_args.class, metaDataMap);
+    }
+
+    public deleteNode_args() {
+    }
+
+    public deleteNode_args(
+      CuratorProjection projection,
+      DeleteSpec spec)
+    {
+      this();
+      this.projection = projection;
+      this.spec = spec;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public deleteNode_args(deleteNode_args other) {
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+      if (other.isSetSpec()) {
+        this.spec = new DeleteSpec(other.spec);
+      }
+    }
+
+    public deleteNode_args deepCopy() {
+      return new deleteNode_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+      this.spec = null;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public deleteNode_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public DeleteSpec getSpec() {
+      return this.spec;
+    }
+
+    public deleteNode_args setSpec(DeleteSpec spec) {
+      this.spec = spec;
+      return this;
+    }
+
+    public void unsetSpec() {
+      this.spec = null;
+    }
+
+    /** Returns true if field spec is set (has been assigned a value) and false otherwise */
+    public boolean isSetSpec() {
+      return this.spec != null;
+    }
+
+    public void setSpecIsSet(boolean value) {
+      if (!value) {
+        this.spec = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      case SPEC:
+        if (value == null) {
+          unsetSpec();
+        } else {
+          setSpec((DeleteSpec)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      case SPEC:
+        return getSpec();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      case SPEC:
+        return isSetSpec();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof deleteNode_args)
+        return this.equals((deleteNode_args)that);
+      return false;
+    }
+
+    public boolean equals(deleteNode_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      boolean this_present_spec = true && this.isSetSpec();
+      boolean that_present_spec = true && that.isSetSpec();
+      if (this_present_spec || that_present_spec) {
+        if (!(this_present_spec && that_present_spec))
+          return false;
+        if (!this.spec.equals(that.spec))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(deleteNode_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetSpec()).compareTo(other.isSetSpec());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSpec()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.spec, other.spec);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("deleteNode_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("spec:");
+      if (this.spec == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.spec);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+      if (spec != null) {
+        spec.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class deleteNode_argsStandardSchemeFactory implements SchemeFactory {
+      public deleteNode_argsStandardScheme getScheme() {
+        return new deleteNode_argsStandardScheme();
+      }
+    }
+
+    private static class deleteNode_argsStandardScheme extends StandardScheme<deleteNode_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, deleteNode_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // SPEC
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.spec = new DeleteSpec();
+                struct.spec.read(iprot);
+                struct.setSpecIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, deleteNode_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.spec != null) {
+          oprot.writeFieldBegin(SPEC_FIELD_DESC);
+          struct.spec.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class deleteNode_argsTupleSchemeFactory implements SchemeFactory {
+      public deleteNode_argsTupleScheme getScheme() {
+        return new deleteNode_argsTupleScheme();
+      }
+    }
+
+    private static class deleteNode_argsTupleScheme extends TupleScheme<deleteNode_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, deleteNode_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        if (struct.isSetSpec()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+        if (struct.isSetSpec()) {
+          struct.spec.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, deleteNode_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(2);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.spec = new DeleteSpec();
+          struct.spec.read(iprot);
+          struct.setSpecIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class deleteNode_result implements org.apache.thrift.TBase<deleteNode_result, deleteNode_result._Fields>, java.io.Serializable, Cloneable, Comparable<deleteNode_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("deleteNode_result");
+
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new deleteNode_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new deleteNode_resultTupleSchemeFactory());
+    }
+
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+;
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(deleteNode_result.class, metaDataMap);
+    }
+
+    public deleteNode_result() {
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public deleteNode_result(deleteNode_result other) {
+    }
+
+    public deleteNode_result deepCopy() {
+      return new deleteNode_result(this);
+    }
+
+    @Override
+    public void clear() {
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof deleteNode_result)
+        return this.equals((deleteNode_result)that);
+      return false;
+    }
+
+    public boolean equals(deleteNode_result that) {
+      if (that == null)
+        return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(deleteNode_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("deleteNode_result(");
+      boolean first = true;
+
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class deleteNode_resultStandardSchemeFactory implements SchemeFactory {
+      public deleteNode_resultStandardScheme getScheme() {
+        return new deleteNode_resultStandardScheme();
+      }
+    }
+
+    private static class deleteNode_resultStandardScheme extends StandardScheme<deleteNode_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, deleteNode_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, deleteNode_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class deleteNode_resultTupleSchemeFactory implements SchemeFactory {
+      public deleteNode_resultTupleScheme getScheme() {
+        return new deleteNode_resultTupleScheme();
+      }
+    }
+
+    private static class deleteNode_resultTupleScheme extends TupleScheme<deleteNode_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, deleteNode_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, deleteNode_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
       }
     }
 

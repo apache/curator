@@ -73,6 +73,14 @@ struct WatchedEvent {
   3: string path;
 }
 
+struct DeleteSpec {
+  1: string path;
+  2: bool guaranteed;
+  3: string asyncContext;
+  4: bool compressed;
+  5: Version version;
+}
+
 struct SetDataSpec {
   1: string path;
   2: bool watched;
@@ -104,7 +112,8 @@ service CuratorService {
   GenericProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs);
   void closeCuratorProjection(1: CuratorProjection projection);
   bool closeGenericProjection(1: CuratorProjection curatorProjection, 2: GenericProjection genericProjection);
-  string create(1: CuratorProjection projection, 2: CreateSpec spec);
+  string createNode(1: CuratorProjection projection, 2: CreateSpec spec);
+  void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec);
   binary getData(1: CuratorProjection projection, 2: GetDataSpec spec);
   CuratorProjection newCuratorProjection(1: string connectionName);
   Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec);

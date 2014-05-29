@@ -84,7 +84,7 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public String create(final CuratorProjection projection, CreateSpec spec) throws Exception
+    public String createNode(CuratorProjection projection, CreateSpec spec) throws Exception
     {
         CuratorFramework client = getEntry(projection).getClient();
 
@@ -116,7 +116,31 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public byte[] getData(final CuratorProjection projection, GetDataSpec spec) throws Exception
+    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws Exception
+    {
+        CuratorFramework client = getEntry(projection).getClient();
+
+        Object builder = client.delete();
+        if ( spec.guaranteed )
+        {
+            builder = castBuilder(builder, DeleteBuilder.class).guaranteed();
+        }
+        if ( spec.version != null )
+        {
+            builder = castBuilder(builder, Versionable.class).withVersion(spec.version.version);
+        }
+
+        if ( spec.asyncContext != null )
+        {
+            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, spec.asyncContext);
+        }
+
+        castBuilder(builder, Pathable.class).forPath(spec.path);
+    }
+
+    @ThriftMethod
+    public byte[] getData(CuratorProjection projection, GetDataSpec spec) throws Exception
     {
         CuratorFramework client = getEntry(projection).getClient();
 
@@ -144,7 +168,7 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public RpcStat setData(final CuratorProjection projection, SetDataSpec spec) throws Exception
+    public RpcStat setData(CuratorProjection projection, SetDataSpec spec) throws Exception
     {
         CuratorFramework client = getEntry(projection).getClient();
 

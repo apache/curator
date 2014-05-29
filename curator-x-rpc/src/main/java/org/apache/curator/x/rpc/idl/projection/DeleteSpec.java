@@ -20,44 +20,35 @@ package org.apache.curator.x.rpc.idl.projection;
 
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
-import org.apache.curator.framework.api.CreateBuilder;
 
 @ThriftStruct
-public class CreateSpec
+public class DeleteSpec
 {
     @ThriftField(1)
     public String path;
 
     @ThriftField(2)
-    public byte[] data;
+    public boolean guaranteed;
 
     @ThriftField(3)
-    public CreateMode mode;
-
-    @ThriftField(4)
     public String asyncContext;
 
-    @ThriftField(5)
+    @ThriftField(4)
     public boolean compressed;
 
-    @ThriftField(6)
-    public boolean creatingParentsIfNeeded;
+    @ThriftField(5)
+    public Version version;
 
-    @ThriftField(7)
-    public boolean withProtection;
-
-    public CreateSpec()
+    public DeleteSpec()
     {
     }
 
-    public CreateSpec(String path, byte[] data, CreateMode mode, String asyncContext, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection)
+    public DeleteSpec(String path, boolean guaranteed, String asyncContext, boolean compressed, Version version)
     {
         this.path = path;
-        this.data = data;
-        this.mode = mode;
+        this.guaranteed = guaranteed;
         this.asyncContext = asyncContext;
         this.compressed = compressed;
-        this.creatingParentsIfNeeded = creatingParentsIfNeeded;
-        this.withProtection = withProtection;
+        this.version = version;
     }
 }

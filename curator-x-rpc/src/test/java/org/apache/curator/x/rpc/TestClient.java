@@ -22,11 +22,10 @@ import org.apache.curator.generated.CreateSpec;
 import org.apache.curator.generated.CuratorEvent;
 import org.apache.curator.generated.CuratorProjection;
 import org.apache.curator.generated.CuratorService;
+import org.apache.curator.generated.DeleteSpec;
 import org.apache.curator.generated.EventService;
 import org.apache.curator.generated.GenericProjection;
 import org.apache.curator.generated.GetDataSpec;
-import org.apache.curator.generated.SetDataSpec;
-import org.apache.curator.generated.Stat;
 import org.apache.curator.test.TestingServer;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -82,7 +81,7 @@ public class TestClient
         createSpec.creatingParentsIfNeeded = true;
         createSpec.asyncContext = "foo";
         createSpec.data = ByteBuffer.wrap("hey".getBytes());
-        String path = client.create(curatorProjection, createSpec);
+        String path = client.createNode(curatorProjection, createSpec);
         System.out.println("Path: " + path);
 
         GenericProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);
@@ -94,10 +93,8 @@ public class TestClient
         ByteBuffer data = client.getData(curatorProjection, getDataSpec);
         System.out.println("getData: " + new String(data.array()));
 
-        SetDataSpec setDataSpec = new SetDataSpec();
-        setDataSpec.path = "/a/b/c";
-        setDataSpec.data = ByteBuffer.wrap("another".getBytes());
-        Stat stat = client.setData(curatorProjection, setDataSpec);
-        System.out.println("Stat: " + stat);
+        DeleteSpec deleteSpec = new DeleteSpec();
+        deleteSpec.path = "/a/b/c";
+        client.deleteNode(curatorProjection, deleteSpec);
     }
 }
