@@ -22,7 +22,6 @@ package org.apache.curator.x.rpc.idl.projection;
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.Backgroundable;
 import org.apache.curator.framework.api.Compressible;
@@ -33,10 +32,9 @@ import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.x.rpc.connections.Closer;
-import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.connections.ConnectionManager;
+import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +53,10 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public CuratorProjection newCuratorProjection(CuratorProjectionSpec spec)   // TODO
+    public CuratorProjection newCuratorProjection(String connectionName)
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient("localhost:2181", new RetryOneTime(1));
+        CuratorFramework client = connectionManager.newConnection(connectionName);
+
         String id = UUID.randomUUID().toString();
         client.start();
         connectionManager.add(id, client);

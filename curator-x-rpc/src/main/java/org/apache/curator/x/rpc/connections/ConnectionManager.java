@@ -7,12 +7,14 @@ import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.rpc.configuration.ConnectionConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -20,8 +22,11 @@ public class ConnectionManager implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final Cache<String, CuratorEntry> cache;
-    private final Map<String, CuratorFramework> clients;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+    private final Map<String, ConnectionConfiguration> connections;
+    private final ScheduledExecutorService service = ThreadUtils.newSingleThreadScheduledExecutor("ConnectionManager");
+
+    private static final int FORCED_CLEANUP_SECONDS = 30;
 
     private enum State
     {
@@ -32,6 +37,8 @@ public class ConnectionManager implements Closeable
 
     public ConnectionManager(List<ConnectionConfiguration> connections, long expirationMs)
     {
+        this.connections = buildConnectionsMap(connections);
+
         RemovalListener<String, CuratorEntry> listener = new RemovalListener<String, CuratorEntry>()
         {
             @SuppressWarnings("NullableProblems")
@@ -50,22 +57,22 @@ public class ConnectionManager implements Closeable
                 }
             }
         };
-        cache = CacheBuilder
-            .newBuilder()
-            .expireAfterAccess(expirationMs, TimeUnit.MILLISECONDS)
-            .removalListener(listener)
-            .build();
-
-        clients = buildClients(connections);
+        cache = CacheBuilder.newBuilder().expireAfterAccess(expirationMs, TimeUnit.MILLISECONDS).removalListener(listener).build();
     }
 
     public void start()
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
-        for ( CuratorFramework client : clients.values() )
+
+        Runnable cleanup = new Runnable()
         {
-            client.start();
-        }
+            @Override
+            public void run()
+            {
+                cache.cleanUp();
+            }
+        };
+        service.scheduleWithFixedDelay(cleanup, FORCED_CLEANUP_SECONDS, 30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -73,14 +80,17 @@ public class ConnectionManager implements Closeable
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
+            service.shutdownNow();
             cache.invalidateAll();
             cache.cleanUp();
-
-            for ( CuratorFramework client : clients.values() )
-            {
-                client.close();
-            }
         }
+    }
+
+    public CuratorFramework newConnection(String name)
+    {
+        ConnectionConfiguration configuration = connections.get(name);
+        Preconditions.checkNotNull(configuration, "No connection configuration with that name was found: " + name);
+        return configuration.build();
     }
 
     public void add(String id, CuratorFramework client)
@@ -101,14 +111,14 @@ public class ConnectionManager implements Closeable
         return cache.asMap().remove(id);
     }
 
-    private Map<String, CuratorFramework> buildClients(List<ConnectionConfiguration> connections)
+    private Map<String, ConnectionConfiguration> buildConnectionsMap(List<ConnectionConfiguration> connections)
     {
         Preconditions.checkArgument(connections.size() > 0, "You must have at least one connection configured");
 
-        ImmutableMap.Builder<String, CuratorFramework> builder = ImmutableMap.builder();
+        ImmutableMap.Builder<String, ConnectionConfiguration> builder = ImmutableMap.builder();
         for ( ConnectionConfiguration configuration : connections )
         {
-            builder.put(configuration.getName(), configuration.build());
+            builder.put(configuration.getName(), configuration);
         }
         return builder.build();
     }

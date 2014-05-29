@@ -44,7 +44,7 @@ public class CuratorService {
 
     public String create(CuratorProjection projection, CreateSpec createSpec) throws org.apache.thrift.TException;
 
-    public CuratorProjection newCuratorProjection(CuratorProjectionSpec spec) throws org.apache.thrift.TException;
+    public CuratorProjection newCuratorProjection(String connectionName) throws org.apache.thrift.TException;
 
   }
 
@@ -58,7 +58,7 @@ public class CuratorService {
 
     public void create(CuratorProjection projection, CreateSpec createSpec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
-    public void newCuratorProjection(CuratorProjectionSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+    public void newCuratorProjection(String connectionName, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -175,16 +175,16 @@ public class CuratorService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "create failed: unknown result");
     }
 
-    public CuratorProjection newCuratorProjection(CuratorProjectionSpec spec) throws org.apache.thrift.TException
+    public CuratorProjection newCuratorProjection(String connectionName) throws org.apache.thrift.TException
     {
-      send_newCuratorProjection(spec);
+      send_newCuratorProjection(connectionName);
       return recv_newCuratorProjection();
     }
 
-    public void send_newCuratorProjection(CuratorProjectionSpec spec) throws org.apache.thrift.TException
+    public void send_newCuratorProjection(String connectionName) throws org.apache.thrift.TException
     {
       newCuratorProjection_args args = new newCuratorProjection_args();
-      args.setSpec(spec);
+      args.setConnectionName(connectionName);
       sendBase("newCuratorProjection", args);
     }
 
@@ -356,24 +356,24 @@ public class CuratorService {
       }
     }
 
-    public void newCuratorProjection(CuratorProjectionSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+    public void newCuratorProjection(String connectionName, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      newCuratorProjection_call method_call = new newCuratorProjection_call(spec, resultHandler, this, ___protocolFactory, ___transport);
+      newCuratorProjection_call method_call = new newCuratorProjection_call(connectionName, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
     public static class newCuratorProjection_call extends org.apache.thrift.async.TAsyncMethodCall {
-      private CuratorProjectionSpec spec;
-      public newCuratorProjection_call(CuratorProjectionSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      private String connectionName;
+      public newCuratorProjection_call(String connectionName, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
-        this.spec = spec;
+        this.connectionName = connectionName;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("newCuratorProjection", org.apache.thrift.protocol.TMessageType.CALL, 0));
         newCuratorProjection_args args = new newCuratorProjection_args();
-        args.setSpec(spec);
+        args.setConnectionName(connectionName);
         args.write(prot);
         prot.writeMessageEnd();
       }
@@ -505,7 +505,7 @@ public class CuratorService {
 
       public newCuratorProjection_result getResult(I iface, newCuratorProjection_args args) throws org.apache.thrift.TException {
         newCuratorProjection_result result = new newCuratorProjection_result();
-        result.success = iface.newCuratorProjection(args.spec);
+        result.success = iface.newCuratorProjection(args.connectionName);
         return result;
       }
     }
@@ -782,7 +782,7 @@ public class CuratorService {
       }
 
       public void start(I iface, newCuratorProjection_args args, org.apache.thrift.async.AsyncMethodCallback<CuratorProjection> resultHandler) throws TException {
-        iface.newCuratorProjection(args.spec,resultHandler);
+        iface.newCuratorProjection(args.connectionName,resultHandler);
       }
     }
 
@@ -3948,7 +3948,7 @@ public class CuratorService {
   public static class newCuratorProjection_args implements org.apache.thrift.TBase<newCuratorProjection_args, newCuratorProjection_args._Fields>, java.io.Serializable, Cloneable, Comparable<newCuratorProjection_args>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("newCuratorProjection_args");
 
-    private static final org.apache.thrift.protocol.TField SPEC_FIELD_DESC = new org.apache.thrift.protocol.TField("spec", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField CONNECTION_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("connectionName", org.apache.thrift.protocol.TType.STRING, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -3956,11 +3956,11 @@ public class CuratorService {
       schemes.put(TupleScheme.class, new newCuratorProjection_argsTupleSchemeFactory());
     }
 
-    public CuratorProjectionSpec spec; // required
+    public String connectionName; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SPEC((short)1, "spec");
+      CONNECTION_NAME((short)1, "connectionName");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -3975,8 +3975,8 @@ public class CuratorService {
        */
       public static _Fields findByThriftId(int fieldId) {
         switch(fieldId) {
-          case 1: // SPEC
-            return SPEC;
+          case 1: // CONNECTION_NAME
+            return CONNECTION_NAME;
           default:
             return null;
         }
@@ -4020,8 +4020,8 @@ public class CuratorService {
     public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.SPEC, new org.apache.thrift.meta_data.FieldMetaData("spec", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjectionSpec.class)));
+      tmpMap.put(_Fields.CONNECTION_NAME, new org.apache.thrift.meta_data.FieldMetaData("connectionName", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(newCuratorProjection_args.class, metaDataMap);
     }
@@ -4030,18 +4030,18 @@ public class CuratorService {
     }
 
     public newCuratorProjection_args(
-      CuratorProjectionSpec spec)
+      String connectionName)
     {
       this();
-      this.spec = spec;
+      this.connectionName = connectionName;
     }
 
     /**
      * Performs a deep copy on <i>other</i>.
      */
     public newCuratorProjection_args(newCuratorProjection_args other) {
-      if (other.isSetSpec()) {
-        this.spec = new CuratorProjectionSpec(other.spec);
+      if (other.isSetConnectionName()) {
+        this.connectionName = other.connectionName;
       }
     }
 
@@ -4051,40 +4051,40 @@ public class CuratorService {
 
     @Override
     public void clear() {
-      this.spec = null;
+      this.connectionName = null;
     }
 
-    public CuratorProjectionSpec getSpec() {
-      return this.spec;
+    public String getConnectionName() {
+      return this.connectionName;
     }
 
-    public newCuratorProjection_args setSpec(CuratorProjectionSpec spec) {
-      this.spec = spec;
+    public newCuratorProjection_args setConnectionName(String connectionName) {
+      this.connectionName = connectionName;
       return this;
     }
 
-    public void unsetSpec() {
-      this.spec = null;
+    public void unsetConnectionName() {
+      this.connectionName = null;
     }
 
-    /** Returns true if field spec is set (has been assigned a value) and false otherwise */
-    public boolean isSetSpec() {
-      return this.spec != null;
+    /** Returns true if field connectionName is set (has been assigned a value) and false otherwise */
+    public boolean isSetConnectionName() {
+      return this.connectionName != null;
     }
 
-    public void setSpecIsSet(boolean value) {
+    public void setConnectionNameIsSet(boolean value) {
       if (!value) {
-        this.spec = null;
+        this.connectionName = null;
       }
     }
 
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
-      case SPEC:
+      case CONNECTION_NAME:
         if (value == null) {
-          unsetSpec();
+          unsetConnectionName();
         } else {
-          setSpec((CuratorProjectionSpec)value);
+          setConnectionName((String)value);
         }
         break;
 
@@ -4093,8 +4093,8 @@ public class CuratorService {
 
     public Object getFieldValue(_Fields field) {
       switch (field) {
-      case SPEC:
-        return getSpec();
+      case CONNECTION_NAME:
+        return getConnectionName();
 
       }
       throw new IllegalStateException();
@@ -4107,8 +4107,8 @@ public class CuratorService {
       }
 
       switch (field) {
-      case SPEC:
-        return isSetSpec();
+      case CONNECTION_NAME:
+        return isSetConnectionName();
       }
       throw new IllegalStateException();
     }
@@ -4126,12 +4126,12 @@ public class CuratorService {
       if (that == null)
         return false;
 
-      boolean this_present_spec = true && this.isSetSpec();
-      boolean that_present_spec = true && that.isSetSpec();
-      if (this_present_spec || that_present_spec) {
-        if (!(this_present_spec && that_present_spec))
+      boolean this_present_connectionName = true && this.isSetConnectionName();
+      boolean that_present_connectionName = true && that.isSetConnectionName();
+      if (this_present_connectionName || that_present_connectionName) {
+        if (!(this_present_connectionName && that_present_connectionName))
           return false;
-        if (!this.spec.equals(that.spec))
+        if (!this.connectionName.equals(that.connectionName))
           return false;
       }
 
@@ -4151,12 +4151,12 @@ public class CuratorService {
 
       int lastComparison = 0;
 
-      lastComparison = Boolean.valueOf(isSetSpec()).compareTo(other.isSetSpec());
+      lastComparison = Boolean.valueOf(isSetConnectionName()).compareTo(other.isSetConnectionName());
       if (lastComparison != 0) {
         return lastComparison;
       }
-      if (isSetSpec()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.spec, other.spec);
+      if (isSetConnectionName()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.connectionName, other.connectionName);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -4181,11 +4181,11 @@ public class CuratorService {
       StringBuilder sb = new StringBuilder("newCuratorProjection_args(");
       boolean first = true;
 
-      sb.append("spec:");
-      if (this.spec == null) {
+      sb.append("connectionName:");
+      if (this.connectionName == null) {
         sb.append("null");
       } else {
-        sb.append(this.spec);
+        sb.append(this.connectionName);
       }
       first = false;
       sb.append(")");
@@ -4195,9 +4195,6 @@ public class CuratorService {
     public void validate() throws org.apache.thrift.TException {
       // check for required fields
       // check for sub-struct validity
-      if (spec != null) {
-        spec.validate();
-      }
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -4234,11 +4231,10 @@ public class CuratorService {
             break;
           }
           switch (schemeField.id) {
-            case 1: // SPEC
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.spec = new CuratorProjectionSpec();
-                struct.spec.read(iprot);
-                struct.setSpecIsSet(true);
+            case 1: // CONNECTION_NAME
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.connectionName = iprot.readString();
+                struct.setConnectionNameIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
@@ -4258,9 +4254,9 @@ public class CuratorService {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
-        if (struct.spec != null) {
-          oprot.writeFieldBegin(SPEC_FIELD_DESC);
-          struct.spec.write(oprot);
+        if (struct.connectionName != null) {
+          oprot.writeFieldBegin(CONNECTION_NAME_FIELD_DESC);
+          oprot.writeString(struct.connectionName);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -4281,12 +4277,12 @@ public class CuratorService {
       public void write(org.apache.thrift.protocol.TProtocol prot, newCuratorProjection_args struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
-        if (struct.isSetSpec()) {
+        if (struct.isSetConnectionName()) {
           optionals.set(0);
         }
         oprot.writeBitSet(optionals, 1);
-        if (struct.isSetSpec()) {
-          struct.spec.write(oprot);
+        if (struct.isSetConnectionName()) {
+          oprot.writeString(struct.connectionName);
         }
       }
 
@@ -4295,9 +4291,8 @@ public class CuratorService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.spec = new CuratorProjectionSpec();
-          struct.spec.read(iprot);
-          struct.setSpecIsSet(true);
+          struct.connectionName = iprot.readString();
+          struct.setConnectionNameIsSet(true);
         }
       }
     }

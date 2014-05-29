@@ -33,9 +33,6 @@ struct CuratorProjection {
   1: string id;
 }
 
-struct CuratorProjectionSpec {
-}
-
 struct GenericProjection {
   1: string id;
 }
@@ -88,7 +85,7 @@ service CuratorService {
   void closeCuratorProjection(1: CuratorProjection projection);
   bool closeGenericProjection(1: CuratorProjection curatorProjection, 2: GenericProjection genericProjection);
   string create(1: CuratorProjection projection, 2: CreateSpec createSpec);
-  CuratorProjection newCuratorProjection(1: CuratorProjectionSpec spec);
+  CuratorProjection newCuratorProjection(1: string connectionName);
 }
 
 service EventService {

@@ -22,7 +22,6 @@ import org.apache.curator.generated.CreateSpec;
 import org.apache.curator.generated.CuratorEvent;
 import org.apache.curator.generated.CuratorEventType;
 import org.apache.curator.generated.CuratorProjection;
-import org.apache.curator.generated.CuratorProjectionSpec;
 import org.apache.curator.generated.CuratorService;
 import org.apache.curator.generated.EventService;
 import org.apache.curator.generated.GenericProjection;
@@ -49,7 +48,7 @@ public class TestClient
         TProtocol eventProtocol = new TBinaryProtocol(eventTransport);
         final EventService.Client serviceClient = new EventService.Client(eventProtocol);
 
-        final CuratorProjection curatorProjection = client.newCuratorProjection(new CuratorProjectionSpec());
+        final CuratorProjection curatorProjection = client.newCuratorProjection("test");
 
         Executors.newSingleThreadExecutor().submit
         (

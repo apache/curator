@@ -71,7 +71,7 @@ public class CuratorProjectionServer
         }
         else
         {
-            System.out.println("First argument is not a file. Treating the command line as a json object");
+            System.out.println("First argument is not a file. Treating the command line as a json/yaml object");
             configurationSource = args[0];
         }
 
