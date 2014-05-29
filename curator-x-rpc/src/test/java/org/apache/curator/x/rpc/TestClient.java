@@ -18,15 +18,7 @@
  */
 package org.apache.curator.x.rpc;
 
-import org.apache.curator.generated.CreateSpec;
-import org.apache.curator.generated.CuratorEvent;
-import org.apache.curator.generated.CuratorProjection;
-import org.apache.curator.generated.CuratorService;
-import org.apache.curator.generated.DeleteSpec;
-import org.apache.curator.generated.EventService;
-import org.apache.curator.generated.ExistsSpec;
-import org.apache.curator.generated.GenericProjection;
-import org.apache.curator.generated.GetDataSpec;
+import org.apache.curator.generated.*;
 import org.apache.curator.test.TestingServer;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -82,7 +74,7 @@ public class TestClient
         createSpec.creatingParentsIfNeeded = true;
         createSpec.asyncContext = "foo";
         createSpec.data = ByteBuffer.wrap("hey".getBytes());
-        String path = client.createNode(curatorProjection, createSpec);
+        OptionalPath path = client.createNode(curatorProjection, createSpec);
         System.out.println("Path: " + path);
 
         GenericProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);

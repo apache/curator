@@ -54,6 +54,10 @@ struct Version {
   1: i32 version;
 }
 
+struct OptionalPath {
+  1: string path;
+}
+
 struct id {
   1: string scheme;
   2: string id;
@@ -122,7 +126,7 @@ service CuratorService {
   GenericProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs);
   void closeCuratorProjection(1: CuratorProjection projection);
   bool closeGenericProjection(1: CuratorProjection curatorProjection, 2: GenericProjection genericProjection);
-  string createNode(1: CuratorProjection projection, 2: CreateSpec spec);
+  OptionalPath createNode(1: CuratorProjection projection, 2: CreateSpec spec);
   void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec);
   OptionalStat exists(1: CuratorProjection projection, 2: ExistsSpec spec);
   binary getData(1: CuratorProjection projection, 2: GetDataSpec spec);

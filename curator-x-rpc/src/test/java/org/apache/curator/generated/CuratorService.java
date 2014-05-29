@@ -42,7 +42,7 @@ public class CuratorService {
 
     public boolean closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection) throws org.apache.thrift.TException;
 
-    public String createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException;
+    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException;
 
     public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws org.apache.thrift.TException;
 
@@ -167,7 +167,7 @@ public class CuratorService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "closeGenericProjection failed: unknown result");
     }
 
-    public String createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
+    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
     {
       send_createNode(projection, spec);
       return recv_createNode();
@@ -181,7 +181,7 @@ public class CuratorService {
       sendBase("createNode", args);
     }
 
-    public String recv_createNode() throws org.apache.thrift.TException
+    public OptionalPath recv_createNode() throws org.apache.thrift.TException
     {
       createNode_result result = new createNode_result();
       receiveBase(result, "createNode");
@@ -455,7 +455,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public String getResult() throws org.apache.thrift.TException {
+      public OptionalPath getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1021,7 +1021,7 @@ public class CuratorService {
       }
     }
 
-    public static class createNode<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, createNode_args, String> {
+    public static class createNode<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, createNode_args, OptionalPath> {
       public createNode() {
         super("createNode");
       }
@@ -1030,10 +1030,10 @@ public class CuratorService {
         return new createNode_args();
       }
 
-      public AsyncMethodCallback<String> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+      public AsyncMethodCallback<OptionalPath> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new AsyncMethodCallback<String>() { 
-          public void onComplete(String o) {
+        return new AsyncMethodCallback<OptionalPath>() { 
+          public void onComplete(OptionalPath o) {
             createNode_result result = new createNode_result();
             result.success = o;
             try {
@@ -1067,7 +1067,7 @@ public class CuratorService {
         return false;
       }
 
-      public void start(I iface, createNode_args args, org.apache.thrift.async.AsyncMethodCallback<String> resultHandler) throws TException {
+      public void start(I iface, createNode_args args, org.apache.thrift.async.AsyncMethodCallback<OptionalPath> resultHandler) throws TException {
         iface.createNode(args.projection, args.spec,resultHandler);
       }
     }
@@ -4134,7 +4134,7 @@ public class CuratorService {
   public static class createNode_result implements org.apache.thrift.TBase<createNode_result, createNode_result._Fields>, java.io.Serializable, Cloneable, Comparable<createNode_result>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("createNode_result");
 
-    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRING, (short)0);
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -4142,7 +4142,7 @@ public class CuratorService {
       schemes.put(TupleScheme.class, new createNode_resultTupleSchemeFactory());
     }
 
-    public String success; // required
+    public OptionalPath success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -4207,7 +4207,7 @@ public class CuratorService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, OptionalPath.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(createNode_result.class, metaDataMap);
     }
@@ -4216,7 +4216,7 @@ public class CuratorService {
     }
 
     public createNode_result(
-      String success)
+      OptionalPath success)
     {
       this();
       this.success = success;
@@ -4227,7 +4227,7 @@ public class CuratorService {
      */
     public createNode_result(createNode_result other) {
       if (other.isSetSuccess()) {
-        this.success = other.success;
+        this.success = new OptionalPath(other.success);
       }
     }
 
@@ -4240,11 +4240,11 @@ public class CuratorService {
       this.success = null;
     }
 
-    public String getSuccess() {
+    public OptionalPath getSuccess() {
       return this.success;
     }
 
-    public createNode_result setSuccess(String success) {
+    public createNode_result setSuccess(OptionalPath success) {
       this.success = success;
       return this;
     }
@@ -4270,7 +4270,7 @@ public class CuratorService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((String)value);
+          setSuccess((OptionalPath)value);
         }
         break;
 
@@ -4381,6 +4381,9 @@ public class CuratorService {
     public void validate() throws org.apache.thrift.TException {
       // check for required fields
       // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -4418,8 +4421,9 @@ public class CuratorService {
           }
           switch (schemeField.id) {
             case 0: // SUCCESS
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-                struct.success = iprot.readString();
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new OptionalPath();
+                struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -4442,7 +4446,7 @@ public class CuratorService {
         oprot.writeStructBegin(STRUCT_DESC);
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-          oprot.writeString(struct.success);
+          struct.success.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -4468,7 +4472,7 @@ public class CuratorService {
         }
         oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
-          oprot.writeString(struct.success);
+          struct.success.write(oprot);
         }
       }
 
@@ -4477,7 +4481,8 @@ public class CuratorService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = iprot.readString();
+          struct.success = new OptionalPath();
+          struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }
       }
