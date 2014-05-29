@@ -18,7 +18,10 @@
  */
 package org.apache.curator.x.rpc.idl.projection;
 
-public enum CreateMode
+import com.facebook.swift.codec.ThriftEnum;
+
+@ThriftEnum("CreateMode")
+public enum RpcCreateMode
 {
     PERSISTENT,
     PERSISTENT_SEQUENTIAL,

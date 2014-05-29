@@ -20,7 +20,6 @@ package org.apache.curator.x.rpc.idl.projection;
 
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
-import org.apache.curator.framework.api.CreateBuilder;
 
 @ThriftStruct
 public class CreateSpec
@@ -32,7 +31,7 @@ public class CreateSpec
     public byte[] data;
 
     @ThriftField(3)
-    public CreateMode mode;
+    public RpcCreateMode mode;
 
     @ThriftField(4)
     public String asyncContext;
@@ -50,7 +49,7 @@ public class CreateSpec
     {
     }
 
-    public CreateSpec(String path, byte[] data, CreateMode mode, String asyncContext, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection)
+    public CreateSpec(String path, byte[] data, RpcCreateMode mode, String asyncContext, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection)
     {
         this.path = path;
         this.data = data;

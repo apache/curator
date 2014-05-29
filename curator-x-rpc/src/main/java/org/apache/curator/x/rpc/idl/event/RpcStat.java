@@ -16,10 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.rpc.idl.event;
 
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
+import org.apache.zookeeper.data.Stat;
 
 @ThriftStruct("Stat")
 public class RpcStat
@@ -59,6 +61,21 @@ public class RpcStat
 
     public RpcStat()
     {
+    }
+
+    public RpcStat(Stat stat)
+    {
+        czxid = stat.getCzxid();
+        mzxid = stat.getMzxid();
+        ctime = stat.getCtime();
+        mtime = stat.getMtime();
+        version = stat.getVersion();
+        cversion = stat.getCversion();
+        aversion = stat.getAversion();
+        ephemeralOwner = stat.getEphemeralOwner();
+        dataLength = stat.getDataLength();
+        numChildren = stat.getNumChildren();
+        pzxid = stat.getPzxid();
     }
 
     public RpcStat(long czxid, long mzxid, long ctime, long mtime, int version, int cversion, int aversion, long ephemeralOwner, int dataLength, int numChildren, long pzxid)

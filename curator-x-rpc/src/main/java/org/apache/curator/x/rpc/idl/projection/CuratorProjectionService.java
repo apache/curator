@@ -49,6 +49,7 @@ import org.apache.curator.x.rpc.idl.event.OptionalRpcStat;
 import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
 import org.apache.curator.x.rpc.idl.event.RpcParticipant;
 import org.apache.curator.x.rpc.idl.event.RpcStat;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +122,7 @@ public class CuratorProjectionService
         }
         if ( spec.mode != null )
         {
-            builder = castBuilder(builder, CreateModable.class).withMode(getRealMode(spec.mode));
+            builder = castBuilder(builder, CreateModable.class).withMode(CreateMode.valueOf(spec.mode.name()));
         }
 
         if ( spec.asyncContext != null )
@@ -356,18 +357,14 @@ public class CuratorProjectionService
 
         LeaderLatch leaderLatch = getThis(entry, leaderProjection.projection.id, LeaderLatch.class);
         Collection<Participant> participants = leaderLatch.getParticipants();
-        return Lists.transform
-        (
-            Lists.newArrayList(participants),
-            new Function<Participant, RpcParticipant>()
+        return Lists.transform(Lists.newArrayList(participants), new Function<Participant, RpcParticipant>()
             {
                 @Override
                 public RpcParticipant apply(Participant participant)
                 {
                     return new RpcParticipant(participant.getId(), participant.isLeader());
                 }
-            }
-        );
+            });
     }
 
     @ThriftMethod
@@ -385,28 +382,7 @@ public class CuratorProjectionService
         CuratorEntry entry = getEntry(projection);
 
         PathChildrenCache cache = new PathChildrenCache(entry.getClient(), path, cacheData, dataIsCompressed, ThreadUtils.newThreadFactory("PathChildrenCacheResource-%d"));
-        PathChildrenCache.StartMode actualStartMode = PathChildrenCache.StartMode.NORMAL;
-        switch ( startMode )
-        {
-            case NORMAL:
-            {
-                actualStartMode = PathChildrenCache.StartMode.NORMAL;
-                break;
-            }
-
-            case BUILD_INITIAL_CACHE:
-            {
-                actualStartMode = PathChildrenCache.StartMode.BUILD_INITIAL_CACHE;
-                break;
-            }
-
-            case POST_INITIALIZED_EVENT:
-            {
-                actualStartMode = PathChildrenCache.StartMode.POST_INITIALIZED_EVENT;
-                break;
-            }
-        }
-        cache.start(actualStartMode);
+        cache.start(PathChildrenCache.StartMode.valueOf(startMode.name()));
 
         Closer<PathChildrenCache> closer = new Closer<PathChildrenCache>()
         {
@@ -446,33 +422,6 @@ public class CuratorProjectionService
         {
             entry.addEvent(event);
         }
-    }
-
-    private org.apache.zookeeper.CreateMode getRealMode(CreateMode mode)
-    {
-        switch ( mode )
-        {
-            case PERSISTENT:
-            {
-                return org.apache.zookeeper.CreateMode.PERSISTENT;
-            }
-
-            case PERSISTENT_SEQUENTIAL:
-            {
-                return org.apache.zookeeper.CreateMode.PERSISTENT_SEQUENTIAL;
-            }
-
-            case EPHEMERAL:
-            {
-                return org.apache.zookeeper.CreateMode.EPHEMERAL;
-            }
-
-            case EPHEMERAL_SEQUENTIAL:
-            {
-                return org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
-            }
-        }
-        throw new UnsupportedOperationException("Bad mode: " + mode.toString());
     }
 
     private CuratorEntry getEntry(CuratorProjection projection) throws Exception

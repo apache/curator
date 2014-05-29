@@ -20,6 +20,7 @@ package org.apache.curator.x.rpc.idl.event;
 
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
+import org.apache.zookeeper.WatchedEvent;
 
 @ThriftStruct("WatchedEvent")
 public class RpcWatchedEvent
@@ -35,6 +36,13 @@ public class RpcWatchedEvent
 
     public RpcWatchedEvent()
     {
+    }
+
+    public RpcWatchedEvent(WatchedEvent watchedEvent)
+    {
+        keeperState = RpcKeeperState.valueOf(watchedEvent.getState().name());
+        eventType = RpcEventType.valueOf(watchedEvent.getType().name());
+        path = watchedEvent.getPath();
     }
 
     public RpcWatchedEvent(RpcKeeperState keeperState, RpcEventType eventType, String path)

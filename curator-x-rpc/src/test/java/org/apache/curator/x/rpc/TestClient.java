@@ -19,20 +19,18 @@
 package org.apache.curator.x.rpc;
 
 import org.apache.curator.generated.*;
-import org.apache.curator.test.TestingServer;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 public class TestClient
 {
     public static void main(String[] args) throws Exception
     {
-        new TestingServer(2181);
-
         TSocket clientTransport = new TSocket("localhost", 8899);
         clientTransport.open();
         TProtocol clientProtocol = new TBinaryProtocol(clientTransport);
@@ -103,6 +101,13 @@ public class TestClient
 
         LeaderResult leader = client.startLeaderSelector(curatorProjection, "/leader", "me", 10000);
         System.out.println("Has Leader: " + leader.hasLeadership);
-        client.closeGenericProjection(curatorProjection, leader.projection);
+
+        List<Participant> leaderParticipants = client.getLeaderParticipants(curatorProjection, leader.projection);
+        System.out.println("Participants: " + leaderParticipants);
+
+        boolean isLeader = client.isLeader(curatorProjection, leader.projection);
+        System.out.println("isLeader: " + isLeader);
+
+        client.closeGenericProjection(curatorProjection, leader.projection.projection);
     }
 }

@@ -3,12 +3,12 @@ namespace cpp org.apache.curator.generated
 namespace java org.apache.curator.generated
 
 
-enum CreateMode {
-  PERSISTENT, PERSISTENT_SEQUENTIAL, EPHEMERAL, EPHEMERAL_SEQUENTIAL
-}
-
 enum PathChildrenCacheStartMode {
   NORMAL, BUILD_INITIAL_CACHE, POST_INITIALIZED_EVENT
+}
+
+enum CreateMode {
+  PERSISTENT, PERSISTENT_SEQUENTIAL, EPHEMERAL, EPHEMERAL_SEQUENTIAL
 }
 
 enum CuratorEventType {
@@ -23,14 +23,8 @@ enum KeeperState {
   Unknown, Disconnected, NoSyncConnected, SyncConnected, AuthFailed, ConnectedReadOnly, SaslAuthenticated, Expired
 }
 
-struct CreateSpec {
-  1: string path;
-  2: binary data;
-  3: CreateMode mode;
-  4: string asyncContext;
-  5: bool compressed;
-  6: bool creatingParentsIfNeeded;
-  7: bool withProtection;
+enum PathChildrenCacheEventType {
+  CHILD_ADDED, CHILD_UPDATED, CHILD_REMOVED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, INITIALIZED
 }
 
 struct CuratorProjection {
@@ -121,6 +115,16 @@ struct WatchedEvent {
   3: string path;
 }
 
+struct CreateSpec {
+  1: string path;
+  2: binary data;
+  3: CreateMode mode;
+  4: string asyncContext;
+  5: bool compressed;
+  6: bool creatingParentsIfNeeded;
+  7: bool withProtection;
+}
+
 struct DeleteSpec {
   1: string path;
   2: bool guaranteed;
@@ -147,6 +151,12 @@ struct Acl {
   2: Id id;
 }
 
+struct ChildData {
+  1: string path;
+  2: Stat stat;
+  3: binary data;
+}
+
 struct CuratorEvent {
   2: CuratorEventType type;
   3: i32 resultCode;
@@ -159,6 +169,11 @@ struct CuratorEvent {
   10: list<Acl> aclList;
   11: WatchedEvent watchedEvent;
   12: LeaderEvent leaderEvent;
+}
+
+struct PathChildrenCacheEvent {
+  1: PathChildrenCacheEventType type;
+  2: ChildData data;
 }
 
 service CuratorService {
