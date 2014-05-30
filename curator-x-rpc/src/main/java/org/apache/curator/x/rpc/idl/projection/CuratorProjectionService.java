@@ -36,6 +36,8 @@ import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.leader.Participant;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2;
+import org.apache.curator.framework.recipes.locks.Lease;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -268,22 +270,22 @@ public class CuratorProjectionService
     public LockProjection acquireLock(CuratorProjection projection, final String path, int maxWaitMs) throws Exception
     {
         CuratorEntry entry = getEntry(projection);
-        InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(entry.getClient(), path);
+        final InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(entry.getClient(), path);
         if ( !lock.acquire(maxWaitMs, TimeUnit.MILLISECONDS) )
         {
             return new LockProjection();
         }
 
-        Closer<InterProcessSemaphoreMutex> closer = new Closer<InterProcessSemaphoreMutex>()
+        Closer closer = new Closer()
         {
             @Override
-            public void close(InterProcessSemaphoreMutex mutex)
+            public void close()
             {
-                if ( mutex.isAcquiredInThisProcess() )
+                if ( lock.isAcquiredInThisProcess() )
                 {
                     try
                     {
-                        mutex.release();
+                        lock.release();
                     }
                     catch ( Exception e )
                     {
@@ -301,17 +303,17 @@ public class CuratorProjectionService
     {
         CuratorEntry entry = getEntry(projection);
 
-        LeaderLatch leaderLatch = new LeaderLatch(entry.getClient(), path, participantId);
+        final LeaderLatch leaderLatch = new LeaderLatch(entry.getClient(), path, participantId);
         leaderLatch.start();
 
-        Closer<LeaderLatch> closer = new Closer<LeaderLatch>()
+        Closer closer = new Closer()
         {
             @Override
-            public void close(LeaderLatch latch)
+            public void close()
             {
                 try
                 {
-                    latch.close();
+                    leaderLatch.close();
                 }
                 catch ( IOException e )
                 {
@@ -376,13 +378,13 @@ public class CuratorProjectionService
     {
         final CuratorEntry entry = getEntry(projection);
 
-        PathChildrenCache cache = new PathChildrenCache(entry.getClient(), path, cacheData, dataIsCompressed, ThreadUtils.newThreadFactory("PathChildrenCacheResource"));
+        final PathChildrenCache cache = new PathChildrenCache(entry.getClient(), path, cacheData, dataIsCompressed, ThreadUtils.newThreadFactory("PathChildrenCacheResource"));
         cache.start(PathChildrenCache.StartMode.valueOf(startMode.name()));
 
-        Closer<PathChildrenCache> closer = new Closer<PathChildrenCache>()
+        Closer closer = new Closer()
         {
             @Override
-            public void close(PathChildrenCache cache)
+            public void close()
             {
                 try
                 {
@@ -446,10 +448,10 @@ public class CuratorProjectionService
         final NodeCache cache = new NodeCache(entry.getClient(), path, dataIsCompressed);
         cache.start(buildInitial);
 
-        Closer<NodeCache> closer = new Closer<NodeCache>()
+        Closer closer = new Closer()
         {
             @Override
-            public void close(NodeCache cache)
+            public void close()
             {
                 try
                 {
@@ -477,17 +479,26 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
+    public RpcChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws Exception
+    {
+        CuratorEntry entry = getEntry(projection);
+
+        NodeCache nodeCache = getThing(entry, cacheProjection.id, NodeCache.class);
+        return new RpcChildData(nodeCache.getCurrentData());
+    }
+
+    @ThriftMethod
     public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, final String path, byte[] data, RpcPersistentEphemeralNodeMode mode) throws Exception
     {
-        final CuratorEntry entry = getEntry(projection);
+        CuratorEntry entry = getEntry(projection);
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(entry.getClient(), PersistentEphemeralNode.Mode.valueOf(mode.name()), path, data);
+        final PersistentEphemeralNode node = new PersistentEphemeralNode(entry.getClient(), PersistentEphemeralNode.Mode.valueOf(mode.name()), path, data);
         node.start();
 
-        Closer<PersistentEphemeralNode> closer = new Closer<PersistentEphemeralNode>()
+        Closer closer = new Closer()
         {
             @Override
-            public void close(PersistentEphemeralNode node)
+            public void close()
             {
                 try
                 {
@@ -504,12 +515,38 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public RpcChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws Exception
+    public List<LeaseProjection> startSemaphore(CuratorProjection projection, final String path, int acquireQty, int maxWaitMs, int maxLeases) throws Exception
     {
-        final CuratorEntry entry = getEntry(projection);
+        CuratorEntry entry = getEntry(projection);
 
-        NodeCache nodeCache = getThing(entry, cacheProjection.id, NodeCache.class);
-        return new RpcChildData(nodeCache.getCurrentData());
+        final InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(entry.getClient(), path, maxLeases);
+        final Collection<Lease> leases = semaphore.acquire(acquireQty, maxWaitMs, TimeUnit.MILLISECONDS);
+        if ( leases == null )
+        {
+            return Lists.newArrayList();
+        }
+
+        List<LeaseProjection> leaseProjections = Lists.newArrayList();
+        for ( final Lease lease : leases )
+        {
+            Closer closer = new Closer()
+            {
+                @Override
+                public void close()
+                {
+                    try
+                    {
+                        semaphore.returnLease(lease);
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error("Could not release semaphore leases for path: " + path, e);
+                    }
+                }
+            };
+            leaseProjections.add(new LeaseProjection(entry.addThing(lease, closer)));
+        }
+        return leaseProjections;
     }
 
     public void addEvent(CuratorProjection projection, RpcCuratorEvent event)

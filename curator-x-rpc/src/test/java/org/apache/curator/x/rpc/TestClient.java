@@ -132,5 +132,12 @@ public class TestClient
         OptionalStat nodeExists = client.exists(curatorProjection, existsSpec);
         System.out.println("nodeExists: " + nodeExists);
         client.closeGenericProjection(curatorProjection, node.id);
+
+        List<LeaseProjection> leaseProjections = client.startSemaphore(curatorProjection, "/semi", 3, 1000, 10);
+        System.out.println("leaseProjections: " + leaseProjections);
+        for ( LeaseProjection leaseProjection : leaseProjections )
+        {
+            client.closeGenericProjection(curatorProjection, leaseProjection.id);
+        }
     }
 }

@@ -1,6 +1,6 @@
 package org.apache.curator.x.rpc.connections;
 
-public interface Closer<T>
+public interface Closer
 {
-    public void close(T thing);
+    public void close();
 }

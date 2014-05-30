@@ -56,7 +56,7 @@ public class CuratorEntry implements Closeable
                 {
                     log.debug(String.format("Closing left over thing. Type: %s - Id: %s", entry.thing.getClass(), mapEntry.getKey()));
                     //noinspection unchecked
-                    entry.closer.close(entry.thing);    // lack of generics is safe because addThing() is type-safe
+                    entry.closer.close();    // lack of generics is safe because addThing() is type-safe
                 }
             }
             things.clear();
@@ -88,7 +88,7 @@ public class CuratorEntry implements Closeable
         return (state.get() == State.OPEN) ? client : null;
     }
 
-    public <T> String addThing(T thing, Closer<T> closer)
+    public String addThing(Object thing, Closer closer)
     {
         return addThing(newId(), thing, closer);
     }
@@ -110,12 +110,12 @@ public class CuratorEntry implements Closeable
         if ( entry != null )
         {
             //noinspection unchecked
-            entry.closer.close(entry.thing);
+            entry.closer.close();
         }
         return false;
     }
 
-    private <T> String addThing(String id, T thing, Closer<T> closer)
+    private <T> String addThing(String id, T thing, Closer closer)
     {
         things.put(id, new Entry(thing, closer));
         return id;

@@ -62,6 +62,10 @@ struct LeaderProjection {
   1: string id;
 }
 
+struct LeaseProjection {
+  1: string id;
+}
+
 struct LockProjection {
   1: string id;
 }
@@ -214,6 +218,7 @@ service CuratorService {
   NodeCacheProjection startNodeCache(1: CuratorProjection projection, 2: string path, 3: bool dataIsCompressed, 4: bool buildInitial);
   PathChildrenCacheProjection startPathChildrenCache(1: CuratorProjection projection, 2: string path, 3: bool cacheData, 4: bool dataIsCompressed, 5: PathChildrenCacheStartMode startMode);
   PersistentEphemeralNodeProjection startPersistentEphemeralNode(1: CuratorProjection projection, 2: string path, 3: binary data, 4: PersistentEphemeralNodeMode mode);
+  list<LeaseProjection> startSemaphore(1: CuratorProjection projection, 2: string path, 3: i32 acquireQty, 4: i32 maxWaitMs, 5: i32 maxLeases);
 }
 
 service EventService {
