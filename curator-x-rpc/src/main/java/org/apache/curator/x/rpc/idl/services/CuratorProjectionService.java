@@ -22,6 +22,7 @@ package org.apache.curator.x.rpc.idl.services;
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
@@ -422,7 +423,7 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public List<RpcParticipant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws RpcException
+    public Collection<RpcParticipant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws RpcException
     {
         try
         {
@@ -430,14 +431,18 @@ public class CuratorProjectionService
 
             LeaderLatch leaderLatch = CuratorEntry.mustGetThing(entry, leaderProjection.id, LeaderLatch.class);
             Collection<Participant> participants = leaderLatch.getParticipants();
-            return Lists.transform(Lists.newArrayList(participants), new Function<Participant, RpcParticipant>()
+            return Collections2.transform
+            (
+                participants,
+                new Function<Participant, RpcParticipant>()
                 {
                     @Override
                     public RpcParticipant apply(Participant participant)
                     {
                         return new RpcParticipant(participant.getId(), participant.isLeader());
                     }
-                });
+                }
+            );
         }
         catch ( Exception e )
         {

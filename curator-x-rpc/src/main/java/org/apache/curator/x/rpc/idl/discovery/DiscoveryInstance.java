@@ -40,15 +40,18 @@ public class DiscoveryInstance
 
     public DiscoveryInstance(ServiceInstance<byte[]> instance)
     {
-        this.name = instance.getName();
-        this.id = instance.getId();
-        this.address = instance.getAddress();
-        this.port = instance.getPort();
-        this.sslPort = instance.getSslPort();
-        this.payload = instance.getPayload();
-        this.registrationTimeUTC = instance.getRegistrationTimeUTC();
-        this.serviceType = DiscoveryInstanceType.valueOf(instance.getServiceType().name());
-        this.uriSpec = instance.buildUriSpec();
+        if ( instance != null )
+        {
+            this.name = instance.getName();
+            this.id = instance.getId();
+            this.address = instance.getAddress();
+            this.port = instance.getPort();
+            this.sslPort = instance.getSslPort();
+            this.payload = instance.getPayload();
+            this.registrationTimeUTC = instance.getRegistrationTimeUTC();
+            this.serviceType = DiscoveryInstanceType.valueOf(instance.getServiceType().name());
+            this.uriSpec = instance.buildUriSpec();
+        }
     }
 
     public DiscoveryInstance(String name, String id, String address, Integer port, Integer sslPort, byte[] payload, long registrationTimeUTC, DiscoveryInstanceType serviceType, String uriSpec)

@@ -278,6 +278,9 @@ service DiscoveryService {
 }
 
 service DiscoveryServiceLowLevel {
+  DiscoveryInstance queryForInstance(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: string name, 4: string id) throws (1: CuratorException ex1);
+  list<DiscoveryInstance> queryForInstances(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: string name) throws (1: CuratorException ex1);
+  list<string> queryForNames(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection) throws (1: CuratorException ex1);
   void registerInstance(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: DiscoveryInstance instance) throws (1: CuratorException ex1);
   void unregisterInstance(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: DiscoveryInstance instance) throws (1: CuratorException ex1);
   void updateInstance(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: DiscoveryInstance instance) throws (1: CuratorException ex1);

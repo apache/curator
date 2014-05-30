@@ -3,6 +3,7 @@ package org.apache.curator.x.rpc.idl.discovery;
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.ProviderStrategy;
@@ -21,6 +22,7 @@ import org.apache.curator.x.rpc.idl.structs.CuratorProjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -159,15 +161,15 @@ public class DiscoveryService
     }
 
     @ThriftMethod
-    public List<DiscoveryInstance> getAllInstances(CuratorProjection projection, DiscoveryProviderProjection providerProjection) throws RpcException
+    public Collection<DiscoveryInstance> getAllInstances(CuratorProjection projection, DiscoveryProviderProjection providerProjection) throws RpcException
     {
         CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
         @SuppressWarnings("unchecked")
         ServiceProvider<byte[]> serviceProvider = CuratorEntry.mustGetThing(entry, providerProjection.id, ServiceProvider.class);
         try
         {
-            List<ServiceInstance<byte[]>> allInstances = Lists.newArrayList(serviceProvider.getAllInstances());
-            return Lists.transform
+            Collection<ServiceInstance<byte[]>> allInstances = serviceProvider.getAllInstances();
+            return Collections2.transform
             (
                 allInstances,
                 new Function<ServiceInstance<byte[]>, DiscoveryInstance>()
@@ -177,8 +179,7 @@ public class DiscoveryService
                     {
                         return new DiscoveryInstance(instance);
                     }
-                }
-            );
+                });
         }
         catch ( Exception e )
         {
