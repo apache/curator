@@ -31,22 +31,12 @@ RPC_PATH="$BASE_DIR/curator-x-rpc/target/classes"
 
 CLASSES=""
 
-PROJECTION_CLASSES=""
-for f in `ls -m1 $RPC_PATH/org/apache/curator/x/rpc/idl/projection/*.class | xargs -n 1 basename | sed s/\.[^\.]*$//`;
-    do
+for p in projection event; do
+    for f in `ls -m1 $RPC_PATH/org/apache/curator/x/rpc/idl/$p/*.class | xargs -n 1 basename | sed s/\.[^\.]*$//`; do
         if [[ $f != *[\$]* ]]; then
-            PROJECTION_CLASSES="$PROJECTION_CLASSES $f";
-            CLASSES="$CLASSES org.apache.curator.x.rpc.idl.projection.$f";
+            CLASSES="$CLASSES org.apache.curator.x.rpc.idl.$p.$f";
         fi;
-done;
-
-EVENT_CLASSES=""
-for f in `ls -m1 $RPC_PATH/org/apache/curator/x/rpc/idl/event/*.class | xargs -n 1 basename | sed s/\.[^\.]*$//`;
-    do
-        if [[ $f != *[\$]* ]]; then
-            EVENT_CLASSES="$EVENT_CLASSES $f";
-            CLASSES="$CLASSES org.apache.curator.x.rpc.idl.event.$f";
-        fi;
+    done;
 done;
 
 THRIFT_DIR="$BASE_DIR/curator-x-rpc/src/main/thrift"
@@ -56,10 +46,6 @@ PATHS="$PATHS:$BASE_DIR/curator-client/target/classes"
 PATHS="$PATHS:$BASE_DIR/curator-framework/target/classes"
 PATHS="$PATHS:$BASE_DIR/curator-recipes/target/classes"
 PATHS="$PATHS:$RPC_PATH"
-
-PACKAGE="org.apache.curator.x.rpc.idl"
-PROJECTION_PACKAGE="org.apache.curator.x.rpc.idl.projection"
-EVENT_PACKAGE="org.apache.curator.x.rpc.idl.event"
 
 java -cp $PATHS com.facebook.swift.generator.swift2thrift.Main \
     -allow_multiple_packages org.apache.curator \
