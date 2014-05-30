@@ -16,22 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.rpc.idl.structs;
+package org.apache.curator.x.rpc.idl.discovery;
 
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
 
 @ThriftStruct
-public class CuratorProjection
+public class DiscoveryProviderProjection
 {
     @ThriftField(1)
     public String id;
 
-    public CuratorProjection()
+    public DiscoveryProviderProjection()
     {
     }
 
-    public CuratorProjection(String id)
+    public DiscoveryProviderProjection(String id)
     {
         this.id = id;
     }

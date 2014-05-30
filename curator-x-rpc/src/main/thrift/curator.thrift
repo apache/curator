@@ -43,6 +43,14 @@ enum ZooKeeperExceptionType {
   SYSTEMERROR, RUNTIMEINCONSISTENCY, DATAINCONSISTENCY, CONNECTIONLOSS, MARSHALLINGERROR, UNIMPLEMENTED, OPERATIONTIMEOUT, BADARGUMENTS, APIERROR, NOAUTH, NOCHILDRENFOREPHEMERALS, INVALIDACL, AUTHFAILED, SESSIONEXPIRED, INVALIDCALLBACK, SESSIONMOVED, NOTREADONLY
 }
 
+enum DiscoveryInstanceType {
+  DYNAMIC, STATIC, PERMANENT
+}
+
+enum ProviderStrategyType {
+  RANDOM, STICKY_RANDOM, STICKY_ROUND_ROBIN, ROUND_ROBIN
+}
+
 struct CuratorProjection {
   1: string id;
 }
@@ -143,6 +151,14 @@ struct Version {
   1: i32 version;
 }
 
+struct DiscoveryProjection {
+  1: string id;
+}
+
+struct DiscoveryProviderProjection {
+  1: string id;
+}
+
 struct CreateSpec {
   1: string path;
   2: binary data;
@@ -198,6 +214,18 @@ exception CuratorException {
   4: string message;
 }
 
+struct DiscoveryInstance {
+  1: string name;
+  2: string id;
+  3: string address;
+  4: i32 port;
+  5: i32 sslPort;
+  6: binary payload;
+  7: i64 registrationTimeUTC;
+  8: DiscoveryInstanceType serviceType;
+  9: string uriSpec;
+}
+
 struct CuratorEvent {
   2: CuratorEventType type;
   3: i32 resultCode;
@@ -227,7 +255,7 @@ service CuratorService {
   list<ChildData> getPathChildrenCacheData(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection) throws (1: CuratorException ex1);
   ChildData getPathChildrenCacheDataForPath(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection, 3: string path) throws (1: CuratorException ex1);
   bool isLeader(1: CuratorProjection projection, 2: LeaderProjection leaderProjection) throws (1: CuratorException ex1);
-  CuratorProjection newCuratorProjection(1: string connectionName);
+  CuratorProjection newCuratorProjection(1: string connectionName) throws (1: CuratorException ex1);
   oneway void pingCuratorProjection(1: CuratorProjection projection);
   Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec) throws (1: CuratorException ex1);
   LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs) throws (1: CuratorException ex1);
@@ -239,4 +267,18 @@ service CuratorService {
 
 service EventService {
   CuratorEvent getNextEvent(1: CuratorProjection projection) throws (1: CuratorException ex1);
+}
+
+service DiscoveryService {
+  list<DiscoveryInstance> getAllInstances(1: CuratorProjection projection, 2: DiscoveryProviderProjection providerProjection) throws (1: CuratorException ex1);
+  DiscoveryInstance getInstance(1: CuratorProjection projection, 2: DiscoveryProviderProjection providerProjection) throws (1: CuratorException ex1);
+  void noteError(1: CuratorProjection projection, 2: DiscoveryProviderProjection providerProjection, 3: string instanceId) throws (1: CuratorException ex1);
+  DiscoveryProjection startDiscovery(1: CuratorProjection projection, 2: string basePath, 3: DiscoveryInstance yourInstance) throws (1: CuratorException ex1);
+  DiscoveryProviderProjection startProvider(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: string serviceName, 4: ProviderStrategyType providerStrategy, 5: i32 downTimeoutMs, 6: i32 downErrorThreshold) throws (1: CuratorException ex1);
+}
+
+service DiscoveryServiceLowLevel {
+  void registerInstance(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: DiscoveryInstance instance) throws (1: CuratorException ex1);
+  void unregisterInstance(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: DiscoveryInstance instance) throws (1: CuratorException ex1);
+  void updateInstance(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: DiscoveryInstance instance) throws (1: CuratorException ex1);
 }

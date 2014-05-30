@@ -31,7 +31,7 @@ RPC_PATH="$BASE_DIR/curator-x-rpc/target/classes"
 
 CLASSES=""
 
-for p in services structs exceptions; do
+for p in services structs exceptions discovery; do
     for f in `ls -m1 $RPC_PATH/org/apache/curator/x/rpc/idl/$p/*.class | xargs -n 1 basename | sed s/\.[^\.]*$//`; do
         if [[ $f != *[\$]* ]]; then
             CLASSES="$CLASSES org.apache.curator.x.rpc.idl.$p.$f";
@@ -45,6 +45,7 @@ PATHS="$1:$2"
 PATHS="$PATHS:$BASE_DIR/curator-client/target/classes"
 PATHS="$PATHS:$BASE_DIR/curator-framework/target/classes"
 PATHS="$PATHS:$BASE_DIR/curator-recipes/target/classes"
+PATHS="$PATHS:$BASE_DIR/curator-x-discovery/target/classes"
 PATHS="$PATHS:$RPC_PATH"
 
 java -cp $PATHS com.facebook.swift.generator.swift2thrift.Main \

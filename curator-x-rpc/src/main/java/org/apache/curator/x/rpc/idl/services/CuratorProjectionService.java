@@ -22,7 +22,6 @@ package org.apache.curator.x.rpc.idl.services;
 import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
@@ -429,7 +428,7 @@ public class CuratorProjectionService
         {
             CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
 
-            LeaderLatch leaderLatch = getThing(entry, leaderProjection.id, LeaderLatch.class);
+            LeaderLatch leaderLatch = CuratorEntry.mustGetThing(entry, leaderProjection.id, LeaderLatch.class);
             Collection<Participant> participants = leaderLatch.getParticipants();
             return Lists.transform(Lists.newArrayList(participants), new Function<Participant, RpcParticipant>()
                 {
@@ -453,7 +452,7 @@ public class CuratorProjectionService
         {
             CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
 
-            LeaderLatch leaderLatch = getThing(entry, leaderProjection.id, LeaderLatch.class);
+            LeaderLatch leaderLatch = CuratorEntry.mustGetThing(entry, leaderProjection.id, LeaderLatch.class);
             return leaderLatch.hasLeadership();
         }
         catch ( Exception e )
@@ -514,7 +513,7 @@ public class CuratorProjectionService
         {
             CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
 
-            PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.id, PathChildrenCache.class);
+            PathChildrenCache pathChildrenCache = CuratorEntry.mustGetThing(entry, cacheProjection.id, PathChildrenCache.class);
             return Lists.transform
             (
                 pathChildrenCache.getCurrentData(),
@@ -541,7 +540,7 @@ public class CuratorProjectionService
         {
             CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
 
-            PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.id, PathChildrenCache.class);
+            PathChildrenCache pathChildrenCache = CuratorEntry.mustGetThing(entry, cacheProjection.id, PathChildrenCache.class);
             return new RpcChildData(pathChildrenCache.getCurrentData(path));
         }
         catch ( Exception e )
@@ -602,7 +601,7 @@ public class CuratorProjectionService
         {
             CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
 
-            NodeCache nodeCache = getThing(entry, cacheProjection.id, NodeCache.class);
+            NodeCache nodeCache = CuratorEntry.mustGetThing(entry, cacheProjection.id, NodeCache.class);
             return new RpcChildData(nodeCache.getCurrentData());
         }
         catch ( Exception e )
@@ -703,12 +702,5 @@ public class CuratorProjectionService
             return clazz.cast(createBuilder);
         }
         throw new Exception("That operation is not available");
-    }
-
-    private <T> T getThing(CuratorEntry entry, String id, Class<T> clazz)
-    {
-        T thing = entry.getThing(id, clazz);
-        Preconditions.checkNotNull(thing, "No item of type " + clazz.getSimpleName() + " found with id " + id);
-        return thing;
     }
 }

@@ -1,5 +1,6 @@
 package org.apache.curator.x.rpc.connections;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
@@ -24,6 +25,13 @@ public class CuratorEntry implements Closeable
     private final BlockingQueue<RpcCuratorEvent> events = Queues.newLinkedBlockingQueue();
     private final AtomicReference<State> state = new AtomicReference<State>(State.OPEN);
     private final Map<String, Entry> things = Maps.newConcurrentMap();
+
+    public static <T> T mustGetThing(CuratorEntry entry, String id, Class<T> clazz)
+    {
+        T thing = entry.getThing(id, clazz);
+        Preconditions.checkNotNull(thing, "No item of type " + clazz.getSimpleName() + " found with id " + id);
+        return thing;
+    }
 
     private static class Entry
     {

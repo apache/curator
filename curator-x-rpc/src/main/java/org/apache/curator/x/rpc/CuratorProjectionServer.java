@@ -30,6 +30,8 @@ import com.google.common.io.Resources;
 import org.apache.curator.x.rpc.configuration.Configuration;
 import org.apache.curator.x.rpc.configuration.ConfigurationBuilder;
 import org.apache.curator.x.rpc.connections.ConnectionManager;
+import org.apache.curator.x.rpc.idl.discovery.DiscoveryService;
+import org.apache.curator.x.rpc.idl.discovery.DiscoveryServiceLowLevel;
 import org.apache.curator.x.rpc.idl.services.EventService;
 import org.apache.curator.x.rpc.idl.services.CuratorProjectionService;
 import org.slf4j.Logger;
@@ -97,8 +99,10 @@ public class CuratorProjectionServer
         this.configuration = configuration;
         connectionManager = new ConnectionManager(configuration.getConnections(), configuration.getProjectionExpiration().toMillis());
         EventService eventService = new EventService(connectionManager, configuration.getPingTime().toMillis());
+        DiscoveryService discoveryService = new DiscoveryService(connectionManager);
         CuratorProjectionService projectionService = new CuratorProjectionService(connectionManager);
-        ThriftServiceProcessor processor = new ThriftServiceProcessor(new ThriftCodecManager(), Lists.<ThriftEventHandler>newArrayList(), projectionService, eventService);
+        DiscoveryServiceLowLevel discoveryServiceLowLevel = new DiscoveryServiceLowLevel(connectionManager);
+        ThriftServiceProcessor processor = new ThriftServiceProcessor(new ThriftCodecManager(), Lists.<ThriftEventHandler>newArrayList(), projectionService, eventService, discoveryService, discoveryServiceLowLevel);
         server = new ThriftServer(processor, configuration.getThrift());
     }
 
