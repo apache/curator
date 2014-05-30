@@ -72,6 +72,8 @@ public class CuratorService {
 
     public PathChildrenCacheProjection startPathChildrenCache(CuratorProjection projection, String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws org.apache.thrift.TException;
 
+    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode) throws org.apache.thrift.TException;
+
   }
 
   public interface AsyncIface {
@@ -111,6 +113,8 @@ public class CuratorService {
     public void startNodeCache(CuratorProjection projection, String path, boolean dataIsCompressed, boolean buildInitial, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void startPathChildrenCache(CuratorProjection projection, String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -565,6 +569,32 @@ public class CuratorService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startPathChildrenCache failed: unknown result");
+    }
+
+    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode) throws org.apache.thrift.TException
+    {
+      send_startPersistentEphemeralNode(projection, path, data, mode);
+      return recv_startPersistentEphemeralNode();
+    }
+
+    public void send_startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode) throws org.apache.thrift.TException
+    {
+      startPersistentEphemeralNode_args args = new startPersistentEphemeralNode_args();
+      args.setProjection(projection);
+      args.setPath(path);
+      args.setData(data);
+      args.setMode(mode);
+      sendBase("startPersistentEphemeralNode", args);
+    }
+
+    public PersistentEphemeralNodeProjection recv_startPersistentEphemeralNode() throws org.apache.thrift.TException
+    {
+      startPersistentEphemeralNode_result result = new startPersistentEphemeralNode_result();
+      receiveBase(result, "startPersistentEphemeralNode");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startPersistentEphemeralNode failed: unknown result");
     }
 
   }
@@ -1236,6 +1266,47 @@ public class CuratorService {
       }
     }
 
+    public void startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      startPersistentEphemeralNode_call method_call = new startPersistentEphemeralNode_call(projection, path, data, mode, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class startPersistentEphemeralNode_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      private String path;
+      private ByteBuffer data;
+      private PersistentEphemeralNodeMode mode;
+      public startPersistentEphemeralNode_call(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.projection = projection;
+        this.path = path;
+        this.data = data;
+        this.mode = mode;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("startPersistentEphemeralNode", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        startPersistentEphemeralNode_args args = new startPersistentEphemeralNode_args();
+        args.setProjection(projection);
+        args.setPath(path);
+        args.setData(data);
+        args.setMode(mode);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public PersistentEphemeralNodeProjection getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_startPersistentEphemeralNode();
+      }
+    }
+
   }
 
   public static class Processor<I extends Iface> extends org.apache.thrift.TBaseProcessor<I> implements org.apache.thrift.TProcessor {
@@ -1267,6 +1338,7 @@ public class CuratorService {
       processMap.put("startLeaderSelector", new startLeaderSelector());
       processMap.put("startNodeCache", new startNodeCache());
       processMap.put("startPathChildrenCache", new startPathChildrenCache());
+      processMap.put("startPersistentEphemeralNode", new startPersistentEphemeralNode());
       return processMap;
     }
 
@@ -1632,6 +1704,26 @@ public class CuratorService {
       }
     }
 
+    public static class startPersistentEphemeralNode<I extends Iface> extends org.apache.thrift.ProcessFunction<I, startPersistentEphemeralNode_args> {
+      public startPersistentEphemeralNode() {
+        super("startPersistentEphemeralNode");
+      }
+
+      public startPersistentEphemeralNode_args getEmptyArgsInstance() {
+        return new startPersistentEphemeralNode_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public startPersistentEphemeralNode_result getResult(I iface, startPersistentEphemeralNode_args args) throws org.apache.thrift.TException {
+        startPersistentEphemeralNode_result result = new startPersistentEphemeralNode_result();
+        result.success = iface.startPersistentEphemeralNode(args.projection, args.path, args.data, args.mode);
+        return result;
+      }
+    }
+
   }
 
   public static class AsyncProcessor<I extends AsyncIface> extends org.apache.thrift.TBaseAsyncProcessor<I> {
@@ -1663,6 +1755,7 @@ public class CuratorService {
       processMap.put("startLeaderSelector", new startLeaderSelector());
       processMap.put("startNodeCache", new startNodeCache());
       processMap.put("startPathChildrenCache", new startPathChildrenCache());
+      processMap.put("startPersistentEphemeralNode", new startPersistentEphemeralNode());
       return processMap;
     }
 
@@ -2581,6 +2674,57 @@ public class CuratorService {
 
       public void start(I iface, startPathChildrenCache_args args, org.apache.thrift.async.AsyncMethodCallback<PathChildrenCacheProjection> resultHandler) throws TException {
         iface.startPathChildrenCache(args.projection, args.path, args.cacheData, args.dataIsCompressed, args.startMode,resultHandler);
+      }
+    }
+
+    public static class startPersistentEphemeralNode<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, startPersistentEphemeralNode_args, PersistentEphemeralNodeProjection> {
+      public startPersistentEphemeralNode() {
+        super("startPersistentEphemeralNode");
+      }
+
+      public startPersistentEphemeralNode_args getEmptyArgsInstance() {
+        return new startPersistentEphemeralNode_args();
+      }
+
+      public AsyncMethodCallback<PersistentEphemeralNodeProjection> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<PersistentEphemeralNodeProjection>() { 
+          public void onComplete(PersistentEphemeralNodeProjection o) {
+            startPersistentEphemeralNode_result result = new startPersistentEphemeralNode_result();
+            result.success = o;
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            startPersistentEphemeralNode_result result = new startPersistentEphemeralNode_result();
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, startPersistentEphemeralNode_args args, org.apache.thrift.async.AsyncMethodCallback<PersistentEphemeralNodeProjection> resultHandler) throws TException {
+        iface.startPersistentEphemeralNode(args.projection, args.path, args.data, args.mode,resultHandler);
       }
     }
 
@@ -17916,6 +18060,1051 @@ public class CuratorService {
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new PathChildrenCacheProjection();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class startPersistentEphemeralNode_args implements org.apache.thrift.TBase<startPersistentEphemeralNode_args, startPersistentEphemeralNode_args._Fields>, java.io.Serializable, Cloneable, Comparable<startPersistentEphemeralNode_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startPersistentEphemeralNode_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("path", org.apache.thrift.protocol.TType.STRING, (short)2);
+    private static final org.apache.thrift.protocol.TField DATA_FIELD_DESC = new org.apache.thrift.protocol.TField("data", org.apache.thrift.protocol.TType.STRING, (short)3);
+    private static final org.apache.thrift.protocol.TField MODE_FIELD_DESC = new org.apache.thrift.protocol.TField("mode", org.apache.thrift.protocol.TType.I32, (short)4);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new startPersistentEphemeralNode_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new startPersistentEphemeralNode_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+    public String path; // required
+    public ByteBuffer data; // required
+    /**
+     * 
+     * @see PersistentEphemeralNodeMode
+     */
+    public PersistentEphemeralNodeMode mode; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection"),
+      PATH((short)2, "path"),
+      DATA((short)3, "data"),
+      /**
+       * 
+       * @see PersistentEphemeralNodeMode
+       */
+      MODE((short)4, "mode");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          case 2: // PATH
+            return PATH;
+          case 3: // DATA
+            return DATA;
+          case 4: // MODE
+            return MODE;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      tmpMap.put(_Fields.PATH, new org.apache.thrift.meta_data.FieldMetaData("path", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      tmpMap.put(_Fields.DATA, new org.apache.thrift.meta_data.FieldMetaData("data", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING          , true)));
+      tmpMap.put(_Fields.MODE, new org.apache.thrift.meta_data.FieldMetaData("mode", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, PersistentEphemeralNodeMode.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startPersistentEphemeralNode_args.class, metaDataMap);
+    }
+
+    public startPersistentEphemeralNode_args() {
+    }
+
+    public startPersistentEphemeralNode_args(
+      CuratorProjection projection,
+      String path,
+      ByteBuffer data,
+      PersistentEphemeralNodeMode mode)
+    {
+      this();
+      this.projection = projection;
+      this.path = path;
+      this.data = data;
+      this.mode = mode;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public startPersistentEphemeralNode_args(startPersistentEphemeralNode_args other) {
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+      if (other.isSetPath()) {
+        this.path = other.path;
+      }
+      if (other.isSetData()) {
+        this.data = org.apache.thrift.TBaseHelper.copyBinary(other.data);
+;
+      }
+      if (other.isSetMode()) {
+        this.mode = other.mode;
+      }
+    }
+
+    public startPersistentEphemeralNode_args deepCopy() {
+      return new startPersistentEphemeralNode_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+      this.path = null;
+      this.data = null;
+      this.mode = null;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public startPersistentEphemeralNode_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public String getPath() {
+      return this.path;
+    }
+
+    public startPersistentEphemeralNode_args setPath(String path) {
+      this.path = path;
+      return this;
+    }
+
+    public void unsetPath() {
+      this.path = null;
+    }
+
+    /** Returns true if field path is set (has been assigned a value) and false otherwise */
+    public boolean isSetPath() {
+      return this.path != null;
+    }
+
+    public void setPathIsSet(boolean value) {
+      if (!value) {
+        this.path = null;
+      }
+    }
+
+    public byte[] getData() {
+      setData(org.apache.thrift.TBaseHelper.rightSize(data));
+      return data == null ? null : data.array();
+    }
+
+    public ByteBuffer bufferForData() {
+      return data;
+    }
+
+    public startPersistentEphemeralNode_args setData(byte[] data) {
+      setData(data == null ? (ByteBuffer)null : ByteBuffer.wrap(data));
+      return this;
+    }
+
+    public startPersistentEphemeralNode_args setData(ByteBuffer data) {
+      this.data = data;
+      return this;
+    }
+
+    public void unsetData() {
+      this.data = null;
+    }
+
+    /** Returns true if field data is set (has been assigned a value) and false otherwise */
+    public boolean isSetData() {
+      return this.data != null;
+    }
+
+    public void setDataIsSet(boolean value) {
+      if (!value) {
+        this.data = null;
+      }
+    }
+
+    /**
+     * 
+     * @see PersistentEphemeralNodeMode
+     */
+    public PersistentEphemeralNodeMode getMode() {
+      return this.mode;
+    }
+
+    /**
+     * 
+     * @see PersistentEphemeralNodeMode
+     */
+    public startPersistentEphemeralNode_args setMode(PersistentEphemeralNodeMode mode) {
+      this.mode = mode;
+      return this;
+    }
+
+    public void unsetMode() {
+      this.mode = null;
+    }
+
+    /** Returns true if field mode is set (has been assigned a value) and false otherwise */
+    public boolean isSetMode() {
+      return this.mode != null;
+    }
+
+    public void setModeIsSet(boolean value) {
+      if (!value) {
+        this.mode = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      case PATH:
+        if (value == null) {
+          unsetPath();
+        } else {
+          setPath((String)value);
+        }
+        break;
+
+      case DATA:
+        if (value == null) {
+          unsetData();
+        } else {
+          setData((ByteBuffer)value);
+        }
+        break;
+
+      case MODE:
+        if (value == null) {
+          unsetMode();
+        } else {
+          setMode((PersistentEphemeralNodeMode)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      case PATH:
+        return getPath();
+
+      case DATA:
+        return getData();
+
+      case MODE:
+        return getMode();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      case PATH:
+        return isSetPath();
+      case DATA:
+        return isSetData();
+      case MODE:
+        return isSetMode();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof startPersistentEphemeralNode_args)
+        return this.equals((startPersistentEphemeralNode_args)that);
+      return false;
+    }
+
+    public boolean equals(startPersistentEphemeralNode_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      boolean this_present_path = true && this.isSetPath();
+      boolean that_present_path = true && that.isSetPath();
+      if (this_present_path || that_present_path) {
+        if (!(this_present_path && that_present_path))
+          return false;
+        if (!this.path.equals(that.path))
+          return false;
+      }
+
+      boolean this_present_data = true && this.isSetData();
+      boolean that_present_data = true && that.isSetData();
+      if (this_present_data || that_present_data) {
+        if (!(this_present_data && that_present_data))
+          return false;
+        if (!this.data.equals(that.data))
+          return false;
+      }
+
+      boolean this_present_mode = true && this.isSetMode();
+      boolean that_present_mode = true && that.isSetMode();
+      if (this_present_mode || that_present_mode) {
+        if (!(this_present_mode && that_present_mode))
+          return false;
+        if (!this.mode.equals(that.mode))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(startPersistentEphemeralNode_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetPath()).compareTo(other.isSetPath());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetPath()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.path, other.path);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetData()).compareTo(other.isSetData());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetData()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.data, other.data);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetMode()).compareTo(other.isSetMode());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetMode()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.mode, other.mode);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("startPersistentEphemeralNode_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("path:");
+      if (this.path == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.path);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("data:");
+      if (this.data == null) {
+        sb.append("null");
+      } else {
+        org.apache.thrift.TBaseHelper.toString(this.data, sb);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("mode:");
+      if (this.mode == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.mode);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class startPersistentEphemeralNode_argsStandardSchemeFactory implements SchemeFactory {
+      public startPersistentEphemeralNode_argsStandardScheme getScheme() {
+        return new startPersistentEphemeralNode_argsStandardScheme();
+      }
+    }
+
+    private static class startPersistentEphemeralNode_argsStandardScheme extends StandardScheme<startPersistentEphemeralNode_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, startPersistentEphemeralNode_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // PATH
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.path = iprot.readString();
+                struct.setPathIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 3: // DATA
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.data = iprot.readBinary();
+                struct.setDataIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 4: // MODE
+              if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+                struct.mode = PersistentEphemeralNodeMode.findByValue(iprot.readI32());
+                struct.setModeIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, startPersistentEphemeralNode_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.path != null) {
+          oprot.writeFieldBegin(PATH_FIELD_DESC);
+          oprot.writeString(struct.path);
+          oprot.writeFieldEnd();
+        }
+        if (struct.data != null) {
+          oprot.writeFieldBegin(DATA_FIELD_DESC);
+          oprot.writeBinary(struct.data);
+          oprot.writeFieldEnd();
+        }
+        if (struct.mode != null) {
+          oprot.writeFieldBegin(MODE_FIELD_DESC);
+          oprot.writeI32(struct.mode.getValue());
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class startPersistentEphemeralNode_argsTupleSchemeFactory implements SchemeFactory {
+      public startPersistentEphemeralNode_argsTupleScheme getScheme() {
+        return new startPersistentEphemeralNode_argsTupleScheme();
+      }
+    }
+
+    private static class startPersistentEphemeralNode_argsTupleScheme extends TupleScheme<startPersistentEphemeralNode_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, startPersistentEphemeralNode_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        if (struct.isSetPath()) {
+          optionals.set(1);
+        }
+        if (struct.isSetData()) {
+          optionals.set(2);
+        }
+        if (struct.isSetMode()) {
+          optionals.set(3);
+        }
+        oprot.writeBitSet(optionals, 4);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+        if (struct.isSetPath()) {
+          oprot.writeString(struct.path);
+        }
+        if (struct.isSetData()) {
+          oprot.writeBinary(struct.data);
+        }
+        if (struct.isSetMode()) {
+          oprot.writeI32(struct.mode.getValue());
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, startPersistentEphemeralNode_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(4);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.path = iprot.readString();
+          struct.setPathIsSet(true);
+        }
+        if (incoming.get(2)) {
+          struct.data = iprot.readBinary();
+          struct.setDataIsSet(true);
+        }
+        if (incoming.get(3)) {
+          struct.mode = PersistentEphemeralNodeMode.findByValue(iprot.readI32());
+          struct.setModeIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class startPersistentEphemeralNode_result implements org.apache.thrift.TBase<startPersistentEphemeralNode_result, startPersistentEphemeralNode_result._Fields>, java.io.Serializable, Cloneable, Comparable<startPersistentEphemeralNode_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startPersistentEphemeralNode_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new startPersistentEphemeralNode_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new startPersistentEphemeralNode_resultTupleSchemeFactory());
+    }
+
+    public PersistentEphemeralNodeProjection success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, PersistentEphemeralNodeProjection.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startPersistentEphemeralNode_result.class, metaDataMap);
+    }
+
+    public startPersistentEphemeralNode_result() {
+    }
+
+    public startPersistentEphemeralNode_result(
+      PersistentEphemeralNodeProjection success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public startPersistentEphemeralNode_result(startPersistentEphemeralNode_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new PersistentEphemeralNodeProjection(other.success);
+      }
+    }
+
+    public startPersistentEphemeralNode_result deepCopy() {
+      return new startPersistentEphemeralNode_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public PersistentEphemeralNodeProjection getSuccess() {
+      return this.success;
+    }
+
+    public startPersistentEphemeralNode_result setSuccess(PersistentEphemeralNodeProjection success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((PersistentEphemeralNodeProjection)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof startPersistentEphemeralNode_result)
+        return this.equals((startPersistentEphemeralNode_result)that);
+      return false;
+    }
+
+    public boolean equals(startPersistentEphemeralNode_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(startPersistentEphemeralNode_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(other.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, other.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("startPersistentEphemeralNode_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class startPersistentEphemeralNode_resultStandardSchemeFactory implements SchemeFactory {
+      public startPersistentEphemeralNode_resultStandardScheme getScheme() {
+        return new startPersistentEphemeralNode_resultStandardScheme();
+      }
+    }
+
+    private static class startPersistentEphemeralNode_resultStandardScheme extends StandardScheme<startPersistentEphemeralNode_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, startPersistentEphemeralNode_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new PersistentEphemeralNodeProjection();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, startPersistentEphemeralNode_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class startPersistentEphemeralNode_resultTupleSchemeFactory implements SchemeFactory {
+      public startPersistentEphemeralNode_resultTupleScheme getScheme() {
+        return new startPersistentEphemeralNode_resultTupleScheme();
+      }
+    }
+
+    private static class startPersistentEphemeralNode_resultTupleScheme extends TupleScheme<startPersistentEphemeralNode_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, startPersistentEphemeralNode_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, startPersistentEphemeralNode_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new PersistentEphemeralNodeProjection();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }

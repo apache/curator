@@ -27,6 +27,10 @@ enum PathChildrenCacheEventType {
   CHILD_ADDED, CHILD_UPDATED, CHILD_REMOVED, CONNECTION_SUSPENDED, CONNECTION_RECONNECTED, CONNECTION_LOST, INITIALIZED
 }
 
+enum PersistentEphemeralNodeMode {
+  EPHEMERAL, EPHEMERAL_SEQUENTIAL, PROTECTED_EPHEMERAL, PROTECTED_EPHEMERAL_SEQUENTIAL
+}
+
 struct CuratorProjection {
   1: string id;
 }
@@ -67,6 +71,10 @@ struct NodeCacheProjection {
 }
 
 struct PathChildrenCacheProjection {
+  1: string id;
+}
+
+struct PersistentEphemeralNodeProjection {
   1: string id;
 }
 
@@ -205,6 +213,7 @@ service CuratorService {
   LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs);
   NodeCacheProjection startNodeCache(1: CuratorProjection projection, 2: string path, 3: bool dataIsCompressed, 4: bool buildInitial);
   PathChildrenCacheProjection startPathChildrenCache(1: CuratorProjection projection, 2: string path, 3: bool cacheData, 4: bool dataIsCompressed, 5: PathChildrenCacheStartMode startMode);
+  PersistentEphemeralNodeProjection startPersistentEphemeralNode(1: CuratorProjection projection, 2: string path, 3: binary data, 4: PersistentEphemeralNodeMode mode);
 }
 
 service EventService {

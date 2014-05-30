@@ -36,6 +36,7 @@ import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.leader.Participant;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
+import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.ThreadUtils;
@@ -473,6 +474,33 @@ public class CuratorProjectionService
         cache.getListenable().addListener(listener);
 
         return new NodeCacheProjection(id);
+    }
+
+    @ThriftMethod
+    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, final String path, byte[] data, RpcPersistentEphemeralNodeMode mode) throws Exception
+    {
+        final CuratorEntry entry = getEntry(projection);
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(entry.getClient(), PersistentEphemeralNode.Mode.valueOf(mode.name()), path, data);
+        node.start();
+
+        Closer<PersistentEphemeralNode> closer = new Closer<PersistentEphemeralNode>()
+        {
+            @Override
+            public void close(PersistentEphemeralNode node)
+            {
+                try
+                {
+                    node.close();
+                }
+                catch ( Exception e )
+                {
+                    log.error("Could not release left-over persistent ephemeral node for path: " + path, e);
+                }
+            }
+        };
+        String id = entry.addThing(node, closer);
+        return new PersistentEphemeralNodeProjection(id);
     }
 
     @ThriftMethod

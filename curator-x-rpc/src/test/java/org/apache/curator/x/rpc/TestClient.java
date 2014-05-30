@@ -126,5 +126,11 @@ public class TestClient
 
         nodeCacheData = client.getNodeCacheData(curatorProjection, nodeCache);
         System.out.println("nodeCacheData: " + nodeCacheData);
+
+        PersistentEphemeralNodeProjection node = client.startPersistentEphemeralNode(curatorProjection, "/my/path", ByteBuffer.wrap("hey".getBytes()), PersistentEphemeralNodeMode.EPHEMERAL);
+        existsSpec.path = "/my/path";
+        OptionalStat nodeExists = client.exists(curatorProjection, existsSpec);
+        System.out.println("nodeExists: " + nodeExists);
+        client.closeGenericProjection(curatorProjection, node.id);
     }
 }
