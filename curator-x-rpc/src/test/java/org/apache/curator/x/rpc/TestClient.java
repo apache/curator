@@ -68,6 +68,18 @@ public class TestClient
         );
 
         CreateSpec createSpec = new CreateSpec();
+        createSpec.path = "/this/should/fail";
+        createSpec.data = ByteBuffer.wrap("hey".getBytes());
+        try
+        {
+            client.createNode(curatorProjection, createSpec);
+        }
+        catch ( CuratorException e )
+        {
+            System.out.println("Ex: " + e);
+        }
+
+        createSpec = new CreateSpec();
         createSpec.path = "/a/b/c";
         createSpec.creatingParentsIfNeeded = true;
         createSpec.data = ByteBuffer.wrap("hey".getBytes());

@@ -47,6 +47,8 @@ import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.details.RpcBackgroundCallback;
 import org.apache.curator.x.rpc.details.RpcWatcher;
+import org.apache.curator.x.rpc.idl.exceptions.ExceptionType;
+import org.apache.curator.x.rpc.idl.exceptions.RpcException;
 import org.apache.curator.x.rpc.idl.structs.*;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
@@ -69,9 +71,13 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public CuratorProjection newCuratorProjection(String connectionName)
+    public CuratorProjection newCuratorProjection(String connectionName) throws RpcException
     {
         CuratorFramework client = connectionManager.newConnection(connectionName);
+        if ( client == null )
+        {
+            throw new RpcException(ExceptionType.GENERAL, null, null, "No connection configuration was found with the name: " + connectionName);
+        }
 
         String id = CuratorEntry.newId();
         client.start();
@@ -108,433 +114,268 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws Exception
+    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws RpcException
     {
-        CuratorFramework client = getEntry(projection).getClient();
-
-        Object builder = client.create();
-        if ( spec.creatingParentsIfNeeded )
+        try
         {
-            builder = castBuilder(builder, CreateBuilder.class).creatingParentsIfNeeded();
-        }
-        if ( spec.compressed )
-        {
-            builder = castBuilder(builder, Compressible.class).compressed();
-        }
-        if ( spec.withProtection )
-        {
-            builder = castBuilder(builder, CreateBuilder.class).withProtection();
-        }
-        if ( spec.mode != null )
-        {
-            builder = castBuilder(builder, CreateModable.class).withMode(CreateMode.valueOf(spec.mode.name()));
-        }
+            CuratorFramework client = CuratorEntry.mustGetEntry(connectionManager, projection).getClient();
 
-        if ( spec.asyncContext != null )
-        {
-            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
-            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, spec.asyncContext);
-        }
-
-        Object path = castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data);
-        return new OptionalPath((path != null) ? String.valueOf(path) : null);
-    }
-
-    @ThriftMethod
-    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws Exception
-    {
-        CuratorFramework client = getEntry(projection).getClient();
-
-        Object builder = client.delete();
-        if ( spec.guaranteed )
-        {
-            builder = castBuilder(builder, DeleteBuilder.class).guaranteed();
-        }
-        if ( spec.version != null )
-        {
-            builder = castBuilder(builder, Versionable.class).withVersion(spec.version.version);
-        }
-
-        if ( spec.asyncContext != null )
-        {
-            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
-            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, spec.asyncContext);
-        }
-
-        castBuilder(builder, Pathable.class).forPath(spec.path);
-    }
-
-    @ThriftMethod
-    public byte[] getData(CuratorProjection projection, GetDataSpec spec) throws Exception
-    {
-        CuratorFramework client = getEntry(projection).getClient();
-
-        Object builder = client.getData();
-        if ( spec.watched )
-        {
-            builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
-        }
-
-        if ( spec.decompressed )
-        {
-            builder = castBuilder(builder, Decompressible.class).decompressed();
-        }
-
-        if ( spec.asyncContext != null )
-        {
-            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
-            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
-        }
-
-        Stat stat = new Stat();
-        builder = castBuilder(builder, Statable.class).storingStatIn(stat);
-
-        return (byte[])castBuilder(builder, Pathable.class).forPath(spec.path);
-    }
-
-    @ThriftMethod
-    public RpcStat setData(CuratorProjection projection, SetDataSpec spec) throws Exception
-    {
-        CuratorFramework client = getEntry(projection).getClient();
-
-        Object builder = client.setData();
-        if ( spec.watched )
-        {
-            builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
-        }
-        if ( spec.version != null )
-        {
-            builder = castBuilder(builder, Versionable.class).withVersion(spec.version.version);
-        }
-
-        if ( spec.compressed )
-        {
-            builder = castBuilder(builder, Compressible.class).compressed();
-        }
-
-        if ( spec.asyncContext != null )
-        {
-            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
-            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
-        }
-
-        Stat stat = (Stat)castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data);
-        return RpcCuratorEvent.toRpcStat(stat);
-    }
-
-    @ThriftMethod
-    public OptionalRpcStat exists(CuratorProjection projection, ExistsSpec spec) throws Exception
-    {
-        CuratorFramework client = getEntry(projection).getClient();
-
-        Object builder = client.checkExists();
-        if ( spec.watched )
-        {
-            builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
-        }
-
-        if ( spec.asyncContext != null )
-        {
-            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
-            castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
-        }
-
-        Stat stat = (Stat)castBuilder(builder, Pathable.class).forPath(spec.path);
-        return new OptionalRpcStat((stat != null) ? RpcCuratorEvent.toRpcStat(stat) : null);
-    }
-
-    @ThriftMethod
-    public OptionalChildrenList getChildren(CuratorProjection projection, GetChildrenSpec spec) throws Exception
-    {
-        CuratorFramework client = getEntry(projection).getClient();
-
-        Object builder = client.getChildren();
-        if ( spec.watched )
-        {
-            builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
-        }
-
-        if ( spec.asyncContext != null )
-        {
-            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
-            builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
-        }
-
-        @SuppressWarnings("unchecked")
-        List<String> children = (List<String>)castBuilder(builder, Pathable.class).forPath(spec.path);
-        return new OptionalChildrenList(children);
-    }
-
-    @ThriftMethod
-    public boolean closeGenericProjection(CuratorProjection curatorProjection, String id) throws Exception
-    {
-        CuratorEntry entry = getEntry(curatorProjection);
-        return entry.closeThing(id);
-    }
-
-    @ThriftMethod
-    public LockProjection acquireLock(CuratorProjection projection, final String path, int maxWaitMs) throws Exception
-    {
-        CuratorEntry entry = getEntry(projection);
-        final InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(entry.getClient(), path);
-        if ( !lock.acquire(maxWaitMs, TimeUnit.MILLISECONDS) )
-        {
-            return new LockProjection();
-        }
-
-        Closer closer = new Closer()
-        {
-            @Override
-            public void close()
+            Object builder = client.create();
+            if ( spec.creatingParentsIfNeeded )
             {
-                if ( lock.isAcquiredInThisProcess() )
-                {
-                    try
-                    {
-                        lock.release();
-                    }
-                    catch ( Exception e )
-                    {
-                        log.error("Could not release left-over lock for path: " + path, e);
-                    }
-                }
+                builder = castBuilder(builder, CreateBuilder.class).creatingParentsIfNeeded();
             }
-        };
-        String id = entry.addThing(lock, closer);
-        return new LockProjection(id);
-    }
-
-    @ThriftMethod
-    public LeaderResult startLeaderSelector(final CuratorProjection projection, final String path, final String participantId, int waitForLeadershipMs) throws Exception
-    {
-        CuratorEntry entry = getEntry(projection);
-
-        final LeaderLatch leaderLatch = new LeaderLatch(entry.getClient(), path, participantId);
-        leaderLatch.start();
-
-        Closer closer = new Closer()
-        {
-            @Override
-            public void close()
+            if ( spec.compressed )
             {
-                try
-                {
-                    leaderLatch.close();
-                }
-                catch ( IOException e )
-                {
-                    log.error("Could not close left-over leader latch for path: " + path, e);
-                }
+                builder = castBuilder(builder, Compressible.class).compressed();
             }
-        };
-        String id = entry.addThing(leaderLatch, closer);
-
-        LeaderLatchListener listener = new LeaderLatchListener()
-        {
-            @Override
-            public void isLeader()
+            if ( spec.withProtection )
             {
-                addEvent(projection, new RpcCuratorEvent(new LeaderEvent(path, participantId, true)));
+                builder = castBuilder(builder, CreateBuilder.class).withProtection();
+            }
+            if ( spec.mode != null )
+            {
+                builder = castBuilder(builder, CreateModable.class).withMode(CreateMode.valueOf(spec.mode.name()));
             }
 
-            @Override
-            public void notLeader()
+            if ( spec.asyncContext != null )
             {
-                addEvent(projection, new RpcCuratorEvent(new LeaderEvent(path, participantId, false)));
+                BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+                builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, spec.asyncContext);
             }
-        };
-        leaderLatch.addListener(listener);
 
-        if ( waitForLeadershipMs > 0 )
-        {
-            leaderLatch.await(waitForLeadershipMs, TimeUnit.MILLISECONDS);
+            Object path = castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data);
+            return new OptionalPath((path != null) ? String.valueOf(path) : null);
         }
-
-        return new LeaderResult(new LeaderProjection(id), leaderLatch.hasLeadership());
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
     }
 
     @ThriftMethod
-    public List<RpcParticipant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws Exception
+    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws RpcException
     {
-        CuratorEntry entry = getEntry(projection);
+        try
+        {
+            CuratorFramework client = CuratorEntry.mustGetEntry(connectionManager, projection).getClient();
 
-        LeaderLatch leaderLatch = getThing(entry, leaderProjection.id, LeaderLatch.class);
-        Collection<Participant> participants = leaderLatch.getParticipants();
-        return Lists.transform(Lists.newArrayList(participants), new Function<Participant, RpcParticipant>()
+            Object builder = client.delete();
+            if ( spec.guaranteed )
+            {
+                builder = castBuilder(builder, DeleteBuilder.class).guaranteed();
+            }
+            if ( spec.version != null )
+            {
+                builder = castBuilder(builder, Versionable.class).withVersion(spec.version.version);
+            }
+
+            if ( spec.asyncContext != null )
+            {
+                BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+                builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback, spec.asyncContext);
+            }
+
+            castBuilder(builder, Pathable.class).forPath(spec.path);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public byte[] getData(CuratorProjection projection, GetDataSpec spec) throws RpcException
+    {
+        try
+        {
+            CuratorFramework client = CuratorEntry.mustGetEntry(connectionManager, projection).getClient();
+
+            Object builder = client.getData();
+            if ( spec.watched )
+            {
+                builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
+            }
+
+            if ( spec.decompressed )
+            {
+                builder = castBuilder(builder, Decompressible.class).decompressed();
+            }
+
+            if ( spec.asyncContext != null )
+            {
+                BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+                builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+            }
+
+            Stat stat = new Stat();
+            builder = castBuilder(builder, Statable.class).storingStatIn(stat);
+
+            return (byte[])castBuilder(builder, Pathable.class).forPath(spec.path);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public RpcStat setData(CuratorProjection projection, SetDataSpec spec) throws RpcException
+    {
+        try
+        {
+            CuratorFramework client = CuratorEntry.mustGetEntry(connectionManager, projection).getClient();
+
+            Object builder = client.setData();
+            if ( spec.watched )
+            {
+                builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
+            }
+            if ( spec.version != null )
+            {
+                builder = castBuilder(builder, Versionable.class).withVersion(spec.version.version);
+            }
+
+            if ( spec.compressed )
+            {
+                builder = castBuilder(builder, Compressible.class).compressed();
+            }
+
+            if ( spec.asyncContext != null )
+            {
+                BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+                builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+            }
+
+            Stat stat = (Stat)castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data);
+            return RpcCuratorEvent.toRpcStat(stat);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public OptionalRpcStat exists(CuratorProjection projection, ExistsSpec spec) throws RpcException
+    {
+        try
+        {
+            CuratorFramework client = CuratorEntry.mustGetEntry(connectionManager, projection).getClient();
+
+            Object builder = client.checkExists();
+            if ( spec.watched )
+            {
+                builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
+            }
+
+            if ( spec.asyncContext != null )
+            {
+                BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+                castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+            }
+
+            Stat stat = (Stat)castBuilder(builder, Pathable.class).forPath(spec.path);
+            return new OptionalRpcStat((stat != null) ? RpcCuratorEvent.toRpcStat(stat) : null);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public OptionalChildrenList getChildren(CuratorProjection projection, GetChildrenSpec spec) throws RpcException
+    {
+        try
+        {
+            CuratorFramework client = CuratorEntry.mustGetEntry(connectionManager, projection).getClient();
+
+            Object builder = client.getChildren();
+            if ( spec.watched )
+            {
+                builder = castBuilder(builder, Watchable.class).usingWatcher(new RpcWatcher(this, projection));
+            }
+
+            if ( spec.asyncContext != null )
+            {
+                BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+                builder = castBuilder(builder, Backgroundable.class).inBackground(backgroundCallback);
+            }
+
+            @SuppressWarnings("unchecked")
+            List<String> children = (List<String>)castBuilder(builder, Pathable.class).forPath(spec.path);
+            return new OptionalChildrenList(children);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public boolean closeGenericProjection(CuratorProjection projection, String id) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+            return entry.closeThing(id);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public LockProjection acquireLock(CuratorProjection projection, final String path, int maxWaitMs) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+            final InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(entry.getClient(), path);
+            if ( !lock.acquire(maxWaitMs, TimeUnit.MILLISECONDS) )
+            {
+                return new LockProjection();
+            }
+
+            Closer closer = new Closer()
             {
                 @Override
-                public RpcParticipant apply(Participant participant)
+                public void close()
                 {
-                    return new RpcParticipant(participant.getId(), participant.isLeader());
+                    if ( lock.isAcquiredInThisProcess() )
+                    {
+                        try
+                        {
+                            lock.release();
+                        }
+                        catch ( Exception e )
+                        {
+                            log.error("Could not release left-over lock for path: " + path, e);
+                        }
+                    }
                 }
-            });
-    }
-
-    @ThriftMethod
-    public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws Exception
-    {
-        CuratorEntry entry = getEntry(projection);
-
-        LeaderLatch leaderLatch = getThing(entry, leaderProjection.id, LeaderLatch.class);
-        return leaderLatch.hasLeadership();
-    }
-
-    @ThriftMethod
-    public PathChildrenCacheProjection startPathChildrenCache(final CuratorProjection projection, final String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws Exception
-    {
-        final CuratorEntry entry = getEntry(projection);
-
-        final PathChildrenCache cache = new PathChildrenCache(entry.getClient(), path, cacheData, dataIsCompressed, ThreadUtils.newThreadFactory("PathChildrenCacheResource"));
-        cache.start(PathChildrenCache.StartMode.valueOf(startMode.name()));
-
-        Closer closer = new Closer()
-        {
-            @Override
-            public void close()
-            {
-                try
-                {
-                    cache.close();
-                }
-                catch ( IOException e )
-                {
-                    log.error("Could not close left-over PathChildrenCache for path: " + path, e);
-                }
-            }
-        };
-        String id = entry.addThing(cache, closer);
-
-        PathChildrenCacheListener listener = new PathChildrenCacheListener()
-        {
-            @Override
-            public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
-            {
-                entry.addEvent(new RpcCuratorEvent(new RpcPathChildrenCacheEvent(path, event)));
-            }
-        };
-        cache.getListenable().addListener(listener);
-
-        return new PathChildrenCacheProjection(id);
-    }
-
-    @ThriftMethod
-    public List<RpcChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws Exception
-    {
-        CuratorEntry entry = getEntry(projection);
-
-        PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.id, PathChildrenCache.class);
-        return Lists.transform
-        (
-            pathChildrenCache.getCurrentData(),
-            new Function<ChildData, RpcChildData>()
-            {
-                @Override
-                public RpcChildData apply(ChildData childData)
-                {
-                    return new RpcChildData(childData);
-                }
-            }
-        );
-    }
-
-    @ThriftMethod
-    public RpcChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws Exception
-    {
-        CuratorEntry entry = getEntry(projection);
-
-        PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.id, PathChildrenCache.class);
-        return new RpcChildData(pathChildrenCache.getCurrentData(path));
-    }
-
-    @ThriftMethod
-    public NodeCacheProjection startNodeCache(CuratorProjection projection, final String path, boolean dataIsCompressed, boolean buildInitial) throws Exception
-    {
-        final CuratorEntry entry = getEntry(projection);
-
-        final NodeCache cache = new NodeCache(entry.getClient(), path, dataIsCompressed);
-        cache.start(buildInitial);
-
-        Closer closer = new Closer()
-        {
-            @Override
-            public void close()
-            {
-                try
-                {
-                    cache.close();
-                }
-                catch ( IOException e )
-                {
-                    log.error("Could not close left-over NodeCache for path: " + path, e);
-                }
-            }
-        };
-        String id = entry.addThing(cache, closer);
-
-        NodeCacheListener listener = new NodeCacheListener()
-        {
-            @Override
-            public void nodeChanged() throws Exception
-            {
-                entry.addEvent(new RpcCuratorEvent(RpcCuratorEventType.NODE_CACHE, path));
-            }
-        };
-        cache.getListenable().addListener(listener);
-
-        return new NodeCacheProjection(id);
-    }
-
-    @ThriftMethod
-    public RpcChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws Exception
-    {
-        CuratorEntry entry = getEntry(projection);
-
-        NodeCache nodeCache = getThing(entry, cacheProjection.id, NodeCache.class);
-        return new RpcChildData(nodeCache.getCurrentData());
-    }
-
-    @ThriftMethod
-    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, final String path, byte[] data, RpcPersistentEphemeralNodeMode mode) throws Exception
-    {
-        CuratorEntry entry = getEntry(projection);
-
-        final PersistentEphemeralNode node = new PersistentEphemeralNode(entry.getClient(), PersistentEphemeralNode.Mode.valueOf(mode.name()), path, data);
-        node.start();
-
-        Closer closer = new Closer()
-        {
-            @Override
-            public void close()
-            {
-                try
-                {
-                    node.close();
-                }
-                catch ( Exception e )
-                {
-                    log.error("Could not release left-over persistent ephemeral node for path: " + path, e);
-                }
-            }
-        };
-        String id = entry.addThing(node, closer);
-        return new PersistentEphemeralNodeProjection(id);
-    }
-
-    @ThriftMethod
-    public List<LeaseProjection> startSemaphore(CuratorProjection projection, final String path, int acquireQty, int maxWaitMs, int maxLeases) throws Exception
-    {
-        CuratorEntry entry = getEntry(projection);
-
-        final InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(entry.getClient(), path, maxLeases);
-        final Collection<Lease> leases = semaphore.acquire(acquireQty, maxWaitMs, TimeUnit.MILLISECONDS);
-        if ( leases == null )
-        {
-            return Lists.newArrayList();
+            };
+            String id = entry.addThing(lock, closer);
+            return new LockProjection(id);
         }
-
-        List<LeaseProjection> leaseProjections = Lists.newArrayList();
-        for ( final Lease lease : leases )
+        catch ( Exception e )
         {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public LeaderResult startLeaderSelector(final CuratorProjection projection, final String path, final String participantId, int waitForLeadershipMs) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            final LeaderLatch leaderLatch = new LeaderLatch(entry.getClient(), path, participantId);
+            leaderLatch.start();
+
             Closer closer = new Closer()
             {
                 @Override
@@ -542,17 +383,308 @@ public class CuratorProjectionService
                 {
                     try
                     {
-                        semaphore.returnLease(lease);
+                        leaderLatch.close();
                     }
-                    catch ( Exception e )
+                    catch ( IOException e )
                     {
-                        log.error("Could not release semaphore leases for path: " + path, e);
+                        log.error("Could not close left-over leader latch for path: " + path, e);
                     }
                 }
             };
-            leaseProjections.add(new LeaseProjection(entry.addThing(lease, closer)));
+            String id = entry.addThing(leaderLatch, closer);
+
+            LeaderLatchListener listener = new LeaderLatchListener()
+            {
+                @Override
+                public void isLeader()
+                {
+                    addEvent(projection, new RpcCuratorEvent(new LeaderEvent(path, participantId, true)));
+                }
+
+                @Override
+                public void notLeader()
+                {
+                    addEvent(projection, new RpcCuratorEvent(new LeaderEvent(path, participantId, false)));
+                }
+            };
+            leaderLatch.addListener(listener);
+
+            if ( waitForLeadershipMs > 0 )
+            {
+                leaderLatch.await(waitForLeadershipMs, TimeUnit.MILLISECONDS);
+            }
+
+            return new LeaderResult(new LeaderProjection(id), leaderLatch.hasLeadership());
         }
-        return leaseProjections;
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public List<RpcParticipant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            LeaderLatch leaderLatch = getThing(entry, leaderProjection.id, LeaderLatch.class);
+            Collection<Participant> participants = leaderLatch.getParticipants();
+            return Lists.transform(Lists.newArrayList(participants), new Function<Participant, RpcParticipant>()
+                {
+                    @Override
+                    public RpcParticipant apply(Participant participant)
+                    {
+                        return new RpcParticipant(participant.getId(), participant.isLeader());
+                    }
+                });
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            LeaderLatch leaderLatch = getThing(entry, leaderProjection.id, LeaderLatch.class);
+            return leaderLatch.hasLeadership();
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public PathChildrenCacheProjection startPathChildrenCache(final CuratorProjection projection, final String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws RpcException
+    {
+        try
+        {
+            final CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            final PathChildrenCache cache = new PathChildrenCache(entry.getClient(), path, cacheData, dataIsCompressed, ThreadUtils.newThreadFactory("PathChildrenCacheResource"));
+            cache.start(PathChildrenCache.StartMode.valueOf(startMode.name()));
+
+            Closer closer = new Closer()
+            {
+                @Override
+                public void close()
+                {
+                    try
+                    {
+                        cache.close();
+                    }
+                    catch ( IOException e )
+                    {
+                        log.error("Could not close left-over PathChildrenCache for path: " + path, e);
+                    }
+                }
+            };
+            String id = entry.addThing(cache, closer);
+
+            PathChildrenCacheListener listener = new PathChildrenCacheListener()
+            {
+                @Override
+                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws RpcException
+                {
+                    entry.addEvent(new RpcCuratorEvent(new RpcPathChildrenCacheEvent(path, event)));
+                }
+            };
+            cache.getListenable().addListener(listener);
+
+            return new PathChildrenCacheProjection(id);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public List<RpcChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.id, PathChildrenCache.class);
+            return Lists.transform
+            (
+                pathChildrenCache.getCurrentData(),
+                new Function<ChildData, RpcChildData>()
+                {
+                    @Override
+                    public RpcChildData apply(ChildData childData)
+                    {
+                        return new RpcChildData(childData);
+                    }
+                }
+            );
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public RpcChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.id, PathChildrenCache.class);
+            return new RpcChildData(pathChildrenCache.getCurrentData(path));
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public NodeCacheProjection startNodeCache(CuratorProjection projection, final String path, boolean dataIsCompressed, boolean buildInitial) throws RpcException
+    {
+        try
+        {
+            final CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            final NodeCache cache = new NodeCache(entry.getClient(), path, dataIsCompressed);
+            cache.start(buildInitial);
+
+            Closer closer = new Closer()
+            {
+                @Override
+                public void close()
+                {
+                    try
+                    {
+                        cache.close();
+                    }
+                    catch ( IOException e )
+                    {
+                        log.error("Could not close left-over NodeCache for path: " + path, e);
+                    }
+                }
+            };
+            String id = entry.addThing(cache, closer);
+
+            NodeCacheListener listener = new NodeCacheListener()
+            {
+                @Override
+                public void nodeChanged()
+                {
+                    entry.addEvent(new RpcCuratorEvent(RpcCuratorEventType.NODE_CACHE, path));
+                }
+            };
+            cache.getListenable().addListener(listener);
+
+            return new NodeCacheProjection(id);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public RpcChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            NodeCache nodeCache = getThing(entry, cacheProjection.id, NodeCache.class);
+            return new RpcChildData(nodeCache.getCurrentData());
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, final String path, byte[] data, RpcPersistentEphemeralNodeMode mode) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            final PersistentEphemeralNode node = new PersistentEphemeralNode(entry.getClient(), PersistentEphemeralNode.Mode.valueOf(mode.name()), path, data);
+            node.start();
+
+            Closer closer = new Closer()
+            {
+                @Override
+                public void close()
+                {
+                    try
+                    {
+                        node.close();
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error("Could not release left-over persistent ephemeral node for path: " + path, e);
+                    }
+                }
+            };
+            String id = entry.addThing(node, closer);
+            return new PersistentEphemeralNodeProjection(id);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
+    public List<LeaseProjection> startSemaphore(CuratorProjection projection, final String path, int acquireQty, int maxWaitMs, int maxLeases) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+
+            final InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(entry.getClient(), path, maxLeases);
+            final Collection<Lease> leases = semaphore.acquire(acquireQty, maxWaitMs, TimeUnit.MILLISECONDS);
+            if ( leases == null )
+            {
+                return Lists.newArrayList();
+            }
+
+            List<LeaseProjection> leaseProjections = Lists.newArrayList();
+            for ( final Lease lease : leases )
+            {
+                Closer closer = new Closer()
+                {
+                    @Override
+                    public void close()
+                    {
+                        try
+                        {
+                            semaphore.returnLease(lease);
+                        }
+                        catch ( Exception e )
+                        {
+                            log.error("Could not release semaphore leases for path: " + path, e);
+                        }
+                    }
+                };
+                leaseProjections.add(new LeaseProjection(entry.addThing(lease, closer)));
+            }
+            return leaseProjections;
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
     }
 
     public void addEvent(CuratorProjection projection, RpcCuratorEvent event)
@@ -562,16 +694,6 @@ public class CuratorProjectionService
         {
             entry.addEvent(event);
         }
-    }
-
-    private CuratorEntry getEntry(CuratorProjection projection) throws Exception
-    {
-        CuratorEntry entry = connectionManager.get(projection.id);
-        if ( entry == null )
-        {
-            throw new Exception("No client found with id: " + projection.id);
-        }
-        return entry;
     }
 
     private static <T> T castBuilder(Object createBuilder, Class<T> clazz) throws Exception

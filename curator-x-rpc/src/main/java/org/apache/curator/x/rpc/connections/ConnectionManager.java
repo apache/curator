@@ -89,8 +89,7 @@ public class ConnectionManager implements Closeable
     public CuratorFramework newConnection(String name)
     {
         ConnectionConfiguration configuration = connections.get(name);
-        Preconditions.checkNotNull(configuration, "No connection configuration with that name was found: " + name);
-        return configuration.build();
+        return (configuration != null) ? configuration.build() : null;
     }
 
     public void add(String id, CuratorFramework client)

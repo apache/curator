@@ -36,47 +36,47 @@ public class CuratorService {
 
   public interface Iface {
 
-    public LockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws org.apache.thrift.TException;
+    public LockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws CuratorException, org.apache.thrift.TException;
 
     public void closeCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException;
 
-    public boolean closeGenericProjection(CuratorProjection curatorProjection, String id) throws org.apache.thrift.TException;
+    public boolean closeGenericProjection(CuratorProjection projection, String id) throws CuratorException, org.apache.thrift.TException;
 
-    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException;
+    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws CuratorException, org.apache.thrift.TException;
 
-    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws org.apache.thrift.TException;
+    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws CuratorException, org.apache.thrift.TException;
 
-    public OptionalStat exists(CuratorProjection projection, ExistsSpec spec) throws org.apache.thrift.TException;
+    public OptionalStat exists(CuratorProjection projection, ExistsSpec spec) throws CuratorException, org.apache.thrift.TException;
 
-    public OptionalChildrenList getChildren(CuratorProjection projection, GetChildrenSpec spec) throws org.apache.thrift.TException;
+    public OptionalChildrenList getChildren(CuratorProjection projection, GetChildrenSpec spec) throws CuratorException, org.apache.thrift.TException;
 
-    public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws org.apache.thrift.TException;
+    public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws CuratorException, org.apache.thrift.TException;
 
-    public List<Participant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws org.apache.thrift.TException;
+    public List<Participant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws CuratorException, org.apache.thrift.TException;
 
-    public ChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws org.apache.thrift.TException;
+    public ChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws CuratorException, org.apache.thrift.TException;
 
-    public List<ChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws org.apache.thrift.TException;
+    public List<ChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws CuratorException, org.apache.thrift.TException;
 
-    public ChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws org.apache.thrift.TException;
+    public ChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws CuratorException, org.apache.thrift.TException;
 
-    public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws org.apache.thrift.TException;
+    public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws CuratorException, org.apache.thrift.TException;
 
     public CuratorProjection newCuratorProjection(String connectionName) throws org.apache.thrift.TException;
 
     public void pingCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException;
 
-    public Stat setData(CuratorProjection projection, SetDataSpec spec) throws org.apache.thrift.TException;
+    public Stat setData(CuratorProjection projection, SetDataSpec spec) throws CuratorException, org.apache.thrift.TException;
 
-    public LeaderResult startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws org.apache.thrift.TException;
+    public LeaderResult startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws CuratorException, org.apache.thrift.TException;
 
-    public NodeCacheProjection startNodeCache(CuratorProjection projection, String path, boolean dataIsCompressed, boolean buildInitial) throws org.apache.thrift.TException;
+    public NodeCacheProjection startNodeCache(CuratorProjection projection, String path, boolean dataIsCompressed, boolean buildInitial) throws CuratorException, org.apache.thrift.TException;
 
-    public PathChildrenCacheProjection startPathChildrenCache(CuratorProjection projection, String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws org.apache.thrift.TException;
+    public PathChildrenCacheProjection startPathChildrenCache(CuratorProjection projection, String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws CuratorException, org.apache.thrift.TException;
 
-    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode) throws org.apache.thrift.TException;
+    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode) throws CuratorException, org.apache.thrift.TException;
 
-    public List<LeaseProjection> startSemaphore(CuratorProjection projection, String path, int acquireQty, int maxWaitMs, int maxLeases) throws org.apache.thrift.TException;
+    public List<LeaseProjection> startSemaphore(CuratorProjection projection, String path, int acquireQty, int maxWaitMs, int maxLeases) throws CuratorException, org.apache.thrift.TException;
 
   }
 
@@ -86,7 +86,7 @@ public class CuratorService {
 
     public void closeCuratorProjection(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
-    public void closeGenericProjection(CuratorProjection curatorProjection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+    public void closeGenericProjection(CuratorProjection projection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void createNode(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -146,7 +146,7 @@ public class CuratorService {
       super(iprot, oprot);
     }
 
-    public LockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws org.apache.thrift.TException
+    public LockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws CuratorException, org.apache.thrift.TException
     {
       send_acquireLock(projection, path, maxWaitMs);
       return recv_acquireLock();
@@ -161,12 +161,15 @@ public class CuratorService {
       sendBase("acquireLock", args);
     }
 
-    public LockProjection recv_acquireLock() throws org.apache.thrift.TException
+    public LockProjection recv_acquireLock() throws CuratorException, org.apache.thrift.TException
     {
       acquireLock_result result = new acquireLock_result();
       receiveBase(result, "acquireLock");
       if (result.isSetSuccess()) {
         return result.success;
+      }
+      if (result.ex1 != null) {
+        throw result.ex1;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "acquireLock failed: unknown result");
     }
@@ -183,31 +186,34 @@ public class CuratorService {
       sendBase("closeCuratorProjection", args);
     }
 
-    public boolean closeGenericProjection(CuratorProjection curatorProjection, String id) throws org.apache.thrift.TException
+    public boolean closeGenericProjection(CuratorProjection projection, String id) throws CuratorException, org.apache.thrift.TException
     {
-      send_closeGenericProjection(curatorProjection, id);
+      send_closeGenericProjection(projection, id);
       return recv_closeGenericProjection();
     }
 
-    public void send_closeGenericProjection(CuratorProjection curatorProjection, String id) throws org.apache.thrift.TException
+    public void send_closeGenericProjection(CuratorProjection projection, String id) throws org.apache.thrift.TException
     {
       closeGenericProjection_args args = new closeGenericProjection_args();
-      args.setCuratorProjection(curatorProjection);
+      args.setProjection(projection);
       args.setId(id);
       sendBase("closeGenericProjection", args);
     }
 
-    public boolean recv_closeGenericProjection() throws org.apache.thrift.TException
+    public boolean recv_closeGenericProjection() throws CuratorException, org.apache.thrift.TException
     {
       closeGenericProjection_result result = new closeGenericProjection_result();
       receiveBase(result, "closeGenericProjection");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "closeGenericProjection failed: unknown result");
     }
 
-    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException
+    public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws CuratorException, org.apache.thrift.TException
     {
       send_createNode(projection, spec);
       return recv_createNode();
@@ -221,17 +227,20 @@ public class CuratorService {
       sendBase("createNode", args);
     }
 
-    public OptionalPath recv_createNode() throws org.apache.thrift.TException
+    public OptionalPath recv_createNode() throws CuratorException, org.apache.thrift.TException
     {
       createNode_result result = new createNode_result();
       receiveBase(result, "createNode");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "createNode failed: unknown result");
     }
 
-    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws org.apache.thrift.TException
+    public void deleteNode(CuratorProjection projection, DeleteSpec spec) throws CuratorException, org.apache.thrift.TException
     {
       send_deleteNode(projection, spec);
       recv_deleteNode();
@@ -245,14 +254,17 @@ public class CuratorService {
       sendBase("deleteNode", args);
     }
 
-    public void recv_deleteNode() throws org.apache.thrift.TException
+    public void recv_deleteNode() throws CuratorException, org.apache.thrift.TException
     {
       deleteNode_result result = new deleteNode_result();
       receiveBase(result, "deleteNode");
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       return;
     }
 
-    public OptionalStat exists(CuratorProjection projection, ExistsSpec spec) throws org.apache.thrift.TException
+    public OptionalStat exists(CuratorProjection projection, ExistsSpec spec) throws CuratorException, org.apache.thrift.TException
     {
       send_exists(projection, spec);
       return recv_exists();
@@ -266,17 +278,20 @@ public class CuratorService {
       sendBase("exists", args);
     }
 
-    public OptionalStat recv_exists() throws org.apache.thrift.TException
+    public OptionalStat recv_exists() throws CuratorException, org.apache.thrift.TException
     {
       exists_result result = new exists_result();
       receiveBase(result, "exists");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "exists failed: unknown result");
     }
 
-    public OptionalChildrenList getChildren(CuratorProjection projection, GetChildrenSpec spec) throws org.apache.thrift.TException
+    public OptionalChildrenList getChildren(CuratorProjection projection, GetChildrenSpec spec) throws CuratorException, org.apache.thrift.TException
     {
       send_getChildren(projection, spec);
       return recv_getChildren();
@@ -290,17 +305,20 @@ public class CuratorService {
       sendBase("getChildren", args);
     }
 
-    public OptionalChildrenList recv_getChildren() throws org.apache.thrift.TException
+    public OptionalChildrenList recv_getChildren() throws CuratorException, org.apache.thrift.TException
     {
       getChildren_result result = new getChildren_result();
       receiveBase(result, "getChildren");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getChildren failed: unknown result");
     }
 
-    public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws org.apache.thrift.TException
+    public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws CuratorException, org.apache.thrift.TException
     {
       send_getData(projection, spec);
       return recv_getData();
@@ -314,17 +332,20 @@ public class CuratorService {
       sendBase("getData", args);
     }
 
-    public ByteBuffer recv_getData() throws org.apache.thrift.TException
+    public ByteBuffer recv_getData() throws CuratorException, org.apache.thrift.TException
     {
       getData_result result = new getData_result();
       receiveBase(result, "getData");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getData failed: unknown result");
     }
 
-    public List<Participant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws org.apache.thrift.TException
+    public List<Participant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws CuratorException, org.apache.thrift.TException
     {
       send_getLeaderParticipants(projection, leaderProjection);
       return recv_getLeaderParticipants();
@@ -338,17 +359,20 @@ public class CuratorService {
       sendBase("getLeaderParticipants", args);
     }
 
-    public List<Participant> recv_getLeaderParticipants() throws org.apache.thrift.TException
+    public List<Participant> recv_getLeaderParticipants() throws CuratorException, org.apache.thrift.TException
     {
       getLeaderParticipants_result result = new getLeaderParticipants_result();
       receiveBase(result, "getLeaderParticipants");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getLeaderParticipants failed: unknown result");
     }
 
-    public ChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws org.apache.thrift.TException
+    public ChildData getNodeCacheData(CuratorProjection projection, NodeCacheProjection cacheProjection) throws CuratorException, org.apache.thrift.TException
     {
       send_getNodeCacheData(projection, cacheProjection);
       return recv_getNodeCacheData();
@@ -362,17 +386,20 @@ public class CuratorService {
       sendBase("getNodeCacheData", args);
     }
 
-    public ChildData recv_getNodeCacheData() throws org.apache.thrift.TException
+    public ChildData recv_getNodeCacheData() throws CuratorException, org.apache.thrift.TException
     {
       getNodeCacheData_result result = new getNodeCacheData_result();
       receiveBase(result, "getNodeCacheData");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getNodeCacheData failed: unknown result");
     }
 
-    public List<ChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws org.apache.thrift.TException
+    public List<ChildData> getPathChildrenCacheData(CuratorProjection projection, PathChildrenCacheProjection cacheProjection) throws CuratorException, org.apache.thrift.TException
     {
       send_getPathChildrenCacheData(projection, cacheProjection);
       return recv_getPathChildrenCacheData();
@@ -386,17 +413,20 @@ public class CuratorService {
       sendBase("getPathChildrenCacheData", args);
     }
 
-    public List<ChildData> recv_getPathChildrenCacheData() throws org.apache.thrift.TException
+    public List<ChildData> recv_getPathChildrenCacheData() throws CuratorException, org.apache.thrift.TException
     {
       getPathChildrenCacheData_result result = new getPathChildrenCacheData_result();
       receiveBase(result, "getPathChildrenCacheData");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getPathChildrenCacheData failed: unknown result");
     }
 
-    public ChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws org.apache.thrift.TException
+    public ChildData getPathChildrenCacheDataForPath(CuratorProjection projection, PathChildrenCacheProjection cacheProjection, String path) throws CuratorException, org.apache.thrift.TException
     {
       send_getPathChildrenCacheDataForPath(projection, cacheProjection, path);
       return recv_getPathChildrenCacheDataForPath();
@@ -411,17 +441,20 @@ public class CuratorService {
       sendBase("getPathChildrenCacheDataForPath", args);
     }
 
-    public ChildData recv_getPathChildrenCacheDataForPath() throws org.apache.thrift.TException
+    public ChildData recv_getPathChildrenCacheDataForPath() throws CuratorException, org.apache.thrift.TException
     {
       getPathChildrenCacheDataForPath_result result = new getPathChildrenCacheDataForPath_result();
       receiveBase(result, "getPathChildrenCacheDataForPath");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getPathChildrenCacheDataForPath failed: unknown result");
     }
 
-    public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws org.apache.thrift.TException
+    public boolean isLeader(CuratorProjection projection, LeaderProjection leaderProjection) throws CuratorException, org.apache.thrift.TException
     {
       send_isLeader(projection, leaderProjection);
       return recv_isLeader();
@@ -435,12 +468,15 @@ public class CuratorService {
       sendBase("isLeader", args);
     }
 
-    public boolean recv_isLeader() throws org.apache.thrift.TException
+    public boolean recv_isLeader() throws CuratorException, org.apache.thrift.TException
     {
       isLeader_result result = new isLeader_result();
       receiveBase(result, "isLeader");
       if (result.isSetSuccess()) {
         return result.success;
+      }
+      if (result.ex1 != null) {
+        throw result.ex1;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "isLeader failed: unknown result");
     }
@@ -480,7 +516,7 @@ public class CuratorService {
       sendBase("pingCuratorProjection", args);
     }
 
-    public Stat setData(CuratorProjection projection, SetDataSpec spec) throws org.apache.thrift.TException
+    public Stat setData(CuratorProjection projection, SetDataSpec spec) throws CuratorException, org.apache.thrift.TException
     {
       send_setData(projection, spec);
       return recv_setData();
@@ -494,17 +530,20 @@ public class CuratorService {
       sendBase("setData", args);
     }
 
-    public Stat recv_setData() throws org.apache.thrift.TException
+    public Stat recv_setData() throws CuratorException, org.apache.thrift.TException
     {
       setData_result result = new setData_result();
       receiveBase(result, "setData");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "setData failed: unknown result");
     }
 
-    public LeaderResult startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws org.apache.thrift.TException
+    public LeaderResult startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws CuratorException, org.apache.thrift.TException
     {
       send_startLeaderSelector(projection, path, participantId, waitForLeadershipMs);
       return recv_startLeaderSelector();
@@ -520,17 +559,20 @@ public class CuratorService {
       sendBase("startLeaderSelector", args);
     }
 
-    public LeaderResult recv_startLeaderSelector() throws org.apache.thrift.TException
+    public LeaderResult recv_startLeaderSelector() throws CuratorException, org.apache.thrift.TException
     {
       startLeaderSelector_result result = new startLeaderSelector_result();
       receiveBase(result, "startLeaderSelector");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startLeaderSelector failed: unknown result");
     }
 
-    public NodeCacheProjection startNodeCache(CuratorProjection projection, String path, boolean dataIsCompressed, boolean buildInitial) throws org.apache.thrift.TException
+    public NodeCacheProjection startNodeCache(CuratorProjection projection, String path, boolean dataIsCompressed, boolean buildInitial) throws CuratorException, org.apache.thrift.TException
     {
       send_startNodeCache(projection, path, dataIsCompressed, buildInitial);
       return recv_startNodeCache();
@@ -546,17 +588,20 @@ public class CuratorService {
       sendBase("startNodeCache", args);
     }
 
-    public NodeCacheProjection recv_startNodeCache() throws org.apache.thrift.TException
+    public NodeCacheProjection recv_startNodeCache() throws CuratorException, org.apache.thrift.TException
     {
       startNodeCache_result result = new startNodeCache_result();
       receiveBase(result, "startNodeCache");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startNodeCache failed: unknown result");
     }
 
-    public PathChildrenCacheProjection startPathChildrenCache(CuratorProjection projection, String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws org.apache.thrift.TException
+    public PathChildrenCacheProjection startPathChildrenCache(CuratorProjection projection, String path, boolean cacheData, boolean dataIsCompressed, PathChildrenCacheStartMode startMode) throws CuratorException, org.apache.thrift.TException
     {
       send_startPathChildrenCache(projection, path, cacheData, dataIsCompressed, startMode);
       return recv_startPathChildrenCache();
@@ -573,17 +618,20 @@ public class CuratorService {
       sendBase("startPathChildrenCache", args);
     }
 
-    public PathChildrenCacheProjection recv_startPathChildrenCache() throws org.apache.thrift.TException
+    public PathChildrenCacheProjection recv_startPathChildrenCache() throws CuratorException, org.apache.thrift.TException
     {
       startPathChildrenCache_result result = new startPathChildrenCache_result();
       receiveBase(result, "startPathChildrenCache");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startPathChildrenCache failed: unknown result");
     }
 
-    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode) throws org.apache.thrift.TException
+    public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode) throws CuratorException, org.apache.thrift.TException
     {
       send_startPersistentEphemeralNode(projection, path, data, mode);
       return recv_startPersistentEphemeralNode();
@@ -599,17 +647,20 @@ public class CuratorService {
       sendBase("startPersistentEphemeralNode", args);
     }
 
-    public PersistentEphemeralNodeProjection recv_startPersistentEphemeralNode() throws org.apache.thrift.TException
+    public PersistentEphemeralNodeProjection recv_startPersistentEphemeralNode() throws CuratorException, org.apache.thrift.TException
     {
       startPersistentEphemeralNode_result result = new startPersistentEphemeralNode_result();
       receiveBase(result, "startPersistentEphemeralNode");
       if (result.isSetSuccess()) {
         return result.success;
       }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startPersistentEphemeralNode failed: unknown result");
     }
 
-    public List<LeaseProjection> startSemaphore(CuratorProjection projection, String path, int acquireQty, int maxWaitMs, int maxLeases) throws org.apache.thrift.TException
+    public List<LeaseProjection> startSemaphore(CuratorProjection projection, String path, int acquireQty, int maxWaitMs, int maxLeases) throws CuratorException, org.apache.thrift.TException
     {
       send_startSemaphore(projection, path, acquireQty, maxWaitMs, maxLeases);
       return recv_startSemaphore();
@@ -626,12 +677,15 @@ public class CuratorService {
       sendBase("startSemaphore", args);
     }
 
-    public List<LeaseProjection> recv_startSemaphore() throws org.apache.thrift.TException
+    public List<LeaseProjection> recv_startSemaphore() throws CuratorException, org.apache.thrift.TException
     {
       startSemaphore_result result = new startSemaphore_result();
       receiveBase(result, "startSemaphore");
       if (result.isSetSuccess()) {
         return result.success;
+      }
+      if (result.ex1 != null) {
+        throw result.ex1;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startSemaphore failed: unknown result");
     }
@@ -682,7 +736,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public LockProjection getResult() throws org.apache.thrift.TException {
+      public LockProjection getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -723,32 +777,32 @@ public class CuratorService {
       }
     }
 
-    public void closeGenericProjection(CuratorProjection curatorProjection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+    public void closeGenericProjection(CuratorProjection projection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      closeGenericProjection_call method_call = new closeGenericProjection_call(curatorProjection, id, resultHandler, this, ___protocolFactory, ___transport);
+      closeGenericProjection_call method_call = new closeGenericProjection_call(projection, id, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
     public static class closeGenericProjection_call extends org.apache.thrift.async.TAsyncMethodCall {
-      private CuratorProjection curatorProjection;
+      private CuratorProjection projection;
       private String id;
-      public closeGenericProjection_call(CuratorProjection curatorProjection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      public closeGenericProjection_call(CuratorProjection projection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
-        this.curatorProjection = curatorProjection;
+        this.projection = projection;
         this.id = id;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("closeGenericProjection", org.apache.thrift.protocol.TMessageType.CALL, 0));
         closeGenericProjection_args args = new closeGenericProjection_args();
-        args.setCuratorProjection(curatorProjection);
+        args.setProjection(projection);
         args.setId(id);
         args.write(prot);
         prot.writeMessageEnd();
       }
 
-      public boolean getResult() throws org.apache.thrift.TException {
+      public boolean getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -783,7 +837,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public OptionalPath getResult() throws org.apache.thrift.TException {
+      public OptionalPath getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -818,7 +872,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public void getResult() throws org.apache.thrift.TException {
+      public void getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -853,7 +907,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public OptionalStat getResult() throws org.apache.thrift.TException {
+      public OptionalStat getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -888,7 +942,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public OptionalChildrenList getResult() throws org.apache.thrift.TException {
+      public OptionalChildrenList getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -923,7 +977,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public ByteBuffer getResult() throws org.apache.thrift.TException {
+      public ByteBuffer getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -958,7 +1012,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public List<Participant> getResult() throws org.apache.thrift.TException {
+      public List<Participant> getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -993,7 +1047,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public ChildData getResult() throws org.apache.thrift.TException {
+      public ChildData getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1028,7 +1082,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public List<ChildData> getResult() throws org.apache.thrift.TException {
+      public List<ChildData> getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1066,7 +1120,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public ChildData getResult() throws org.apache.thrift.TException {
+      public ChildData getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1101,7 +1155,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public boolean getResult() throws org.apache.thrift.TException {
+      public boolean getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1199,7 +1253,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public Stat getResult() throws org.apache.thrift.TException {
+      public Stat getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1240,7 +1294,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public LeaderResult getResult() throws org.apache.thrift.TException {
+      public LeaderResult getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1281,7 +1335,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public NodeCacheProjection getResult() throws org.apache.thrift.TException {
+      public NodeCacheProjection getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1325,7 +1379,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public PathChildrenCacheProjection getResult() throws org.apache.thrift.TException {
+      public PathChildrenCacheProjection getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1366,7 +1420,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public PersistentEphemeralNodeProjection getResult() throws org.apache.thrift.TException {
+      public PersistentEphemeralNodeProjection getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1410,7 +1464,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public List<LeaseProjection> getResult() throws org.apache.thrift.TException {
+      public List<LeaseProjection> getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1472,7 +1526,11 @@ public class CuratorService {
 
       public acquireLock_result getResult(I iface, acquireLock_args args) throws org.apache.thrift.TException {
         acquireLock_result result = new acquireLock_result();
-        result.success = iface.acquireLock(args.projection, args.path, args.maxWaitMs);
+        try {
+          result.success = iface.acquireLock(args.projection, args.path, args.maxWaitMs);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1511,8 +1569,12 @@ public class CuratorService {
 
       public closeGenericProjection_result getResult(I iface, closeGenericProjection_args args) throws org.apache.thrift.TException {
         closeGenericProjection_result result = new closeGenericProjection_result();
-        result.success = iface.closeGenericProjection(args.curatorProjection, args.id);
-        result.setSuccessIsSet(true);
+        try {
+          result.success = iface.closeGenericProjection(args.projection, args.id);
+          result.setSuccessIsSet(true);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1532,7 +1594,11 @@ public class CuratorService {
 
       public createNode_result getResult(I iface, createNode_args args) throws org.apache.thrift.TException {
         createNode_result result = new createNode_result();
-        result.success = iface.createNode(args.projection, args.spec);
+        try {
+          result.success = iface.createNode(args.projection, args.spec);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1552,7 +1618,11 @@ public class CuratorService {
 
       public deleteNode_result getResult(I iface, deleteNode_args args) throws org.apache.thrift.TException {
         deleteNode_result result = new deleteNode_result();
-        iface.deleteNode(args.projection, args.spec);
+        try {
+          iface.deleteNode(args.projection, args.spec);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1572,7 +1642,11 @@ public class CuratorService {
 
       public exists_result getResult(I iface, exists_args args) throws org.apache.thrift.TException {
         exists_result result = new exists_result();
-        result.success = iface.exists(args.projection, args.spec);
+        try {
+          result.success = iface.exists(args.projection, args.spec);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1592,7 +1666,11 @@ public class CuratorService {
 
       public getChildren_result getResult(I iface, getChildren_args args) throws org.apache.thrift.TException {
         getChildren_result result = new getChildren_result();
-        result.success = iface.getChildren(args.projection, args.spec);
+        try {
+          result.success = iface.getChildren(args.projection, args.spec);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1612,7 +1690,11 @@ public class CuratorService {
 
       public getData_result getResult(I iface, getData_args args) throws org.apache.thrift.TException {
         getData_result result = new getData_result();
-        result.success = iface.getData(args.projection, args.spec);
+        try {
+          result.success = iface.getData(args.projection, args.spec);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1632,7 +1714,11 @@ public class CuratorService {
 
       public getLeaderParticipants_result getResult(I iface, getLeaderParticipants_args args) throws org.apache.thrift.TException {
         getLeaderParticipants_result result = new getLeaderParticipants_result();
-        result.success = iface.getLeaderParticipants(args.projection, args.leaderProjection);
+        try {
+          result.success = iface.getLeaderParticipants(args.projection, args.leaderProjection);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1652,7 +1738,11 @@ public class CuratorService {
 
       public getNodeCacheData_result getResult(I iface, getNodeCacheData_args args) throws org.apache.thrift.TException {
         getNodeCacheData_result result = new getNodeCacheData_result();
-        result.success = iface.getNodeCacheData(args.projection, args.cacheProjection);
+        try {
+          result.success = iface.getNodeCacheData(args.projection, args.cacheProjection);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1672,7 +1762,11 @@ public class CuratorService {
 
       public getPathChildrenCacheData_result getResult(I iface, getPathChildrenCacheData_args args) throws org.apache.thrift.TException {
         getPathChildrenCacheData_result result = new getPathChildrenCacheData_result();
-        result.success = iface.getPathChildrenCacheData(args.projection, args.cacheProjection);
+        try {
+          result.success = iface.getPathChildrenCacheData(args.projection, args.cacheProjection);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1692,7 +1786,11 @@ public class CuratorService {
 
       public getPathChildrenCacheDataForPath_result getResult(I iface, getPathChildrenCacheDataForPath_args args) throws org.apache.thrift.TException {
         getPathChildrenCacheDataForPath_result result = new getPathChildrenCacheDataForPath_result();
-        result.success = iface.getPathChildrenCacheDataForPath(args.projection, args.cacheProjection, args.path);
+        try {
+          result.success = iface.getPathChildrenCacheDataForPath(args.projection, args.cacheProjection, args.path);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1712,8 +1810,12 @@ public class CuratorService {
 
       public isLeader_result getResult(I iface, isLeader_args args) throws org.apache.thrift.TException {
         isLeader_result result = new isLeader_result();
-        result.success = iface.isLeader(args.projection, args.leaderProjection);
-        result.setSuccessIsSet(true);
+        try {
+          result.success = iface.isLeader(args.projection, args.leaderProjection);
+          result.setSuccessIsSet(true);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1772,7 +1874,11 @@ public class CuratorService {
 
       public setData_result getResult(I iface, setData_args args) throws org.apache.thrift.TException {
         setData_result result = new setData_result();
-        result.success = iface.setData(args.projection, args.spec);
+        try {
+          result.success = iface.setData(args.projection, args.spec);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1792,7 +1898,11 @@ public class CuratorService {
 
       public startLeaderSelector_result getResult(I iface, startLeaderSelector_args args) throws org.apache.thrift.TException {
         startLeaderSelector_result result = new startLeaderSelector_result();
-        result.success = iface.startLeaderSelector(args.projection, args.path, args.participantId, args.waitForLeadershipMs);
+        try {
+          result.success = iface.startLeaderSelector(args.projection, args.path, args.participantId, args.waitForLeadershipMs);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1812,7 +1922,11 @@ public class CuratorService {
 
       public startNodeCache_result getResult(I iface, startNodeCache_args args) throws org.apache.thrift.TException {
         startNodeCache_result result = new startNodeCache_result();
-        result.success = iface.startNodeCache(args.projection, args.path, args.dataIsCompressed, args.buildInitial);
+        try {
+          result.success = iface.startNodeCache(args.projection, args.path, args.dataIsCompressed, args.buildInitial);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1832,7 +1946,11 @@ public class CuratorService {
 
       public startPathChildrenCache_result getResult(I iface, startPathChildrenCache_args args) throws org.apache.thrift.TException {
         startPathChildrenCache_result result = new startPathChildrenCache_result();
-        result.success = iface.startPathChildrenCache(args.projection, args.path, args.cacheData, args.dataIsCompressed, args.startMode);
+        try {
+          result.success = iface.startPathChildrenCache(args.projection, args.path, args.cacheData, args.dataIsCompressed, args.startMode);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1852,7 +1970,11 @@ public class CuratorService {
 
       public startPersistentEphemeralNode_result getResult(I iface, startPersistentEphemeralNode_args args) throws org.apache.thrift.TException {
         startPersistentEphemeralNode_result result = new startPersistentEphemeralNode_result();
-        result.success = iface.startPersistentEphemeralNode(args.projection, args.path, args.data, args.mode);
+        try {
+          result.success = iface.startPersistentEphemeralNode(args.projection, args.path, args.data, args.mode);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1872,7 +1994,11 @@ public class CuratorService {
 
       public startSemaphore_result getResult(I iface, startSemaphore_args args) throws org.apache.thrift.TException {
         startSemaphore_result result = new startSemaphore_result();
-        result.success = iface.startSemaphore(args.projection, args.path, args.acquireQty, args.maxWaitMs, args.maxLeases);
+        try {
+          result.success = iface.startSemaphore(args.projection, args.path, args.acquireQty, args.maxWaitMs, args.maxLeases);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -1941,6 +2067,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             acquireLock_result result = new acquireLock_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2021,6 +2153,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             closeGenericProjection_result result = new closeGenericProjection_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2041,7 +2179,7 @@ public class CuratorService {
       }
 
       public void start(I iface, closeGenericProjection_args args, org.apache.thrift.async.AsyncMethodCallback<Boolean> resultHandler) throws TException {
-        iface.closeGenericProjection(args.curatorProjection, args.id,resultHandler);
+        iface.closeGenericProjection(args.projection, args.id,resultHandler);
       }
     }
 
@@ -2072,6 +2210,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             createNode_result result = new createNode_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2122,6 +2266,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             deleteNode_result result = new deleteNode_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2173,6 +2323,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             exists_result result = new exists_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2224,6 +2380,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             getChildren_result result = new getChildren_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2275,6 +2437,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             getData_result result = new getData_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2326,6 +2494,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             getLeaderParticipants_result result = new getLeaderParticipants_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2377,6 +2551,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             getNodeCacheData_result result = new getNodeCacheData_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2428,6 +2608,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             getPathChildrenCacheData_result result = new getPathChildrenCacheData_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2479,6 +2665,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             getPathChildrenCacheDataForPath_result result = new getPathChildrenCacheDataForPath_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2531,6 +2723,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             isLeader_result result = new isLeader_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2661,6 +2859,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             setData_result result = new setData_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2712,6 +2916,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             startLeaderSelector_result result = new startLeaderSelector_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2763,6 +2973,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             startNodeCache_result result = new startNodeCache_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2814,6 +3030,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             startPathChildrenCache_result result = new startPathChildrenCache_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2865,6 +3087,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             startPersistentEphemeralNode_result result = new startPersistentEphemeralNode_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -2916,6 +3144,12 @@ public class CuratorService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             startSemaphore_result result = new startSemaphore_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -3503,6 +3737,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("acquireLock_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -3511,10 +3746,12 @@ public class CuratorService {
     }
 
     public LockProjection success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -3531,6 +3768,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -3576,6 +3815,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LockProjection.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(acquireLock_result.class, metaDataMap);
     }
@@ -3584,10 +3825,12 @@ public class CuratorService {
     }
 
     public acquireLock_result(
-      LockProjection success)
+      LockProjection success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -3596,6 +3839,9 @@ public class CuratorService {
     public acquireLock_result(acquireLock_result other) {
       if (other.isSetSuccess()) {
         this.success = new LockProjection(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -3606,6 +3852,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public LockProjection getSuccess() {
@@ -3632,6 +3879,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public acquireLock_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -3642,6 +3913,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -3649,6 +3928,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -3663,6 +3945,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -3686,6 +3970,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -3715,6 +4008,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -3740,6 +4043,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -3797,6 +4108,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -3815,6 +4135,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -3838,20 +4163,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, acquireLock_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new LockProjection();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -4220,7 +4556,7 @@ public class CuratorService {
   public static class closeGenericProjection_args implements org.apache.thrift.TBase<closeGenericProjection_args, closeGenericProjection_args._Fields>, java.io.Serializable, Cloneable, Comparable<closeGenericProjection_args>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("closeGenericProjection_args");
 
-    private static final org.apache.thrift.protocol.TField CURATOR_PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("curatorProjection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
     private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.STRING, (short)2);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
@@ -4229,12 +4565,12 @@ public class CuratorService {
       schemes.put(TupleScheme.class, new closeGenericProjection_argsTupleSchemeFactory());
     }
 
-    public CuratorProjection curatorProjection; // required
+    public CuratorProjection projection; // required
     public String id; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      CURATOR_PROJECTION((short)1, "curatorProjection"),
+      PROJECTION((short)1, "projection"),
       ID((short)2, "id");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -4250,8 +4586,8 @@ public class CuratorService {
        */
       public static _Fields findByThriftId(int fieldId) {
         switch(fieldId) {
-          case 1: // CURATOR_PROJECTION
-            return CURATOR_PROJECTION;
+          case 1: // PROJECTION
+            return PROJECTION;
           case 2: // ID
             return ID;
           default:
@@ -4297,7 +4633,7 @@ public class CuratorService {
     public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.CURATOR_PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("curatorProjection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
       tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
@@ -4309,11 +4645,11 @@ public class CuratorService {
     }
 
     public closeGenericProjection_args(
-      CuratorProjection curatorProjection,
+      CuratorProjection projection,
       String id)
     {
       this();
-      this.curatorProjection = curatorProjection;
+      this.projection = projection;
       this.id = id;
     }
 
@@ -4321,8 +4657,8 @@ public class CuratorService {
      * Performs a deep copy on <i>other</i>.
      */
     public closeGenericProjection_args(closeGenericProjection_args other) {
-      if (other.isSetCuratorProjection()) {
-        this.curatorProjection = new CuratorProjection(other.curatorProjection);
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
       }
       if (other.isSetId()) {
         this.id = other.id;
@@ -4335,31 +4671,31 @@ public class CuratorService {
 
     @Override
     public void clear() {
-      this.curatorProjection = null;
+      this.projection = null;
       this.id = null;
     }
 
-    public CuratorProjection getCuratorProjection() {
-      return this.curatorProjection;
+    public CuratorProjection getProjection() {
+      return this.projection;
     }
 
-    public closeGenericProjection_args setCuratorProjection(CuratorProjection curatorProjection) {
-      this.curatorProjection = curatorProjection;
+    public closeGenericProjection_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
       return this;
     }
 
-    public void unsetCuratorProjection() {
-      this.curatorProjection = null;
+    public void unsetProjection() {
+      this.projection = null;
     }
 
-    /** Returns true if field curatorProjection is set (has been assigned a value) and false otherwise */
-    public boolean isSetCuratorProjection() {
-      return this.curatorProjection != null;
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
     }
 
-    public void setCuratorProjectionIsSet(boolean value) {
+    public void setProjectionIsSet(boolean value) {
       if (!value) {
-        this.curatorProjection = null;
+        this.projection = null;
       }
     }
 
@@ -4389,11 +4725,11 @@ public class CuratorService {
 
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
-      case CURATOR_PROJECTION:
+      case PROJECTION:
         if (value == null) {
-          unsetCuratorProjection();
+          unsetProjection();
         } else {
-          setCuratorProjection((CuratorProjection)value);
+          setProjection((CuratorProjection)value);
         }
         break;
 
@@ -4410,8 +4746,8 @@ public class CuratorService {
 
     public Object getFieldValue(_Fields field) {
       switch (field) {
-      case CURATOR_PROJECTION:
-        return getCuratorProjection();
+      case PROJECTION:
+        return getProjection();
 
       case ID:
         return getId();
@@ -4427,8 +4763,8 @@ public class CuratorService {
       }
 
       switch (field) {
-      case CURATOR_PROJECTION:
-        return isSetCuratorProjection();
+      case PROJECTION:
+        return isSetProjection();
       case ID:
         return isSetId();
       }
@@ -4448,12 +4784,12 @@ public class CuratorService {
       if (that == null)
         return false;
 
-      boolean this_present_curatorProjection = true && this.isSetCuratorProjection();
-      boolean that_present_curatorProjection = true && that.isSetCuratorProjection();
-      if (this_present_curatorProjection || that_present_curatorProjection) {
-        if (!(this_present_curatorProjection && that_present_curatorProjection))
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
           return false;
-        if (!this.curatorProjection.equals(that.curatorProjection))
+        if (!this.projection.equals(that.projection))
           return false;
       }
 
@@ -4482,12 +4818,12 @@ public class CuratorService {
 
       int lastComparison = 0;
 
-      lastComparison = Boolean.valueOf(isSetCuratorProjection()).compareTo(other.isSetCuratorProjection());
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
       if (lastComparison != 0) {
         return lastComparison;
       }
-      if (isSetCuratorProjection()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.curatorProjection, other.curatorProjection);
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -4522,11 +4858,11 @@ public class CuratorService {
       StringBuilder sb = new StringBuilder("closeGenericProjection_args(");
       boolean first = true;
 
-      sb.append("curatorProjection:");
-      if (this.curatorProjection == null) {
+      sb.append("projection:");
+      if (this.projection == null) {
         sb.append("null");
       } else {
-        sb.append(this.curatorProjection);
+        sb.append(this.projection);
       }
       first = false;
       if (!first) sb.append(", ");
@@ -4544,8 +4880,8 @@ public class CuratorService {
     public void validate() throws org.apache.thrift.TException {
       // check for required fields
       // check for sub-struct validity
-      if (curatorProjection != null) {
-        curatorProjection.validate();
+      if (projection != null) {
+        projection.validate();
       }
     }
 
@@ -4583,11 +4919,11 @@ public class CuratorService {
             break;
           }
           switch (schemeField.id) {
-            case 1: // CURATOR_PROJECTION
+            case 1: // PROJECTION
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.curatorProjection = new CuratorProjection();
-                struct.curatorProjection.read(iprot);
-                struct.setCuratorProjectionIsSet(true);
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
@@ -4615,9 +4951,9 @@ public class CuratorService {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
-        if (struct.curatorProjection != null) {
-          oprot.writeFieldBegin(CURATOR_PROJECTION_FIELD_DESC);
-          struct.curatorProjection.write(oprot);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
           oprot.writeFieldEnd();
         }
         if (struct.id != null) {
@@ -4643,15 +4979,15 @@ public class CuratorService {
       public void write(org.apache.thrift.protocol.TProtocol prot, closeGenericProjection_args struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
-        if (struct.isSetCuratorProjection()) {
+        if (struct.isSetProjection()) {
           optionals.set(0);
         }
         if (struct.isSetId()) {
           optionals.set(1);
         }
         oprot.writeBitSet(optionals, 2);
-        if (struct.isSetCuratorProjection()) {
-          struct.curatorProjection.write(oprot);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
         }
         if (struct.isSetId()) {
           oprot.writeString(struct.id);
@@ -4663,9 +4999,9 @@ public class CuratorService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
-          struct.curatorProjection = new CuratorProjection();
-          struct.curatorProjection.read(iprot);
-          struct.setCuratorProjectionIsSet(true);
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
         }
         if (incoming.get(1)) {
           struct.id = iprot.readString();
@@ -4680,6 +5016,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("closeGenericProjection_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.BOOL, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -4688,10 +5025,12 @@ public class CuratorService {
     }
 
     public boolean success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -4708,6 +5047,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -4755,6 +5096,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(closeGenericProjection_result.class, metaDataMap);
     }
@@ -4763,11 +5106,13 @@ public class CuratorService {
     }
 
     public closeGenericProjection_result(
-      boolean success)
+      boolean success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
       setSuccessIsSet(true);
+      this.ex1 = ex1;
     }
 
     /**
@@ -4776,6 +5121,9 @@ public class CuratorService {
     public closeGenericProjection_result(closeGenericProjection_result other) {
       __isset_bitfield = other.__isset_bitfield;
       this.success = other.success;
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
     }
 
     public closeGenericProjection_result deepCopy() {
@@ -4786,6 +5134,7 @@ public class CuratorService {
     public void clear() {
       setSuccessIsSet(false);
       this.success = false;
+      this.ex1 = null;
     }
 
     public boolean isSuccess() {
@@ -4811,6 +5160,30 @@ public class CuratorService {
       __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __SUCCESS_ISSET_ID, value);
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public closeGenericProjection_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -4821,6 +5194,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -4828,6 +5209,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return Boolean.valueOf(isSuccess());
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -4842,6 +5226,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -4865,6 +5251,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (this.success != that.success)
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -4894,6 +5289,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -4916,6 +5321,14 @@ public class CuratorService {
 
       sb.append("success:");
       sb.append(this.success);
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
+      }
       first = false;
       sb.append(")");
       return sb.toString();
@@ -4970,6 +5383,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -4988,6 +5410,11 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           oprot.writeBool(struct.success);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -5011,19 +5438,30 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           oprot.writeBool(struct.success);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, closeGenericProjection_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = iprot.readBool();
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -5498,6 +5936,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("createNode_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -5506,10 +5945,12 @@ public class CuratorService {
     }
 
     public OptionalPath success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -5526,6 +5967,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -5571,6 +6014,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, OptionalPath.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(createNode_result.class, metaDataMap);
     }
@@ -5579,10 +6024,12 @@ public class CuratorService {
     }
 
     public createNode_result(
-      OptionalPath success)
+      OptionalPath success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -5591,6 +6038,9 @@ public class CuratorService {
     public createNode_result(createNode_result other) {
       if (other.isSetSuccess()) {
         this.success = new OptionalPath(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -5601,6 +6051,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public OptionalPath getSuccess() {
@@ -5627,6 +6078,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public createNode_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -5637,6 +6112,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -5644,6 +6127,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -5658,6 +6144,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -5681,6 +6169,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -5710,6 +6207,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -5735,6 +6242,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -5792,6 +6307,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -5810,6 +6334,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -5833,20 +6362,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, createNode_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new OptionalPath();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -6320,6 +6860,7 @@ public class CuratorService {
   public static class deleteNode_result implements org.apache.thrift.TBase<deleteNode_result, deleteNode_result._Fields>, java.io.Serializable, Cloneable, Comparable<deleteNode_result>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("deleteNode_result");
 
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -6327,10 +6868,11 @@ public class CuratorService {
       schemes.put(TupleScheme.class, new deleteNode_resultTupleSchemeFactory());
     }
 
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-;
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -6345,6 +6887,8 @@ public class CuratorService {
        */
       public static _Fields findByThriftId(int fieldId) {
         switch(fieldId) {
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -6383,9 +6927,13 @@ public class CuratorService {
         return _fieldName;
       }
     }
+
+    // isset id assignments
     public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(deleteNode_result.class, metaDataMap);
     }
@@ -6393,10 +6941,20 @@ public class CuratorService {
     public deleteNode_result() {
     }
 
+    public deleteNode_result(
+      CuratorException ex1)
+    {
+      this();
+      this.ex1 = ex1;
+    }
+
     /**
      * Performs a deep copy on <i>other</i>.
      */
     public deleteNode_result(deleteNode_result other) {
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
     }
 
     public deleteNode_result deepCopy() {
@@ -6405,15 +6963,51 @@ public class CuratorService {
 
     @Override
     public void clear() {
+      this.ex1 = null;
+    }
+
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public deleteNode_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
     }
 
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
     public Object getFieldValue(_Fields field) {
       switch (field) {
+      case EX1:
+        return getEx1();
+
       }
       throw new IllegalStateException();
     }
@@ -6425,6 +7019,8 @@ public class CuratorService {
       }
 
       switch (field) {
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -6442,6 +7038,15 @@ public class CuratorService {
       if (that == null)
         return false;
 
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
+          return false;
+      }
+
       return true;
     }
 
@@ -6458,6 +7063,16 @@ public class CuratorService {
 
       int lastComparison = 0;
 
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -6478,6 +7093,13 @@ public class CuratorService {
       StringBuilder sb = new StringBuilder("deleteNode_result(");
       boolean first = true;
 
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
+      }
+      first = false;
       sb.append(")");
       return sb.toString();
     }
@@ -6521,6 +7143,15 @@ public class CuratorService {
             break;
           }
           switch (schemeField.id) {
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -6536,6 +7167,11 @@ public class CuratorService {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
+          oprot.writeFieldEnd();
+        }
         oprot.writeFieldStop();
         oprot.writeStructEnd();
       }
@@ -6553,11 +7189,25 @@ public class CuratorService {
       @Override
       public void write(org.apache.thrift.protocol.TProtocol prot, deleteNode_result struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetEx1()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
+        }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, deleteNode_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
+        }
       }
     }
 
@@ -7031,6 +7681,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("exists_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -7039,10 +7690,12 @@ public class CuratorService {
     }
 
     public OptionalStat success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -7059,6 +7712,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -7104,6 +7759,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, OptionalStat.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(exists_result.class, metaDataMap);
     }
@@ -7112,10 +7769,12 @@ public class CuratorService {
     }
 
     public exists_result(
-      OptionalStat success)
+      OptionalStat success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -7124,6 +7783,9 @@ public class CuratorService {
     public exists_result(exists_result other) {
       if (other.isSetSuccess()) {
         this.success = new OptionalStat(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -7134,6 +7796,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public OptionalStat getSuccess() {
@@ -7160,6 +7823,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public exists_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -7170,6 +7857,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -7177,6 +7872,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -7191,6 +7889,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -7214,6 +7914,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -7243,6 +7952,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -7268,6 +7987,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -7325,6 +8052,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -7343,6 +8079,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -7366,20 +8107,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, exists_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new OptionalStat();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -7854,6 +8606,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getChildren_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -7862,10 +8615,12 @@ public class CuratorService {
     }
 
     public OptionalChildrenList success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -7882,6 +8637,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -7927,6 +8684,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, OptionalChildrenList.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getChildren_result.class, metaDataMap);
     }
@@ -7935,10 +8694,12 @@ public class CuratorService {
     }
 
     public getChildren_result(
-      OptionalChildrenList success)
+      OptionalChildrenList success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -7947,6 +8708,9 @@ public class CuratorService {
     public getChildren_result(getChildren_result other) {
       if (other.isSetSuccess()) {
         this.success = new OptionalChildrenList(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -7957,6 +8721,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public OptionalChildrenList getSuccess() {
@@ -7983,6 +8748,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public getChildren_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -7993,6 +8782,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -8000,6 +8797,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -8014,6 +8814,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -8037,6 +8839,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -8066,6 +8877,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -8091,6 +8912,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -8148,6 +8977,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -8166,6 +9004,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -8189,20 +9032,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, getChildren_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new OptionalChildrenList();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -8677,6 +9531,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getData_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRING, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -8685,10 +9540,12 @@ public class CuratorService {
     }
 
     public ByteBuffer success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -8705,6 +9562,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -8750,6 +9609,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING          , true)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getData_result.class, metaDataMap);
     }
@@ -8758,10 +9619,12 @@ public class CuratorService {
     }
 
     public getData_result(
-      ByteBuffer success)
+      ByteBuffer success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -8772,6 +9635,9 @@ public class CuratorService {
         this.success = org.apache.thrift.TBaseHelper.copyBinary(other.success);
 ;
       }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
     }
 
     public getData_result deepCopy() {
@@ -8781,6 +9647,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public byte[] getSuccess() {
@@ -8817,6 +9684,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public getData_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -8827,6 +9718,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -8834,6 +9733,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -8848,6 +9750,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -8871,6 +9775,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -8900,6 +9813,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -8925,6 +9848,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         org.apache.thrift.TBaseHelper.toString(this.success, sb);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -8978,6 +9909,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -8996,6 +9936,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           oprot.writeBinary(struct.success);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -9019,19 +9964,30 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           oprot.writeBinary(struct.success);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, getData_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = iprot.readBinary();
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -9506,6 +10462,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getLeaderParticipants_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.LIST, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -9514,10 +10471,12 @@ public class CuratorService {
     }
 
     public List<Participant> success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -9534,6 +10493,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -9580,6 +10541,8 @@ public class CuratorService {
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
               new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Participant.class))));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getLeaderParticipants_result.class, metaDataMap);
     }
@@ -9588,10 +10551,12 @@ public class CuratorService {
     }
 
     public getLeaderParticipants_result(
-      List<Participant> success)
+      List<Participant> success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -9605,6 +10570,9 @@ public class CuratorService {
         }
         this.success = __this__success;
       }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
     }
 
     public getLeaderParticipants_result deepCopy() {
@@ -9614,6 +10582,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public int getSuccessSize() {
@@ -9655,6 +10624,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public getLeaderParticipants_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -9665,6 +10658,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -9672,6 +10673,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -9686,6 +10690,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -9709,6 +10715,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -9738,6 +10753,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -9763,6 +10788,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -9827,6 +10860,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -9854,6 +10896,11 @@ public class CuratorService {
           }
           oprot.writeFieldEnd();
         }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
+          oprot.writeFieldEnd();
+        }
         oprot.writeFieldStop();
         oprot.writeStructEnd();
       }
@@ -9875,7 +10922,10 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           {
             oprot.writeI32(struct.success.size());
@@ -9885,12 +10935,15 @@ public class CuratorService {
             }
           }
         }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
+        }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, getLeaderParticipants_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           {
             org.apache.thrift.protocol.TList _list29 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
@@ -9904,6 +10957,11 @@ public class CuratorService {
             }
           }
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -10378,6 +11436,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getNodeCacheData_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -10386,10 +11445,12 @@ public class CuratorService {
     }
 
     public ChildData success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -10406,6 +11467,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -10451,6 +11514,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, ChildData.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getNodeCacheData_result.class, metaDataMap);
     }
@@ -10459,10 +11524,12 @@ public class CuratorService {
     }
 
     public getNodeCacheData_result(
-      ChildData success)
+      ChildData success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -10471,6 +11538,9 @@ public class CuratorService {
     public getNodeCacheData_result(getNodeCacheData_result other) {
       if (other.isSetSuccess()) {
         this.success = new ChildData(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -10481,6 +11551,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public ChildData getSuccess() {
@@ -10507,6 +11578,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public getNodeCacheData_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -10517,6 +11612,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -10524,6 +11627,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -10538,6 +11644,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -10561,6 +11669,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -10590,6 +11707,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -10615,6 +11742,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -10672,6 +11807,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -10690,6 +11834,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -10713,20 +11862,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, getNodeCacheData_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new ChildData();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -11201,6 +12361,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPathChildrenCacheData_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.LIST, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -11209,10 +12370,12 @@ public class CuratorService {
     }
 
     public List<ChildData> success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -11229,6 +12392,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -11275,6 +12440,8 @@ public class CuratorService {
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
               new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, ChildData.class))));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPathChildrenCacheData_result.class, metaDataMap);
     }
@@ -11283,10 +12450,12 @@ public class CuratorService {
     }
 
     public getPathChildrenCacheData_result(
-      List<ChildData> success)
+      List<ChildData> success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -11300,6 +12469,9 @@ public class CuratorService {
         }
         this.success = __this__success;
       }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
     }
 
     public getPathChildrenCacheData_result deepCopy() {
@@ -11309,6 +12481,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public int getSuccessSize() {
@@ -11350,6 +12523,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public getPathChildrenCacheData_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -11360,6 +12557,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -11367,6 +12572,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -11381,6 +12589,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -11404,6 +12614,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -11433,6 +12652,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -11458,6 +12687,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -11522,6 +12759,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -11549,6 +12795,11 @@ public class CuratorService {
           }
           oprot.writeFieldEnd();
         }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
+          oprot.writeFieldEnd();
+        }
         oprot.writeFieldStop();
         oprot.writeStructEnd();
       }
@@ -11570,7 +12821,10 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           {
             oprot.writeI32(struct.success.size());
@@ -11580,12 +12834,15 @@ public class CuratorService {
             }
           }
         }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
+        }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheData_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           {
             org.apache.thrift.protocol.TList _list37 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
@@ -11599,6 +12856,11 @@ public class CuratorService {
             }
           }
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -12173,6 +13435,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPathChildrenCacheDataForPath_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -12181,10 +13444,12 @@ public class CuratorService {
     }
 
     public ChildData success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -12201,6 +13466,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -12246,6 +13513,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, ChildData.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPathChildrenCacheDataForPath_result.class, metaDataMap);
     }
@@ -12254,10 +13523,12 @@ public class CuratorService {
     }
 
     public getPathChildrenCacheDataForPath_result(
-      ChildData success)
+      ChildData success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -12266,6 +13537,9 @@ public class CuratorService {
     public getPathChildrenCacheDataForPath_result(getPathChildrenCacheDataForPath_result other) {
       if (other.isSetSuccess()) {
         this.success = new ChildData(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -12276,6 +13550,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public ChildData getSuccess() {
@@ -12302,6 +13577,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public getPathChildrenCacheDataForPath_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -12312,6 +13611,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -12319,6 +13626,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -12333,6 +13643,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -12356,6 +13668,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -12385,6 +13706,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -12410,6 +13741,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -12467,6 +13806,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -12485,6 +13833,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -12508,20 +13861,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, getPathChildrenCacheDataForPath_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new ChildData();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -12996,6 +14360,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("isLeader_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.BOOL, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -13004,10 +14369,12 @@ public class CuratorService {
     }
 
     public boolean success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -13024,6 +14391,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -13071,6 +14440,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(isLeader_result.class, metaDataMap);
     }
@@ -13079,11 +14450,13 @@ public class CuratorService {
     }
 
     public isLeader_result(
-      boolean success)
+      boolean success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
       setSuccessIsSet(true);
+      this.ex1 = ex1;
     }
 
     /**
@@ -13092,6 +14465,9 @@ public class CuratorService {
     public isLeader_result(isLeader_result other) {
       __isset_bitfield = other.__isset_bitfield;
       this.success = other.success;
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
     }
 
     public isLeader_result deepCopy() {
@@ -13102,6 +14478,7 @@ public class CuratorService {
     public void clear() {
       setSuccessIsSet(false);
       this.success = false;
+      this.ex1 = null;
     }
 
     public boolean isSuccess() {
@@ -13127,6 +14504,30 @@ public class CuratorService {
       __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __SUCCESS_ISSET_ID, value);
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public isLeader_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -13137,6 +14538,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -13144,6 +14553,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return Boolean.valueOf(isSuccess());
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -13158,6 +14570,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -13181,6 +14595,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (this.success != that.success)
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -13210,6 +14633,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -13232,6 +14665,14 @@ public class CuratorService {
 
       sb.append("success:");
       sb.append(this.success);
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
+      }
       first = false;
       sb.append(")");
       return sb.toString();
@@ -13286,6 +14727,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -13304,6 +14754,11 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           oprot.writeBool(struct.success);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -13327,19 +14782,30 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           oprot.writeBool(struct.success);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, isLeader_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = iprot.readBool();
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -14886,6 +16352,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("setData_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -14894,10 +16361,12 @@ public class CuratorService {
     }
 
     public Stat success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -14914,6 +16383,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -14959,6 +16430,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Stat.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(setData_result.class, metaDataMap);
     }
@@ -14967,10 +16440,12 @@ public class CuratorService {
     }
 
     public setData_result(
-      Stat success)
+      Stat success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -14979,6 +16454,9 @@ public class CuratorService {
     public setData_result(setData_result other) {
       if (other.isSetSuccess()) {
         this.success = new Stat(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -14989,6 +16467,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public Stat getSuccess() {
@@ -15015,6 +16494,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public setData_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -15025,6 +16528,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -15032,6 +16543,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -15046,6 +16560,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -15069,6 +16585,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -15098,6 +16623,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -15123,6 +16658,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -15180,6 +16723,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -15198,6 +16750,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -15221,20 +16778,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, setData_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new Stat();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -15902,6 +17470,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startLeaderSelector_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -15910,10 +17479,12 @@ public class CuratorService {
     }
 
     public LeaderResult success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -15930,6 +17501,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -15975,6 +17548,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LeaderResult.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startLeaderSelector_result.class, metaDataMap);
     }
@@ -15983,10 +17558,12 @@ public class CuratorService {
     }
 
     public startLeaderSelector_result(
-      LeaderResult success)
+      LeaderResult success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -15995,6 +17572,9 @@ public class CuratorService {
     public startLeaderSelector_result(startLeaderSelector_result other) {
       if (other.isSetSuccess()) {
         this.success = new LeaderResult(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -16005,6 +17585,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public LeaderResult getSuccess() {
@@ -16031,6 +17612,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public startLeaderSelector_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -16041,6 +17646,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -16048,6 +17661,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -16062,6 +17678,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -16085,6 +17703,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -16114,6 +17741,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -16139,6 +17776,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -16196,6 +17841,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -16214,6 +17868,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -16237,20 +17896,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, startLeaderSelector_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new LeaderResult();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -16912,6 +18582,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startNodeCache_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -16920,10 +18591,12 @@ public class CuratorService {
     }
 
     public NodeCacheProjection success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -16940,6 +18613,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -16985,6 +18660,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, NodeCacheProjection.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startNodeCache_result.class, metaDataMap);
     }
@@ -16993,10 +18670,12 @@ public class CuratorService {
     }
 
     public startNodeCache_result(
-      NodeCacheProjection success)
+      NodeCacheProjection success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -17005,6 +18684,9 @@ public class CuratorService {
     public startNodeCache_result(startNodeCache_result other) {
       if (other.isSetSuccess()) {
         this.success = new NodeCacheProjection(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -17015,6 +18697,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public NodeCacheProjection getSuccess() {
@@ -17041,6 +18724,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public startNodeCache_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -17051,6 +18758,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -17058,6 +18773,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -17072,6 +18790,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -17095,6 +18815,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -17124,6 +18853,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -17149,6 +18888,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -17206,6 +18953,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -17224,6 +18980,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -17247,20 +19008,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, startNodeCache_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new NodeCacheProjection();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -18038,6 +19810,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startPathChildrenCache_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -18046,10 +19819,12 @@ public class CuratorService {
     }
 
     public PathChildrenCacheProjection success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -18066,6 +19841,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -18111,6 +19888,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, PathChildrenCacheProjection.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startPathChildrenCache_result.class, metaDataMap);
     }
@@ -18119,10 +19898,12 @@ public class CuratorService {
     }
 
     public startPathChildrenCache_result(
-      PathChildrenCacheProjection success)
+      PathChildrenCacheProjection success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -18131,6 +19912,9 @@ public class CuratorService {
     public startPathChildrenCache_result(startPathChildrenCache_result other) {
       if (other.isSetSuccess()) {
         this.success = new PathChildrenCacheProjection(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -18141,6 +19925,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public PathChildrenCacheProjection getSuccess() {
@@ -18167,6 +19952,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public startPathChildrenCache_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -18177,6 +19986,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -18184,6 +20001,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -18198,6 +20018,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -18221,6 +20043,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -18250,6 +20081,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -18275,6 +20116,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -18332,6 +20181,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -18350,6 +20208,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -18373,20 +20236,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, startPathChildrenCache_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new PathChildrenCacheProjection();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -19083,6 +20957,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startPersistentEphemeralNode_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -19091,10 +20966,12 @@ public class CuratorService {
     }
 
     public PersistentEphemeralNodeProjection success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -19111,6 +20988,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -19156,6 +21035,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, PersistentEphemeralNodeProjection.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startPersistentEphemeralNode_result.class, metaDataMap);
     }
@@ -19164,10 +21045,12 @@ public class CuratorService {
     }
 
     public startPersistentEphemeralNode_result(
-      PersistentEphemeralNodeProjection success)
+      PersistentEphemeralNodeProjection success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -19176,6 +21059,9 @@ public class CuratorService {
     public startPersistentEphemeralNode_result(startPersistentEphemeralNode_result other) {
       if (other.isSetSuccess()) {
         this.success = new PersistentEphemeralNodeProjection(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -19186,6 +21072,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public PersistentEphemeralNodeProjection getSuccess() {
@@ -19212,6 +21099,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public startPersistentEphemeralNode_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -19222,6 +21133,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -19229,6 +21148,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -19243,6 +21165,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -19266,6 +21190,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -19295,6 +21228,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -19320,6 +21263,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -19377,6 +21328,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -19395,6 +21355,11 @@ public class CuratorService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -19418,20 +21383,31 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, startPersistentEphemeralNode_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new PersistentEphemeralNodeProjection();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
@@ -20187,6 +22163,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("startSemaphore_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.LIST, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -20195,10 +22172,12 @@ public class CuratorService {
     }
 
     public List<LeaseProjection> success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -20215,6 +22194,8 @@ public class CuratorService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -20261,6 +22242,8 @@ public class CuratorService {
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
               new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LeaseProjection.class))));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(startSemaphore_result.class, metaDataMap);
     }
@@ -20269,10 +22252,12 @@ public class CuratorService {
     }
 
     public startSemaphore_result(
-      List<LeaseProjection> success)
+      List<LeaseProjection> success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -20286,6 +22271,9 @@ public class CuratorService {
         }
         this.success = __this__success;
       }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
     }
 
     public startSemaphore_result deepCopy() {
@@ -20295,6 +22283,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public int getSuccessSize() {
@@ -20336,6 +22325,30 @@ public class CuratorService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public startSemaphore_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -20346,6 +22359,14 @@ public class CuratorService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -20353,6 +22374,9 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -20367,6 +22391,8 @@ public class CuratorService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -20390,6 +22416,15 @@ public class CuratorService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -20419,6 +22454,16 @@ public class CuratorService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -20444,6 +22489,14 @@ public class CuratorService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -20508,6 +22561,15 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -20535,6 +22597,11 @@ public class CuratorService {
           }
           oprot.writeFieldEnd();
         }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
+          oprot.writeFieldEnd();
+        }
         oprot.writeFieldStop();
         oprot.writeStructEnd();
       }
@@ -20556,7 +22623,10 @@ public class CuratorService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           {
             oprot.writeI32(struct.success.size());
@@ -20566,12 +22636,15 @@ public class CuratorService {
             }
           }
         }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
+        }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, startSemaphore_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           {
             org.apache.thrift.protocol.TList _list45 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
@@ -20585,6 +22658,11 @@ public class CuratorService {
             }
           }
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }

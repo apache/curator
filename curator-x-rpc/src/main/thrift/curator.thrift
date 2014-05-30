@@ -31,6 +31,18 @@ enum PersistentEphemeralNodeMode {
   EPHEMERAL, EPHEMERAL_SEQUENTIAL, PROTECTED_EPHEMERAL, PROTECTED_EPHEMERAL_SEQUENTIAL
 }
 
+enum ExceptionType {
+  GENERAL, ZOOKEEPER, NODE
+}
+
+enum NodeExceptionType {
+  NONODE, BADVERSION, NODEEXISTS, NOTEMPTY
+}
+
+enum ZooKeeperExceptionType {
+  SYSTEMERROR, RUNTIMEINCONSISTENCY, DATAINCONSISTENCY, CONNECTIONLOSS, MARSHALLINGERROR, UNIMPLEMENTED, OPERATIONTIMEOUT, BADARGUMENTS, APIERROR, NOAUTH, NOCHILDRENFOREPHEMERALS, INVALIDACL, AUTHFAILED, SESSIONEXPIRED, INVALIDCALLBACK, SESSIONMOVED, NOTREADONLY
+}
+
 struct CuratorProjection {
   1: string id;
 }
@@ -179,6 +191,13 @@ struct SetDataSpec {
   6: binary data;
 }
 
+exception CuratorException {
+  1: ExceptionType type;
+  2: ZooKeeperExceptionType zooKeeperException;
+  3: NodeExceptionType nodeException;
+  4: string message;
+}
+
 struct CuratorEvent {
   2: CuratorEventType type;
   3: i32 resultCode;
@@ -195,29 +214,29 @@ struct CuratorEvent {
 }
 
 service CuratorService {
-  LockProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs);
+  LockProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs) throws (1: CuratorException ex1);
   oneway void closeCuratorProjection(1: CuratorProjection projection);
-  bool closeGenericProjection(1: CuratorProjection curatorProjection, 2: string id);
-  OptionalPath createNode(1: CuratorProjection projection, 2: CreateSpec spec);
-  void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec);
-  OptionalStat exists(1: CuratorProjection projection, 2: ExistsSpec spec);
-  OptionalChildrenList getChildren(1: CuratorProjection projection, 2: GetChildrenSpec spec);
-  binary getData(1: CuratorProjection projection, 2: GetDataSpec spec);
-  list<Participant> getLeaderParticipants(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
-  ChildData getNodeCacheData(1: CuratorProjection projection, 2: NodeCacheProjection cacheProjection);
-  list<ChildData> getPathChildrenCacheData(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection);
-  ChildData getPathChildrenCacheDataForPath(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection, 3: string path);
-  bool isLeader(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
+  bool closeGenericProjection(1: CuratorProjection projection, 2: string id) throws (1: CuratorException ex1);
+  OptionalPath createNode(1: CuratorProjection projection, 2: CreateSpec spec) throws (1: CuratorException ex1);
+  void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec) throws (1: CuratorException ex1);
+  OptionalStat exists(1: CuratorProjection projection, 2: ExistsSpec spec) throws (1: CuratorException ex1);
+  OptionalChildrenList getChildren(1: CuratorProjection projection, 2: GetChildrenSpec spec) throws (1: CuratorException ex1);
+  binary getData(1: CuratorProjection projection, 2: GetDataSpec spec) throws (1: CuratorException ex1);
+  list<Participant> getLeaderParticipants(1: CuratorProjection projection, 2: LeaderProjection leaderProjection) throws (1: CuratorException ex1);
+  ChildData getNodeCacheData(1: CuratorProjection projection, 2: NodeCacheProjection cacheProjection) throws (1: CuratorException ex1);
+  list<ChildData> getPathChildrenCacheData(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection) throws (1: CuratorException ex1);
+  ChildData getPathChildrenCacheDataForPath(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection, 3: string path) throws (1: CuratorException ex1);
+  bool isLeader(1: CuratorProjection projection, 2: LeaderProjection leaderProjection) throws (1: CuratorException ex1);
   CuratorProjection newCuratorProjection(1: string connectionName);
   oneway void pingCuratorProjection(1: CuratorProjection projection);
-  Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec);
-  LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs);
-  NodeCacheProjection startNodeCache(1: CuratorProjection projection, 2: string path, 3: bool dataIsCompressed, 4: bool buildInitial);
-  PathChildrenCacheProjection startPathChildrenCache(1: CuratorProjection projection, 2: string path, 3: bool cacheData, 4: bool dataIsCompressed, 5: PathChildrenCacheStartMode startMode);
-  PersistentEphemeralNodeProjection startPersistentEphemeralNode(1: CuratorProjection projection, 2: string path, 3: binary data, 4: PersistentEphemeralNodeMode mode);
-  list<LeaseProjection> startSemaphore(1: CuratorProjection projection, 2: string path, 3: i32 acquireQty, 4: i32 maxWaitMs, 5: i32 maxLeases);
+  Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec) throws (1: CuratorException ex1);
+  LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs) throws (1: CuratorException ex1);
+  NodeCacheProjection startNodeCache(1: CuratorProjection projection, 2: string path, 3: bool dataIsCompressed, 4: bool buildInitial) throws (1: CuratorException ex1);
+  PathChildrenCacheProjection startPathChildrenCache(1: CuratorProjection projection, 2: string path, 3: bool cacheData, 4: bool dataIsCompressed, 5: PathChildrenCacheStartMode startMode) throws (1: CuratorException ex1);
+  PersistentEphemeralNodeProjection startPersistentEphemeralNode(1: CuratorProjection projection, 2: string path, 3: binary data, 4: PersistentEphemeralNodeMode mode) throws (1: CuratorException ex1);
+  list<LeaseProjection> startSemaphore(1: CuratorProjection projection, 2: string path, 3: i32 acquireQty, 4: i32 maxWaitMs, 5: i32 maxLeases) throws (1: CuratorException ex1);
 }
 
 service EventService {
-  CuratorEvent getNextEvent(1: CuratorProjection projection);
+  CuratorEvent getNextEvent(1: CuratorProjection projection) throws (1: CuratorException ex1);
 }

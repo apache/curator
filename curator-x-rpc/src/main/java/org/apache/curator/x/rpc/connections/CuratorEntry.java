@@ -3,6 +3,10 @@ package org.apache.curator.x.rpc.connections;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.x.rpc.idl.exceptions.ExceptionType;
+import org.apache.curator.x.rpc.idl.exceptions.RpcException;
+import org.apache.curator.x.rpc.idl.structs.CuratorProjection;
 import org.apache.curator.x.rpc.idl.structs.RpcCuratorEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +84,16 @@ public class CuratorEntry implements Closeable
         {
             events.offer(event);
         }
+    }
+
+    public static CuratorEntry mustGetEntry(ConnectionManager connectionManager, CuratorProjection projection) throws RpcException
+    {
+        CuratorEntry entry = connectionManager.get(projection.id);
+        if ( entry == null )
+        {
+            throw new RpcException(ExceptionType.GENERAL, null, null, "No CuratorProjection found with the id: " + projection.id);
+        }
+        return entry;
     }
 
     public CuratorFramework getClient()

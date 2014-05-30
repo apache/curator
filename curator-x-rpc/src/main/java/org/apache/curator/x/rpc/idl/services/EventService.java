@@ -4,6 +4,7 @@ import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.connections.ConnectionManager;
+import org.apache.curator.x.rpc.idl.exceptions.RpcException;
 import org.apache.curator.x.rpc.idl.structs.CuratorProjection;
 import org.apache.curator.x.rpc.idl.structs.RpcCuratorEvent;
 
@@ -20,15 +21,17 @@ public class EventService
     }
 
     @ThriftMethod
-    public RpcCuratorEvent getNextEvent(CuratorProjection projection) throws InterruptedException
+    public RpcCuratorEvent getNextEvent(CuratorProjection projection) throws RpcException
     {
-        CuratorEntry entry = connectionManager.get(projection.id);
-        if ( entry == null )
+        try
         {
-            // TODO
-            return null;
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+            RpcCuratorEvent event = entry.pollForEvent(pingTimeMs);
+            return (event != null) ? event : new RpcCuratorEvent();
         }
-        RpcCuratorEvent event = entry.pollForEvent(pingTimeMs);
-        return (event != null) ? event : new RpcCuratorEvent();
+        catch ( InterruptedException e )
+        {
+            throw new RpcException(e);
+        }
     }
 }

@@ -36,7 +36,7 @@ public class EventService {
 
   public interface Iface {
 
-    public CuratorEvent getNextEvent(CuratorProjection projection) throws org.apache.thrift.TException;
+    public CuratorEvent getNextEvent(CuratorProjection projection) throws CuratorException, org.apache.thrift.TException;
 
   }
 
@@ -66,7 +66,7 @@ public class EventService {
       super(iprot, oprot);
     }
 
-    public CuratorEvent getNextEvent(CuratorProjection projection) throws org.apache.thrift.TException
+    public CuratorEvent getNextEvent(CuratorProjection projection) throws CuratorException, org.apache.thrift.TException
     {
       send_getNextEvent(projection);
       return recv_getNextEvent();
@@ -79,12 +79,15 @@ public class EventService {
       sendBase("getNextEvent", args);
     }
 
-    public CuratorEvent recv_getNextEvent() throws org.apache.thrift.TException
+    public CuratorEvent recv_getNextEvent() throws CuratorException, org.apache.thrift.TException
     {
       getNextEvent_result result = new getNextEvent_result();
       receiveBase(result, "getNextEvent");
       if (result.isSetSuccess()) {
         return result.success;
+      }
+      if (result.ex1 != null) {
+        throw result.ex1;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getNextEvent failed: unknown result");
     }
@@ -129,7 +132,7 @@ public class EventService {
         prot.writeMessageEnd();
       }
 
-      public CuratorEvent getResult() throws org.apache.thrift.TException {
+      public CuratorEvent getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -171,7 +174,11 @@ public class EventService {
 
       public getNextEvent_result getResult(I iface, getNextEvent_args args) throws org.apache.thrift.TException {
         getNextEvent_result result = new getNextEvent_result();
-        result.success = iface.getNextEvent(args.projection);
+        try {
+          result.success = iface.getNextEvent(args.projection);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
         return result;
       }
     }
@@ -220,6 +227,12 @@ public class EventService {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TBase msg;
             getNextEvent_result result = new getNextEvent_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
             {
               msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
               msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
@@ -609,6 +622,7 @@ public class EventService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getNextEvent_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -617,10 +631,12 @@ public class EventService {
     }
 
     public CuratorEvent success; // required
+    public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success");
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -637,6 +653,8 @@ public class EventService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
+          case 1: // EX1
+            return EX1;
           default:
             return null;
         }
@@ -682,6 +700,8 @@ public class EventService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorEvent.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getNextEvent_result.class, metaDataMap);
     }
@@ -690,10 +710,12 @@ public class EventService {
     }
 
     public getNextEvent_result(
-      CuratorEvent success)
+      CuratorEvent success,
+      CuratorException ex1)
     {
       this();
       this.success = success;
+      this.ex1 = ex1;
     }
 
     /**
@@ -702,6 +724,9 @@ public class EventService {
     public getNextEvent_result(getNextEvent_result other) {
       if (other.isSetSuccess()) {
         this.success = new CuratorEvent(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
       }
     }
 
@@ -712,6 +737,7 @@ public class EventService {
     @Override
     public void clear() {
       this.success = null;
+      this.ex1 = null;
     }
 
     public CuratorEvent getSuccess() {
@@ -738,6 +764,30 @@ public class EventService {
       }
     }
 
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public getNextEvent_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -748,6 +798,14 @@ public class EventService {
         }
         break;
 
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
       }
     }
 
@@ -755,6 +813,9 @@ public class EventService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
+
+      case EX1:
+        return getEx1();
 
       }
       throw new IllegalStateException();
@@ -769,6 +830,8 @@ public class EventService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
+      case EX1:
+        return isSetEx1();
       }
       throw new IllegalStateException();
     }
@@ -792,6 +855,15 @@ public class EventService {
         if (!(this_present_success && that_present_success))
           return false;
         if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
           return false;
       }
 
@@ -821,6 +893,16 @@ public class EventService {
           return lastComparison;
         }
       }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
       return 0;
     }
 
@@ -846,6 +928,14 @@ public class EventService {
         sb.append("null");
       } else {
         sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
       }
       first = false;
       sb.append(")");
@@ -903,6 +993,15 @@ public class EventService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -921,6 +1020,11 @@ public class EventService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -944,20 +1048,31 @@ public class EventService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, getNextEvent_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(1);
+        BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
           struct.success = new CuratorEvent();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
         }
       }
     }
