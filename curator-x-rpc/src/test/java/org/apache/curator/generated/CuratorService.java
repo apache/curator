@@ -174,7 +174,6 @@ public class CuratorService {
     public void closeCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException
     {
       send_closeCuratorProjection(projection);
-      recv_closeCuratorProjection();
     }
 
     public void send_closeCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException
@@ -182,13 +181,6 @@ public class CuratorService {
       closeCuratorProjection_args args = new closeCuratorProjection_args();
       args.setProjection(projection);
       sendBase("closeCuratorProjection", args);
-    }
-
-    public void recv_closeCuratorProjection() throws org.apache.thrift.TException
-    {
-      closeCuratorProjection_result result = new closeCuratorProjection_result();
-      receiveBase(result, "closeCuratorProjection");
-      return;
     }
 
     public boolean closeGenericProjection(CuratorProjection curatorProjection, String id) throws org.apache.thrift.TException
@@ -710,7 +702,7 @@ public class CuratorService {
     public static class closeCuratorProjection_call extends org.apache.thrift.async.TAsyncMethodCall {
       private CuratorProjection projection;
       public closeCuratorProjection_call(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
-        super(client, protocolFactory, transport, resultHandler, false);
+        super(client, protocolFactory, transport, resultHandler, true);
         this.projection = projection;
       }
 
@@ -728,7 +720,6 @@ public class CuratorService {
         }
         org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
         org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
-        (new Client(prot)).recv_closeCuratorProjection();
       }
     }
 
@@ -1496,13 +1487,12 @@ public class CuratorService {
       }
 
       protected boolean isOneway() {
-        return false;
+        return true;
       }
 
-      public closeCuratorProjection_result getResult(I iface, closeCuratorProjection_args args) throws org.apache.thrift.TException {
-        closeCuratorProjection_result result = new closeCuratorProjection_result();
+      public org.apache.thrift.TBase getResult(I iface, closeCuratorProjection_args args) throws org.apache.thrift.TException {
         iface.closeCuratorProjection(args.projection);
-        return result;
+        return null;
       }
     }
 
@@ -1988,36 +1978,14 @@ public class CuratorService {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
         return new AsyncMethodCallback<Void>() { 
           public void onComplete(Void o) {
-            closeCuratorProjection_result result = new closeCuratorProjection_result();
-            try {
-              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
-              return;
-            } catch (Exception e) {
-              LOGGER.error("Exception writing to internal frame buffer", e);
-            }
-            fb.close();
           }
           public void onError(Exception e) {
-            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
-            org.apache.thrift.TBase msg;
-            closeCuratorProjection_result result = new closeCuratorProjection_result();
-            {
-              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
-              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
-            }
-            try {
-              fcall.sendResponse(fb,msg,msgType,seqid);
-              return;
-            } catch (Exception ex) {
-              LOGGER.error("Exception writing to internal frame buffer", ex);
-            }
-            fb.close();
           }
         };
       }
 
       protected boolean isOneway() {
-        return false;
+        return true;
       }
 
       public void start(I iface, closeCuratorProjection_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws TException {
@@ -4244,252 +4212,6 @@ public class CuratorService {
           struct.projection.read(iprot);
           struct.setProjectionIsSet(true);
         }
-      }
-    }
-
-  }
-
-  public static class closeCuratorProjection_result implements org.apache.thrift.TBase<closeCuratorProjection_result, closeCuratorProjection_result._Fields>, java.io.Serializable, Cloneable, Comparable<closeCuratorProjection_result>   {
-    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("closeCuratorProjection_result");
-
-
-    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
-    static {
-      schemes.put(StandardScheme.class, new closeCuratorProjection_resultStandardSchemeFactory());
-      schemes.put(TupleScheme.class, new closeCuratorProjection_resultTupleSchemeFactory());
-    }
-
-
-    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-;
-
-      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-      static {
-        for (_Fields field : EnumSet.allOf(_Fields.class)) {
-          byName.put(field.getFieldName(), field);
-        }
-      }
-
-      /**
-       * Find the _Fields constant that matches fieldId, or null if its not found.
-       */
-      public static _Fields findByThriftId(int fieldId) {
-        switch(fieldId) {
-          default:
-            return null;
-        }
-      }
-
-      /**
-       * Find the _Fields constant that matches fieldId, throwing an exception
-       * if it is not found.
-       */
-      public static _Fields findByThriftIdOrThrow(int fieldId) {
-        _Fields fields = findByThriftId(fieldId);
-        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-        return fields;
-      }
-
-      /**
-       * Find the _Fields constant that matches name, or null if its not found.
-       */
-      public static _Fields findByName(String name) {
-        return byName.get(name);
-      }
-
-      private final short _thriftId;
-      private final String _fieldName;
-
-      _Fields(short thriftId, String fieldName) {
-        _thriftId = thriftId;
-        _fieldName = fieldName;
-      }
-
-      public short getThriftFieldId() {
-        return _thriftId;
-      }
-
-      public String getFieldName() {
-        return _fieldName;
-      }
-    }
-    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-    static {
-      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      metaDataMap = Collections.unmodifiableMap(tmpMap);
-      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(closeCuratorProjection_result.class, metaDataMap);
-    }
-
-    public closeCuratorProjection_result() {
-    }
-
-    /**
-     * Performs a deep copy on <i>other</i>.
-     */
-    public closeCuratorProjection_result(closeCuratorProjection_result other) {
-    }
-
-    public closeCuratorProjection_result deepCopy() {
-      return new closeCuratorProjection_result(this);
-    }
-
-    @Override
-    public void clear() {
-    }
-
-    public void setFieldValue(_Fields field, Object value) {
-      switch (field) {
-      }
-    }
-
-    public Object getFieldValue(_Fields field) {
-      switch (field) {
-      }
-      throw new IllegalStateException();
-    }
-
-    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
-      if (field == null) {
-        throw new IllegalArgumentException();
-      }
-
-      switch (field) {
-      }
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public boolean equals(Object that) {
-      if (that == null)
-        return false;
-      if (that instanceof closeCuratorProjection_result)
-        return this.equals((closeCuratorProjection_result)that);
-      return false;
-    }
-
-    public boolean equals(closeCuratorProjection_result that) {
-      if (that == null)
-        return false;
-
-      return true;
-    }
-
-    @Override
-    public int hashCode() {
-      return 0;
-    }
-
-    @Override
-    public int compareTo(closeCuratorProjection_result other) {
-      if (!getClass().equals(other.getClass())) {
-        return getClass().getName().compareTo(other.getClass().getName());
-      }
-
-      int lastComparison = 0;
-
-      return 0;
-    }
-
-    public _Fields fieldForId(int fieldId) {
-      return _Fields.findByThriftId(fieldId);
-    }
-
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
-      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
-    }
-
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
-      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
-      }
-
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder("closeCuratorProjection_result(");
-      boolean first = true;
-
-      sb.append(")");
-      return sb.toString();
-    }
-
-    public void validate() throws org.apache.thrift.TException {
-      // check for required fields
-      // check for sub-struct validity
-    }
-
-    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-      try {
-        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-      } catch (org.apache.thrift.TException te) {
-        throw new java.io.IOException(te);
-      }
-    }
-
-    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-      try {
-        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-      } catch (org.apache.thrift.TException te) {
-        throw new java.io.IOException(te);
-      }
-    }
-
-    private static class closeCuratorProjection_resultStandardSchemeFactory implements SchemeFactory {
-      public closeCuratorProjection_resultStandardScheme getScheme() {
-        return new closeCuratorProjection_resultStandardScheme();
-      }
-    }
-
-    private static class closeCuratorProjection_resultStandardScheme extends StandardScheme<closeCuratorProjection_result> {
-
-      public void read(org.apache.thrift.protocol.TProtocol iprot, closeCuratorProjection_result struct) throws org.apache.thrift.TException {
-        org.apache.thrift.protocol.TField schemeField;
-        iprot.readStructBegin();
-        while (true)
-        {
-          schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
-            break;
-          }
-          switch (schemeField.id) {
-            default:
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-          }
-          iprot.readFieldEnd();
-        }
-        iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
-        struct.validate();
-      }
-
-      public void write(org.apache.thrift.protocol.TProtocol oprot, closeCuratorProjection_result struct) throws org.apache.thrift.TException {
-        struct.validate();
-
-        oprot.writeStructBegin(STRUCT_DESC);
-        oprot.writeFieldStop();
-        oprot.writeStructEnd();
-      }
-
-    }
-
-    private static class closeCuratorProjection_resultTupleSchemeFactory implements SchemeFactory {
-      public closeCuratorProjection_resultTupleScheme getScheme() {
-        return new closeCuratorProjection_resultTupleScheme();
-      }
-    }
-
-    private static class closeCuratorProjection_resultTupleScheme extends TupleScheme<closeCuratorProjection_result> {
-
-      @Override
-      public void write(org.apache.thrift.protocol.TProtocol prot, closeCuratorProjection_result struct) throws org.apache.thrift.TException {
-        TTupleProtocol oprot = (TTupleProtocol) prot;
-      }
-
-      @Override
-      public void read(org.apache.thrift.protocol.TProtocol prot, closeCuratorProjection_result struct) throws org.apache.thrift.TException {
-        TTupleProtocol iprot = (TTupleProtocol) prot;
       }
     }
 

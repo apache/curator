@@ -41,10 +41,6 @@ struct ExistsSpec {
   3: string asyncContext;
 }
 
-struct GenericProjection {
-  1: string id;
-}
-
 struct GetChildrenSpec {
   1: string path;
   2: bool watched;
@@ -58,8 +54,19 @@ struct GetDataSpec {
   4: bool decompressed;
 }
 
+struct LeaderEvent {
+  1: string path;
+  2: string participantId;
+  3: bool isLeader;
+}
+
 struct LeaderProjection {
   1: string id;
+}
+
+struct LeaderResult {
+  1: LeaderProjection projection;
+  2: bool hasLeadership;
 }
 
 struct LeaseProjection {
@@ -74,35 +81,20 @@ struct NodeCacheProjection {
   1: string id;
 }
 
-struct PathChildrenCacheProjection {
-  1: string id;
-}
-
-struct PersistentEphemeralNodeProjection {
-  1: string id;
-}
-
-struct Version {
-  1: i32 version;
-}
-
-struct LeaderEvent {
-  1: string path;
-  2: string participantId;
-  3: bool isLeader;
-}
-
-struct LeaderResult {
-  1: LeaderProjection projection;
-  2: bool hasLeadership;
-}
-
 struct OptionalChildrenList {
   1: list<string> children;
 }
 
 struct OptionalPath {
   1: string path;
+}
+
+struct PathChildrenCacheProjection {
+  1: string id;
+}
+
+struct PersistentEphemeralNodeProjection {
+  1: string id;
 }
 
 struct Id {
@@ -135,6 +127,10 @@ struct WatchedEvent {
   3: string path;
 }
 
+struct Version {
+  1: i32 version;
+}
+
 struct CreateSpec {
   1: string path;
   2: binary data;
@@ -151,15 +147,6 @@ struct DeleteSpec {
   3: string asyncContext;
   4: bool compressed;
   5: Version version;
-}
-
-struct SetDataSpec {
-  1: string path;
-  2: bool watched;
-  3: string asyncContext;
-  4: bool compressed;
-  5: Version version;
-  6: binary data;
 }
 
 struct OptionalStat {
@@ -183,6 +170,15 @@ struct PathChildrenCacheEvent {
   3: ChildData data;
 }
 
+struct SetDataSpec {
+  1: string path;
+  2: bool watched;
+  3: string asyncContext;
+  4: bool compressed;
+  5: Version version;
+  6: binary data;
+}
+
 struct CuratorEvent {
   2: CuratorEventType type;
   3: i32 resultCode;
@@ -200,7 +196,7 @@ struct CuratorEvent {
 
 service CuratorService {
   LockProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs);
-  void closeCuratorProjection(1: CuratorProjection projection);
+  oneway void closeCuratorProjection(1: CuratorProjection projection);
   bool closeGenericProjection(1: CuratorProjection curatorProjection, 2: string id);
   OptionalPath createNode(1: CuratorProjection projection, 2: CreateSpec spec);
   void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec);

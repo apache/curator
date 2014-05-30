@@ -31,7 +31,7 @@ RPC_PATH="$BASE_DIR/curator-x-rpc/target/classes"
 
 CLASSES=""
 
-for p in projection event; do
+for p in services structs; do
     for f in `ls -m1 $RPC_PATH/org/apache/curator/x/rpc/idl/$p/*.class | xargs -n 1 basename | sed s/\.[^\.]*$//`; do
         if [[ $f != *[\$]* ]]; then
             CLASSES="$CLASSES org.apache.curator.x.rpc.idl.$p.$f";

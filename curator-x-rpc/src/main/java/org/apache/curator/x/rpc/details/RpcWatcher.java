@@ -1,8 +1,8 @@
 package org.apache.curator.x.rpc.details;
 
-import org.apache.curator.x.rpc.idl.event.RpcCuratorEvent;
-import org.apache.curator.x.rpc.idl.projection.CuratorProjection;
-import org.apache.curator.x.rpc.idl.projection.CuratorProjectionService;
+import org.apache.curator.x.rpc.idl.structs.RpcCuratorEvent;
+import org.apache.curator.x.rpc.idl.structs.CuratorProjection;
+import org.apache.curator.x.rpc.idl.services.CuratorProjectionService;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 
