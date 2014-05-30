@@ -7,14 +7,14 @@ import com.facebook.swift.codec.ThriftStruct;
 public class PathChildrenCacheProjection
 {
     @ThriftField(1)
-    public GenericProjection projection;
+    public String id;
 
     public PathChildrenCacheProjection()
     {
     }
 
-    public PathChildrenCacheProjection(GenericProjection projection)
+    public PathChildrenCacheProjection(String id)
     {
-        this.projection = projection;
+        this.id = id;
     }
 }

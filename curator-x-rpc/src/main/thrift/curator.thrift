@@ -55,15 +55,19 @@ struct GetDataSpec {
 }
 
 struct LeaderProjection {
-  1: GenericProjection projection;
+  1: string id;
+}
+
+struct LockProjection {
+  1: string id;
 }
 
 struct NodeCacheProjection {
-  1: GenericProjection projection;
+  1: string id;
 }
 
 struct PathChildrenCacheProjection {
-  1: GenericProjection projection;
+  1: string id;
 }
 
 struct Version {
@@ -183,9 +187,9 @@ struct CuratorEvent {
 }
 
 service CuratorService {
-  GenericProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs);
+  LockProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs);
   void closeCuratorProjection(1: CuratorProjection projection);
-  bool closeGenericProjection(1: CuratorProjection curatorProjection, 2: GenericProjection genericProjection);
+  bool closeGenericProjection(1: CuratorProjection curatorProjection, 2: string id);
   OptionalPath createNode(1: CuratorProjection projection, 2: CreateSpec spec);
   void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec);
   OptionalStat exists(1: CuratorProjection projection, 2: ExistsSpec spec);

@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjection, LeaderProjection._Fields>, java.io.Serializable, Cloneable, Comparable<LeaderProjection> {
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("LeaderProjection");
 
-  private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+  private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.STRING, (short)1);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -43,11 +43,11 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
     schemes.put(TupleScheme.class, new LeaderProjectionTupleSchemeFactory());
   }
 
-  public GenericProjection projection; // required
+  public String id; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    PROJECTION((short)1, "projection");
+    ID((short)1, "id");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -62,8 +62,8 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // PROJECTION
-          return PROJECTION;
+        case 1: // ID
+          return ID;
         default:
           return null;
       }
@@ -107,8 +107,8 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, GenericProjection.class)));
+    tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(LeaderProjection.class, metaDataMap);
   }
@@ -117,18 +117,18 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
   }
 
   public LeaderProjection(
-    GenericProjection projection)
+    String id)
   {
     this();
-    this.projection = projection;
+    this.id = id;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
   public LeaderProjection(LeaderProjection other) {
-    if (other.isSetProjection()) {
-      this.projection = new GenericProjection(other.projection);
+    if (other.isSetId()) {
+      this.id = other.id;
     }
   }
 
@@ -138,40 +138,40 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
 
   @Override
   public void clear() {
-    this.projection = null;
+    this.id = null;
   }
 
-  public GenericProjection getProjection() {
-    return this.projection;
+  public String getId() {
+    return this.id;
   }
 
-  public LeaderProjection setProjection(GenericProjection projection) {
-    this.projection = projection;
+  public LeaderProjection setId(String id) {
+    this.id = id;
     return this;
   }
 
-  public void unsetProjection() {
-    this.projection = null;
+  public void unsetId() {
+    this.id = null;
   }
 
-  /** Returns true if field projection is set (has been assigned a value) and false otherwise */
-  public boolean isSetProjection() {
-    return this.projection != null;
+  /** Returns true if field id is set (has been assigned a value) and false otherwise */
+  public boolean isSetId() {
+    return this.id != null;
   }
 
-  public void setProjectionIsSet(boolean value) {
+  public void setIdIsSet(boolean value) {
     if (!value) {
-      this.projection = null;
+      this.id = null;
     }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case PROJECTION:
+    case ID:
       if (value == null) {
-        unsetProjection();
+        unsetId();
       } else {
-        setProjection((GenericProjection)value);
+        setId((String)value);
       }
       break;
 
@@ -180,8 +180,8 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case PROJECTION:
-      return getProjection();
+    case ID:
+      return getId();
 
     }
     throw new IllegalStateException();
@@ -194,8 +194,8 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
     }
 
     switch (field) {
-    case PROJECTION:
-      return isSetProjection();
+    case ID:
+      return isSetId();
     }
     throw new IllegalStateException();
   }
@@ -213,12 +213,12 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
     if (that == null)
       return false;
 
-    boolean this_present_projection = true && this.isSetProjection();
-    boolean that_present_projection = true && that.isSetProjection();
-    if (this_present_projection || that_present_projection) {
-      if (!(this_present_projection && that_present_projection))
+    boolean this_present_id = true && this.isSetId();
+    boolean that_present_id = true && that.isSetId();
+    if (this_present_id || that_present_id) {
+      if (!(this_present_id && that_present_id))
         return false;
-      if (!this.projection.equals(that.projection))
+      if (!this.id.equals(that.id))
         return false;
     }
 
@@ -238,12 +238,12 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
 
     int lastComparison = 0;
 
-    lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+    lastComparison = Boolean.valueOf(isSetId()).compareTo(other.isSetId());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetProjection()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+    if (isSetId()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.id, other.id);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -268,11 +268,11 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
     StringBuilder sb = new StringBuilder("LeaderProjection(");
     boolean first = true;
 
-    sb.append("projection:");
-    if (this.projection == null) {
+    sb.append("id:");
+    if (this.id == null) {
       sb.append("null");
     } else {
-      sb.append(this.projection);
+      sb.append(this.id);
     }
     first = false;
     sb.append(")");
@@ -282,9 +282,6 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
     // check for sub-struct validity
-    if (projection != null) {
-      projection.validate();
-    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -321,11 +318,10 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
           break;
         }
         switch (schemeField.id) {
-          case 1: // PROJECTION
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-              struct.projection = new GenericProjection();
-              struct.projection.read(iprot);
-              struct.setProjectionIsSet(true);
+          case 1: // ID
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.id = iprot.readString();
+              struct.setIdIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -345,9 +341,9 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      if (struct.projection != null) {
-        oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
-        struct.projection.write(oprot);
+      if (struct.id != null) {
+        oprot.writeFieldBegin(ID_FIELD_DESC);
+        oprot.writeString(struct.id);
         oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
@@ -368,12 +364,12 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
     public void write(org.apache.thrift.protocol.TProtocol prot, LeaderProjection struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       BitSet optionals = new BitSet();
-      if (struct.isSetProjection()) {
+      if (struct.isSetId()) {
         optionals.set(0);
       }
       oprot.writeBitSet(optionals, 1);
-      if (struct.isSetProjection()) {
-        struct.projection.write(oprot);
+      if (struct.isSetId()) {
+        oprot.writeString(struct.id);
       }
     }
 
@@ -382,9 +378,8 @@ public class LeaderProjection implements org.apache.thrift.TBase<LeaderProjectio
       TTupleProtocol iprot = (TTupleProtocol) prot;
       BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {
-        struct.projection = new GenericProjection();
-        struct.projection.read(iprot);
-        struct.setProjectionIsSet(true);
+        struct.id = iprot.readString();
+        struct.setIdIsSet(true);
       }
     }
   }

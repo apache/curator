@@ -36,11 +36,11 @@ public class CuratorService {
 
   public interface Iface {
 
-    public GenericProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws org.apache.thrift.TException;
+    public LockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws org.apache.thrift.TException;
 
     public void closeCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException;
 
-    public boolean closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection) throws org.apache.thrift.TException;
+    public boolean closeGenericProjection(CuratorProjection curatorProjection, String id) throws org.apache.thrift.TException;
 
     public OptionalPath createNode(CuratorProjection projection, CreateSpec spec) throws org.apache.thrift.TException;
 
@@ -80,7 +80,7 @@ public class CuratorService {
 
     public void closeCuratorProjection(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
-    public void closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+    public void closeGenericProjection(CuratorProjection curatorProjection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void createNode(CuratorProjection projection, CreateSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -134,7 +134,7 @@ public class CuratorService {
       super(iprot, oprot);
     }
 
-    public GenericProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws org.apache.thrift.TException
+    public LockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws org.apache.thrift.TException
     {
       send_acquireLock(projection, path, maxWaitMs);
       return recv_acquireLock();
@@ -149,7 +149,7 @@ public class CuratorService {
       sendBase("acquireLock", args);
     }
 
-    public GenericProjection recv_acquireLock() throws org.apache.thrift.TException
+    public LockProjection recv_acquireLock() throws org.apache.thrift.TException
     {
       acquireLock_result result = new acquireLock_result();
       receiveBase(result, "acquireLock");
@@ -179,17 +179,17 @@ public class CuratorService {
       return;
     }
 
-    public boolean closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection) throws org.apache.thrift.TException
+    public boolean closeGenericProjection(CuratorProjection curatorProjection, String id) throws org.apache.thrift.TException
     {
-      send_closeGenericProjection(curatorProjection, genericProjection);
+      send_closeGenericProjection(curatorProjection, id);
       return recv_closeGenericProjection();
     }
 
-    public void send_closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection) throws org.apache.thrift.TException
+    public void send_closeGenericProjection(CuratorProjection curatorProjection, String id) throws org.apache.thrift.TException
     {
       closeGenericProjection_args args = new closeGenericProjection_args();
       args.setCuratorProjection(curatorProjection);
-      args.setGenericProjection(genericProjection);
+      args.setId(id);
       sendBase("closeGenericProjection", args);
     }
 
@@ -613,7 +613,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public GenericProjection getResult() throws org.apache.thrift.TException {
+      public LockProjection getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -655,27 +655,27 @@ public class CuratorService {
       }
     }
 
-    public void closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+    public void closeGenericProjection(CuratorProjection curatorProjection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      closeGenericProjection_call method_call = new closeGenericProjection_call(curatorProjection, genericProjection, resultHandler, this, ___protocolFactory, ___transport);
+      closeGenericProjection_call method_call = new closeGenericProjection_call(curatorProjection, id, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
     public static class closeGenericProjection_call extends org.apache.thrift.async.TAsyncMethodCall {
       private CuratorProjection curatorProjection;
-      private GenericProjection genericProjection;
-      public closeGenericProjection_call(CuratorProjection curatorProjection, GenericProjection genericProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      private String id;
+      public closeGenericProjection_call(CuratorProjection curatorProjection, String id, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.curatorProjection = curatorProjection;
-        this.genericProjection = genericProjection;
+        this.id = id;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("closeGenericProjection", org.apache.thrift.protocol.TMessageType.CALL, 0));
         closeGenericProjection_args args = new closeGenericProjection_args();
         args.setCuratorProjection(curatorProjection);
-        args.setGenericProjection(genericProjection);
+        args.setId(id);
         args.write(prot);
         prot.writeMessageEnd();
       }
@@ -1325,7 +1325,7 @@ public class CuratorService {
 
       public closeGenericProjection_result getResult(I iface, closeGenericProjection_args args) throws org.apache.thrift.TException {
         closeGenericProjection_result result = new closeGenericProjection_result();
-        result.success = iface.closeGenericProjection(args.curatorProjection, args.genericProjection);
+        result.success = iface.closeGenericProjection(args.curatorProjection, args.id);
         result.setSuccessIsSet(true);
         return result;
       }
@@ -1666,7 +1666,7 @@ public class CuratorService {
       return processMap;
     }
 
-    public static class acquireLock<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, acquireLock_args, GenericProjection> {
+    public static class acquireLock<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, acquireLock_args, LockProjection> {
       public acquireLock() {
         super("acquireLock");
       }
@@ -1675,10 +1675,10 @@ public class CuratorService {
         return new acquireLock_args();
       }
 
-      public AsyncMethodCallback<GenericProjection> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+      public AsyncMethodCallback<LockProjection> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new AsyncMethodCallback<GenericProjection>() { 
-          public void onComplete(GenericProjection o) {
+        return new AsyncMethodCallback<LockProjection>() { 
+          public void onComplete(LockProjection o) {
             acquireLock_result result = new acquireLock_result();
             result.success = o;
             try {
@@ -1712,7 +1712,7 @@ public class CuratorService {
         return false;
       }
 
-      public void start(I iface, acquireLock_args args, org.apache.thrift.async.AsyncMethodCallback<GenericProjection> resultHandler) throws TException {
+      public void start(I iface, acquireLock_args args, org.apache.thrift.async.AsyncMethodCallback<LockProjection> resultHandler) throws TException {
         iface.acquireLock(args.projection, args.path, args.maxWaitMs,resultHandler);
       }
     }
@@ -1815,7 +1815,7 @@ public class CuratorService {
       }
 
       public void start(I iface, closeGenericProjection_args args, org.apache.thrift.async.AsyncMethodCallback<Boolean> resultHandler) throws TException {
-        iface.closeGenericProjection(args.curatorProjection, args.genericProjection,resultHandler);
+        iface.closeGenericProjection(args.curatorProjection, args.id,resultHandler);
       }
     }
 
@@ -3154,7 +3154,7 @@ public class CuratorService {
       schemes.put(TupleScheme.class, new acquireLock_resultTupleSchemeFactory());
     }
 
-    public GenericProjection success; // required
+    public LockProjection success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -3219,7 +3219,7 @@ public class CuratorService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, GenericProjection.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LockProjection.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(acquireLock_result.class, metaDataMap);
     }
@@ -3228,7 +3228,7 @@ public class CuratorService {
     }
 
     public acquireLock_result(
-      GenericProjection success)
+      LockProjection success)
     {
       this();
       this.success = success;
@@ -3239,7 +3239,7 @@ public class CuratorService {
      */
     public acquireLock_result(acquireLock_result other) {
       if (other.isSetSuccess()) {
-        this.success = new GenericProjection(other.success);
+        this.success = new LockProjection(other.success);
       }
     }
 
@@ -3252,11 +3252,11 @@ public class CuratorService {
       this.success = null;
     }
 
-    public GenericProjection getSuccess() {
+    public LockProjection getSuccess() {
       return this.success;
     }
 
-    public acquireLock_result setSuccess(GenericProjection success) {
+    public acquireLock_result setSuccess(LockProjection success) {
       this.success = success;
       return this;
     }
@@ -3282,7 +3282,7 @@ public class CuratorService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((GenericProjection)value);
+          setSuccess((LockProjection)value);
         }
         break;
 
@@ -3434,7 +3434,7 @@ public class CuratorService {
           switch (schemeField.id) {
             case 0: // SUCCESS
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.success = new GenericProjection();
+                struct.success = new LockProjection();
                 struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
@@ -3493,7 +3493,7 @@ public class CuratorService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = new GenericProjection();
+          struct.success = new LockProjection();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }
@@ -4111,7 +4111,7 @@ public class CuratorService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("closeGenericProjection_args");
 
     private static final org.apache.thrift.protocol.TField CURATOR_PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("curatorProjection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
-    private static final org.apache.thrift.protocol.TField GENERIC_PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("genericProjection", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+    private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.STRING, (short)2);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -4120,12 +4120,12 @@ public class CuratorService {
     }
 
     public CuratorProjection curatorProjection; // required
-    public GenericProjection genericProjection; // required
+    public String id; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
       CURATOR_PROJECTION((short)1, "curatorProjection"),
-      GENERIC_PROJECTION((short)2, "genericProjection");
+      ID((short)2, "id");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -4142,8 +4142,8 @@ public class CuratorService {
         switch(fieldId) {
           case 1: // CURATOR_PROJECTION
             return CURATOR_PROJECTION;
-          case 2: // GENERIC_PROJECTION
-            return GENERIC_PROJECTION;
+          case 2: // ID
+            return ID;
           default:
             return null;
         }
@@ -4189,8 +4189,8 @@ public class CuratorService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.CURATOR_PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("curatorProjection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
-      tmpMap.put(_Fields.GENERIC_PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("genericProjection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, GenericProjection.class)));
+      tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(closeGenericProjection_args.class, metaDataMap);
     }
@@ -4200,11 +4200,11 @@ public class CuratorService {
 
     public closeGenericProjection_args(
       CuratorProjection curatorProjection,
-      GenericProjection genericProjection)
+      String id)
     {
       this();
       this.curatorProjection = curatorProjection;
-      this.genericProjection = genericProjection;
+      this.id = id;
     }
 
     /**
@@ -4214,8 +4214,8 @@ public class CuratorService {
       if (other.isSetCuratorProjection()) {
         this.curatorProjection = new CuratorProjection(other.curatorProjection);
       }
-      if (other.isSetGenericProjection()) {
-        this.genericProjection = new GenericProjection(other.genericProjection);
+      if (other.isSetId()) {
+        this.id = other.id;
       }
     }
 
@@ -4226,7 +4226,7 @@ public class CuratorService {
     @Override
     public void clear() {
       this.curatorProjection = null;
-      this.genericProjection = null;
+      this.id = null;
     }
 
     public CuratorProjection getCuratorProjection() {
@@ -4253,27 +4253,27 @@ public class CuratorService {
       }
     }
 
-    public GenericProjection getGenericProjection() {
-      return this.genericProjection;
+    public String getId() {
+      return this.id;
     }
 
-    public closeGenericProjection_args setGenericProjection(GenericProjection genericProjection) {
-      this.genericProjection = genericProjection;
+    public closeGenericProjection_args setId(String id) {
+      this.id = id;
       return this;
     }
 
-    public void unsetGenericProjection() {
-      this.genericProjection = null;
+    public void unsetId() {
+      this.id = null;
     }
 
-    /** Returns true if field genericProjection is set (has been assigned a value) and false otherwise */
-    public boolean isSetGenericProjection() {
-      return this.genericProjection != null;
+    /** Returns true if field id is set (has been assigned a value) and false otherwise */
+    public boolean isSetId() {
+      return this.id != null;
     }
 
-    public void setGenericProjectionIsSet(boolean value) {
+    public void setIdIsSet(boolean value) {
       if (!value) {
-        this.genericProjection = null;
+        this.id = null;
       }
     }
 
@@ -4287,11 +4287,11 @@ public class CuratorService {
         }
         break;
 
-      case GENERIC_PROJECTION:
+      case ID:
         if (value == null) {
-          unsetGenericProjection();
+          unsetId();
         } else {
-          setGenericProjection((GenericProjection)value);
+          setId((String)value);
         }
         break;
 
@@ -4303,8 +4303,8 @@ public class CuratorService {
       case CURATOR_PROJECTION:
         return getCuratorProjection();
 
-      case GENERIC_PROJECTION:
-        return getGenericProjection();
+      case ID:
+        return getId();
 
       }
       throw new IllegalStateException();
@@ -4319,8 +4319,8 @@ public class CuratorService {
       switch (field) {
       case CURATOR_PROJECTION:
         return isSetCuratorProjection();
-      case GENERIC_PROJECTION:
-        return isSetGenericProjection();
+      case ID:
+        return isSetId();
       }
       throw new IllegalStateException();
     }
@@ -4347,12 +4347,12 @@ public class CuratorService {
           return false;
       }
 
-      boolean this_present_genericProjection = true && this.isSetGenericProjection();
-      boolean that_present_genericProjection = true && that.isSetGenericProjection();
-      if (this_present_genericProjection || that_present_genericProjection) {
-        if (!(this_present_genericProjection && that_present_genericProjection))
+      boolean this_present_id = true && this.isSetId();
+      boolean that_present_id = true && that.isSetId();
+      if (this_present_id || that_present_id) {
+        if (!(this_present_id && that_present_id))
           return false;
-        if (!this.genericProjection.equals(that.genericProjection))
+        if (!this.id.equals(that.id))
           return false;
       }
 
@@ -4382,12 +4382,12 @@ public class CuratorService {
           return lastComparison;
         }
       }
-      lastComparison = Boolean.valueOf(isSetGenericProjection()).compareTo(other.isSetGenericProjection());
+      lastComparison = Boolean.valueOf(isSetId()).compareTo(other.isSetId());
       if (lastComparison != 0) {
         return lastComparison;
       }
-      if (isSetGenericProjection()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.genericProjection, other.genericProjection);
+      if (isSetId()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.id, other.id);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -4420,11 +4420,11 @@ public class CuratorService {
       }
       first = false;
       if (!first) sb.append(", ");
-      sb.append("genericProjection:");
-      if (this.genericProjection == null) {
+      sb.append("id:");
+      if (this.id == null) {
         sb.append("null");
       } else {
-        sb.append(this.genericProjection);
+        sb.append(this.id);
       }
       first = false;
       sb.append(")");
@@ -4436,9 +4436,6 @@ public class CuratorService {
       // check for sub-struct validity
       if (curatorProjection != null) {
         curatorProjection.validate();
-      }
-      if (genericProjection != null) {
-        genericProjection.validate();
       }
     }
 
@@ -4485,11 +4482,10 @@ public class CuratorService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
-            case 2: // GENERIC_PROJECTION
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.genericProjection = new GenericProjection();
-                struct.genericProjection.read(iprot);
-                struct.setGenericProjectionIsSet(true);
+            case 2: // ID
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.id = iprot.readString();
+                struct.setIdIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
@@ -4514,9 +4510,9 @@ public class CuratorService {
           struct.curatorProjection.write(oprot);
           oprot.writeFieldEnd();
         }
-        if (struct.genericProjection != null) {
-          oprot.writeFieldBegin(GENERIC_PROJECTION_FIELD_DESC);
-          struct.genericProjection.write(oprot);
+        if (struct.id != null) {
+          oprot.writeFieldBegin(ID_FIELD_DESC);
+          oprot.writeString(struct.id);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -4540,15 +4536,15 @@ public class CuratorService {
         if (struct.isSetCuratorProjection()) {
           optionals.set(0);
         }
-        if (struct.isSetGenericProjection()) {
+        if (struct.isSetId()) {
           optionals.set(1);
         }
         oprot.writeBitSet(optionals, 2);
         if (struct.isSetCuratorProjection()) {
           struct.curatorProjection.write(oprot);
         }
-        if (struct.isSetGenericProjection()) {
-          struct.genericProjection.write(oprot);
+        if (struct.isSetId()) {
+          oprot.writeString(struct.id);
         }
       }
 
@@ -4562,9 +4558,8 @@ public class CuratorService {
           struct.setCuratorProjectionIsSet(true);
         }
         if (incoming.get(1)) {
-          struct.genericProjection = new GenericProjection();
-          struct.genericProjection.read(iprot);
-          struct.setGenericProjectionIsSet(true);
+          struct.id = iprot.readString();
+          struct.setIdIsSet(true);
         }
       }
     }

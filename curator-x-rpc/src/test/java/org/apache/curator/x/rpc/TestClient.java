@@ -91,8 +91,8 @@ public class TestClient
         ChildData pathChildrenCacheDataForPath = client.getPathChildrenCacheDataForPath(curatorProjection, pathChildrenCacheProjection, "/a/b/c");
         System.out.println(pathChildrenCacheDataForPath);
 
-        GenericProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);
-        client.closeGenericProjection(curatorProjection, lockId);
+        LockProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);
+        client.closeGenericProjection(curatorProjection, lockId.id);
 
         GetDataSpec getDataSpec = new GetDataSpec();
         getDataSpec.watched = true;
@@ -119,7 +119,7 @@ public class TestClient
         boolean isLeader = client.isLeader(curatorProjection, leader.projection);
         System.out.println("isLeader: " + isLeader);
 
-        client.closeGenericProjection(curatorProjection, leader.projection.projection);
+        client.closeGenericProjection(curatorProjection, leader.projection.id);
 
         pathChildrenCacheData = client.getPathChildrenCacheData(curatorProjection, pathChildrenCacheProjection);
         System.out.println("Child data: " + pathChildrenCacheData);

@@ -7,14 +7,14 @@ import com.facebook.swift.codec.ThriftStruct;
 public class LeaderProjection
 {
     @ThriftField(1)
-    public GenericProjection projection;
+    public String id;
 
     public LeaderProjection()
     {
     }
 
-    public LeaderProjection(GenericProjection projection)
+    public LeaderProjection(String id)
     {
-        this.projection = projection;
+        this.id = id;
     }
 }

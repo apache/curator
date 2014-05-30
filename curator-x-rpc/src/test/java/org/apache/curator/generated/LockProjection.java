@@ -32,15 +32,15 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PathChildrenCacheProjection implements org.apache.thrift.TBase<PathChildrenCacheProjection, PathChildrenCacheProjection._Fields>, java.io.Serializable, Cloneable, Comparable<PathChildrenCacheProjection> {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("PathChildrenCacheProjection");
+public class LockProjection implements org.apache.thrift.TBase<LockProjection, LockProjection._Fields>, java.io.Serializable, Cloneable, Comparable<LockProjection> {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("LockProjection");
 
   private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.STRING, (short)1);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new PathChildrenCacheProjectionStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new PathChildrenCacheProjectionTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new LockProjectionStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new LockProjectionTupleSchemeFactory());
   }
 
   public String id; // required
@@ -110,13 +110,13 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
     tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(PathChildrenCacheProjection.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(LockProjection.class, metaDataMap);
   }
 
-  public PathChildrenCacheProjection() {
+  public LockProjection() {
   }
 
-  public PathChildrenCacheProjection(
+  public LockProjection(
     String id)
   {
     this();
@@ -126,14 +126,14 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public PathChildrenCacheProjection(PathChildrenCacheProjection other) {
+  public LockProjection(LockProjection other) {
     if (other.isSetId()) {
       this.id = other.id;
     }
   }
 
-  public PathChildrenCacheProjection deepCopy() {
-    return new PathChildrenCacheProjection(this);
+  public LockProjection deepCopy() {
+    return new LockProjection(this);
   }
 
   @Override
@@ -145,7 +145,7 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
     return this.id;
   }
 
-  public PathChildrenCacheProjection setId(String id) {
+  public LockProjection setId(String id) {
     this.id = id;
     return this;
   }
@@ -204,12 +204,12 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof PathChildrenCacheProjection)
-      return this.equals((PathChildrenCacheProjection)that);
+    if (that instanceof LockProjection)
+      return this.equals((LockProjection)that);
     return false;
   }
 
-  public boolean equals(PathChildrenCacheProjection that) {
+  public boolean equals(LockProjection that) {
     if (that == null)
       return false;
 
@@ -231,7 +231,7 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
   }
 
   @Override
-  public int compareTo(PathChildrenCacheProjection other) {
+  public int compareTo(LockProjection other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
@@ -265,7 +265,7 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("PathChildrenCacheProjection(");
+    StringBuilder sb = new StringBuilder("LockProjection(");
     boolean first = true;
 
     sb.append("id:");
@@ -300,15 +300,15 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
     }
   }
 
-  private static class PathChildrenCacheProjectionStandardSchemeFactory implements SchemeFactory {
-    public PathChildrenCacheProjectionStandardScheme getScheme() {
-      return new PathChildrenCacheProjectionStandardScheme();
+  private static class LockProjectionStandardSchemeFactory implements SchemeFactory {
+    public LockProjectionStandardScheme getScheme() {
+      return new LockProjectionStandardScheme();
     }
   }
 
-  private static class PathChildrenCacheProjectionStandardScheme extends StandardScheme<PathChildrenCacheProjection> {
+  private static class LockProjectionStandardScheme extends StandardScheme<LockProjection> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, PathChildrenCacheProjection struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, LockProjection struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -337,7 +337,7 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, PathChildrenCacheProjection struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, LockProjection struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -352,16 +352,16 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
 
   }
 
-  private static class PathChildrenCacheProjectionTupleSchemeFactory implements SchemeFactory {
-    public PathChildrenCacheProjectionTupleScheme getScheme() {
-      return new PathChildrenCacheProjectionTupleScheme();
+  private static class LockProjectionTupleSchemeFactory implements SchemeFactory {
+    public LockProjectionTupleScheme getScheme() {
+      return new LockProjectionTupleScheme();
     }
   }
 
-  private static class PathChildrenCacheProjectionTupleScheme extends TupleScheme<PathChildrenCacheProjection> {
+  private static class LockProjectionTupleScheme extends TupleScheme<LockProjection> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, PathChildrenCacheProjection struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, LockProjection struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       BitSet optionals = new BitSet();
       if (struct.isSetId()) {
@@ -374,7 +374,7 @@ public class PathChildrenCacheProjection implements org.apache.thrift.TBase<Path
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, PathChildrenCacheProjection struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, LockProjection struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {

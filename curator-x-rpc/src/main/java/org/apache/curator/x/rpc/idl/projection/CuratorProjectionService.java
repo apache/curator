@@ -257,20 +257,20 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public boolean closeGenericProjection(CuratorProjection curatorProjection, GenericProjection genericProjection) throws Exception
+    public boolean closeGenericProjection(CuratorProjection curatorProjection, String id) throws Exception
     {
         CuratorEntry entry = getEntry(curatorProjection);
-        return entry.closeThing(genericProjection.id);
+        return entry.closeThing(id);
     }
 
     @ThriftMethod
-    public GenericProjection acquireLock(CuratorProjection projection, final String path, int maxWaitMs) throws Exception
+    public LockProjection acquireLock(CuratorProjection projection, final String path, int maxWaitMs) throws Exception
     {
         CuratorEntry entry = getEntry(projection);
         InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(entry.getClient(), path);
         if ( !lock.acquire(maxWaitMs, TimeUnit.MILLISECONDS) )
         {
-            return new GenericProjection();
+            return new LockProjection();
         }
 
         Closer<InterProcessSemaphoreMutex> closer = new Closer<InterProcessSemaphoreMutex>()
@@ -292,7 +292,7 @@ public class CuratorProjectionService
             }
         };
         String id = entry.addThing(lock, closer);
-        return new GenericProjection(id);
+        return new LockProjection(id);
     }
 
     @ThriftMethod
@@ -341,8 +341,7 @@ public class CuratorProjectionService
             leaderLatch.await(waitForLeadershipMs, TimeUnit.MILLISECONDS);
         }
 
-        GenericProjection leaderProjection = new GenericProjection(id);
-        return new LeaderResult(new LeaderProjection(leaderProjection), leaderLatch.hasLeadership());
+        return new LeaderResult(new LeaderProjection(id), leaderLatch.hasLeadership());
     }
 
     @ThriftMethod
@@ -350,7 +349,7 @@ public class CuratorProjectionService
     {
         CuratorEntry entry = getEntry(projection);
 
-        LeaderLatch leaderLatch = getThing(entry, leaderProjection.projection.id, LeaderLatch.class);
+        LeaderLatch leaderLatch = getThing(entry, leaderProjection.id, LeaderLatch.class);
         Collection<Participant> participants = leaderLatch.getParticipants();
         return Lists.transform(Lists.newArrayList(participants), new Function<Participant, RpcParticipant>()
             {
@@ -367,7 +366,7 @@ public class CuratorProjectionService
     {
         CuratorEntry entry = getEntry(projection);
 
-        LeaderLatch leaderLatch = getThing(entry, leaderProjection.projection.id, LeaderLatch.class);
+        LeaderLatch leaderLatch = getThing(entry, leaderProjection.id, LeaderLatch.class);
         return leaderLatch.hasLeadership();
     }
 
@@ -406,7 +405,7 @@ public class CuratorProjectionService
         };
         cache.getListenable().addListener(listener);
 
-        return new PathChildrenCacheProjection(new GenericProjection(id));
+        return new PathChildrenCacheProjection(id);
     }
 
     @ThriftMethod
@@ -414,7 +413,7 @@ public class CuratorProjectionService
     {
         CuratorEntry entry = getEntry(projection);
 
-        PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.projection.id, PathChildrenCache.class);
+        PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.id, PathChildrenCache.class);
         return Lists.transform
         (
             pathChildrenCache.getCurrentData(),
@@ -434,7 +433,7 @@ public class CuratorProjectionService
     {
         CuratorEntry entry = getEntry(projection);
 
-        PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.projection.id, PathChildrenCache.class);
+        PathChildrenCache pathChildrenCache = getThing(entry, cacheProjection.id, PathChildrenCache.class);
         return new RpcChildData(pathChildrenCache.getCurrentData(path));
     }
 
@@ -473,7 +472,7 @@ public class CuratorProjectionService
         };
         cache.getListenable().addListener(listener);
 
-        return new NodeCacheProjection(new GenericProjection(id));
+        return new NodeCacheProjection(id);
     }
 
     @ThriftMethod
@@ -481,7 +480,7 @@ public class CuratorProjectionService
     {
         final CuratorEntry entry = getEntry(projection);
 
-        NodeCache nodeCache = getThing(entry, cacheProjection.projection.id, NodeCache.class);
+        NodeCache nodeCache = getThing(entry, cacheProjection.id, NodeCache.class);
         return new RpcChildData(nodeCache.getCurrentData());
     }
 
