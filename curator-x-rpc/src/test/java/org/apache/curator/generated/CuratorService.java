@@ -64,6 +64,8 @@ public class CuratorService {
 
     public CuratorProjection newCuratorProjection(String connectionName) throws org.apache.thrift.TException;
 
+    public void pingCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException;
+
     public Stat setData(CuratorProjection projection, SetDataSpec spec) throws org.apache.thrift.TException;
 
     public LeaderResult startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws org.apache.thrift.TException;
@@ -107,6 +109,8 @@ public class CuratorService {
     public void isLeader(CuratorProjection projection, LeaderProjection leaderProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void newCuratorProjection(String connectionName, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void pingCuratorProjection(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void setData(CuratorProjection projection, SetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -470,6 +474,18 @@ public class CuratorService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "newCuratorProjection failed: unknown result");
+    }
+
+    public void pingCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException
+    {
+      send_pingCuratorProjection(projection);
+    }
+
+    public void send_pingCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException
+    {
+      pingCuratorProjection_args args = new pingCuratorProjection_args();
+      args.setProjection(projection);
+      sendBase("pingCuratorProjection", args);
     }
 
     public Stat setData(CuratorProjection projection, SetDataSpec spec) throws org.apache.thrift.TException
@@ -1136,6 +1152,37 @@ public class CuratorService {
       }
     }
 
+    public void pingCuratorProjection(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      pingCuratorProjection_call method_call = new pingCuratorProjection_call(projection, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class pingCuratorProjection_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      public pingCuratorProjection_call(CuratorProjection projection, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, true);
+        this.projection = projection;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("pingCuratorProjection", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        pingCuratorProjection_args args = new pingCuratorProjection_args();
+        args.setProjection(projection);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public void getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+      }
+    }
+
     public void setData(CuratorProjection projection, SetDataSpec spec, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
       setData_call method_call = new setData_call(projection, spec, resultHandler, this, ___protocolFactory, ___transport);
@@ -1409,6 +1456,7 @@ public class CuratorService {
       processMap.put("getPathChildrenCacheDataForPath", new getPathChildrenCacheDataForPath());
       processMap.put("isLeader", new isLeader());
       processMap.put("newCuratorProjection", new newCuratorProjection());
+      processMap.put("pingCuratorProjection", new pingCuratorProjection());
       processMap.put("setData", new setData());
       processMap.put("startLeaderSelector", new startLeaderSelector());
       processMap.put("startNodeCache", new startNodeCache());
@@ -1700,6 +1748,25 @@ public class CuratorService {
       }
     }
 
+    public static class pingCuratorProjection<I extends Iface> extends org.apache.thrift.ProcessFunction<I, pingCuratorProjection_args> {
+      public pingCuratorProjection() {
+        super("pingCuratorProjection");
+      }
+
+      public pingCuratorProjection_args getEmptyArgsInstance() {
+        return new pingCuratorProjection_args();
+      }
+
+      protected boolean isOneway() {
+        return true;
+      }
+
+      public org.apache.thrift.TBase getResult(I iface, pingCuratorProjection_args args) throws org.apache.thrift.TException {
+        iface.pingCuratorProjection(args.projection);
+        return null;
+      }
+    }
+
     public static class setData<I extends Iface> extends org.apache.thrift.ProcessFunction<I, setData_args> {
       public setData() {
         super("setData");
@@ -1847,6 +1914,7 @@ public class CuratorService {
       processMap.put("getPathChildrenCacheDataForPath", new getPathChildrenCacheDataForPath());
       processMap.put("isLeader", new isLeader());
       processMap.put("newCuratorProjection", new newCuratorProjection());
+      processMap.put("pingCuratorProjection", new pingCuratorProjection());
       processMap.put("setData", new setData());
       processMap.put("startLeaderSelector", new startLeaderSelector());
       processMap.put("startNodeCache", new startNodeCache());
@@ -2567,6 +2635,34 @@ public class CuratorService {
 
       public void start(I iface, newCuratorProjection_args args, org.apache.thrift.async.AsyncMethodCallback<CuratorProjection> resultHandler) throws TException {
         iface.newCuratorProjection(args.connectionName,resultHandler);
+      }
+    }
+
+    public static class pingCuratorProjection<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, pingCuratorProjection_args, Void> {
+      public pingCuratorProjection() {
+        super("pingCuratorProjection");
+      }
+
+      public pingCuratorProjection_args getEmptyArgsInstance() {
+        return new pingCuratorProjection_args();
+      }
+
+      public AsyncMethodCallback<Void> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<Void>() { 
+          public void onComplete(Void o) {
+          }
+          public void onError(Exception e) {
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return true;
+      }
+
+      public void start(I iface, pingCuratorProjection_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws TException {
+        iface.pingCuratorProjection(args.projection,resultHandler);
       }
     }
 
@@ -14235,6 +14331,365 @@ public class CuratorService {
           struct.success = new CuratorProjection();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class pingCuratorProjection_args implements org.apache.thrift.TBase<pingCuratorProjection_args, pingCuratorProjection_args._Fields>, java.io.Serializable, Cloneable, Comparable<pingCuratorProjection_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("pingCuratorProjection_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new pingCuratorProjection_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new pingCuratorProjection_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(pingCuratorProjection_args.class, metaDataMap);
+    }
+
+    public pingCuratorProjection_args() {
+    }
+
+    public pingCuratorProjection_args(
+      CuratorProjection projection)
+    {
+      this();
+      this.projection = projection;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public pingCuratorProjection_args(pingCuratorProjection_args other) {
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+    }
+
+    public pingCuratorProjection_args deepCopy() {
+      return new pingCuratorProjection_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public pingCuratorProjection_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof pingCuratorProjection_args)
+        return this.equals((pingCuratorProjection_args)that);
+      return false;
+    }
+
+    public boolean equals(pingCuratorProjection_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(pingCuratorProjection_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("pingCuratorProjection_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class pingCuratorProjection_argsStandardSchemeFactory implements SchemeFactory {
+      public pingCuratorProjection_argsStandardScheme getScheme() {
+        return new pingCuratorProjection_argsStandardScheme();
+      }
+    }
+
+    private static class pingCuratorProjection_argsStandardScheme extends StandardScheme<pingCuratorProjection_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, pingCuratorProjection_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, pingCuratorProjection_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class pingCuratorProjection_argsTupleSchemeFactory implements SchemeFactory {
+      public pingCuratorProjection_argsTupleScheme getScheme() {
+        return new pingCuratorProjection_argsTupleScheme();
+      }
+    }
+
+    private static class pingCuratorProjection_argsTupleScheme extends TupleScheme<pingCuratorProjection_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, pingCuratorProjection_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, pingCuratorProjection_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
         }
       }
     }

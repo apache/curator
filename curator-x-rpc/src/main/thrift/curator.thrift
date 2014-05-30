@@ -213,6 +213,7 @@ service CuratorService {
   ChildData getPathChildrenCacheDataForPath(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection, 3: string path);
   bool isLeader(1: CuratorProjection projection, 2: LeaderProjection leaderProjection);
   CuratorProjection newCuratorProjection(1: string connectionName);
+  oneway void pingCuratorProjection(1: CuratorProjection projection);
   Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec);
   LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs);
   NodeCacheProjection startNodeCache(1: CuratorProjection projection, 2: string path, 3: bool dataIsCompressed, 4: bool buildInitial);

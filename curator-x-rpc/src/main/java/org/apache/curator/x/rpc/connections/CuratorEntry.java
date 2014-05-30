@@ -55,8 +55,7 @@ public class CuratorEntry implements Closeable
                 if ( entry.closer != null )
                 {
                     log.debug(String.format("Closing left over thing. Type: %s - Id: %s", entry.thing.getClass(), mapEntry.getKey()));
-                    //noinspection unchecked
-                    entry.closer.close();    // lack of generics is safe because addThing() is type-safe
+                    entry.closer.close();
                 }
             }
             things.clear();
@@ -109,7 +108,6 @@ public class CuratorEntry implements Closeable
         Entry entry = (id != null) ? things.remove(id) : null;
         if ( entry != null )
         {
-            //noinspection unchecked
             entry.closer.close();
         }
         return false;
