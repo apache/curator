@@ -3,6 +3,8 @@ package org.apache.curator.x.rpc.idl.discovery;
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
 import org.apache.curator.x.discovery.ServiceInstance;
+import org.apache.curator.x.discovery.ServiceType;
+import org.apache.curator.x.discovery.UriSpec;
 
 @ThriftStruct
 public class DiscoveryInstance
@@ -65,5 +67,10 @@ public class DiscoveryInstance
         this.registrationTimeUTC = registrationTimeUTC;
         this.serviceType = serviceType;
         this.uriSpec = uriSpec;
+    }
+
+    public ServiceInstance<byte[]> toReal()
+    {
+        return new ServiceInstance<byte[]>(name, id, address, port, sslPort, payload, registrationTimeUTC, ServiceType.valueOf(serviceType.name()), new UriSpec(uriSpec));
     }
 }

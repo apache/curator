@@ -10,14 +10,11 @@ import org.apache.curator.x.rpc.connections.ConnectionManager;
 import org.apache.curator.x.rpc.connections.CuratorEntry;
 import org.apache.curator.x.rpc.idl.exceptions.RpcException;
 import org.apache.curator.x.rpc.idl.structs.CuratorProjection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Collection;
 
 @ThriftService
 public class DiscoveryServiceLowLevel
 {
-    private final Logger log = LoggerFactory.getLogger(getClass());
     private final ConnectionManager connectionManager;
 
     public DiscoveryServiceLowLevel(ConnectionManager connectionManager)
@@ -33,7 +30,7 @@ public class DiscoveryServiceLowLevel
             CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
             @SuppressWarnings("unchecked")
             ServiceDiscovery<byte[]> serviceDiscovery = CuratorEntry.mustGetThing(entry, discoveryProjection.id, ServiceDiscovery.class);
-            serviceDiscovery.registerService(null); // TODO
+            serviceDiscovery.registerService(instance.toReal());
         }
         catch ( Exception e )
         {
@@ -49,7 +46,7 @@ public class DiscoveryServiceLowLevel
             CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
             @SuppressWarnings("unchecked")
             ServiceDiscovery<byte[]> serviceDiscovery = CuratorEntry.mustGetThing(entry, discoveryProjection.id, ServiceDiscovery.class);
-            serviceDiscovery.updateService(null); // TODO
+            serviceDiscovery.updateService(instance.toReal());
         }
         catch ( Exception e )
         {
@@ -65,7 +62,7 @@ public class DiscoveryServiceLowLevel
             CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
             @SuppressWarnings("unchecked")
             ServiceDiscovery<byte[]> serviceDiscovery = CuratorEntry.mustGetThing(entry, discoveryProjection.id, ServiceDiscovery.class);
-            serviceDiscovery.unregisterService(null); // TODO
+            serviceDiscovery.unregisterService(instance.toReal());
         }
         catch ( Exception e )
         {

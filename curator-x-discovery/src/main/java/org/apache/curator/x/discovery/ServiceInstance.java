@@ -75,7 +75,7 @@ public class ServiceInstance<T>
      * @param serviceType type of the service
      * @param uriSpec the uri spec or null
      */
-    ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec)
+    public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec)
     {
         name = Preconditions.checkNotNull(name, "name cannot be null");
         id = Preconditions.checkNotNull(id, "id cannot be null");
