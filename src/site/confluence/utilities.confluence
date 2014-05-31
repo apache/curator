@@ -1,10 +1,10 @@
 h1. Utilities
 
 h2. Test Server
-In the curator-test sub-model the {{TestingServer}} class is provided. This class creates a local, in-process ZooKeeper server that can be used for testing.
+In the curator\-test sub\-model the {{TestingServer}} class is provided. This class creates a local, in\-process ZooKeeper server that can be used for testing.
 
 h2. Test Cluster
-In the curator-test sub-model the {{TestingCluster}} class is provided. This class creates an internally running ensemble of ZooKeeper servers.
+In the curator\-test sub\-model the {{TestingCluster}} class is provided. This class creates an internally running ensemble of ZooKeeper servers.
 
 h2. ZKPaths
 Various static methods to help with using ZooKeeper ZNode paths:
@@ -16,7 +16,7 @@ Various static methods to help with using ZooKeeper ZNode paths:
 
 h2. EnsurePath
 Utility to ensure that a particular path is created.
-The first time it is used, a synchronized call to {{ZKPaths.mkdirs(ZooKeeper, String)}} is made to ensure that the entire path has been created (with an empty byte array if needed). Subsequent calls with the instance are un-synchronized NOPs.
+The first time it is used, a synchronized call to {{ZKPaths.mkdirs(ZooKeeper, String)}} is made to ensure that the entire path has been created (with an empty byte array if needed). Subsequent calls with the instance are un\-synchronized NOPs.
 
 Usage:
 {code}
@@ -40,7 +40,7 @@ A queue consumer that provides behavior similar to a the JDK's BlockingQueue.
 
 h2. QueueSharder
 
-Due to limitations in ZooKeeper's transport layer, a single queue will break if it has more than 10K-ish items in it. This class
+Due to limitations in ZooKeeper's transport layer, a single queue will break if it has more than 10K\-ish items in it. This class
 provides a facade over multiple distributed queues. It monitors the queues and if any one of them goes over a threshold, a new
 queue is added. Puts are distributed amongst the queues.
 

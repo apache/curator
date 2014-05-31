@@ -1,6 +1,6 @@
 h1. Distributed Queue
 
-h2. *IMPORTANT* - We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|https://cwiki.apache.org/confluence/display/CURATOR/TN4]] for details.
+h2. *IMPORTANT* \- We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|https://cwiki.apache.org/confluence/display/CURATOR/TN4]] for details.
 
 h2. Description
 An implementation of the Distributed Queue ZK recipe. Items put into the queue are guaranteed to be ordered (by means of ZK's PERSISTENT_SEQUENTIAL node). If a single consumer takes items out of the queue, they will be ordered FIFO. If ordering is important, use a LeaderSelector to nominate a single consumer.
@@ -45,7 +45,7 @@ h2. Lock Safety
 In the general usage case, the message is removed from the queue prior to the consumer being called. A more
 atomic mode is provided that removes the item from the queue only after the consumer successfully returns. To
 enable this mode, call the {{lockPath()}} method of the Queue Builder. This uses a lock to make the
-message recoverable. A lock is held while the message is being processed - this prevents other processes
+message recoverable. A lock is held while the message is being processed \- this prevents other processes
 from taking the message. The message will not be removed from the queue until the consumer functor returns.
 Thus, if there is a failure or the process dies, the message will get sent to another process. There is a
 small performance penalty for this behavior however.
@@ -58,7 +58,7 @@ The Distributed queue writes messages using this format:
 |4|1|Opcode: 0x01 = message, 0x02 = End of data|
 |5|4|Message byte length|
 |9|n|Message: serialized message bytes|
-|9 + n|...|Next set of opcode-size-bytes until end of data|
+|9 + n|...|Next set of opcode\-size\-bytes until end of data|
 
 h2. Error Handling
 The {{QueueConsumer}} class extends {{ConnectionStateListener}}. When the queue is started,

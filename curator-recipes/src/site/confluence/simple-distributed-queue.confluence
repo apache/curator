@@ -1,10 +1,10 @@
 h1. Simple Distributed Queue
 
-h2. *IMPORTANT* - We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|https://cwiki.apache.org/confluence/display/CURATOR/TN4]] for details.
+h2. *IMPORTANT* \- We recommend that you do NOT use ZooKeeper for Queues. Please see [[Tech Note 4|https://cwiki.apache.org/confluence/display/CURATOR/TN4]] for details.
 
 h2. Description
 
-A drop-in replacement for the DistributedQueue that comes with the ZK distribution.
+A drop\-in replacement for the DistributedQueue that comes with the ZK distribution.
 
 h2. Participating Classes
 

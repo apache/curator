@@ -25,7 +25,7 @@ h2. Method Documentation
 |newRetryLoop()|Allocate a new Retry Loop \- see details below|
 
 h2. Retry Loop
-For a variety of reasons, operations on a ZooKeeper cluster can fail. Best practices dictate that these operations should be retried. The Retry Loop mechanism provides the means to do this. <b>Every operation should be wrapped in a retry loop</b>. Here's the canonical usage:
+For a variety of reasons, operations on a ZooKeeper cluster can fail. Best practices dictate that these operations should be retried. The Retry Loop mechanism provides the means to do this. *Every operation should be wrapped in a retry loop*. Here's the canonical usage:
 {code}
 RetryLoop retryLoop = client.newRetryLoop();
 while ( retryLoop.shouldContinue() )

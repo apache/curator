@@ -9,7 +9,7 @@ ZooKeeper and handles the complexity of managing connections to the ZooKeeper cl
 * Cleaner API:
 ** simplifies the raw ZooKeeper methods, events, etc.
 ** provides a modern, fluent interface
-* Recipe implementations (see [[Recipes|../curator-recipes/index.html]]):
+* Recipe implementations (see [[Recipes|../curator\-recipes/index.html]]):
 ** Leader election
 ** Shared lock
 ** Path cache and watcher
@@ -52,7 +52,7 @@ CuratorFramework instance using the addListener() method. The listener implement
 <td>clientClosedDueToError()|An unrecoverable error has occurred. The CuratorFramework instance has been shut down|
 
 h3. ClientEvent
-The ClientEvent object is a super-set POJO that can hold every type of background notification and triggered watch. The useful fields of
+The ClientEvent object is a super\-set POJO that can hold every type of background notification and triggered watch. The useful fields of
 ClientEvent depend on the type of event which is exposed via the getType() method.
 
 ||Event Type||Event Methods||

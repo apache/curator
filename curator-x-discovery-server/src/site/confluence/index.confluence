@@ -1,17 +1,17 @@
 h1. Service Discovery Server
 
 h2. Packaging
-Curator Service Discovery is in its own package in Maven Central: curator-x-discovery-server
+Curator Service Discovery is in its own package in Maven Central: curator\-x\-discovery\-server
 
 h2. Description
-The Service Discovery Server bridges non-Java or legacy applications with the Curator [[Service Discovery|../curator-x-discovery/index.html]].
+The Service Discovery Server bridges non\-Java or legacy applications with the Curator [[Service Discovery|../curator-x-discovery/index.html]].
 It exposes RESTful web services to register, remove, query, etc. services.
 
-The Service Discovery Server provides JAX-RS components that can be incorporated into a container of your choice
-(Tomcat, Jetty, etc.). You can also choose any JAX-RS provider (Jersey, RESTEasy, etc.).
+The Service Discovery Server provides JAX\-RS components that can be incorporated into a container of your choice
+(Tomcat, Jetty, etc.). You can also choose any JAX\-RS provider (Jersey, RESTEasy, etc.).
 
 h2. Deploying the Server
-The server must be combined with a JAX-RS implementation (Jersey, etc.) and a container (Tomcat, Jetty, etc.).
+The server must be combined with a JAX\-RS implementation (Jersey, etc.) and a container (Tomcat, Jetty, etc.).
 
 Several singletons need to be injected:
 
@@ -21,9 +21,9 @@ Several singletons need to be injected:
 * JsonServiceInstancesMarshaller
 * JsonServiceNamesMarshaller
 
-Additionally the JAX-RS Resource class must be injected. Due to how most JAX-RS implementations are written, you must
+Additionally the JAX\-RS Resource class must be injected. Due to how most JAX\-RS implementations are written, you must
 create a concrete class that extends this using your payload type. The concrete class should have the base path that you'd like to use.
-Because the JAX-RS implementation can create a new instance of the resource for every request, your concrete class must
+Because the JAX\-RS implementation can create a new instance of the resource for every request, your concrete class must
 use a context resolver to access the DiscoveryContext. Or, if you are using an IoC framework, you can access it that way.
 
 Here's a version that has no payload (i.e. a Void payload):
@@ -46,7 +46,7 @@ h2. putService
 *Request Entity:* ServiceInstance \\
 *Response Entity:* n/a \\
 *Description:* {name} is the service name, {id} is the instance id. The request entity is a _ServiceInstance_. This
-method registers a service instance. If the ServiceType is STATIC, the instance is registered only for the pre-defined period
+method registers a service instance. If the ServiceType is STATIC, the instance is registered only for the pre\-defined period
 (defined in the DiscoveryContext). STATIC services must call putService at least once per period. PERMANENT services are registered
 until they are manually deleted.
 
@@ -87,4 +87,4 @@ h2. getAny
 *Description:* {name} is the service name. Return a random instance from the given service or 404.
 
 h2. JSON specs
-The JSON specifications for the REST entities are documented here: https://git-wip-us.apache.org/repos/asf?p=curator.git;a=blob_plain;f=curator-x-discovery-server/README.txt;hb=HEAD
+The JSON specifications for the REST entities are documented here: [[https://git-wip-us.apache.org/repos/asf?p=curator.git;a=blob_plain;f=curator-x-discovery-server/README.txt;hb=HEAD]]

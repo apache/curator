@@ -1,7 +1,7 @@
 h1. Shared Semaphore
 
 h2. Description
-A counting semaphore that works across JVMs. All processes in all JVMs that use the same lock path will achieve an inter-process limited set of leases. Further, this semaphore is mostly "fair" - each user will get a lease in the order requested (from ZK's point of view).
+A counting semaphore that works across JVMs. All processes in all JVMs that use the same lock path will achieve an inter\-process limited set of leases. Further, this semaphore is mostly "fair" \- each user will get a lease in the order requested (from ZK's point of view).
 
 There are two modes for determining the max leases for the semaphore. In the first mode the max leases is a convention maintained by the users of a given path. In the second mode a SharedCountReader is used as the method for semaphores of a given path to determine the max leases.
 
