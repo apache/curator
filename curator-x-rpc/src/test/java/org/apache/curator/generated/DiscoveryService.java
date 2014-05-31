@@ -40,6 +40,8 @@ public class DiscoveryService {
 
     public DiscoveryInstance getInstance(CuratorProjection projection, DiscoveryProviderProjection providerProjection) throws CuratorException, org.apache.thrift.TException;
 
+    public DiscoveryInstance makeDiscoveryInstance(String name, ByteBuffer payload, int port) throws CuratorException, org.apache.thrift.TException;
+
     public void noteError(CuratorProjection projection, DiscoveryProviderProjection providerProjection, String instanceId) throws CuratorException, org.apache.thrift.TException;
 
     public DiscoveryProjection startDiscovery(CuratorProjection projection, String basePath, DiscoveryInstance yourInstance) throws CuratorException, org.apache.thrift.TException;
@@ -53,6 +55,8 @@ public class DiscoveryService {
     public void getAllInstances(CuratorProjection projection, DiscoveryProviderProjection providerProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void getInstance(CuratorProjection projection, DiscoveryProviderProjection providerProjection, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void makeDiscoveryInstance(String name, ByteBuffer payload, int port, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void noteError(CuratorProjection projection, DiscoveryProviderProjection providerProjection, String instanceId, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -134,6 +138,34 @@ public class DiscoveryService {
         throw result.ex1;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getInstance failed: unknown result");
+    }
+
+    public DiscoveryInstance makeDiscoveryInstance(String name, ByteBuffer payload, int port) throws CuratorException, org.apache.thrift.TException
+    {
+      send_makeDiscoveryInstance(name, payload, port);
+      return recv_makeDiscoveryInstance();
+    }
+
+    public void send_makeDiscoveryInstance(String name, ByteBuffer payload, int port) throws org.apache.thrift.TException
+    {
+      makeDiscoveryInstance_args args = new makeDiscoveryInstance_args();
+      args.setName(name);
+      args.setPayload(payload);
+      args.setPort(port);
+      sendBase("makeDiscoveryInstance", args);
+    }
+
+    public DiscoveryInstance recv_makeDiscoveryInstance() throws CuratorException, org.apache.thrift.TException
+    {
+      makeDiscoveryInstance_result result = new makeDiscoveryInstance_result();
+      receiveBase(result, "makeDiscoveryInstance");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "makeDiscoveryInstance failed: unknown result");
     }
 
     public void noteError(CuratorProjection projection, DiscoveryProviderProjection providerProjection, String instanceId) throws CuratorException, org.apache.thrift.TException
@@ -308,6 +340,44 @@ public class DiscoveryService {
       }
     }
 
+    public void makeDiscoveryInstance(String name, ByteBuffer payload, int port, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      makeDiscoveryInstance_call method_call = new makeDiscoveryInstance_call(name, payload, port, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class makeDiscoveryInstance_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private String name;
+      private ByteBuffer payload;
+      private int port;
+      public makeDiscoveryInstance_call(String name, ByteBuffer payload, int port, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.name = name;
+        this.payload = payload;
+        this.port = port;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("makeDiscoveryInstance", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        makeDiscoveryInstance_args args = new makeDiscoveryInstance_args();
+        args.setName(name);
+        args.setPayload(payload);
+        args.setPort(port);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public DiscoveryInstance getResult() throws CuratorException, org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_makeDiscoveryInstance();
+      }
+    }
+
     public void noteError(CuratorProjection projection, DiscoveryProviderProjection providerProjection, String instanceId, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
       noteError_call method_call = new noteError_call(projection, providerProjection, instanceId, resultHandler, this, ___protocolFactory, ___transport);
@@ -446,6 +516,7 @@ public class DiscoveryService {
     private static <I extends Iface> Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> getProcessMap(Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> processMap) {
       processMap.put("getAllInstances", new getAllInstances());
       processMap.put("getInstance", new getInstance());
+      processMap.put("makeDiscoveryInstance", new makeDiscoveryInstance());
       processMap.put("noteError", new noteError());
       processMap.put("startDiscovery", new startDiscovery());
       processMap.put("startProvider", new startProvider());
@@ -493,6 +564,30 @@ public class DiscoveryService {
         getInstance_result result = new getInstance_result();
         try {
           result.success = iface.getInstance(args.projection, args.providerProjection);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
+        return result;
+      }
+    }
+
+    public static class makeDiscoveryInstance<I extends Iface> extends org.apache.thrift.ProcessFunction<I, makeDiscoveryInstance_args> {
+      public makeDiscoveryInstance() {
+        super("makeDiscoveryInstance");
+      }
+
+      public makeDiscoveryInstance_args getEmptyArgsInstance() {
+        return new makeDiscoveryInstance_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public makeDiscoveryInstance_result getResult(I iface, makeDiscoveryInstance_args args) throws org.apache.thrift.TException {
+        makeDiscoveryInstance_result result = new makeDiscoveryInstance_result();
+        try {
+          result.success = iface.makeDiscoveryInstance(args.name, args.payload, args.port);
         } catch (CuratorException ex1) {
           result.ex1 = ex1;
         }
@@ -587,6 +682,7 @@ public class DiscoveryService {
     private static <I extends AsyncIface> Map<String,  org.apache.thrift.AsyncProcessFunction<I, ? extends  org.apache.thrift.TBase,?>> getProcessMap(Map<String,  org.apache.thrift.AsyncProcessFunction<I, ? extends  org.apache.thrift.TBase, ?>> processMap) {
       processMap.put("getAllInstances", new getAllInstances());
       processMap.put("getInstance", new getInstance());
+      processMap.put("makeDiscoveryInstance", new makeDiscoveryInstance());
       processMap.put("noteError", new noteError());
       processMap.put("startDiscovery", new startDiscovery());
       processMap.put("startProvider", new startProvider());
@@ -704,6 +800,63 @@ public class DiscoveryService {
 
       public void start(I iface, getInstance_args args, org.apache.thrift.async.AsyncMethodCallback<DiscoveryInstance> resultHandler) throws TException {
         iface.getInstance(args.projection, args.providerProjection,resultHandler);
+      }
+    }
+
+    public static class makeDiscoveryInstance<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, makeDiscoveryInstance_args, DiscoveryInstance> {
+      public makeDiscoveryInstance() {
+        super("makeDiscoveryInstance");
+      }
+
+      public makeDiscoveryInstance_args getEmptyArgsInstance() {
+        return new makeDiscoveryInstance_args();
+      }
+
+      public AsyncMethodCallback<DiscoveryInstance> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<DiscoveryInstance>() { 
+          public void onComplete(DiscoveryInstance o) {
+            makeDiscoveryInstance_result result = new makeDiscoveryInstance_result();
+            result.success = o;
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            makeDiscoveryInstance_result result = new makeDiscoveryInstance_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, makeDiscoveryInstance_args args, org.apache.thrift.async.AsyncMethodCallback<DiscoveryInstance> resultHandler) throws TException {
+        iface.makeDiscoveryInstance(args.name, args.payload, args.port,resultHandler);
       }
     }
 
@@ -2761,6 +2914,1030 @@ public class DiscoveryService {
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, getInstance_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(2);
+        if (incoming.get(0)) {
+          struct.success = new DiscoveryInstance();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class makeDiscoveryInstance_args implements org.apache.thrift.TBase<makeDiscoveryInstance_args, makeDiscoveryInstance_args._Fields>, java.io.Serializable, Cloneable, Comparable<makeDiscoveryInstance_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("makeDiscoveryInstance_args");
+
+    private static final org.apache.thrift.protocol.TField NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("name", org.apache.thrift.protocol.TType.STRING, (short)1);
+    private static final org.apache.thrift.protocol.TField PAYLOAD_FIELD_DESC = new org.apache.thrift.protocol.TField("payload", org.apache.thrift.protocol.TType.STRING, (short)2);
+    private static final org.apache.thrift.protocol.TField PORT_FIELD_DESC = new org.apache.thrift.protocol.TField("port", org.apache.thrift.protocol.TType.I32, (short)3);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new makeDiscoveryInstance_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new makeDiscoveryInstance_argsTupleSchemeFactory());
+    }
+
+    public String name; // required
+    public ByteBuffer payload; // required
+    public int port; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      NAME((short)1, "name"),
+      PAYLOAD((short)2, "payload"),
+      PORT((short)3, "port");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // NAME
+            return NAME;
+          case 2: // PAYLOAD
+            return PAYLOAD;
+          case 3: // PORT
+            return PORT;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    private static final int __PORT_ISSET_ID = 0;
+    private byte __isset_bitfield = 0;
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.NAME, new org.apache.thrift.meta_data.FieldMetaData("name", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      tmpMap.put(_Fields.PAYLOAD, new org.apache.thrift.meta_data.FieldMetaData("payload", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING          , true)));
+      tmpMap.put(_Fields.PORT, new org.apache.thrift.meta_data.FieldMetaData("port", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(makeDiscoveryInstance_args.class, metaDataMap);
+    }
+
+    public makeDiscoveryInstance_args() {
+    }
+
+    public makeDiscoveryInstance_args(
+      String name,
+      ByteBuffer payload,
+      int port)
+    {
+      this();
+      this.name = name;
+      this.payload = payload;
+      this.port = port;
+      setPortIsSet(true);
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public makeDiscoveryInstance_args(makeDiscoveryInstance_args other) {
+      __isset_bitfield = other.__isset_bitfield;
+      if (other.isSetName()) {
+        this.name = other.name;
+      }
+      if (other.isSetPayload()) {
+        this.payload = org.apache.thrift.TBaseHelper.copyBinary(other.payload);
+;
+      }
+      this.port = other.port;
+    }
+
+    public makeDiscoveryInstance_args deepCopy() {
+      return new makeDiscoveryInstance_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.name = null;
+      this.payload = null;
+      setPortIsSet(false);
+      this.port = 0;
+    }
+
+    public String getName() {
+      return this.name;
+    }
+
+    public makeDiscoveryInstance_args setName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public void unsetName() {
+      this.name = null;
+    }
+
+    /** Returns true if field name is set (has been assigned a value) and false otherwise */
+    public boolean isSetName() {
+      return this.name != null;
+    }
+
+    public void setNameIsSet(boolean value) {
+      if (!value) {
+        this.name = null;
+      }
+    }
+
+    public byte[] getPayload() {
+      setPayload(org.apache.thrift.TBaseHelper.rightSize(payload));
+      return payload == null ? null : payload.array();
+    }
+
+    public ByteBuffer bufferForPayload() {
+      return payload;
+    }
+
+    public makeDiscoveryInstance_args setPayload(byte[] payload) {
+      setPayload(payload == null ? (ByteBuffer)null : ByteBuffer.wrap(payload));
+      return this;
+    }
+
+    public makeDiscoveryInstance_args setPayload(ByteBuffer payload) {
+      this.payload = payload;
+      return this;
+    }
+
+    public void unsetPayload() {
+      this.payload = null;
+    }
+
+    /** Returns true if field payload is set (has been assigned a value) and false otherwise */
+    public boolean isSetPayload() {
+      return this.payload != null;
+    }
+
+    public void setPayloadIsSet(boolean value) {
+      if (!value) {
+        this.payload = null;
+      }
+    }
+
+    public int getPort() {
+      return this.port;
+    }
+
+    public makeDiscoveryInstance_args setPort(int port) {
+      this.port = port;
+      setPortIsSet(true);
+      return this;
+    }
+
+    public void unsetPort() {
+      __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __PORT_ISSET_ID);
+    }
+
+    /** Returns true if field port is set (has been assigned a value) and false otherwise */
+    public boolean isSetPort() {
+      return EncodingUtils.testBit(__isset_bitfield, __PORT_ISSET_ID);
+    }
+
+    public void setPortIsSet(boolean value) {
+      __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PORT_ISSET_ID, value);
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case NAME:
+        if (value == null) {
+          unsetName();
+        } else {
+          setName((String)value);
+        }
+        break;
+
+      case PAYLOAD:
+        if (value == null) {
+          unsetPayload();
+        } else {
+          setPayload((ByteBuffer)value);
+        }
+        break;
+
+      case PORT:
+        if (value == null) {
+          unsetPort();
+        } else {
+          setPort((Integer)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case NAME:
+        return getName();
+
+      case PAYLOAD:
+        return getPayload();
+
+      case PORT:
+        return Integer.valueOf(getPort());
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case NAME:
+        return isSetName();
+      case PAYLOAD:
+        return isSetPayload();
+      case PORT:
+        return isSetPort();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof makeDiscoveryInstance_args)
+        return this.equals((makeDiscoveryInstance_args)that);
+      return false;
+    }
+
+    public boolean equals(makeDiscoveryInstance_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_name = true && this.isSetName();
+      boolean that_present_name = true && that.isSetName();
+      if (this_present_name || that_present_name) {
+        if (!(this_present_name && that_present_name))
+          return false;
+        if (!this.name.equals(that.name))
+          return false;
+      }
+
+      boolean this_present_payload = true && this.isSetPayload();
+      boolean that_present_payload = true && that.isSetPayload();
+      if (this_present_payload || that_present_payload) {
+        if (!(this_present_payload && that_present_payload))
+          return false;
+        if (!this.payload.equals(that.payload))
+          return false;
+      }
+
+      boolean this_present_port = true;
+      boolean that_present_port = true;
+      if (this_present_port || that_present_port) {
+        if (!(this_present_port && that_present_port))
+          return false;
+        if (this.port != that.port)
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(makeDiscoveryInstance_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetName()).compareTo(other.isSetName());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetName()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.name, other.name);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetPayload()).compareTo(other.isSetPayload());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetPayload()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.payload, other.payload);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetPort()).compareTo(other.isSetPort());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetPort()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.port, other.port);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("makeDiscoveryInstance_args(");
+      boolean first = true;
+
+      sb.append("name:");
+      if (this.name == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.name);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("payload:");
+      if (this.payload == null) {
+        sb.append("null");
+      } else {
+        org.apache.thrift.TBaseHelper.toString(this.payload, sb);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("port:");
+      sb.append(this.port);
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+        __isset_bitfield = 0;
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class makeDiscoveryInstance_argsStandardSchemeFactory implements SchemeFactory {
+      public makeDiscoveryInstance_argsStandardScheme getScheme() {
+        return new makeDiscoveryInstance_argsStandardScheme();
+      }
+    }
+
+    private static class makeDiscoveryInstance_argsStandardScheme extends StandardScheme<makeDiscoveryInstance_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, makeDiscoveryInstance_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // NAME
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.name = iprot.readString();
+                struct.setNameIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // PAYLOAD
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.payload = iprot.readBinary();
+                struct.setPayloadIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 3: // PORT
+              if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+                struct.port = iprot.readI32();
+                struct.setPortIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, makeDiscoveryInstance_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.name != null) {
+          oprot.writeFieldBegin(NAME_FIELD_DESC);
+          oprot.writeString(struct.name);
+          oprot.writeFieldEnd();
+        }
+        if (struct.payload != null) {
+          oprot.writeFieldBegin(PAYLOAD_FIELD_DESC);
+          oprot.writeBinary(struct.payload);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldBegin(PORT_FIELD_DESC);
+        oprot.writeI32(struct.port);
+        oprot.writeFieldEnd();
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class makeDiscoveryInstance_argsTupleSchemeFactory implements SchemeFactory {
+      public makeDiscoveryInstance_argsTupleScheme getScheme() {
+        return new makeDiscoveryInstance_argsTupleScheme();
+      }
+    }
+
+    private static class makeDiscoveryInstance_argsTupleScheme extends TupleScheme<makeDiscoveryInstance_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, makeDiscoveryInstance_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetName()) {
+          optionals.set(0);
+        }
+        if (struct.isSetPayload()) {
+          optionals.set(1);
+        }
+        if (struct.isSetPort()) {
+          optionals.set(2);
+        }
+        oprot.writeBitSet(optionals, 3);
+        if (struct.isSetName()) {
+          oprot.writeString(struct.name);
+        }
+        if (struct.isSetPayload()) {
+          oprot.writeBinary(struct.payload);
+        }
+        if (struct.isSetPort()) {
+          oprot.writeI32(struct.port);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, makeDiscoveryInstance_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(3);
+        if (incoming.get(0)) {
+          struct.name = iprot.readString();
+          struct.setNameIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.payload = iprot.readBinary();
+          struct.setPayloadIsSet(true);
+        }
+        if (incoming.get(2)) {
+          struct.port = iprot.readI32();
+          struct.setPortIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class makeDiscoveryInstance_result implements org.apache.thrift.TBase<makeDiscoveryInstance_result, makeDiscoveryInstance_result._Fields>, java.io.Serializable, Cloneable, Comparable<makeDiscoveryInstance_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("makeDiscoveryInstance_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new makeDiscoveryInstance_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new makeDiscoveryInstance_resultTupleSchemeFactory());
+    }
+
+    public DiscoveryInstance success; // required
+    public CuratorException ex1; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success"),
+      EX1((short)1, "ex1");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          case 1: // EX1
+            return EX1;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, DiscoveryInstance.class)));
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(makeDiscoveryInstance_result.class, metaDataMap);
+    }
+
+    public makeDiscoveryInstance_result() {
+    }
+
+    public makeDiscoveryInstance_result(
+      DiscoveryInstance success,
+      CuratorException ex1)
+    {
+      this();
+      this.success = success;
+      this.ex1 = ex1;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public makeDiscoveryInstance_result(makeDiscoveryInstance_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new DiscoveryInstance(other.success);
+      }
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
+    }
+
+    public makeDiscoveryInstance_result deepCopy() {
+      return new makeDiscoveryInstance_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+      this.ex1 = null;
+    }
+
+    public DiscoveryInstance getSuccess() {
+      return this.success;
+    }
+
+    public makeDiscoveryInstance_result setSuccess(DiscoveryInstance success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public makeDiscoveryInstance_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((DiscoveryInstance)value);
+        }
+        break;
+
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      case EX1:
+        return getEx1();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      case EX1:
+        return isSetEx1();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof makeDiscoveryInstance_result)
+        return this.equals((makeDiscoveryInstance_result)that);
+      return false;
+    }
+
+    public boolean equals(makeDiscoveryInstance_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(makeDiscoveryInstance_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(other.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, other.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("makeDiscoveryInstance_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class makeDiscoveryInstance_resultStandardSchemeFactory implements SchemeFactory {
+      public makeDiscoveryInstance_resultStandardScheme getScheme() {
+        return new makeDiscoveryInstance_resultStandardScheme();
+      }
+    }
+
+    private static class makeDiscoveryInstance_resultStandardScheme extends StandardScheme<makeDiscoveryInstance_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, makeDiscoveryInstance_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new DiscoveryInstance();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, makeDiscoveryInstance_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class makeDiscoveryInstance_resultTupleSchemeFactory implements SchemeFactory {
+      public makeDiscoveryInstance_resultTupleScheme getScheme() {
+        return new makeDiscoveryInstance_resultTupleScheme();
+      }
+    }
+
+    private static class makeDiscoveryInstance_resultTupleScheme extends TupleScheme<makeDiscoveryInstance_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, makeDiscoveryInstance_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        if (struct.isSetEx1()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, makeDiscoveryInstance_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {

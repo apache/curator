@@ -136,7 +136,7 @@ public class RpcCuratorEvent
 
     public RpcCuratorEvent(ConnectionState newState)
     {
-        this.type = RpcCuratorEventType.valueOf(newState.name());
+        this.type = RpcCuratorEventType.valueOf("CONNECTION_" + newState.name());
         this.resultCode = 0;
         this.path = null;
         this.context = null;

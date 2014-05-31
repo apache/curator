@@ -41,6 +41,11 @@ public class TestClient
         TProtocol eventProtocol = new TBinaryProtocol(eventTransport);
         final EventService.Client serviceClient = new EventService.Client(eventProtocol);
 
+        TSocket discoveryTransport = new TSocket("localhost", 8899);
+        discoveryTransport.open();
+        TProtocol discoveryProtocol = new TBinaryProtocol(discoveryTransport);
+        final DiscoveryService.Client discoveryClient = new DiscoveryService.Client(discoveryProtocol);
+
         final CuratorProjection curatorProjection = client.newCuratorProjection("test");
 
         Executors.newSingleThreadExecutor().submit
@@ -151,5 +156,12 @@ public class TestClient
         {
             client.closeGenericProjection(curatorProjection, leaseProjection.id);
         }
+
+        DiscoveryInstance yourInstance = discoveryClient.makeDiscoveryInstance("mine", ByteBuffer.wrap(new byte[]{}), 8080);
+        DiscoveryProjection discovery = discoveryClient.startDiscovery(curatorProjection, "/discovery", yourInstance);
+        DiscoveryProviderProjection provider = discoveryClient.startProvider(curatorProjection, discovery, "mine", ProviderStrategyType.ROUND_ROBIN, 1000, 3);
+
+        DiscoveryInstance instance = discoveryClient.getInstance(curatorProjection, provider);
+        System.out.println("Instance: " + instance);
     }
 }

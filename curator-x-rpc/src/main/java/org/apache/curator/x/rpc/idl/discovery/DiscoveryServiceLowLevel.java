@@ -4,6 +4,7 @@ import com.facebook.swift.service.ThriftMethod;
 import com.facebook.swift.service.ThriftService;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.rpc.connections.ConnectionManager;
@@ -111,7 +112,7 @@ public class DiscoveryServiceLowLevel
         try
         {
             Collection<ServiceInstance<byte[]>> instances = serviceDiscovery.queryForInstances(name);
-            return Collections2.transform
+            Collection<DiscoveryInstance> transformed = Collections2.transform
             (
                 instances,
                 new Function<ServiceInstance<byte[]>, DiscoveryInstance>()
@@ -123,6 +124,7 @@ public class DiscoveryServiceLowLevel
                     }
                 }
             );
+            return Lists.newArrayList(transformed);
         }
         catch ( Exception e )
         {

@@ -431,7 +431,7 @@ public class CuratorProjectionService
 
             LeaderLatch leaderLatch = CuratorEntry.mustGetThing(entry, leaderProjection.id, LeaderLatch.class);
             Collection<Participant> participants = leaderLatch.getParticipants();
-            return Collections2.transform
+            Collection<RpcParticipant> transformed = Collections2.transform
             (
                 participants,
                 new Function<Participant, RpcParticipant>()
@@ -443,6 +443,7 @@ public class CuratorProjectionService
                     }
                 }
             );
+            return Lists.newArrayList(transformed);
         }
         catch ( Exception e )
         {

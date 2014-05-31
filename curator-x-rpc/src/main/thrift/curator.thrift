@@ -272,6 +272,7 @@ service EventService {
 service DiscoveryService {
   list<DiscoveryInstance> getAllInstances(1: CuratorProjection projection, 2: DiscoveryProviderProjection providerProjection) throws (1: CuratorException ex1);
   DiscoveryInstance getInstance(1: CuratorProjection projection, 2: DiscoveryProviderProjection providerProjection) throws (1: CuratorException ex1);
+  DiscoveryInstance makeDiscoveryInstance(1: string name, 2: binary payload, 3: i32 port) throws (1: CuratorException ex1);
   void noteError(1: CuratorProjection projection, 2: DiscoveryProviderProjection providerProjection, 3: string instanceId) throws (1: CuratorException ex1);
   DiscoveryProjection startDiscovery(1: CuratorProjection projection, 2: string basePath, 3: DiscoveryInstance yourInstance) throws (1: CuratorException ex1);
   DiscoveryProviderProjection startProvider(1: CuratorProjection projection, 2: DiscoveryProjection discoveryProjection, 3: string serviceName, 4: ProviderStrategyType providerStrategy, 5: i32 downTimeoutMs, 6: i32 downErrorThreshold) throws (1: CuratorException ex1);

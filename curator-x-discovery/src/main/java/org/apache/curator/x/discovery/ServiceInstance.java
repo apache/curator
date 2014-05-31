@@ -50,7 +50,7 @@ public class ServiceInstance<T>
      * @return builder
      * @throws Exception errors getting the local IP
      */
-    public static<T> ServiceInstanceBuilder<T> builder() throws Exception
+    public static<T> ServiceInstanceBuilder<T>builder() throws Exception
     {
         String                  address = null;
         Collection<InetAddress> ips = ServiceInstanceBuilder.getAllLocalIPs();

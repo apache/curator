@@ -11,6 +11,7 @@ import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
+import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import org.apache.curator.x.discovery.strategies.StickyStrategy;
@@ -23,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @ThriftService
@@ -35,6 +35,25 @@ public class DiscoveryService
     public DiscoveryService(ConnectionManager connectionManager)
     {
         this.connectionManager = connectionManager;
+    }
+
+    @ThriftMethod
+    public DiscoveryInstance makeDiscoveryInstance(String name, byte[] payload, int port) throws RpcException
+    {
+        try
+        {
+            ServiceInstance<byte[]> serviceInstance = ServiceInstance.<byte[]>builder()
+                .serviceType(ServiceType.DYNAMIC)
+                .name(name)
+                .payload(payload)
+                .port(port)
+                .build();
+            return new DiscoveryInstance(serviceInstance);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
     }
 
     @ThriftMethod
@@ -79,7 +98,7 @@ public class DiscoveryService
     @ThriftMethod
     public DiscoveryProviderProjection startProvider(CuratorProjection projection, DiscoveryProjection discoveryProjection, final String serviceName, ProviderStrategyType providerStrategy, int downTimeoutMs, int downErrorThreshold) throws RpcException
     {
-        ProviderStrategy<byte[]> strategy = null;
+        ProviderStrategy<byte[]> strategy;
         switch ( providerStrategy )
         {
             default:
@@ -169,7 +188,7 @@ public class DiscoveryService
         try
         {
             Collection<ServiceInstance<byte[]>> allInstances = serviceProvider.getAllInstances();
-            return Collections2.transform
+            Collection<DiscoveryInstance> transformed = Collections2.transform
             (
                 allInstances,
                 new Function<ServiceInstance<byte[]>, DiscoveryInstance>()
@@ -179,7 +198,9 @@ public class DiscoveryService
                     {
                         return new DiscoveryInstance(instance);
                     }
-                });
+                }
+            );
+            return Lists.newArrayList(transformed);
         }
         catch ( Exception e )
         {

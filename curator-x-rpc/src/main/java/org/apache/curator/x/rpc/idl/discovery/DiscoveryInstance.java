@@ -2,6 +2,7 @@ package org.apache.curator.x.rpc.idl.discovery;
 
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
+import com.google.common.base.Objects;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.UriSpec;
@@ -19,10 +20,10 @@ public class DiscoveryInstance
     public String address;
 
     @ThriftField(4)
-    public Integer port;
+    public int port;
 
     @ThriftField(5)
-    public Integer sslPort;
+    public int sslPort;
 
     @ThriftField(6)
     public byte[] payload;
@@ -47,8 +48,8 @@ public class DiscoveryInstance
             this.name = instance.getName();
             this.id = instance.getId();
             this.address = instance.getAddress();
-            this.port = instance.getPort();
-            this.sslPort = instance.getSslPort();
+            this.port = Objects.firstNonNull(instance.getPort(), 0);
+            this.sslPort = Objects.firstNonNull(instance.getSslPort(), 0);
             this.payload = instance.getPayload();
             this.registrationTimeUTC = instance.getRegistrationTimeUTC();
             this.serviceType = DiscoveryInstanceType.valueOf(instance.getServiceType().name());
@@ -56,7 +57,7 @@ public class DiscoveryInstance
         }
     }
 
-    public DiscoveryInstance(String name, String id, String address, Integer port, Integer sslPort, byte[] payload, long registrationTimeUTC, DiscoveryInstanceType serviceType, String uriSpec)
+    public DiscoveryInstance(String name, String id, String address, int port, int sslPort, byte[] payload, long registrationTimeUTC, DiscoveryInstanceType serviceType, String uriSpec)
     {
         this.name = name;
         this.id = id;
