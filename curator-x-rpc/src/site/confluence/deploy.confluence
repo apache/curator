@@ -1,0 +1,16 @@
+[[Curator RPC Proxy|index.html]] / Deployment
+
+h1. Deployment
+
+Curator RPC is designed to have an instance of its Thrift Server co\-located on each client instance that needs to connect to ZooKeeper.
+Each Curator RPC instance is configured (see [[Configuration|configuration.html]]) to connect to one or more ZooKeeper clusters. The Curator
+Framework instances are maintained inside of the Curator RPC instances and RPC clients reference these instances by ID.
+
+!images/topology.png!
+
+How you configure your server to launch depends on your environment and other needs. Here are some suggestions:
+
+* [Airlift Launcher|https://github.com/airlift/airlift/tree/master/launcher]
+* [Docker|https://www.docker.io/]
+* [One-JAR|http://one-jar.sourceforge.net/]
+* [Capsule|https://github.com/puniverse/capsule]

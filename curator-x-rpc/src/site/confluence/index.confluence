@@ -1,10 +1,13 @@
 h1. Curator RPC Proxy
 
-NOTE: Curator REST Proxy is in its own package in Maven Central: curator\-x\-rpc
+NOTE: Curator RPC Proxy is in its own package in Maven Central: curator\-x\-rpc
 
-The Curator REST module implements a proxy that bridges non-java environments with the Curator framework and recipes. Every major language
-today has a REST library available. With the Curator REST Proxy, you can now take advantage of the Curator framework and its recipes in
-any language or environment.
+The Curator RPC module implements a proxy that bridges non-java environments with the Curator framework and recipes. It uses
+[[Apache Thrift|http://thrift.apache.org]] which supports a large set of languages and environments.
+
+h2. Thrift File
+The current Curator RPC Thrift File can be found here: [[https://raw.githubusercontent.com/apache/curator/master/curator-x-rpc/src/main/thrift/curator.thrift]]. Use
+this to generate code for the language/environment you need.
 
 h2. Building and Packaging
 

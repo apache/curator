@@ -86,6 +86,7 @@
         <testng-version>6.8.8</testng-version>
         <swift-version>0.12.0</swift-version>
         <dropwizard-version>0.7.0</dropwizard-version>
+        <maven-shade-plugin-version>2.3</maven-shade-plugin-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -551,6 +552,12 @@
                     <artifactId>apache-rat-plugin</artifactId>
                     <version>${apache-rat-plugin-version}</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${maven-shade-plugin-version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -693,6 +700,7 @@
                     <header>src/etc/header.txt</header>
                     <excludes>
                         <exclude>**/*.confluence</exclude>
+                        <exclude>**/help.txt</exclude>
                         <exclude>**/*.rdf</exclude>
                         <exclude>**/.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
@@ -736,6 +744,7 @@
                     <excludes>
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/*.rdf</exclude>
+                        <exclude>**/help.txt</exclude>
                         <exclude>**/.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
