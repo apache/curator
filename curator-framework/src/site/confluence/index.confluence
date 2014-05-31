@@ -1,6 +1,6 @@
 h1. Framework
 
-The Curator Framework is a high-level API that greatly simplifies using ZooKeeper. It adds many features that build on
+The Curator Framework is a high\-level API that greatly simplifies using ZooKeeper. It adds many features that build on
 ZooKeeper and handles the complexity of managing connections to the ZooKeeper cluster and retrying operations. Some of the features are:
 
 * Automatic connection management:
@@ -19,15 +19,15 @@ ZooKeeper and handles the complexity of managing connections to the ZooKeeper cl
 
 h2. Allocating a Curator Framework Instance
 CuratorFrameworks are allocated using the CuratorFrameworkFactory which provides both factory methods and a builder for
-creating instances. IMPORTANT: CuratorFramework instances are fully thread-safe. You should share one CuratorFramework per
+creating instances. IMPORTANT: CuratorFramework instances are fully thread\-safe. You should share one CuratorFramework per
 ZooKeeper cluster in your application.
 
 The factory methods (newClient()) provide a simplified way of creating an instance. The Builder gives control over all
 parameters. Once you have a CuratorFramework instance, you must call the start() method. At the end of your application, you should call close().
 
 h2. CuratorFramework API
-The CuratorFramework uses a Fluent-style interface. Operations are constructed using builders returned by the CuratorFramework
-instance. When strung together, the methods form sentence-like statements. e.g.
+The CuratorFramework uses a Fluent\-style interface. Operations are constructed using builders returned by the CuratorFramework
+instance. When strung together, the methods form sentence\-like statements. e.g.
 {code}
 client.create().forPath("/head", new byte[0]);
 client.delete().inBackground().forPath("/head");

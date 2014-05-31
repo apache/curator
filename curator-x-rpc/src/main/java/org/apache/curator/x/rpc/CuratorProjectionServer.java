@@ -135,5 +135,12 @@ public class CuratorProjectionServer
     {
         URL helpUrl = Resources.getResource("curator/help.txt");
         System.out.println(Resources.toString(helpUrl, Charset.defaultCharset()));
+
+        System.out.println();
+        System.out.println("======= Curator Thrift IDL =======");
+        System.out.println();
+
+        URL idlUrl = Resources.getResource("curator.thrift");
+        System.out.println(Resources.toString(idlUrl, Charset.defaultCharset()));
     }
 }

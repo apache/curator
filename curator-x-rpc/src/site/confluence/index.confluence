@@ -1,0 +1,28 @@
+h1. Curator RPC Proxy
+
+NOTE: Curator REST Proxy is in its own package in Maven Central: curator\-x\-rpc
+
+The Curator REST module implements a proxy that bridges non-java environments with the Curator framework and recipes. Every major language
+today has a REST library available. With the Curator REST Proxy, you can now take advantage of the Curator framework and its recipes in
+any language or environment.
+
+h2. Building and Packaging
+
+See the [[Building and Packaging Page|build.html]] for details on building and packaging the REST proxy.
+
+h2. Deployment
+
+See the [[Deployment Page|deploy.html]] for details on deploying the REST proxy.
+
+h2. Your REST Client
+
+See the [[REST Client|client.html]] for details on how to write a REST client that interacts with the proxy.
+
+h2. APIs
+
+See the [[APIs Page|apis.html]] for list of available APIs.
+
+h2. Entities
+
+See the [[Entity Descriptions Page|entities.html]] for details on the Entities used in the APIs.
+

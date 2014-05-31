@@ -2,7 +2,7 @@ h1. Service Discovery
 
 h2. Packaging
 
-Curator Service Discovery is in its own package in Maven Central: {{curator-x-discovery}}
+Curator Service Discovery is in its own package in Maven Central: curator-x-discovery
 
 h2. What Is a Discovery Service?
 

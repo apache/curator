@@ -1,7 +1,7 @@
 h1. Service Discovery Server
 
 h2. Packaging
-Curator Service Discovery is in its own package in Maven Central: {{curator-x-discovery-server}}
+Curator Service Discovery is in its own package in Maven Central: curator-x-discovery-server
 
 h2. Description
 The Service Discovery Server bridges non-Java or legacy applications with the Curator [[Service Discovery|../curator-x-discovery/index.html]].
