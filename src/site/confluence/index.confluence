@@ -2,7 +2,7 @@ h1. Welcome to Apache Curator
 
 h2. What is Curator?
 
-Curator _n &#x02c8;kyoor&#x035d;&#x02cc;&#x0101;t&#x0259;r_: a keeper or custodian of a museum or other collection - A ZooKeeper Keeper.
+Curator _n &#x02c8;kyoor&#x035d;&#x02cc;&#x0101;t&#x0259;r_: a keeper or custodian of a museum or other collection \- A ZooKeeper Keeper.
 
 !images/ph-quote.png!
 
@@ -13,22 +13,22 @@ See the page for quick start: [[Getting Started|getting-started.html]].
 h2. Components
 
 |[[Recipes|curator-recipes/index.html]]|Implementations of some of the common ZooKeeper "recipes". The implementations are built on top of the Curator Framework.|
-|[[Framework|curator-framework/index.html]]|The Curator Framework is a high-level API that greatly simplifies using ZooKeeper. It adds many features that build on ZooKeeper and handles the complexity of managing connections to the ZooKeeper cluster and retrying operations.|
+|[[Framework|curator-framework/index.html]]|The Curator Framework is a high\-level API that greatly simplifies using ZooKeeper. It adds many features that build on ZooKeeper and handles the complexity of managing connections to the ZooKeeper cluster and retrying operations.|
 |[[Utilities|utilities.html]]|Various utilities that are useful when using ZooKeeper.|
-|[[Client|curator-client/index.html]]|A replacement for the bundled {{ZooKeeper}} class that takes care of some low-level housekeeping and provides some useful utilities.|
+|[[Client|curator-client/index.html]]|A replacement for the bundled {{ZooKeeper}} class that takes care of some low\-level housekeeping and provides some useful utilities.|
 |[[Errors|errors.html]]|How Curator deals with errors, connection issues, recoverable exceptions, etc.|
-|Extensions|The curator-recipes package implements the common recipes that are described in the ZooKeeper documentation. To avoid bloating that package, recipes/applications that have a vertical appeal will be put in separate "extension" packages using the naming convention curator-x-name.|
+|Extensions|The curator\-recipes package implements the common recipes that are described in the ZooKeeper documentation. To avoid bloating that package, recipes/applications that have a vertical appeal will be put in separate "extension" packages using the naming convention curator\-x\-name.|
 
 h2. Maven / Artifacts
 
 Curator binaries are published to Maven Central. Curator consists of several artifacts. Which artifacts to use depends on your needs. For
-most users, the only artifact you need is {{curator-recipes}}.
+most users, the only artifact you need is curator\-recipes.
 
 ||GroupID/Org||ArtifactID/Name||Description||
-|org.apache.curator|curator-recipes|All of the recipes. Note: this artifact has dependencies on client and framework and, so, Maven (or whatever tool you're using) should pull those in automatically.|
-|org.apache.curator|curator-framework|The Curator Framework high level API. This is built on top of the client and should pull it in automatically.|
-|org.apache.curator|curator-client|The Curator Client - replacement for the ZooKeeper class in the ZK distribution.|
-|org.apache.curator|curator-test|Contains the TestingServer, the TestingCluster and a few other tools useful for testing.|
-|org.apache.curator|curator-examples|Example usages of various Curator features.|
-|org.apache.curator|curator-x-discovery|A Service Discovery implementation built on the Curator Framework.|
-|org.apache.curator|curator-x-discovery-server|A RESTful server that can be used with Curator Discovery.|
+|org.apache.curator|curator\-recipes|All of the recipes. Note: this artifact has dependencies on client and framework and, so, Maven (or whatever tool you're using) should pull those in automatically.|
+|org.apache.curator|curator\-framework|The Curator Framework high level API. This is built on top of the client and should pull it in automatically.|
+|org.apache.curator|curator\-client|The Curator Client \- replacement for the ZooKeeper class in the ZK distribution.|
+|org.apache.curator|curator\-test|Contains the TestingServer, the TestingCluster and a few other tools useful for testing.|
+|org.apache.curator|curator\-examples|Example usages of various Curator features.|
+|org.apache.curator|curator\-x\-discovery|A Service Discovery implementation built on the Curator Framework.|
+|org.apache.curator|curator\-x\-discovery-server|A RESTful server that can be used with Curator Discovery.|

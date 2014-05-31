@@ -43,7 +43,7 @@ Perform one release of the mutex if the calling thread is the same thread that a
 thread had made multiple calls to acquire, the mutex will still be held when this method returns.
 {code}
 
-*NOTE:* A InterProcessMutex instance is reusable. i.e. don't create a new instance every time. Re-use a single instance.
+*NOTE:* A InterProcessMutex instance is reusable. i.e. don't create a new instance every time. Re\-use a single instance.
 
 h3. Revoking
 InterProcessMutex supports a cooperative revocation mechanism as described on the ZooKeeper recipes wiki.

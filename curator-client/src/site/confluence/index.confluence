@@ -1,18 +1,18 @@
 h1. Client
 
 h2. IMPORTANT NOTE
-The Curator Client is a low-level API. It is strongly recommended that you use the Curator [[Framework|../curator-framework/index.html]]
+The Curator Client is a low\-level API. It is strongly recommended that you use the Curator [[Framework|../curator-framework/index.html]]
 instead of directly using CuratorZookeeperClient.
 
 h2. Background
 CuratorZookeeperClient is a wrapper around ZooKeeper's Java client that makes client access to ZooKeeper much simpler and
 less error prone. It provides the following features:
 
-* Continuous connection management - ZooKeeper has many caveats regarding connection management (see the ZooKeeper FAQ for
+* Continuous connection management \- ZooKeeper has many caveats regarding connection management (see the ZooKeeper FAQ for
 details). CuratorZookeeperClient takes care of most of them automatically.
 
-* Operation retry utilities - a method for retrying operations is provided
-* Test ZooKeeper server - an in-process, self-contained ZooKeeper test server is provided that can be used for test cases and experimentation
+* Operation retry utilities \- a method for retrying operations is provided
+* Test ZooKeeper server \- an in\-process, self\-contained ZooKeeper test server is provided that can be used for test cases and experimentation
 
 h2. Method Documentation
 ||Method||Description||
@@ -22,10 +22,10 @@ h2. Method Documentation
 |blockUntilConnectedOrTimedOut()|A convenience method that blocks until the initial connection is successful or times out|
 |close()|Close the connection|
 |setRetryPolicy()|Change the retry policy|
-|newRetryLoop()|Allocate a new Retry Loop - see details below|
+|newRetryLoop()|Allocate a new Retry Loop \- see details below|
 
 h2. Retry Loop
-For a variety of reasons, operations on a ZooKeeper cluster can fail. Best practices dictate that these operations should be retried. The Retry Loop mechanism provides the means to do this. <b>Every operation should be wrapped in a retry loop</b>. Here's the canonical usage:
+For a variety of reasons, operations on a ZooKeeper cluster can fail. Best practices dictate that these operations should be retried. The Retry Loop mechanism provides the means to do this. *Every operation should be wrapped in a retry loop*. Here's the canonical usage:
 {code}
 RetryLoop retryLoop = client.newRetryLoop();
 while ( retryLoop.shouldContinue() )
@@ -45,7 +45,7 @@ while ( retryLoop.shouldContinue() )
 }
 {code}
 
-The Retry Loop maintains a count of retries and determines if a given error is retry-able. If an operation is a candidate for retrying, the Retry Policy is invoked to determine if the retry should proceed.
+The Retry Loop maintains a count of retries and determines if a given error is retry\-able. If an operation is a candidate for retrying, the Retry Policy is invoked to determine if the retry should proceed.
 
 As a convenience, RetryLoop has a static method that takes a Callable to perform a complete retry loop on. E.g.
 {code}

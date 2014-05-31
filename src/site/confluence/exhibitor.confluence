@@ -12,13 +12,13 @@ using the framework). Pass an {{EnsembleProvider}} to the {{ensembleProvider()}}
 h2. EnsembleProvider
 
 For Exhibitor, construct an instance of {{ExhibitorEnsembleProvider}} to pass to the builder. It takes a number of arguments:
-* exhibitors - a list of the exhibitor instances. This is the initial set of Exhibitor instances. This set will get automatically updated if it changes.
-* restClient - a simple facade to access the Exhibitor instances via REST. Use the provided {{DefaultExhibitorRestClient}} or something else of your choosing.
-* restUriPath - the REST path to use. In most cases this should be: {{/exhibitor/v1/cluster/list}}
-* pollingMs - how often to poll the Exhibitor instances
-* retryPolicy - the retry policy to use when polling the Exhibitor instances.
+* exhibitors \- a list of the exhibitor instances. This is the initial set of Exhibitor instances. This set will get automatically updated if it changes.
+* restClient \- a simple facade to access the Exhibitor instances via REST. Use the provided {{DefaultExhibitorRestClient}} or something else of your choosing.
+* restUriPath \- the REST path to use. In most cases this should be: {{/exhibitor/v1/cluster/list}}
+* pollingMs \- how often to poll the Exhibitor instances
+* retryPolicy \- the retry policy to use when polling the Exhibitor instances.
 
 h2. Details
 
-Once configured, Curator will poll the Exhibitors for changes in the ensemble. If Curator should need to re-create the ZooKeeper
+Once configured, Curator will poll the Exhibitors for changes in the ensemble. If Curator should need to re\-create the ZooKeeper
 instance (due to a SysDisconnected event, etc.) it will use the updated ensemble list to do so.

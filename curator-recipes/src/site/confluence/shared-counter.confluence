@@ -1,7 +1,7 @@
 h1. Shared Counter
 
 h2. Description
-Manages a shared integer. All clients watching the same path will have the up-to-date value of the shared integer
+Manages a shared integer. All clients watching the same path will have the up\-to\-date value of the shared integer
 (considering ZK's normal consistency guarantees).
 
 h2. Participating Classes

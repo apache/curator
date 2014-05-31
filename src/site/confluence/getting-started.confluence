@@ -9,8 +9,8 @@ h2. Using Curator
 The Curator JARs are available from Maven Central. The various artifacts are listed on the [[main page|index.html]]. Users
 of Maven, Gradle, Ant, etc. can easily include Curator into their build script.
 
-Most users will want to use one of Curator's pre-built recipes. So, the {{curator-recipes}} is the correct artifact to use. If you only
-want a wrapper around ZooKeeper that adds connection management and retry policies, use {{curator-framework}}.
+Most users will want to use one of Curator's pre\-built recipes. So, the curator-recipes is the correct artifact to use. If you only
+want a wrapper around ZooKeeper that adds connection management and retry policies, use curator-framework.
 
 h2. Getting a Connection
 

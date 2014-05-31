@@ -24,7 +24,7 @@ cacheData - if true, node contents are cached in addition to the stat
 h2. General Usage
 The cache must be started by calling {{start()}}. Call {{close()}} when you are through with the cache.
 
-There are two versions of {{start()}}. The no-arg version gives default behavior. The other version takes an enumeration that allows you to control how the initial cache is warmed:
+There are two versions of {{start()}}. The no\-arg version gives default behavior. The other version takes an enumeration that allows you to control how the initial cache is warmed:
 
 {code}
 public enum StartMode
