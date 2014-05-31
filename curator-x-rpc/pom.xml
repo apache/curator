@@ -99,6 +99,12 @@
                     <include>curator/help.txt</include>
                 </includes>
             </resource>
+            <resource>
+                <directory>${project.basedir}/src/main/thrift</directory>
+                <includes>
+                    <include>curator.thrift</include>
+                </includes>
+            </resource>
         </resources>
 
         <plugins>
