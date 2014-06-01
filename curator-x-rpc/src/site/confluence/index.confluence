@@ -29,4 +29,8 @@ See the [[Usage Page|usage.html]] for details on using the RPC proxy.
 
 h2. Configuration
 
-See the [[Configuration|configuration.html]] for details on configuring the RPC proxy.
+See [[Configuration|configuration.html]] for details on configuring the RPC proxy.
+
+h2. Events
+
+See [[Events|events.html]] for details on the Curator RPC event loop and its structure.

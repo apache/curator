@@ -11,13 +11,13 @@ Curator RPC is built as an "uber" Java JAR and can be downloaded from Maven Cent
 java -jar curator-x-rpc-VERSION.jar <argument>
 {noformat}
 
-The argument is either a configuration file or a JSON or YAML string. See [[Configuration|configuration.html]] for details.
+The argument is either a configuration file or a JSON or YAML string. Call without the argument for help text. See [[Configuration|configuration.html]] for details.
 
 h2. Deploying
 
 Curator RPC is designed to have an instance of its Thrift Server co\-located on each client instance that needs to connect to ZooKeeper
 (see the figure below). Each Curator RPC instance is configured (see [[Configuration|configuration.html]]) to connect to one or more
-ZooKeeper clusters. The Curator Framework instances are maintained inside of the Curator RPC instances and RPC clients reference these instances by ID.
+ZooKeeper clusters. The Curator Framework instances are maintained inside of the Curator RPC instances and RPC clients reference these instances by name.
 
 How you configure your server to launch depends on your environment and other needs. Here are some suggestions:
 
