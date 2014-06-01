@@ -107,3 +107,7 @@ if event.type == PATH_CHILDREN_CACHE {
 // when done with the cache, close it
 client.closeGenericProjection(curatorProjection, cacheProjection.id);
 {code}
+
+h2. Reference
+
+See [[API Reference Page|reference.html]] for the API reference.

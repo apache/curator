@@ -105,6 +105,10 @@ struct OptionalChildrenList {
   1: list<string> children;
 }
 
+struct OptionalData {
+  1: binary data;
+}
+
 struct OptionalPath {
   1: string path;
 }
@@ -249,7 +253,7 @@ service CuratorService {
   void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec) throws (1: CuratorException ex1);
   OptionalStat exists(1: CuratorProjection projection, 2: ExistsSpec spec) throws (1: CuratorException ex1);
   OptionalChildrenList getChildren(1: CuratorProjection projection, 2: GetChildrenSpec spec) throws (1: CuratorException ex1);
-  binary getData(1: CuratorProjection projection, 2: GetDataSpec spec) throws (1: CuratorException ex1);
+  OptionalData getData(1: CuratorProjection projection, 2: GetDataSpec spec) throws (1: CuratorException ex1);
   list<Participant> getLeaderParticipants(1: CuratorProjection projection, 2: LeaderProjection leaderProjection) throws (1: CuratorException ex1);
   ChildData getNodeCacheData(1: CuratorProjection projection, 2: NodeCacheProjection cacheProjection) throws (1: CuratorException ex1);
   list<ChildData> getPathChildrenCacheData(1: CuratorProjection projection, 2: PathChildrenCacheProjection cacheProjection) throws (1: CuratorException ex1);
@@ -257,12 +261,13 @@ service CuratorService {
   bool isLeader(1: CuratorProjection projection, 2: LeaderProjection leaderProjection) throws (1: CuratorException ex1);
   CuratorProjection newCuratorProjection(1: string connectionName) throws (1: CuratorException ex1);
   oneway void pingCuratorProjection(1: CuratorProjection projection);
-  Stat setData(1: CuratorProjection projection, 2: SetDataSpec spec) throws (1: CuratorException ex1);
+  OptionalStat setData(1: CuratorProjection projection, 2: SetDataSpec spec) throws (1: CuratorException ex1);
   LeaderResult startLeaderSelector(1: CuratorProjection projection, 2: string path, 3: string participantId, 4: i32 waitForLeadershipMs) throws (1: CuratorException ex1);
   NodeCacheProjection startNodeCache(1: CuratorProjection projection, 2: string path, 3: bool dataIsCompressed, 4: bool buildInitial) throws (1: CuratorException ex1);
   PathChildrenCacheProjection startPathChildrenCache(1: CuratorProjection projection, 2: string path, 3: bool cacheData, 4: bool dataIsCompressed, 5: PathChildrenCacheStartMode startMode) throws (1: CuratorException ex1);
   PersistentEphemeralNodeProjection startPersistentEphemeralNode(1: CuratorProjection projection, 2: string path, 3: binary data, 4: PersistentEphemeralNodeMode mode) throws (1: CuratorException ex1);
   list<LeaseProjection> startSemaphore(1: CuratorProjection projection, 2: string path, 3: i32 acquireQty, 4: i32 maxWaitMs, 5: i32 maxLeases) throws (1: CuratorException ex1);
+  void sync(1: CuratorProjection projection, 2: string path, 3: string asyncContext) throws (1: CuratorException ex1);
 }
 
 service EventService {

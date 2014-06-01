@@ -50,7 +50,7 @@ public class CuratorService {
 
     public OptionalChildrenList getChildren(CuratorProjection projection, GetChildrenSpec spec) throws CuratorException, org.apache.thrift.TException;
 
-    public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws CuratorException, org.apache.thrift.TException;
+    public OptionalData getData(CuratorProjection projection, GetDataSpec spec) throws CuratorException, org.apache.thrift.TException;
 
     public List<Participant> getLeaderParticipants(CuratorProjection projection, LeaderProjection leaderProjection) throws CuratorException, org.apache.thrift.TException;
 
@@ -66,7 +66,7 @@ public class CuratorService {
 
     public void pingCuratorProjection(CuratorProjection projection) throws org.apache.thrift.TException;
 
-    public Stat setData(CuratorProjection projection, SetDataSpec spec) throws CuratorException, org.apache.thrift.TException;
+    public OptionalStat setData(CuratorProjection projection, SetDataSpec spec) throws CuratorException, org.apache.thrift.TException;
 
     public LeaderResult startLeaderSelector(CuratorProjection projection, String path, String participantId, int waitForLeadershipMs) throws CuratorException, org.apache.thrift.TException;
 
@@ -77,6 +77,8 @@ public class CuratorService {
     public PersistentEphemeralNodeProjection startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode) throws CuratorException, org.apache.thrift.TException;
 
     public List<LeaseProjection> startSemaphore(CuratorProjection projection, String path, int acquireQty, int maxWaitMs, int maxLeases) throws CuratorException, org.apache.thrift.TException;
+
+    public void sync(CuratorProjection projection, String path, String asyncContext) throws CuratorException, org.apache.thrift.TException;
 
   }
 
@@ -123,6 +125,8 @@ public class CuratorService {
     public void startPersistentEphemeralNode(CuratorProjection projection, String path, ByteBuffer data, PersistentEphemeralNodeMode mode, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void startSemaphore(CuratorProjection projection, String path, int acquireQty, int maxWaitMs, int maxLeases, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void sync(CuratorProjection projection, String path, String asyncContext, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -318,7 +322,7 @@ public class CuratorService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getChildren failed: unknown result");
     }
 
-    public ByteBuffer getData(CuratorProjection projection, GetDataSpec spec) throws CuratorException, org.apache.thrift.TException
+    public OptionalData getData(CuratorProjection projection, GetDataSpec spec) throws CuratorException, org.apache.thrift.TException
     {
       send_getData(projection, spec);
       return recv_getData();
@@ -332,7 +336,7 @@ public class CuratorService {
       sendBase("getData", args);
     }
 
-    public ByteBuffer recv_getData() throws CuratorException, org.apache.thrift.TException
+    public OptionalData recv_getData() throws CuratorException, org.apache.thrift.TException
     {
       getData_result result = new getData_result();
       receiveBase(result, "getData");
@@ -519,7 +523,7 @@ public class CuratorService {
       sendBase("pingCuratorProjection", args);
     }
 
-    public Stat setData(CuratorProjection projection, SetDataSpec spec) throws CuratorException, org.apache.thrift.TException
+    public OptionalStat setData(CuratorProjection projection, SetDataSpec spec) throws CuratorException, org.apache.thrift.TException
     {
       send_setData(projection, spec);
       return recv_setData();
@@ -533,7 +537,7 @@ public class CuratorService {
       sendBase("setData", args);
     }
 
-    public Stat recv_setData() throws CuratorException, org.apache.thrift.TException
+    public OptionalStat recv_setData() throws CuratorException, org.apache.thrift.TException
     {
       setData_result result = new setData_result();
       receiveBase(result, "setData");
@@ -691,6 +695,31 @@ public class CuratorService {
         throw result.ex1;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "startSemaphore failed: unknown result");
+    }
+
+    public void sync(CuratorProjection projection, String path, String asyncContext) throws CuratorException, org.apache.thrift.TException
+    {
+      send_sync(projection, path, asyncContext);
+      recv_sync();
+    }
+
+    public void send_sync(CuratorProjection projection, String path, String asyncContext) throws org.apache.thrift.TException
+    {
+      sync_args args = new sync_args();
+      args.setProjection(projection);
+      args.setPath(path);
+      args.setAsyncContext(asyncContext);
+      sendBase("sync", args);
+    }
+
+    public void recv_sync() throws CuratorException, org.apache.thrift.TException
+    {
+      sync_result result = new sync_result();
+      receiveBase(result, "sync");
+      if (result.ex1 != null) {
+        throw result.ex1;
+      }
+      return;
     }
 
   }
@@ -980,7 +1009,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public ByteBuffer getResult() throws CuratorException, org.apache.thrift.TException {
+      public OptionalData getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1256,7 +1285,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public Stat getResult() throws CuratorException, org.apache.thrift.TException {
+      public OptionalStat getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -1477,6 +1506,44 @@ public class CuratorService {
       }
     }
 
+    public void sync(CuratorProjection projection, String path, String asyncContext, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      sync_call method_call = new sync_call(projection, path, asyncContext, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class sync_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private CuratorProjection projection;
+      private String path;
+      private String asyncContext;
+      public sync_call(CuratorProjection projection, String path, String asyncContext, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.projection = projection;
+        this.path = path;
+        this.asyncContext = asyncContext;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("sync", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        sync_args args = new sync_args();
+        args.setProjection(projection);
+        args.setPath(path);
+        args.setAsyncContext(asyncContext);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public void getResult() throws CuratorException, org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        (new Client(prot)).recv_sync();
+      }
+    }
+
   }
 
   public static class Processor<I extends Iface> extends org.apache.thrift.TBaseProcessor<I> implements org.apache.thrift.TProcessor {
@@ -1511,6 +1578,7 @@ public class CuratorService {
       processMap.put("startPathChildrenCache", new startPathChildrenCache());
       processMap.put("startPersistentEphemeralNode", new startPersistentEphemeralNode());
       processMap.put("startSemaphore", new startSemaphore());
+      processMap.put("sync", new sync());
       return processMap;
     }
 
@@ -2010,6 +2078,30 @@ public class CuratorService {
       }
     }
 
+    public static class sync<I extends Iface> extends org.apache.thrift.ProcessFunction<I, sync_args> {
+      public sync() {
+        super("sync");
+      }
+
+      public sync_args getEmptyArgsInstance() {
+        return new sync_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public sync_result getResult(I iface, sync_args args) throws org.apache.thrift.TException {
+        sync_result result = new sync_result();
+        try {
+          iface.sync(args.projection, args.path, args.asyncContext);
+        } catch (CuratorException ex1) {
+          result.ex1 = ex1;
+        }
+        return result;
+      }
+    }
+
   }
 
   public static class AsyncProcessor<I extends AsyncIface> extends org.apache.thrift.TBaseAsyncProcessor<I> {
@@ -2044,6 +2136,7 @@ public class CuratorService {
       processMap.put("startPathChildrenCache", new startPathChildrenCache());
       processMap.put("startPersistentEphemeralNode", new startPersistentEphemeralNode());
       processMap.put("startSemaphore", new startSemaphore());
+      processMap.put("sync", new sync());
       return processMap;
     }
 
@@ -2417,7 +2510,7 @@ public class CuratorService {
       }
     }
 
-    public static class getData<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, getData_args, ByteBuffer> {
+    public static class getData<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, getData_args, OptionalData> {
       public getData() {
         super("getData");
       }
@@ -2426,10 +2519,10 @@ public class CuratorService {
         return new getData_args();
       }
 
-      public AsyncMethodCallback<ByteBuffer> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+      public AsyncMethodCallback<OptionalData> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new AsyncMethodCallback<ByteBuffer>() { 
-          public void onComplete(ByteBuffer o) {
+        return new AsyncMethodCallback<OptionalData>() { 
+          public void onComplete(OptionalData o) {
             getData_result result = new getData_result();
             result.success = o;
             try {
@@ -2469,7 +2562,7 @@ public class CuratorService {
         return false;
       }
 
-      public void start(I iface, getData_args args, org.apache.thrift.async.AsyncMethodCallback<ByteBuffer> resultHandler) throws TException {
+      public void start(I iface, getData_args args, org.apache.thrift.async.AsyncMethodCallback<OptionalData> resultHandler) throws TException {
         iface.getData(args.projection, args.spec,resultHandler);
       }
     }
@@ -2845,7 +2938,7 @@ public class CuratorService {
       }
     }
 
-    public static class setData<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, setData_args, Stat> {
+    public static class setData<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, setData_args, OptionalStat> {
       public setData() {
         super("setData");
       }
@@ -2854,10 +2947,10 @@ public class CuratorService {
         return new setData_args();
       }
 
-      public AsyncMethodCallback<Stat> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+      public AsyncMethodCallback<OptionalStat> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new AsyncMethodCallback<Stat>() { 
-          public void onComplete(Stat o) {
+        return new AsyncMethodCallback<OptionalStat>() { 
+          public void onComplete(OptionalStat o) {
             setData_result result = new setData_result();
             result.success = o;
             try {
@@ -2897,7 +2990,7 @@ public class CuratorService {
         return false;
       }
 
-      public void start(I iface, setData_args args, org.apache.thrift.async.AsyncMethodCallback<Stat> resultHandler) throws TException {
+      public void start(I iface, setData_args args, org.apache.thrift.async.AsyncMethodCallback<OptionalStat> resultHandler) throws TException {
         iface.setData(args.projection, args.spec,resultHandler);
       }
     }
@@ -3184,6 +3277,62 @@ public class CuratorService {
 
       public void start(I iface, startSemaphore_args args, org.apache.thrift.async.AsyncMethodCallback<List<LeaseProjection>> resultHandler) throws TException {
         iface.startSemaphore(args.projection, args.path, args.acquireQty, args.maxWaitMs, args.maxLeases,resultHandler);
+      }
+    }
+
+    public static class sync<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, sync_args, Void> {
+      public sync() {
+        super("sync");
+      }
+
+      public sync_args getEmptyArgsInstance() {
+        return new sync_args();
+      }
+
+      public AsyncMethodCallback<Void> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<Void>() { 
+          public void onComplete(Void o) {
+            sync_result result = new sync_result();
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            sync_result result = new sync_result();
+            if (e instanceof CuratorException) {
+                        result.ex1 = (CuratorException) e;
+                        result.setEx1IsSet(true);
+                        msg = result;
+            }
+             else 
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, sync_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws TException {
+        iface.sync(args.projection, args.path, args.asyncContext,resultHandler);
       }
     }
 
@@ -9543,7 +9692,7 @@ public class CuratorService {
   public static class getData_result implements org.apache.thrift.TBase<getData_result, getData_result._Fields>, java.io.Serializable, Cloneable, Comparable<getData_result>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getData_result");
 
-    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRING, (short)0);
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
     private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
@@ -9552,7 +9701,7 @@ public class CuratorService {
       schemes.put(TupleScheme.class, new getData_resultTupleSchemeFactory());
     }
 
-    public ByteBuffer success; // required
+    public OptionalData success; // required
     public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -9621,7 +9770,7 @@ public class CuratorService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING          , true)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, OptionalData.class)));
       tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -9632,7 +9781,7 @@ public class CuratorService {
     }
 
     public getData_result(
-      ByteBuffer success,
+      OptionalData success,
       CuratorException ex1)
     {
       this();
@@ -9645,8 +9794,7 @@ public class CuratorService {
      */
     public getData_result(getData_result other) {
       if (other.isSetSuccess()) {
-        this.success = org.apache.thrift.TBaseHelper.copyBinary(other.success);
-;
+        this.success = new OptionalData(other.success);
       }
       if (other.isSetEx1()) {
         this.ex1 = new CuratorException(other.ex1);
@@ -9663,21 +9811,11 @@ public class CuratorService {
       this.ex1 = null;
     }
 
-    public byte[] getSuccess() {
-      setSuccess(org.apache.thrift.TBaseHelper.rightSize(success));
-      return success == null ? null : success.array();
+    public OptionalData getSuccess() {
+      return this.success;
     }
 
-    public ByteBuffer bufferForSuccess() {
-      return success;
-    }
-
-    public getData_result setSuccess(byte[] success) {
-      setSuccess(success == null ? (ByteBuffer)null : ByteBuffer.wrap(success));
-      return this;
-    }
-
-    public getData_result setSuccess(ByteBuffer success) {
+    public getData_result setSuccess(OptionalData success) {
       this.success = success;
       return this;
     }
@@ -9727,7 +9865,7 @@ public class CuratorService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((ByteBuffer)value);
+          setSuccess((OptionalData)value);
         }
         break;
 
@@ -9860,7 +9998,7 @@ public class CuratorService {
       if (this.success == null) {
         sb.append("null");
       } else {
-        org.apache.thrift.TBaseHelper.toString(this.success, sb);
+        sb.append(this.success);
       }
       first = false;
       if (!first) sb.append(", ");
@@ -9878,6 +10016,9 @@ public class CuratorService {
     public void validate() throws org.apache.thrift.TException {
       // check for required fields
       // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -9915,8 +10056,9 @@ public class CuratorService {
           }
           switch (schemeField.id) {
             case 0: // SUCCESS
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-                struct.success = iprot.readBinary();
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new OptionalData();
+                struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -9948,7 +10090,7 @@ public class CuratorService {
         oprot.writeStructBegin(STRUCT_DESC);
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-          oprot.writeBinary(struct.success);
+          struct.success.write(oprot);
           oprot.writeFieldEnd();
         }
         if (struct.ex1 != null) {
@@ -9982,7 +10124,7 @@ public class CuratorService {
         }
         oprot.writeBitSet(optionals, 2);
         if (struct.isSetSuccess()) {
-          oprot.writeBinary(struct.success);
+          struct.success.write(oprot);
         }
         if (struct.isSetEx1()) {
           struct.ex1.write(oprot);
@@ -9994,7 +10136,8 @@ public class CuratorService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
-          struct.success = iprot.readBinary();
+          struct.success = new OptionalData();
+          struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }
         if (incoming.get(1)) {
@@ -16475,7 +16618,7 @@ public class CuratorService {
       schemes.put(TupleScheme.class, new setData_resultTupleSchemeFactory());
     }
 
-    public Stat success; // required
+    public OptionalStat success; // required
     public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -16544,7 +16687,7 @@ public class CuratorService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Stat.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, OptionalStat.class)));
       tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -16555,7 +16698,7 @@ public class CuratorService {
     }
 
     public setData_result(
-      Stat success,
+      OptionalStat success,
       CuratorException ex1)
     {
       this();
@@ -16568,7 +16711,7 @@ public class CuratorService {
      */
     public setData_result(setData_result other) {
       if (other.isSetSuccess()) {
-        this.success = new Stat(other.success);
+        this.success = new OptionalStat(other.success);
       }
       if (other.isSetEx1()) {
         this.ex1 = new CuratorException(other.ex1);
@@ -16585,11 +16728,11 @@ public class CuratorService {
       this.ex1 = null;
     }
 
-    public Stat getSuccess() {
+    public OptionalStat getSuccess() {
       return this.success;
     }
 
-    public setData_result setSuccess(Stat success) {
+    public setData_result setSuccess(OptionalStat success) {
       this.success = success;
       return this;
     }
@@ -16639,7 +16782,7 @@ public class CuratorService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((Stat)value);
+          setSuccess((OptionalStat)value);
         }
         break;
 
@@ -16831,7 +16974,7 @@ public class CuratorService {
           switch (schemeField.id) {
             case 0: // SUCCESS
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.success = new Stat();
+                struct.success = new OptionalStat();
                 struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
@@ -16910,7 +17053,7 @@ public class CuratorService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
-          struct.success = new Stat();
+          struct.success = new OptionalStat();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }
@@ -22775,6 +22918,921 @@ public class CuratorService {
           struct.setSuccessIsSet(true);
         }
         if (incoming.get(1)) {
+          struct.ex1 = new CuratorException();
+          struct.ex1.read(iprot);
+          struct.setEx1IsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class sync_args implements org.apache.thrift.TBase<sync_args, sync_args._Fields>, java.io.Serializable, Cloneable, Comparable<sync_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("sync_args");
+
+    private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("path", org.apache.thrift.protocol.TType.STRING, (short)2);
+    private static final org.apache.thrift.protocol.TField ASYNC_CONTEXT_FIELD_DESC = new org.apache.thrift.protocol.TField("asyncContext", org.apache.thrift.protocol.TType.STRING, (short)3);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new sync_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new sync_argsTupleSchemeFactory());
+    }
+
+    public CuratorProjection projection; // required
+    public String path; // required
+    public String asyncContext; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      PROJECTION((short)1, "projection"),
+      PATH((short)2, "path"),
+      ASYNC_CONTEXT((short)3, "asyncContext");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // PROJECTION
+            return PROJECTION;
+          case 2: // PATH
+            return PATH;
+          case 3: // ASYNC_CONTEXT
+            return ASYNC_CONTEXT;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CuratorProjection.class)));
+      tmpMap.put(_Fields.PATH, new org.apache.thrift.meta_data.FieldMetaData("path", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      tmpMap.put(_Fields.ASYNC_CONTEXT, new org.apache.thrift.meta_data.FieldMetaData("asyncContext", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(sync_args.class, metaDataMap);
+    }
+
+    public sync_args() {
+    }
+
+    public sync_args(
+      CuratorProjection projection,
+      String path,
+      String asyncContext)
+    {
+      this();
+      this.projection = projection;
+      this.path = path;
+      this.asyncContext = asyncContext;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public sync_args(sync_args other) {
+      if (other.isSetProjection()) {
+        this.projection = new CuratorProjection(other.projection);
+      }
+      if (other.isSetPath()) {
+        this.path = other.path;
+      }
+      if (other.isSetAsyncContext()) {
+        this.asyncContext = other.asyncContext;
+      }
+    }
+
+    public sync_args deepCopy() {
+      return new sync_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.projection = null;
+      this.path = null;
+      this.asyncContext = null;
+    }
+
+    public CuratorProjection getProjection() {
+      return this.projection;
+    }
+
+    public sync_args setProjection(CuratorProjection projection) {
+      this.projection = projection;
+      return this;
+    }
+
+    public void unsetProjection() {
+      this.projection = null;
+    }
+
+    /** Returns true if field projection is set (has been assigned a value) and false otherwise */
+    public boolean isSetProjection() {
+      return this.projection != null;
+    }
+
+    public void setProjectionIsSet(boolean value) {
+      if (!value) {
+        this.projection = null;
+      }
+    }
+
+    public String getPath() {
+      return this.path;
+    }
+
+    public sync_args setPath(String path) {
+      this.path = path;
+      return this;
+    }
+
+    public void unsetPath() {
+      this.path = null;
+    }
+
+    /** Returns true if field path is set (has been assigned a value) and false otherwise */
+    public boolean isSetPath() {
+      return this.path != null;
+    }
+
+    public void setPathIsSet(boolean value) {
+      if (!value) {
+        this.path = null;
+      }
+    }
+
+    public String getAsyncContext() {
+      return this.asyncContext;
+    }
+
+    public sync_args setAsyncContext(String asyncContext) {
+      this.asyncContext = asyncContext;
+      return this;
+    }
+
+    public void unsetAsyncContext() {
+      this.asyncContext = null;
+    }
+
+    /** Returns true if field asyncContext is set (has been assigned a value) and false otherwise */
+    public boolean isSetAsyncContext() {
+      return this.asyncContext != null;
+    }
+
+    public void setAsyncContextIsSet(boolean value) {
+      if (!value) {
+        this.asyncContext = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case PROJECTION:
+        if (value == null) {
+          unsetProjection();
+        } else {
+          setProjection((CuratorProjection)value);
+        }
+        break;
+
+      case PATH:
+        if (value == null) {
+          unsetPath();
+        } else {
+          setPath((String)value);
+        }
+        break;
+
+      case ASYNC_CONTEXT:
+        if (value == null) {
+          unsetAsyncContext();
+        } else {
+          setAsyncContext((String)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case PROJECTION:
+        return getProjection();
+
+      case PATH:
+        return getPath();
+
+      case ASYNC_CONTEXT:
+        return getAsyncContext();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case PROJECTION:
+        return isSetProjection();
+      case PATH:
+        return isSetPath();
+      case ASYNC_CONTEXT:
+        return isSetAsyncContext();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof sync_args)
+        return this.equals((sync_args)that);
+      return false;
+    }
+
+    public boolean equals(sync_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_projection = true && this.isSetProjection();
+      boolean that_present_projection = true && that.isSetProjection();
+      if (this_present_projection || that_present_projection) {
+        if (!(this_present_projection && that_present_projection))
+          return false;
+        if (!this.projection.equals(that.projection))
+          return false;
+      }
+
+      boolean this_present_path = true && this.isSetPath();
+      boolean that_present_path = true && that.isSetPath();
+      if (this_present_path || that_present_path) {
+        if (!(this_present_path && that_present_path))
+          return false;
+        if (!this.path.equals(that.path))
+          return false;
+      }
+
+      boolean this_present_asyncContext = true && this.isSetAsyncContext();
+      boolean that_present_asyncContext = true && that.isSetAsyncContext();
+      if (this_present_asyncContext || that_present_asyncContext) {
+        if (!(this_present_asyncContext && that_present_asyncContext))
+          return false;
+        if (!this.asyncContext.equals(that.asyncContext))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(sync_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetProjection()).compareTo(other.isSetProjection());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetProjection()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.projection, other.projection);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetPath()).compareTo(other.isSetPath());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetPath()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.path, other.path);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetAsyncContext()).compareTo(other.isSetAsyncContext());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetAsyncContext()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.asyncContext, other.asyncContext);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("sync_args(");
+      boolean first = true;
+
+      sb.append("projection:");
+      if (this.projection == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.projection);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("path:");
+      if (this.path == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.path);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("asyncContext:");
+      if (this.asyncContext == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.asyncContext);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (projection != null) {
+        projection.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class sync_argsStandardSchemeFactory implements SchemeFactory {
+      public sync_argsStandardScheme getScheme() {
+        return new sync_argsStandardScheme();
+      }
+    }
+
+    private static class sync_argsStandardScheme extends StandardScheme<sync_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, sync_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // PROJECTION
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.projection = new CuratorProjection();
+                struct.projection.read(iprot);
+                struct.setProjectionIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // PATH
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.path = iprot.readString();
+                struct.setPathIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 3: // ASYNC_CONTEXT
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+                struct.asyncContext = iprot.readString();
+                struct.setAsyncContextIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, sync_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.projection != null) {
+          oprot.writeFieldBegin(PROJECTION_FIELD_DESC);
+          struct.projection.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.path != null) {
+          oprot.writeFieldBegin(PATH_FIELD_DESC);
+          oprot.writeString(struct.path);
+          oprot.writeFieldEnd();
+        }
+        if (struct.asyncContext != null) {
+          oprot.writeFieldBegin(ASYNC_CONTEXT_FIELD_DESC);
+          oprot.writeString(struct.asyncContext);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class sync_argsTupleSchemeFactory implements SchemeFactory {
+      public sync_argsTupleScheme getScheme() {
+        return new sync_argsTupleScheme();
+      }
+    }
+
+    private static class sync_argsTupleScheme extends TupleScheme<sync_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, sync_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetProjection()) {
+          optionals.set(0);
+        }
+        if (struct.isSetPath()) {
+          optionals.set(1);
+        }
+        if (struct.isSetAsyncContext()) {
+          optionals.set(2);
+        }
+        oprot.writeBitSet(optionals, 3);
+        if (struct.isSetProjection()) {
+          struct.projection.write(oprot);
+        }
+        if (struct.isSetPath()) {
+          oprot.writeString(struct.path);
+        }
+        if (struct.isSetAsyncContext()) {
+          oprot.writeString(struct.asyncContext);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, sync_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(3);
+        if (incoming.get(0)) {
+          struct.projection = new CuratorProjection();
+          struct.projection.read(iprot);
+          struct.setProjectionIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.path = iprot.readString();
+          struct.setPathIsSet(true);
+        }
+        if (incoming.get(2)) {
+          struct.asyncContext = iprot.readString();
+          struct.setAsyncContextIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class sync_result implements org.apache.thrift.TBase<sync_result, sync_result._Fields>, java.io.Serializable, Cloneable, Comparable<sync_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("sync_result");
+
+    private static final org.apache.thrift.protocol.TField EX1_FIELD_DESC = new org.apache.thrift.protocol.TField("ex1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new sync_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new sync_resultTupleSchemeFactory());
+    }
+
+    public CuratorException ex1; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      EX1((short)1, "ex1");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // EX1
+            return EX1;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(sync_result.class, metaDataMap);
+    }
+
+    public sync_result() {
+    }
+
+    public sync_result(
+      CuratorException ex1)
+    {
+      this();
+      this.ex1 = ex1;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public sync_result(sync_result other) {
+      if (other.isSetEx1()) {
+        this.ex1 = new CuratorException(other.ex1);
+      }
+    }
+
+    public sync_result deepCopy() {
+      return new sync_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.ex1 = null;
+    }
+
+    public CuratorException getEx1() {
+      return this.ex1;
+    }
+
+    public sync_result setEx1(CuratorException ex1) {
+      this.ex1 = ex1;
+      return this;
+    }
+
+    public void unsetEx1() {
+      this.ex1 = null;
+    }
+
+    /** Returns true if field ex1 is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx1() {
+      return this.ex1 != null;
+    }
+
+    public void setEx1IsSet(boolean value) {
+      if (!value) {
+        this.ex1 = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case EX1:
+        if (value == null) {
+          unsetEx1();
+        } else {
+          setEx1((CuratorException)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case EX1:
+        return getEx1();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case EX1:
+        return isSetEx1();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof sync_result)
+        return this.equals((sync_result)that);
+      return false;
+    }
+
+    public boolean equals(sync_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_ex1 = true && this.isSetEx1();
+      boolean that_present_ex1 = true && that.isSetEx1();
+      if (this_present_ex1 || that_present_ex1) {
+        if (!(this_present_ex1 && that_present_ex1))
+          return false;
+        if (!this.ex1.equals(that.ex1))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(sync_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetEx1()).compareTo(other.isSetEx1());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx1()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex1, other.ex1);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("sync_result(");
+      boolean first = true;
+
+      sb.append("ex1:");
+      if (this.ex1 == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex1);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class sync_resultStandardSchemeFactory implements SchemeFactory {
+      public sync_resultStandardScheme getScheme() {
+        return new sync_resultStandardScheme();
+      }
+    }
+
+    private static class sync_resultStandardScheme extends StandardScheme<sync_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, sync_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // EX1
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.ex1 = new CuratorException();
+                struct.ex1.read(iprot);
+                struct.setEx1IsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, sync_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.ex1 != null) {
+          oprot.writeFieldBegin(EX1_FIELD_DESC);
+          struct.ex1.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class sync_resultTupleSchemeFactory implements SchemeFactory {
+      public sync_resultTupleScheme getScheme() {
+        return new sync_resultTupleScheme();
+      }
+    }
+
+    private static class sync_resultTupleScheme extends TupleScheme<sync_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, sync_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetEx1()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetEx1()) {
+          struct.ex1.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, sync_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
           struct.ex1 = new CuratorException();
           struct.ex1.read(iprot);
           struct.setEx1IsSet(true);

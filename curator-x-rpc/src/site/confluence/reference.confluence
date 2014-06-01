@@ -1,0 +1,29 @@
+[[Curator RPC Proxy|index.html]] / Reference
+
+h1. Reference
+
+h2. CuratorService Reference
+
+||API||Arguments||Return Value||Description||
+|newCuratorProjection|connectionName|CuratorProjection|Allocates a projection to a configured CuratorFramework instance in the RPC server. "connectionName" is the name of a [[configured|configuration.html]] connection.|
+|closeCuratorProjection|CuratorProjection|void|Close a CuratorProjection. Also closes any recipes, etc. create for the projection.|
+|pingCuratorProjection|CuratorProjection|void|Keeps the CuratorProjection from timing out. NOTE: your [[EventService|events.html]] event loop will do this for your.|
+|createNode|CreateSpec|Created path name|Create a ZNode|
+|deleteNode|DeleteSpec|void|Delete a ZNode|
+|getData|GetDataSpec|bytes|Return a ZNode's data|
+|setData|SetDataSpec|Stat|Set a ZNode's data|
+|exists|ExistsSpec|Stat|Check is a ZNode exists|
+|getChildren|GetChildrenSpec|List of nodes|Get the child nodes for a ZNode|
+|sync|path and async context|void|Do a ZooKeeper sync|
+|closeGenericProjection|id|void|Closes any projection|
+|acquireLock|path, maxWaitMs|lock projection|Acquire a lock for the given path. Will wait at most maxWaitMs to acquire the lock. If the acquisition fails, LockProjection.id will be null.|
+|startLeaderSelector|path, participantId, waitForLeadershipMs|LeaderResult|Start a leader selector on the given path. The instance will be assigned the specified participantId. If waitForLeadershipMs is non\-zero, the method will block for that amount of time waiting for leadership.|
+|getLeaderParticipants|leaderProjection|List of Participant|Return the participants in a leader selector|
+|isLeader|leaderProjection|bool|Return true if the specified projection is the current leader|
+|startPathChildrenCache|path, cacheData, dataIsCompressed, startMode|cache projection|Start a PathChildrenCache for the given path. Can optionally cache data, use compressed data.|
+|getPathChildrenCacheData|cacheProjection|List of ChildData|Get all the data for a path cache|
+|getPathChildrenCacheDataForPath|cacheProjection, path|ChildData|Get the data for a single ZNode in a path cache|
+|startNodeCache|path, dataIsCompressed, buildInitial|node cache projection|Start a node cache for the given path. Can optionally use compressed data and build the initial cache.|
+|getNodeCacheData|node cache projection|ChildData|Return the data for the cached node. If the node doesn't exist, the fields of the ChildData object will be null.|
+|startPersistentEphemeralNode|path, data, mode|projection|Start a PersistentEphemeralNode for the given path using the given data and mode.|
+|acquireSemaphore|path, acquireQty, maxWaitMs, maxLeases|List of lease projections|Acquire one or more leases for a semaphore on the given path. acquireQty is the number of leases to acquire. maxWaitMs is the max time to wait to get the leases. maxLeases is the maximum leases to allow for the semaphore. If the number of leases cannot be acquired within the max time, an empty list is returned.|

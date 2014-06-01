@@ -34,3 +34,7 @@ See [[Configuration|configuration.html]] for details on configuring the RPC prox
 h2. Events
 
 See [[Events|events.html]] for details on the Curator RPC event loop and its structure.
+
+h2. Reference
+
+See [[API Reference Page|reference.html]] for the API reference.

@@ -185,7 +185,7 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public byte[] getData(CuratorProjection projection, GetDataSpec spec) throws RpcException
+    public OptionalData getData(CuratorProjection projection, GetDataSpec spec) throws RpcException
     {
         try
         {
@@ -211,7 +211,8 @@ public class CuratorProjectionService
             Stat stat = new Stat();
             builder = castBuilder(builder, Statable.class).storingStatIn(stat);
 
-            return (byte[])castBuilder(builder, Pathable.class).forPath(spec.path);
+            byte[] bytes = (byte[])castBuilder(builder, Pathable.class).forPath(spec.path);
+            return new OptionalData(bytes);
         }
         catch ( Exception e )
         {
@@ -220,7 +221,7 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public RpcStat setData(CuratorProjection projection, SetDataSpec spec) throws RpcException
+    public OptionalRpcStat setData(CuratorProjection projection, SetDataSpec spec) throws RpcException
     {
         try
         {
@@ -248,7 +249,7 @@ public class CuratorProjectionService
             }
 
             Stat stat = (Stat)castBuilder(builder, PathAndBytesable.class).forPath(spec.path, spec.data);
-            return RpcCuratorEvent.toRpcStat(stat);
+            return new OptionalRpcStat(RpcCuratorEvent.toRpcStat(stat));
         }
         catch ( Exception e )
         {
@@ -333,8 +334,16 @@ public class CuratorProjectionService
     {
         try
         {
-            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
-            return entry.closeThing(id);
+            if ( id.equals(projection.id) )
+            {
+                closeCuratorProjection(projection);
+                return true;
+            }
+            else
+            {
+                CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+                return entry.closeThing(id);
+            }
         }
         catch ( Exception e )
         {
@@ -666,7 +675,7 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public List<LeaseProjection> startSemaphore(CuratorProjection projection, final String path, int acquireQty, int maxWaitMs, int maxLeases) throws RpcException
+    public List<LeaseProjection> acquireSemaphore(CuratorProjection projection, final String path, int acquireQty, int maxWaitMs, int maxLeases) throws RpcException
     {
         try
         {

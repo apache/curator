@@ -114,8 +114,9 @@ public class TestClient
         GetDataSpec getDataSpec = new GetDataSpec();
         getDataSpec.watched = true;
         getDataSpec.path = "/a/b/c";
-        ByteBuffer data = client.getData(curatorProjection, getDataSpec);
-        System.out.println("getData: " + new String(data.array()));
+        getDataSpec.asyncContext = "hey";
+        OptionalData optionalData = client.getData(curatorProjection, getDataSpec);
+        System.out.println("getData: " + optionalData);
 
         ExistsSpec existsSpec = new ExistsSpec();
         existsSpec.path = "/a/b/c";

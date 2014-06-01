@@ -33,7 +33,4 @@ else
     TARGET_DIR="$BASE_DIR/curator-x-rpc/src/test/java"
 fi
 
-mkdir -p "$TARGET_DIR/"
-rm -fr "$TARGET_DIR/"*
-
 thrift -gen $1 -out "$TARGET_DIR" "$BASE_DIR/curator-x-rpc/src/main/thrift/curator.thrift"

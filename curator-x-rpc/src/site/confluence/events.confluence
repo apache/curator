@@ -2,7 +2,6 @@
 
 h1. Events
 
-
 h2. Event Loop
 
 In order to receive out\-of\-bounds messages (connection state changes, watcher triggers, etc.) you must have an event loop to recieve
