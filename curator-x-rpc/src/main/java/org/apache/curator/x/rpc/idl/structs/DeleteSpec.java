@@ -34,21 +34,17 @@ public class DeleteSpec
     public String asyncContext;
 
     @ThriftField(4)
-    public boolean compressed;
-
-    @ThriftField(5)
     public Version version;
 
     public DeleteSpec()
     {
     }
 
-    public DeleteSpec(String path, boolean guaranteed, String asyncContext, boolean compressed, Version version)
+    public DeleteSpec(String path, boolean guaranteed, String asyncContext, Version version)
     {
         this.path = path;
         this.guaranteed = guaranteed;
         this.asyncContext = asyncContext;
-        this.compressed = compressed;
         this.version = version;
     }
 }

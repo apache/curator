@@ -1,6 +1,6 @@
 [[Curator RPC Proxy|index.html]] / Reference
 
-h1. API and Struct Reference
+h1. API Reference
 
 h2. CuratorService
 
@@ -31,9 +31,9 @@ h2. CuratorService
 h2. EventService
 
 ||API||Arguments||Return Value||Description||
-|getNextEvent|CuratorProjection|Returns the next queued event for the given CuratorProjection. If no events are queued within the [[configured|configuration.html]] ping time, a PING event is returned.|
+|getNextEvent|CuratorProjection|CuratorEvent|Returns the next queued event for the given CuratorProjection. If no events are queued within the [[configured|configuration.html]] ping time, a PING event is returned.|
 
-See the [[Events Page|events.html]] for the Event schema reference.
+See the [[Events Page|events.html]] for the CuratorEvent schema reference.
 
 h2. DiscoveryService
 
@@ -44,3 +44,78 @@ h2. DiscoveryService
 |getInstance|provider projection|DiscoveryInstance|Return a single instance for the given service|
 |getAllInstances|provider projection|list of DiscoveryInstance|Return all instances for the given service|
 |noteError|provider projection, service id|void|Note an error for the given service instance|
+
+h1. Struct Reference
+
+_Required fields have (r) in the description_
+
+h2. CreateSpec
+
+||Field||Type||Description||
+|path|string|(r) the ZNode path|
+|data|bytes|data for the node|
+|mode|CreateMode|PERSISTENT, PERSISTENT\_SEQUENTIAL, EPHEMERAL, or EPHEMERAL\_SEQUENTIAL|
+|asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
+|compressed|bool|if true, compress the data|
+|creatingParentsIfNeeded|bool|if true, create any needed parent nodes|
+|withProtection|bool|if true, use Curator protection|
+
+h2. DeleteSpec
+
+||Field||Type||Description||
+|path|string|(r) the ZNode path|
+|guaranteed|bool|if true, use guaranteed deletion|
+|asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
+|compressed|bool|if true, compress the data|
+|version|Version|if not null, uses Version.version when deleting the node. Otherwise, \-1 is used.|
+
+h2. GetDataSpec
+
+||Field||Type||Description||
+|path|string|(r) the ZNode path|
+|watched|bool|if true, trigger watch events for this node|
+|asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
+|decompressed|bool|if true, decompress the data|
+
+h2. SetDataSpec
+
+||Field||Type||Description||
+|path|string|(r) the ZNode path|
+|data|bytes|(r) data for the node|
+|watched|bool|if true, trigger watch events for this node|
+|asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
+|compressed|bool|if true, compress the data|
+|version|Version|if not null, uses Version.version when setting the node data. Otherwise, \-1 is used.|
+
+h2. ExistsSpec
+
+||Field||Type||Description||
+|path|string|(r) the ZNode path|
+|watched|bool|if true, trigger watch events for this node|
+|asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
+
+h2. GetChildrenSpec
+
+||Field||Type||Description||
+|path|string|(r) the ZNode path|
+|watched|bool|if true, trigger watch events for this node|
+|asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
+
+h2. LeaderResult
+
+||Field||Type||Description||
+|projection|LeaderProjection|the projection of the leader|
+|isLeader|bool|true if this projection is the leader|
+
+h2. Participant
+
+||Field||Type||Description||
+|id|string|participant id|
+|isLeader|bool|true if this participant is the leader|
+
+h2. ChildData
+
+||Field||Type||Description||
+|path|string|the ZNode path|
+|stat|Stat|ZooKeeper stat for the node|
+|data|bytes|node data or null|

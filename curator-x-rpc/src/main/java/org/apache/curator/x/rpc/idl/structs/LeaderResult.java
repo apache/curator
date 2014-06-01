@@ -28,15 +28,15 @@ public class LeaderResult
     public LeaderProjection projection;
 
     @ThriftField(2)
-    public boolean hasLeadership;
+    public boolean isLeader;
 
     public LeaderResult()
     {
     }
 
-    public LeaderResult(LeaderProjection projection, boolean hasLeadership)
+    public LeaderResult(LeaderProjection projection, boolean isLeader)
     {
         this.projection = projection;
-        this.hasLeadership = hasLeadership;
+        this.isLeader = isLeader;
     }
 }
