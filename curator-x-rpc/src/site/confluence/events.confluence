@@ -2,3 +2,88 @@
 
 h1. Events
 
+
+h2. Event Loop
+
+In order to receive out\-of\-bounds messages (connection state changes, watcher triggers, etc.) you must have an event loop to recieve
+messages from the EventService. Here is pseudo code:
+
+{code}
+inThread => {
+    while ( isOpen ) {
+        event = eventService.getNextEvent(curatorProjection)
+        ... process event ...
+    }
+}
+{code}
+
+h2. Schema
+
+h3. CuratorEvent
+
+||Field||Type||Description||
+|type|CuratorEventType|The event type|
+|resultCode|int|some event types have a result code (i.e. async API calls)|
+|path|string|if there is a path associated with the event|
+|context|string|async context for async API calls|
+|stat|Stat|some event types have a ZooKeeper Stat object|
+|data|bytes|ZNode data if the event type has it|
+|name|string|ZNode name if the event type has it|
+|children|list of string|list of node names if the event type has it|
+|aclList|list of Acl|list of ACL data if the event type has it|
+|watchedEvent|WatchedEvent|if the event type is WATCHED|
+|leaderEvent|LeaderEvent|if the event type is WATCHED|
+|childrenCacheEvent|PathChildrenCacheEvent|if the event type is PATH\_CHILDREN\_CACHE|
+
+h3. CuratorEventType
+
+||Value||Description||
+|PING|Returned if there no events have been generated within the [[configured|configuration.html]] pingTime|
+|CREATE|Async createNode() API completion|
+|DELETE|Async deleteNode() API completion|
+|EXISTS|Async exists() API completion|
+|GET\_DATA|Async getData() API completion|
+|SET\_DATA|Async setData() API completion|
+|CHILDREN|Async getChildren() API completion|
+|SYNC|Async sync() API completion|
+|WATCHED|A watcher has triggered|
+|CONNECTION\_CONNECTED|A Curator ConnectionStateListener is installed. This event is for the initial successful connection.|
+|CONNECTION\_SUSPENDED|A Curator ConnectionStateListener is installed. This event means the connection has been suspended.|
+|CONNECTION\_RECONNECTED|A Curator ConnectionStateListener is installed. This event means the connection has been reconnected.|
+|CONNECTION\_LOST|A Curator ConnectionStateListener is installed. This event means the connection has been lost.|
+|CONNECTION\_READ\_ONLY|A Curator ConnectionStateListener is installed. This event means the connection has changed to read only.|
+|LEADER|A Leader recipe event|
+|PATH\_CHILDREN\_CACHE|A path children cache event|
+|NODE\_CACHE|The node for a node cache has changed|
+
+h3. LeaderEvent
+
+||Field||Type||Description||
+|path|string|The leader's path|
+|participantId|string|The participant ID for the event being reported|
+|isLeader|bool|if true, this participant is being made leader. If false, it is losing leadership.|
+
+h3. PathChildrenCacheEvent
+
+||Field||Type||Description||
+|cachedPath|name|The path being cached|
+|type|PathChildrenCacheEventType|cache event type|
+|data|ChildData|data for the child ZNode|
+
+h3. PathChildrenCacheEventType
+
+Values:     CHILD\_ADDED,
+            CHILD\_UPDATED,
+            CHILD\_REMOVED,
+            CONNECTION\_SUSPENDED,
+            CONNECTION\_RECONNECTED,
+            CONNECTION\_LOST,
+            INITIALIZED
+
+h3. ChildData
+
+||Field||Type||Description||
+|path|string|The ZNode path|
+|stat|Stat|ZooKeeper Stat object|
+|data|bytes|ZNode data (if the cache is configured to cache data)|
+

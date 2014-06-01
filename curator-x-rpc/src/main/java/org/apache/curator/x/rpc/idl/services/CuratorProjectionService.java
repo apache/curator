@@ -314,6 +314,21 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
+    public void sync(CuratorProjection projection, String path, String asyncContext) throws RpcException
+    {
+        try
+        {
+            CuratorEntry entry = CuratorEntry.mustGetEntry(connectionManager, projection);
+            BackgroundCallback backgroundCallback = new RpcBackgroundCallback(this, projection);
+            entry.getClient().sync().inBackground(backgroundCallback, asyncContext).forPath(path);
+        }
+        catch ( Exception e )
+        {
+            throw new RpcException(e);
+        }
+    }
+
+    @ThriftMethod
     public boolean closeGenericProjection(CuratorProjection projection, String id) throws RpcException
     {
         try
