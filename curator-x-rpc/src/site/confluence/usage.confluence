@@ -62,6 +62,9 @@ inThread => {
         ... process event ...
     }
 }
+
+... in your application shutdown
+client.closeCuratorProjection(curatorProjection)
 {code}
 
 h2. Usage

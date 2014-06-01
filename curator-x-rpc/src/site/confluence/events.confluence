@@ -17,6 +17,8 @@ inThread => {
 }
 {code}
 
+*IMPORTANT:* your event handling should operate as quickly as possible. You should return to calling getNextEvent() as soon as possible.
+
 h2. Schema
 
 h3. CuratorEvent
@@ -38,7 +40,7 @@ h3. CuratorEvent
 h3. CuratorEventType
 
 ||Value||Description||
-|PING|Returned if there no events have been generated within the [[configured|configuration.html]] pingTime|
+|PING|Returned if no events have been generated within the [[configured|configuration.html]] pingTime|
 |CREATE|Async createNode() API completion|
 |DELETE|Async deleteNode() API completion|
 |EXISTS|Async exists() API completion|
