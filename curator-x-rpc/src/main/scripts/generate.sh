@@ -20,7 +20,7 @@
 
 
 if (( $# != 2 )); then
-    echo "usage:\ngenerate.sh <path to swift2thrift-generator-cli-N.N.N-standalone.jar> <path to zookeeper-N.N.N.jar>"
+    echo -e "usage:\n\tgenerate.sh <path to swift2thrift-generator-cli-N.N.N-standalone.jar> <path to zookeeper-N.N.N.jar>"
     exit
 fi
 

@@ -29,6 +29,7 @@ the model configuration shown in JSON with added comments. Required fields have 
 
     "connections": [ // * list of ZooKeeper connections
         "name": "string", // * unique name for the connection
+        "connectionString": "string", // * ZooKeeper connection string (e.g. "host1:2181,host2:2181")
         "sessionLength": "Duration", // duration for the session. Default is 1 minute.
         "connectionTimeout": "Duration", // duration for connecting. Default is 15 seconds.
         "authorization": { // Authorization spec. Default is NULL.

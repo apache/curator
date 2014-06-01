@@ -1,0 +1,27 @@
+[[Curator RPC Proxy|index.html]] / Usage
+
+h1. Usage
+
+h2. Thrift File
+
+The first step in using the RPC Proxy is to process the Curator RPC Thrift file into your desired language/environment.
+The current Curator RPC Thrift File can be found here: [[https://raw.githubusercontent.com/apache/curator/master/curator-x-rpc/src/main/thrift/curator.thrift]].
+Details on using Apache Thrift can be found here: [[http://thrift.apache.org]].
+
+h2. Prerequisites
+
+It's assumed you already familiar with ZooKeeper and Curator. Also, familiarity with writing Thrift applications is helpful.
+
+h2. Services
+
+Three Thrift Services are included with the Curator RPC:
+
+||Service||Description||
+|CuratorService|The main service for accessing the Curator APIs and recipes|
+|EventService|Used to receive out-of-band messages for callbacks, watchers, etc|
+|DiscoveryService|Curator's ServiceDiscovery recipe|
+
+h2. Concepts
+
+_Projections - Many of the Curator RPC APIs refer to "projections" (e.g. CuratorProjection). A projection is an id that refers
+to a real object instance inside of the RPC server.

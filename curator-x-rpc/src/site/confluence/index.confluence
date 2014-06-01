@@ -2,30 +2,31 @@ h1. Curator RPC Proxy
 
 NOTE: Curator RPC Proxy is in its own package in Maven Central: curator\-x\-rpc
 
-The Curator RPC module implements a proxy that bridges non-java environments with the Curator framework and recipes. It uses
+The Curator RPC module implements a proxy that bridges non\-java environments with the Curator framework and recipes. It uses
 [[Apache Thrift|http://thrift.apache.org]] which supports a large set of languages and environments.
+
+The benefits of Curator RPC are:
+
+* Gives access to Curator to non JVM languages/environments
+** Curator has become the de\-facto JVM client library for ZooKeeper
+** Curator makes using Apache ZooKeeper much easier
+** Curator contains well\-tested recipes for many common ZooKeeper usages
+* Organizations can unify their ZooKeeper usage across languages/environments (i.e. use Curator's Service Discovery recipe)
+* The quality of ZooKeeper clients for some non\-JVM languages is lacking
+* There are Thrift implementations for a large number of languages/environments
 
 h2. Thrift File
 The current Curator RPC Thrift File can be found here: [[https://raw.githubusercontent.com/apache/curator/master/curator-x-rpc/src/main/thrift/curator.thrift]]. Use
 this to generate code for the language/environment you need.
 
-h2. Building and Packaging
-
-See the [[Building and Packaging Page|build.html]] for details on building and packaging the REST proxy.
-
 h2. Deployment
 
-See the [[Deployment Page|deploy.html]] for details on deploying the REST proxy.
+See the [[Deployment Page|deploy.html]] for details on deploying the RPC proxy.
 
-h2. Your REST Client
+h2. Usage
 
-See the [[REST Client|client.html]] for details on how to write a REST client that interacts with the proxy.
+See the [[Usage Page|usage.html]] for details on using the RPC proxy.
 
-h2. APIs
+h2. Configuration
 
-See the [[APIs Page|apis.html]] for list of available APIs.
-
-h2. Entities
-
-See the [[Entity Descriptions Page|entities.html]] for details on the Entities used in the APIs.
-
+See the [[Configuration|configuration.html]] for details on configuring the RPC proxy.

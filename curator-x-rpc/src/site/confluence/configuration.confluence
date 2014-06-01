@@ -1,0 +1,150 @@
+[[Curator RPC Proxy|index.html]] / Configuration
+
+h1. Configuration
+
+h2. Introduction
+
+Curator RPC uses [[Dropwizard|http://dropwizard.readthedocs.org/en/latest/]] for configuration. You can write the configuration in JSON or YAML.
+It can be passed to Curator RPC via a file or directly on the command line. i.e.
+
+{noformat}
+# via command line
+java -jar curator-x-rpc-VERSION.jar '{"thrift":{"port": 8080}}'
+{noformat}
+
+{noformat}
+# via file
+java -jar curator-x-rpc-VERSION.jar path/to/config.json
+{noformat}
+
+h2. Example
+
+Here is an example JSON configuration file
+
+{noformat}
+{
+    "projectionExpiration": "15s",
+
+    "thrift": {
+        "port": 1234
+    },
+
+    "pingTime": "10s",
+
+    "logging": {
+        "level": "INFO",
+
+        "appenders": [
+            {
+                "type": "file",
+                "currentLogFilename": "logs/curator-rpc.log",
+                "archivedLogFilenamePattern": "logs/curator-rpc-%d.log.gz",
+                "archivedFileCount": 10,
+                "timeZone": "UTC"
+            },
+
+            {
+                "type": "console"
+            }
+        ]
+    },
+
+    "connections": [
+        {
+            "name": "main",
+            "connectionString": "one:1,two:2",
+            "sessionLength": "3m",
+            "connectionTimeout": "20s",
+            "retry": {
+                "type": "exponential-backoff",
+                "baseSleepTime": "1s",
+                "maxRetries": 10
+            }
+        },
+
+        {
+            "name": "alt",
+            "connectionString": "three:3,four:4",
+            "sessionLength": "4m",
+            "connectionTimeout": "30s",
+            "retry": {
+                "type": "ntimes",
+                "sleepBetweenRetries": "1m",
+                "n": 10
+            }
+        }
+    ]
+}
+{noformat}
+
+
+h2. Reference
+
+h3. Main
+
+||Name||Type||Default Value||Description||
+|thrift|Thrift|n/a|Thrift server configuration|
+|logging|Logging|n/a|log file configuration|
+|projectionExpiration|Duration|3 minutes|Curator Projection instances will be automatically closed if not accessed within this amount of time|
+|pingTime|Duration|5 seconds|The EventService will return a PING event if this time elapses without some other event being generated|
+|connections|List of Connection|n/a|List of ZooKeeper connections|
+
+h3. Duration
+
+Durations are strings that specify a time duration. Examples:
+* "10s" \- 10 seconds
+* "100ms" \- 100 milliseconds
+* "3h" \- 3 hours
+
+h3. Thrift
+
+||Name||Type||Default Value||Description||
+|bindAddress|string|"bindAddress"|Address for server to bind to|
+|port|int|_none_|port to listen on. *required*|
+|idleConnectionTimeout|int|60 seconds|timeout period between receiving requests from a client connection. If the timeout is exceeded (no complete requests have arrived from the client within the timeout), the server will disconnect the idle client.|
+|transportName|string|"framed"|the name of the transport (frame codec) that this server will handle. The available options by default are 'unframed', 'buffered', and 'framed'. Additional modules may install other options.|
+|protocolName|string|"binary"|name of the protocol that this server will speak. The available options by default are 'binary' and 'compact'. Additional modules may install other options.|
+
+h3. Logging
+
+Dropwizard's logging module is used. See the [[Dropwizard Logging Doc|http://dropwizard.readthedocs.org/en/latest/manual/configuration.html#logging]] for details
+on specifying the logging configuration.
+
+h3. Connection
+
+||Name||Type||Default Value||Description||
+|name|string|_none_|Unique name for the connection. *required*|
+|connectionString|string|_none_|ZooKeeper connection string (e.g. "host1:2181,host2:2181"). *required*|
+|sessionLength|Duration|1 minute|duration for the ZooKeeper session|
+|connectionTimeout|Duration|15 seconds|duration for connecting|
+|retry|Retry|an exponential\-backoff policy|The Retry Policy to use|
+|authorization|Authorization|null|Authorization spec|
+
+h3. Retry
+
+The retry policy configuration depends on what type is used. There 3 types supported:
+
+_exponential\-backoff_
+||Name||Type||Default Value||Description||
+|type|string|n/a|"exponential\-backoff"|
+|baseSleepTime|Duration|100 milliseconds|The base sleep time|
+|maxRetries|int|3|The max retries|
+
+_bounded\-exponential\-backoff_
+||Name||Type||Default Value||Description||
+|type|string|n/a|"bounded\-exponential\-backoff"|
+|baseSleepTime|Duration|100 milliseconds|The base sleep time|
+|maxSleepTime|Duration|30 seconds|The max sleep time|
+|maxRetries|int|3|The max retries|
+
+_ntimes_
+||Name||Type||Default Value||Description||
+|type|string|n/a|"ntimes"|
+|sleepBetweenRetries|int|100 milliseconds|sleep time between retries|
+|n|int|3|the number of retries|
+
+h3. Authorization
+
+||Name||Type||Description||
+|scheme|string|the authorization scheme|
+|auth|string|the authorization auth|

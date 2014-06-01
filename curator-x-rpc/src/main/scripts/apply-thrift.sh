@@ -19,10 +19,21 @@
 #
 
 
+if (( $# == 0 )); then
+    echo -e "usage:\n\tapply-thrift.sh <language code> <optional target directory>"
+    exit
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR="$( cd "$DIR/../../../.." && pwd )"
-TARGET_DIR="$BASE_DIR/curator-x-rpc/src/test/java"
 
-rm "$TARGET_DIR/org/apache/curator/generated/"*
+if (( $# == 2 )); then
+    TARGET_DIR="$2"
+else
+    TARGET_DIR="$BASE_DIR/curator-x-rpc/src/test/java"
+fi
 
-thrift -gen java -out "$TARGET_DIR" "$BASE_DIR/curator-x-rpc/src/main/thrift/curator.thrift"
+mkdir -p "$TARGET_DIR/"
+rm -fr "$TARGET_DIR/"*
+
+thrift -gen $1 -out "$TARGET_DIR" "$BASE_DIR/curator-x-rpc/src/main/thrift/curator.thrift"
