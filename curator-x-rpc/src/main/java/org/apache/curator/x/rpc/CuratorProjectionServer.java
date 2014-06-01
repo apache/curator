@@ -77,10 +77,7 @@ public class CuratorProjectionServer
             configurationSource = args[0];
         }
 
-        Configuration configuration = new ConfigurationBuilder(configurationSource).build();
-
-        final CuratorProjectionServer server = new CuratorProjectionServer(configuration);
-        server.start();
+        final CuratorProjectionServer server = startServer(configurationSource);
 
         Runnable shutdown = new Runnable()
         {
@@ -92,6 +89,15 @@ public class CuratorProjectionServer
         };
         Thread hook = new Thread(shutdown);
         Runtime.getRuntime().addShutdownHook(hook);
+    }
+
+    public static CuratorProjectionServer startServer(String configurationSource) throws Exception
+    {
+        Configuration configuration = new ConfigurationBuilder(configurationSource).build();
+
+        final CuratorProjectionServer server = new CuratorProjectionServer(configuration);
+        server.start();
+        return server;
     }
 
     public CuratorProjectionServer(Configuration configuration)
