@@ -1,8 +1,8 @@
 [[Curator RPC Proxy|index.html]] / Reference
 
-h1. Reference
+h1. API and Struct Reference
 
-h2. CuratorService Reference
+h2. CuratorService
 
 ||API||Arguments||Return Value||Description||
 |newCuratorProjection|connectionName|CuratorProjection|Allocates a projection to a configured CuratorFramework instance in the RPC server. "connectionName" is the name of a [[configured|configuration.html]] connection.|
@@ -27,3 +27,20 @@ h2. CuratorService Reference
 |getNodeCacheData|node cache projection|ChildData|Return the data for the cached node. If the node doesn't exist, the fields of the ChildData object will be null.|
 |startPersistentEphemeralNode|path, data, mode|projection|Start a PersistentEphemeralNode for the given path using the given data and mode.|
 |acquireSemaphore|path, acquireQty, maxWaitMs, maxLeases|List of lease projections|Acquire one or more leases for a semaphore on the given path. acquireQty is the number of leases to acquire. maxWaitMs is the max time to wait to get the leases. maxLeases is the maximum leases to allow for the semaphore. If the number of leases cannot be acquired within the max time, an empty list is returned.|
+
+h2. EventService
+
+||API||Arguments||Return Value||Description||
+|getNextEvent|CuratorProjection|Returns the next queued event for the given CuratorProjection. If no events are queued within the [[configured|configuration.html]] ping time, a PING event is returned.|
+
+See the [[Events Page|events.html]] for the Event schema reference.
+
+h2. DiscoveryService
+
+||API||Arguments||Return Value||Description||
+|makeDiscoveryInstance|name, payload, port|DiscoveryInstance|Return a completed DiscoveryInstance using the RPC server's address and the given name, payload and port.|
+|startDiscovery|basePath, yourInstance|discovery projection|Start a Service Discovery instance on the given path. If yourInstance is not null it will be registered as the local service.|
+|startProvider|discoveryProjection, serviceName, providerStrategy, downTimeoutMs, downErrorThreshold|provider projection|start a Service Discovery Provider to return instances for the given service name using the given provider strategy. Specify "down" instance characteristics with downTimeoutMs and downErrorThreshold.|
+|getInstance|provider projection|DiscoveryInstance|Return a single instance for the given service|
+|getAllInstances|provider projection|list of DiscoveryInstance|Return all instances for the given service|
+|noteError|provider projection, service id|void|Note an error for the given service instance|

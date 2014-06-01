@@ -84,7 +84,7 @@ public class DiscoveryService
                 .builder(byte[].class)
                 .basePath(basePath)
                 .client(entry.getClient())
-                .thisInstance(yourInstance.toReal())
+                .thisInstance((yourInstance != null) ? yourInstance.toReal() : null)
                 .build();
             serviceDiscovery.start();
 
