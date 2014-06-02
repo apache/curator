@@ -203,5 +203,24 @@ public class RpcTests extends BaseClassForTests
 
         service.shutdownNow();
     }
-}
 
+    @Test
+    public void testRecoverableException() throws Exception
+    {
+        CuratorProjection curatorProjection = curatorServiceClient.newCuratorProjection("test");
+        CreateSpec spec = new CreateSpec();
+        spec.path = "/this/wont/work";
+        spec.data = ByteBuffer.wrap("value".getBytes());
+        try
+        {
+            curatorServiceClient.createNode(curatorProjection, spec);
+            Assert.fail("Should have failed");
+        }
+        catch ( CuratorException e )
+        {
+            Assert.assertEquals(e.getType(), ExceptionType.NODE);
+            Assert.assertNotNull(e.nodeException);
+            Assert.assertEquals(e.nodeException, NodeExceptionType.NONODE);
+        }
+    }
+}
