@@ -118,8 +118,7 @@ public class ConnectionManager implements Closeable
 
     public CuratorEntry get(String id)
     {
-        Preconditions.checkState(state.get() == State.STARTED, "Not started");
-        return cache.getIfPresent(id);
+        return (state.get() == State.STARTED) ? cache.getIfPresent(id) : null;
     }
 
     public CuratorEntry remove(String id)
