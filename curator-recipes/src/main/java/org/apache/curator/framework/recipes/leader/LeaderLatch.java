@@ -19,17 +19,9 @@
 
 package org.apache.curator.framework.recipes.leader;
 
-import java.io.Closeable;
-import java.io.EOFException;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -46,60 +38,71 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
+import java.io.Closeable;
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
- * Abstraction to select a "leader" amongst multiple contenders in a group of
- * JMVs connected to a Zookeeper cluster. If a group of N thread/processes
- * contend for leadership one will randomly be assigned leader until it releases
- * leadership at which time another one from the group will randomly be chosen
+ * Abstraction to select a "leader" amongst multiple contenders in a group of JMVs connected to
+ * a Zookeeper cluster. If a group of N thread/processes contend for leadership one will
+ * randomly be assigned leader until it releases leadership at which time another one from the
+ * group will randomly be chosen
  * </p>
  */
-public class LeaderLatch implements Closeable {
+public class LeaderLatch implements Closeable
+{
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final String latchPath;
     private final String id;
-    private final AtomicReference<State> state = new AtomicReference<State>(
-            State.LATENT);
+    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean hasLeadership = new AtomicBoolean(false);
     private final AtomicReference<String> ourPath = new AtomicReference<String>();
     private final ListenerContainer<LeaderLatchListener> listeners = new ListenerContainer<LeaderLatchListener>();
     private final CloseMode closeMode;
 
-    private final ConnectionStateListener listener = new ConnectionStateListener() {
+    private final ConnectionStateListener listener = new ConnectionStateListener()
+    {
         @Override
-        public void stateChanged(CuratorFramework client,
-                ConnectionState newState) {
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
             handleStateChange(newState);
         }
     };
 
     private static final String LOCK_NAME = "latch-";
 
-    private static final LockInternalsSorter sorter = new LockInternalsSorter() {
+    private static final LockInternalsSorter sorter = new LockInternalsSorter()
+    {
         @Override
-        public String fixForSorting(String str, String lockName) {
-            return StandardLockInternalsDriver.standardFixForSorting(str,
-                    lockName);
+        public String fixForSorting(String str, String lockName)
+        {
+            return StandardLockInternalsDriver.standardFixForSorting(str, lockName);
         }
     };
 
-    public enum State {
-        LATENT, STARTED, CLOSED
+    public enum State
+    {
+        LATENT,
+        STARTED,
+        CLOSED
     }
 
     /**
      * How to handle listeners when the latch is closed
      */
-    public enum CloseMode {
+    public enum CloseMode
+    {
         /**
-         * When the latch is closed, listeners will *not* be notified (default
-         * behavior)
+         * When the latch is closed, listeners will *not* be notified (default behavior)
          */
         SILENT,
 
@@ -110,116 +113,105 @@ public class LeaderLatch implements Closeable {
     }
 
     /**
-     * @param client
-     *            the client
-     * @param latchPath
-     *            the path for this leadership group
+     * @param client    the client
+     * @param latchPath the path for this leadership group
      */
-    public LeaderLatch(CuratorFramework client, String latchPath) {
+    public LeaderLatch(CuratorFramework client, String latchPath)
+    {
         this(client, latchPath, "", CloseMode.SILENT);
     }
 
     /**
-     * @param client
-     *            the client
-     * @param latchPath
-     *            the path for this leadership group
-     * @param id
-     *            participant ID
+     * @param client    the client
+     * @param latchPath the path for this leadership group
+     * @param id        participant ID
      */
-    public LeaderLatch(CuratorFramework client, String latchPath, String id) {
+    public LeaderLatch(CuratorFramework client, String latchPath, String id)
+    {
         this(client, latchPath, id, CloseMode.SILENT);
     }
 
     /**
-     * @param client
-     *            the client
-     * @param latchPath
-     *            the path for this leadership group
-     * @param id
-     *            participant ID
-     * @param closeMode
-     *            behaviour of listener on explicit close.
+     * @param client    the client
+     * @param latchPath the path for this leadership group
+     * @param id        participant ID
+     * @param closeMode behaviour of listener on explicit close.
      */
-    public LeaderLatch(CuratorFramework client, String latchPath, String id,
-            CloseMode closeMode) {
-        this.client = Preconditions.checkNotNull(client,
-                "client cannot be null");
-        this.latchPath = Preconditions.checkNotNull(latchPath,
-                "mutexPath cannot be null");
+    public LeaderLatch(CuratorFramework client, String latchPath, String id, CloseMode closeMode)
+    {
+        this.client = Preconditions.checkNotNull(client, "client cannot be null");
+        this.latchPath = Preconditions.checkNotNull(latchPath, "mutexPath cannot be null");
         this.id = Preconditions.checkNotNull(id, "id cannot be null");
-        this.closeMode = Preconditions.checkNotNull(closeMode,
-                "closeMode cannot be null");
+        this.closeMode = Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
     }
 
     /**
-     * Add this instance to the leadership election and attempt to acquire
-     * leadership.
-     * 
-     * @throws Exception
-     *             errors
+     * Add this instance to the leadership election and attempt to acquire leadership.
+     *
+     * @throws Exception errors
      */
-    public void start() throws Exception {
-        Preconditions.checkState(
-                state.compareAndSet(State.LATENT, State.STARTED),
-                "Cannot be started more than once");
+    public void start() throws Exception
+    {
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         client.getConnectionStateListenable().addListener(listener);
         reset();
     }
 
     /**
-     * Remove this instance from the leadership election. If this instance is
-     * the leader, leadership is released. IMPORTANT: the only way to release
-     * leadership is by calling close(). All LeaderLatch instances must
-     * eventually be closed.
-     * 
-     * @throws IOException
-     *             errors
+     * Remove this instance from the leadership election. If this instance is the leader, leadership
+     * is released. IMPORTANT: the only way to release leadership is by calling close(). All LeaderLatch
+     * instances must eventually be closed.
+     *
+     * @throws IOException errors
      */
     @Override
-    public void close() throws IOException {
+    public void close() throws IOException
+    {
         close(closeMode);
     }
 
     /**
-     * Remove this instance from the leadership election. If this instance is
-     * the leader, leadership is released. IMPORTANT: the only way to release
-     * leadership is by calling close(). All LeaderLatch instances must
-     * eventually be closed.
-     * 
-     * @param closeMode
-     *            allows the default close mode to be overridden at the time the
-     *            latch is closed.
-     * 
-     * @throws IOException
-     *             errors
+     * Remove this instance from the leadership election. If this instance is the leader, leadership
+     * is released. IMPORTANT: the only way to release leadership is by calling close(). All LeaderLatch
+     * instances must eventually be closed.
+     *
+     * @param closeMode allows the default close mode to be overridden at the time the latch is closed.
+     *
+     * @throws IOException errors
      */
-    public void close(CloseMode closeMode) throws IOException {
-        Preconditions.checkState(
-                state.compareAndSet(State.STARTED, State.CLOSED),
-                "Already closed or has not been started");
+    public void close(CloseMode closeMode) throws IOException
+    {
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
         Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
 
-        try {
+        try
+        {
             setNode(null);
-        } catch (Exception e) {
+        }
+        catch ( Exception e )
+        {
             throw new IOException(e);
-        } finally {
+        }
+        finally
+        {
             client.getConnectionStateListenable().removeListener(listener);
 
-            switch (closeMode) {
-            case NOTIFY_LEADER: {
-                setLeadership(false);
-                listeners.clear();
-                break;
-            }
+            switch ( closeMode )
+            {
+                case NOTIFY_LEADER:
+                {
+                    setLeadership(false);
+                    listeners.clear();
+                    break;
+                }
 
-            default: {
-                listeners.clear();
-                setLeadership(false);
-                break;
-            }
+                default:
+                {
+                    listeners.clear();
+                    setLeadership(false);
+                    break;
+                }
             }
         }
     }
@@ -227,160 +219,134 @@ public class LeaderLatch implements Closeable {
     /**
      * Attaches a listener to this LeaderLatch
      * <p>
-     * Attaching the same listener multiple times is a noop from the second time
-     * on.
+     * Attaching the same listener multiple times is a noop from the second time on.
      * <p>
-     * All methods for the listener are run using the provided Executor. It is
-     * common to pass in a single-threaded executor so that you can be certain
-     * that listener methods are called in sequence, but if you are fine with
+     * All methods for the listener are run using the provided Executor.  It is common to pass in a single-threaded
+     * executor so that you can be certain that listener methods are called in sequence, but if you are fine with
      * them being called out of order you are welcome to use multiple threads.
-     * 
-     * @param listener
-     *            the listener to attach
+     *
+     * @param listener the listener to attach
      */
-    public void addListener(LeaderLatchListener listener) {
+    public void addListener(LeaderLatchListener listener)
+    {
         listeners.addListener(listener);
     }
 
     /**
      * Attaches a listener to this LeaderLatch
      * <p>
-     * Attaching the same listener multiple times is a noop from the second time
-     * on.
+     * Attaching the same listener multiple times is a noop from the second time on.
      * <p>
-     * All methods for the listener are run using the provided Executor. It is
-     * common to pass in a single-threaded executor so that you can be certain
-     * that listener methods are called in sequence, but if you are fine with
+     * All methods for the listener are run using the provided Executor.  It is common to pass in a single-threaded
+     * executor so that you can be certain that listener methods are called in sequence, but if you are fine with
      * them being called out of order you are welcome to use multiple threads.
-     * 
-     * @param listener
-     *            the listener to attach
-     * @param executor
-     *            An executor to run the methods for the listener on.
+     *
+     * @param listener the listener to attach
+     * @param executor     An executor to run the methods for the listener on.
      */
-    public void addListener(LeaderLatchListener listener, Executor executor) {
+    public void addListener(LeaderLatchListener listener, Executor executor)
+    {
         listeners.addListener(listener, executor);
     }
 
     /**
      * Removes a given listener from this LeaderLatch
-     * 
-     * @param listener
-     *            the listener to remove
+     *
+     * @param listener the listener to remove
      */
-    public void removeListener(LeaderLatchListener listener) {
+    public void removeListener(LeaderLatchListener listener)
+    {
         listeners.removeListener(listener);
     }
 
     /**
-     * <p>
-     * Causes the current thread to wait until this instance acquires leadership
-     * unless the thread is {@linkplain Thread#interrupt interrupted} or
-     * {@linkplain #close() closed}.
-     * </p>
-     * <p>
-     * If this instance already is the leader then this method returns
-     * immediately.
-     * </p>
-     * 
-     * <p>
-     * Otherwise the current thread becomes disabled for thread scheduling
-     * purposes and lies dormant until one of three things happen:
-     * </p>
+     * <p>Causes the current thread to wait until this instance acquires leadership
+     * unless the thread is {@linkplain Thread#interrupt interrupted} or {@linkplain #close() closed}.</p>
+     * <p>If this instance already is the leader then this method returns immediately.</p>
+     *
+     * <p>Otherwise the current
+     * thread becomes disabled for thread scheduling purposes and lies
+     * dormant until one of three things happen:</p>
      * <ul>
      * <li>This instance becomes the leader</li>
-     * <li>Some other thread {@linkplain Thread#interrupt interrupts} the
-     * current thread</li>
+     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
+     * the current thread</li>
      * <li>The instance is {@linkplain #close() closed}</li>
      * </ul>
-     * <p>
-     * If the current thread:
-     * </p>
+     * <p>If the current thread:</p>
      * <ul>
      * <li>has its interrupted status set on entry to this method; or
      * <li>is {@linkplain Thread#interrupt interrupted} while waiting,
      * </ul>
-     * <p>
-     * then {@link InterruptedException} is thrown and the current thread's
-     * interrupted status is cleared.
-     * </p>
-     * 
-     * @throws InterruptedException
-     *             if the current thread is interrupted while waiting
-     * @throws EOFException
-     *             if the instance is {@linkplain #close() closed} while waiting
+     * <p>then {@link InterruptedException} is thrown and the current thread's
+     * interrupted status is cleared.</p>
+     *
+     * @throws InterruptedException if the current thread is interrupted
+     *                              while waiting
+     * @throws EOFException         if the instance is {@linkplain #close() closed}
+     *                              while waiting
      */
-    public void await() throws InterruptedException, EOFException {
-        synchronized (this) {
-            while ((state.get() == State.STARTED) && !hasLeadership.get()) {
+    public void await() throws InterruptedException, EOFException
+    {
+        synchronized(this)
+        {
+            while ( (state.get() == State.STARTED) && !hasLeadership.get() )
+            {
                 wait();
             }
         }
-        if (state.get() != State.STARTED) {
+        if ( state.get() != State.STARTED )
+        {
             throw new EOFException();
         }
     }
 
     /**
-     * <p>
-     * Causes the current thread to wait until this instance acquires leadership
-     * unless the thread is {@linkplain Thread#interrupt interrupted}, the
-     * specified waiting time elapses or the instance is {@linkplain #close()
-     * closed}.
-     * </p>
-     * 
-     * <p>
-     * If this instance already is the leader then this method returns
-     * immediately with the value {@code true}.
-     * </p>
-     * 
-     * <p>
-     * Otherwise the current thread becomes disabled for thread scheduling
-     * purposes and lies dormant until one of four things happen:
-     * </p>
+     * <p>Causes the current thread to wait until this instance acquires leadership
+     * unless the thread is {@linkplain Thread#interrupt interrupted},
+     * the specified waiting time elapses or the instance is {@linkplain #close() closed}.</p>
+     *
+     * <p>If this instance already is the leader then this method returns immediately
+     * with the value {@code true}.</p>
+     *
+     * <p>Otherwise the current
+     * thread becomes disabled for thread scheduling purposes and lies
+     * dormant until one of four things happen:</p>
      * <ul>
      * <li>This instance becomes the leader</li>
-     * <li>Some other thread {@linkplain Thread#interrupt interrupts} the
-     * current thread</li>
+     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
+     * the current thread</li>
      * <li>The specified waiting time elapses.</li>
      * <li>The instance is {@linkplain #close() closed}</li>
      * </ul>
-     * 
-     * <p>
-     * If the current thread:
-     * </p>
+     *
+     * <p>If the current thread:</p>
      * <ul>
      * <li>has its interrupted status set on entry to this method; or
      * <li>is {@linkplain Thread#interrupt interrupted} while waiting,
      * </ul>
-     * <p>
-     * then {@link InterruptedException} is thrown and the current thread's
-     * interrupted status is cleared.
-     * </p>
-     * 
-     * <p>
-     * If the specified waiting time elapses or the instance is
-     * {@linkplain #close() closed} then the value {@code false} is returned. If
-     * the time is less than or equal to zero, the method will not wait at all.
-     * </p>
-     * 
-     * @param timeout
-     *            the maximum time to wait
-     * @param unit
-     *            the time unit of the {@code timeout} argument
-     * @return {@code true} if the count reached zero and {@code false} if the
-     *         waiting time elapsed before the count reached zero or the
-     *         instances was closed
-     * @throws InterruptedException
-     *             if the current thread is interrupted while waiting
+     * <p>then {@link InterruptedException} is thrown and the current thread's
+     * interrupted status is cleared.</p>
+     *
+     * <p>If the specified waiting time elapses or the instance is {@linkplain #close() closed}
+     * then the value {@code false} is returned.  If the time is less than or equal to zero, the method
+     * will not wait at all.</p>
+     *
+     * @param timeout the maximum time to wait
+     * @param unit    the time unit of the {@code timeout} argument
+     * @return {@code true} if the count reached zero and {@code false}
+     *         if the waiting time elapsed before the count reached zero or the instances was closed
+     * @throws InterruptedException if the current thread is interrupted
+     *                              while waiting
      */
-    public boolean await(long timeout, TimeUnit unit)
-            throws InterruptedException {
+    public boolean await(long timeout, TimeUnit unit) throws InterruptedException
+    {
         long waitNanos = TimeUnit.NANOSECONDS.convert(timeout, unit);
 
-        synchronized (this) {
-            while ((waitNanos > 0) && (state.get() == State.STARTED)
-                    && !hasLeadership.get()) {
+        synchronized(this)
+        {
+            while ( (waitNanos > 0) && (state.get() == State.STARTED) && !hasLeadership.get() )
+            {
                 long startNanos = System.nanoTime();
                 TimeUnit.NANOSECONDS.timedWait(this, waitNanos);
                 long elapsed = System.nanoTime() - startNanos;
@@ -392,23 +358,24 @@ public class LeaderLatch implements Closeable {
 
     /**
      * Return this instance's participant Id
-     * 
+     *
      * @return participant Id
      */
-    public String getId() {
+    public String getId()
+    {
         return id;
     }
 
     /**
-     * Returns this instances current state, this is the only way to verify that
-     * the object has been closed before closing again. If you try to close a
-     * latch multiple times, the close() method will throw an
-     * IllegalArgumentException which is often not caught and ignored
-     * (CloseableUtils.closeQuietly() only looks for IOException).
-     * 
+     * Returns this instances current state, this is the only way to verify that the object has been closed before
+     * closing again.  If you try to close a latch multiple times, the close() method will throw an
+     * IllegalArgumentException which is often not caught and ignored (CloseableUtils.closeQuietly() only looks for
+     * IOException).
+     *
      * @return the state of the current instance
      */
-    public State getState() {
+    public State getState()
+    {
         return state.get();
     }
 
@@ -419,17 +386,16 @@ public class LeaderLatch implements Closeable {
      * <p>
      * <p>
      * <B>NOTE</B> - this method polls the ZK server. Therefore it can possibly
-     * return a value that does not match {@link #hasLeadership()} as
-     * hasLeadership uses a local field of the class.
+     * return a value that does not match {@link #hasLeadership()} as hasLeadership
+     * uses a local field of the class.
      * </p>
-     * 
+     *
      * @return participants
-     * @throws Exception
-     *             ZK errors, interruptions, etc.
+     * @throws Exception ZK errors, interruptions, etc.
      */
-    public Collection<Participant> getParticipants() throws Exception {
-        Collection<String> participantNodes = LockInternals
-                .getParticipantNodes(client, latchPath, LOCK_NAME, sorter);
+    public Collection<Participant> getParticipants() throws Exception
+    {
+        Collection<String> participantNodes = LockInternals.getParticipantNodes(client, latchPath, LOCK_NAME, sorter);
         return LeaderSelector.getParticipants(client, participantNodes);
     }
 
@@ -441,26 +407,26 @@ public class LeaderLatch implements Closeable {
      * <p>
      * <p>
      * <B>NOTE</B> - this method polls the ZK server. Therefore it can possibly
-     * return a value that does not match {@link #hasLeadership()} as
-     * hasLeadership uses a local field of the class.
+     * return a value that does not match {@link #hasLeadership()} as hasLeadership
+     * uses a local field of the class.
      * </p>
-     * 
+     *
      * @return leader
-     * @throws Exception
-     *             ZK errors, interruptions, etc.
+     * @throws Exception ZK errors, interruptions, etc.
      */
-    public Participant getLeader() throws Exception {
-        Collection<String> participantNodes = LockInternals
-                .getParticipantNodes(client, latchPath, LOCK_NAME, sorter);
+    public Participant getLeader() throws Exception
+    {
+        Collection<String> participantNodes = LockInternals.getParticipantNodes(client, latchPath, LOCK_NAME, sorter);
         return LeaderSelector.getLeader(client, participantNodes);
     }
 
     /**
      * Return true if leadership is currently held by this instance
-     * 
+     *
      * @return true/false
      */
-    public boolean hasLeadership() {
+    public boolean hasLeadership()
+    {
         return (state.get() == State.STARTED) && hasLeadership.get();
     }
 
@@ -468,95 +434,105 @@ public class LeaderLatch implements Closeable {
     volatile CountDownLatch debugResetWaitLatch = null;
 
     @VisibleForTesting
-    void reset() throws Exception {
+    void reset() throws Exception
+    {
         setLeadership(false);
         setNode(null);
 
-        BackgroundCallback callback = new BackgroundCallback() {
+        BackgroundCallback callback = new BackgroundCallback()
+        {
             @Override
-            public void processResult(CuratorFramework client,
-                    CuratorEvent event) throws Exception {
-                if (debugResetWaitLatch != null) {
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                if ( debugResetWaitLatch != null )
+                {
                     debugResetWaitLatch.await();
                     debugResetWaitLatch = null;
                 }
 
-                if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
                     setNode(event.getName());
-                    if (state.get() == State.CLOSED) {
+                    if ( state.get() == State.CLOSED )
+                    {
                         setNode(null);
-                    } else {
+                    }
+                    else
+                    {
                         getChildren();
                     }
-                } else {
-                    log.error("getChildren() failed. rc = "
-                            + event.getResultCode());
+                }
+                else
+                {
+                    log.error("getChildren() failed. rc = " + event.getResultCode());
                 }
             }
         };
-        client.create()
-                .creatingParentsIfNeeded()
-                .withProtection()
-                .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
-                .inBackground(callback)
-                .forPath(ZKPaths.makePath(latchPath, LOCK_NAME),
-                        LeaderSelector.getIdBytes(id));
+        client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
     }
 
-    private void checkLeadership(List<String> children) throws Exception {
+    private void checkLeadership(List<String> children) throws Exception
+    {
         final String localOurPath = ourPath.get();
-        List<String> sortedChildren = LockInternals.getSortedChildren(
-                LOCK_NAME, sorter, children);
-        int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths
-                .getNodeFromPath(localOurPath)) : -1;
-        if (ourIndex < 0) {
+        List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
+        int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
+        if ( ourIndex < 0 )
+        {
             log.error("Can't find our node. Resetting. Index: " + ourIndex);
             reset();
-        } else if (ourIndex == 0) {
+        }
+        else if ( ourIndex == 0 )
+        {
             setLeadership(true);
-        } else {
+        }
+        else
+        {
             String watchPath = sortedChildren.get(ourIndex - 1);
-            Watcher watcher = new Watcher() {
+            Watcher watcher = new Watcher()
+            {
                 @Override
-                public void process(WatchedEvent event) {
-                    if ((state.get() == State.STARTED)
-                            && (event.getType() == Event.EventType.NodeDeleted)
-                            && (localOurPath != null)) {
-                        try {
+                public void process(WatchedEvent event)
+                {
+                    if ( (state.get() == State.STARTED) && (event.getType() == Event.EventType.NodeDeleted) && (localOurPath != null) )
+                    {
+                        try
+                        {
                             getChildren();
-                        } catch (Exception ex) {
-                            log.error(
-                                    "An error occurred checking the leadership.",
-                                    ex);
+                        }
+                        catch ( Exception ex )
+                        {
+                            log.error("An error occurred checking the leadership.", ex);
                         }
                     }
                 }
             };
 
-            BackgroundCallback callback = new BackgroundCallback() {
+            BackgroundCallback callback = new BackgroundCallback()
+            {
                 @Override
-                public void processResult(CuratorFramework client,
-                        CuratorEvent event) throws Exception {
-                    if (event.getResultCode() == KeeperException.Code.NONODE
-                            .intValue()) {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
+                    {
                         // previous node is gone - reset
                         reset();
                     }
                 }
             };
-            // use getData() instead of exists() to avoid leaving unneeded
-            // watchers which is a type of resource leak
-            client.getData().usingWatcher(watcher).inBackground(callback)
-                    .forPath(ZKPaths.makePath(latchPath, watchPath));
+            // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
+            client.getData().usingWatcher(watcher).inBackground(callback).forPath(ZKPaths.makePath(latchPath, watchPath));
         }
     }
 
-    private void getChildren() throws Exception {
-        BackgroundCallback callback = new BackgroundCallback() {
+    private void getChildren() throws Exception
+    {
+        BackgroundCallback callback = new BackgroundCallback()
+        {
             @Override
-            public void processResult(CuratorFramework client,
-                    CuratorEvent event) throws Exception {
-                if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
                     checkLeadership(event.getChildren());
                 }
             }
@@ -564,47 +540,69 @@ public class LeaderLatch implements Closeable {
         client.getChildren().inBackground(callback).forPath(latchPath);
     }
 
-    private void handleStateChange(ConnectionState newState) {
-        if (newState.isConnected()) {
-            try {
+    private void handleStateChange(ConnectionState newState)
+    {
+        if (newState.isConnected())
+        {
+            try
+            {
                 reset();
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 log.error("Could not reset leader latch", e);
                 setLeadership(false);
             }
-        } else {
+        }
+        else
+        {
             setLeadership(false);
         }
     }
 
-    private synchronized void setLeadership(boolean newValue) {
+    private synchronized void setLeadership(boolean newValue)
+    {
         boolean oldValue = hasLeadership.getAndSet(newValue);
 
-        if (oldValue && !newValue) { // Lost leadership, was true, now false
-            listeners.forEach(new Function<LeaderLatchListener, Void>() {
-                @Override
-                public Void apply(LeaderLatchListener listener) {
-                    listener.notLeader();
-                    return null;
+        if ( oldValue && !newValue )
+        { // Lost leadership, was true, now false
+            listeners.forEach
+            (
+                new Function<LeaderLatchListener, Void>()
+                {
+                    @Override
+                    public Void apply(LeaderLatchListener listener)
+                    {
+                        listener.notLeader();
+                        return null;
+                    }
                 }
-            });
-        } else if (!oldValue && newValue) { // Gained leadership, was false, now
-                                            // true
-            listeners.forEach(new Function<LeaderLatchListener, Void>() {
-                @Override
-                public Void apply(LeaderLatchListener input) {
-                    input.isLeader();
-                    return null;
+            );
+        }
+        else if ( !oldValue && newValue )
+        { // Gained leadership, was false, now true
+            listeners.forEach
+            (
+                new Function<LeaderLatchListener, Void>()
+                {
+                    @Override
+                    public Void apply(LeaderLatchListener input)
+                    {
+                        input.isLeader();
+                        return null;
+                    }
                 }
-            });
+            );
         }
 
         notifyAll();
     }
 
-    private void setNode(String newValue) throws Exception {
+    private void setNode(String newValue) throws Exception
+    {
         String oldPath = ourPath.getAndSet(newValue);
-        if (oldPath != null) {
+        if ( oldPath != null )
+        {
             client.delete().guaranteed().inBackground().forPath(oldPath);
         }
     }

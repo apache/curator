@@ -23,17 +23,18 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 /**
  * Represents state changes in the connection to ZK
  */
-public enum ConnectionState {
+public enum ConnectionState
+{
     /**
-     * Sent for the first successful connection to the server. NOTE: You will
-     * only get one of these messages for any CuratorFramework instance.
+     * Sent for the first successful connection to the server. NOTE: You will only
+     * get one of these messages for any CuratorFramework instance.
      */
     CONNECTED,
 
     /**
      * There has been a loss of connection. Leaders, locks, etc. should suspend
-     * until the connection is re-established. If the connection times-out you
-     * will receive a {@link #LOST} notice
+     * until the connection is re-established. If the connection times-out you will
+     * receive a {@link #LOST} notice
      */
     SUSPENDED,
 
@@ -43,30 +44,28 @@ public enum ConnectionState {
     RECONNECTED,
 
     /**
-     * The connection is confirmed to be lost. Close any locks, leaders, etc.
-     * and attempt to re-create them. NOTE: it is possible to get a
-     * {@link #RECONNECTED} state after this but you should still consider any
-     * locks, etc. as dirty/unstable
+     * The connection is confirmed to be lost. Close any locks, leaders, etc. and
+     * attempt to re-create them. NOTE: it is possible to get a {@link #RECONNECTED}
+     * state after this but you should still consider any locks, etc. as dirty/unstable
      */
     LOST,
 
     /**
-     * The connection has gone into read-only mode. This can only happen if you
-     * pass true for {@link CuratorFrameworkFactory.Builder#canBeReadOnly()}.
-     * See the ZooKeeper doc regarding read only connections: <a
-     * href="http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode"
-     * >http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode</a>. The
-     * connection will remain in read only mode until another state change is
-     * sent.
+     * The connection has gone into read-only mode. This can only happen if you pass true
+     * for {@link CuratorFrameworkFactory.Builder#canBeReadOnly()}. See the ZooKeeper doc
+     * regarding read only connections:
+     * <a href="http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode">http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode</a>.
+     * The connection will remain in read only mode until another state change is sent.
      */
     READ_ONLY;
-
+    
     /**
      * Check if this state indicates that Curator has a connection to ZooKeeper
      * 
      * @return True if connected, false otherwise
      */
-    public boolean isConnected() {
+    public boolean isConnected()
+    {
         return this == CONNECTED || this == RECONNECTED || this == READ_ONLY;
     }
 }
