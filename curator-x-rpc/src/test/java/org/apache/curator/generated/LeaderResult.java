@@ -36,7 +36,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("LeaderResult");
 
   private static final org.apache.thrift.protocol.TField PROJECTION_FIELD_DESC = new org.apache.thrift.protocol.TField("projection", org.apache.thrift.protocol.TType.STRUCT, (short)1);
-  private static final org.apache.thrift.protocol.TField HAS_LEADERSHIP_FIELD_DESC = new org.apache.thrift.protocol.TField("hasLeadership", org.apache.thrift.protocol.TType.BOOL, (short)2);
+  private static final org.apache.thrift.protocol.TField IS_LEADER_FIELD_DESC = new org.apache.thrift.protocol.TField("isLeader", org.apache.thrift.protocol.TType.BOOL, (short)2);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -45,12 +45,12 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
   }
 
   public LeaderProjection projection; // required
-  public boolean hasLeadership; // required
+  public boolean isLeader; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROJECTION((short)1, "projection"),
-    HAS_LEADERSHIP((short)2, "hasLeadership");
+    IS_LEADER((short)2, "isLeader");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -67,8 +67,8 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
       switch(fieldId) {
         case 1: // PROJECTION
           return PROJECTION;
-        case 2: // HAS_LEADERSHIP
-          return HAS_LEADERSHIP;
+        case 2: // IS_LEADER
+          return IS_LEADER;
         default:
           return null;
       }
@@ -109,14 +109,14 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
   }
 
   // isset id assignments
-  private static final int __HASLEADERSHIP_ISSET_ID = 0;
+  private static final int __ISLEADER_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.PROJECTION, new org.apache.thrift.meta_data.FieldMetaData("projection", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LeaderProjection.class)));
-    tmpMap.put(_Fields.HAS_LEADERSHIP, new org.apache.thrift.meta_data.FieldMetaData("hasLeadership", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+    tmpMap.put(_Fields.IS_LEADER, new org.apache.thrift.meta_data.FieldMetaData("isLeader", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(LeaderResult.class, metaDataMap);
@@ -127,12 +127,12 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
 
   public LeaderResult(
     LeaderProjection projection,
-    boolean hasLeadership)
+    boolean isLeader)
   {
     this();
     this.projection = projection;
-    this.hasLeadership = hasLeadership;
-    setHasLeadershipIsSet(true);
+    this.isLeader = isLeader;
+    setIsLeaderIsSet(true);
   }
 
   /**
@@ -143,7 +143,7 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
     if (other.isSetProjection()) {
       this.projection = new LeaderProjection(other.projection);
     }
-    this.hasLeadership = other.hasLeadership;
+    this.isLeader = other.isLeader;
   }
 
   public LeaderResult deepCopy() {
@@ -153,8 +153,8 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
   @Override
   public void clear() {
     this.projection = null;
-    setHasLeadershipIsSet(false);
-    this.hasLeadership = false;
+    setIsLeaderIsSet(false);
+    this.isLeader = false;
   }
 
   public LeaderProjection getProjection() {
@@ -181,27 +181,27 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
     }
   }
 
-  public boolean isHasLeadership() {
-    return this.hasLeadership;
+  public boolean isIsLeader() {
+    return this.isLeader;
   }
 
-  public LeaderResult setHasLeadership(boolean hasLeadership) {
-    this.hasLeadership = hasLeadership;
-    setHasLeadershipIsSet(true);
+  public LeaderResult setIsLeader(boolean isLeader) {
+    this.isLeader = isLeader;
+    setIsLeaderIsSet(true);
     return this;
   }
 
-  public void unsetHasLeadership() {
-    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __HASLEADERSHIP_ISSET_ID);
+  public void unsetIsLeader() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __ISLEADER_ISSET_ID);
   }
 
-  /** Returns true if field hasLeadership is set (has been assigned a value) and false otherwise */
-  public boolean isSetHasLeadership() {
-    return EncodingUtils.testBit(__isset_bitfield, __HASLEADERSHIP_ISSET_ID);
+  /** Returns true if field isLeader is set (has been assigned a value) and false otherwise */
+  public boolean isSetIsLeader() {
+    return EncodingUtils.testBit(__isset_bitfield, __ISLEADER_ISSET_ID);
   }
 
-  public void setHasLeadershipIsSet(boolean value) {
-    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __HASLEADERSHIP_ISSET_ID, value);
+  public void setIsLeaderIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __ISLEADER_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, Object value) {
@@ -214,11 +214,11 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
       }
       break;
 
-    case HAS_LEADERSHIP:
+    case IS_LEADER:
       if (value == null) {
-        unsetHasLeadership();
+        unsetIsLeader();
       } else {
-        setHasLeadership((Boolean)value);
+        setIsLeader((Boolean)value);
       }
       break;
 
@@ -230,8 +230,8 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
     case PROJECTION:
       return getProjection();
 
-    case HAS_LEADERSHIP:
-      return Boolean.valueOf(isHasLeadership());
+    case IS_LEADER:
+      return Boolean.valueOf(isIsLeader());
 
     }
     throw new IllegalStateException();
@@ -246,8 +246,8 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
     switch (field) {
     case PROJECTION:
       return isSetProjection();
-    case HAS_LEADERSHIP:
-      return isSetHasLeadership();
+    case IS_LEADER:
+      return isSetIsLeader();
     }
     throw new IllegalStateException();
   }
@@ -274,12 +274,12 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
         return false;
     }
 
-    boolean this_present_hasLeadership = true;
-    boolean that_present_hasLeadership = true;
-    if (this_present_hasLeadership || that_present_hasLeadership) {
-      if (!(this_present_hasLeadership && that_present_hasLeadership))
+    boolean this_present_isLeader = true;
+    boolean that_present_isLeader = true;
+    if (this_present_isLeader || that_present_isLeader) {
+      if (!(this_present_isLeader && that_present_isLeader))
         return false;
-      if (this.hasLeadership != that.hasLeadership)
+      if (this.isLeader != that.isLeader)
         return false;
     }
 
@@ -309,12 +309,12 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetHasLeadership()).compareTo(other.isSetHasLeadership());
+    lastComparison = Boolean.valueOf(isSetIsLeader()).compareTo(other.isSetIsLeader());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetHasLeadership()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.hasLeadership, other.hasLeadership);
+    if (isSetIsLeader()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.isLeader, other.isLeader);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -347,8 +347,8 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
     }
     first = false;
     if (!first) sb.append(", ");
-    sb.append("hasLeadership:");
-    sb.append(this.hasLeadership);
+    sb.append("isLeader:");
+    sb.append(this.isLeader);
     first = false;
     sb.append(")");
     return sb.toString();
@@ -407,10 +407,10 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // HAS_LEADERSHIP
+          case 2: // IS_LEADER
             if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
-              struct.hasLeadership = iprot.readBool();
-              struct.setHasLeadershipIsSet(true);
+              struct.isLeader = iprot.readBool();
+              struct.setIsLeaderIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -435,8 +435,8 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
         struct.projection.write(oprot);
         oprot.writeFieldEnd();
       }
-      oprot.writeFieldBegin(HAS_LEADERSHIP_FIELD_DESC);
-      oprot.writeBool(struct.hasLeadership);
+      oprot.writeFieldBegin(IS_LEADER_FIELD_DESC);
+      oprot.writeBool(struct.isLeader);
       oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
@@ -459,15 +459,15 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
       if (struct.isSetProjection()) {
         optionals.set(0);
       }
-      if (struct.isSetHasLeadership()) {
+      if (struct.isSetIsLeader()) {
         optionals.set(1);
       }
       oprot.writeBitSet(optionals, 2);
       if (struct.isSetProjection()) {
         struct.projection.write(oprot);
       }
-      if (struct.isSetHasLeadership()) {
-        oprot.writeBool(struct.hasLeadership);
+      if (struct.isSetIsLeader()) {
+        oprot.writeBool(struct.isLeader);
       }
     }
 
@@ -481,8 +481,8 @@ public class LeaderResult implements org.apache.thrift.TBase<LeaderResult, Leade
         struct.setProjectionIsSet(true);
       }
       if (incoming.get(1)) {
-        struct.hasLeadership = iprot.readBool();
-        struct.setHasLeadershipIsSet(true);
+        struct.isLeader = iprot.readBool();
+        struct.setIsLeaderIsSet(true);
       }
     }
   }

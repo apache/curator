@@ -86,7 +86,7 @@ struct LeaderProjection {
 
 struct LeaderResult {
   1: LeaderProjection projection;
-  2: bool hasLeadership;
+  2: bool isLeader;
 }
 
 struct LeaseProjection {
@@ -177,8 +177,7 @@ struct DeleteSpec {
   1: string path;
   2: bool guaranteed;
   3: string asyncContext;
-  4: bool compressed;
-  5: Version version;
+  4: Version version;
 }
 
 struct OptionalStat {
@@ -247,7 +246,8 @@ struct CuratorEvent {
 
 service CuratorService {
   LockProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs) throws (1: CuratorException ex1);
-  oneway void closeCuratorProjection(1: CuratorProjection projection);
+  list<LeaseProjection> acquireSemaphore(1: CuratorProjection projection, 2: string path, 3: i32 acquireQty, 4: i32 maxWaitMs, 5: i32 maxLeases) throws (1: CuratorException ex1);
+  void closeCuratorProjection(1: CuratorProjection projection);
   bool closeGenericProjection(1: CuratorProjection projection, 2: string id) throws (1: CuratorException ex1);
   OptionalPath createNode(1: CuratorProjection projection, 2: CreateSpec spec) throws (1: CuratorException ex1);
   void deleteNode(1: CuratorProjection projection, 2: DeleteSpec spec) throws (1: CuratorException ex1);
@@ -266,7 +266,6 @@ service CuratorService {
   NodeCacheProjection startNodeCache(1: CuratorProjection projection, 2: string path, 3: bool dataIsCompressed, 4: bool buildInitial) throws (1: CuratorException ex1);
   PathChildrenCacheProjection startPathChildrenCache(1: CuratorProjection projection, 2: string path, 3: bool cacheData, 4: bool dataIsCompressed, 5: PathChildrenCacheStartMode startMode) throws (1: CuratorException ex1);
   PersistentEphemeralNodeProjection startPersistentEphemeralNode(1: CuratorProjection projection, 2: string path, 3: binary data, 4: PersistentEphemeralNodeMode mode) throws (1: CuratorException ex1);
-  list<LeaseProjection> startSemaphore(1: CuratorProjection projection, 2: string path, 3: i32 acquireQty, 4: i32 maxWaitMs, 5: i32 maxLeases) throws (1: CuratorException ex1);
   void sync(1: CuratorProjection projection, 2: string path, 3: string asyncContext) throws (1: CuratorException ex1);
 }
 

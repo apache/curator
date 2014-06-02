@@ -97,7 +97,7 @@ public class CuratorProjectionService
         return projection;
     }
 
-    @ThriftMethod(oneway = true)
+    @ThriftMethod
     public void closeCuratorProjection(CuratorProjection projection)
     {
         CuratorEntry entry = connectionManager.remove(projection.id);

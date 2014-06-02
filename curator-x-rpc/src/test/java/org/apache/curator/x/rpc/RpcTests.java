@@ -1,13 +1,19 @@
 package org.apache.curator.x.rpc;
 
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.generated.*;
+import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -221,6 +227,45 @@ public class RpcTests extends BaseClassForTests
             Assert.assertEquals(e.getType(), ExceptionType.NODE);
             Assert.assertNotNull(e.nodeException);
             Assert.assertEquals(e.nodeException, NodeExceptionType.NONODE);
+        }
+    }
+
+    @Test
+    public void testEphemeralCleanup() throws Exception
+    {
+        CuratorProjection curatorProjection = curatorServiceClient.newCuratorProjection("test");
+        CreateSpec spec = new CreateSpec();
+        spec.path = "/test";
+        spec.data = ByteBuffer.wrap("value".getBytes());
+        spec.mode = CreateMode.EPHEMERAL;
+        OptionalPath node = curatorServiceClient.createNode(curatorProjection, spec);
+        System.out.println(node);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    if ( event.getType() == Event.EventType.NodeDeleted )
+                    {
+                        latch.countDown();
+                    }
+                }
+            };
+            client.checkExists().usingWatcher(watcher).forPath("/test");
+
+            curatorServiceClient.closeCuratorProjection(curatorProjection);
+
+            Assert.assertTrue(timing.awaitLatch(latch));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
         }
     }
 }

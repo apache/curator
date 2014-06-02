@@ -78,9 +78,7 @@ Here is an example JSON configuration file
 {noformat}
 
 
-h2. Reference
-
-h3. Main
+h2. Main
 
 ||Name||Type||Default Value||Description||
 |thrift|Thrift|n/a|Thrift server configuration|
@@ -89,14 +87,14 @@ h3. Main
 |pingTime|Duration|5 seconds|The EventService will return a PING event if this time elapses without some other event being generated|
 |connections|List of Connection|n/a|List of ZooKeeper connections|
 
-h3. Duration
+h2. Duration
 
 Durations are strings that specify a time duration. Examples:
 * "10s" \- 10 seconds
 * "100ms" \- 100 milliseconds
 * "3h" \- 3 hours
 
-h3. Thrift
+h2. Thrift
 
 ||Name||Type||Default Value||Required||Description||
 |port|int|_none_|*Y*|port to listen on.|
@@ -105,12 +103,12 @@ h3. Thrift
 |transportName|string|"framed"|\-|the name of the transport (frame codec) that this server will handle. The available options by default are 'unframed', 'buffered', and 'framed'. Additional modules may install other options.|
 |protocolName|string|"binary"|\-|name of the protocol that this server will speak. The available options by default are 'binary' and 'compact'. Additional modules may install other options.|
 
-h3. Logging
+h2. Logging
 
 Dropwizard's logging module is used. See the [[Dropwizard Logging Doc|http://dropwizard.readthedocs.org/en/latest/manual/configuration.html#logging]] for details
 on specifying the logging configuration.
 
-h3. Connection
+h2. Connection
 
 ||Name||Type||Default Value||Required||Description||
 |name|string|_none_|*Y*|Unique name for the connection.|
@@ -120,7 +118,7 @@ h3. Connection
 |retry|Retry|an exponential\-backoff policy|\-|The Retry Policy to use|
 |authorization|Authorization|null|\-|Authorization spec|
 
-h3. Retry
+h2. Retry
 
 The retry policy configuration depends on what type is used. There 3 types supported:
 
@@ -138,7 +136,7 @@ The retry policy configuration depends on what type is used. There 3 types suppo
 |sleepBetweenRetries|int|100 milliseconds|sleep time between retries|
 |n|int|3|the number of retries|
 
-h3. Authorization
+h2. Authorization
 
 ||Name||Type||Description||
 |scheme|string|the authorization scheme|

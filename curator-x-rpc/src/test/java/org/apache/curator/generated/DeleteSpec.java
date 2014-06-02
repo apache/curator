@@ -38,8 +38,7 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
   private static final org.apache.thrift.protocol.TField PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("path", org.apache.thrift.protocol.TType.STRING, (short)1);
   private static final org.apache.thrift.protocol.TField GUARANTEED_FIELD_DESC = new org.apache.thrift.protocol.TField("guaranteed", org.apache.thrift.protocol.TType.BOOL, (short)2);
   private static final org.apache.thrift.protocol.TField ASYNC_CONTEXT_FIELD_DESC = new org.apache.thrift.protocol.TField("asyncContext", org.apache.thrift.protocol.TType.STRING, (short)3);
-  private static final org.apache.thrift.protocol.TField COMPRESSED_FIELD_DESC = new org.apache.thrift.protocol.TField("compressed", org.apache.thrift.protocol.TType.BOOL, (short)4);
-  private static final org.apache.thrift.protocol.TField VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("version", org.apache.thrift.protocol.TType.STRUCT, (short)5);
+  private static final org.apache.thrift.protocol.TField VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("version", org.apache.thrift.protocol.TType.STRUCT, (short)4);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -50,7 +49,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
   public String path; // required
   public boolean guaranteed; // required
   public String asyncContext; // required
-  public boolean compressed; // required
   public Version version; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -58,8 +56,7 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     PATH((short)1, "path"),
     GUARANTEED((short)2, "guaranteed"),
     ASYNC_CONTEXT((short)3, "asyncContext"),
-    COMPRESSED((short)4, "compressed"),
-    VERSION((short)5, "version");
+    VERSION((short)4, "version");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -80,9 +77,7 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
           return GUARANTEED;
         case 3: // ASYNC_CONTEXT
           return ASYNC_CONTEXT;
-        case 4: // COMPRESSED
-          return COMPRESSED;
-        case 5: // VERSION
+        case 4: // VERSION
           return VERSION;
         default:
           return null;
@@ -125,7 +120,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
 
   // isset id assignments
   private static final int __GUARANTEED_ISSET_ID = 0;
-  private static final int __COMPRESSED_ISSET_ID = 1;
   private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
@@ -136,8 +130,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
     tmpMap.put(_Fields.ASYNC_CONTEXT, new org.apache.thrift.meta_data.FieldMetaData("asyncContext", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.COMPRESSED, new org.apache.thrift.meta_data.FieldMetaData("compressed", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
     tmpMap.put(_Fields.VERSION, new org.apache.thrift.meta_data.FieldMetaData("version", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Version.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -151,7 +143,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     String path,
     boolean guaranteed,
     String asyncContext,
-    boolean compressed,
     Version version)
   {
     this();
@@ -159,8 +150,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     this.guaranteed = guaranteed;
     setGuaranteedIsSet(true);
     this.asyncContext = asyncContext;
-    this.compressed = compressed;
-    setCompressedIsSet(true);
     this.version = version;
   }
 
@@ -176,7 +165,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     if (other.isSetAsyncContext()) {
       this.asyncContext = other.asyncContext;
     }
-    this.compressed = other.compressed;
     if (other.isSetVersion()) {
       this.version = new Version(other.version);
     }
@@ -192,8 +180,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     setGuaranteedIsSet(false);
     this.guaranteed = false;
     this.asyncContext = null;
-    setCompressedIsSet(false);
-    this.compressed = false;
     this.version = null;
   }
 
@@ -268,29 +254,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     }
   }
 
-  public boolean isCompressed() {
-    return this.compressed;
-  }
-
-  public DeleteSpec setCompressed(boolean compressed) {
-    this.compressed = compressed;
-    setCompressedIsSet(true);
-    return this;
-  }
-
-  public void unsetCompressed() {
-    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __COMPRESSED_ISSET_ID);
-  }
-
-  /** Returns true if field compressed is set (has been assigned a value) and false otherwise */
-  public boolean isSetCompressed() {
-    return EncodingUtils.testBit(__isset_bitfield, __COMPRESSED_ISSET_ID);
-  }
-
-  public void setCompressedIsSet(boolean value) {
-    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __COMPRESSED_ISSET_ID, value);
-  }
-
   public Version getVersion() {
     return this.version;
   }
@@ -341,14 +304,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
       }
       break;
 
-    case COMPRESSED:
-      if (value == null) {
-        unsetCompressed();
-      } else {
-        setCompressed((Boolean)value);
-      }
-      break;
-
     case VERSION:
       if (value == null) {
         unsetVersion();
@@ -371,9 +326,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     case ASYNC_CONTEXT:
       return getAsyncContext();
 
-    case COMPRESSED:
-      return Boolean.valueOf(isCompressed());
-
     case VERSION:
       return getVersion();
 
@@ -394,8 +346,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
       return isSetGuaranteed();
     case ASYNC_CONTEXT:
       return isSetAsyncContext();
-    case COMPRESSED:
-      return isSetCompressed();
     case VERSION:
       return isSetVersion();
     }
@@ -439,15 +389,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
       if (!(this_present_asyncContext && that_present_asyncContext))
         return false;
       if (!this.asyncContext.equals(that.asyncContext))
-        return false;
-    }
-
-    boolean this_present_compressed = true;
-    boolean that_present_compressed = true;
-    if (this_present_compressed || that_present_compressed) {
-      if (!(this_present_compressed && that_present_compressed))
-        return false;
-      if (this.compressed != that.compressed)
         return false;
     }
 
@@ -506,16 +447,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetCompressed()).compareTo(other.isSetCompressed());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetCompressed()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.compressed, other.compressed);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetVersion()).compareTo(other.isSetVersion());
     if (lastComparison != 0) {
       return lastComparison;
@@ -564,10 +495,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     } else {
       sb.append(this.asyncContext);
     }
-    first = false;
-    if (!first) sb.append(", ");
-    sb.append("compressed:");
-    sb.append(this.compressed);
     first = false;
     if (!first) sb.append(", ");
     sb.append("version:");
@@ -649,15 +576,7 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 4: // COMPRESSED
-            if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
-              struct.compressed = iprot.readBool();
-              struct.setCompressedIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
-          case 5: // VERSION
+          case 4: // VERSION
             if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
               struct.version = new Version();
               struct.version.read(iprot);
@@ -694,9 +613,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
         oprot.writeString(struct.asyncContext);
         oprot.writeFieldEnd();
       }
-      oprot.writeFieldBegin(COMPRESSED_FIELD_DESC);
-      oprot.writeBool(struct.compressed);
-      oprot.writeFieldEnd();
       if (struct.version != null) {
         oprot.writeFieldBegin(VERSION_FIELD_DESC);
         struct.version.write(oprot);
@@ -729,13 +645,10 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
       if (struct.isSetAsyncContext()) {
         optionals.set(2);
       }
-      if (struct.isSetCompressed()) {
+      if (struct.isSetVersion()) {
         optionals.set(3);
       }
-      if (struct.isSetVersion()) {
-        optionals.set(4);
-      }
-      oprot.writeBitSet(optionals, 5);
+      oprot.writeBitSet(optionals, 4);
       if (struct.isSetPath()) {
         oprot.writeString(struct.path);
       }
@@ -745,9 +658,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
       if (struct.isSetAsyncContext()) {
         oprot.writeString(struct.asyncContext);
       }
-      if (struct.isSetCompressed()) {
-        oprot.writeBool(struct.compressed);
-      }
       if (struct.isSetVersion()) {
         struct.version.write(oprot);
       }
@@ -756,7 +666,7 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, DeleteSpec struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(5);
+      BitSet incoming = iprot.readBitSet(4);
       if (incoming.get(0)) {
         struct.path = iprot.readString();
         struct.setPathIsSet(true);
@@ -770,10 +680,6 @@ public class DeleteSpec implements org.apache.thrift.TBase<DeleteSpec, DeleteSpe
         struct.setAsyncContextIsSet(true);
       }
       if (incoming.get(3)) {
-        struct.compressed = iprot.readBool();
-        struct.setCompressedIsSet(true);
-      }
-      if (incoming.get(4)) {
         struct.version = new Version();
         struct.version.read(iprot);
         struct.setVersionIsSet(true);

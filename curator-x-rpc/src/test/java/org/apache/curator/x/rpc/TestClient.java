@@ -129,7 +129,7 @@ public class TestClient
         System.out.println("exists: " + client.exists(curatorProjection, existsSpec));
 
         LeaderResult leader = client.startLeaderSelector(curatorProjection, "/leader", "me", 10000);
-        System.out.println("Has Leader: " + leader.hasLeadership);
+        System.out.println("Has Leader: " + leader.isLeader);
 
         List<Participant> leaderParticipants = client.getLeaderParticipants(curatorProjection, leader.projection);
         System.out.println("Participants: " + leaderParticipants);
@@ -151,7 +151,7 @@ public class TestClient
         System.out.println("nodeExists: " + nodeExists);
         client.closeGenericProjection(curatorProjection, node.id);
 
-        List<LeaseProjection> leaseProjections = client.startSemaphore(curatorProjection, "/semi", 3, 1000, 10);
+        List<LeaseProjection> leaseProjections = client.acquireSemaphore(curatorProjection, "/semi", 3, 1000, 10);
         System.out.println("leaseProjections: " + leaseProjections);
         for ( LeaseProjection leaseProjection : leaseProjections )
         {
