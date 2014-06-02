@@ -47,12 +47,10 @@ h2. DiscoveryService
 
 h1. Struct Reference
 
-_Required fields have (r) in the description_
-
 h2. CreateSpec
 
 ||Field||Type||Description||
-|path|string|(r) the ZNode path|
+|path|string|the ZNode path \- *required*|
 |data|bytes|data for the node|
 |mode|CreateMode|PERSISTENT, PERSISTENT\_SEQUENTIAL, EPHEMERAL, or EPHEMERAL\_SEQUENTIAL|
 |asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
@@ -63,7 +61,7 @@ h2. CreateSpec
 h2. DeleteSpec
 
 ||Field||Type||Description||
-|path|string|(r) the ZNode path|
+|path|string|the ZNode path \- *required*|
 |guaranteed|bool|if true, use guaranteed deletion|
 |asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
 |compressed|bool|if true, compress the data|
@@ -72,7 +70,7 @@ h2. DeleteSpec
 h2. GetDataSpec
 
 ||Field||Type||Description||
-|path|string|(r) the ZNode path|
+|path|string|the ZNode path \- *required*|
 |watched|bool|if true, trigger watch events for this node|
 |asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
 |decompressed|bool|if true, decompress the data|
@@ -80,8 +78,8 @@ h2. GetDataSpec
 h2. SetDataSpec
 
 ||Field||Type||Description||
-|path|string|(r) the ZNode path|
-|data|bytes|(r) data for the node|
+|path|string|the ZNode path \- *required*|
+|data|bytes|data for the node \- *required*|
 |watched|bool|if true, trigger watch events for this node|
 |asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
 |compressed|bool|if true, compress the data|
@@ -90,14 +88,14 @@ h2. SetDataSpec
 h2. ExistsSpec
 
 ||Field||Type||Description||
-|path|string|(r) the ZNode path|
+|path|string|the ZNode path \- *required*|
 |watched|bool|if true, trigger watch events for this node|
 |asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
 
 h2. GetChildrenSpec
 
 ||Field||Type||Description||
-|path|string|(r) the ZNode path|
+|path|string|the ZNode path \- *required*|
 |watched|bool|if true, trigger watch events for this node|
 |asyncContext|string|if not null, createNode() is performed asynchronously and this is the context used in the async message|
 

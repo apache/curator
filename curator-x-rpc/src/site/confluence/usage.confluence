@@ -10,7 +10,7 @@ Details on using Apache Thrift can be found here: [[http://thrift.apache.org]].
 
 h2. Prerequisites
 
-It's assumed you already familiar with ZooKeeper and Curator. Also, familiarity with writing Thrift applications is helpful.
+It's assumed you are already familiar with ZooKeeper and Curator. Also, familiarity with writing Thrift applications is helpful.
 
 h2. Services
 

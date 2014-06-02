@@ -124,22 +124,17 @@ h3. Retry
 
 The retry policy configuration depends on what type is used. There 3 types supported:
 
-_exponential\-backoff_
 ||Name||Type||Default Value||Description||
-|type|string|n/a|"exponential\-backoff"|
+|type|string|n/a|*exponential\-backoff*|
 |baseSleepTime|Duration|100 milliseconds|The base sleep time|
 |maxRetries|int|3|The max retries|
-
-_bounded\-exponential\-backoff_
-||Name||Type||Default Value||Description||
-|type|string|n/a|"bounded\-exponential\-backoff"|
+|\_|\_|\_|\_|
+|type|string|n/a|*bounded\-exponential\-backoff*|
 |baseSleepTime|Duration|100 milliseconds|The base sleep time|
 |maxSleepTime|Duration|30 seconds|The max sleep time|
 |maxRetries|int|3|The max retries|
-
-_ntimes_
-||Name||Type||Default Value||Description||
-|type|string|n/a|"ntimes"|
+|\_|\_|\_|\_|
+|type|string|n/a|*ntimes*|
 |sleepBetweenRetries|int|100 milliseconds|sleep time between retries|
 |n|int|3|the number of retries|
 
