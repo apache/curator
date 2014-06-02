@@ -72,14 +72,14 @@ h2. Usage
 Once initialized, use recipes/APIs as needed. Here is an example of using the lock recipe:
 
 {code}
-lockId = client.acquireLock(curatorProjection, "/mylock", 10000);
+lockId = client.acquireLock(curatorProjection, "/mylock", 10000)
 if lockId.id == null {
     // lock attempt failed. Throw exception, etc.
 }
 
 // you now own the lock
 
-client.closeGenericProjection(curatorProjection, lockId.id);
+client.closeGenericProjection(curatorProjection, lockId.id)
 {code}
 
 Here is an example of using the path cache:
@@ -89,7 +89,7 @@ cacheProjection = client.startPathChildrenCache(curatorProjection, "/path", true
 
 ...
 
-data = client.getPathChildrenCacheDataForPath(curatorProjection, cacheProjection, "/path/child");
+data = client.getPathChildrenCacheDataForPath(curatorProjection, cacheProjection, "/path/child")
 
 ...
 
@@ -105,7 +105,7 @@ if event.type == PATH_CHILDREN_CACHE {
 ...
 
 // when done with the cache, close it
-client.closeGenericProjection(curatorProjection, cacheProjection.id);
+client.closeGenericProjection(curatorProjection, cacheProjection.id)
 {code}
 
 h2. Reference

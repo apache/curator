@@ -98,12 +98,12 @@ Durations are strings that specify a time duration. Examples:
 
 h3. Thrift
 
-||Name||Type||Default Value||Description||
-|bindAddress|string|"bindAddress"|Address for server to bind to|
-|port|int|_none_|port to listen on. *required*|
-|idleConnectionTimeout|int|60 seconds|timeout period between receiving requests from a client connection. If the timeout is exceeded (no complete requests have arrived from the client within the timeout), the server will disconnect the idle client.|
-|transportName|string|"framed"|the name of the transport (frame codec) that this server will handle. The available options by default are 'unframed', 'buffered', and 'framed'. Additional modules may install other options.|
-|protocolName|string|"binary"|name of the protocol that this server will speak. The available options by default are 'binary' and 'compact'. Additional modules may install other options.|
+||Name||Type||Default Value||Required||Description||
+|port|int|_none_|*Y*|port to listen on.|
+|bindAddress|string|"localhost"|\-|Address for server to bind to|
+|idleConnectionTimeout|int|60 seconds|\-|timeout period between receiving requests from a client connection. If the timeout is exceeded (no complete requests have arrived from the client within the timeout), the server will disconnect the idle client.|
+|transportName|string|"framed"|\-|the name of the transport (frame codec) that this server will handle. The available options by default are 'unframed', 'buffered', and 'framed'. Additional modules may install other options.|
+|protocolName|string|"binary"|\-|name of the protocol that this server will speak. The available options by default are 'binary' and 'compact'. Additional modules may install other options.|
 
 h3. Logging
 
@@ -112,13 +112,13 @@ on specifying the logging configuration.
 
 h3. Connection
 
-||Name||Type||Default Value||Description||
-|name|string|_none_|Unique name for the connection. *required*|
-|connectionString|string|_none_|ZooKeeper connection string (e.g. "host1:2181,host2:2181"). *required*|
-|sessionLength|Duration|1 minute|duration for the ZooKeeper session|
-|connectionTimeout|Duration|15 seconds|duration for connecting|
-|retry|Retry|an exponential\-backoff policy|The Retry Policy to use|
-|authorization|Authorization|null|Authorization spec|
+||Name||Type||Default Value||Required||Description||
+|name|string|_none_|*Y*|Unique name for the connection.|
+|connectionString|string|_none_|*Y*|ZooKeeper connection string (e.g. "host1:2181,host2:2181").|
+|sessionLength|Duration|1 minute|\-|duration for the ZooKeeper session|
+|connectionTimeout|Duration|15 seconds|\-|duration for connecting|
+|retry|Retry|an exponential\-backoff policy|\-|The Retry Policy to use|
+|authorization|Authorization|null|\-|Authorization spec|
 
 h3. Retry
 
