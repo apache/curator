@@ -9,7 +9,7 @@ messages from the EventService. Here is pseudo code:
 
 {code}
 inThread => {
-    while ( isOpen ) {
+    while isOpen {
         event = eventService.getNextEvent(curatorProjection)
         ... process event ...
     }

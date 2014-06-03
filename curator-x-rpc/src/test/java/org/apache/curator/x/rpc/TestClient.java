@@ -108,8 +108,8 @@ public class TestClient
         ChildData pathChildrenCacheDataForPath = client.getPathChildrenCacheDataForPath(curatorProjection, pathChildrenCacheProjection, "/a/b/c");
         System.out.println(pathChildrenCacheDataForPath);
 
-        LockProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);
-        client.closeGenericProjection(curatorProjection, lockId.id);
+        OptionalLockProjection lockId = client.acquireLock(curatorProjection, "/mylock", 1000);
+        client.closeGenericProjection(curatorProjection, lockId.lockProjection.id);
 
         GetDataSpec getDataSpec = new GetDataSpec();
         getDataSpec.watched = true;

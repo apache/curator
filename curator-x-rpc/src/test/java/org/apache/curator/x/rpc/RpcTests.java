@@ -193,8 +193,8 @@ public class RpcTests extends BaseClassForTests
                 public Void call() throws Exception
                 {
                     CuratorProjection curatorProjection = client.newCuratorProjection("test");
-                    LockProjection lockProjection = client.acquireLock(curatorProjection, "/lock", timing.forWaiting().milliseconds());
-                    if ( lockProjection.id == null )
+                    OptionalLockProjection lockProjection = client.acquireLock(curatorProjection, "/lock", timing.forWaiting().milliseconds());
+                    if ( lockProjection.lockProjection == null )
                     {
                         throw new Exception("Could not acquire lock");
                     }
@@ -211,7 +211,7 @@ public class RpcTests extends BaseClassForTests
                     {
                         hasTheLock.set(false);
                         lockLatch.countDown();
-                        client.closeGenericProjection(curatorProjection, lockProjection.id);
+                        client.closeGenericProjection(curatorProjection, lockProjection.lockProjection.id);
                     }
 
                     return null;

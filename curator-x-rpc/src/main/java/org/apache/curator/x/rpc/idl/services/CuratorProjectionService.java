@@ -352,7 +352,7 @@ public class CuratorProjectionService
     }
 
     @ThriftMethod
-    public LockProjection acquireLock(CuratorProjection projection, final String path, int maxWaitMs) throws RpcException
+    public OptionalLockProjection acquireLock(CuratorProjection projection, final String path, int maxWaitMs) throws RpcException
     {
         try
         {
@@ -360,7 +360,7 @@ public class CuratorProjectionService
             final InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(entry.getClient(), path);
             if ( !lock.acquire(maxWaitMs, TimeUnit.MILLISECONDS) )
             {
-                return new LockProjection();
+                return new OptionalLockProjection();
             }
 
             Closer closer = new Closer()
@@ -382,7 +382,7 @@ public class CuratorProjectionService
                 }
             };
             String id = entry.addThing(lock, closer);
-            return new LockProjection(id);
+            return new OptionalLockProjection(new LockProjection(id));
         }
         catch ( Exception e )
         {

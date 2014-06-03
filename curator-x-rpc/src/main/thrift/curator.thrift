@@ -109,6 +109,10 @@ struct OptionalData {
   1: binary data;
 }
 
+struct OptionalLockProjection {
+  1: LockProjection lockProjection;
+}
+
 struct OptionalPath {
   1: string path;
 }
@@ -245,7 +249,7 @@ struct CuratorEvent {
 }
 
 service CuratorService {
-  LockProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs) throws (1: CuratorException ex1);
+  OptionalLockProjection acquireLock(1: CuratorProjection projection, 2: string path, 3: i32 maxWaitMs) throws (1: CuratorException ex1);
   list<LeaseProjection> acquireSemaphore(1: CuratorProjection projection, 2: string path, 3: i32 acquireQty, 4: i32 maxWaitMs, 5: i32 maxLeases) throws (1: CuratorException ex1);
   void closeCuratorProjection(1: CuratorProjection projection);
   bool closeGenericProjection(1: CuratorProjection projection, 2: string id) throws (1: CuratorException ex1);

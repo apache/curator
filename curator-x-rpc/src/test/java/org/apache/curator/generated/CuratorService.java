@@ -36,7 +36,7 @@ public class CuratorService {
 
   public interface Iface {
 
-    public LockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws CuratorException, org.apache.thrift.TException;
+    public OptionalLockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws CuratorException, org.apache.thrift.TException;
 
     public List<LeaseProjection> acquireSemaphore(CuratorProjection projection, String path, int acquireQty, int maxWaitMs, int maxLeases) throws CuratorException, org.apache.thrift.TException;
 
@@ -150,7 +150,7 @@ public class CuratorService {
       super(iprot, oprot);
     }
 
-    public LockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws CuratorException, org.apache.thrift.TException
+    public OptionalLockProjection acquireLock(CuratorProjection projection, String path, int maxWaitMs) throws CuratorException, org.apache.thrift.TException
     {
       send_acquireLock(projection, path, maxWaitMs);
       return recv_acquireLock();
@@ -165,7 +165,7 @@ public class CuratorService {
       sendBase("acquireLock", args);
     }
 
-    public LockProjection recv_acquireLock() throws CuratorException, org.apache.thrift.TException
+    public OptionalLockProjection recv_acquireLock() throws CuratorException, org.apache.thrift.TException
     {
       acquireLock_result result = new acquireLock_result();
       receiveBase(result, "acquireLock");
@@ -776,7 +776,7 @@ public class CuratorService {
         prot.writeMessageEnd();
       }
 
-      public LockProjection getResult() throws CuratorException, org.apache.thrift.TException {
+      public OptionalLockProjection getResult() throws CuratorException, org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -2150,7 +2150,7 @@ public class CuratorService {
       return processMap;
     }
 
-    public static class acquireLock<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, acquireLock_args, LockProjection> {
+    public static class acquireLock<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, acquireLock_args, OptionalLockProjection> {
       public acquireLock() {
         super("acquireLock");
       }
@@ -2159,10 +2159,10 @@ public class CuratorService {
         return new acquireLock_args();
       }
 
-      public AsyncMethodCallback<LockProjection> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+      public AsyncMethodCallback<OptionalLockProjection> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new AsyncMethodCallback<LockProjection>() { 
-          public void onComplete(LockProjection o) {
+        return new AsyncMethodCallback<OptionalLockProjection>() { 
+          public void onComplete(OptionalLockProjection o) {
             acquireLock_result result = new acquireLock_result();
             result.success = o;
             try {
@@ -2202,7 +2202,7 @@ public class CuratorService {
         return false;
       }
 
-      public void start(I iface, acquireLock_args args, org.apache.thrift.async.AsyncMethodCallback<LockProjection> resultHandler) throws TException {
+      public void start(I iface, acquireLock_args args, org.apache.thrift.async.AsyncMethodCallback<OptionalLockProjection> resultHandler) throws TException {
         iface.acquireLock(args.projection, args.path, args.maxWaitMs,resultHandler);
       }
     }
@@ -3939,7 +3939,7 @@ public class CuratorService {
       schemes.put(TupleScheme.class, new acquireLock_resultTupleSchemeFactory());
     }
 
-    public LockProjection success; // required
+    public OptionalLockProjection success; // required
     public CuratorException ex1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -4008,7 +4008,7 @@ public class CuratorService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, LockProjection.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, OptionalLockProjection.class)));
       tmpMap.put(_Fields.EX1, new org.apache.thrift.meta_data.FieldMetaData("ex1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -4019,7 +4019,7 @@ public class CuratorService {
     }
 
     public acquireLock_result(
-      LockProjection success,
+      OptionalLockProjection success,
       CuratorException ex1)
     {
       this();
@@ -4032,7 +4032,7 @@ public class CuratorService {
      */
     public acquireLock_result(acquireLock_result other) {
       if (other.isSetSuccess()) {
-        this.success = new LockProjection(other.success);
+        this.success = new OptionalLockProjection(other.success);
       }
       if (other.isSetEx1()) {
         this.ex1 = new CuratorException(other.ex1);
@@ -4049,11 +4049,11 @@ public class CuratorService {
       this.ex1 = null;
     }
 
-    public LockProjection getSuccess() {
+    public OptionalLockProjection getSuccess() {
       return this.success;
     }
 
-    public acquireLock_result setSuccess(LockProjection success) {
+    public acquireLock_result setSuccess(OptionalLockProjection success) {
       this.success = success;
       return this;
     }
@@ -4103,7 +4103,7 @@ public class CuratorService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((LockProjection)value);
+          setSuccess((OptionalLockProjection)value);
         }
         break;
 
@@ -4295,7 +4295,7 @@ public class CuratorService {
           switch (schemeField.id) {
             case 0: // SUCCESS
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.success = new LockProjection();
+                struct.success = new OptionalLockProjection();
                 struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
@@ -4374,7 +4374,7 @@ public class CuratorService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
-          struct.success = new LockProjection();
+          struct.success = new OptionalLockProjection();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }

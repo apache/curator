@@ -57,7 +57,7 @@ EventService.Client eventService = new EventService.Client()
 curatorProjection = curatorService.newCuratorProjection(name)
 
 inThread => {
-    while ( isOpen ) {
+    while isOpen {
         event = eventService.getNextEvent(curatorProjection)
         ... process event ...
     }
@@ -72,10 +72,11 @@ h2. Usage
 Once initialized, use recipes/APIs as needed. Here is an example of using the lock recipe:
 
 {code}
-lockId = client.acquireLock(curatorProjection, "/mylock", 10000)
-if lockId.id == null {
+optionalLockId = client.acquireLock(curatorProjection, "/mylock", 10000)
+if optionalLockId.lockProjection == null {
     // lock attempt failed. Throw exception, etc.
 }
+lockId = optionalLockId.lockProjection
 
 // you now own the lock
 
