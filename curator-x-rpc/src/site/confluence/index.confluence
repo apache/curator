@@ -43,3 +43,7 @@ See [[Events|events.html]] for details on the Curator RPC event loop and its str
 h2. Reference
 
 See [[API Reference Page|reference.html]] for the API reference.
+
+----
+
+Special thanks to the [[Facebook Swift|https://github.com/facebook/swift/]] project which makes writing a Java Thrift server much easier.
