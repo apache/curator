@@ -44,6 +44,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.io.File;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -340,6 +341,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     {
         final int MAX_RETRIES = 3;
         final int serverPort = server.getPort();
+        final File tempDirectory = server.getTempDirectory();
 
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(10));
         client.start();
@@ -347,36 +349,47 @@ public class TestFrameworkEdges extends BaseClassForTests
         {
             final AtomicInteger retries = new AtomicInteger(0);
             final Semaphore semaphore = new Semaphore(0);
-            client.getZookeeperClient().setRetryPolicy
-                (
-                    new RetryPolicy()
+            RetryPolicy policy = new RetryPolicy()
+            {
+                @Override
+                public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
+                {
+                    semaphore.release();
+                    if ( retries.incrementAndGet() == MAX_RETRIES )
                     {
-                        @Override
-                        public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
+                        try
                         {
-                            semaphore.release();
-                            if ( retries.incrementAndGet() == MAX_RETRIES )
-                            {
-                                try
-                                {
-                                    server = new TestingServer(serverPort);
-                                }
-                                catch ( Exception e )
-                                {
-                                    throw new Error(e);
-                                }
-                            }
-                            return true;
+                            server = new TestingServer(serverPort, tempDirectory);
+                        }
+                        catch ( Exception e )
+                        {
+                            throw new Error(e);
                         }
                     }
-                );
+                    try
+                    {
+                        sleeper.sleepFor(100, TimeUnit.MILLISECONDS);
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                    return true;
+                }
+            };
+            client.getZookeeperClient().setRetryPolicy(policy);
 
             server.stop();
 
             // test foreground retry
             client.checkExists().forPath("/hey");
-            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, timing.forWaiting().seconds(), TimeUnit.SECONDS), "Remaining leases: " + semaphore.availablePermits());
 
+            // make sure we're reconnected
+            client.getZookeeperClient().setRetryPolicy(new RetryOneTime(100));
+            client.checkExists().forPath("/hey");
+
+            client.getZookeeperClient().setRetryPolicy(policy);
             semaphore.drainPermits();
             retries.set(0);
 
@@ -384,11 +397,7 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             // test background retry
             client.checkExists().inBackground().forPath("/hey");
-            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, timing.forWaiting().seconds(), TimeUnit.SECONDS));
-        }
-        catch ( Throwable e )
-        {
-            Assert.fail("Error", e);
+            Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, timing.forWaiting().seconds(), TimeUnit.SECONDS), "Remaining leases: " + semaphore.availablePermits());
         }
         finally
         {
