@@ -6,16 +6,16 @@ h2. CuratorService
 
 ||API||Arguments||Return Value||Description||
 |newCuratorProjection|connectionName|CuratorProjection|Allocates a projection to a configured CuratorFramework instance in the RPC server. "connectionName" is the name of a [[configured|configuration.html]] connection.|
-|closeCuratorProjection|CuratorProjection|void|Close a CuratorProjection. Also closes any recipes, etc. create for the projection.|
+|closeCuratorProjection|CuratorProjection|void|Close a CuratorProjection. Also closes any recipes, etc. created for the projection.|
 |pingCuratorProjection|CuratorProjection|void|Keeps the CuratorProjection from timing out. NOTE: your [[EventService|events.html]] event loop will do this for you.|
 |createNode|CreateSpec|Created path name|Create a ZNode|
 |deleteNode|DeleteSpec|void|Delete a ZNode|
 |getData|GetDataSpec|bytes|Return a ZNode's data|
 |setData|SetDataSpec|Stat|Set a ZNode's data|
-|exists|ExistsSpec|Stat|Check is a ZNode exists|
+|exists|ExistsSpec|Stat|Check if a ZNode exists|
 |getChildren|GetChildrenSpec|List of nodes|Get the child nodes for a ZNode|
 |sync|path and async context|void|Do a ZooKeeper sync|
-|closeGenericProjection|id|void|Closes any projection|
+|closeGenericProjection|id|void|Closes any projection. All projections have an "id" field. This is the value to pass.|
 |acquireLock|path, maxWaitMs|optional lock projection|Acquire a lock for the given path. Will wait at most maxWaitMs to acquire the lock. If the acquisition fails, result will be null.|
 |startLeaderSelector|path, participantId, waitForLeadershipMs|LeaderResult|Start a leader selector on the given path. The instance will be assigned the specified participantId. If waitForLeadershipMs is non\-zero, the method will block for that amount of time waiting for leadership.|
 |getLeaderParticipants|leaderProjection|List of Participant|Return the participants in a leader selector|

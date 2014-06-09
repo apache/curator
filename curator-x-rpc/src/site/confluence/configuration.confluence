@@ -120,7 +120,7 @@ h2. Connection
 
 h2. Retry
 
-The retry policy configuration depends on what type is used. There 3 types supported:
+The retry policy configuration depends on what type is used. There are three types supported:
 
 ||Name||Type||Default Value||Description||
 |type|string|n/a|*exponential\-backoff*|

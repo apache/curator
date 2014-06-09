@@ -72,15 +72,16 @@ h2. Usage
 Once initialized, use recipes/APIs as needed. Here is an example of using the lock recipe:
 
 {code}
-optionalLockId = client.acquireLock(curatorProjection, "/mylock", 10000)
-if optionalLockId.lockProjection == null {
+optionalLock = client.acquireLock(curatorProjection, "/mylock", 10000)
+if optionalLock.lockProjection == null {
     // lock attempt failed. Throw exception, etc.
 }
-lockId = optionalLockId.lockProjection
+lockProjection = optionalLock.lockProjection
 
-// you now own the lock
-
-client.closeGenericProjection(curatorProjection, lockId.id)
+try
+    // you now own the lock
+finally
+    client.closeGenericProjection(curatorProjection, lockProjection.id)
 {code}
 
 Here is an example of using the path cache:
