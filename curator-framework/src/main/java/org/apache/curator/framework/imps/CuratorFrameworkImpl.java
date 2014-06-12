@@ -20,6 +20,7 @@ package org.apache.curator.framework.imps;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
@@ -43,6 +44,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -65,6 +67,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final BlockingQueue<OperationAndData<?>>                    backgroundOperations;
     private final NamespaceImpl                                         namespace;
     private final ConnectionStateManager                                connectionStateManager;
+    private final AtomicReference<ConnectionState>						connectionState;
     private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
     private final byte[]                                                defaultData;
     private final FailedDeleteManager                                   failedDeleteManager;
@@ -148,6 +151,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespace = new NamespaceImpl(this, builder.getNamespace());
         threadFactory = getThreadFactory(builder);
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
+        connectionState = new AtomicReference<ConnectionState>(null);
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
@@ -162,6 +166,21 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         failedDeleteManager = new FailedDeleteManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
+        
+        //Add callback handler to determine connection state transitions
+    	getConnectionStateListenable().addListener(new ConnectionStateListener()
+    	{
+			
+			@Override
+			public void stateChanged(CuratorFramework client, ConnectionState newState)
+			{
+				connectionState.set(newState);
+				synchronized(connectionState)
+				{
+					connectionState.notifyAll();
+				}
+			}
+		});
     }
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
@@ -201,6 +220,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         threadFactory = parent.threadFactory;
         backgroundOperations = parent.backgroundOperations;
         connectionStateManager = parent.connectionStateManager;
+        connectionState = parent.connectionState;
         defaultData = parent.defaultData;
         failedDeleteManager = parent.failedDeleteManager;
         compressionProvider = parent.compressionProvider;
@@ -868,5 +888,54 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             }
         );
+    }
+    
+    public ConnectionState getCurrentConnectionState()
+    {
+    	return connectionState.get();
+    }
+    
+    @Override
+    public boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException
+    {
+    	//Check if we're already connected
+    	ConnectionState currentConnectionState = connectionState.get();
+    	if(currentConnectionState != null && currentConnectionState.isConnected())
+    	{
+    		return true;
+    	}
+    	
+    	long startTime = System.currentTimeMillis();
+    	long maxWaitTimeMS = TimeUnit.MILLISECONDS.convert(maxWaitTime, units);
+    	
+    	for(;;)
+    	{
+    		synchronized(connectionState)
+    		{
+    			currentConnectionState = connectionState.get();
+    	    	if(currentConnectionState != null && currentConnectionState.isConnected())
+    			{
+    				return true;
+    			}
+    			
+    			long waitTime = 0;
+    			if(maxWaitTime > 0)
+    			{
+    				waitTime = maxWaitTimeMS  - (System.currentTimeMillis() - startTime);
+    	   			
+    				//Timeout
+        			if(waitTime <= 0)
+        			{
+        				return false;
+        			}    					
+    			}
+    		
+    			connectionState.wait(waitTime);
+    		}
+    	}
+    }
+    
+    public void blockUntilConnected() throws InterruptedException {
+    	blockUntilConnected(0, TimeUnit.SECONDS);
     }
 }

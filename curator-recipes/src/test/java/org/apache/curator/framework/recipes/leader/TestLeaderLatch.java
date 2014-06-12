@@ -22,10 +22,12 @@ package org.apache.curator.framework.recipes.leader;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
@@ -33,6 +35,7 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -42,6 +45,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TestLeaderLatch extends BaseClassForTests
@@ -531,57 +535,45 @@ public class TestLeaderLatch extends BaseClassForTests
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(
                 server.getConnectString(), timing.session(),
-                timing.connection(), new RetryOneTime(1));
+                timing.connection(), new RetryNTimes(5, 1000));
 
         client.start();
 
-        final CountDownLatch sessionLostCount = new CountDownLatch(1);
-
-        // Need to ensure that we've actually lost the connection completely
-        // before starting. Otherwise it's possible that the server will start
-        // during retries of the inital commands to create the latch zNodes
-        client.getConnectionStateListenable().addListener(
-                new ConnectionStateListener()
-                {
-                    @Override
-                    public void stateChanged(CuratorFramework client,
-                            ConnectionState newState)
-                    {
-                        if (newState == ConnectionState.LOST)
-                        {
-                            sessionLostCount.countDown();
-                        }
-                    }
-                });
-
         final LeaderLatch leader = new LeaderLatch(client, PATH_NAME);
         final CountDownLatch leaderCounter = new CountDownLatch(1);
+        final AtomicInteger leaderCount = new AtomicInteger(0);
+        final AtomicInteger notLeaderCount = new AtomicInteger(0);        
         leader.addListener(new LeaderLatchListener()
         {
             @Override
             public void isLeader()
             {
                 leaderCounter.countDown();
+                leaderCount.incrementAndGet();
             }
 
             @Override
             public void notLeader()
             {
+            	notLeaderCount.incrementAndGet();
             }
 
         });
 
         try
         {
-            leader.start();
-
-            timing.awaitLatch(sessionLostCount);
+        	leader.start();
+         
+        	//Wait for a while before starting the test server
+        	Thread.sleep(5000);
 
             // Start the new server
             server = new TestingServer(server.getPort());
 
-            timing.awaitLatch(leaderCounter);
-
+            Assert.assertTrue(timing.awaitLatch(leaderCounter), "Not elected leader");
+            
+            Assert.assertEquals(leaderCount.get(), 1, "Elected too many times");
+            Assert.assertEquals(notLeaderCount.get(), 0, "Unelected too many times");            
         }
         catch (Exception e)
         {
@@ -593,7 +585,6 @@ public class TestLeaderLatch extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(server);
         }
-
     }    
 
     private enum Mode

@@ -24,10 +24,13 @@ import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
+
 import java.io.Closeable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Zookeeper framework-style client
@@ -210,4 +213,28 @@ public interface CuratorFramework extends Closeable
      * @param watcher the watcher
      */
     public void clearWatcherReferences(Watcher watcher);
+    
+    /**
+     * Get the current connection state. The connection state will have a value of 0 until
+     * the first connection related event is received.
+     * @return The current connection state, or null if it is unknown 
+     */
+    public ConnectionState getCurrentConnectionState();
+    
+    /**
+     * Block until a connection to ZooKeeper is available or the maxWaitTime has been exceeded
+     * @param maxWaitTime The maximum wait time. Specify a value <= 0 to wait indefinitely
+     * @param units The time units for the maximum wait time.
+     * @return True if connection has been established, false otherwise.
+     * @throws InterruptedException If interrupted while waiting
+     */
+    public boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException;
+    
+    /**
+     * Block until a connection to ZooKeeper is available. This method will not return until a
+     * connection is available or it is interrupted, in which case an InterruptedException will
+     * be thrown
+     * @throws InterruptedException If interrupted while waiting
+     */
+    public void blockUntilConnected() throws InterruptedException;
 }

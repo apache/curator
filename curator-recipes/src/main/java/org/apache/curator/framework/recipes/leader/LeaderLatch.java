@@ -22,6 +22,7 @@ package org.apache.curator.framework.recipes.leader;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -31,6 +32,7 @@ import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -38,6 +40,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
@@ -45,6 +48,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -144,6 +148,14 @@ public class LeaderLatch implements Closeable
         this.id = Preconditions.checkNotNull(id, "id cannot be null");
         this.closeMode = Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
     }
+    
+    private CountDownLatch startLatch;
+    
+    public LeaderLatch(CuratorFramework client, String latchPath,
+    		CountDownLatch startLatch) {
+    	this(client, latchPath);
+        this.startLatch = startLatch;
+    }
 
     /**
      * Add this instance to the leadership election and attempt to acquire leadership.
@@ -154,8 +166,30 @@ public class LeaderLatch implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        client.getConnectionStateListenable().addListener(listener);
-        reset();
+        //Block until connected
+        final ExecutorService executor = ThreadUtils.newSingleThreadExecutor("");
+        executor.submit(new Runnable()
+        {
+			
+			@Override
+			public void run()
+			{
+		        try
+		        {
+		        	client.blockUntilConnected();
+			        
+			        client.getConnectionStateListenable().addListener(listener);		        	
+		        	reset();
+		        }
+		        catch(Exception ex)
+		        {
+		        	log.error("An error occurred checking resetting leadership.", ex);
+		        } finally {
+		        	//Shutdown the executor
+		        	executor.shutdown();
+		        }
+			}
+        });
     }
 
     /**
