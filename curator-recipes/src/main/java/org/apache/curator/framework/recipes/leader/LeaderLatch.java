@@ -22,7 +22,6 @@ package org.apache.curator.framework.recipes.leader;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -33,7 +32,6 @@ import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -41,15 +39,14 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -159,23 +156,20 @@ public class LeaderLatch implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        ExecuteAfterConnectionEstablished.executeAfterConnectionEstablishedInBackground(LeaderLatch.class.getName(),
-        		client, new Runnable()
-        {					
-        	@Override
-			public void run()
-			{
-        		try
-        		{
-        			client.getConnectionStateListenable().addListener(listener);		        	
-        			reset();
-        		}
-        		catch(Exception ex)
+        ExecuteAfterConnectionEstablished.executeAfterConnectionEstablishedInBackground
+        (
+            client,
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
                 {
-                	log.error("An error occurred checking resetting leadership.", ex);
+                    client.getConnectionStateListenable().addListener(listener);
+                    reset();
+                    return null;
                 }
-			}
-		});     
+            }
+        );
     }
 
     /**
