@@ -53,4 +53,13 @@ public class ThreadUtils
             .setDaemon(true)
             .build();
     }
+
+    public static String getProcessName(Class<?> clazz)
+    {
+        if ( clazz.isAnonymousClass() )
+        {
+            return getProcessName(clazz.getEnclosingClass());
+        }
+        return clazz.getSimpleName();
+    }
 }

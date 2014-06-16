@@ -28,9 +28,9 @@ import java.util.concurrent.ExecutorService;
 /**
  * Utility class to allow execution of logic once a ZooKeeper connection becomes available.
  */
-public class ExecuteAfterConnectionEstablished
+public class AfterConnectionEstablished
 {
-    private final static Logger log = LoggerFactory.getLogger(ExecuteAfterConnectionEstablished.class);
+    private final static Logger log = LoggerFactory.getLogger(AfterConnectionEstablished.class);
 
     /**
      * Spawns a new new background thread that will block until a connection is available and
@@ -39,7 +39,7 @@ public class ExecuteAfterConnectionEstablished
      * @param client             The curator client
      * @param runAfterConnection The logic to run
      */
-    public static <T> T executeAfterConnectionEstablishedInBackground(final CuratorFramework client, final Callable<T> runAfterConnection) throws Exception
+    public static <T> T execute(final CuratorFramework client, final Callable<T> runAfterConnection) throws Exception
     {
         //Block until connected
         final ExecutorService executor = ThreadUtils.newSingleThreadExecutor(runAfterConnection.getClass().getSimpleName());
@@ -67,7 +67,7 @@ public class ExecuteAfterConnectionEstablished
         return executor.submit(internalCall).get();
     }
 
-    private ExecuteAfterConnectionEstablished()
+    private AfterConnectionEstablished()
     {
     }
 }
