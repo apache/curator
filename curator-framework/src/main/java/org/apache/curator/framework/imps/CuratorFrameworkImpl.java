@@ -67,7 +67,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final BlockingQueue<OperationAndData<?>>                    backgroundOperations;
     private final NamespaceImpl                                         namespace;
     private final ConnectionStateManager                                connectionStateManager;
-    private final AtomicReference<ConnectionState>						connectionState;
     private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
     private final byte[]                                                defaultData;
     private final FailedDeleteManager                                   failedDeleteManager;
@@ -75,6 +74,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ACLProvider                                           aclProvider;
     private final NamespaceFacadeCache                                  namespaceFacadeCache;
     private final NamespaceWatcherMap                                   namespaceWatcherMap = new NamespaceWatcherMap(this);
+    private final Object												connectionLock = new Object();
 
     private volatile ExecutorService                                    executorService;
     private final AtomicBoolean                                         logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -151,7 +151,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespace = new NamespaceImpl(this, builder.getNamespace());
         threadFactory = getThreadFactory(builder);
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
-        connectionState = new AtomicReference<ConnectionState>(null);
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
@@ -174,10 +173,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
 			@Override
 			public void stateChanged(CuratorFramework client, ConnectionState newState)
 			{
-				connectionState.set(newState);
-				synchronized(connectionState)
+				synchronized(connectionLock)
 				{
-					connectionState.notifyAll();
+					connectionLock.notifyAll();
 				}
 			}
 		});
@@ -220,7 +218,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         threadFactory = parent.threadFactory;
         backgroundOperations = parent.backgroundOperations;
         connectionStateManager = parent.connectionStateManager;
-        connectionState = parent.connectionState;
         defaultData = parent.defaultData;
         failedDeleteManager = parent.failedDeleteManager;
         compressionProvider = parent.compressionProvider;
@@ -890,16 +887,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
         );
     }
     
-    public ConnectionState getCurrentConnectionState()
-    {
-    	return connectionState.get();
-    }
-    
     @Override
     public boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException
     {
     	//Check if we're already connected
-    	ConnectionState currentConnectionState = connectionState.get();
+    	ConnectionState currentConnectionState = connectionStateManager.getCurrentConnectionState();
     	if(currentConnectionState != null && currentConnectionState.isConnected())
     	{
     		return true;
@@ -910,9 +902,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
     	
     	for(;;)
     	{
-    		synchronized(connectionState)
+    		synchronized(connectionLock)
     		{
-    			currentConnectionState = connectionState.get();
+    			currentConnectionState = connectionStateManager.getCurrentConnectionState();
     	    	if(currentConnectionState != null && currentConnectionState.isConnected())
     			{
     				return true;
@@ -930,7 +922,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         			}    					
     			}
     		
-    			connectionState.wait(waitTime);
+    			connectionLock.wait(waitTime);
     		}
     	}
     }

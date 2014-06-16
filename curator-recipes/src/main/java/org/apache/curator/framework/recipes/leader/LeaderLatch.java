@@ -27,6 +27,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.recipes.ExecuteAfterConnectionEstablished;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
@@ -148,14 +149,6 @@ public class LeaderLatch implements Closeable
         this.id = Preconditions.checkNotNull(id, "id cannot be null");
         this.closeMode = Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
     }
-    
-    private CountDownLatch startLatch;
-    
-    public LeaderLatch(CuratorFramework client, String latchPath,
-    		CountDownLatch startLatch) {
-    	this(client, latchPath);
-        this.startLatch = startLatch;
-    }
 
     /**
      * Add this instance to the leadership election and attempt to acquire leadership.
@@ -166,30 +159,23 @@ public class LeaderLatch implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        //Block until connected
-        final ExecutorService executor = ThreadUtils.newSingleThreadExecutor("");
-        executor.submit(new Runnable()
-        {
-			
-			@Override
+        ExecuteAfterConnectionEstablished.executeAfterConnectionEstablishedInBackground(LeaderLatch.class.getName(),
+        		client, new Runnable()
+        {					
+        	@Override
 			public void run()
 			{
-		        try
-		        {
-		        	client.blockUntilConnected();
-			        
-			        client.getConnectionStateListenable().addListener(listener);		        	
-		        	reset();
-		        }
-		        catch(Exception ex)
-		        {
-		        	log.error("An error occurred checking resetting leadership.", ex);
-		        } finally {
-		        	//Shutdown the executor
-		        	executor.shutdown();
-		        }
+        		try
+        		{
+        			client.getConnectionStateListenable().addListener(listener);		        	
+        			reset();
+        		}
+        		catch(Exception ex)
+                {
+                	log.error("An error occurred checking resetting leadership.", ex);
+                }
 			}
-        });
+		});     
     }
 
     /**

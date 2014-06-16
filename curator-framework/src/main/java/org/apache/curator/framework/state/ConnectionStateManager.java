@@ -188,6 +188,11 @@ public class ConnectionStateManager implements Closeable
 
         return true;
     }
+    
+    public synchronized ConnectionState getCurrentConnectionState()
+    {
+    	return currentConnectionState;
+    }
 
     private void postState(ConnectionState state)
     {

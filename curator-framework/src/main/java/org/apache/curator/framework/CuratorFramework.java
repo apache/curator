@@ -213,14 +213,7 @@ public interface CuratorFramework extends Closeable
      * @param watcher the watcher
      */
     public void clearWatcherReferences(Watcher watcher);
-    
-    /**
-     * Get the current connection state. The connection state will have a value of 0 until
-     * the first connection related event is received.
-     * @return The current connection state, or null if it is unknown 
-     */
-    public ConnectionState getCurrentConnectionState();
-    
+        
     /**
      * Block until a connection to ZooKeeper is available or the maxWaitTime has been exceeded
      * @param maxWaitTime The maximum wait time. Specify a value <= 0 to wait indefinitely
