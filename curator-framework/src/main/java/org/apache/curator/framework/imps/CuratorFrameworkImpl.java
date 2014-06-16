@@ -173,9 +173,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
 			@Override
 			public void stateChanged(CuratorFramework client, ConnectionState newState)
 			{
-				synchronized(connectionLock)
+				if(newState.isConnected())
 				{
-					connectionLock.notifyAll();
+					synchronized(connectionLock)
+					{
+						connectionLock.notifyAll();
+					}
 				}
 			}
 		});
