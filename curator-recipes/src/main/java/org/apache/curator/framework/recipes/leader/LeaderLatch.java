@@ -26,7 +26,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.recipes.ExecuteAfterConnectionEstablished;
+import org.apache.curator.framework.recipes.AfterConnectionEstablished;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
@@ -156,17 +156,22 @@ public class LeaderLatch implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        ExecuteAfterConnectionEstablished.executeAfterConnectionEstablishedInBackground
+        AfterConnectionEstablished.execute
         (
-            client,
-            new Callable<Void>()
+            client, new Runnable()
             {
                 @Override
-                public Void call() throws Exception
+                public void run()
                 {
                     client.getConnectionStateListenable().addListener(listener);
-                    reset();
-                    return null;
+                    try
+                    {
+                        reset();
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error("An error occurred checking resetting leadership.", e);
+                    }
                 }
             }
         );
@@ -556,7 +561,7 @@ public class LeaderLatch implements Closeable
 
     private void handleStateChange(ConnectionState newState)
     {
-        if (newState.isConnected())
+        if ( newState == ConnectionState.RECONNECTED )
         {
             try
             {

@@ -33,6 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -153,6 +154,7 @@ public class ConnectionStateManager implements Closeable
 
         currentConnectionState = ConnectionState.SUSPENDED;
         postState(ConnectionState.SUSPENDED);
+
         return true;
     }
 
@@ -188,15 +190,45 @@ public class ConnectionStateManager implements Closeable
 
         return true;
     }
-    
-    public synchronized ConnectionState getCurrentConnectionState()
+
+    public synchronized boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException
     {
-    	return currentConnectionState;
+        boolean hasMaxWait = (units != null);
+        long startTime = System.currentTimeMillis();
+
+        while ( !isConnected() )
+        {
+            long maxWaitTimeMS = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWaitTime, units) : 0;
+
+            if ( hasMaxWait )
+            {
+                long waitTime = maxWaitTimeMS - (System.currentTimeMillis() - startTime);
+                if ( waitTime <= 0 )
+                {
+                    return isConnected();
+                }
+
+                wait(waitTime);
+            }
+            else
+            {
+                wait();
+            }
+        }
+        return isConnected();
+    }
+
+    public synchronized boolean isConnected()
+    {
+        return (currentConnectionState != null) && currentConnectionState.isConnected();
     }
 
     private void postState(ConnectionState state)
     {
         log.info("State change: " + state);
+
+        notifyAll();
+
         while ( !eventQueue.offer(state) )
         {
             eventQueue.poll();

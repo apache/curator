@@ -22,7 +22,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -39,24 +38,23 @@ public class AfterConnectionEstablished
      * @param client             The curator client
      * @param runAfterConnection The logic to run
      */
-    public static <T> T execute(final CuratorFramework client, final Callable<T> runAfterConnection) throws Exception
+    public static void execute(final CuratorFramework client, final Runnable runAfterConnection) throws Exception
     {
         //Block until connected
-        final ExecutorService executor = ThreadUtils.newSingleThreadExecutor(runAfterConnection.getClass().getSimpleName());
-        Callable<T> internalCall = new Callable<T>()
+        final ExecutorService executor = ThreadUtils.newSingleThreadExecutor(ThreadUtils.getProcessName(runAfterConnection.getClass()));
+        Runnable internalCall = new Runnable()
         {
             @Override
-            public T call() throws Exception
+            public void run()
             {
                 try
                 {
                     client.blockUntilConnected();
-                    return runAfterConnection.call();
+                    runAfterConnection.run();
                 }
                 catch ( Exception e )
                 {
                     log.error("An error occurred blocking until a connection is available", e);
-                    throw e;
                 }
                 finally
                 {
@@ -64,7 +62,7 @@ public class AfterConnectionEstablished
                 }
             }
         };
-        return executor.submit(internalCall).get();
+        executor.submit(internalCall);
     }
 
     private AfterConnectionEstablished()

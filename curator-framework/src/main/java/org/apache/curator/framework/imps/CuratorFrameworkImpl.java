@@ -16,11 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
@@ -44,7 +44,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -59,40 +58,40 @@ import java.util.concurrent.atomic.AtomicReference;
 public class CuratorFrameworkImpl implements CuratorFramework
 {
 
-    private final Logger                                                log = LoggerFactory.getLogger(getClass());
-    private final CuratorZookeeperClient                                client;
-    private final ListenerContainer<CuratorListener>                    listeners;
-    private final ListenerContainer<UnhandledErrorListener>             unhandledErrorListeners;
-    private final ThreadFactory                                         threadFactory;
-    private final BlockingQueue<OperationAndData<?>>                    backgroundOperations;
-    private final NamespaceImpl                                         namespace;
-    private final ConnectionStateManager                                connectionStateManager;
-    private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
-    private final byte[]                                                defaultData;
-    private final FailedDeleteManager                                   failedDeleteManager;
-    private final CompressionProvider                                   compressionProvider;
-    private final ACLProvider                                           aclProvider;
-    private final NamespaceFacadeCache                                  namespaceFacadeCache;
-    private final NamespaceWatcherMap                                   namespaceWatcherMap = new NamespaceWatcherMap(this);
-    private final Object												connectionLock = new Object();
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final CuratorZookeeperClient client;
+    private final ListenerContainer<CuratorListener> listeners;
+    private final ListenerContainer<UnhandledErrorListener> unhandledErrorListeners;
+    private final ThreadFactory threadFactory;
+    private final BlockingQueue<OperationAndData<?>> backgroundOperations;
+    private final NamespaceImpl namespace;
+    private final ConnectionStateManager connectionStateManager;
+    private final AtomicReference<AuthInfo> authInfo = new AtomicReference<AuthInfo>();
+    private final byte[] defaultData;
+    private final FailedDeleteManager failedDeleteManager;
+    private final CompressionProvider compressionProvider;
+    private final ACLProvider aclProvider;
+    private final NamespaceFacadeCache namespaceFacadeCache;
+    private final NamespaceWatcherMap namespaceWatcherMap = new NamespaceWatcherMap(this);
 
-    private volatile ExecutorService                                    executorService;
-    private final AtomicBoolean                                         logAsErrorConnectionErrors = new AtomicBoolean(false);
+    private volatile ExecutorService executorService;
+    private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
 
-    private static final boolean                                        LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL = !Boolean.getBoolean(DebugUtils.PROPERTY_LOG_ONLY_FIRST_CONNECTION_ISSUE_AS_ERROR_LEVEL);
+    private static final boolean LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL = !Boolean.getBoolean(DebugUtils.PROPERTY_LOG_ONLY_FIRST_CONNECTION_ISSUE_AS_ERROR_LEVEL);
 
     interface DebugBackgroundListener
     {
-        void        listen(OperationAndData<?> data);
+        void listen(OperationAndData<?> data);
     }
-    volatile DebugBackgroundListener        debugListener = null;
 
-    private final AtomicReference<CuratorFrameworkState>                    state;
+    volatile DebugBackgroundListener debugListener = null;
+
+    private final AtomicReference<CuratorFrameworkState> state;
 
     private static class AuthInfo
     {
-        final String    scheme;
-        final byte[]    auth;
+        final String scheme;
+        final byte[] auth;
 
         private AuthInfo(String scheme, byte[] auth)
         {
@@ -113,37 +112,15 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
         ZookeeperFactory localZookeeperFactory = makeZookeeperFactory(builder.getZookeeperFactory());
-        this.client = new CuratorZookeeperClient
-        (
-            localZookeeperFactory,
-            builder.getEnsembleProvider(),
-            builder.getSessionTimeoutMs(),
-            builder.getConnectionTimeoutMs(),
-            new Watcher()
+        this.client = new CuratorZookeeperClient(localZookeeperFactory, builder.getEnsembleProvider(), builder.getSessionTimeoutMs(), builder.getConnectionTimeoutMs(), new Watcher()
+        {
+            @Override
+            public void process(WatchedEvent watchedEvent)
             {
-                @Override
-                public void process(WatchedEvent watchedEvent)
-                {
-                    CuratorEvent event = new CuratorEventImpl
-                    (
-                        CuratorFrameworkImpl.this,
-                        CuratorEventType.WATCHED,
-                        watchedEvent.getState().getIntValue(),
-                        unfixForNamespace(watchedEvent.getPath()),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        watchedEvent,
-                        null
-                    );
-                    processEvent(event);
-                }
-            },
-            builder.getRetryPolicy(),
-            builder.canBeReadOnly()
-        );
+                CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null);
+                processEvent(event);
+            }
+        }, builder.getRetryPolicy(), builder.canBeReadOnly());
 
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
@@ -155,7 +132,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
 
-        byte[]      builderDefaultData = builder.getDefaultData();
+        byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
 
         if ( builder.getAuthScheme() != null )
@@ -165,23 +142,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         failedDeleteManager = new FailedDeleteManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
-        
-        //Add callback handler to determine connection state transitions
-    	getConnectionStateListenable().addListener(new ConnectionStateListener()
-    	{
-			
-			@Override
-			public void stateChanged(CuratorFramework client, ConnectionState newState)
-			{
-				if(newState.isConnected())
-				{
-					synchronized(connectionLock)
-					{
-						connectionLock.notifyAll();
-					}
-				}
-			}
-		});
     }
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
@@ -253,7 +213,19 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
-    public void     start()
+    public boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException
+    {
+        return connectionStateManager.blockUntilConnected(maxWaitTime, units);
+    }
+
+    @Override
+    public void blockUntilConnected() throws InterruptedException
+    {
+        blockUntilConnected(0, null);
+    }
+
+    @Override
+    public void start()
     {
         log.info("Starting");
         if ( !state.compareAndSet(CuratorFrameworkState.LATENT, CuratorFrameworkState.STARTED) )
@@ -266,7 +238,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         try
         {
             connectionStateManager.start(); // ordering dependency - must be called before client.start()
-            
+
             final ConnectionStateListener listener = new ConnectionStateListener()
             {
                 @Override
@@ -278,16 +250,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     }
                 }
             };
-            
+
             this.getConnectionStateListenable().addListener(listener);
 
             client.start();
 
             executorService = Executors.newFixedThreadPool(2, threadFactory);  // 1 for listeners, 1 for background ops
 
-            executorService.submit
-            (
-                new Callable<Object>()
+            executorService.submit(new Callable<Object>()
                 {
                     @Override
                     public Object call() throws Exception
@@ -295,8 +265,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                         backgroundOperationsLoop();
                         return null;
                     }
-                }
-            );
+                });
         }
         catch ( Exception e )
         {
@@ -305,31 +274,28 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
-    public void     close()
+    public void close()
     {
         log.debug("Closing");
         if ( state.compareAndSet(CuratorFrameworkState.STARTED, CuratorFrameworkState.STOPPED) )
         {
-            listeners.forEach
-                (
-                    new Function<CuratorListener, Void>()
+            listeners.forEach(new Function<CuratorListener, Void>()
+                {
+                    @Override
+                    public Void apply(CuratorListener listener)
                     {
-                        @Override
-                        public Void apply(CuratorListener listener)
+                        CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
+                        try
                         {
-                            CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
-                            try
-                            {
-                                listener.eventReceived(CuratorFrameworkImpl.this, event);
-                            }
-                            catch ( Exception e )
-                            {
-                                log.error("Exception while sending Closing event", e);
-                            }
-                            return null;
+                            listener.eventReceived(CuratorFrameworkImpl.this, event);
                         }
+                        catch ( Exception e )
+                        {
+                            log.error("Exception while sending Closing event", e);
+                        }
+                        return null;
                     }
-                );
+                });
 
             listeners.clear();
             unhandledErrorListeners.clear();
@@ -515,14 +481,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
     {
-        boolean     isInitialExecution = (event == null);
+        boolean isInitialExecution = (event == null);
         if ( isInitialExecution )
         {
             performBackgroundOperation(operationAndData);
             return;
         }
 
-        boolean     doQueueOperation = false;
+        boolean doQueueOperation = false;
         do
         {
             if ( RetryLoop.shouldRetry(event.getResultCode()) )
@@ -538,7 +504,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
 
             processEvent(event);
-        } while ( false );
+        }
+        while ( false );
 
         if ( doQueueOperation )
         {
@@ -560,7 +527,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) || !(e instanceof KeeperException) )
         {
-            if ( e instanceof KeeperException.ConnectionLossException || e instanceof CuratorConnectionLossException ) {
+            if ( e instanceof KeeperException.ConnectionLossException )
+            {
                 if ( LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL || logAsErrorConnectionErrors.compareAndSet(true, false) )
                 {
                     log.error(reason, e);
@@ -576,27 +544,24 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
         }
 
-        final String        localReason = reason;
-        unhandledErrorListeners.forEach
-            (
-                new Function<UnhandledErrorListener, Void>()
+        final String localReason = reason;
+        unhandledErrorListeners.forEach(new Function<UnhandledErrorListener, Void>()
+            {
+                @Override
+                public Void apply(UnhandledErrorListener listener)
                 {
-                    @Override
-                    public Void apply(UnhandledErrorListener listener)
-                    {
-                        listener.unhandledError(localReason, e);
-                        return null;
-                    }
+                    listener.unhandledError(localReason, e);
+                    return null;
                 }
-            );
+            });
     }
 
-    String    unfixForNamespace(String path)
+    String unfixForNamespace(String path)
     {
         return namespace.unfixForNamespace(path);
     }
 
-    String    fixForNamespace(String path)
+    String fixForNamespace(String path)
     {
         return namespace.fixForNamespace(path);
     }
@@ -723,8 +688,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 sendToBackgroundCallback(operationAndData, event);
             }
 
-            KeeperException.Code    code = KeeperException.Code.get(event.getResultCode());
-            Exception               e = null;
+            KeeperException.Code code = KeeperException.Code.get(event.getResultCode());
+            Exception e = null;
             try
             {
                 e = (code != null) ? KeeperException.create(code) : null;
@@ -755,7 +720,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    private<DATA_TYPE> void handleBackgroundOperationException(OperationAndData<DATA_TYPE> operationAndData, Throwable e)
+    private <DATA_TYPE> void handleBackgroundOperationException(OperationAndData<DATA_TYPE> operationAndData, Throwable e)
     {
         do
         {
@@ -788,14 +753,15 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
 
             logError("Background exception was not retry-able or retry gave up", e);
-        } while ( false );
+        }
+        while ( false );
     }
 
     private void backgroundOperationsLoop()
     {
         while ( !Thread.interrupted() )
         {
-            OperationAndData<?>         operationAndData;
+            OperationAndData<?> operationAndData;
             try
             {
                 operationAndData = backgroundOperations.take();
@@ -850,7 +816,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
                 else
                 {
-                	logError("Background retry gave up", e);
+                    logError("Background retry gave up", e);
                 }
             }
             else
@@ -867,70 +833,23 @@ public class CuratorFrameworkImpl implements CuratorFramework
             validateConnection(curatorEvent.getWatchedEvent().getState());
         }
 
-        listeners.forEach
-        (
-            new Function<CuratorListener, Void>()
+        listeners.forEach(new Function<CuratorListener, Void>()
+        {
+            @Override
+            public Void apply(CuratorListener listener)
             {
-                @Override
-                public Void apply(CuratorListener listener)
+                try
                 {
-                    try
-                    {
-                        TimeTrace trace = client.startTracer("EventListener");
-                        listener.eventReceived(CuratorFrameworkImpl.this, curatorEvent);
-                        trace.commit();
-                    }
-                    catch ( Exception e )
-                    {
-                        logError("Event listener threw exception", e);
-                    }
-                    return null;
+                    TimeTrace trace = client.startTracer("EventListener");
+                    listener.eventReceived(CuratorFrameworkImpl.this, curatorEvent);
+                    trace.commit();
                 }
+                catch ( Exception e )
+                {
+                    logError("Event listener threw exception", e);
+                }
+                return null;
             }
-        );
-    }
-    
-    @Override
-    public boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException
-    {
-    	//Check if we're already connected
-    	ConnectionState currentConnectionState = connectionStateManager.getCurrentConnectionState();
-    	if(currentConnectionState != null && currentConnectionState.isConnected())
-    	{
-    		return true;
-    	}
-    	
-    	long startTime = System.currentTimeMillis();
-    	long maxWaitTimeMS = TimeUnit.MILLISECONDS.convert(maxWaitTime, units);
-    	
-    	for(;;)
-    	{
-    		synchronized(connectionLock)
-    		{
-    			currentConnectionState = connectionStateManager.getCurrentConnectionState();
-    	    	if(currentConnectionState != null && currentConnectionState.isConnected())
-    			{
-    				return true;
-    			}
-    			
-    			long waitTime = 0;
-    			if(maxWaitTime > 0)
-    			{
-    				waitTime = maxWaitTimeMS  - (System.currentTimeMillis() - startTime);
-    	   			
-    				//Timeout
-        			if(waitTime <= 0)
-        			{
-        				return false;
-        			}    					
-    			}
-    		
-    			connectionLock.wait(waitTime);
-    		}
-    	}
-    }
-    
-    public void blockUntilConnected() throws InterruptedException {
-    	blockUntilConnected(0, TimeUnit.SECONDS);
+        });
     }
 }
