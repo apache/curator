@@ -193,16 +193,16 @@ public class ConnectionStateManager implements Closeable
 
     public synchronized boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException
     {
-        boolean hasMaxWait = (units != null);
         long startTime = System.currentTimeMillis();
+
+        boolean hasMaxWait = (units != null);
+        long maxWaitTimeMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWaitTime, units) : 0;
 
         while ( !isConnected() )
         {
-            long maxWaitTimeMS = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWaitTime, units) : 0;
-
             if ( hasMaxWait )
             {
-                long waitTime = maxWaitTimeMS - (System.currentTimeMillis() - startTime);
+                long waitTime = maxWaitTimeMs - (System.currentTimeMillis() - startTime);
                 if ( waitTime <= 0 )
                 {
                     return isConnected();
