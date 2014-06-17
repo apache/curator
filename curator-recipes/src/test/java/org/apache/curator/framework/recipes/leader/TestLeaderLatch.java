@@ -52,6 +52,55 @@ public class TestLeaderLatch extends BaseClassForTests
     private static final int MAX_LOOPS = 5;
 
     @Test
+    public void testProperCloseWithoutConnectionEstablished() throws Exception
+    {
+        server.stop();
+
+        Timing timing = new Timing();
+        LeaderLatch latch = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            final AtomicBoolean resetCalled = new AtomicBoolean(false);
+            final CountDownLatch cancelStartTaskLatch = new CountDownLatch(1);
+            latch = new LeaderLatch(client, PATH_NAME)
+            {
+                @Override
+                void reset() throws Exception
+                {
+                    resetCalled.set(true);
+                    super.reset();
+                }
+
+                @Override
+                protected boolean cancelStartTask()
+                {
+                    if ( super.cancelStartTask() )
+                    {
+                        cancelStartTaskLatch.countDown();
+                        return true;
+                    }
+                    return false;
+                }
+            };
+
+            latch.start();
+            latch.close();
+            latch = null;
+
+            Assert.assertTrue(timing.awaitLatch(cancelStartTaskLatch));
+            Assert.assertFalse(resetCalled.get());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(latch);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testResetRace() throws Exception
     {
         Timing timing = new Timing();

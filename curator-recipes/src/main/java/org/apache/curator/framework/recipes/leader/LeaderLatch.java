@@ -200,11 +200,7 @@ public class LeaderLatch implements Closeable
         Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
         Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
 
-        Future<?> localStartTask = startTask.getAndSet(null);
-        if ( localStartTask != null )
-        {
-            localStartTask.cancel(true);
-        }
+        cancelStartTask();
 
         try
         {
@@ -235,6 +231,18 @@ public class LeaderLatch implements Closeable
             }
             }
         }
+    }
+
+    @VisibleForTesting
+    protected boolean cancelStartTask()
+    {
+        Future<?> localStartTask = startTask.getAndSet(null);
+        if ( localStartTask != null )
+        {
+            localStartTask.cancel(true);
+            return true;
+        }
+        return false;
     }
 
     /**
