@@ -26,6 +26,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.recipes.AfterConnectionEstablished;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
@@ -45,6 +46,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -68,6 +70,7 @@ public class LeaderLatch implements Closeable
     private final AtomicReference<String> ourPath = new AtomicReference<String>();
     private final ListenerContainer<LeaderLatchListener> listeners = new ListenerContainer<LeaderLatchListener>();
     private final CloseMode closeMode;
+    private final AtomicReference<Future<?>> startTask = new AtomicReference<Future<?>>();
 
     private final ConnectionStateListener listener = new ConnectionStateListener()
     {
@@ -154,8 +157,21 @@ public class LeaderLatch implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        client.getConnectionStateListenable().addListener(listener);
-        reset();
+        startTask.set(AfterConnectionEstablished.execute(client, new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            internalStart();
+                        }
+                        finally
+                        {
+                            startTask.set(null);
+                        }
+                    }
+                }));
     }
 
     /**
@@ -177,13 +193,14 @@ public class LeaderLatch implements Closeable
      * instances must eventually be closed.
      *
      * @param closeMode allows the default close mode to be overridden at the time the latch is closed.
-     *
      * @throws IOException errors
      */
-    public void close(CloseMode closeMode) throws IOException
+    public synchronized void close(CloseMode closeMode) throws IOException
     {
         Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
         Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
+
+        cancelStartTask();
 
         try
         {
@@ -199,28 +216,40 @@ public class LeaderLatch implements Closeable
 
             switch ( closeMode )
             {
-                case NOTIFY_LEADER:
-                {
-                    setLeadership(false);
-                    listeners.clear();
-                    break;
-                }
+            case NOTIFY_LEADER:
+            {
+                setLeadership(false);
+                listeners.clear();
+                break;
+            }
 
-                default:
-                {
-                    listeners.clear();
-                    setLeadership(false);
-                    break;
-                }
+            default:
+            {
+                listeners.clear();
+                setLeadership(false);
+                break;
+            }
             }
         }
     }
 
+    @VisibleForTesting
+    protected boolean cancelStartTask()
+    {
+        Future<?> localStartTask = startTask.getAndSet(null);
+        if ( localStartTask != null )
+        {
+            localStartTask.cancel(true);
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Attaches a listener to this LeaderLatch
-     * <p>
+     * <p/>
      * Attaching the same listener multiple times is a noop from the second time on.
-     * <p>
+     * <p/>
      * All methods for the listener are run using the provided Executor.  It is common to pass in a single-threaded
      * executor so that you can be certain that listener methods are called in sequence, but if you are fine with
      * them being called out of order you are welcome to use multiple threads.
@@ -234,15 +263,15 @@ public class LeaderLatch implements Closeable
 
     /**
      * Attaches a listener to this LeaderLatch
-     * <p>
+     * <p/>
      * Attaching the same listener multiple times is a noop from the second time on.
-     * <p>
+     * <p/>
      * All methods for the listener are run using the provided Executor.  It is common to pass in a single-threaded
      * executor so that you can be certain that listener methods are called in sequence, but if you are fine with
      * them being called out of order you are welcome to use multiple threads.
      *
      * @param listener the listener to attach
-     * @param executor     An executor to run the methods for the listener on.
+     * @param executor An executor to run the methods for the listener on.
      */
     public void addListener(LeaderLatchListener listener, Executor executor)
     {
@@ -263,7 +292,7 @@ public class LeaderLatch implements Closeable
      * <p>Causes the current thread to wait until this instance acquires leadership
      * unless the thread is {@linkplain Thread#interrupt interrupted} or {@linkplain #close() closed}.</p>
      * <p>If this instance already is the leader then this method returns immediately.</p>
-     *
+     * <p/>
      * <p>Otherwise the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until one of three things happen:</p>
@@ -305,10 +334,10 @@ public class LeaderLatch implements Closeable
      * <p>Causes the current thread to wait until this instance acquires leadership
      * unless the thread is {@linkplain Thread#interrupt interrupted},
      * the specified waiting time elapses or the instance is {@linkplain #close() closed}.</p>
-     *
+     * <p/>
      * <p>If this instance already is the leader then this method returns immediately
      * with the value {@code true}.</p>
-     *
+     * <p/>
      * <p>Otherwise the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until one of four things happen:</p>
@@ -319,7 +348,7 @@ public class LeaderLatch implements Closeable
      * <li>The specified waiting time elapses.</li>
      * <li>The instance is {@linkplain #close() closed}</li>
      * </ul>
-     *
+     * <p/>
      * <p>If the current thread:</p>
      * <ul>
      * <li>has its interrupted status set on entry to this method; or
@@ -327,7 +356,7 @@ public class LeaderLatch implements Closeable
      * </ul>
      * <p>then {@link InterruptedException} is thrown and the current thread's
      * interrupted status is cleared.</p>
-     *
+     * <p/>
      * <p>If the specified waiting time elapses or the instance is {@linkplain #close() closed}
      * then the value {@code false} is returned.  If the time is less than or equal to zero, the method
      * will not wait at all.</p>
@@ -335,7 +364,7 @@ public class LeaderLatch implements Closeable
      * @param timeout the maximum time to wait
      * @param unit    the time unit of the {@code timeout} argument
      * @return {@code true} if the count reached zero and {@code false}
-     *         if the waiting time elapsed before the count reached zero or the instances was closed
+     * if the waiting time elapsed before the count reached zero or the instances was closed
      * @throws InterruptedException if the current thread is interrupted
      *                              while waiting
      */
@@ -471,6 +500,22 @@ public class LeaderLatch implements Closeable
         client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
     }
 
+    private synchronized void internalStart()
+    {
+        if ( state.get() == State.STARTED )
+        {
+            client.getConnectionStateListenable().addListener(listener);
+            try
+            {
+                reset();
+            }
+            catch ( Exception e )
+            {
+                log.error("An error occurred checking resetting leadership.", e);
+            }
+        }
+    }
+
     private void checkLeadership(List<String> children) throws Exception
     {
         final String localOurPath = ourPath.get();
@@ -544,32 +589,32 @@ public class LeaderLatch implements Closeable
     {
         switch ( newState )
         {
-        default:
-        {
-            // NOP
-            break;
-        }
-
-        case RECONNECTED:
-        {
-            try
+            default:
             {
-                reset();
+                // NOP
+                break;
             }
-            catch ( Exception e )
+
+            case RECONNECTED:
             {
-                log.error("Could not reset leader latch", e);
+                try
+                {
+                    reset();
+                }
+                catch ( Exception e )
+                {
+                    log.error("Could not reset leader latch", e);
+                    setLeadership(false);
+                }
+                break;
+            }
+
+            case SUSPENDED:
+            case LOST:
+            {
                 setLeadership(false);
+                break;
             }
-            break;
-        }
-
-        case SUSPENDED:
-        case LOST:
-        {
-            setLeadership(false);
-            break;
-        }
         }
     }
 
@@ -579,9 +624,7 @@ public class LeaderLatch implements Closeable
 
         if ( oldValue && !newValue )
         { // Lost leadership, was true, now false
-            listeners.forEach
-            (
-                new Function<LeaderLatchListener, Void>()
+            listeners.forEach(new Function<LeaderLatchListener, Void>()
                 {
                     @Override
                     public Void apply(LeaderLatchListener listener)
@@ -589,14 +632,11 @@ public class LeaderLatch implements Closeable
                         listener.notLeader();
                         return null;
                     }
-                }
-            );
+                });
         }
         else if ( !oldValue && newValue )
         { // Gained leadership, was false, now true
-            listeners.forEach
-            (
-                new Function<LeaderLatchListener, Void>()
+            listeners.forEach(new Function<LeaderLatchListener, Void>()
                 {
                     @Override
                     public Void apply(LeaderLatchListener input)
@@ -604,8 +644,7 @@ public class LeaderLatch implements Closeable
                         input.isLeader();
                         return null;
                     }
-                }
-            );
+                });
         }
 
         notifyAll();

@@ -26,6 +26,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
@@ -42,12 +43,62 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TestLeaderLatch extends BaseClassForTests
 {
     private static final String PATH_NAME = "/one/two/me";
     private static final int MAX_LOOPS = 5;
+
+    @Test
+    public void testProperCloseWithoutConnectionEstablished() throws Exception
+    {
+        server.stop();
+
+        Timing timing = new Timing();
+        LeaderLatch latch = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            final AtomicBoolean resetCalled = new AtomicBoolean(false);
+            final CountDownLatch cancelStartTaskLatch = new CountDownLatch(1);
+            latch = new LeaderLatch(client, PATH_NAME)
+            {
+                @Override
+                void reset() throws Exception
+                {
+                    resetCalled.set(true);
+                    super.reset();
+                }
+
+                @Override
+                protected boolean cancelStartTask()
+                {
+                    if ( super.cancelStartTask() )
+                    {
+                        cancelStartTaskLatch.countDown();
+                        return true;
+                    }
+                    return false;
+                }
+            };
+
+            latch.start();
+            latch.close();
+            latch = null;
+
+            Assert.assertTrue(timing.awaitLatch(cancelStartTaskLatch));
+            Assert.assertFalse(resetCalled.get());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(latch);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 
     @Test
     public void testResetRace() throws Exception
@@ -87,6 +138,8 @@ public class TestLeaderLatch extends BaseClassForTests
         try
         {
             client.start();
+            client.create().creatingParentsIfNeeded().forPath(PATH_NAME);
+
             LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
 
             latch.debugResetWaitLatch = new CountDownLatch(1);
@@ -211,6 +264,17 @@ public class TestLeaderLatch extends BaseClassForTests
     @Test
     public void testWaiting() throws Exception
     {
+        final int LOOPS = 10;
+        for ( int i = 0; i < LOOPS; ++i )
+        {
+            System.out.println("TRY #" + i);
+            internalTestWaitingOnce();
+            Thread.sleep(10);
+        }
+    }
+
+    private void internalTestWaitingOnce() throws Exception
+    {
         final int PARTICIPANT_QTY = 10;
 
         ExecutorService executorService = Executors.newFixedThreadPool(PARTICIPANT_QTY);
@@ -237,10 +301,10 @@ public class TestLeaderLatch extends BaseClassForTests
                             Assert.assertTrue(latch.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
                             Assert.assertTrue(thereIsALeader.compareAndSet(false, true));
                             Thread.sleep((int)(10 * Math.random()));
+                            thereIsALeader.set(false);
                         }
                         finally
                         {
-                            thereIsALeader.set(false);
                             latch.close();
                         }
                         return null;
@@ -255,7 +319,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
         finally
         {
-            executorService.shutdown();
+            executorService.shutdownNow();
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -520,6 +584,63 @@ public class TestLeaderLatch extends BaseClassForTests
                 CloseableUtils.closeQuietly(notifiedLeader);
             }
             CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testNoServerAtStart()
+    {
+        CloseableUtils.closeQuietly(server);
+
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(5, 1000));
+
+        client.start();
+
+        final LeaderLatch leader = new LeaderLatch(client, PATH_NAME);
+        final CountDownLatch leaderCounter = new CountDownLatch(1);
+        final AtomicInteger leaderCount = new AtomicInteger(0);
+        final AtomicInteger notLeaderCount = new AtomicInteger(0);
+        leader.addListener(new LeaderLatchListener()
+        {
+            @Override
+            public void isLeader()
+            {
+                leaderCounter.countDown();
+                leaderCount.incrementAndGet();
+            }
+
+            @Override
+            public void notLeader()
+            {
+                notLeaderCount.incrementAndGet();
+            }
+
+        });
+
+        try
+        {
+            leader.start();
+
+            timing.sleepABit();
+
+            // Start the new server
+            server = new TestingServer(server.getPort(), server.getTempDirectory());
+
+            Assert.assertTrue(timing.awaitLatch(leaderCounter), "Not elected leader");
+
+            Assert.assertEquals(leaderCount.get(), 1, "Elected too many times");
+            Assert.assertEquals(notLeaderCount.get(), 0, "Unelected too many times");
+        }
+        catch ( Exception e )
+        {
+            Assert.fail("Unexpected exception", e);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(leader);
+            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(server);
         }
     }
 
