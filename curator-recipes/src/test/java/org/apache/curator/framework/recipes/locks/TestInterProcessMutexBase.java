@@ -96,7 +96,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
                                     server.stop();
                                     Assert.assertTrue(timing.awaitLatch(latch));
-                                    server = new TestingServer(server.getPort(), server.getTempDirectory());
+                                    server.restart();
                                 }
                             }
                             finally

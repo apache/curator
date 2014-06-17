@@ -82,7 +82,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
 
             timing.sleepABit();
 
-            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            server.restart();
             Assert.assertTrue(timing.awaitLatch(latch));
 
             timing.sleepABit();
@@ -145,7 +145,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
 
             timing.sleepABit();
 
-            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            server.restart();
             Assert.assertTrue(timing.awaitLatch(latch));
 
             timing.sleepABit();
@@ -208,7 +208,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
 
             timing.sleepABit();
 
-            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            server.restart();
             Assert.assertTrue(timing.awaitLatch(latch));
 
             timing.sleepABit();
@@ -240,7 +240,6 @@ public class TestFailedDeleteManager extends BaseClassForTests
             int     serverPort = server.getPort();
 
             server.stop(); // cause the next delete to fail
-            server = null;
             try
             {
                 client.delete().forPath(PATH);
@@ -251,11 +250,10 @@ public class TestFailedDeleteManager extends BaseClassForTests
                 // expected
             }
             
-            server = new TestingServer(serverPort, serverDir);
+            server.restart();
             Assert.assertNotNull(client.checkExists().forPath(PATH));
 
             server.stop(); // cause the next delete to fail
-            server = null;
             try
             {
                 client.delete().guaranteed().forPath(PATH);
@@ -266,7 +264,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
                 // expected
             }
 
-            server = new TestingServer(serverPort, serverDir);
+            server.restart();
 
             final int       TRIES = 5;
             for ( int i = 0; i < TRIES; ++i )

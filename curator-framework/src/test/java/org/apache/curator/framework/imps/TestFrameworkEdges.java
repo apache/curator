@@ -359,7 +359,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                     {
                         try
                         {
-                            server = new TestingServer(serverPort, tempDirectory);
+                            server.restart();
                         }
                         catch ( Exception e )
                         {

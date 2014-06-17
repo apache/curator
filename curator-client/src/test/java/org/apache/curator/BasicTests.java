@@ -138,7 +138,7 @@ public class BasicTests extends BaseClassForTests
             server.stop();
             Thread.sleep(1000);
 
-            server = new TestingServer(serverPort, tempDirectory);
+            server.restart();
             Assert.assertTrue(client.blockUntilConnectedOrTimedOut());
             byte[]      readData = client.getZooKeeper().getData("/test", false, null);
             Assert.assertEquals(readData, writtenData);

@@ -266,7 +266,7 @@ public class TestFramework extends BaseClassForTests
                 // expected
             }
 
-            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            server.restart();
             try
             {
                 client.setData().forPath("/test", "test".getBytes());
