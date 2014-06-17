@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -23,6 +24,7 @@ import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 /**
  * Utility class to allow execution of logic once a ZooKeeper connection becomes available.
@@ -37,8 +39,9 @@ public class AfterConnectionEstablished
      *
      * @param client             The curator client
      * @param runAfterConnection The logic to run
+     * @return future of the task so it can be canceled, etc. if needed
      */
-    public static void execute(final CuratorFramework client, final Runnable runAfterConnection) throws Exception
+    public static Future<?> execute(final CuratorFramework client, final Runnable runAfterConnection) throws Exception
     {
         //Block until connected
         final ExecutorService executor = ThreadUtils.newSingleThreadExecutor(ThreadUtils.getProcessName(runAfterConnection.getClass()));
@@ -62,7 +65,7 @@ public class AfterConnectionEstablished
                 }
             }
         };
-        executor.submit(internalCall);
+        return executor.submit(internalCall);
     }
 
     private AfterConnectionEstablished()

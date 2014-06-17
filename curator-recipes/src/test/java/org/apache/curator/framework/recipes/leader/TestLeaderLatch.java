@@ -89,6 +89,8 @@ public class TestLeaderLatch extends BaseClassForTests
         try
         {
             client.start();
+            client.create().creatingParentsIfNeeded().forPath(PATH_NAME);
+
             LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
 
             latch.debugResetWaitLatch = new CountDownLatch(1);

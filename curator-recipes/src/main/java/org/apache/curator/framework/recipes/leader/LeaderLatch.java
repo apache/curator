@@ -46,6 +46,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,6 +70,7 @@ public class LeaderLatch implements Closeable
     private final AtomicReference<String> ourPath = new AtomicReference<String>();
     private final ListenerContainer<LeaderLatchListener> listeners = new ListenerContainer<LeaderLatchListener>();
     private final CloseMode closeMode;
+    private final AtomicReference<Future<?>> startTask = new AtomicReference<Future<?>>();
 
     private final ConnectionStateListener listener = new ConnectionStateListener()
     {
@@ -155,22 +157,21 @@ public class LeaderLatch implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        AfterConnectionEstablished.execute(client, new Runnable()
-            {
-                @Override
-                public void run()
+        startTask.set(AfterConnectionEstablished.execute(client, new Runnable()
                 {
-                    client.getConnectionStateListenable().addListener(listener);
-                    try
+                    @Override
+                    public void run()
                     {
-                        reset();
+                        try
+                        {
+                            internalStart();
+                        }
+                        finally
+                        {
+                            startTask.set(null);
+                        }
                     }
-                    catch ( Exception e )
-                    {
-                        log.error("An error occurred checking resetting leadership.", e);
-                    }
-                }
-            });
+                }));
     }
 
     /**
@@ -194,10 +195,16 @@ public class LeaderLatch implements Closeable
      * @param closeMode allows the default close mode to be overridden at the time the latch is closed.
      * @throws IOException errors
      */
-    public void close(CloseMode closeMode) throws IOException
+    public synchronized void close(CloseMode closeMode) throws IOException
     {
         Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
         Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
+
+        Future<?> localStartTask = startTask.getAndSet(null);
+        if ( localStartTask != null )
+        {
+            localStartTask.cancel(true);
+        }
 
         try
         {
@@ -483,6 +490,22 @@ public class LeaderLatch implements Closeable
             }
         };
         client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
+    }
+
+    private synchronized void internalStart()
+    {
+        if ( state.get() == State.STARTED )
+        {
+            client.getConnectionStateListenable().addListener(listener);
+            try
+            {
+                reset();
+            }
+            catch ( Exception e )
+            {
+                log.error("An error occurred checking resetting leadership.", e);
+            }
+        }
     }
 
     private void checkLeadership(List<String> children) throws Exception
