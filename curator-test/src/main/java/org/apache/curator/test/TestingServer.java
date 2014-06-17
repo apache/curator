@@ -171,8 +171,10 @@ public class TestingServer implements Closeable
     }
 
     /**
-     * Restart the server. This is only valid if the server has previously been
-     * stopped.
+     * Restart the server. If the server is currently running it will be stopped
+     * and restarted. If it's not currently running then it will be started. If
+     * it has been closed (had close() called on it) then an exception will be
+     * thrown.
      * 
      * @throws Exception
      */
