@@ -87,16 +87,28 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 CreateBuilderImpl.this.withMode(mode);
                 return this;
             }
-
+            
+            @Override
+            public ACLPathAndBytesable<CuratorTransactionBridge> compressed()
+            {
+                CreateBuilderImpl.this.compressed();
+                return this;
+            }
+            
             @Override
             public CuratorTransactionBridge forPath(String path) throws Exception
             {
                 return forPath(path, client.getDefaultData());
-            }
+            }            
 
             @Override
             public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception
-            {
+            {               
+                if ( compress )
+                {
+                    data = client.getCompressionProvider().compress(path, data);
+                }
+                
                 String fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
                 return curatorTransaction;

@@ -19,12 +19,15 @@
 package org.apache.curator.framework.api.transaction;
 
 import org.apache.curator.framework.api.ACLPathAndBytesable;
+import org.apache.curator.framework.api.Compressible;
+import org.apache.curator.framework.api.CreateBackgroundModeACLable;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.PathAndBytesable;
 
 public interface TransactionCreateBuilder extends
     PathAndBytesable<CuratorTransactionBridge>,
     CreateModable<ACLPathAndBytesable<CuratorTransactionBridge>>,
-    ACLPathAndBytesable<CuratorTransactionBridge>
+    ACLPathAndBytesable<CuratorTransactionBridge>,
+    Compressible<ACLPathAndBytesable<CuratorTransactionBridge>>
 {
 }
