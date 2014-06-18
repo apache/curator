@@ -99,7 +99,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             public CuratorTransactionBridge forPath(String path) throws Exception
             {
                 return forPath(path, client.getDefaultData());
-            }            
+            }
 
             @Override
             public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception

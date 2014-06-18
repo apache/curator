@@ -18,11 +18,13 @@
  */
 package org.apache.curator.framework.api.transaction;
 
+import org.apache.curator.framework.api.Compressible;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.api.Versionable;
 
 public interface TransactionSetDataBuilder extends
     PathAndBytesable<CuratorTransactionBridge>,
-    Versionable<PathAndBytesable<CuratorTransactionBridge>>
+    Versionable<PathAndBytesable<CuratorTransactionBridge>>,
+    Compressible<PathAndBytesable<CuratorTransactionBridge>>
 {
 }
