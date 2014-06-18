@@ -37,47 +37,104 @@ public class TestingServer implements Closeable
 
     /**
      * Create the server using a random port
-     *
-     * @throws Exception errors
+     * 
+     * @throws Exception
+     *             errors
      */
     public TestingServer() throws Exception
+    {
+        this(true);
+    }
+
+    /**
+     * Create the server using a random port
+     * 
+     * @param start
+     *            True if the server should be started, false otherwise
+     * @throws Exception
+     *             errors
+     */
+    public TestingServer(boolean start) throws Exception
     {
         this(-1, null);
     }
 
     /**
      * Create the server using the given port
-     *
-     * @param port the port
-     * @throws Exception errors
+     * 
+     * @param port
+     *            the port
+     * @throws Exception
+     *             errors
      */
     public TestingServer(int port) throws Exception
     {
-        this(port, null);
+        this(port, true);
     }
 
     /**
      * Create the server using the given port
-     *
-     * @param port          the port
-     * @param tempDirectory directory to use
-     * @throws Exception errors
+     * 
+     * @param port
+     *            the port
+     * @param start
+     *            True if the server should be started, false otherwise
+     * @throws Exception
+     *             errors
+     */
+    public TestingServer(int port, boolean start) throws Exception
+    {
+        this(port, null, start);
+    }
+
+    /**
+     * Create the server using the given port
+     * 
+     * @param port
+     *            the port
+     * @param tempDirectory
+     *            directory to use
+     * @throws Exception
+     *             errors
      */
     public TestingServer(int port, File tempDirectory) throws Exception
     {
-        this(new InstanceSpec(tempDirectory, port, -1, -1, true, -1));
+        this(port, tempDirectory, true);
     }
 
-    public TestingServer(InstanceSpec spec) throws Exception
+    /**
+     * Create the server using the given port
+     * 
+     * @param port
+     *            the port
+     * @param tempDirectory
+     *            directory to use
+     * @param start
+     *            True if the server should be started, false otherwise
+     * @throws Exception
+     *             errors
+     */
+    public TestingServer(int port, File tempDirectory, boolean start)
+            throws Exception
+    {
+        this(new InstanceSpec(tempDirectory, port, -1, -1, true, -1), start);
+    }
+
+    public TestingServer(InstanceSpec spec, boolean start) throws Exception
     {
         this.spec = spec;
-        testingZooKeeperServer = new TestingZooKeeperServer(new QuorumConfigBuilder(spec));
-        testingZooKeeperServer.start();
+        testingZooKeeperServer = new TestingZooKeeperServer(
+                new QuorumConfigBuilder(spec));
+
+        if (start)
+        {
+            testingZooKeeperServer.start();
+        }
     }
 
     /**
      * Return the port being used
-     *
+     * 
      * @return port
      */
     public int getPort()
@@ -87,7 +144,7 @@ public class TestingServer implements Closeable
 
     /**
      * Returns the temp directory being used
-     *
+     * 
      * @return directory
      */
     public File getTempDirectory()
@@ -96,11 +153,34 @@ public class TestingServer implements Closeable
     }
 
     /**
+     * Start the server
+     * 
+     * @throws Exception
+     */
+    public void start() throws Exception
+    {
+        testingZooKeeperServer.start();
+    }
+
+    /**
      * Stop the server without deleting the temp directory
      */
     public void stop() throws IOException
     {
         testingZooKeeperServer.stop();
+    }
+
+    /**
+     * Restart the server. If the server is currently running it will be stopped
+     * and restarted. If it's not currently running then it will be started. If
+     * it has been closed (had close() called on it) then an exception will be
+     * thrown.
+     * 
+     * @throws Exception
+     */
+    public void restart() throws Exception
+    {
+        testingZooKeeperServer.restart();
     }
 
     /**
@@ -114,7 +194,7 @@ public class TestingServer implements Closeable
 
     /**
      * Returns the connection string to use
-     *
+     * 
      * @return connection string
      */
     public String getConnectString()

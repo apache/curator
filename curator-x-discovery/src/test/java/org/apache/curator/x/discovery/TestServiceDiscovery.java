@@ -26,7 +26,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
-import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.curator.x.discovery.details.ServiceDiscoveryImpl;
@@ -83,7 +82,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
             server.stop();
 
-            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            server.restart();
             closeables.add(server);
 
             timing.acquireSemaphore(semaphore, 2);
@@ -129,7 +128,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
             server.stop();
 
-            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            server.restart();
             closeables.add(server);
 
             timing.acquireSemaphore(semaphore);

@@ -204,7 +204,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
             Assert.assertEquals(getLeaders(latches).size(), 0);
 
-            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            server.restart();
             Assert.assertEquals(waitForALeader(latches, timing).size(), 1); // should reconnect
         }
         finally

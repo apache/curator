@@ -182,7 +182,7 @@ public class TestLeaderSelector extends BaseClassForTests
             timing.sleepABit();
             debugLeadershipWaitLatch.countDown();
 
-            server = new TestingServer(server.getPort(), server.getTempDirectory());
+            server.restart();
             Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
 
             Assert.assertFalse(takeLeadershipLatch.await(3, TimeUnit.SECONDS));

@@ -74,7 +74,7 @@ public class TestRetryLoop extends BaseClassForTests
 
                     case 2:
                     {
-                        server = new TestingServer(serverPort, tempDirectory);
+                        server.restart();
                         break;
                     }
 
