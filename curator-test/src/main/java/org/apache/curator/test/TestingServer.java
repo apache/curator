@@ -56,7 +56,7 @@ public class TestingServer implements Closeable
      */
     public TestingServer(boolean start) throws Exception
     {
-        this(-1, null);
+        this(-1, null, start);
     }
 
     /**
