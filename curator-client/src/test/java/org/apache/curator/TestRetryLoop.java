@@ -21,12 +21,10 @@ package org.apache.curator;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 public class TestRetryLoop extends BaseClassForTests
@@ -52,9 +50,6 @@ public class TestRetryLoop extends BaseClassForTests
     @Test
     public void     testRetryLoopWithFailure() throws Exception
     {
-        int                 serverPort = server.getPort();
-        File                tempDirectory = server.getTempDirectory();
-
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 5000, 5000, null, new RetryOneTime(1));
         client.start();
         try

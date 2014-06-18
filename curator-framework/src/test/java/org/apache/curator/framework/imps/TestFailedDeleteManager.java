@@ -18,20 +18,18 @@
  */
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.TestingServer;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
@@ -235,9 +233,6 @@ public class TestFailedDeleteManager extends BaseClassForTests
         {
             client.create().creatingParentsIfNeeded().forPath(PATH);
             Assert.assertNotNull(client.checkExists().forPath(PATH));
-
-            File    serverDir = server.getTempDirectory();
-            int     serverPort = server.getPort();
 
             server.stop(); // cause the next delete to fail
             try

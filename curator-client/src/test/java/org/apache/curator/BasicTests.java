@@ -22,7 +22,6 @@ import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
-import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
@@ -34,7 +33,6 @@ import org.apache.zookeeper.ZooKeeper;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.io.File;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -123,9 +121,6 @@ public class BasicTests extends BaseClassForTests
     @Test
     public void     testReconnect() throws Exception
     {
-        int                 serverPort = server.getPort();
-        File                tempDirectory = server.getTempDirectory();
-
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, 10000, null, new RetryOneTime(1));
         client.start();
         try

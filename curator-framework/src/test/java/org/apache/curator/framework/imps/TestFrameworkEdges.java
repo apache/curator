@@ -44,7 +44,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.io.File;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -340,8 +339,6 @@ public class TestFrameworkEdges extends BaseClassForTests
     public void testRetry() throws Exception
     {
         final int MAX_RETRIES = 3;
-        final int serverPort = server.getPort();
-        final File tempDirectory = server.getTempDirectory();
 
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(10));
         client.start();

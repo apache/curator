@@ -16,32 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicReference;
+package org.apache.curator.test;
 
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Thanks to Jeremie BORDIER (ahfeel) for this code
  */
 public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
 {
-    private static final Logger logger = LoggerFactory
-            .getLogger(TestingZooKeeperServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(TestingZooKeeperServer.class);
 
     private final QuorumConfigBuilder configBuilder;
     private final int thisInstanceIndex;
     private volatile ZooKeeperMainFace main;
-    private final AtomicReference<State> state = new AtomicReference<State>(
-            State.LATENT);
+    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
     private enum State
     {
@@ -53,13 +51,11 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
         this(configBuilder, 0);
     }
 
-    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder,
-            int thisInstanceIndex)
+    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder, int thisInstanceIndex)
     {
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
-        main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain()
-                : new TestingZooKeeperMain();
+        main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
     }
 
     public QuorumPeer getQuorumPeer()
@@ -83,19 +79,19 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
      * started again. If it is not running (in a LATENT or STOPPED state) then
      * it will be restarted. If it is in a CLOSED state then an exception will
      * be thrown.
-     * 
+     *
      * @throws Exception
      */
     public void restart() throws Exception
     {
         // Can't restart from a closed state as all the temporary data is gone
-        if (state.get() == State.CLOSED)
+        if ( state.get() == State.CLOSED )
         {
             throw new IllegalStateException("Cannot restart a closed instance");
         }
 
         // If the server's currently running then stop it.
-        if (state.get() == State.STARTED)
+        if ( state.get() == State.STARTED )
         {
             stop();
         }
@@ -103,14 +99,13 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
         // Set to a LATENT state so we can restart
         state.set(State.LATENT);
 
-        main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain()
-                : new TestingZooKeeperMain();
+        main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
         start();
     }
 
     public void stop() throws IOException
     {
-        if (state.compareAndSet(State.STARTED, State.STOPPED))
+        if ( state.compareAndSet(State.STARTED, State.STOPPED) )
         {
             main.close();
         }
@@ -126,10 +121,10 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
     {
         stop();
 
-        if (state.compareAndSet(State.STOPPED, State.CLOSED))
+        if ( state.compareAndSet(State.STOPPED, State.CLOSED) )
         {
             InstanceSpec spec = getInstanceSpec();
-            if (spec.deleteDataDirectoryOnClose())
+            if ( spec.deleteDataDirectoryOnClose() )
             {
                 DirectoryUtils.deleteRecursively(spec.getDataDirectory());
             }
@@ -138,7 +133,7 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
 
     public void start() throws Exception
     {
-        if (!state.compareAndSet(State.LATENT, State.STARTED))
+        if ( !state.compareAndSet(State.LATENT, State.STARTED) )
         {
             return;
         }
@@ -149,16 +144,12 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
             {
                 try
                 {
-                    QuorumPeerConfig config = configBuilder
-                            .buildConfig(thisInstanceIndex);
+                    QuorumPeerConfig config = configBuilder.buildConfig(thisInstanceIndex);
                     main.runFromConfig(config);
-                } catch (Exception e)
+                }
+                catch ( Exception e )
                 {
-                    logger.error(
-                            String.format(
-                                    "From testing server (random state: %s) for instance: %s",
-                                    String.valueOf(configBuilder.isFromRandom()),
-                                    getInstanceSpec()), e);
+                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
                 }
             }
         }).start();
