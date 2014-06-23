@@ -1,11 +1,14 @@
 package org.apache.curator.ensemble.exhibitor;
 
+import com.google.common.io.CharStreams;
 import org.apache.curator.utils.CloseableUtils;
 import sun.misc.BASE64Encoder;
 
 import javax.net.ssl.*;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.security.cert.CertificateException;
@@ -49,24 +52,14 @@ public class BasicAuthExhibitorRestClient  implements ExhibitorRestClient
         connection.addRequestProperty("Accept", mimeType);
         connection.addRequestProperty("Authorization", "Basic " + new BASE64Encoder().encode(userInfo.getBytes()));
 
-        StringBuilder       str = new StringBuilder();
-        InputStream in = new BufferedInputStream(connection.getInputStream());
+        Reader in = new InputStreamReader(new BufferedInputStream(connection.getInputStream()));
         try
         {
-            for(;;)
-            {
-                int     b = in.read();
-                if ( b < 0 )
-                {
-                    break;
-                }
-                str.append((char)(b & 0xff));
-            }
+            return CharStreams.toString(in);
         }
         finally
         {
             CloseableUtils.closeQuietly(in);
         }
-        return str.toString();
     }
 }

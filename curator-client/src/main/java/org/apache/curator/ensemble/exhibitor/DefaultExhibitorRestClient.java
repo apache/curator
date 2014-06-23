@@ -18,9 +18,12 @@
  */
 package org.apache.curator.ensemble.exhibitor;
 
+import com.google.common.io.CharStreams;
 import org.apache.curator.utils.CloseableUtils;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 
@@ -45,24 +48,14 @@ public class DefaultExhibitorRestClient implements ExhibitorRestClient
         URI                 uri = new URI(useSsl ? "https" : "http", null, hostname, port, uriPath, null, null);
         HttpURLConnection   connection = (HttpURLConnection)uri.toURL().openConnection();
         connection.addRequestProperty("Accept", mimeType);
-        StringBuilder       str = new StringBuilder();
-        InputStream         in = new BufferedInputStream(connection.getInputStream());
+        Reader in = new InputStreamReader(new BufferedInputStream(connection.getInputStream()));
         try
         {
-            for(;;)
-            {
-                int     b = in.read();
-                if ( b < 0 )
-                {
-                    break;
-                }
-                str.append((char)(b & 0xff));
-            }
+            return CharStreams.toString(in);
         }
         finally
         {
             CloseableUtils.closeQuietly(in);
         }
-        return str.toString();
     }
 }
