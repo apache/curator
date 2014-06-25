@@ -83,7 +83,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
                 return getDelay(itemNode, System.currentTimeMillis());
             }
             
-            protected long getDelay(String itemNode, long sortTime)
+            private long getDelay(String itemNode, long sortTime)
             {               
                 long epoch = getEpoch(itemNode);
                 return epoch - sortTime;
