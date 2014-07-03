@@ -245,6 +245,18 @@
             <timezone>-8</timezone>
             <url>https://people.apache.org/~enis</url>
         </developer>
+
+        <developer>
+            <id>cammckenzie</id>
+            <name>Cameron McKenzie</name>
+            <email>cammckenzie@apache.org</email>
+            <timezone>+10</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>https://people.apache.org/~cammckenzie</url>
+        </developer>
     </developers>
 
     <modules>
