@@ -33,7 +33,7 @@ h3. CuratorEvent
 |children|list of string|list of node names if the event type has it|
 |aclList|list of Acl|list of ACL data if the event type has it|
 |watchedEvent|WatchedEvent|if the event type is WATCHED|
-|leaderEvent|LeaderEvent|if the event type is WATCHED|
+|leaderEvent|LeaderEvent|if the event type is LEADER|
 |childrenCacheEvent|PathChildrenCacheEvent|if the event type is PATH\_CHILDREN\_CACHE|
 
 h3. CuratorEventType
