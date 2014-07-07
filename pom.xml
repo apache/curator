@@ -207,6 +207,18 @@
         </developer>
 
         <developer>
+            <id>cammckenzie</id>
+            <name>Cameron McKenzie</name>
+            <email>cammckenzie@apache.org</email>
+            <timezone>+10</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>https://people.apache.org/~cammckenzie</url>
+        </developer>
+
+        <developer>
             <name>Patrick Hunt</name>
             <email>phunt1@gmail.com</email>
             <roles>
