@@ -77,14 +77,22 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
             finalFlushMs
         )
         {
+            @Override
             protected long getDelay(String itemNode)
             {
+                return getDelay(itemNode, System.currentTimeMillis());
+            }
+            
+            private long getDelay(String itemNode, long sortTime)
+            {               
                 long epoch = getEpoch(itemNode);
-                return epoch - System.currentTimeMillis();
+                return epoch - sortTime;
             }
 
+            @Override
             protected void sortChildren(List<String> children)
             {
+                final long sortTime = System.currentTimeMillis();
                 Collections.sort
                 (
                     children,
@@ -93,7 +101,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
                         @Override
                         public int compare(String o1, String o2)
                         {
-                            long        diff = getDelay(o1) - getDelay(o2);
+                            long        diff = getDelay(o1, sortTime) - getDelay(o2, sortTime);
                             return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
                         }
                     }
