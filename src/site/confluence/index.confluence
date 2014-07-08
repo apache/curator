@@ -32,3 +32,4 @@ most users, the only artifact you need is curator\-recipes.
 |org.apache.curator|curator\-examples|Example usages of various Curator features.|
 |org.apache.curator|curator\-x\-discovery|A Service Discovery implementation built on the Curator Framework.|
 |org.apache.curator|curator\-x\-discovery-server|A RESTful server that can be used with Curator Discovery.|
+|org.apache.curator|curator\-x\-rpc|A proxy that bridges non\-java environments with the Curator framework and recipes.|
