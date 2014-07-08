@@ -142,14 +142,14 @@ public class TestDistributedDelayQueue extends BaseClassForTests
         final int QTY = 1000;
 
         Timing                          timing = new Timing();
-        DistributedDelayQueue<Long>     queue = null;
+        DistributedDelayQueue<Long>     putQueue = null;
+        DistributedDelayQueue<Long>     getQueue = null;
         CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
         {
-            BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
-            queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test2").putInBackground(false).buildDelayQueue();
-            queue.start();
+            putQueue = QueueBuilder.builder(client, null, new LongSerializer(), "/test2").putInBackground(false).buildDelayQueue();
+            putQueue.start();
             
             Map<Long, Long> data = new HashMap<Long, Long>();
             
@@ -174,8 +174,12 @@ public class TestDistributedDelayQueue extends BaseClassForTests
             //delay and value
             for ( Long key : keys )
             {                
-                queue.put(data.get(key), key);
-            }           
+                putQueue.put(data.get(key), key);
+            }
+
+            BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
+            getQueue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test2").putInBackground(false).buildDelayQueue();
+            getQueue.start();
 
             long lastValue = -1;
             for ( int i = 0; i < QTY; ++i )
@@ -188,7 +192,8 @@ public class TestDistributedDelayQueue extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(queue);
+            CloseableUtils.closeQuietly(putQueue);
+            CloseableUtils.closeQuietly(getQueue);
             CloseableUtils.closeQuietly(client);
         }
     }
