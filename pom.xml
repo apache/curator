@@ -720,7 +720,8 @@
                         <exclude>**/help.txt</exclude>
                         <exclude>**/*.rdf</exclude>
                         <exclude>**/.gitignore</exclude>
-                        <exclude>**/.thrift</exclude>
+                        <exclude>**/*.thrift</exclude>
+                        <exclude>**/*.json</exclude>
                         <exclude>**/.idea/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
@@ -764,7 +765,8 @@
                         <exclude>**/*.rdf</exclude>
                         <exclude>**/help.txt</exclude>
                         <exclude>**/.gitignore</exclude>
-                        <exclude>**/.thrift</exclude>
+                        <exclude>**/*.thrift</exclude>
+                        <exclude>**/*.json</exclude>
                         <exclude>**/.idea/**</exclude>
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
