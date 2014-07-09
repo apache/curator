@@ -34,7 +34,6 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
-import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -45,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,7 +73,6 @@ public class PathChildrenCache implements Closeable
     private final CloseableExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
-    private final EnsurePath ensurePath;
     private final ListenerContainer<PathChildrenCacheListener> listeners = new ListenerContainer<PathChildrenCacheListener>();
     private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
@@ -220,7 +219,6 @@ public class PathChildrenCache implements Closeable
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.executorService = executorService;
-        ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 
     /**
@@ -283,6 +281,7 @@ public class PathChildrenCache implements Closeable
         mode = Preconditions.checkNotNull(mode, "mode cannot be null");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
+        client.checkExists().usingWatcher(childrenWatcher).inBackground().forPath(path);
 
         switch ( mode )
         {
@@ -317,20 +316,25 @@ public class PathChildrenCache implements Closeable
     {
         Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
 
-        ensurePath.ensure(client.getZookeeperClient());
-
         clear();
 
-        List<String> children = client.getChildren().forPath(path);
-        for ( String child : children )
+        try
         {
-            String fullPath = ZKPaths.makePath(path, child);
-            internalRebuildNode(fullPath);
-
-            if ( rebuildTestExchanger != null )
+            List<String> children = client.getChildren().forPath(path);
+            for ( String child : children )
             {
-                rebuildTestExchanger.exchange(new Object());
+                String fullPath = ZKPaths.makePath(path, child);
+                internalRebuildNode(fullPath);
+
+                if ( rebuildTestExchanger != null )
+                {
+                    rebuildTestExchanger.exchange(new Object());
+                }
             }
+        }
+        catch ( KeeperException.NoNodeException e )
+        {
+            // ignored
         }
 
         // this is necessary so that any updates that occurred while rebuilding are taken
@@ -349,7 +353,6 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkArgument(ZKPaths.getPathAndNode(fullPath).getPath().equals(path), "Node is not part of this cache: " + fullPath);
         Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
 
-        ensurePath.ensure(client.getZookeeperClient());
         internalRebuildNode(fullPath);
 
         // this is necessary so that any updates that occurred while rebuilding are taken
@@ -478,8 +481,6 @@ public class PathChildrenCache implements Closeable
 
     void refresh(final RefreshMode mode) throws Exception
     {
-        ensurePath.ensure(client.getZookeeperClient());
-
         final BackgroundCallback callback = new BackgroundCallback()
         {
             @Override
@@ -488,6 +489,10 @@ public class PathChildrenCache implements Closeable
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
                     processChildren(event.getChildren(), mode);
+                }
+                else if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
+                {
+                    processChildren(Collections.<String>emptyList(), mode);
                 }
             }
         };

@@ -47,7 +47,6 @@ public class TestPathChildrenCacheInCluster
 
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
-            client.create().creatingParentsIfNeeded().forPath("/test");
 
             cache = new PathChildrenCache(client, "/test", false);
             cache.start();
@@ -78,6 +77,7 @@ public class TestPathChildrenCacheInCluster
                     }
                 );
 
+            client.create().creatingParentsIfNeeded().forPath("/test");
             client.create().forPath("/test/one");
             client.create().forPath("/test/two");
             client.create().forPath("/test/three");
