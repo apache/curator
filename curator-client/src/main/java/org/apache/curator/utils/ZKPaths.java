@@ -19,6 +19,7 @@
 
 package org.apache.curator.utils;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -113,6 +114,21 @@ public class ZKPaths
         String node = path.substring(i + 1);
         String parentPath = (i > 0) ? path.substring(0, i) : "/";
         return new PathAndNode(parentPath, node);
+    }
+
+    private static final Splitter PATH_SPLITTER = Splitter.on('/').omitEmptyStrings();
+
+    /**
+     * Given a full path, return the the individual parts, without slashes.
+     * The root path will return an empty list.
+     *
+     * @param path the path
+     * @return an array of parts
+     */
+    public static List<String> split(String path)
+    {
+        PathUtils.validatePath(path);
+        return PATH_SPLITTER.splitToList(path);
     }
 
     /**

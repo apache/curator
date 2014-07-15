@@ -21,6 +21,8 @@ package org.apache.curator.utils;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class TestZKPaths
 {
@@ -61,5 +63,14 @@ public class TestZKPaths
         Assert.assertEquals(ZKPaths.makePath("/foo", "bar"), "/foo/bar");
         Assert.assertEquals(ZKPaths.makePath("foo", "/bar"), "/foo/bar");
         Assert.assertEquals(ZKPaths.makePath("/foo", "/bar"), "/foo/bar");
+    }
+
+    @Test
+    public void testSplit()
+    {
+        Assert.assertEquals(ZKPaths.split("/"), Collections.emptyList());
+        Assert.assertEquals(ZKPaths.split("/test"), Collections.singletonList("test"));
+        Assert.assertEquals(ZKPaths.split("/test/one"), Arrays.asList("test", "one"));
+        Assert.assertEquals(ZKPaths.split("/test/one/two"), Arrays.asList("test", "one", "two"));
     }
 }
