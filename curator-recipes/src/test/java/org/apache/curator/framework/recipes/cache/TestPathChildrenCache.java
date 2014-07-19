@@ -841,6 +841,52 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
 
     }
+    
+    /**
+     * Tests the case where there's an outstanding operation being executed when the cache is
+     * shut down. See CURATOR-121, this was causing misleading warning messages to be logged.
+     * @throws Exception
+     */
+    @Test
+    public void testInterruptedOperationOnShutdown() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1));
+        client.start();
+
+        try
+        {
+            final CountDownLatch latch = new CountDownLatch(1);
+            final PathChildrenCache cache = new PathChildrenCache(client, "/test", false) {
+                @Override
+                protected void handleException(Throwable e)
+                {
+                    latch.countDown();
+                }
+            };
+            cache.start();
+
+            cache.offerOperation(new Operation()
+            {
+
+                @Override
+                public void invoke() throws Exception
+                {
+                    Thread.sleep(5000);
+                }
+            });
+            
+            Thread.sleep(1000);
+
+            cache.close();
+            
+            latch.await(5, TimeUnit.SECONDS);
+            
+            Assert.assertTrue(latch.getCount() == 1, "Unexpected exception occurred");
+        } finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }    
 
     public static class ExecuteCalledWatchingExecutorService extends DelegatingExecutorService
     {

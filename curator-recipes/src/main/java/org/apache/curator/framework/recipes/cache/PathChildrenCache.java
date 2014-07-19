@@ -745,7 +745,7 @@ public class PathChildrenCache implements Closeable
         return (uninitializedChildren.size() != 0);
     }
 
-    private void offerOperation(final Operation operation)
+    void offerOperation(final Operation operation)
     {
         if ( operationsQuantizer.add(operation) )
         {
@@ -760,6 +760,15 @@ public class PathChildrenCache implements Closeable
                         {
                             operationsQuantizer.remove(operation);
                             operation.invoke();
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            //We expect to get interrupted during shutdown,
+                            //so just ignore these events
+                            if ( state.get() != State.CLOSED )
+                            {
+                                handleException(e);    
+                            }
                         }
                         catch ( Exception e )
                         {
