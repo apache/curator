@@ -769,6 +769,8 @@ public class PathChildrenCache implements Closeable
                             {
                                 handleException(e);    
                             }
+                            
+                            Thread.currentThread().interrupt();
                         }
                         catch ( Exception e )
                         {
