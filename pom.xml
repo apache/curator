@@ -561,7 +561,7 @@
                     <version>${maven-release-plugin-version}</version>
                     <configuration>
                         <autoVersionSubmodules>true</autoVersionSubmodules>
-                        <tagNameFormat>${artifactID}-${project.version}</tagNameFormat>
+                        <tagNameFormat>${project.artifactId}-${project.version}</tagNameFormat>
                         <pushChanges>false</pushChanges>
                         <localCheckout>true</localCheckout>
                     </configuration>
