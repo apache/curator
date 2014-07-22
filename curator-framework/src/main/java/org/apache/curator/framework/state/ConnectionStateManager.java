@@ -180,7 +180,7 @@ public class ConnectionStateManager implements Closeable
         currentConnectionState = newConnectionState;
 
         ConnectionState localState = newConnectionState;
-        boolean isNegativeMessage = ((newConnectionState == ConnectionState.LOST) || (newConnectionState == ConnectionState.SUSPENDED));
+        boolean isNegativeMessage = ((newConnectionState == ConnectionState.LOST) || (newConnectionState == ConnectionState.SUSPENDED) || (newConnectionState == ConnectionState.READ_ONLY));
         if ( !isNegativeMessage && initialConnectMessageSent.compareAndSet(false, true) )
         {
             localState = ConnectionState.CONNECTED;
