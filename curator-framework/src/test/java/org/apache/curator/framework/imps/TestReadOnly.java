@@ -70,14 +70,12 @@ public class TestReadOnly
             client.close();
             client = null;
 
-            System.out.println("killing 2 instances");
             Iterator<InstanceSpec> iterator = cluster.getInstances().iterator();
             for ( int i = 0; i < 2; ++i )
             {
                 cluster.killServer(iterator.next());
             }
 
-            System.out.println("reconnecting client");
             client = CuratorFrameworkFactory.builder()
                 .connectString(cluster.getConnectString())
                 .sessionTimeoutMs(timing.session())
@@ -100,7 +98,6 @@ public class TestReadOnly
             );
             client.start();
 
-            System.out.println("making api call");
             client.checkExists().forPath("/");
 
             ConnectionState state = states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
