@@ -253,20 +253,21 @@ public class PathChildrenCache implements Closeable
     public enum StartMode
     {
         /**
-         * cache will _not_ be primed. i.e. it will start empty and you will receive
-         * events for all nodes added, etc.
+         * The cache will be primed (in the background) with initial values.
+         * Events for existing and new nodes will be posted.
          */
         NORMAL,
 
         /**
-         * {@link PathChildrenCache#rebuild()} will be called before this method returns in
-         * order to get an initial view of the node.
+         * The cache will be primed (in the foreground) with initial values.
+         * {@link PathChildrenCache#rebuild()} will be called before this
+         * method returns in order to get an initial view of the node.
          */
         BUILD_INITIAL_CACHE,
 
         /**
          * After cache is primed with initial values (in the background) a
-         * {@link PathChildrenCacheEvent.Type#INITIALIZED} will be posted
+         * {@link PathChildrenCacheEvent.Type#INITIALIZED} will be posted.
          */
         POST_INITIALIZED_EVENT
     }
@@ -767,9 +768,9 @@ public class PathChildrenCache implements Closeable
                             //so just ignore these events
                             if ( state.get() != State.CLOSED )
                             {
-                                handleException(e);    
+                                handleException(e);
                             }
-                            
+
                             Thread.currentThread().interrupt();
                         }
                         catch ( Exception e )
