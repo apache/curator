@@ -260,8 +260,9 @@ public class PathChildrenCache implements Closeable
 
         /**
          * The cache will be primed (in the foreground) with initial values.
-         * {@link PathChildrenCache#rebuild()} will be called before this
-         * method returns in order to get an initial view of the node.
+         * {@link PathChildrenCache#rebuild()} will be called before
+         * the {@link PathChildrenCache#start(StartMode)} method returns
+         * in order to get an initial view of the node.
          */
         BUILD_INITIAL_CACHE,
 
@@ -770,7 +771,6 @@ public class PathChildrenCache implements Closeable
                             {
                                 handleException(e);
                             }
-
                             Thread.currentThread().interrupt();
                         }
                         catch ( Exception e )
