@@ -172,6 +172,55 @@ public class TestPathChildrenCache extends BaseClassForTests
     }
 
     @Test
+    public void testChildrenInitializedNormal() throws Exception
+    {
+        Timing timing = new Timing();
+        PathChildrenCache cache = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().forPath("/test");
+
+            cache = new PathChildrenCache(client, "/test", true);
+
+            final CountDownLatch addedLatch = new CountDownLatch(3);
+            cache.getListenable().addListener
+                    (
+                            new PathChildrenCacheListener()
+                            {
+                                @Override
+                                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                                {
+                                    Assert.assertNotEquals(event.getType(), PathChildrenCacheEvent.Type.INITIALIZED);
+                                    if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                                    {
+                                        addedLatch.countDown();
+                                    }
+                                }
+                            }
+                    );
+
+            client.create().forPath("/test/1", "1".getBytes());
+            client.create().forPath("/test/2", "2".getBytes());
+            client.create().forPath("/test/3", "3".getBytes());
+
+            cache.start(PathChildrenCache.StartMode.NORMAL);
+
+            Assert.assertTrue(timing.awaitLatch(addedLatch));
+            Assert.assertEquals(cache.getCurrentData().size(), 3);
+            Assert.assertEquals(cache.getCurrentData().get(0).getData(), "1".getBytes());
+            Assert.assertEquals(cache.getCurrentData().get(1).getData(), "2".getBytes());
+            Assert.assertEquals(cache.getCurrentData().get(2).getData(), "3".getBytes());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testUpdateWhenNotCachingData() throws Exception
     {
         Timing timing = new Timing();
@@ -841,7 +890,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
 
     }
-    
+
     /**
      * Tests the case where there's an outstanding operation being executed when the cache is
      * shut down. See CURATOR-121, this was causing misleading warning messages to be logged.
@@ -874,19 +923,19 @@ public class TestPathChildrenCache extends BaseClassForTests
                     Thread.sleep(5000);
                 }
             });
-            
+
             Thread.sleep(1000);
 
             cache.close();
-            
+
             latch.await(5, TimeUnit.SECONDS);
-            
+
             Assert.assertTrue(latch.getCount() == 1, "Unexpected exception occurred");
         } finally
         {
             CloseableUtils.closeQuietly(client);
         }
-    }    
+    }
 
     public static class ExecuteCalledWatchingExecutorService extends DelegatingExecutorService
     {
