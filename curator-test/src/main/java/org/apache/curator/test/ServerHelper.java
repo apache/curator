@@ -27,12 +27,12 @@ class ServerHelper
 {
     private static class ServerCnxnFactoryMethods
     {
-        private final Constructor constructor;
+        private final Constructor<?> constructor;
         private final Method configureMethod;
         private final Method startupMethod;
         private final Method shutdownMethod;
 
-        private ServerCnxnFactoryMethods(Constructor constructor, Method configureMethod, Method startupMethod, Method shutdownMethod)
+        private ServerCnxnFactoryMethods(Constructor<?> constructor, Method configureMethod, Method startupMethod, Method shutdownMethod)
         {
             this.constructor = constructor;
             this.configureMethod = configureMethod;
@@ -43,11 +43,11 @@ class ServerHelper
 
     private static class NioServerCnxnMethods
     {
-        private final Constructor constructor;
+        private final Constructor<?> constructor;
         private final Method startupMethod;
         private final Method shutdownMethod;
 
-        private NioServerCnxnMethods(Constructor constructor, Method startupMethod, Method shutdownMethod)
+        private NioServerCnxnMethods(Constructor<?> constructor, Method startupMethod, Method shutdownMethod)
         {
             this.constructor = constructor;
             this.startupMethod = startupMethod;
@@ -60,8 +60,8 @@ class ServerHelper
 
     static
     {
-        Class       serverCnxnFactoryClass = null;
-        Class       nioServerCnxnFactoryClass = null;
+        Class<?>       serverCnxnFactoryClass = null;
+        Class<?>       nioServerCnxnFactoryClass = null;
         try
         {
             serverCnxnFactoryClass = Class.forName("org.apache.zookeeper.server.NIOServerCnxnFactory");

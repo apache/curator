@@ -116,6 +116,7 @@ public class SessionFailRetryLoop implements Closeable
 
     public static class SessionFailedException extends Exception
     {
+      private static final long serialVersionUID = 1L;
     }
 
     public enum Mode
