@@ -46,10 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.DelayQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,7 +71,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final NamespaceFacadeCache namespaceFacadeCache;
     private final NamespaceWatcherMap namespaceWatcherMap = new NamespaceWatcherMap(this);
 
-    private volatile ExecutorService executorService;
+    private volatile Thread backgroundThread;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
 
     private static final boolean LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL = !Boolean.getBoolean(DebugUtils.PROPERTY_LOG_ONLY_FIRST_CONNECTION_ISSUE_AS_ERROR_LEVEL);
@@ -255,17 +252,15 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
             client.start();
 
-            executorService = Executors.newFixedThreadPool(2, threadFactory);  // 1 for listeners, 1 for background ops
-
-            executorService.submit(new Callable<Object>()
+            backgroundThread = threadFactory.newThread(new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    @Override
-                    public Object call() throws Exception
-                    {
-                        backgroundOperationsLoop();
-                        return null;
-                    }
-                });
+                    backgroundOperationsLoop();
+                }
+            });
+            backgroundThread.start();
         }
         catch ( Exception e )
         {
@@ -300,12 +295,20 @@ public class CuratorFrameworkImpl implements CuratorFramework
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
+            if (backgroundThread != null) {
+                backgroundThread.interrupt();
+                try
+                {
+                    backgroundThread.join(1000);
+                }
+                catch ( InterruptedException e )
+                {
+                    // Interrupted while interrupting; I give up.
+                    Thread.currentThread().interrupt();
+                }
+            }
             client.close();
             namespaceWatcherMap.close();
-            if ( executorService != null )
-            {
-                executorService.shutdownNow();
-            }
         }
     }
 
@@ -722,39 +725,35 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private <DATA_TYPE> void handleBackgroundOperationException(OperationAndData<DATA_TYPE> operationAndData, Throwable e)
     {
-        do
+        if ( (operationAndData != null) && RetryLoop.isRetryException(e) )
         {
-            if ( (operationAndData != null) && RetryLoop.isRetryException(e) )
+            if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+            {
+                log.debug("Retry-able exception received", e);
+            }
+            if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
             {
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
-                    log.debug("Retry-able exception received", e);
+                    log.debug("Retrying operation");
                 }
-                if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
+                backgroundOperations.offer(operationAndData);
+                return;
+            }
+            else
+            {
+                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
-                    if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
-                    {
-                        log.debug("Retrying operation");
-                    }
-                    backgroundOperations.offer(operationAndData);
-                    break;
+                    log.debug("Retry policy did not allow retry");
                 }
-                else
+                if ( operationAndData.getErrorCallback() != null )
                 {
-                    if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
-                    {
-                        log.debug("Retry policy did not allow retry");
-                    }
-                    if ( operationAndData.getErrorCallback() != null )
-                    {
-                        operationAndData.getErrorCallback().retriesExhausted(operationAndData);
-                    }
+                    operationAndData.getErrorCallback().retriesExhausted(operationAndData);
                 }
             }
-
-            logError("Background exception was not retry-able or retry gave up", e);
         }
-        while ( false );
+
+        logError("Background exception was not retry-able or retry gave up", e);
     }
 
     private void backgroundOperationsLoop()
@@ -770,9 +769,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     debugListener.listen(operationAndData);
                 }
             }
-            catch ( InterruptedException e )
+            catch ( InterruptedException ignored )
             {
-                Thread.currentThread().interrupt();
                 break;
             }
 
