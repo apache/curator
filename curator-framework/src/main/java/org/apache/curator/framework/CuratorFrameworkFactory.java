@@ -52,6 +52,7 @@ public class CuratorFrameworkFactory
     private static final DefaultZookeeperFactory    DEFAULT_ZOOKEEPER_FACTORY = new DefaultZookeeperFactory();
     private static final DefaultACLProvider         DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
     private static final long                       DEFAULT_INACTIVE_THRESHOLD_MS = (int)TimeUnit.MINUTES.toMillis(3);
+    private static final int                        DEFAULT_CLOSE_WAIT_MS = (int)TimeUnit.SECONDS.toMillis(1);
 
     /**
      * Return a new builder that builds a CuratorFramework
@@ -101,6 +102,7 @@ public class CuratorFrameworkFactory
         private EnsembleProvider    ensembleProvider;
         private int                 sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
         private int                 connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
+        private int                 maxCloseWaitMs = DEFAULT_CLOSE_WAIT_MS;
         private RetryPolicy         retryPolicy;
         private ThreadFactory       threadFactory = null;
         private String              namespace;
@@ -239,6 +241,16 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * @param maxCloseWaitMs time to wait during close to join background threads
+         * @return this
+         */
+        public Builder maxCloseWaitMs(int maxCloseWaitMs)
+        {
+            this.maxCloseWaitMs = maxCloseWaitMs;
+            return this;
+        }
+
+        /**
          * @param retryPolicy retry policy to use
          * @return this
          */
@@ -334,6 +346,11 @@ public class CuratorFrameworkFactory
         public int getConnectionTimeoutMs()
         {
             return connectionTimeoutMs;
+        }
+
+        public int getMaxCloseWaitMs()
+        {
+            return maxCloseWaitMs;
         }
 
         public RetryPolicy getRetryPolicy()

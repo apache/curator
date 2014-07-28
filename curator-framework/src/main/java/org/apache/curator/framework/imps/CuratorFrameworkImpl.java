@@ -63,6 +63,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ListenerContainer<CuratorListener> listeners;
     private final ListenerContainer<UnhandledErrorListener> unhandledErrorListeners;
     private final ThreadFactory threadFactory;
+    private final int maxCloseWaitMs;
     private final BlockingQueue<OperationAndData<?>> backgroundOperations;
     private final NamespaceImpl namespace;
     private final ConnectionStateManager connectionStateManager;
@@ -127,6 +128,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         backgroundOperations = new DelayQueue<OperationAndData<?>>();
         namespace = new NamespaceImpl(this, builder.getNamespace());
         threadFactory = getThreadFactory(builder);
+        maxCloseWaitMs = builder.getMaxCloseWaitMs();
         connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
@@ -179,6 +181,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         listeners = parent.listeners;
         unhandledErrorListeners = parent.unhandledErrorListeners;
         threadFactory = parent.threadFactory;
+        maxCloseWaitMs = parent.maxCloseWaitMs;
         backgroundOperations = parent.backgroundOperations;
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
@@ -297,15 +300,24 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     }
                 });
 
+            if ( executorService != null )
+            {
+                executorService.shutdownNow();
+                try
+                {
+                    executorService.awaitTermination(maxCloseWaitMs, TimeUnit.MILLISECONDS);
+                }
+                catch ( InterruptedException e )
+                {
+                    // Interrupted while interrupting; I give up.
+                    Thread.currentThread().interrupt();
+                }
+            }
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
             client.close();
             namespaceWatcherMap.close();
-            if ( executorService != null )
-            {
-                executorService.shutdownNow();
-            }
         }
     }
 
@@ -759,7 +771,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void backgroundOperationsLoop()
     {
-        while ( !Thread.interrupted() )
+        while ( !Thread.currentThread().isInterrupted() )
         {
             OperationAndData<?> operationAndData;
             try
