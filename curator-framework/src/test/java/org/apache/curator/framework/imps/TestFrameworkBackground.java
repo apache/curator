@@ -20,12 +20,15 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
+
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.imps.OperationAndData.ErrorCallback;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
@@ -35,10 +38,12 @@ import org.apache.curator.test.Timing;
 import org.apache.zookeeper.KeeperException.Code;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -215,4 +220,85 @@ public class TestFrameworkBackground extends BaseClassForTests
         }
 
     }
+    
+    /**
+     * CURATOR-126
+     * Shutdown the Curator client while there are still background operations running.
+     */
+    @Test
+    public void testShutdown() throws Exception
+    {
+        final int MAX_CLOSE_WAIT_MS = 5000;
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).sessionTimeoutMs(timing.session()).
+            connectionTimeoutMs(timing.connection()).retryPolicy(new RetryOneTime(1)).maxCloseWaitMs(MAX_CLOSE_WAIT_MS).build();
+        try
+        {
+            client.start();
+
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {                
+                }
+            };
+            
+            final CountDownLatch operationReadyLatch = new CountDownLatch(1);
+            
+            //This gets called just before the operation is run.
+            ((CuratorFrameworkImpl)client).debugListener = new CuratorFrameworkImpl.DebugBackgroundListener()
+            {
+                @Override
+                public void listen(OperationAndData<?> data)
+                {
+                    operationReadyLatch.countDown();
+                    
+                    try {
+                        Thread.sleep(MAX_CLOSE_WAIT_MS / 2);
+                    } catch(InterruptedException e) {
+                    }
+                }
+            };            
+            
+            Assert.assertTrue(client.getZookeeperClient().blockUntilConnectedOrTimedOut(), "Failed to connect");
+
+            server.stop();
+            
+            BackgroundOperation<String> background = new BackgroundOperation<String>()
+            {
+
+                @Override
+                public void performBackgroundOperation(OperationAndData<String> data)
+                        throws Exception
+                {
+                }
+            };
+            
+            ErrorCallback<String> errorCallback = new ErrorCallback<String>()
+            {
+
+                @Override
+                public void retriesExhausted(
+                        OperationAndData<String> operationAndData)
+                {
+                }
+            };
+            
+            OperationAndData<String> operation = new OperationAndData<String>(background,
+                    "thedata", callback, errorCallback, null);
+            
+            ((CuratorFrameworkImpl)client).queueOperation(operation);
+            
+            operationReadyLatch.await();
+            
+            client.close();
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }        
+    }
+    
+    
 }
