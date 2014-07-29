@@ -57,7 +57,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorFrameworkImpl implements CuratorFramework
 {
-
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorZookeeperClient client;
     private final ListenerContainer<CuratorListener> listeners;
@@ -86,6 +85,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     volatile DebugBackgroundListener debugListener = null;
+    volatile UnhandledErrorListener debugUnhandledErrorListener = null;
 
     private final AtomicReference<CuratorFrameworkState> state;
 
@@ -313,6 +313,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     Thread.currentThread().interrupt();
                 }
             }
+
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
@@ -566,6 +567,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     return null;
                 }
             });
+
+        if ( debugUnhandledErrorListener != null )
+        {
+            debugUnhandledErrorListener.unhandledError(reason, e);
+        }
     }
 
     String unfixForNamespace(String path)
