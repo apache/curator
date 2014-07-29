@@ -52,16 +52,18 @@ public class TestTreeCache extends BaseClassForTests
     /**
      * A TreeCache that records exceptions.
      */
-    private TreeCache newTreeCache(String path, boolean cacheData)
-    {
-        return new TreeCache(client, path, cacheData)
+    class TreeCache extends org.apache.curator.framework.recipes.cache.TreeCache {
+
+        TreeCache(CuratorFramework client, String path, boolean cacheData)
         {
-            @Override
-            protected void handleException(Throwable e)
-            {
-                exceptions.add(e);
-            }
-        };
+            super(client, path, cacheData);
+        }
+
+        @Override
+        protected void handleException(Throwable e)
+        {
+            exceptions.add(e);
+        }
     }
 
     @Override
@@ -77,6 +79,11 @@ public class TestTreeCache extends BaseClassForTests
             @Override
             public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
             {
+                if (event.getData() != null && event.getData().getPath().startsWith("/zookeeper"))
+                {
+                    // Suppress any events related to /zookeeper paths
+                    return;
+                }
                 events.add(event);
             }
         };
@@ -84,15 +91,14 @@ public class TestTreeCache extends BaseClassForTests
         client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         client.getUnhandledErrorListenable().addListener(new UnhandledErrorListener()
-                                                         {
-                                                             @Override
-                                                             public void unhandledError(String message, Throwable e)
-                                                             {
-                                                                 exceptions.add(e);
-                                                             }
-                                                         }
-                                                        );
-        cache = newTreeCache("/test", true);
+        {
+            @Override
+            public void unhandledError(String message, Throwable e)
+            {
+                exceptions.add(e);
+            }
+        });
+        cache = new TreeCache(client, "/test", true);
         cache.getListenable().addListener(eventListener);
     }
 
@@ -104,9 +110,18 @@ public class TestTreeCache extends BaseClassForTests
         {
             try
             {
-                for ( Throwable exception : exceptions )
+                if ( exceptions.size() == 1 )
                 {
-                    Assert.fail("Exception was thrown", exception);
+                    Assert.fail("Exception was thrown", exceptions.get(0));
+                }
+                else if ( exceptions.size() > 1 )
+                {
+                    AssertionError error = new AssertionError("Multiple exceptions were thrown");
+                    for ( Throwable exception : exceptions )
+                    {
+                        error.addSuppressed(exception);
+                    }
+                    throw error;
                 }
             }
             finally
@@ -169,6 +184,55 @@ public class TestTreeCache extends BaseClassForTests
     }
 
     @Test
+    public void testFromRoot() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/one", "hey there".getBytes());
+        cache = new TreeCache(client, "/", true);
+        cache.getListenable().addListener(eventListener);
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testWithNamespace() throws Exception
+    {
+        client.create().forPath("/outer");
+        client.create().forPath("/outer/foo");
+        client.create().forPath("/outer/test");
+        client.create().forPath("/outer/test/one", "hey there".getBytes());
+        cache = new TreeCache(client.usingNamespace("outer"), "/test", true);
+        cache.getListenable().addListener(eventListener);
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testWithNamespaceAtRoot() throws Exception
+    {
+        client.create().forPath("/outer");
+        client.create().forPath("/outer/foo");
+        client.create().forPath("/outer/test");
+        client.create().forPath("/outer/test/one", "hey there".getBytes());
+        cache = new TreeCache(client.usingNamespace("outer"), "/", true);
+        cache.getListenable().addListener(eventListener);
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
+    }
+
+    @Test
     public void testSyncInitialPopulation() throws Exception
     {
         cache.start();
@@ -200,7 +264,7 @@ public class TestTreeCache extends BaseClassForTests
     @Test
     public void testUpdateWhenNotCachingData() throws Exception
     {
-        cache = newTreeCache("/test", false);
+        cache = new TreeCache(client, "/test", false);
         cache.getListenable().addListener(eventListener);
 
         client.create().forPath("/test");
@@ -313,7 +377,7 @@ public class TestTreeCache extends BaseClassForTests
     @Test
     public void testBasicsOnTwoCaches() throws Exception
     {
-        TreeCache cache2 = newTreeCache("/test", true);
+        TreeCache cache2 = new TreeCache(client, "/test", true);
 
         // Just ensures the same event count; enables test flow control on cache2.
         final Semaphore semaphore = new Semaphore(0);
@@ -402,18 +466,18 @@ public class TestTreeCache extends BaseClassForTests
     private TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData) throws InterruptedException
     {
         TreeCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-        Assert.assertEquals(event.getType(), expectedType);
+        Assert.assertEquals(event.getType(), expectedType, event.toString());
         if ( expectedPath == null )
         {
-            Assert.assertNull(event.getData());
+            Assert.assertNull(event.getData(), event.toString());
         }
         else
         {
-            Assert.assertEquals(event.getData().getPath(), expectedPath);
+            Assert.assertEquals(event.getData().getPath(), expectedPath, event.toString());
         }
         if ( expectedData != null )
         {
-            Assert.assertEquals(event.getData().getData(), expectedData);
+            Assert.assertEquals(event.getData().getData(), expectedData, event.toString());
         }
         return event;
     }
