@@ -27,7 +27,6 @@ import org.apache.curator.framework.api.ChildrenDeletable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.DeleteBuilder;
-import org.apache.curator.framework.api.Guaranteeable;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
@@ -248,14 +247,11 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                     }
                 }
             );
-        }
-        catch ( KeeperException.NodeExistsException e )
-        {
-            throw e;
-        }
+        }      
         catch ( Exception e )
         {
-            if ( guaranteed )
+            //Only retry a guaranteed delete if it's a retryable error
+            if( RetryLoop.isRetryException(e) && guaranteed )
             {
                 client.getFailedDeleteManager().addFailedDelete(unfixedPath);
             }

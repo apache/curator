@@ -26,6 +26,13 @@ class FailedDeleteManager
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
+    
+    volatile FailedDeleteManagerListener debugListener = null;
+    
+    interface FailedDeleteManagerListener
+    {
+       public void pathAddedForDelete(String path);
+    }
 
     FailedDeleteManager(CuratorFramework client)
     {
@@ -34,6 +41,12 @@ class FailedDeleteManager
 
     void addFailedDelete(String path)
     {
+        if ( debugListener != null )
+        {
+            debugListener.pathAddedForDelete(path);
+        }
+        
+        
         if ( client.isStarted() )
         {
             log.debug("Path being added to guaranteed delete set: " + path);

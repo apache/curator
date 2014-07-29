@@ -20,6 +20,9 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.imps.FailedDeleteManager.FailedDeleteManagerListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -28,10 +31,13 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestFailedDeleteManager extends BaseClassForTests
 {
@@ -276,4 +282,84 @@ public class TestFailedDeleteManager extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+    
+    @Test
+    public void testGuaranteedDeleteOnNonExistentNodeInForeground() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        
+        final AtomicBoolean pathAdded = new AtomicBoolean(false);
+        
+        ((CuratorFrameworkImpl)client).getFailedDeleteManager().debugListener = new FailedDeleteManagerListener()
+        {
+            
+            @Override
+            public void pathAddedForDelete(String path)
+            {
+                pathAdded.set(true);
+            }
+        };
+        
+        try
+        {
+            client.delete().guaranteed().forPath("/nonexistent");
+            Assert.fail();
+        }
+        catch(NoNodeException e)
+        {
+            //Exception is expected, the delete should not be retried
+            Assert.assertFalse(pathAdded.get());
+        }
+        finally
+        {
+            client.close();
+        }        
+    }
+    
+    @Test
+    public void testGuaranteedDeleteOnNonExistentNodeInBackground() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        
+        final AtomicBoolean pathAdded = new AtomicBoolean(false);
+        
+        ((CuratorFrameworkImpl)client).getFailedDeleteManager().debugListener = new FailedDeleteManagerListener()
+        {
+            
+            @Override
+            public void pathAddedForDelete(String path)
+            {
+                pathAdded.set(true);
+            }
+        };
+        
+        final CountDownLatch backgroundLatch = new CountDownLatch(1);
+        
+        BackgroundCallback background = new BackgroundCallback()
+        {
+            
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event)
+                    throws Exception
+            {
+                backgroundLatch.countDown();
+            }
+        };
+        
+        try
+        {
+            client.delete().guaranteed().inBackground(background).forPath("/nonexistent");
+            
+            backgroundLatch.await();
+            
+            //Exception is expected, the delete should not be retried
+            Assert.assertFalse(pathAdded.get());
+        }
+        finally
+        {
+            client.close();
+        }        
+    }    
 }
