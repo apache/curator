@@ -38,6 +38,9 @@ public class ZKPaths
      */
     public static String    fixForNamespace(String namespace, String path)
     {
+        // Child path must be valid in and of itself.
+        PathUtils.validatePath(path);
+
         if ( namespace != null )
         {
             return makePath(namespace, path);
@@ -268,21 +271,37 @@ public class ZKPaths
     {
         StringBuilder path = new StringBuilder();
 
-        if ( !parent.startsWith("/") )
+        // Add parent piece, with no trailing slash.
+        if ( parent != null && parent.length() > 0)
         {
-            path.append("/");
+            if ( !parent.startsWith("/") )
+            {
+                path.append('/');
+            }
+            if ( parent.endsWith("/") )
+            {
+                path.append(parent.substring(0, parent.length() - 1));
+            }
+            else
+            {
+                path.append(parent);
+            }
         }
-        path.append(parent);
-        if ( (child == null) || (child.length() == 0) )
+
+        if ( (child == null) || (child.length() == 0) || (child.equals("/")) )
         {
+            // Special case, empty parent and child
+            if ( path.length() == 0 )
+            {
+                return "/";
+            }
             return path.toString();
         }
 
-        if ( !parent.endsWith("/") )
-        {
-            path.append("/");
-        }
+        // Now add the separator between parent and child.
+        path.append('/');
 
+        // Finally, add the child.
         if ( child.startsWith("/") )
         {
             path.append(child.substring(1));

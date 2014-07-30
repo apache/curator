@@ -97,7 +97,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         {
             client.start();
 
-            Assert.assertEquals(client.usingNamespace("foo"), client.usingNamespace("foo"));
+            Assert.assertSame(client.usingNamespace("foo"), client.usingNamespace("foo"));
             Assert.assertNotSame(client.usingNamespace("foo"), client.usingNamespace("bar"));
         }
         finally
@@ -122,12 +122,54 @@ public class TestNamespaceFacade extends BaseClassForTests
 
             client.usingNamespace("name").create().forPath("/one");
             Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/name", false));
+            Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/name/one", false));
         }
         finally
         {
             CloseableUtils.closeQuietly(client);
         }
     }
+
+    /**
+     * CURATOR-128: access root node within a namespace.
+     */
+    @Test
+    public void     testRootAccess() throws Exception
+    {
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            client.create().forPath("/one");
+            Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/one", false));
+
+            Assert.assertNotNull(client.checkExists().forPath("/"));
+            try
+            {
+                client.checkExists().forPath("");
+                Assert.fail("IllegalArgumentException expected");
+            }
+            catch ( IllegalArgumentException expected )
+            {
+            }
+
+            Assert.assertNotNull(client.usingNamespace("one").checkExists().forPath("/"));
+            try
+            {
+                client.usingNamespace("one").checkExists().forPath("");
+                Assert.fail("IllegalArgumentException expected");
+            }
+            catch ( IllegalArgumentException expected )
+            {
+            }
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
 
     @Test
     public void     testIsStarted() throws Exception
