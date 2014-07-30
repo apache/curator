@@ -27,6 +27,11 @@ public class TestZKPaths
     @Test
     public void testMakePath()
     {
+        Assert.assertEquals(ZKPaths.makePath(null, "/"), "/");
+        Assert.assertEquals(ZKPaths.makePath("", null), "/");
+        Assert.assertEquals(ZKPaths.makePath("/", null), "/");
+        Assert.assertEquals(ZKPaths.makePath(null, null), "/");
+
         Assert.assertEquals(ZKPaths.makePath("/", "/"), "/");
         Assert.assertEquals(ZKPaths.makePath("", "/"), "/");
         Assert.assertEquals(ZKPaths.makePath("/", ""), "/");
@@ -37,10 +42,20 @@ public class TestZKPaths
         Assert.assertEquals(ZKPaths.makePath("/foo", ""), "/foo");
         Assert.assertEquals(ZKPaths.makePath("/foo", "/"), "/foo");
 
+        Assert.assertEquals(ZKPaths.makePath("foo", null), "/foo");
+        Assert.assertEquals(ZKPaths.makePath("foo", null), "/foo");
+        Assert.assertEquals(ZKPaths.makePath("/foo", null), "/foo");
+        Assert.assertEquals(ZKPaths.makePath("/foo", null), "/foo");
+
         Assert.assertEquals(ZKPaths.makePath("", "bar"), "/bar");
         Assert.assertEquals(ZKPaths.makePath("/", "bar"), "/bar");
         Assert.assertEquals(ZKPaths.makePath("", "/bar"), "/bar");
         Assert.assertEquals(ZKPaths.makePath("/", "/bar"), "/bar");
+
+        Assert.assertEquals(ZKPaths.makePath(null, "bar"), "/bar");
+        Assert.assertEquals(ZKPaths.makePath(null, "bar"), "/bar");
+        Assert.assertEquals(ZKPaths.makePath(null, "/bar"), "/bar");
+        Assert.assertEquals(ZKPaths.makePath(null, "/bar"), "/bar");
 
         Assert.assertEquals(ZKPaths.makePath("foo", "bar"), "/foo/bar");
         Assert.assertEquals(ZKPaths.makePath("/foo", "bar"), "/foo/bar");
