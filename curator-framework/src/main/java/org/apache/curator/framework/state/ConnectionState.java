@@ -51,7 +51,7 @@ public enum ConnectionState
     },    
 
     /**
-     * A suspended or read-only connection has been re-established
+     * A suspended, lost, or read-only connection has been re-established
      */
     RECONNECTED
     {
