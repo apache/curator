@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.utils;
 
 import com.google.common.collect.Lists;
@@ -33,10 +34,10 @@ public class ZKPaths
      * Apply the namespace to the given path
      *
      * @param namespace namespace (can be null)
-     * @param path path
+     * @param path      path
      * @return adjusted path
      */
-    public static String    fixForNamespace(String namespace, String path)
+    public static String fixForNamespace(String namespace, String path)
     {
         // Child path must be valid in and of itself.
         PathUtils.validatePath(path);
@@ -50,7 +51,7 @@ public class ZKPaths
 
     /**
      * Given a full path, return the node name. i.e. "/one/two/three" will return "three"
-     * 
+     *
      * @param path the path
      * @return the node
      */
@@ -62,7 +63,7 @@ public class ZKPaths
         {
             return path;
         }
-        if ( (i + 1) >= path.length()  )
+        if ( (i + 1) >= path.length() )
         {
             return "";
         }
@@ -71,8 +72,8 @@ public class ZKPaths
 
     public static class PathAndNode
     {
-        private final String        path;
-        private final String        node;
+        private final String path;
+        private final String node;
 
         public PathAndNode(String path, String node)
         {
@@ -105,7 +106,7 @@ public class ZKPaths
         {
             return new PathAndNode(path, "");
         }
-        if ( (i + 1) >= path.length()  )
+        if ( (i + 1) >= path.length() )
         {
             return new PathAndNode("/", "");
         }
@@ -120,12 +121,10 @@ public class ZKPaths
      *
      * @param zookeeper the client
      * @param path      path to ensure
-     * @throws InterruptedException thread interruption
-     * @throws org.apache.zookeeper.KeeperException
-     *                              Zookeeper errors
+     * @throws InterruptedException                 thread interruption
+     * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
-    public static void mkdirs(ZooKeeper zookeeper, String path)
-        throws InterruptedException, KeeperException
+    public static void mkdirs(ZooKeeper zookeeper, String path) throws InterruptedException, KeeperException
     {
         mkdirs(zookeeper, path, true, null);
     }
@@ -134,15 +133,13 @@ public class ZKPaths
      * Make sure all the nodes in the path are created. NOTE: Unlike File.mkdirs(), Zookeeper doesn't distinguish
      * between directories and files. So, every node in the path is created. The data for each node is an empty blob
      *
-     * @param zookeeper the client
-     * @param path      path to ensure
+     * @param zookeeper    the client
+     * @param path         path to ensure
      * @param makeLastNode if true, all nodes are created. If false, only the parent nodes are created
-     * @throws InterruptedException thread interruption
-     * @throws org.apache.zookeeper.KeeperException
-     *                              Zookeeper errors
+     * @throws InterruptedException                 thread interruption
+     * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
-    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode)
-        throws InterruptedException, KeeperException
+    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode) throws InterruptedException, KeeperException
     {
         mkdirs(zookeeper, path, makeLastNode, null);
     }
@@ -151,16 +148,14 @@ public class ZKPaths
      * Make sure all the nodes in the path are created. NOTE: Unlike File.mkdirs(), Zookeeper doesn't distinguish
      * between directories and files. So, every node in the path is created. The data for each node is an empty blob
      *
-     * @param zookeeper the client
-     * @param path      path to ensure
+     * @param zookeeper    the client
+     * @param path         path to ensure
      * @param makeLastNode if true, all nodes are created. If false, only the parent nodes are created
-     * @throws InterruptedException thread interruption
-     * @throws org.apache.zookeeper.KeeperException
-     *                              Zookeeper errors
-     * @param aclProvider if not null, the ACL provider to use when creating parent nodes
+     * @param aclProvider  if not null, the ACL provider to use when creating parent nodes
+     * @throws InterruptedException                 thread interruption
+     * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
-    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider)
-        throws InterruptedException, KeeperException
+    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider) throws InterruptedException, KeeperException
     {
         PathUtils.validatePath(path);
 
@@ -214,28 +209,36 @@ public class ZKPaths
     /**
      * Recursively deletes children of a node.
      *
-     * @param zookeeper     the client
-     * @param path          path of the node to delete
-     * @param deleteSelf    flag that indicates that the node should also get deleted
+     * @param zookeeper  the client
+     * @param path       path of the node to delete
+     * @param deleteSelf flag that indicates that the node should also get deleted
      * @throws InterruptedException
      * @throws KeeperException
      */
-    public static void deleteChildren(ZooKeeper zookeeper, String path, boolean deleteSelf) throws InterruptedException, KeeperException {
+    public static void deleteChildren(ZooKeeper zookeeper, String path, boolean deleteSelf) throws InterruptedException, KeeperException
+    {
         PathUtils.validatePath(path);
 
         List<String> children = zookeeper.getChildren(path, null);
-        for (String child : children) {
+        for ( String child : children )
+        {
             String fullPath = makePath(path, child);
             deleteChildren(zookeeper, fullPath, true);
         }
 
-        if (deleteSelf) {
-            try {
+        if ( deleteSelf )
+        {
+            try
+            {
                 zookeeper.delete(path, -1);
-            } catch (KeeperException.NotEmptyException e) {
+            }
+            catch ( KeeperException.NotEmptyException e )
+            {
                 //someone has created a new child since we checked ... delete again.
-                deleteChildren(zookeeper, path, deleteSelf);
-            } catch (KeeperException.NoNodeException e) {
+                deleteChildren(zookeeper, path, true);
+            }
+            catch ( KeeperException.NoNodeException e )
+            {
                 // ignore... someone else has deleted the node it since we checked
             }
         }
@@ -247,12 +250,10 @@ public class ZKPaths
      * @param zookeeper the client
      * @param path      the path
      * @return sorted list of children
-     * @throws InterruptedException thread interruption
-     * @throws org.apache.zookeeper.KeeperException
-     *                              zookeeper errors
+     * @throws InterruptedException                 thread interruption
+     * @throws org.apache.zookeeper.KeeperException zookeeper errors
      */
-    public static List<String> getSortedChildren(ZooKeeper zookeeper, String path)
-        throws InterruptedException, KeeperException
+    public static List<String> getSortedChildren(ZooKeeper zookeeper, String path) throws InterruptedException, KeeperException
     {
         List<String> children = zookeeper.getChildren(path, false);
         List<String> sortedList = Lists.newArrayList(children);
@@ -272,7 +273,7 @@ public class ZKPaths
         StringBuilder path = new StringBuilder();
 
         // Add parent piece, with no trailing slash.
-        if ( parent != null && parent.length() > 0)
+        if ( (parent != null) && (parent.length() > 0) )
         {
             if ( !parent.startsWith("/") )
             {
