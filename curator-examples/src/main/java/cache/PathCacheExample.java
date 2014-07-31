@@ -119,7 +119,13 @@ public class PathCacheExample
             {
                 System.out.print("> ");
 
-                String      command = in.readLine().trim();
+                String      line = in.readLine();
+                if ( line == null )
+                {
+                    break;
+                }
+
+                String      command = line.trim();
                 String[]    parts = command.split("\\s");
                 if ( parts.length == 0 )
                 {
