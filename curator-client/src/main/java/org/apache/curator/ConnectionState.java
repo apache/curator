@@ -191,7 +191,6 @@ class ConnectionState implements Watcher, Closeable
                     {
                         log.warn(String.format("Connection attempt unsuccessful after %d (greater than max timeout of %d). Resetting connection and trying again with a new connection.", elapsed, maxTimeout));
                     }
-                    reset();
                 }
                 else
                 {
