@@ -29,6 +29,7 @@ public class ServiceDiscoveryBuilder<T>
     private String                  basePath;
     private InstanceSerializer<T>   serializer;
     private ServiceInstance<T>      thisInstance;
+    private Class<T>                payloadClass;
 
     /**
      * Return a new builder. The builder will be defaulted with a {@link JsonInstanceSerializer}.
@@ -39,7 +40,7 @@ public class ServiceDiscoveryBuilder<T>
      */
     public static<T> ServiceDiscoveryBuilder<T>     builder(Class<T> payloadClass)
     {
-        return new ServiceDiscoveryBuilder<T>(payloadClass).serializer(new JsonInstanceSerializer<T>(payloadClass));
+        return new ServiceDiscoveryBuilder<T>(payloadClass);
     }
 
     /**
@@ -49,6 +50,9 @@ public class ServiceDiscoveryBuilder<T>
      */
     public ServiceDiscovery<T>      build()
     {
+        if ( serializer == null ) {
+            serializer(new JsonInstanceSerializer<T>(payloadClass));
+        }
         return new ServiceDiscoveryImpl<T>(client, basePath, serializer, thisInstance);
     }
 
@@ -102,5 +106,6 @@ public class ServiceDiscoveryBuilder<T>
 
     ServiceDiscoveryBuilder(Class<T> payloadClass)
     {
+        this.payloadClass = payloadClass;
     }
 }
