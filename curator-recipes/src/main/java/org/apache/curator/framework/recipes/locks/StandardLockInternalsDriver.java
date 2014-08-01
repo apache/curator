@@ -61,7 +61,6 @@ public class StandardLockInternalsDriver implements LockInternalsDriver
     {
         if ( ourIndex < 0 )
         {
-            log.error("Sequential path not found: " + sequenceNodeName);
             throw new KeeperException.NoNodeException("Sequential path not found: " + sequenceNodeName);
         }
     }
