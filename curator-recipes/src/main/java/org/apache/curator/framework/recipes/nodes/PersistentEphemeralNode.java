@@ -320,7 +320,6 @@ public class PersistentEphemeralNode implements Closeable
             }
             catch ( Exception e )
             {
-                log.error("Deleting node: " + localNodePath, e);
                 throw e;
             }
         }
@@ -341,8 +340,7 @@ public class PersistentEphemeralNode implements Closeable
         }
         catch ( Exception e )
         {
-            log.error("Creating node. BasePath: " + basePath, e);
-            throw new RuntimeException(e);  // should never happen unless there's a programming error - so throw RuntimeException
+            throw new RuntimeException("Creating node. BasePath: " + basePath, e);  // should never happen unless there's a programming error - so throw RuntimeException
         }
     }
 
@@ -362,7 +360,6 @@ public class PersistentEphemeralNode implements Closeable
             }
             catch ( Exception e )
             {
-                log.error("Watching node: " + localNodePath, e);
                 throw e;
             }
         }

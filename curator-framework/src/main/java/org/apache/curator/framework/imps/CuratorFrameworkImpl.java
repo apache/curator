@@ -233,9 +233,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         log.info("Starting");
         if ( !state.compareAndSet(CuratorFrameworkState.LATENT, CuratorFrameworkState.STARTED) )
         {
-            IllegalStateException error = new IllegalStateException();
-            log.error("Cannot be started more than once", error);
-            throw error;
+            IllegalStateException ise = new IllegalStateException("Cannot be started more than once");
+            throw ise;
         }
 
         try

@@ -418,7 +418,6 @@ public class LeaderSelector implements Closeable
         }
         catch ( Exception e )
         {
-            log.error("mutex.acquire() threw an exception", e);
             throw e;
         }
         finally

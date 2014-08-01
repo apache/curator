@@ -182,9 +182,8 @@ public class CuratorZookeeperClient implements Closeable
 
         if ( !started.compareAndSet(false, true) )
         {
-            IllegalStateException error = new IllegalStateException();
-            log.error("Already started", error);
-            throw error;
+            IllegalStateException ise = new IllegalStateException("Already started");
+            throw ise;
         }
 
         state.start();
