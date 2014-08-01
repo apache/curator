@@ -19,123 +19,17 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableSet;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.api.UnhandledErrorListener;
-import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
-import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
-public class TestTreeCache extends BaseClassForTests
+public class TestTreeCache extends BaseTestTreeCache
 {
-    private final Timing timing = new Timing();
-    private CuratorFramework client;
-    private TreeCache cache;
-    private List<Throwable> exceptions;
-    private BlockingQueue<TreeCacheEvent> events;
-    private TreeCacheListener eventListener;
-
-    /**
-     * A TreeCache that records exceptions.
-     */
-    class TreeCache extends org.apache.curator.framework.recipes.cache.TreeCache {
-
-        TreeCache(CuratorFramework client, String path, boolean cacheData)
-        {
-            super(client, path, cacheData);
-        }
-
-        @Override
-        protected void handleException(Throwable e)
-        {
-            exceptions.add(e);
-        }
-    }
-
-    @Override
-    @BeforeMethod
-    public void setup() throws Exception
-    {
-        super.setup();
-
-        exceptions = new ArrayList<Throwable>();
-        events = new LinkedBlockingQueue<TreeCacheEvent>();
-        eventListener = new TreeCacheListener()
-        {
-            @Override
-            public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
-            {
-                if (event.getData() != null && event.getData().getPath().startsWith("/zookeeper"))
-                {
-                    // Suppress any events related to /zookeeper paths
-                    return;
-                }
-                events.add(event);
-            }
-        };
-
-        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        client.start();
-        client.getUnhandledErrorListenable().addListener(new UnhandledErrorListener()
-        {
-            @Override
-            public void unhandledError(String message, Throwable e)
-            {
-                exceptions.add(e);
-            }
-        });
-        cache = new TreeCache(client, "/test", true);
-        cache.getListenable().addListener(eventListener);
-    }
-
-    @Override
-    @AfterMethod
-    public void teardown() throws Exception
-    {
-        try
-        {
-            try
-            {
-                if ( exceptions.size() == 1 )
-                {
-                    Assert.fail("Exception was thrown", exceptions.get(0));
-                }
-                else if ( exceptions.size() > 1 )
-                {
-                    AssertionError error = new AssertionError("Multiple exceptions were thrown");
-                    for ( Throwable exception : exceptions )
-                    {
-                        error.addSuppressed(exception);
-                    }
-                    throw error;
-                }
-            }
-            finally
-            {
-                CloseableUtils.closeQuietly(cache);
-                CloseableUtils.closeQuietly(client);
-            }
-        }
-        finally
-        {
-            super.teardown();
-        }
-    }
-
     @Test
     public void testStartup() throws Exception
     {
@@ -154,9 +48,9 @@ public class TestTreeCache extends BaseClassForTests
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
         assertNoMoreEvents();
 
-        Assert.assertEquals(cache.getCurrentChildren("/test"), ImmutableSortedSet.of("1", "2", "3"));
-        Assert.assertEquals(cache.getCurrentChildren("/test/1"), ImmutableSortedSet.of());
-        Assert.assertEquals(cache.getCurrentChildren("/test/2"), ImmutableSortedSet.of("sub"));
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("1", "2", "3"));
+        Assert.assertEquals(cache.getCurrentChildren("/test/1").keySet(), ImmutableSet.of());
+        Assert.assertEquals(cache.getCurrentChildren("/test/2").keySet(), ImmutableSet.of("sub"));
         Assert.assertNull(cache.getCurrentChildren("/test/non_exist"));
     }
 
@@ -176,6 +70,7 @@ public class TestTreeCache extends BaseClassForTests
     {
         client.create().forPath("/test");
         client.create().forPath("/test/one", "hey there".getBytes());
+
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
@@ -188,14 +83,19 @@ public class TestTreeCache extends BaseClassForTests
     {
         client.create().forPath("/test");
         client.create().forPath("/test/one", "hey there".getBytes());
+
         cache = new TreeCache(client, "/", true);
-        cache.getListenable().addListener(eventListener);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
         assertNoMoreEvents();
+
+        Assert.assertTrue(cache.getCurrentChildren("/").keySet().contains("test"));
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("one"));
+        Assert.assertEquals(cache.getCurrentChildren("/test/one").keySet(), ImmutableSet.of());
+        Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
     }
 
     @Test
@@ -205,13 +105,17 @@ public class TestTreeCache extends BaseClassForTests
         client.create().forPath("/outer/foo");
         client.create().forPath("/outer/test");
         client.create().forPath("/outer/test/one", "hey there".getBytes());
+
         cache = new TreeCache(client.usingNamespace("outer"), "/test", true);
-        cache.getListenable().addListener(eventListener);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
         assertNoMoreEvents();
+
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("one"));
+        Assert.assertEquals(cache.getCurrentChildren("/test/one").keySet(), ImmutableSet.of());
+        Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
     }
 
     @Test
@@ -221,8 +125,8 @@ public class TestTreeCache extends BaseClassForTests
         client.create().forPath("/outer/foo");
         client.create().forPath("/outer/test");
         client.create().forPath("/outer/test/one", "hey there".getBytes());
+
         cache = new TreeCache(client.usingNamespace("outer"), "/", true);
-        cache.getListenable().addListener(eventListener);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/foo");
@@ -230,6 +134,11 @@ public class TestTreeCache extends BaseClassForTests
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
         assertNoMoreEvents();
+        Assert.assertEquals(cache.getCurrentChildren("/").keySet(), ImmutableSet.of("foo", "test"));
+        Assert.assertEquals(cache.getCurrentChildren("/foo").keySet(), ImmutableSet.of());
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("one"));
+        Assert.assertEquals(cache.getCurrentChildren("/test/one").keySet(), ImmutableSet.of());
+        Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
     }
 
     @Test
@@ -237,6 +146,7 @@ public class TestTreeCache extends BaseClassForTests
     {
         cache.start();
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
+
         client.create().forPath("/test");
         client.create().forPath("/test/one", "hey there".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
@@ -264,10 +174,9 @@ public class TestTreeCache extends BaseClassForTests
     @Test
     public void testUpdateWhenNotCachingData() throws Exception
     {
-        cache = new TreeCache(client, "/test", false);
-        cache.getListenable().addListener(eventListener);
-
         client.create().forPath("/test");
+
+        cache = new TreeCache(client, "/test", false);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
@@ -285,8 +194,8 @@ public class TestTreeCache extends BaseClassForTests
     {
         client.create().forPath("/test");
         client.create().forPath("/test/foo", "one".getBytes());
-        cache.start();
 
+        cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
@@ -299,38 +208,12 @@ public class TestTreeCache extends BaseClassForTests
         assertNoMoreEvents();
     }
 
-    // see https://github.com/Netflix/curator/issues/27 - was caused by not comparing old->new data
-    @Test
-    public void testIssue27() throws Exception
-    {
-        client.create().forPath("/test");
-        client.create().forPath("/test/a");
-        client.create().forPath("/test/b");
-        client.create().forPath("/test/c");
-
-        client.getChildren().forPath("/test");
-
-        cache.start();
-        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
-        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/a");
-        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/b");
-        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/c");
-        assertEvent(TreeCacheEvent.Type.INITIALIZED);
-
-        client.delete().forPath("/test/a");
-        client.create().forPath("/test/a");
-        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/a");
-        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/a");
-
-        assertNoMoreEvents();
-    }
-
     @Test
     public void testKilledSession() throws Exception
     {
         client.create().forPath("/test");
-        cache.start();
 
+        cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
 
@@ -352,24 +235,25 @@ public class TestTreeCache extends BaseClassForTests
     public void testBasics() throws Exception
     {
         client.create().forPath("/test");
+
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
-        Assert.assertEquals(cache.getCurrentChildren("/test"), ImmutableSortedSet.of());
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of());
 
         client.create().forPath("/test/one", "hey there".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
-        Assert.assertEquals(cache.getCurrentChildren("/test"), ImmutableSortedSet.of("one"));
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("one"));
         Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
 
         client.setData().forPath("/test/one", "sup!".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_UPDATED, "/test/one");
-        Assert.assertEquals(cache.getCurrentChildren("/test"), ImmutableSortedSet.of("one"));
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("one"));
         Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
 
         client.delete().forPath("/test/one");
         assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/one");
-        Assert.assertEquals(cache.getCurrentChildren("/test"), ImmutableSortedSet.of());
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of());
 
         assertNoMoreEvents();
     }
@@ -378,6 +262,7 @@ public class TestTreeCache extends BaseClassForTests
     public void testBasicsOnTwoCaches() throws Exception
     {
         TreeCache cache2 = new TreeCache(client, "/test", true);
+        cache2.getListenable().removeListener(eventListener);  // Don't listen on the second cache.
 
         // Just ensures the same event count; enables test flow control on cache2.
         final Semaphore semaphore = new Semaphore(0);
@@ -393,6 +278,7 @@ public class TestTreeCache extends BaseClassForTests
         try
         {
             client.create().forPath("/test");
+
             cache.start();
             cache2.start();
 
@@ -445,40 +331,5 @@ public class TestTreeCache extends BaseClassForTests
 
         client.delete().forPath("/test/one");
         assertNoMoreEvents();
-    }
-
-    private void assertNoMoreEvents() throws InterruptedException
-    {
-        timing.sleepABit();
-        Assert.assertTrue(events.isEmpty());
-    }
-
-    private TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType) throws InterruptedException
-    {
-        return assertEvent(expectedType, null);
-    }
-
-    private TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath) throws InterruptedException
-    {
-        return assertEvent(expectedType, expectedPath, null);
-    }
-
-    private TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData) throws InterruptedException
-    {
-        TreeCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-        Assert.assertEquals(event.getType(), expectedType, event.toString());
-        if ( expectedPath == null )
-        {
-            Assert.assertNull(event.getData(), event.toString());
-        }
-        else
-        {
-            Assert.assertEquals(event.getData().getPath(), expectedPath, event.toString());
-        }
-        if ( expectedData != null )
-        {
-            Assert.assertEquals(event.getData().getData(), expectedData, event.toString());
-        }
-        return event;
     }
 }

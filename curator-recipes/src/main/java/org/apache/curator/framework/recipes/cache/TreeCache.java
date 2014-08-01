@@ -20,7 +20,8 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -38,15 +39,15 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.SortedSet;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -68,7 +69,7 @@ public class TreeCache implements Closeable
         PENDING, LIVE, DEAD
     }
 
-    final class TreeNode implements Watcher, BackgroundCallback
+    private final class TreeNode implements Watcher, BackgroundCallback
     {
         private final AtomicReference<NodeState> nodeState = new AtomicReference<NodeState>(NodeState.PENDING);
         private final String path;
@@ -77,10 +78,16 @@ public class TreeCache implements Closeable
         private final AtomicReference<byte[]> data = new AtomicReference<byte[]>();
         private final AtomicReference<ConcurrentMap<String, TreeNode>> children = new AtomicReference<ConcurrentMap<String, TreeNode>>();
 
-        TreeNode(String path, TreeNode parent)
+        private TreeNode(String path, TreeNode parent)
         {
             this.path = path;
             this.parent = parent;
+        }
+
+        private void refresh() throws Exception
+        {
+            refreshData();
+            refreshChildren();
         }
 
         private void refreshChildren() throws Exception
@@ -104,8 +111,7 @@ public class TreeCache implements Closeable
 
         private void wasReconnected() throws Exception
         {
-            refreshData();
-            refreshChildren();
+            refresh();
             ConcurrentMap<String, TreeNode> childMap = children.get();
             if ( childMap != null )
             {
@@ -118,8 +124,7 @@ public class TreeCache implements Closeable
 
         private void wasCreated() throws Exception
         {
-            refreshData();
-            refreshChildren();
+            refresh();
         }
 
         private void wasDeleted() throws Exception
@@ -172,7 +177,7 @@ public class TreeCache implements Closeable
                 switch ( event.getType() )
                 {
                 case NodeCreated:
-                    assert parent == null;
+                    Preconditions.checkState(parent == null, "unexpected NodeCreated on non-root node");
                     wasCreated();
                     break;
                 case NodeChildrenChanged:
@@ -198,7 +203,7 @@ public class TreeCache implements Closeable
             switch ( event.getType() )
             {
             case EXISTS:
-                // TODO: should only happen for root node
+                Preconditions.checkState(parent == null, "unexpected EXISTS on non-root node");
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
                     nodeState.compareAndSet(NodeState.DEAD, NodeState.PENDING);
@@ -284,7 +289,7 @@ public class TreeCache implements Closeable
 
             if ( outstandingOps.decrementAndGet() == 0 )
             {
-                if ( treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED) )
+                if ( isInitialized.compareAndSet(false, true) )
                 {
                     publishEvent(TreeCacheEvent.Type.INITIALIZED);
                 }
@@ -300,9 +305,14 @@ public class TreeCache implements Closeable
     }
 
     /**
-     * Detemines when to publish the initialized event.
+     * Tracks the number of outstanding background requests in flight. The first time this count reaches 0, we publish the initialized event.
      */
     private final AtomicLong outstandingOps = new AtomicLong(0);
+
+    /**
+     * Have we published the {@link TreeCacheEvent.Type#INITIALIZED} event yet?
+     */
+    private final AtomicBoolean isInitialized = new AtomicBoolean(false);
 
     private final TreeNode root;
     private final CuratorFramework client;
@@ -391,17 +401,16 @@ public class TreeCache implements Closeable
      */
     public void start() throws Exception
     {
+        Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
         client.getConnectionStateListenable().addListener(connectionStateListener);
         root.wasCreated();
     }
 
     /**
-     * Close/end the cache
-     *
-     * @throws java.io.IOException errors
+     * Close/end the cache.
      */
     @Override
-    public void close() throws IOException
+    public void close()
     {
         if ( treeState.compareAndSet(TreeState.STARTED, TreeState.CLOSED) )
         {
@@ -439,7 +448,11 @@ public class TreeCache implements Closeable
         TreeNode current = root;
         if ( fullPath.length() > root.path.length() )
         {
-            List<String> split = ZKPaths.split(fullPath.substring(root.path.length()));
+            if ( root.path.length() > 1 )
+            {
+                fullPath = fullPath.substring(root.path.length());
+            }
+            List<String> split = ZKPaths.split(fullPath);
             for ( String part : split )
             {
                 ConcurrentMap<String, TreeNode> map = current.children.get();
@@ -458,14 +471,14 @@ public class TreeCache implements Closeable
     }
 
     /**
-     * Return the current set of children. There are no guarantees of accuracy. This is
-     * merely the most recent view of the data. The data is returned in sorted order. If there is
-     * no child with that path, <code>null</code> is returned.
+     * Return the current set of children at the given path, mapped by child name. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.  If there is no
+     * node at this path, {@code null} is returned.
      *
      * @param fullPath full path to the node to check
      * @return a possibly-empty list of children if the node is alive, or null
      */
-    public SortedSet<String> getCurrentChildren(String fullPath)
+    public Map<String, ChildData> getCurrentChildren(String fullPath)
     {
         TreeNode node = find(fullPath);
         if ( node == null || node.nodeState.get() != NodeState.LIVE )
@@ -473,14 +486,25 @@ public class TreeCache implements Closeable
             return null;
         }
         ConcurrentMap<String, TreeNode> map = node.children.get();
-        SortedSet<String> result;
+        Map<String, ChildData> result;
         if ( map == null )
         {
-            result = ImmutableSortedSet.of();
+            result = ImmutableMap.of();
         }
         else
         {
-            result = ImmutableSortedSet.copyOf(map.keySet());
+            ImmutableMap.Builder<String, ChildData> builder = ImmutableMap.builder();
+            for ( Map.Entry<String, TreeNode> entry : map.entrySet() )
+            {
+                TreeNode childNode = entry.getValue();
+                ChildData childData = new ChildData(childNode.path, childNode.stat.get(), childNode.data.get());
+                // Double-check liveness after retreiving data.
+                if ( childNode.nodeState.get() == NodeState.LIVE )
+                {
+                    builder.put(entry.getKey(), childData);
+                }
+            }
+            result = builder.build();
         }
 
         // Double-check liveness after retreiving children.
@@ -489,8 +513,8 @@ public class TreeCache implements Closeable
 
     /**
      * Return the current data for the given path. There are no guarantees of accuracy. This is
-     * merely the most recent view of the data. If there is no child with that path,
-     * <code>null</code> is returned.
+     * merely the most recent view of the data. If there is no node at the given path,
+     * {@code null} is returned.
      *
      * @param fullPath full path to the node to check
      * @return data if the node is alive, or null
@@ -503,29 +527,28 @@ public class TreeCache implements Closeable
             return null;
         }
         ChildData result = new ChildData(node.path, node.stat.get(), node.data.get());
-        // Double-check liveness after retreiving stat / data.
+        // Double-check liveness after retreiving data.
         return node.nodeState.get() == NodeState.LIVE ? result : null;
     }
 
-    void callListeners(final TreeCacheEvent event)
+    private void callListeners(final TreeCacheEvent event)
     {
         listeners.forEach(new Function<TreeCacheListener, Void>()
-                          {
-                              @Override
-                              public Void apply(TreeCacheListener listener)
-                              {
-                                  try
-                                  {
-                                      listener.childEvent(client, event);
-                                  }
-                                  catch ( Exception e )
-                                  {
-                                      handleException(e);
-                                  }
-                                  return null;
-                              }
-                          }
-                         );
+        {
+            @Override
+            public Void apply(TreeCacheListener listener)
+            {
+                try
+                {
+                    listener.childEvent(client, event);
+                }
+                catch ( Exception e )
+                {
+                    handleException(e);
+                }
+                return null;
+            }
+        });
     }
 
     /**
