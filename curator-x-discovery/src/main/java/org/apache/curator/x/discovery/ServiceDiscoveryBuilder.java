@@ -32,7 +32,7 @@ public class ServiceDiscoveryBuilder<T>
     private Class<T>                payloadClass;
 
     /**
-     * Return a new builder. The builder will be defaulted with a {@link JsonInstanceSerializer}.
+     * Return a new builder.
      *
      * @param payloadClass the class of the payload of your service instance (you can use {@link Void}
      * if your instances don't need a payload)
@@ -44,7 +44,8 @@ public class ServiceDiscoveryBuilder<T>
     }
 
     /**
-     * Build a new service discovery with the currently set values
+     * Build a new service discovery with the currently set values. If not set, the builder will be
+     * defaulted with a {@link JsonInstanceSerializer}.
      *
      * @return new service discovery
      */
