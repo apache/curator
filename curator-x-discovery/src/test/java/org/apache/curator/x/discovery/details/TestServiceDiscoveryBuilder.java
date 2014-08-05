@@ -25,7 +25,6 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class TestServiceDiscoveryBuilder extends BaseClassForTests
