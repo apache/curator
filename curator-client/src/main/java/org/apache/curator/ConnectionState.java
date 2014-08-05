@@ -77,7 +77,6 @@ class ConnectionState implements Watcher, Closeable
         Exception exception = backgroundExceptions.poll();
         if ( exception != null )
         {
-            log.error("Background exception caught", exception);
             tracer.get().addCount("background-exceptions", 1);
             throw exception;
         }
