@@ -39,7 +39,7 @@ public class BaseTestTreeCache extends BaseClassForTests
 {
     private final Timing timing = new Timing();
     CuratorFramework client;
-    TreeCache cache;
+    MyTreeCache cache;
     private List<Throwable> exceptions;
     private BlockingQueue<TreeCacheEvent> events;
     TreeCacheListener eventListener;
@@ -47,10 +47,10 @@ public class BaseTestTreeCache extends BaseClassForTests
     /**
      * A TreeCache that records exceptions and automatically adds a listener.
      */
-    class TreeCache extends org.apache.curator.framework.recipes.cache.TreeCache
+    class MyTreeCache extends TreeCache
     {
 
-        TreeCache(CuratorFramework client, String path, boolean cacheData)
+        MyTreeCache(CuratorFramework client, String path, boolean cacheData)
         {
             super(client, path, cacheData);
             getListenable().addListener(eventListener);
@@ -95,7 +95,6 @@ public class BaseTestTreeCache extends BaseClassForTests
                 exceptions.add(e);
             }
         });
-        cache = new TreeCache(client, "/test", true);
     }
 
     @Override

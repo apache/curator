@@ -63,8 +63,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     {
         client.create().forPath("/tree", null);
         CuratorFramework cl = client.usingNamespace("tree");
-        cache = new TreeCache(cl, "/", true);
-        cache.getListenable().addListener(eventListener);
+        cache = new MyTreeCache(cl, "/", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
@@ -170,7 +169,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     /**
      * Recursively assert that current children equal expected children.
      */
-    private static void assertTreeEquals(TreeCache cache, TestNode expectedNode)
+    private static void assertTreeEquals(MyTreeCache cache, TestNode expectedNode)
     {
         String path = expectedNode.fullPath;
         Map<String, ChildData> cacheChildren = cache.getCurrentChildren(path);
