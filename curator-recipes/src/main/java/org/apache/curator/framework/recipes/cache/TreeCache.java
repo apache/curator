@@ -305,6 +305,7 @@ public class TreeCache implements Closeable
                 break;
             default:
                 handleException(new Exception(String.format("Unknown event %s", event)));
+                break;
             }
 
             if ( outstandingOps.decrementAndGet() == 0 )
@@ -593,6 +594,7 @@ public class TreeCache implements Closeable
             publishEvent(TreeCacheEvent.Type.CONNECTION_LOST);
             break;
 
+        case CONNECTED:
         case RECONNECTED:
             try
             {

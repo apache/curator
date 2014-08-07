@@ -39,6 +39,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test/3", "three".getBytes());
         client.create().forPath("/test/2/sub", "two-sub".getBytes());
 
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/1", "one".getBytes());
@@ -57,6 +58,7 @@ public class TestTreeCache extends BaseTestTreeCache
     @Test
     public void testStartEmpty() throws Exception
     {
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
 
@@ -71,6 +73,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test");
         client.create().forPath("/test/one", "hey there".getBytes());
 
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
@@ -84,7 +87,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test");
         client.create().forPath("/test/one", "hey there".getBytes());
 
-        cache = new TreeCache(client, "/", true);
+        cache = new MyTreeCache(client, "/", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
@@ -106,7 +109,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/outer/test");
         client.create().forPath("/outer/test/one", "hey there".getBytes());
 
-        cache = new TreeCache(client.usingNamespace("outer"), "/test", true);
+        cache = new MyTreeCache(client.usingNamespace("outer"), "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
@@ -126,7 +129,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/outer/test");
         client.create().forPath("/outer/test/one", "hey there".getBytes());
 
-        cache = new TreeCache(client.usingNamespace("outer"), "/", true);
+        cache = new MyTreeCache(client.usingNamespace("outer"), "/", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/foo");
@@ -144,6 +147,7 @@ public class TestTreeCache extends BaseTestTreeCache
     @Test
     public void testSyncInitialPopulation() throws Exception
     {
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
 
@@ -162,6 +166,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test/2", "2".getBytes());
         client.create().forPath("/test/3", "3".getBytes());
 
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/1");
@@ -176,7 +181,7 @@ public class TestTreeCache extends BaseTestTreeCache
     {
         client.create().forPath("/test");
 
-        cache = new TreeCache(client, "/test", false);
+        cache = new MyTreeCache(client, "/test", false);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
@@ -195,6 +200,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test");
         client.create().forPath("/test/foo", "one".getBytes());
 
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
@@ -213,6 +219,7 @@ public class TestTreeCache extends BaseTestTreeCache
     {
         client.create().forPath("/test");
 
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
@@ -236,6 +243,7 @@ public class TestTreeCache extends BaseTestTreeCache
     {
         client.create().forPath("/test");
 
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
@@ -261,7 +269,7 @@ public class TestTreeCache extends BaseTestTreeCache
     @Test
     public void testBasicsOnTwoCaches() throws Exception
     {
-        TreeCache cache2 = new TreeCache(client, "/test", true);
+        MyTreeCache cache2 = new MyTreeCache(client, "/test", true);
         cache2.getListenable().removeListener(eventListener);  // Don't listen on the second cache.
 
         // Just ensures the same event count; enables test flow control on cache2.
@@ -279,6 +287,7 @@ public class TestTreeCache extends BaseTestTreeCache
         {
             client.create().forPath("/test");
 
+            cache = new MyTreeCache(client, "/test", true);
             cache.start();
             cache2.start();
 
@@ -318,6 +327,7 @@ public class TestTreeCache extends BaseTestTreeCache
     {
         client.create().forPath("/test");
 
+        cache = new MyTreeCache(client, "/test", true);
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
