@@ -342,4 +342,32 @@ public class TestTreeCache extends BaseTestTreeCache
         client.delete().forPath("/test/one");
         assertNoMoreEvents();
     }
+
+    /**
+     * Make sure TreeCache gets to a sane state when we can't initially connect to server.
+     */
+    @Test
+    public void testServerNotStartedYet() throws Exception
+    {
+        // Stop the existing server.
+        server.stop();
+
+        // Shutdown the existing client and re-create it started.
+        client.close();
+        initCuratorFramework();
+
+        // Start the client disconnected.
+        cache = new MyTreeCache(client, "/test", true);
+        cache.start();
+        assertNoMoreEvents();
+
+        // Now restart the server.
+        server.restart();
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+
+        client.create().forPath("/test");
+
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertNoMoreEvents();
+    }
 }

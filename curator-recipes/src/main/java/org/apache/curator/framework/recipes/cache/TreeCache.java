@@ -304,8 +304,11 @@ public class TreeCache implements Closeable
                 }
                 break;
             default:
-                handleException(new Exception(String.format("Unknown event %s", event)));
-                break;
+                // An unknown event, probably an error of some sort like connection loss.
+                LOG.info(String.format("Unknown event %s", event));
+                // Don't produce an initialized event on error; reconnect can fix this.
+                outstandingOps.decrementAndGet();
+                return;
             }
 
             if ( outstandingOps.decrementAndGet() == 0 )
@@ -424,7 +427,10 @@ public class TreeCache implements Closeable
     {
         Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        root.wasCreated();
+        if (client.getZookeeperClient().isConnected())
+        {
+            root.wasCreated();
+        }
     }
 
     /**
@@ -595,6 +601,16 @@ public class TreeCache implements Closeable
             break;
 
         case CONNECTED:
+            try
+            {
+                root.wasCreated();
+            }
+            catch ( Exception e )
+            {
+                handleException(e);
+            }
+            break;
+
         case RECONNECTED:
             try
             {
