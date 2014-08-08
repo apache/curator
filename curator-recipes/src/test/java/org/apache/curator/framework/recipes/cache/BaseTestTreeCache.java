@@ -85,6 +85,10 @@ public class BaseTestTreeCache extends BaseClassForTests
             }
         };
 
+        initCuratorFramework();
+    }
+
+    void initCuratorFramework() {
         client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         client.getUnhandledErrorListenable().addListener(new UnhandledErrorListener()
