@@ -1,0 +1,39 @@
+h1. Tree Cache
+
+h2. Description
+A utility that attempts to keep all data from all children of a ZK path locally cached. This class will watch the ZK path, respond to update/create/delete events, pull down the data, etc. You can register a listener that will get notified when changes occur.
+
+h2. Participating Classes
+* TreeCache
+* TreeCacheListener
+* TreeCacheEvent
+* ChildData
+
+h2. Usage
+h3. Creating a TreeCache
+{code}
+public TreeCache(CuratorFramework client,
+                         String path,
+                         boolean cacheData)
+Parameters:
+client - the client
+path - path to watch
+cacheData - if true, node contents are cached in addition to the stat
+{code}
+
+h2. General Usage
+The cache must be started by calling {{start()}}. Call {{close()}} when you are through with the cache.
+
+At any time, call {{getCurrentChildren()}} to get the current state of the cache. Alternatively, call {{getCurrentData()}} to get
+the data for a given path that's being monitored.
+
+You can also register to be notified when a change occurs by calling {{getListenable()}} and then:
+{code}
+public void addListener(TreeCacheListener listener)
+     Add a change listener
+Parameters:
+listener - the listener
+{code}
+
+h2. Error Handling
+TreeCache instances internally monitor a {{ConnectionStateListener}}. If the connection state changes, the cache will receive messages detailing the change.
