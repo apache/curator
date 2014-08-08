@@ -29,20 +29,32 @@ import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BaseTestTreeCache extends BaseClassForTests
 {
-    private final Timing timing = new Timing();
     CuratorFramework client;
     MyTreeCache cache;
-    private List<Throwable> exceptions;
-    private BlockingQueue<TreeCacheEvent> events;
-    TreeCacheListener eventListener;
+    private final AtomicBoolean hadBackgroundException = new AtomicBoolean(false);
+    private final BlockingQueue<TreeCacheEvent> events = new LinkedBlockingQueue<TreeCacheEvent>();
+    private final Timing timing = new Timing();
+
+    final TreeCacheListener eventListener = new TreeCacheListener()
+    {
+        @Override
+        public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
+        {
+            if ( event.getData() != null && event.getData().getPath().startsWith("/zookeeper") )
+            {
+                // Suppress any events related to /zookeeper paths
+                return;
+            }
+            events.add(event);
+        }
+    };
 
     /**
      * A TreeCache that records exceptions and automatically adds a listener.
@@ -59,7 +71,7 @@ public class BaseTestTreeCache extends BaseClassForTests
         @Override
         protected void handleException(Throwable e)
         {
-            exceptions.add(e);
+            handleBackgroundException(e);
         }
     }
 
@@ -68,27 +80,11 @@ public class BaseTestTreeCache extends BaseClassForTests
     public void setup() throws Exception
     {
         super.setup();
-
-        exceptions = new ArrayList<Throwable>();
-        events = new LinkedBlockingQueue<TreeCacheEvent>();
-        eventListener = new TreeCacheListener()
-        {
-            @Override
-            public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
-            {
-                if ( event.getData() != null && event.getData().getPath().startsWith("/zookeeper") )
-                {
-                    // Suppress any events related to /zookeeper paths
-                    return;
-                }
-                events.add(event);
-            }
-        };
-
         initCuratorFramework();
     }
 
-    void initCuratorFramework() {
+    void initCuratorFramework()
+    {
         client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         client.getUnhandledErrorListenable().addListener(new UnhandledErrorListener()
@@ -96,9 +92,15 @@ public class BaseTestTreeCache extends BaseClassForTests
             @Override
             public void unhandledError(String message, Throwable e)
             {
-                exceptions.add(e);
+                handleBackgroundException(e);
             }
         });
+    }
+
+    private void handleBackgroundException(Throwable exception)
+    {
+        hadBackgroundException.set(true);
+        exception.printStackTrace(System.err);
     }
 
     @Override
@@ -109,19 +111,7 @@ public class BaseTestTreeCache extends BaseClassForTests
         {
             try
             {
-                if ( exceptions.size() == 1 )
-                {
-                    Assert.fail("Exception was thrown", exceptions.get(0));
-                }
-                else if ( exceptions.size() > 1 )
-                {
-                    AssertionError error = new AssertionError("Multiple exceptions were thrown");
-                    for ( Throwable exception : exceptions )
-                    {
-                        error.addSuppressed(exception);
-                    }
-                    throw error;
-                }
+                Assert.assertFalse(hadBackgroundException.get(), "Background exceptions were thrown, see stderr for details");
             }
             finally
             {
