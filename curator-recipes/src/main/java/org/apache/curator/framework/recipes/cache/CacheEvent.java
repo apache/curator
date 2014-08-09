@@ -19,10 +19,12 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import org.apache.curator.framework.state.ConnectionState;
+
 /**
- * POJO that abstracts a change to a path
+ * POJO that describes a change that occurs in a cache.
  */
-public class TreeCacheEvent
+public class CacheEvent
 {
     private final Type type;
     private final ChildData data;
@@ -38,47 +40,47 @@ public class TreeCacheEvent
         NODE_ADDED,
 
         /**
-         * A node's data was changed
+         * A node's data was changed.
          */
         NODE_UPDATED,
 
         /**
-         * A node was removed from the tree
+         * A node was deleted.
          */
         NODE_REMOVED,
 
         /**
-         * Called when the connection has changed to {@link org.apache.curator.framework.state.ConnectionState#SUSPENDED}
+         * Called when the connection has changed to {@link ConnectionState#SUSPENDED}
          * <p/>
          * This is exposed so that users of the class can be notified of issues that *might* affect normal operation.
-         * The TreeCache is written such that listeners are not expected to do anything special on this
+         * Listeners are not expected to do anything special on this
          * event, except for those people who want to cause some application-specific logic to fire when this occurs.
-         * While the connection is down, the TreeCache will continue to have its state from before it lost
-         * the connection and after the connection is restored, the TreeCache will emit normal child events
+         * While the connection is down, the cache will continue to have its state from before it lost
+         * the connection and after the connection is restored, the cache will emit normal child events
          * for all of the adds, deletes and updates that happened during the time that it was disconnected.
          */
         CONNECTION_SUSPENDED,
 
         /**
-         * Called when the connection has changed to {@link org.apache.curator.framework.state.ConnectionState#RECONNECTED}
+         * Called when the connection has changed to {@link ConnectionState#RECONNECTED}
          * <p/>
          * This is exposed so that users of the class can be notified of issues that *might* affect normal operation.
-         * The TreeCache is written such that listeners are not expected to do anything special on this
+         * Listeners are not expected to do anything special on this
          * event, except for those people who want to cause some application-specific logic to fire when this occurs.
-         * While the connection is down, the TreeCache will continue to have its state from before it lost
-         * the connection and after the connection is restored, the TreeCache will emit normal child events
+         * While the connection is down, the cache will continue to have its state from before it lost
+         * the connection and after the connection is restored, the cache will emit normal child events
          * for all of the adds, deletes and updates that happened during the time that it was disconnected.
          */
         CONNECTION_RECONNECTED,
 
         /**
-         * Called when the connection has changed to {@link org.apache.curator.framework.state.ConnectionState#LOST}
+         * Called when the connection has changed to {@link ConnectionState#LOST}
          * <p/>
          * This is exposed so that users of the class can be notified of issues that *might* affect normal operation.
-         * The TreeCache is written such that listeners are not expected to do anything special on this
+         * Listeners are not expected to do anything special on this
          * event, except for those people who want to cause some application-specific logic to fire when this occurs.
-         * While the connection is down, the TreeCache will continue to have its state from before it lost
-         * the connection and after the connection is restored, the TreeCache will emit normal child events
+         * While the connection is down, the cache will continue to have its state from before it lost
+         * the connection and after the connection is restored, the cache will emit normal child events
          * for all of the adds, deletes and updates that happened during the time that it was disconnected.
          */
         CONNECTION_LOST,
@@ -86,9 +88,10 @@ public class TreeCacheEvent
         /**
          * Posted after the initial cache has been fully populated.
          * <p/>
-         * On startup, the cache synchronizes its internal
+         * On startup, a cache synchronizes its internal
          * state with the server, publishing a series of {@link #NODE_ADDED} events as new nodes are discovered.  Once
-         * the cachehas been fully synchronized, this {@link #INITIALIZED} this event is published.  All events
+         * state with the server, publishing a series of {@link #NODE_ADDED} events as new nodes are discovered.  Once
+         * the cache has been fully synchronized, this {@link #INITIALIZED} this event is published.  All events
          * published after this event represent actual server-side mutations.
          * <p/>
          * Note: because the initial population is inherently asynchronous, so it's possible to observe server-side changes
@@ -101,7 +104,7 @@ public class TreeCacheEvent
      * @param type event type
      * @param data event data or null
      */
-    public TreeCacheEvent(Type type, ChildData data)
+    public CacheEvent(Type type, ChildData data)
     {
         this.type = type;
         this.data = data;
@@ -126,7 +129,7 @@ public class TreeCacheEvent
     @Override
     public String toString()
     {
-        return TreeCacheEvent.class.getSimpleName() + "{" +
+        return CacheEvent.class.getSimpleName() + "{" +
             "type=" + type +
             ", data=" + data +
             '}';

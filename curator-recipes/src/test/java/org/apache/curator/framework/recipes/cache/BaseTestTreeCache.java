@@ -39,13 +39,13 @@ public class BaseTestTreeCache extends BaseClassForTests
     CuratorFramework client;
     MyTreeCache cache;
     private final AtomicBoolean hadBackgroundException = new AtomicBoolean(false);
-    private final BlockingQueue<TreeCacheEvent> events = new LinkedBlockingQueue<TreeCacheEvent>();
+    private final BlockingQueue<CacheEvent> events = new LinkedBlockingQueue<CacheEvent>();
     private final Timing timing = new Timing();
 
-    final TreeCacheListener eventListener = new TreeCacheListener()
+    final CacheListener eventListener = new CacheListener()
     {
         @Override
-        public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
+        public void childEvent(CuratorFramework client, CacheEvent event) throws Exception
         {
             if ( event.getData() != null && event.getData().getPath().startsWith("/zookeeper") )
             {
@@ -131,19 +131,19 @@ public class BaseTestTreeCache extends BaseClassForTests
         Assert.assertTrue(events.isEmpty());
     }
 
-    TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType) throws InterruptedException
+    CacheEvent assertEvent(CacheEvent.Type expectedType) throws InterruptedException
     {
         return assertEvent(expectedType, null);
     }
 
-    TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath) throws InterruptedException
+    CacheEvent assertEvent(CacheEvent.Type expectedType, String expectedPath) throws InterruptedException
     {
         return assertEvent(expectedType, expectedPath, null);
     }
 
-    TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData) throws InterruptedException
+    CacheEvent assertEvent(CacheEvent.Type expectedType, String expectedPath, byte[] expectedData) throws InterruptedException
     {
-        TreeCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+        CacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
         Assert.assertNotNull(event, String.format("Expected type: %s, path: %s", expectedType, expectedPath));
 
         String message = event.toString();
