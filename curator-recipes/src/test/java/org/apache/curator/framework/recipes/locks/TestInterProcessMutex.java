@@ -20,9 +20,14 @@ package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.Timing;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -30,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestInterProcessMutex extends TestInterProcessMutexBase
 {
@@ -105,6 +111,72 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
         finally
         {
             client.close();
+        }
+    }
+    
+    /**
+     * See CURATOR-79. If the mutex is interrupted while attempting to acquire a lock it is
+     * possible for the zNode to be created in ZooKeeper, but for Curator to think that it
+     * hasn't been. This causes the next call to acquire() to fail because the an orphaned
+     * zNode has been left behind from the previous call.
+     */
+    @Test
+    public void testInterruptedDuringAcquire() throws Exception
+    {
+        Timing timing = new Timing();
+        final CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        final InterProcessMutex       lock = new InterProcessMutex(client, LOCK_PATH);
+        
+        final AtomicBoolean interruptOnError = new AtomicBoolean(true);
+        
+        ((CuratorFrameworkImpl)client).debugUnhandledErrorListener = new UnhandledErrorListener()
+        {
+            
+            @Override
+            public void unhandledError(String message, Throwable e)
+            {
+                if(interruptOnError.compareAndSet(true, false))
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        };
+        
+        //The lock path needs to exist for the deadlock to occur.
+        try {
+            client.create().creatingParentsIfNeeded().forPath(LOCK_PATH);
+        } catch(NodeExistsException e) {            
+        }
+        
+        try
+        {
+            //Interrupt the current thread. This will cause ensurePath() to fail.
+            //We need to reinterrupt in the debugUnhandledErrorListener above.
+            Thread.currentThread().interrupt();
+            lock.acquire();
+            Assert.fail();
+        }
+        catch(InterruptedException e)
+        {
+            //Expected lock to have failed.
+            Assert.assertTrue(!lock.isOwnedByCurrentThread());
+        }
+        
+        try
+        {
+            Assert.assertTrue(lock.acquire(timing.seconds(), TimeUnit.SECONDS));
+        }
+        catch(Exception e)
+        {
+            Assert.fail();
+        }
+        finally
+        {
+            if(lock.isOwnedByCurrentThread())
+            {
+                lock.release();
+            }
         }
     }
 }

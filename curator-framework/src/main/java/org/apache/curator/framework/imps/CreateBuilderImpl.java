@@ -469,6 +469,26 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             }
             throw e;
         }
+        catch ( KeeperException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            if ( protectedId != null )
+            {
+                /*
+                 * CURATOR-79 - Handle an runtime exception's here and treat the
+                 * same as a connection loss exception. This is necessary as, from
+                 * the clients point of view, an exception has been thrown and the
+                 * zNode should not exist on ZK. This was causing deadlock in the
+                 * locking recipes.
+                 */
+                findAndDeleteProtectedNodeInBackground(adjustedPath, protectedId, null);
+                protectedId = UUID.randomUUID().toString();
+            }
+            throw e;            
+        }
     }
 
     @Override
