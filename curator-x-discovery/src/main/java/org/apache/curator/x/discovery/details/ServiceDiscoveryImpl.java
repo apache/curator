@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
@@ -43,9 +44,11 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -122,18 +125,35 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             CloseableUtils.closeQuietly(provider);
         }
 
-        for ( ServiceInstance<T> service : services.values() )
+        Iterator<ServiceInstance<T>> it = services.values().iterator();
+        while ( it.hasNext() )
         {
+            // Should not use unregisterService because of potential ConcurrentModificationException
+            // so we in-line the bulk of the method here
+            ServiceInstance<T> service = it.next();
+            String path = pathForInstance(service.getName(), service.getId());
+            boolean doRemove = true;
+            
             try
             {
-                unregisterService(service);
+                client.delete().forPath(path);
+            }
+            catch ( KeeperException.NoNodeException ignore )
+            {
+                // ignore
             }
             catch ( Exception e )
             {
+                doRemove = false;
                 log.error("Could not unregister instance: " + service.getName(), e);
             }
+            
+            if ( doRemove )
+            {
+                it.remove();
+            }
         }
-
+        
         client.getConnectionStateListenable().removeListener(connectionStateListener);
     }
 
