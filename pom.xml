@@ -86,6 +86,7 @@
         <swift-version>0.12.0</swift-version>
         <dropwizard-version>0.7.0</dropwizard-version>
         <maven-shade-plugin-version>2.3</maven-shade-plugin-version>
+        <slf4j-version>1.7.6</slf4j-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -275,7 +276,13 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>1.7.6</version>
+                <version>${slf4j-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>${slf4j-version}</version>
             </dependency>
 
             <dependency>
@@ -474,6 +481,13 @@
             <artifactId>testng</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <reporting>
