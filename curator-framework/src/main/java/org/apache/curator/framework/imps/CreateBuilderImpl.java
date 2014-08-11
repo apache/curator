@@ -452,42 +452,25 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         {
             return pathInForeground(adjustedPath, data);
         }
-        catch ( KeeperException.ConnectionLossException e )
+        catch ( Exception e)
         {
-            if ( protectedId != null )
+            if ( ( e instanceof KeeperException.ConnectionLossException ||
+                !( e instanceof KeeperException )) && protectedId != null )
             {
                 /*
-                 * CURATOR-45 : we don't know if the create operation was successful or not,
+                 * CURATOR-45 + CURATOR-79: we don't know if the create operation was successful or not,
                  * register the znode to be sure it is deleted later.
                  */
-                findAndDeleteProtectedNodeInBackground(adjustedPath, protectedId, null);
+                String localProtectedId = protectedId;
+                findAndDeleteProtectedNodeInBackground(adjustedPath, localProtectedId, null);
                 /*
                 * The current UUID is scheduled to be deleted, it is not safe to use it again.
                 * If this builder is used again later create a new UUID
                 */
                 protectedId = UUID.randomUUID().toString();
             }
+            
             throw e;
-        }
-        catch ( KeeperException e )
-        {
-            throw e;
-        }
-        catch ( Exception e )
-        {
-            if ( protectedId != null )
-            {
-                /*
-                 * CURATOR-79 - Handle an runtime exception's here and treat the
-                 * same as a connection loss exception. This is necessary as, from
-                 * the clients point of view, an exception has been thrown and the
-                 * zNode should not exist on ZK. This was causing deadlock in the
-                 * locking recipes.
-                 */
-                findAndDeleteProtectedNodeInBackground(adjustedPath, protectedId, null);
-                protectedId = UUID.randomUUID().toString();
-            }
-            throw e;            
         }
     }
 

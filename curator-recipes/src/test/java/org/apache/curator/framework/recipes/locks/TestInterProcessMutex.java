@@ -155,12 +155,12 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
             //We need to reinterrupt in the debugUnhandledErrorListener above.
             Thread.currentThread().interrupt();
             lock.acquire();
-            Assert.fail();
+            Assert.fail("Lock acquisition succeeded when failure was expected");
         }
         catch(InterruptedException e)
         {
             //Expected lock to have failed.
-            Assert.assertTrue(!lock.isOwnedByCurrentThread());
+            Assert.assertFalse(lock.isOwnedByCurrentThread());
         }
         
         try
