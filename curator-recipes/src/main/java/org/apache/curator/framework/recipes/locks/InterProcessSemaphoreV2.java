@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -115,6 +116,7 @@ public class InterProcessSemaphoreV2
     private InterProcessSemaphoreV2(CuratorFramework client, String path, int maxLeases, SharedCountReader count)
     {
         this.client = client;
+        path = PathUtils.validatePath(path);
         lock = new InterProcessMutex(client, ZKPaths.makePath(path, LOCK_PARENT));
         this.maxLeases = (count != null) ? count.getCount() : maxLeases;
         leasesPath = ZKPaths.makePath(path, LEASE_PARENT);

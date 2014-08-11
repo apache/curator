@@ -47,6 +47,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>An implementation of the Distributed Queue ZK recipe. Items put into the queue
@@ -120,20 +121,19 @@ public class DistributedQueue<T> implements QueueBase<T>
     {
         Preconditions.checkNotNull(client, "client cannot be null");
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
-        Preconditions.checkNotNull(queuePath, "queuePath cannot be null");
         Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
         Preconditions.checkNotNull(executor, "executor cannot be null");
         Preconditions.checkArgument(maxItems > 0, "maxItems must be a positive number");
 
         isProducerOnly = (consumer == null);
-        this.lockPath = lockPath;
+        this.lockPath = PathUtils.validatePath(lockPath);
         this.putInBackground = putInBackground;
         this.consumer = consumer;
         this.minItemsBeforeRefresh = minItemsBeforeRefresh;
         this.refreshOnWatch = refreshOnWatch;
         this.client = client;
         this.serializer = serializer;
-        this.queuePath = queuePath;
+        this.queuePath = PathUtils.validatePath(queuePath);
         this.executor = executor;
         this.maxItems = maxItems;
         this.finalFlushMs = finalFlushMs;

@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.retry.RetryNTimes;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * Abstraction of arguments for mutex promotion. Use {@link #builder()} to create.
@@ -68,7 +69,7 @@ public class PromotedToLock
          */
         public Builder          lockPath(String path)
         {
-            instance = new PromotedToLock(path, instance.maxLockTime, instance.maxLockTimeUnit, instance.retryPolicy);
+            instance = new PromotedToLock(PathUtils.validatePath(path), instance.maxLockTime, instance.maxLockTimeUnit, instance.retryPolicy);
             return this;
         }
 

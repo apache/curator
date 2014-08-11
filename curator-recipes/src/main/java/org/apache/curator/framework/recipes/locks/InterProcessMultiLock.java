@@ -43,6 +43,7 @@ public class InterProcessMultiLock implements InterProcessLock
      */
     public InterProcessMultiLock(CuratorFramework client, List<String> paths)
     {
+        // paths get checked in each individual InterProcessMutex, so trust them here
         this(makeLocks(client, paths));
     }
 

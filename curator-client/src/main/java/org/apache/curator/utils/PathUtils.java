@@ -40,9 +40,10 @@ public class PathUtils {
     /**
      * Validate the provided znode path string
      * @param path znode path string
+     * @return The given path if it was valid, for fluent chaining
      * @throws IllegalArgumentException if the path is invalid
      */
-    public static void validatePath(String path) throws IllegalArgumentException {
+    public static String validatePath(String path) throws IllegalArgumentException {
         if (path == null) {
             throw new IllegalArgumentException("Path cannot be null");
         }
@@ -54,7 +55,7 @@ public class PathUtils {
                     "Path must start with / character");
         }
         if (path.length() == 1) { // done checking - it's the root
-            return;
+            return path;
         }
         if (path.charAt(path.length() - 1) == '/') {
             throw new IllegalArgumentException(
@@ -101,5 +102,7 @@ public class PathUtils {
             throw new IllegalArgumentException(
                     "Invalid path string \"" + path + "\" caused by " + reason);
         }
+
+        return path;
     }
 }

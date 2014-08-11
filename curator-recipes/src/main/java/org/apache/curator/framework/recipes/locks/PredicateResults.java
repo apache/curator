@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import org.apache.curator.utils.PathUtils;
+
 class PredicateResults
 {
     private final boolean   getsTheLock;
@@ -25,7 +27,7 @@ class PredicateResults
 
     PredicateResults(String pathToWatch, boolean getsTheLock)
     {
-        this.pathToWatch = pathToWatch;
+        this.pathToWatch = PathUtils.validatePath(pathToWatch);
         this.getsTheLock = getsTheLock;
     }
 
