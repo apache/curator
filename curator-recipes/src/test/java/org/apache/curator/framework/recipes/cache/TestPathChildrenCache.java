@@ -18,22 +18,44 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.log4j.Appender;
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.SimpleLayout;
+import org.apache.log4j.spi.LoggingEvent;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -73,6 +95,67 @@ public class TestPathChildrenCache extends BaseClassForTests
             CloseableUtils.closeQuietly(cache);
             CloseableUtils.closeQuietly(client);
         }
+    }
+
+    @Test
+    public void testClientClosedDuringRefreshErrorMessage() throws Exception
+    {
+        Timing timing = new Timing();
+
+        // Fiddle with logging so we can intercept the error events for org.apache.curator
+        final List<LoggingEvent> events = Lists.newArrayList();
+        Collection<String> messages = Collections2.transform(events, new Function<LoggingEvent, String>() {
+            @Override
+            public String apply(LoggingEvent loggingEvent) {
+                return loggingEvent.getRenderedMessage();
+            }
+        });
+        Appender appender = new AppenderSkeleton(true) {
+            @Override
+            protected void append(LoggingEvent event) {
+                if (event.getLevel().equals(Level.ERROR)) {
+                    events.add(event);
+                }
+            }
+
+            @Override
+            public void close() {
+
+            }
+
+            @Override
+            public boolean requiresLayout() {
+                return false;
+            }
+        };
+        appender.setLayout(new SimpleLayout());
+        Logger rootLogger = Logger.getLogger("org.apache.curator");
+        rootLogger.addAppender(appender);
+
+        // Check that the logging setup didn't change in a way that breaks this test
+        Logger.getLogger(CuratorFrameworkImpl.class).error("Just checking");
+        Assert.assertTrue(messages.contains("Just checking"),
+                "The test error message was not logged, this test may be broken");
+
+        // try to reproduce a bunch of times because it doesn't happen reliably
+        for (int i = 0; i < 50; i++) {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            client.start();
+            try {
+                PathChildrenCache cache = new PathChildrenCache(client, "/test", true);
+                cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
+                client.newNamespaceAwareEnsurePath("/test/aaa").ensure(client.getZookeeperClient());
+                client.setData().forPath("/test/aaa", new byte[]{1, 2, 3, 4, 5});
+                cache.rebuildNode("/test/aaa");
+                CloseableUtils.closeQuietly(cache);
+            } finally {
+                CloseableUtils.closeQuietly(client);
+            }
+        }
+
+        Assert.assertEquals(messages.size(), 1, "There should not be any error events except for the test message, " +
+                "but got:\n" + Joiner.on("\n").join(messages));
+
     }
 
     @Test
