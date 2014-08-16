@@ -214,14 +214,7 @@ public class LockInternals
 
             try
             {
-                if ( localLockNodeBytes != null )
-                {
-                    ourPath = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, localLockNodeBytes);
-                }
-                else
-                {
-                    ourPath = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path);
-                }
+                ourPath = driver.createsTheLock(client, path, localLockNodeBytes);
                 hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
             }
             catch ( KeeperException.NoNodeException e )
