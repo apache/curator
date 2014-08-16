@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,22 @@ public class StandardLockInternalsDriver implements LockInternalsDriver
 
         return new PredicateResults(pathToWatch, getsTheLock);
     }
+
+    @Override
+    public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception
+    {
+        String ourPath;
+        if ( lockNodeBytes != null )
+        {
+            ourPath = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, lockNodeBytes);
+        }
+        else
+        {
+            ourPath = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path);
+        }
+        return ourPath;
+    }
+
 
     @Override
     public String fixForSorting(String str, String lockName)
