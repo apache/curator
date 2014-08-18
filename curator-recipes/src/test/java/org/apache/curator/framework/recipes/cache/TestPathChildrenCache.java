@@ -24,6 +24,9 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.retry.RetryOneTime;
@@ -129,13 +132,30 @@ public class TestPathChildrenCache extends BaseClassForTests
             }
         };
         appender.setLayout(new SimpleLayout());
-        Logger rootLogger = Logger.getLogger("org.apache.curator");
-        rootLogger.addAppender(appender);
+        Logger logger = Logger.getLogger("org.apache.curator");
+        logger.addAppender(appender);
 
-        // Check that the logging setup didn't change in a way that breaks this test
-        Logger.getLogger(CuratorFrameworkImpl.class).error("Just checking");
-        Assert.assertTrue(messages.contains("Just checking"),
-                "The test error message was not logged, this test may be broken");
+        // Check that we can intercept error log messages from the client
+        CuratorFramework clientTestLogSetup = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        clientTestLogSetup.start();
+        try {
+            Pathable<byte[]> callback = clientTestLogSetup.getData().inBackground(new BackgroundCallback() {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                    // ignore result
+                }
+            });
+            CloseableUtils.closeQuietly(clientTestLogSetup);
+            callback.forPath("/test/aaa"); // this should cause an error log message
+        } catch (IllegalStateException ise) {
+            // ok, excpected
+        } finally {
+            CloseableUtils.closeQuietly(clientTestLogSetup);
+        }
+
+        Assert.assertTrue(messages.contains("Background exception was not retry-able or retry gave up"),
+                "The expected error was not logged. This is an indication that this test could be broken due to" +
+                        " an incomplete logging setup.");
 
         // try to reproduce a bunch of times because it doesn't happen reliably
         for (int i = 0; i < 50; i++) {
