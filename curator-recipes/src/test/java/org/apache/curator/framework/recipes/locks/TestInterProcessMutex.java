@@ -111,14 +111,18 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
     }
 
     @Test
-    public void testPersistentLock() throws Exception {
+    public void testPersistentLock() throws Exception
+    {
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
 
-        try {
-            final InterProcessMutex lock = new InterProcessMutex(client, LOCK_PATH, new StandardLockInternalsDriver() {
+        try
+        {
+            final InterProcessMutex lock = new InterProcessMutex(client, LOCK_PATH, new StandardLockInternalsDriver()
+            {
                 @Override
-                public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception {
+                public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception
+                {
                     String ourPath;
                     if ( lockNodeBytes != null )
                     {
@@ -145,9 +149,9 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
             lock.release();
             Assert.assertNull(client.checkExists().forPath(actualLockPath));
         }
-        finally {
+        finally
+        {
             client.close();
         }
-
     }
 }
