@@ -369,34 +369,6 @@ public class TestPathChildrenCache extends BaseClassForTests
     }
 
     @Test
-    public void testEnsurePath() throws Exception
-    {
-        Timing timing = new Timing();
-
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        client.start();
-        try
-        {
-            PathChildrenCache cache = new PathChildrenCache(client, "/one/two/three", false);
-            cache.start();
-            timing.sleepABit();
-
-            try
-            {
-                client.create().forPath("/one/two/three/four");
-            }
-            catch ( KeeperException.NoNodeException e )
-            {
-                Assert.fail("Path should exist", e);
-            }
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(client);
-        }
-    }
-
-    @Test
     public void testDeleteThenCreate() throws Exception
     {
         Timing timing = new Timing();
@@ -420,9 +392,9 @@ public class TestPathChildrenCache extends BaseClassForTests
                     }
                 );
 
-            final CountDownLatch removedLatch = new CountDownLatch(1);
-            final CountDownLatch postRemovedLatch = new CountDownLatch(1);
-            final CountDownLatch dataLatch = new CountDownLatch(1);
+            final Semaphore removedLatch = new Semaphore(0);
+            final Semaphore postRemovedLatch = new Semaphore(0);
+            final Semaphore dataLatch = new Semaphore(0);
             PathChildrenCache cache = new PathChildrenCache(client, "/test", true);
             cache.getListenable().addListener
                 (
@@ -433,18 +405,21 @@ public class TestPathChildrenCache extends BaseClassForTests
                         {
                             if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_REMOVED )
                             {
-                                removedLatch.countDown();
-                                Assert.assertTrue(postRemovedLatch.await(10, TimeUnit.SECONDS));
+                                removedLatch.release();
+                                Assert.assertEquals(event.getData().getPath(), "/test/foo");
+                                Assert.assertTrue(postRemovedLatch.tryAcquire(10, TimeUnit.SECONDS));
                             }
                             else
                             {
                                 try
                                 {
+                                    Assert.assertEquals(event.getType(), PathChildrenCacheEvent.Type.CHILD_ADDED);
+                                    Assert.assertEquals(event.getData().getPath(), "/test/foo");
                                     Assert.assertEquals(event.getData().getData(), "two".getBytes());
                                 }
                                 finally
                                 {
-                                    dataLatch.countDown();
+                                    dataLatch.release();
                                 }
                             }
                         }
@@ -452,11 +427,23 @@ public class TestPathChildrenCache extends BaseClassForTests
                 );
             cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
 
+            // Remove just the child
             client.delete().forPath("/test/foo");
-            Assert.assertTrue(timing.awaitLatch(removedLatch));
+            Assert.assertTrue(timing.acquireSemaphore(removedLatch));
+            Assert.assertNull(cache.getCurrentData("/test/foo"));
             client.create().forPath("/test/foo", "two".getBytes());
-            postRemovedLatch.countDown();
-            Assert.assertTrue(timing.awaitLatch(dataLatch));
+            postRemovedLatch.release();
+            Assert.assertTrue(timing.acquireSemaphore(dataLatch));
+            Assert.assertEquals(cache.getCurrentData("/test/foo").getData(), "two".getBytes());
+
+            // Remove the entire watched tree
+            client.delete().deletingChildrenIfNeeded().forPath("/test");
+            Assert.assertTrue(timing.acquireSemaphore(removedLatch));
+            Assert.assertNull(cache.getCurrentData("/test/foo"));
+            client.create().creatingParentsIfNeeded().forPath("/test/foo", "two".getBytes());
+            postRemovedLatch.release();
+            Assert.assertTrue(timing.acquireSemaphore(dataLatch));
+            Assert.assertEquals(cache.getCurrentData("/test/foo").getData(), "two".getBytes());
 
             Throwable t = error.get();
             if ( t != null )
@@ -952,6 +939,50 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             cache.close();
             cache2.close();
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void testBasicsNoNode() throws Exception
+    {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final BlockingQueue<PathChildrenCacheEvent.Type> events = new LinkedBlockingQueue<PathChildrenCacheEvent.Type>();
+            PathChildrenCache cache = new PathChildrenCache(client, "/test", true);
+            cache.getListenable().addListener
+                    (
+                            new PathChildrenCacheListener()
+                            {
+                                @Override
+                                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                                {
+                                    if ( event.getData().getPath().equals("/test/one") )
+                                    {
+                                        events.offer(event.getType());
+                                    }
+                                }
+                            }
+                    );
+            cache.start();
+
+            client.create().creatingParentsIfNeeded().forPath("/test/one", "hey there".getBytes());
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+
+            client.setData().forPath("/test/one", "sup!".getBytes());
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+            Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
+
+            client.delete().forPath("/test/one");
+            Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+
+            cache.close();
         }
         finally
         {

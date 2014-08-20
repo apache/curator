@@ -82,6 +82,8 @@ public class TestNodeCache extends BaseClassForTests
 
             client.delete().forPath("/test/foo");
             Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertNull(cache.getCurrentData());
+
             client.create().forPath("/test/foo", "two".getBytes());
             Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
 
@@ -237,6 +239,53 @@ public class TestNodeCache extends BaseClassForTests
 
             Assert.assertNull(cache.getCurrentData());
 
+            client.create().forPath("/test/node", "a".getBytes());
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            Assert.assertEquals(cache.getCurrentData().getData(), "a".getBytes());
+
+            client.setData().forPath("/test/node", "b".getBytes());
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            Assert.assertEquals(cache.getCurrentData().getData(), "b".getBytes());
+
+            client.delete().forPath("/test/node");
+            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            Assert.assertNull(cache.getCurrentData());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void     testBasicsNoNode() throws Exception
+    {
+        NodeCache           cache = null;
+        Timing              timing = new Timing();
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            cache = new NodeCache(client, "/test/node");
+            cache.start(true);
+
+            final Semaphore     semaphore = new Semaphore(0);
+            cache.getListenable().addListener
+                    (
+                            new NodeCacheListener()
+                            {
+                                @Override
+                                public void nodeChanged() throws Exception
+                                {
+                                    semaphore.release();
+                                }
+                            }
+                    );
+
+            Assert.assertNull(cache.getCurrentData());
+
+            client.create().forPath("/test");
             client.create().forPath("/test/node", "a".getBytes());
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
             Assert.assertEquals(cache.getCurrentData().getData(), "a".getBytes());
