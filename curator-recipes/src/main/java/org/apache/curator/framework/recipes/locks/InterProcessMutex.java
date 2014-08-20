@@ -61,7 +61,17 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      */
     public InterProcessMutex(CuratorFramework client, String path)
     {
-        this(client, path, LOCK_NAME, 1, new StandardLockInternalsDriver());
+        this(client, path, new StandardLockInternalsDriver());
+    }
+
+    /**
+     * @param client client
+     * @param path the path to lock
+     * @param driver lock driver
+     */
+    public InterProcessMutex(CuratorFramework client, String path, LockInternalsDriver driver)
+    {
+        this(client, path, LOCK_NAME, 1, driver);
     }
 
     /**
@@ -199,6 +209,11 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
     protected byte[]        getLockNodeBytes()
     {
         return null;
+    }
+
+    protected String getLockPath() {
+        LockData    lockData = threadData.get(Thread.currentThread());
+        return lockData != null ? lockData.lockPath : null;
     }
 
     private boolean internalLock(long time, TimeUnit unit) throws Exception

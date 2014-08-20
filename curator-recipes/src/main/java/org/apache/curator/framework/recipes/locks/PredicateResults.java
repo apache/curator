@@ -18,23 +18,23 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
-class PredicateResults
+public class PredicateResults
 {
     private final boolean   getsTheLock;
     private final String    pathToWatch;
 
-    PredicateResults(String pathToWatch, boolean getsTheLock)
+    public PredicateResults(String pathToWatch, boolean getsTheLock)
     {
         this.pathToWatch = pathToWatch;
         this.getsTheLock = getsTheLock;
     }
 
-    String getPathToWatch()
+    public String getPathToWatch()
     {
         return pathToWatch;
     }
 
-    boolean getsTheLock()
+    public boolean getsTheLock()
     {
         return getsTheLock;
     }
