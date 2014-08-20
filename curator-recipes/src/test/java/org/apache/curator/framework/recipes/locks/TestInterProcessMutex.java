@@ -21,6 +21,8 @@ package org.apache.curator.framework.recipes.locks;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.KillSession;
+import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Collection;
@@ -106,5 +108,46 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
         {
             client.close();
         }
+    }
+
+    @Test
+    public void testPersistentLock() throws Exception {
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+
+        try {
+            final InterProcessMutex lock = new InterProcessMutex(client, LOCK_PATH, new StandardLockInternalsDriver() {
+                @Override
+                public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception {
+                    String ourPath;
+                    if ( lockNodeBytes != null )
+                    {
+                        ourPath = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.PERSISTENT).forPath(path, lockNodeBytes);
+                    }
+                    else
+                    {
+                        ourPath = client.create().creatingParentsIfNeeded().withProtection().withMode(CreateMode.PERSISTENT).forPath(path);
+                    }
+                    return ourPath;
+                }
+            });
+
+            // Get a persistent lock
+            lock.acquire(10, TimeUnit.SECONDS);
+            Assert.assertTrue(lock.isAcquiredInThisProcess());
+
+            // Kill the session, check that lock node still exists
+            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            Assert.assertNotNull(client.checkExists().forPath(LOCK_PATH));
+
+            // Release the lock and verify that the actual lock node created no longer exists
+            String actualLockPath = lock.getLockPath();
+            lock.release();
+            Assert.assertNull(client.checkExists().forPath(actualLockPath));
+        }
+        finally {
+            client.close();
+        }
+
     }
 }
