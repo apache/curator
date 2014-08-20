@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -60,7 +61,7 @@ public class SimpleDistributedQueue
     public SimpleDistributedQueue(CuratorFramework client, String path)
     {
         this.client = client;
-        this.path = path;
+        this.path = PathUtils.validatePath(path);
         ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 

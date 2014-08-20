@@ -16,28 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.recipes.locks;
 
-import org.apache.curator.utils.PathUtils;
+package org.apache.curator.framework.recipes.cache;
 
-class PredicateResults
+import org.apache.curator.framework.CuratorFramework;
+
+/**
+ * Listener for {@link TreeCache} changes
+ */
+public interface TreeCacheListener
 {
-    private final boolean   getsTheLock;
-    private final String    pathToWatch;
-
-    PredicateResults(String pathToWatch, boolean getsTheLock)
-    {
-        this.pathToWatch = PathUtils.validatePath(pathToWatch);
-        this.getsTheLock = getsTheLock;
-    }
-
-    String getPathToWatch()
-    {
-        return pathToWatch;
-    }
-
-    boolean getsTheLock()
-    {
-        return getsTheLock;
-    }
+    /**
+     * Called when a change has occurred
+     *
+     * @param client the client
+     * @param event  describes the change
+     * @throws Exception errors
+     */
+    public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception;
 }

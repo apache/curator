@@ -23,6 +23,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -54,7 +55,7 @@ public class DistributedBarrier
     public DistributedBarrier(CuratorFramework client, String barrierPath)
     {
         this.client = client;
-        this.barrierPath = barrierPath;
+        this.barrierPath = PathUtils.validatePath(barrierPath);
     }
 
     /**

@@ -739,4 +739,12 @@ public class TestLeaderLatch extends BaseClassForTests
         }
         return leaders;
     }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRelativePath() throws Exception
+    {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        LeaderLatch latch = new LeaderLatch(client, "parent");
+    }
 }

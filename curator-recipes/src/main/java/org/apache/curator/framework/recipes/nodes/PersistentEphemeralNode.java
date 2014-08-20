@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -190,7 +191,7 @@ public class PersistentEphemeralNode implements Closeable
     public PersistentEphemeralNode(CuratorFramework client, Mode mode, String basePath, byte[] data)
     {
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
-        this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
+        this.basePath = PathUtils.validatePath(basePath);
         this.mode = Preconditions.checkNotNull(mode, "mode cannot be null");
         data = Preconditions.checkNotNull(data, "data cannot be null");
 
@@ -320,7 +321,6 @@ public class PersistentEphemeralNode implements Closeable
             }
             catch ( Exception e )
             {
-                log.error("Deleting node: " + localNodePath, e);
                 throw e;
             }
         }
@@ -341,8 +341,7 @@ public class PersistentEphemeralNode implements Closeable
         }
         catch ( Exception e )
         {
-            log.error("Creating node. BasePath: " + basePath, e);
-            throw new RuntimeException(e);  // should never happen unless there's a programming error - so throw RuntimeException
+            throw new RuntimeException("Creating node. BasePath: " + basePath, e);  // should never happen unless there's a programming error - so throw RuntimeException
         }
     }
 
@@ -362,7 +361,6 @@ public class PersistentEphemeralNode implements Closeable
             }
             catch ( Exception e )
             {
-                log.error("Watching node: " + localNodePath, e);
                 throw e;
             }
         }

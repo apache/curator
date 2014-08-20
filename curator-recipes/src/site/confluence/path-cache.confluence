@@ -5,7 +5,7 @@ A Path Cache is used to watch a ZNode. Whenever a child is added, updated or rem
 
 h2. Participating Classes
 * PathChildrenCache
-* PathChildrenCacheMode
+* PathChildrenCacheEvent
 * PathChildrenCacheListener
 * ChildData
 

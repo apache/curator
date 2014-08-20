@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import org.apache.curator.utils.PathUtils;
+
 class GetDataOperation implements Operation
 {
     private final PathChildrenCache cache;
@@ -26,7 +28,7 @@ class GetDataOperation implements Operation
     GetDataOperation(PathChildrenCache cache, String fullPath)
     {
         this.cache = cache;
-        this.fullPath = fullPath;
+        this.fullPath = PathUtils.validatePath(fullPath);
     }
 
     @Override

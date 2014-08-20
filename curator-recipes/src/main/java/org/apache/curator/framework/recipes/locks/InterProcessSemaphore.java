@@ -92,6 +92,7 @@ public class InterProcessSemaphore
 
     private InterProcessSemaphore(CuratorFramework client, String path, int maxLeases, SharedCountReader count)
     {
+        // path verified in LockInternals
         internals = new LockInternals(client, new StandardLockInternalsDriver(), path, LOCK_NAME, (count != null) ? count.getCount() : maxLeases);
         if ( count != null )
         {
