@@ -58,6 +58,8 @@
 
         <jdk-version>1.6</jdk-version>
 
+        <surefire-forkcount>1</surefire-forkcount>
+
         <!-- versions -->
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
         <maven-javadoc-plugin-version>2.9.1</maven-javadoc-plugin-version>
@@ -669,7 +671,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <forkCount>1</forkCount>
+                    <forkCount>${surefire-forkcount}</forkCount>
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
