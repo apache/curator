@@ -154,6 +154,18 @@ public class TestingCluster implements Closeable
             server.start();
         }
     }
+    
+    /**
+     * Restart the ensemble.
+     * @throws Exception
+     */
+    public void     restart() throws Exception
+    {
+        for ( TestingZooKeeperServer server : servers )
+        {
+            server.restart();
+        }
+    }
 
     /**
      * Shutdown the ensemble WITHOUT freeing resources, etc.
