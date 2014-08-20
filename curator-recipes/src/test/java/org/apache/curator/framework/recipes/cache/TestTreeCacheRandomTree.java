@@ -65,8 +65,8 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
         CuratorFramework cl = client.usingNamespace("tree");
         cache = new MyTreeCache(cl, "/", true);
         cache.start();
-        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
-        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertEvent(CacheEvent.Type.NODE_ADDED, "/");
+        assertEvent(CacheEvent.Type.INITIALIZED);
 
         TestNode root = new TestNode("/", null);
         int maxDepth = 0;
@@ -104,7 +104,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
                     cl.delete().forPath(node.fullPath);
 
                     // TreeCache should see the delete.
-                    assertEvent(TreeCacheEvent.Type.NODE_REMOVED, node.fullPath);
+                    assertEvent(CacheEvent.Type.NODE_REMOVED, node.fullPath);
                     ++removals;
                 }
                 break;
@@ -126,7 +126,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
                 cl.setData().forPath(node.fullPath, node.data);
 
                 // TreeCache should see the update.
-                assertEvent(TreeCacheEvent.Type.NODE_UPDATED, node.fullPath, node.data);
+                assertEvent(CacheEvent.Type.NODE_UPDATED, node.fullPath, node.data);
 
                 ++updates;
                 break;
@@ -149,7 +149,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
                 cl.create().forPath(child.fullPath, child.data);
 
                 // TreeCache should see the add.
-                assertEvent(TreeCacheEvent.Type.NODE_ADDED, child.fullPath, child.data);
+                assertEvent(CacheEvent.Type.NODE_ADDED, child.fullPath, child.data);
 
                 ++adds;
                 break;
@@ -179,9 +179,9 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
         for ( Map.Entry<String, TestNode> entry : expectedNode.children.entrySet() )
         {
             String nodeName = entry.getKey();
-            ChildData childData = cacheChildren.get(nodeName);
+            ChildData nodeData = cacheChildren.get(nodeName);
             TestNode expectedChild = entry.getValue();
-            assertNodeEquals(childData, expectedChild);
+            assertNodeEquals(nodeData, expectedChild);
             assertTreeEquals(cache, expectedChild);
         }
     }
@@ -189,10 +189,10 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     /**
      * Assert that the given node data matches expected test node data.
      */
-    private static void assertNodeEquals(ChildData actualChild, TestNode expectedNode)
+    private static void assertNodeEquals(ChildData actualNode, TestNode expectedNode)
     {
         String path = expectedNode.fullPath;
-        Assert.assertNotNull(actualChild, path);
-        Assert.assertEquals(actualChild.getData(), expectedNode.data, path);
+        Assert.assertNotNull(actualNode, path);
+        Assert.assertEquals(actualNode.getData(), expectedNode.data, path);
     }
 }

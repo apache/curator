@@ -161,7 +161,7 @@ public class TreeCache implements Closeable
 
             if ( nodeState.compareAndSet(NodeState.LIVE, NodeState.DEAD) )
             {
-                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, path);
+                publishEvent(CacheEvent.Type.NODE_REMOVED, path);
             }
 
             if ( parent == null )
@@ -288,13 +288,13 @@ public class TreeCache implements Closeable
                     Stat oldStat = stat.getAndSet(newStat);
                     if ( nodeState.compareAndSet(NodeState.PENDING, NodeState.LIVE) )
                     {
-                        publishEvent(TreeCacheEvent.Type.NODE_ADDED, new ChildData(event.getPath(), newStat, event.getData()));
+                        publishEvent(CacheEvent.Type.NODE_ADDED, new ChildData(event.getPath(), newStat, event.getData()));
                     }
                     else
                     {
                         if ( oldStat == null || oldStat.getMzxid() != newStat.getMzxid() )
                         {
-                            publishEvent(TreeCacheEvent.Type.NODE_UPDATED, new ChildData(event.getPath(), newStat, event.getData()));
+                            publishEvent(CacheEvent.Type.NODE_UPDATED, new ChildData(event.getPath(), newStat, event.getData()));
                         }
                     }
                 }
@@ -315,7 +315,7 @@ public class TreeCache implements Closeable
             {
                 if ( isInitialized.compareAndSet(false, true) )
                 {
-                    publishEvent(TreeCacheEvent.Type.INITIALIZED);
+                    publishEvent(CacheEvent.Type.INITIALIZED);
                 }
             }
         }
@@ -334,7 +334,7 @@ public class TreeCache implements Closeable
     private final AtomicLong outstandingOps = new AtomicLong(0);
 
     /**
-     * Have we published the {@link TreeCacheEvent.Type#INITIALIZED} event yet?
+     * Have we published the {@link CacheEvent.Type#INITIALIZED} event yet?
      */
     private final AtomicBoolean isInitialized = new AtomicBoolean(false);
 
@@ -343,7 +343,7 @@ public class TreeCache implements Closeable
     private final CloseableExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
-    private final ListenerContainer<TreeCacheListener> listeners = new ListenerContainer<TreeCacheListener>();
+    private final ListenerContainer<CacheListener> listeners = new ListenerContainer<CacheListener>();
     private final AtomicReference<TreeState> treeState = new AtomicReference<TreeState>(TreeState.LATENT);
 
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -460,7 +460,7 @@ public class TreeCache implements Closeable
      *
      * @return listenable
      */
-    public ListenerContainer<TreeCacheListener> getListenable()
+    public ListenerContainer<CacheListener> getListenable()
     {
         return listeners;
     }
@@ -524,11 +524,11 @@ public class TreeCache implements Closeable
             for ( Map.Entry<String, TreeNode> entry : map.entrySet() )
             {
                 TreeNode childNode = entry.getValue();
-                ChildData childData = new ChildData(childNode.path, childNode.stat.get(), childNode.data.get());
+                ChildData ChildData = new ChildData(childNode.path, childNode.stat.get(), childNode.data.get());
                 // Double-check liveness after retreiving data.
                 if ( childNode.nodeState.get() == NodeState.LIVE )
                 {
-                    builder.put(entry.getKey(), childData);
+                    builder.put(entry.getKey(), ChildData);
                 }
             }
             result = builder.build();
@@ -558,12 +558,12 @@ public class TreeCache implements Closeable
         return node.nodeState.get() == NodeState.LIVE ? result : null;
     }
 
-    private void callListeners(final TreeCacheEvent event)
+    private void callListeners(final CacheEvent event)
     {
-        listeners.forEach(new Function<TreeCacheListener, Void>()
+        listeners.forEach(new Function<CacheListener, Void>()
         {
             @Override
-            public Void apply(TreeCacheListener listener)
+            public Void apply(CacheListener listener)
             {
                 try
                 {
@@ -593,11 +593,11 @@ public class TreeCache implements Closeable
         switch ( newState )
         {
         case SUSPENDED:
-            publishEvent(TreeCacheEvent.Type.CONNECTION_SUSPENDED);
+            publishEvent(CacheEvent.Type.CONNECTION_SUSPENDED);
             break;
 
         case LOST:
-            publishEvent(TreeCacheEvent.Type.CONNECTION_LOST);
+            publishEvent(CacheEvent.Type.CONNECTION_LOST);
             break;
 
         case CONNECTED:
@@ -615,7 +615,7 @@ public class TreeCache implements Closeable
             try
             {
                 root.wasReconnected();
-                publishEvent(TreeCacheEvent.Type.CONNECTION_RECONNECTED);
+                publishEvent(CacheEvent.Type.CONNECTION_RECONNECTED);
             }
             catch ( Exception e )
             {
@@ -625,22 +625,22 @@ public class TreeCache implements Closeable
         }
     }
 
-    private void publishEvent(TreeCacheEvent.Type type)
+    private void publishEvent(CacheEvent.Type type)
     {
-        publishEvent(new TreeCacheEvent(type, null));
+        publishEvent(new CacheEvent(type, null));
     }
 
-    private void publishEvent(TreeCacheEvent.Type type, String path)
+    private void publishEvent(CacheEvent.Type type, String path)
     {
-        publishEvent(new TreeCacheEvent(type, new ChildData(path, null, null)));
+        publishEvent(new CacheEvent(type, new ChildData(path, null, null)));
     }
 
-    private void publishEvent(TreeCacheEvent.Type type, ChildData data)
+    private void publishEvent(CacheEvent.Type type, ChildData data)
     {
-        publishEvent(new TreeCacheEvent(type, data));
+        publishEvent(new CacheEvent(type, data));
     }
 
-    private void publishEvent(final TreeCacheEvent event)
+    private void publishEvent(final CacheEvent event)
     {
         if ( treeState.get() != TreeState.CLOSED )
         {

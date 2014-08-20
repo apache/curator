@@ -22,9 +22,9 @@ package org.apache.curator.framework.recipes.cache;
 import org.apache.curator.framework.CuratorFramework;
 
 /**
- * Listener for {@link TreeCache} changes
+ * Listener for cache changes.
  */
-public interface TreeCacheListener
+public interface CacheListener
 {
     /**
      * Called when a change has occurred
@@ -33,5 +33,5 @@ public interface TreeCacheListener
      * @param event  describes the change
      * @throws Exception errors
      */
-    public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception;
+    void childEvent(CuratorFramework client, CacheEvent event) throws Exception;
 }
