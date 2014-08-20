@@ -19,10 +19,13 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Maps;
+
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ServiceInstance;
-import java.util.Map;
+
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -77,12 +80,14 @@ class DownInstanceManager<T> implements InstanceFilter<T>
             return;
         }
 
-        for ( Map.Entry<ServiceInstance<?>, Status> entry : statuses.entrySet() )
+        Iterator<Entry<ServiceInstance<?>, Status>> it = statuses.entrySet().iterator();
+        while ( it.hasNext() )
         {
+            Entry<ServiceInstance<?>, Status> entry = it.next();
             long elapsedMs = System.currentTimeMillis() - entry.getValue().startMs;
             if ( elapsedMs >= downInstancePolicy.getTimeoutMs() )
             {
-                statuses.remove(entry.getKey());
+                it.remove();
             }
         }
     }

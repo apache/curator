@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.queue;
 
 import java.util.concurrent.BlockingQueue;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * Parameter block for specifying queue safety with either {@link DistributedQueue} or
@@ -36,14 +37,14 @@ public class QueueSafety<T>
      */
     public QueueSafety(String lockPath, QueueConsumer<T> consumer)
     {
-        this.lockPath = lockPath;
+        this.lockPath = PathUtils.validatePath(lockPath);
         this.consumer = consumer;
         this.queue = null;
     }
 
     QueueSafety(String lockPath, BlockingQueue<T> queue)
     {
-        this.lockPath = lockPath;
+        this.lockPath = PathUtils.validatePath(lockPath);
         this.consumer = null;
         this.queue = queue;
     }

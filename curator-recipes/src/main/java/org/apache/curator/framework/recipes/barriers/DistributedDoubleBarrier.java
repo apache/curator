@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -85,7 +86,7 @@ public class DistributedDoubleBarrier
         Preconditions.checkState(memberQty > 0, "memberQty cannot be 0");
 
         this.client = client;
-        this.barrierPath = barrierPath;
+        this.barrierPath = PathUtils.validatePath(barrierPath);
         this.memberQty = memberQty;
         ourPath = ZKPaths.makePath(barrierPath, UUID.randomUUID().toString());
         readyPath = ZKPaths.makePath(barrierPath, READY_NODE);

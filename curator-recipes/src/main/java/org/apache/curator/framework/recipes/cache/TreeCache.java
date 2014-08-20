@@ -50,6 +50,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
@@ -411,7 +412,7 @@ public class TreeCache implements Closeable
      */
     public TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final CloseableExecutorService executorService)
     {
-        this.root = new TreeNode(path, null);
+        this.root = new TreeNode(PathUtils.validatePath(path), null);
         this.client = client;
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
