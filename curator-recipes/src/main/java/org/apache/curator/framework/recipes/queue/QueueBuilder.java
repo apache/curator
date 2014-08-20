@@ -26,6 +26,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * The builder for both {@link DistributedQueue} and {@link DistributedPriorityQueue}
@@ -213,7 +214,7 @@ public class QueueBuilder<T>
      */
     public QueueBuilder<T>  lockPath(String path)
     {
-        lockPath = path;
+        lockPath = PathUtils.validatePath(path);
         return this;
     }
 
@@ -265,7 +266,7 @@ public class QueueBuilder<T>
         this.client = client;
         this.consumer = consumer;
         this.serializer = serializer;
-        this.queuePath = queuePath;
+        this.queuePath = PathUtils.validatePath(queuePath);
 
         factory = defaultThreadFactory;
         executor = MoreExecutors.sameThreadExecutor();

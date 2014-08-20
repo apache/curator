@@ -34,6 +34,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * Manages a shared value. All clients watching the same path will have the up-to-date
@@ -88,7 +89,7 @@ public class SharedValue implements Closeable, SharedValueReader
     public SharedValue(CuratorFramework client, String path, byte[] seedValue)
     {
         this.client = client;
-        this.path = path;
+        this.path = PathUtils.validatePath(path);
         this.seedValue = Arrays.copyOf(seedValue, seedValue.length);
         value = seedValue;
     }

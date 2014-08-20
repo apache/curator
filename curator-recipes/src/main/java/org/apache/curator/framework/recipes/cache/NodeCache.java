@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>A utility that attempts to keep the data from a node locally cached. This class
@@ -129,7 +130,7 @@ public class NodeCache implements Closeable
     public NodeCache(CuratorFramework client, String path, boolean dataIsCompressed)
     {
         this.client = client;
-        this.path = path;
+        this.path = PathUtils.validatePath(path);
         this.dataIsCompressed = dataIsCompressed;
         ensurePath = client.newNamespaceAwareEnsurePath(path).excludingLast();
     }
