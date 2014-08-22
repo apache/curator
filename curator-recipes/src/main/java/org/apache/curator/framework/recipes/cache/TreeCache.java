@@ -30,7 +30,6 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
-import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -51,6 +50,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.curator.utils.PathUtils.validatePath;
 
 /**
  * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
@@ -73,8 +75,8 @@ public class TreeCache implements Closeable
         private CloseableExecutorService executorService = null;
 
         private Builder(CuratorFramework client, String path) {
-            this.client = client;
-            this.path = path;
+            this.client = checkNotNull(client);
+            this.path = validatePath(path);
         }
 
         /**
@@ -143,7 +145,7 @@ public class TreeCache implements Closeable
          */
         public Builder setExecutor(CloseableExecutorService executorService)
         {
-            this.executorService = executorService;
+            this.executorService = checkNotNull(executorService);
             return this;
         }
     }
@@ -485,7 +487,7 @@ public class TreeCache implements Closeable
      */
     TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final CloseableExecutorService executorService)
     {
-        this.root = new TreeNode(PathUtils.validatePath(path), null);
+        this.root = new TreeNode(validatePath(path), null);
         this.client = client;
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;

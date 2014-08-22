@@ -116,7 +116,7 @@ public class CloseableExecutorService implements Closeable
      */
     public CloseableExecutorService(ExecutorService executorService, boolean shutdownOnClose)
     {
-        this.executorService = executorService;
+        this.executorService = Preconditions.checkNotNull(executorService);
         this.shutdownOnClose = shutdownOnClose;
     }
 
