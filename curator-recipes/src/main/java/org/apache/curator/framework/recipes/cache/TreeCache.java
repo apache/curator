@@ -30,6 +30,7 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -50,7 +51,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
@@ -64,6 +64,106 @@ import org.apache.curator.utils.PathUtils;
 public class TreeCache implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
+
+    public static final class Builder {
+        private final CuratorFramework client;
+        private final String path;
+        private boolean cacheData = true;
+        private boolean dataIsCompressed = false;
+        private CloseableExecutorService executorService = null;
+
+        private Builder(CuratorFramework client, String path) {
+            this.client = client;
+            this.path = path;
+        }
+
+        /**
+         * Builds the {@link TreeCache} based on configured values.
+         */
+        public TreeCache build()
+        {
+            CloseableExecutorService executor = executorService;
+            if ( executor == null )
+            {
+                executor = new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory));
+            }
+            return new TreeCache(client, path, cacheData, dataIsCompressed, executor);
+        }
+
+        /**
+         * Builds the {@link TreeCache} based on configured values, and starts it.
+         */
+        public TreeCache buildAndStart() throws Exception
+        {
+            TreeCache treeCache = build();
+            treeCache.start();
+            return treeCache;
+        }
+
+        /**
+         * Sets whether or not to cache byte data per node; default {@code true}.
+         */
+        public Builder setCacheData(boolean cacheData)
+        {
+            this.cacheData = cacheData;
+            return this;
+        }
+
+        /**
+         * Sets whether or to decompress node data; default {@code false}.
+         */
+        public Builder setDataIsCompressed(boolean dataIsCompressed)
+        {
+            this.dataIsCompressed = dataIsCompressed;
+            return this;
+        }
+
+        /**
+         * Sets the executor to publish events; a default executor will be created if not specified.
+         */
+        public Builder setExecutor(ThreadFactory threadFactory)
+        {
+            return setExecutor(new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory)));
+        }
+
+        /**
+         * Sets the executor to publish events; a default executor will be created if not specified.
+         */
+        public Builder setExecutor(ExecutorService executorService)
+        {
+            if (executorService instanceof CloseableExecutorService) {
+                return setExecutor((CloseableExecutorService) executorService);
+            } else {
+                return setExecutor(new CloseableExecutorService(executorService));
+            }
+        }
+
+        /**
+         * Sets the executor to publish events; a default executor will be created if not specified.
+         */
+        public Builder setExecutor(CloseableExecutorService executorService)
+        {
+            this.executorService = executorService;
+            return this;
+        }
+    }
+
+    /**
+     * Create a TreeCache builder for the given client and path to configure advanced options.
+     *
+     * If the client is namespaced, all operations on the resulting TreeCache will be in terms of
+     * the namespace, including all published events.  The given path is the root at which the
+     * TreeCache will watch and explore.  If no node exists at the given path, the TreeCache will
+     * be initially empty.
+     *
+     * @param client the client to use; may be namespaced
+     * @param path the path to the root node to watch/explore; this path need not actually exist on
+     *             the server
+     * @return a new builder
+     */
+    public static Builder newBuilder(CuratorFramework client, String path) {
+        return new Builder(client, path);
+    }
 
     private enum NodeState
     {
@@ -356,51 +456,24 @@ public class TreeCache implements Closeable
         }
     };
 
-    private static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("TreeCache");
+    static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("TreeCache");
 
     /**
-     * @param client    the client
-     * @param path      path to watch
-     * @param cacheData if true, node contents are cached in addition to the stat
+     * Create a TreeCache for the given client and path with default options.
+     *
+     * If the client is namespaced, all operations on the resulting TreeCache will be in terms of
+     * the namespace, including all published events.  The given path is the root at which the
+     * TreeCache will watch and explore.  If no node exists at the given path, the TreeCache will
+     * be initially empty.
+     *
+     * @see #newBuilder(CuratorFramework, String)
+     * @param client the client to use; may be namespaced
+     * @param path the path to the root node to watch/explore; this path need not actually exist on
+     *             the server
      */
-    public TreeCache(CuratorFramework client, String path, boolean cacheData)
+    public TreeCache(CuratorFramework client, String path)
     {
-        this(client, path, cacheData, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
-    }
-
-    /**
-     * @param client        the client
-     * @param path          path to watch
-     * @param cacheData     if true, node contents are cached in addition to the stat
-     * @param threadFactory factory to use when creating internal threads
-     */
-    public TreeCache(CuratorFramework client, String path, boolean cacheData, ThreadFactory threadFactory)
-    {
-        this(client, path, cacheData, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory), true));
-    }
-
-    /**
-     * @param client           the client
-     * @param path             path to watch
-     * @param cacheData        if true, node contents are cached in addition to the stat
-     * @param dataIsCompressed if true, data in the path is compressed
-     * @param threadFactory    factory to use when creating internal threads
-     */
-    public TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, ThreadFactory threadFactory)
-    {
-        this(client, path, cacheData, dataIsCompressed, new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory), true));
-    }
-
-    /**
-     * @param client           the client
-     * @param path             path to watch
-     * @param cacheData        if true, node contents are cached in addition to the stat
-     * @param dataIsCompressed if true, data in the path is compressed
-     * @param executorService  ExecutorService to use for the TreeCache's background thread
-     */
-    public TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final ExecutorService executorService)
-    {
-        this(client, path, cacheData, dataIsCompressed, new CloseableExecutorService(executorService));
+        this(client, path, true, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
     }
 
     /**
@@ -410,7 +483,7 @@ public class TreeCache implements Closeable
      * @param dataIsCompressed if true, data in the path is compressed
      * @param executorService  Closeable ExecutorService to use for the TreeCache's background thread
      */
-    public TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final CloseableExecutorService executorService)
+    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final CloseableExecutorService executorService)
     {
         this.root = new TreeNode(PathUtils.validatePath(path), null);
         this.client = client;

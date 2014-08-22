@@ -63,7 +63,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     {
         client.create().forPath("/tree", null);
         CuratorFramework cl = client.usingNamespace("tree");
-        cache = new MyTreeCache(cl, "/", true);
+        cache = new MyTreeCache(cl, "/");
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);

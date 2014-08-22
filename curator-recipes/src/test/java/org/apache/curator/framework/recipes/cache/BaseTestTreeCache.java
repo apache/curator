@@ -25,11 +25,13 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,9 +64,14 @@ public class BaseTestTreeCache extends BaseClassForTests
     class MyTreeCache extends TreeCache
     {
 
+        MyTreeCache(CuratorFramework client, String path)
+        {
+            this(client, path, true);
+        }
+
         MyTreeCache(CuratorFramework client, String path, boolean cacheData)
         {
-            super(client, path, cacheData);
+            super(client, path, cacheData, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(TreeCache.defaultThreadFactory), true));
             getListenable().addListener(eventListener);
         }
 
