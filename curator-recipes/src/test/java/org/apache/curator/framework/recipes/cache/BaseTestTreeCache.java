@@ -25,13 +25,11 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,19 +37,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class BaseTestTreeCache extends BaseClassForTests
 {
     CuratorFramework client;
-    MyTreeCache cache;
+    TreeCache cache;
     private final AtomicBoolean hadBackgroundException = new AtomicBoolean(false);
     private final BlockingQueue<TreeCacheEvent> events = new LinkedBlockingQueue<TreeCacheEvent>();
     private final Timing timing = new Timing();
 
+    /**
+     * Automatically records all events into an easily testable event stream.
+     */
     final TreeCacheListener eventListener = new TreeCacheListener()
     {
         @Override
         public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
         {
+            // Suppress any events related to /zookeeper paths
             if ( event.getData() != null && event.getData().getPath().startsWith("/zookeeper") )
             {
-                // Suppress any events related to /zookeeper paths
                 return;
             }
             events.add(event);
@@ -59,27 +60,38 @@ public class BaseTestTreeCache extends BaseClassForTests
     };
 
     /**
-     * A TreeCache that records exceptions and automatically adds a listener.
+     * Ensures that tests don't cause any background errors.
      */
-    class MyTreeCache extends TreeCache
+    final UnhandledErrorListener errorListener = new UnhandledErrorListener()
     {
-
-        MyTreeCache(CuratorFramework client, String path)
-        {
-            this(client, path, true);
-        }
-
-        MyTreeCache(CuratorFramework client, String path, boolean cacheData)
-        {
-            super(client, path, cacheData, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(TreeCache.defaultThreadFactory), true));
-            getListenable().addListener(eventListener);
-        }
-
         @Override
-        protected void handleException(Throwable e)
+        public void unhandledError(String message, Throwable e)
         {
-            handleBackgroundException(e);
+            hadBackgroundException.set(true);
+            e.printStackTrace(System.err);
         }
+    };
+
+    /**
+     * Construct a TreeCache that records exceptions and automatically listens.
+     */
+    protected TreeCache newTreeCacheWithListeners(CuratorFramework client, String path)
+    {
+        TreeCache result = new TreeCache(client, path);
+        result.getListenable().addListener(eventListener);
+        result.getUnhandledErrorListenable().addListener(errorListener);
+        return result;
+    }
+
+    /**
+     * Finish constructing a TreeCache that records exceptions and automatically listens.
+     */
+    protected TreeCache buildWithListeners(TreeCache.Builder builder)
+    {
+        TreeCache result = builder.build();
+        result.getListenable().addListener(eventListener);
+        result.getUnhandledErrorListenable().addListener(errorListener);
+        return result;
     }
 
     @Override
@@ -94,20 +106,7 @@ public class BaseTestTreeCache extends BaseClassForTests
     {
         client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
-        client.getUnhandledErrorListenable().addListener(new UnhandledErrorListener()
-        {
-            @Override
-            public void unhandledError(String message, Throwable e)
-            {
-                handleBackgroundException(e);
-            }
-        });
-    }
-
-    private void handleBackgroundException(Throwable exception)
-    {
-        hadBackgroundException.set(true);
-        exception.printStackTrace(System.err);
+        client.getUnhandledErrorListenable().addListener(errorListener);
     }
 
     @Override
@@ -132,22 +131,34 @@ public class BaseTestTreeCache extends BaseClassForTests
         }
     }
 
+    /**
+     * Asserts the event queue is empty.
+     */
     void assertNoMoreEvents() throws InterruptedException
     {
         timing.sleepABit();
         Assert.assertTrue(events.isEmpty());
     }
 
+    /**
+     * Asserts the given event is next in the queue, and consumes it from the queue.
+     */
     TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType) throws InterruptedException
     {
         return assertEvent(expectedType, null);
     }
 
+    /**
+     * Asserts the given event is next in the queue, and consumes it from the queue.
+     */
     TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath) throws InterruptedException
     {
         return assertEvent(expectedType, expectedPath, null);
     }
 
+    /**
+     * Asserts the given event is next in the queue, and consumes it from the queue.
+     */
     TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData) throws InterruptedException
     {
         TreeCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);

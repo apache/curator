@@ -26,6 +26,8 @@ import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -67,14 +69,16 @@ public class TreeCache implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
 
-    public static final class Builder {
+    public static final class Builder
+    {
         private final CuratorFramework client;
         private final String path;
         private boolean cacheData = true;
         private boolean dataIsCompressed = false;
         private CloseableExecutorService executorService = null;
 
-        private Builder(CuratorFramework client, String path) {
+        private Builder(CuratorFramework client, String path)
+        {
             this.client = checkNotNull(client);
             this.path = validatePath(path);
         }
@@ -133,9 +137,12 @@ public class TreeCache implements Closeable
          */
         public Builder setExecutor(ExecutorService executorService)
         {
-            if (executorService instanceof CloseableExecutorService) {
-                return setExecutor((CloseableExecutorService) executorService);
-            } else {
+            if ( executorService instanceof CloseableExecutorService )
+            {
+                return setExecutor((CloseableExecutorService)executorService);
+            }
+            else
+            {
                 return setExecutor(new CloseableExecutorService(executorService));
             }
         }
@@ -152,18 +159,19 @@ public class TreeCache implements Closeable
 
     /**
      * Create a TreeCache builder for the given client and path to configure advanced options.
-     *
+     * <p/>
      * If the client is namespaced, all operations on the resulting TreeCache will be in terms of
      * the namespace, including all published events.  The given path is the root at which the
      * TreeCache will watch and explore.  If no node exists at the given path, the TreeCache will
      * be initially empty.
      *
      * @param client the client to use; may be namespaced
-     * @param path the path to the root node to watch/explore; this path need not actually exist on
-     *             the server
+     * @param path   the path to the root node to watch/explore; this path need not actually exist on
+     *               the server
      * @return a new builder
      */
-    public static Builder newBuilder(CuratorFramework client, String path) {
+    public static Builder newBuilder(CuratorFramework client, String path)
+    {
         return new Builder(client, path);
     }
 
@@ -333,7 +341,8 @@ public class TreeCache implements Closeable
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
                     Stat oldStat = stat.get();
-                    if (oldStat != null && oldStat.getMzxid() == newStat.getMzxid()) {
+                    if ( oldStat != null && oldStat.getMzxid() == newStat.getMzxid() )
+                    {
                         // Only update stat if mzxid is different, otherwise we might obscure
                         // GET_DATA event updates.
                         stat.set(newStat);
@@ -447,6 +456,7 @@ public class TreeCache implements Closeable
     private final boolean cacheData;
     private final boolean dataIsCompressed;
     private final ListenerContainer<TreeCacheListener> listeners = new ListenerContainer<TreeCacheListener>();
+    private final ListenerContainer<UnhandledErrorListener> errorListeners = new ListenerContainer<UnhandledErrorListener>();
     private final AtomicReference<TreeState> treeState = new AtomicReference<TreeState>(TreeState.LATENT);
 
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -462,16 +472,16 @@ public class TreeCache implements Closeable
 
     /**
      * Create a TreeCache for the given client and path with default options.
-     *
+     * <p/>
      * If the client is namespaced, all operations on the resulting TreeCache will be in terms of
      * the namespace, including all published events.  The given path is the root at which the
      * TreeCache will watch and explore.  If no node exists at the given path, the TreeCache will
      * be initially empty.
      *
-     * @see #newBuilder(CuratorFramework, String)
      * @param client the client to use; may be namespaced
-     * @param path the path to the root node to watch/explore; this path need not actually exist on
-     *             the server
+     * @param path   the path to the root node to watch/explore; this path need not actually exist on
+     *               the server
+     * @see #newBuilder(CuratorFramework, String)
      */
     public TreeCache(CuratorFramework client, String path)
     {
@@ -503,7 +513,7 @@ public class TreeCache implements Closeable
     {
         Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        if (client.getZookeeperClient().isConnected())
+        if ( client.getZookeeperClient().isConnected() )
         {
             root.wasCreated();
         }
@@ -536,9 +546,14 @@ public class TreeCache implements Closeable
      *
      * @return listenable
      */
-    public ListenerContainer<TreeCacheListener> getListenable()
+    public Listenable<TreeCacheListener> getListenable()
     {
         return listeners;
+    }
+
+    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
+    {
+        return errorListeners;
     }
 
     private TreeNode find(String fullPath)
@@ -655,13 +670,33 @@ public class TreeCache implements Closeable
     }
 
     /**
-     * Default behavior is just to log the exception
-     *
-     * @param e the exception
+     * Send an exception to any listeners, or else log the error if there are none.
      */
-    protected void handleException(Throwable e)
+    private void handleException(final Throwable e)
     {
-        LOG.error("", e);
+        if ( errorListeners.size() == 0 )
+        {
+            LOG.error("", e);
+        }
+        else
+        {
+            errorListeners.forEach(new Function<UnhandledErrorListener, Void>()
+            {
+                @Override
+                public Void apply(UnhandledErrorListener listener)
+                {
+                    try
+                    {
+                        listener.unhandledError("", e);
+                    }
+                    catch ( Exception e )
+                    {
+                        LOG.error("Exception handling exception", e);
+                    }
+                    return null;
+                }
+            });
+        }
     }
 
     private void handleStateChange(ConnectionState newState)
