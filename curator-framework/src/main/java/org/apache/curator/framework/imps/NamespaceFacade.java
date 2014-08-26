@@ -71,18 +71,6 @@ class NamespaceFacade extends CuratorFrameworkImpl
     }
 
     @Override
-    public GetACLBuilder getACL()
-    {
-        return client.getACL();
-    }
-
-    @Override
-    public SetACLBuilder setACL()
-    {
-        return client.setACL();
-    }
-
-    @Override
     public Listenable<ConnectionStateListener> getConnectionStateListenable()
     {
         return client.getConnectionStateListenable();

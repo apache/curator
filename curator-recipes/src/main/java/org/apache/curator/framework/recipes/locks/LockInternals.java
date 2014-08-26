@@ -99,10 +99,9 @@ public class LockInternals
         this.driver = driver;
         this.lockName = lockName;
         this.maxLeases = maxLeases;
-        PathUtils.validatePath(path);
 
         this.client = client;
-        this.basePath = path;
+        this.basePath = PathUtils.validatePath(path);
         this.path = ZKPaths.makePath(path, lockName);
     }
 

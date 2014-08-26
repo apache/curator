@@ -452,21 +452,24 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         {
             return pathInForeground(adjustedPath, data);
         }
-        catch ( KeeperException.ConnectionLossException e )
+        catch ( Exception e)
         {
-            if ( protectedId != null )
+            if ( ( e instanceof KeeperException.ConnectionLossException ||
+                !( e instanceof KeeperException )) && protectedId != null )
             {
                 /*
-                 * CURATOR-45 : we don't know if the create operation was successful or not,
+                 * CURATOR-45 + CURATOR-79: we don't know if the create operation was successful or not,
                  * register the znode to be sure it is deleted later.
                  */
-                findAndDeleteProtectedNodeInBackground(adjustedPath, protectedId, null);
+                String localProtectedId = protectedId;
+                findAndDeleteProtectedNodeInBackground(adjustedPath, localProtectedId, null);
                 /*
                 * The current UUID is scheduled to be deleted, it is not safe to use it again.
                 * If this builder is used again later create a new UUID
                 */
                 protectedId = UUID.randomUUID().toString();
             }
+            
             throw e;
         }
     }

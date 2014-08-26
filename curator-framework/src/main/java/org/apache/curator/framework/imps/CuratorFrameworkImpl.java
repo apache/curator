@@ -19,8 +19,10 @@
 
 package org.apache.curator.framework.imps;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
@@ -44,6 +46,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -85,7 +88,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     volatile DebugBackgroundListener debugListener = null;
-    volatile UnhandledErrorListener debugUnhandledErrorListener = null;
+    @VisibleForTesting
+    public volatile UnhandledErrorListener debugUnhandledErrorListener = null;
 
     private final AtomicReference<CuratorFrameworkState> state;
 

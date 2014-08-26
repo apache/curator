@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
@@ -190,7 +191,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
 
     InterProcessMutex(CuratorFramework client, String path, String lockName, int maxLeases, LockInternalsDriver driver)
     {
-        basePath = path;
+        basePath = PathUtils.validatePath(path);
         internals = new LockInternals(client, driver, path, lockName, maxLeases);
     }
 

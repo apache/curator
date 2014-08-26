@@ -50,6 +50,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -143,7 +144,7 @@ public class LeaderLatch implements Closeable
     public LeaderLatch(CuratorFramework client, String latchPath, String id, CloseMode closeMode)
     {
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
-        this.latchPath = Preconditions.checkNotNull(latchPath, "mutexPath cannot be null");
+        this.latchPath = PathUtils.validatePath(latchPath);
         this.id = Preconditions.checkNotNull(id, "id cannot be null");
         this.closeMode = Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
     }
@@ -582,7 +583,7 @@ public class LeaderLatch implements Closeable
                 }
             }
         };
-        client.getChildren().inBackground(callback).forPath(latchPath);
+        client.getChildren().inBackground(callback).forPath(ZKPaths.makePath(latchPath, null));
     }
 
     private void handleStateChange(ConnectionState newState)

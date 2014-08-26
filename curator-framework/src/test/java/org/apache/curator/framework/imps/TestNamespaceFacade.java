@@ -18,11 +18,18 @@
  */
 package org.apache.curator.framework.imps;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.KeeperException.NoAuthException;
+import org.apache.zookeeper.data.ACL;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -182,5 +189,44 @@ public class TestNamespaceFacade extends BaseClassForTests
 
         client.close();
         Assert.assertEquals(client.isStarted(), namespaced.isStarted());
+    }
+    
+    /**
+     * Test that ACLs work on a NamespaceFacade. See CURATOR-132
+     * @throws Exception
+     */
+    @Test
+    public void testACL() throws Exception
+    {
+        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        client.getZookeeperClient().blockUntilConnectedOrTimedOut();
+
+        client.create().creatingParentsIfNeeded().forPath("/parent/child", "A string".getBytes());
+        CuratorFramework client2 = client.usingNamespace("parent");
+
+        Assert.assertNotNull(client2.getData().forPath("/child"));  
+        client.setACL().withACL(Collections.singletonList(
+            new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.ANYONE_ID_UNSAFE))).
+                forPath("/parent/child");
+        // This will attempt to setACL on /parent/child, Previously this failed because /child
+        // isn't present. Using "child" would case a failure because the path didn't start with
+        // a slash
+        try
+        {
+            List<ACL> acls = client2.getACL().forPath("/child");
+            Assert.assertNotNull(acls);
+            Assert.assertEquals(acls.size(), 1);
+            Assert.assertEquals(acls.get(0).getId(), ZooDefs.Ids.ANYONE_ID_UNSAFE);
+            Assert.assertEquals(acls.get(0).getPerms(), ZooDefs.Perms.WRITE);
+            client2.setACL().withACL(Collections.singletonList(
+                new ACL(ZooDefs.Perms.DELETE, ZooDefs.Ids.ANYONE_ID_UNSAFE))).
+                    forPath("/child");
+            Assert.fail("Expected auth exception was not thrown");
+        }
+        catch(NoAuthException e)
+        {
+            //Expected
+        }
     }
 }

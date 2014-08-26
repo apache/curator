@@ -46,6 +46,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -135,7 +136,7 @@ public class LeaderSelector implements Closeable
     public LeaderSelector(CuratorFramework client, String leaderPath, CloseableExecutorService executorService, LeaderSelectorListener listener)
     {
         Preconditions.checkNotNull(client, "client cannot be null");
-        Preconditions.checkNotNull(leaderPath, "leaderPath cannot be null");
+        PathUtils.validatePath(leaderPath);
         Preconditions.checkNotNull(listener, "listener cannot be null");
 
         this.client = client;

@@ -26,6 +26,8 @@ import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
+import org.apache.curator.utils.PathUtils;
+import org.apache.zookeeper.ZKUtil;
 
 /**
  * <p>A distributed value that attempts atomic sets. It first tries uses optimistic locking. If that fails,
@@ -69,7 +71,7 @@ public class DistributedAtomicValue
     public DistributedAtomicValue(CuratorFramework client, String path, RetryPolicy retryPolicy, PromotedToLock promotedToLock)
     {
         this.client = client;
-        this.path = path;
+        this.path = PathUtils.validatePath(path);
         this.retryPolicy = retryPolicy;
         this.promotedToLock = promotedToLock;
         mutex = (promotedToLock != null) ? new InterProcessMutex(client, promotedToLock.getPath()) : null;
