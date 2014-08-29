@@ -97,16 +97,6 @@ public class TreeCache implements Closeable
         }
 
         /**
-         * Builds the {@link TreeCache} based on configured values, and starts it.
-         */
-        public TreeCache buildAndStart() throws Exception
-        {
-            TreeCache treeCache = build();
-            treeCache.start();
-            return treeCache;
-        }
-
-        /**
          * Sets whether or not to cache byte data per node; default {@code true}.
          */
         public Builder setCacheData(boolean cacheData)
@@ -507,9 +497,10 @@ public class TreeCache implements Closeable
     /**
      * Start the cache. The cache is not started automatically. You must call this method.
      *
+     * @return this
      * @throws Exception errors
      */
-    public void start() throws Exception
+    public TreeCache start() throws Exception
     {
         Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
         client.getConnectionStateListenable().addListener(connectionStateListener);
@@ -517,6 +508,7 @@ public class TreeCache implements Closeable
         {
             root.wasCreated();
         }
+        return this;
     }
 
     /**
