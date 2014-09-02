@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -543,7 +544,13 @@ public class TreeCache implements Closeable
         return listeners;
     }
 
-    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
+    /**
+     * Allows catching unhandled errors in asynchornous operations.
+     *
+     * TODO: consider making public.
+     */
+    @VisibleForTesting
+    Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
     {
         return errorListeners;
     }
