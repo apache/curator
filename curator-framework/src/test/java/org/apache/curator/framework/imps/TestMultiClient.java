@@ -87,7 +87,7 @@ public class TestMultiClient extends BaseClassForTests
                 }
             );
 
-            client2.sync("/test", null);
+            client2.sync().forPath("/test");
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
         }

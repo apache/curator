@@ -185,10 +185,10 @@ public class TestNamespaceFacade extends BaseClassForTests
         client.start();
         CuratorFramework    namespaced = client.usingNamespace(null);
 
-        Assert.assertEquals(client.isStarted(), namespaced.isStarted());
+        Assert.assertEquals(client.getState(), namespaced.getState(), "Namespaced state did not match true state after call to start.");
 
         client.close();
-        Assert.assertEquals(client.isStarted(), namespaced.isStarted());
+        Assert.assertEquals(client.getState(), namespaced.getState(), "Namespaced state did not match true state after call to close.");
     }
     
     /**

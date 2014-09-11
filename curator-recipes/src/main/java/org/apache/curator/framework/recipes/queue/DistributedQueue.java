@@ -22,11 +22,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.utils.ZKPaths;
@@ -702,7 +704,7 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 bytes = client.getData().storingStatIn(stat).forPath(itemPath);
             }
-            if ( client.isStarted() )
+            if ( client.getState() == CuratorFrameworkState.STARTED )
             {
                 client.delete().withVersion(stat.getVersion()).forPath(itemPath);
             }

@@ -90,7 +90,7 @@ public class TestTransactions extends BaseClassForTests
                     .commit();
 
             Assert.assertTrue(client.checkExists().forPath("/foo") != null);
-            Assert.assertTrue(client.nonNamespaceView().checkExists().forPath("/galt/foo") != null);
+            Assert.assertTrue(client.usingNamespace(null).checkExists().forPath("/galt/foo") != null);
             Assert.assertEquals(client.getData().forPath("/foo"), "two".getBytes());
             Assert.assertTrue(client.checkExists().forPath("/foo/bar") == null);
 

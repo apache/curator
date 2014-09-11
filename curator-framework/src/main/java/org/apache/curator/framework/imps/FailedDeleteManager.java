@@ -47,7 +47,7 @@ class FailedDeleteManager
         }
         
         
-        if ( client.isStarted() )
+        if ( client.getState() == CuratorFrameworkState.STARTED )
         {
             log.debug("Path being added to guaranteed delete set: " + path);
             try

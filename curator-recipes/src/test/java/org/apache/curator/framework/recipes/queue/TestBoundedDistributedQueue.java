@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.queue;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -115,7 +116,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
                             }
                         };
 
-                        while ( !Thread.currentThread().isInterrupted() && client.isStarted() && !isDone.get() )
+                        while ( !Thread.currentThread().isInterrupted() && client.getState() == CuratorFrameworkState.STARTED && !isDone.get() )
                         {
                             synchronized(lock)
                             {

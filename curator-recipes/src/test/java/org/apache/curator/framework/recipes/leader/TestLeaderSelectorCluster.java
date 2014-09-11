@@ -96,7 +96,7 @@ public class TestLeaderSelectorCluster
         {
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
-            client.sync("/", null);
+            client.sync().forPath("/");
 
             final AtomicReference<Exception>        error = new AtomicReference<Exception>(null);
             final AtomicReference<String>           lockNode = new AtomicReference<String>(null);
