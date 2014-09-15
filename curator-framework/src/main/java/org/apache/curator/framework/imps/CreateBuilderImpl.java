@@ -771,7 +771,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
      */
     private void findAndDeleteProtectedNodeInBackground(String path, String protectedId, FindProtectedNodeCB callback)
     {
-        if ( client.isStarted() )
+        if ( client.getState() == CuratorFrameworkState.STARTED )
         {
             if ( callback == null )
             {
