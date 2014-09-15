@@ -214,6 +214,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
+    @Deprecated
     public boolean isStarted()
     {
         return state.get() == CuratorFrameworkState.STARTED;
@@ -326,6 +327,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
+    @Deprecated
     public CuratorFramework nonNamespaceView()
     {
         return usingNamespace(null);
@@ -341,7 +343,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CuratorFramework usingNamespace(String newNamespace)
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return namespaceFacadeCache.get(newNamespace);
     }
@@ -349,7 +351,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CreateBuilder create()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new CreateBuilderImpl(this);
     }
@@ -357,7 +359,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public DeleteBuilder delete()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new DeleteBuilderImpl(this);
     }
@@ -365,7 +367,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public ExistsBuilder checkExists()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new ExistsBuilderImpl(this);
     }
@@ -373,7 +375,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public GetDataBuilder getData()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new GetDataBuilderImpl(this);
     }
@@ -381,7 +383,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public SetDataBuilder setData()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new SetDataBuilderImpl(this);
     }
@@ -389,7 +391,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public GetChildrenBuilder getChildren()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new GetChildrenBuilderImpl(this);
     }
@@ -397,7 +399,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public GetACLBuilder getACL()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new GetACLBuilderImpl(this);
     }
@@ -405,7 +407,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public SetACLBuilder setACL()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new SetACLBuilderImpl(this);
     }
@@ -413,7 +415,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CuratorTransaction inTransaction()
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new CuratorTransactionImpl(this);
     }
@@ -439,7 +441,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public void sync(String path, Object context)
     {
-        Preconditions.checkState(isStarted(), "instance must be started before calling this method");
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         path = fixForNamespace(path);
 

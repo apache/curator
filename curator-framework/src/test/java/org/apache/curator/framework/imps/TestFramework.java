@@ -342,7 +342,7 @@ public class TestFramework extends BaseClassForTests
             Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/" + namespace + "/test", false));
             Assert.assertNull(client.getZookeeperClient().getZooKeeper().exists("/test", false));
 
-            actualPath = client.nonNamespaceView().create().forPath("/non");
+            actualPath = client.usingNamespace(null).create().forPath("/non");
             Assert.assertEquals(actualPath, "/non");
             Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/non", false));
 
@@ -350,7 +350,7 @@ public class TestFramework extends BaseClassForTests
             byte[]      bytes = client.getData().forPath("/test/child");
             Assert.assertEquals(bytes, "hey".getBytes());
 
-            bytes = client.nonNamespaceView().getData().forPath("/" + namespace + "/test/child");
+            bytes = client.usingNamespace(null).getData().forPath("/" + namespace + "/test/child");
             Assert.assertEquals(bytes, "hey".getBytes());
         }
         finally
