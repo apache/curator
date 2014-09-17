@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.cache;
 import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.curator.utils.PathUtils;
 
 public class ChildData implements Comparable<ChildData>
 {
@@ -31,7 +30,7 @@ public class ChildData implements Comparable<ChildData>
 
     public ChildData(String path, Stat stat, byte[] data)
     {
-        this.path = PathUtils.validatePath(path);
+        this.path = path;
         this.stat = stat;
         this.data = new AtomicReference<byte[]>(data);
     }
