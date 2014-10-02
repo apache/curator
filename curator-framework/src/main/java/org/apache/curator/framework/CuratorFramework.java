@@ -216,7 +216,7 @@ public interface CuratorFramework extends Closeable
         
     /**
      * Block until a connection to ZooKeeper is available or the maxWaitTime has been exceeded
-     * @param maxWaitTime The maximum wait time. Specify a value <= 0 to wait indefinitely
+     * @param maxWaitTime The maximum wait time. Specify a value &lt;= 0 to wait indefinitely
      * @param units The time units for the maximum wait time.
      * @return True if connection has been established, false otherwise.
      * @throws InterruptedException If interrupted while waiting

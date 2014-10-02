@@ -248,12 +248,13 @@ public class LeaderLatch implements Closeable
 
     /**
      * Attaches a listener to this LeaderLatch
-     * <p/>
+     * <p>
      * Attaching the same listener multiple times is a noop from the second time on.
-     * <p/>
+     * </p><p>
      * All methods for the listener are run using the provided Executor.  It is common to pass in a single-threaded
      * executor so that you can be certain that listener methods are called in sequence, but if you are fine with
      * them being called out of order you are welcome to use multiple threads.
+     * </p>
      *
      * @param listener the listener to attach
      */
@@ -264,12 +265,13 @@ public class LeaderLatch implements Closeable
 
     /**
      * Attaches a listener to this LeaderLatch
-     * <p/>
+     * <p>
      * Attaching the same listener multiple times is a noop from the second time on.
-     * <p/>
+     * </p><p>
      * All methods for the listener are run using the provided Executor.  It is common to pass in a single-threaded
      * executor so that you can be certain that listener methods are called in sequence, but if you are fine with
      * them being called out of order you are welcome to use multiple threads.
+     * </p>
      *
      * @param listener the listener to attach
      * @param executor An executor to run the methods for the listener on.
@@ -293,7 +295,7 @@ public class LeaderLatch implements Closeable
      * <p>Causes the current thread to wait until this instance acquires leadership
      * unless the thread is {@linkplain Thread#interrupt interrupted} or {@linkplain #close() closed}.</p>
      * <p>If this instance already is the leader then this method returns immediately.</p>
-     * <p/>
+     * <p></p>
      * <p>Otherwise the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until one of three things happen:</p>
@@ -335,10 +337,10 @@ public class LeaderLatch implements Closeable
      * <p>Causes the current thread to wait until this instance acquires leadership
      * unless the thread is {@linkplain Thread#interrupt interrupted},
      * the specified waiting time elapses or the instance is {@linkplain #close() closed}.</p>
-     * <p/>
+     * <p></p>
      * <p>If this instance already is the leader then this method returns immediately
      * with the value {@code true}.</p>
-     * <p/>
+     * <p></p>
      * <p>Otherwise the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until one of four things happen:</p>
@@ -349,7 +351,7 @@ public class LeaderLatch implements Closeable
      * <li>The specified waiting time elapses.</li>
      * <li>The instance is {@linkplain #close() closed}</li>
      * </ul>
-     * <p/>
+     * <p></p>
      * <p>If the current thread:</p>
      * <ul>
      * <li>has its interrupted status set on entry to this method; or
@@ -357,7 +359,7 @@ public class LeaderLatch implements Closeable
      * </ul>
      * <p>then {@link InterruptedException} is thrown and the current thread's
      * interrupted status is cleared.</p>
-     * <p/>
+     * <p></p>
      * <p>If the specified waiting time elapses or the instance is {@linkplain #close() closed}
      * then the value {@code false} is returned.  If the time is less than or equal to zero, the method
      * will not wait at all.</p>
