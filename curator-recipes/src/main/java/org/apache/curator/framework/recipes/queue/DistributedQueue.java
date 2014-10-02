@@ -128,7 +128,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         Preconditions.checkArgument(maxItems > 0, "maxItems must be a positive number");
 
         isProducerOnly = (consumer == null);
-        this.lockPath = PathUtils.validatePath(lockPath);
+        this.lockPath = (lockPath == null) ? null : PathUtils.validatePath(lockPath);
         this.putInBackground = putInBackground;
         this.consumer = consumer;
         this.minItemsBeforeRefresh = minItemsBeforeRefresh;

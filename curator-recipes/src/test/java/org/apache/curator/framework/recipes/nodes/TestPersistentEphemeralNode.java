@@ -167,7 +167,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         new PersistentEphemeralNode(null, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNullPath() throws Exception
     {
         CuratorFramework curator = newCurator();

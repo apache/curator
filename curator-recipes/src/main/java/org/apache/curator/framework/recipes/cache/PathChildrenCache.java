@@ -88,7 +88,7 @@ public class PathChildrenCache implements Closeable
         CLOSED
     }
 
-    private static final ChildData NULL_CHILD_DATA = new ChildData(null, null, null);
+    private static final ChildData NULL_CHILD_DATA = new ChildData("/", null, null);
 
     private static final boolean USE_EXISTS = Boolean.getBoolean("curator-path-children-cache-use-exists");
 
