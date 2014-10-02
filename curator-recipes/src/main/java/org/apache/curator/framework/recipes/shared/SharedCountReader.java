@@ -30,5 +30,12 @@ public interface SharedCountReader extends Listenable<SharedCountListener>
      *
      * @return count
      */
-    int      getCount();
+    public int      getCount();
+
+    /**
+     * Return the current count and version
+     *
+     * @return count and version
+     */
+    public VersionedValue<Integer> getVersionedValue();
 }

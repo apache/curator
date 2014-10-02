@@ -33,6 +33,13 @@ public interface SharedValueReader
     public byte[]   getValue();
 
     /**
+     * Return the current version and value
+     *
+     * @return version/value
+     */
+    public VersionedValue<byte[]> getVersionedValue();
+
+    /**
      * Returns the listenable
      *
      * @return listenable

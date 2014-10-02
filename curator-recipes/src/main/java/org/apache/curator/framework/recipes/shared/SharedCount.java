@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.shared;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.framework.CuratorFramework;
@@ -54,6 +55,13 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
         return fromBytes(sharedValue.getValue());
     }
 
+    @Override
+    public VersionedValue<Integer> getVersionedValue()
+    {
+        VersionedValue<byte[]> localValue = sharedValue.getVersionedValue();
+        return new VersionedValue<Integer>(localValue.getVersion(), fromBytes(localValue.getValue()));
+    }
+
     /**
      * Change the shared count value irrespective of its previous state
      *
@@ -79,6 +87,23 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
     public boolean  trySetCount(int newCount) throws Exception
     {
         return sharedValue.trySetValue(toBytes(newCount));
+    }
+
+    /**
+     * Changes the shared count only if its value has not changed since the version specified by
+     * newCount. If the count has changed, the value is not set and this client's view of the
+     * value is updated. i.e. if the count is not successful you can get the updated value
+     * by calling {@link #getCount()}.
+     *
+     * @param newCount the new value to attempt
+     * @return true if the change attempt was successful, false if not. If the change
+     * was not successful, {@link #getCount()} will return the updated value
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public boolean  trySetCount(VersionedValue<Integer> newCount) throws Exception
+    {
+        VersionedValue<byte[]> copy = new VersionedValue<byte[]>(newCount.getVersion(), toBytes(newCount.getValue()));
+        return sharedValue.trySetValue(copy);
     }
 
     @Override
@@ -131,7 +156,8 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
         sharedValue.close();
     }
 
-    private static byte[]   toBytes(int value)
+    @VisibleForTesting
+    static byte[]   toBytes(int value)
     {
         byte[]      bytes = new byte[4];
         ByteBuffer.wrap(bytes).putInt(value);
