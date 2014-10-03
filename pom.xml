@@ -222,6 +222,18 @@
         </developer>
 
         <developer>
+            <id>dragonsinth</id>
+            <name>Scott Blum</name>
+            <email>dragonsinth@apache.org</email>
+            <timezone>-5</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>http://github.com/dragonsinth</url>
+        </developer>
+
+        <developer>
             <name>Patrick Hunt</name>
             <email>phunt1@gmail.com</email>
             <roles>
