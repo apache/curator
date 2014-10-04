@@ -32,7 +32,7 @@ public class VersionedValue<T>
      * @param version the version
      * @param value the value (cannot be null)
      */
-    public VersionedValue(int version, T value)
+    VersionedValue(int version, T value)
     {
         this.version = version;
         this.value = Preconditions.checkNotNull(value, "value cannot be null");

@@ -117,10 +117,8 @@ public class SharedValue implements Closeable, SharedValueReader
     {
         Preconditions.checkState(state.get() == State.STARTED, "not started");
 
-        VersionedValue<byte[]> localCopy = currentValue.get();
-        client.setData().forPath(path, newValue);
-
-        currentValue.set(new VersionedValue<byte[]>(localCopy.getVersion() + 1, Arrays.copyOf(newValue, newValue.length)));
+        Stat result = client.setData().forPath(path, newValue);
+        updateValue(result.getVersion(), Arrays.copyOf(newValue, newValue.length));
     }
 
     /**
@@ -129,29 +127,19 @@ public class SharedValue implements Closeable, SharedValueReader
      * value is updated. i.e. if the value is not successful you can get the updated value
      * by calling {@link #getValue()}.
      *
+     * @deprecated use {@link #trySetValue(VersionedValue, byte[])} for stronger atomicity
+     * guarantees. Even if this object's internal state is up-to-date, the caller has no way to
+     * ensure that they've read the most recently seen value.
+     *
      * @param newValue the new value to attempt
      * @return true if the change attempt was successful, false if not. If the change
      * was not successful, {@link #getValue()} will return the updated value
      * @throws Exception ZK errors, interruptions, etc.
      */
+    @Deprecated
     public boolean trySetValue(byte[] newValue) throws Exception
     {
-        Preconditions.checkState(state.get() == State.STARTED, "not started");
-
-        try
-        {
-            VersionedValue<byte[]> localCopy = currentValue.get();
-            client.setData().withVersion(localCopy.getVersion()).forPath(path, newValue);
-            currentValue.set(new VersionedValue<byte[]>(localCopy.getVersion() + 1, Arrays.copyOf(newValue, newValue.length)));
-            return true;
-        }
-        catch ( KeeperException.BadVersionException ignore )
-        {
-            // ignore
-        }
-
-        readValue();
-        return false;
+        return trySetValue(currentValue.get(), newValue);
     }
 
     /**
@@ -165,14 +153,20 @@ public class SharedValue implements Closeable, SharedValueReader
      * was not successful, {@link #getValue()} will return the updated value
      * @throws Exception ZK errors, interruptions, etc.
      */
-    public boolean trySetValue(VersionedValue<byte[]> newValue) throws Exception
+    public boolean trySetValue(VersionedValue<byte[]> previous, byte[] newValue) throws Exception
     {
         Preconditions.checkState(state.get() == State.STARTED, "not started");
 
+        VersionedValue<byte[]> current = currentValue.get();
+        if ( previous.getVersion() != current.getVersion() || !Arrays.equals(previous.getValue(), current.getValue()) )
+        {
+            return false;
+        }
+
         try
         {
-            client.setData().withVersion(newValue.getVersion()).forPath(path, newValue.getValue());
-            currentValue.set(new VersionedValue<byte[]>(newValue.getVersion() + 1, Arrays.copyOf(newValue.getValue(), newValue.getValue().length)));
+            Stat result = client.setData().withVersion(previous.getVersion()).forPath(path, newValue);
+            updateValue(result.getVersion(), Arrays.copyOf(newValue, newValue.length));
             return true;
         }
         catch ( KeeperException.BadVersionException ignore )
@@ -182,6 +176,25 @@ public class SharedValue implements Closeable, SharedValueReader
 
         readValue();
         return false;
+    }
+
+    private void updateValue(int version, byte[] bytes)
+    {
+        while (true)
+        {
+            VersionedValue<byte[]> current = currentValue.get();
+            if (current.getVersion() >= version)
+            {
+                // A newer version was concurrently set.
+                return;
+            }
+            if ( currentValue.compareAndSet(current, new VersionedValue<byte[]>(version, bytes)) )
+            {
+                // Successfully set.
+                return;
+            }
+            // Lost a race, retry.
+        }
     }
 
     /**
@@ -225,11 +238,11 @@ public class SharedValue implements Closeable, SharedValueReader
         listeners.clear();
     }
 
-    private synchronized void readValue() throws Exception
+    private void readValue() throws Exception
     {
         Stat localStat = new Stat();
         byte[] bytes = client.getData().storingStatIn(localStat).usingWatcher(watcher).forPath(path);
-        currentValue.set(new VersionedValue<byte[]>(localStat.getVersion(), Arrays.copyOf(bytes, bytes.length)));
+        updateValue(localStat.getVersion(), bytes);
     }
 
     private void notifyListeners()
