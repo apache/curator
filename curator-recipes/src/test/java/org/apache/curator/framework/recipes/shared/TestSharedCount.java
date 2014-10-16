@@ -184,17 +184,33 @@ public class TestSharedCount extends BaseClassForTests
         {
             count.start();
 
-            Assert.assertTrue(count.trySetCount(new VersionedValue<Integer>(0, 1)));
-            Assert.assertTrue(count.trySetCount(new VersionedValue<Integer>(1, 5)));
-            Assert.assertTrue(count.trySetCount(new VersionedValue<Integer>(2, 10)));
-            Assert.assertEquals(count.getCount(), 10);
-            Assert.assertFalse(count.trySetCount(new VersionedValue<Integer>(10, 20)));
+            VersionedValue<Integer> current = count.getVersionedValue();
+            Assert.assertEquals(current.getVersion(), 0);
 
-            VersionedValue<Integer> versionedValue = count.getVersionedValue();
-            Assert.assertTrue(count.trySetCount(new VersionedValue<Integer>(versionedValue.getVersion(), 100)));
-            versionedValue = count.getVersionedValue();
+            Assert.assertTrue(count.trySetCount(current, 1));
+            current = count.getVersionedValue();
+            Assert.assertEquals(current.getVersion(), 1);
+            Assert.assertEquals(count.getCount(), 1);
+
+            Assert.assertTrue(count.trySetCount(current, 5));
+            current = count.getVersionedValue();
+            Assert.assertEquals(current.getVersion(), 2);
+            Assert.assertEquals(count.getCount(), 5);
+
+            Assert.assertTrue(count.trySetCount(current, 10));
+
+            current = count.getVersionedValue();
+            Assert.assertEquals(current.getVersion(), 3);
+            Assert.assertEquals(count.getCount(), 10);
+
+            // Wrong value
+            Assert.assertFalse(count.trySetCount(new VersionedValue<Integer>(3, 20), 7));
+            // Wrong version
+            Assert.assertFalse(count.trySetCount(new VersionedValue<Integer>(10, 10), 7));
+
+            // Server changed
             client.setData().forPath("/count", SharedCount.toBytes(88));
-            Assert.assertFalse(count.trySetCount(new VersionedValue<Integer>(versionedValue.getVersion(), 234)));
+            Assert.assertFalse(count.trySetCount(current, 234));
         }
         finally
         {
@@ -219,18 +235,18 @@ public class TestSharedCount extends BaseClassForTests
             count2.start();
 
             VersionedValue<Integer> versionedValue = count1.getVersionedValue();
-            Assert.assertTrue(count1.trySetCount(new VersionedValue<Integer>(versionedValue.getVersion(), 10)));
+            Assert.assertTrue(count1.trySetCount(versionedValue, 10));
             timing.sleepABit();
             versionedValue = count2.getVersionedValue();
-            Assert.assertTrue(count2.trySetCount(new VersionedValue<Integer>(versionedValue.getVersion(), 20)));
+            Assert.assertTrue(count2.trySetCount(versionedValue, 20));
             timing.sleepABit();
 
             VersionedValue<Integer> versionedValue1 = count1.getVersionedValue();
             VersionedValue<Integer> versionedValue2 = count2.getVersionedValue();
-            Assert.assertTrue(count2.trySetCount(new VersionedValue<Integer>(versionedValue2.getVersion(), 30)));
-            Assert.assertFalse(count1.trySetCount(new VersionedValue<Integer>(versionedValue1.getVersion(), 40)));
+            Assert.assertTrue(count2.trySetCount(versionedValue2, 30));
+            Assert.assertFalse(count1.trySetCount(versionedValue1, 40));
             versionedValue1 = count1.getVersionedValue();
-            Assert.assertTrue(count1.trySetCount(new VersionedValue<Integer>(versionedValue1.getVersion(), 40)));
+            Assert.assertTrue(count1.trySetCount(versionedValue1, 40));
         }
         finally
         {

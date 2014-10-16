@@ -79,11 +79,16 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
      * value is updated. i.e. if the count is not successful you can get the updated value
      * by calling {@link #getCount()}.
      *
+     * @deprecated use {@link #trySetCount(VersionedValue, int)} for stronger atomicity
+     * guarantees. Even if this object's internal state is up-to-date, the caller has no way to
+     * ensure that they've read the most recently seen count.
+     *
      * @param newCount the new value to attempt
      * @return true if the change attempt was successful, false if not. If the change
      * was not successful, {@link #getCount()} will return the updated value
      * @throws Exception ZK errors, interruptions, etc.
      */
+    @Deprecated
     public boolean  trySetCount(int newCount) throws Exception
     {
         return sharedValue.trySetValue(toBytes(newCount));
@@ -100,10 +105,10 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
      * was not successful, {@link #getCount()} will return the updated value
      * @throws Exception ZK errors, interruptions, etc.
      */
-    public boolean  trySetCount(VersionedValue<Integer> newCount) throws Exception
+    public boolean  trySetCount(VersionedValue<Integer> previous, int newCount) throws Exception
     {
-        VersionedValue<byte[]> copy = new VersionedValue<byte[]>(newCount.getVersion(), toBytes(newCount.getValue()));
-        return sharedValue.trySetValue(copy);
+        VersionedValue<byte[]> previousCopy = new VersionedValue<byte[]>(previous.getVersion(), toBytes(previous.getValue()));
+        return sharedValue.trySetValue(previousCopy, toBytes(newCount));
     }
 
     @Override
