@@ -77,6 +77,7 @@ public class TreeCache implements Closeable
         private boolean cacheData = true;
         private boolean dataIsCompressed = false;
         private CloseableExecutorService executorService = null;
+        private int maxDepth = Integer.MAX_VALUE;
 
         private Builder(CuratorFramework client, String path)
         {
@@ -94,7 +95,7 @@ public class TreeCache implements Closeable
             {
                 executor = new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory));
             }
-            return new TreeCache(client, path, cacheData, dataIsCompressed, executor);
+            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor);
         }
 
         /**
@@ -146,6 +147,18 @@ public class TreeCache implements Closeable
             this.executorService = checkNotNull(executorService);
             return this;
         }
+
+        /**
+         * Sets the maximum depth to explore/watch.  A {@code maxDepth} of {@code 0} will watch only
+         * the root node (like {@link NodeCache}); a {@code maxDepth} of {@code 1} will watch the
+         * root node and its immediate children (kind of like {@link PathChildrenCache}.
+         * Default: {@code Integer.MAX_VALUE}
+         */
+        public Builder setMaxDepth(int maxDepth)
+        {
+            this.maxDepth = maxDepth;
+            return this;
+        }
     }
 
     /**
@@ -179,24 +192,34 @@ public class TreeCache implements Closeable
         final AtomicReference<Stat> stat = new AtomicReference<Stat>();
         final AtomicReference<byte[]> data = new AtomicReference<byte[]>();
         final AtomicReference<ConcurrentMap<String, TreeNode>> children = new AtomicReference<ConcurrentMap<String, TreeNode>>();
+        final int depth;
 
         TreeNode(String path, TreeNode parent)
         {
             this.path = path;
             this.parent = parent;
+            this.depth = parent == null ? 0 : parent.depth + 1;
         }
 
         private void refresh() throws Exception
         {
-            outstandingOps.addAndGet(2);
-            doRefreshData();
-            doRefreshChildren();
+            if (depth < maxDepth)
+            {
+                outstandingOps.addAndGet(2);
+                doRefreshData();
+                doRefreshChildren();
+            } else {
+                refreshData();
+            }
         }
 
         private void refreshChildren() throws Exception
         {
-            outstandingOps.incrementAndGet();
-            doRefreshChildren();
+            if (depth < maxDepth)
+            {
+                outstandingOps.incrementAndGet();
+                doRefreshChildren();
+            }
         }
 
         private void refreshData() throws Exception
@@ -446,6 +469,7 @@ public class TreeCache implements Closeable
     private final CloseableExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
+    private final int maxDepth;
     private final ListenerContainer<TreeCacheListener> listeners = new ListenerContainer<TreeCacheListener>();
     private final ListenerContainer<UnhandledErrorListener> errorListeners = new ListenerContainer<UnhandledErrorListener>();
     private final AtomicReference<TreeState> treeState = new AtomicReference<TreeState>(TreeState.LATENT);
@@ -476,7 +500,7 @@ public class TreeCache implements Closeable
      */
     public TreeCache(CuratorFramework client, String path)
     {
-        this(client, path, true, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
+        this(client, path, true, false, Integer.MAX_VALUE, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
     }
 
     /**
@@ -486,12 +510,13 @@ public class TreeCache implements Closeable
      * @param dataIsCompressed if true, data in the path is compressed
      * @param executorService  Closeable ExecutorService to use for the TreeCache's background thread
      */
-    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final CloseableExecutorService executorService)
+    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService)
     {
         this.root = new TreeNode(validatePath(path), null);
         this.client = client;
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
+        this.maxDepth = maxDepth;
         this.executorService = executorService;
     }
 

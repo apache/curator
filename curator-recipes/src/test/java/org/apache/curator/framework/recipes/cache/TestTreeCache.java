@@ -68,6 +68,74 @@ public class TestTreeCache extends BaseTestTreeCache
     }
 
     @Test
+    public void testDepth0() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/1", "one".getBytes());
+        client.create().forPath("/test/2", "two".getBytes());
+        client.create().forPath("/test/3", "three".getBytes());
+        client.create().forPath("/test/2/sub", "two-sub".getBytes());
+
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/test").setMaxDepth(0));
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
+
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of());
+        Assert.assertNull(cache.getCurrentData("/test/1"));
+        Assert.assertNull(cache.getCurrentChildren("/test/1"));
+        Assert.assertNull(cache.getCurrentData("/test/non_exist"));
+    }
+
+    @Test
+    public void testDepth1() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/1", "one".getBytes());
+        client.create().forPath("/test/2", "two".getBytes());
+        client.create().forPath("/test/3", "three".getBytes());
+        client.create().forPath("/test/2/sub", "two-sub".getBytes());
+
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/test").setMaxDepth(1));
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/1", "one".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/2", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/3", "three".getBytes());
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
+
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("1", "2", "3"));
+        Assert.assertEquals(cache.getCurrentChildren("/test/1").keySet(), ImmutableSet.of());
+        Assert.assertEquals(cache.getCurrentChildren("/test/2").keySet(), ImmutableSet.of());
+        Assert.assertNull(cache.getCurrentData("/test/2/sub"));
+        Assert.assertNull(cache.getCurrentChildren("/test/2/sub"));
+        Assert.assertNull(cache.getCurrentChildren("/test/non_exist"));
+    }
+
+    @Test
+    public void testDepth1Deeper() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/foo");
+        client.create().forPath("/test/foo/bar");
+        client.create().forPath("/test/foo/bar/1", "one".getBytes());
+        client.create().forPath("/test/foo/bar/2", "two".getBytes());
+        client.create().forPath("/test/foo/bar/3", "three".getBytes());
+        client.create().forPath("/test/foo/bar/2/sub", "two-sub".getBytes());
+
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/test/foo/bar").setMaxDepth(1));
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar/1", "one".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar/2", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar/3", "three".getBytes());
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
+    }
+
+    @Test
     public void testAsyncInitialPopulation() throws Exception
     {
         client.create().forPath("/test");
@@ -99,6 +167,25 @@ public class TestTreeCache extends BaseTestTreeCache
         Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("one"));
         Assert.assertEquals(cache.getCurrentChildren("/test/one").keySet(), ImmutableSet.of());
         Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
+    }
+
+    @Test
+    public void testFromRootWithDepth() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/one", "hey there".getBytes());
+
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/").setMaxDepth(1));
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
+
+        Assert.assertTrue(cache.getCurrentChildren("/").keySet().contains("test"));
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of());
+        Assert.assertNull(cache.getCurrentData("/test/one"));
+        Assert.assertNull(cache.getCurrentChildren("/test/one"));
     }
 
     @Test
