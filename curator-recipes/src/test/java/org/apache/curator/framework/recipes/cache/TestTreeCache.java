@@ -115,6 +115,27 @@ public class TestTreeCache extends BaseTestTreeCache
     }
 
     @Test
+    public void testDepth1Deeper() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/foo");
+        client.create().forPath("/test/foo/bar");
+        client.create().forPath("/test/foo/bar/1", "one".getBytes());
+        client.create().forPath("/test/foo/bar/2", "two".getBytes());
+        client.create().forPath("/test/foo/bar/3", "three".getBytes());
+        client.create().forPath("/test/foo/bar/2/sub", "two-sub".getBytes());
+
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/test/foo/bar").setMaxDepth(1));
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar/1", "one".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar/2", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar/3", "three".getBytes());
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
+    }
+
+    @Test
     public void testAsyncInitialPopulation() throws Exception
     {
         client.create().forPath("/test");
