@@ -150,8 +150,9 @@ public class TreeCache implements Closeable
 
         /**
          * Sets the maximum depth to explore/watch.  A {@code maxDepth} of {@code 0} will watch only
-         * the root node; a {@code maxDepth} of {@code 1} will watch the root node and its immediate
-         * children. Default: {@code Integer.MAX_VALUE}
+         * the root node (like {@link NodeCache}); a {@code maxDepth} of {@code 1} will watch the
+         * root node and its immediate children (kind of like {@link PathChildrenCache}.
+         * Default: {@code Integer.MAX_VALUE}
          */
         public Builder setMaxDepth(int maxDepth)
         {
