@@ -302,7 +302,7 @@ public class PersistentEphemeralNode implements Closeable
         this.data.set(Arrays.copyOf(data, data.length));
         if ( isActive() )
         {
-            client.setData().inBackground().forPath(basePath, this.data.get());
+            client.setData().inBackground().forPath(getActualPath(), this.data.get());
         }
     }
 

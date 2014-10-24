@@ -189,19 +189,29 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
 
     @Test
+    public void testSettingDataSequential() throws Exception
+    {
+        setDataTest(PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL);
+    }
+
+    @Test
     public void testSettingData() throws Exception
+    {
+        setDataTest(PersistentEphemeralNode.Mode.EPHEMERAL);
+    }
+
+    protected void setDataTest(PersistentEphemeralNode.Mode mode) throws Exception
     {
         PersistentEphemeralNode node = null;
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
             client.start();
-            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, "a".getBytes());
+            node = new PersistentEphemeralNode(client, mode, PATH, "a".getBytes());
             node.start();
             Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS));
 
-            Assert.assertEquals(node.getActualPath(), PATH);
-            Assert.assertEquals(client.getData().forPath(PATH), "a".getBytes());
+            Assert.assertEquals(client.getData().forPath(node.getActualPath()), "a".getBytes());
 
             final Semaphore semaphore = new Semaphore(0);
             Watcher watcher = new Watcher()
@@ -212,18 +222,17 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
                     semaphore.release();
                 }
             };
-            client.checkExists().usingWatcher(watcher).forPath(PATH);
+            client.checkExists().usingWatcher(watcher).forPath(node.getActualPath());
             node.setData("b".getBytes());
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertEquals(node.getActualPath(), PATH);
-            Assert.assertEquals(client.getData().usingWatcher(watcher).forPath(PATH), "b".getBytes());
+            Assert.assertEquals(node.getActualPath(), node.getActualPath());
+            Assert.assertEquals(client.getData().usingWatcher(watcher).forPath(node.getActualPath()), "b".getBytes());
             node.setData("c".getBytes());
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertEquals(node.getActualPath(), PATH);
-            Assert.assertEquals(client.getData().usingWatcher(watcher).forPath(PATH), "c".getBytes());
+            Assert.assertEquals(node.getActualPath(), node.getActualPath());
+            Assert.assertEquals(client.getData().usingWatcher(watcher).forPath(node.getActualPath()), "c".getBytes());
             node.close();
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertTrue(client.checkExists().forPath(PATH) == null);
         }
         finally
         {
