@@ -521,6 +521,7 @@
                     <additionalJOptions>
                         <additionalJOption>-J-Xmx1g</additionalJOption>
                     </additionalJOptions>
+                    <failOnError>false</failOnError>
                 </configuration>
             </plugin>
         </plugins>
@@ -697,6 +698,7 @@
                     <additionalJOptions>
                         <additionalJOption>-J-Xmx1g</additionalJOption>
                     </additionalJOptions>
+                    <failOnError>false</failOnError>
                 </configuration>
             </plugin>
 
