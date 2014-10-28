@@ -240,7 +240,7 @@ public class PathCacheExample
         System.out.println("An example of using PathChildrenCache. This example is driven by entering commands at the prompt:\n");
         System.out.println("set <name> <value>: Adds or updates a node with the given name");
         System.out.println("remove <name>: Deletes the node with the given name");
-        System.out.println("delete: List the nodes/values in the cache");
+        System.out.println("list: List the nodes/values in the cache");
         System.out.println("quit: Quit the example");
         System.out.println();
     }
