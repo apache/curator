@@ -22,6 +22,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.apache.curator.framework.CuratorFramework;
+
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -74,11 +76,13 @@ public class InterProcessReadWriteLock
     private static class InternalInterProcessMutex extends InterProcessMutex
     {
         private final String lockName;
+        private final byte[] lockData;
 
-        InternalInterProcessMutex(CuratorFramework client, String path, String lockName, int maxLeases, LockInternalsDriver driver)
+        InternalInterProcessMutex(CuratorFramework client, String path, String lockName, byte[] lockData, int maxLeases, LockInternalsDriver driver)
         {
             super(client, path, lockName, maxLeases, driver);
             this.lockName = lockName;
+            this.lockData = lockData;
         }
 
         @Override
@@ -99,19 +103,38 @@ public class InterProcessReadWriteLock
             );
             return ImmutableList.copyOf(filtered);
         }
+
+        @Override
+        protected byte[] getLockNodeBytes()
+        {
+            return lockData;
+        }
     }
 
-    /**
-     * @param client the client
-     * @param basePath path to use for locking
-     */
+  /**
+    * @param client the client
+    * @param basePath path to use for locking
+    */
     public InterProcessReadWriteLock(CuratorFramework client, String basePath)
     {
+        this(client, basePath, null);
+    }
+
+  /**
+    * @param client the client
+    * @param basePath path to use for locking
+    * @param lockData the data to store in the lock nodes
+    */
+    public InterProcessReadWriteLock(CuratorFramework client, String basePath, byte[] lockData)
+    {
+        lockData = (lockData == null) ? null : Arrays.copyOf(lockData, lockData.length);
+
         writeMutex = new InternalInterProcessMutex
         (
             client,
             basePath,
             WRITE_LOCK_NAME,
+            lockData,
             1,
             new SortingLockInternalsDriver()
             {
@@ -128,6 +151,7 @@ public class InterProcessReadWriteLock
             client,
             basePath,
             READ_LOCK_NAME,
+            lockData,
             Integer.MAX_VALUE,
             new SortingLockInternalsDriver()
             {
