@@ -80,6 +80,7 @@ public class PathChildrenCache implements Closeable
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
     private final Set<Operation> operationsQuantizer = Sets.newSetFromMap(Maps.<Operation, Boolean>newConcurrentMap());
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+    private final Object backgroundTaskMonitor = new Object();
 
     private enum State
     {
@@ -382,6 +383,11 @@ public class PathChildrenCache implements Closeable
             connectionStateListener = null;
             childrenWatcher = null;
             dataWatcher = null;
+
+            synchronized (backgroundTaskMonitor) {
+                // To make sure background callbacks are finished before returning, avoids ugly
+                // stack traces if ZooKeeper is closed immediately after the PathChildrenCache
+            }
         }
     }
 
@@ -488,18 +494,25 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if (PathChildrenCache.this.state.get().equals(State.CLOSED)) {
-                    // This ship is closed, don't handle the callback
-                    return;
-                }
-                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-                {
-                    processChildren(event.getChildren(), mode);
+                synchronized (backgroundTaskMonitor) {
+                    if (PathChildrenCache.this.state.get().equals(State.CLOSED)) {
+                        // This ship is closed, don't handle the callback
+                        return;
+                    }
+                    if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+                        processChildren(event.getChildren(), mode);
+                    }
                 }
             }
         };
 
-        client.getChildren().usingWatcher(childrenWatcher).inBackground(callback).forPath(path);
+        synchronized (backgroundTaskMonitor) {
+            if (PathChildrenCache.this.state.get().equals(State.CLOSED)) {
+                // This ship is closed, don't launch new tasks
+                return;
+            }
+            client.getChildren().usingWatcher(childrenWatcher).inBackground(callback).forPath(path);
+        }
     }
 
     void callListeners(final PathChildrenCacheEvent event)
