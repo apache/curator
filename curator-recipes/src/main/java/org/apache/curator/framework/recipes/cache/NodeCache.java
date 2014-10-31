@@ -87,6 +87,7 @@ public class NodeCache implements Closeable
             }
         }
     };
+    private final Object backgroundTaskMonitor = new Object();
 
     private final CuratorWatcher watcher = new CuratorWatcher()
     {
@@ -109,7 +110,15 @@ public class NodeCache implements Closeable
         @Override
         public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
         {
-            processBackgroundResult(event);
+            synchronized (backgroundTaskMonitor)
+            {
+                if (state.get().equals(State.CLOSED))
+                {
+                    // This ship is closed, don't handle the callback
+                    return;
+                }
+                processBackgroundResult(event);
+            }
         }
     };
 
@@ -175,6 +184,11 @@ public class NodeCache implements Closeable
             listeners.clear();
         }
         client.getConnectionStateListenable().removeListener(connectionStateListener);
+
+        synchronized (backgroundTaskMonitor) {
+            // To make sure background callbacks are finished before returning, avoids ugly
+            // stack traces if ZooKeeper is closed immediately after the NodeCache
+        }
     }
 
     /**
