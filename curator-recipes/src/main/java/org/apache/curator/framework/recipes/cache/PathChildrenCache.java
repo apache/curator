@@ -677,6 +677,12 @@ public class PathChildrenCache implements Closeable
 
         for ( String name : children )
         {
+            if (state.get() == State.CLOSED)
+            {
+                // When close() is being called, no need to continue with this
+                return;
+            }
+
             String fullPath = ZKPaths.makePath(path, name);
 
             if ( (mode == RefreshMode.FORCE_GET_DATA_AND_STAT) || !currentData.containsKey(fullPath) )
