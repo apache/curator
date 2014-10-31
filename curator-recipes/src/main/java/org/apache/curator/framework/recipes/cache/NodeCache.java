@@ -185,7 +185,8 @@ public class NodeCache implements Closeable
         }
         client.getConnectionStateListenable().removeListener(connectionStateListener);
 
-        synchronized (backgroundTaskMonitor) {
+        synchronized (backgroundTaskMonitor)
+        {
             // To make sure background callbacks are finished before returning, avoids ugly
             // stack traces if ZooKeeper is closed immediately after the NodeCache
         }

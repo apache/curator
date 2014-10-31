@@ -384,7 +384,8 @@ public class PathChildrenCache implements Closeable
             childrenWatcher = null;
             dataWatcher = null;
 
-            synchronized (backgroundTaskMonitor) {
+            synchronized (backgroundTaskMonitor)
+            {
                 // To make sure background callbacks are finished before returning, avoids ugly
                 // stack traces if ZooKeeper is closed immediately after the PathChildrenCache
             }
@@ -494,20 +495,25 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                synchronized (backgroundTaskMonitor) {
-                    if (PathChildrenCache.this.state.get().equals(State.CLOSED)) {
+                synchronized (backgroundTaskMonitor)
+                {
+                    if (PathChildrenCache.this.state.get().equals(State.CLOSED))
+                    {
                         // This ship is closed, don't handle the callback
                         return;
                     }
-                    if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+                    if (event.getResultCode() == KeeperException.Code.OK.intValue())
+                    {
                         processChildren(event.getChildren(), mode);
                     }
                 }
             }
         };
 
-        synchronized (backgroundTaskMonitor) {
-            if (PathChildrenCache.this.state.get().equals(State.CLOSED)) {
+        synchronized (backgroundTaskMonitor)
+        {
+            if (PathChildrenCache.this.state.get().equals(State.CLOSED))
+            {
                 // This ship is closed, don't launch new tasks
                 return;
             }
