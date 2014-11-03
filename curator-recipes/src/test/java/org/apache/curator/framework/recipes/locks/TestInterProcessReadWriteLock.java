@@ -261,6 +261,39 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         Assert.assertTrue(maxConcurrentCount.get() > 1);
     }
 
+    @Test
+    public void     testSetNodeData() throws Exception
+    {
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+
+        try
+        {
+            client.start();
+
+            final byte[] nodeData = new byte[] { 1, 2, 3, 4 };
+
+            InterProcessReadWriteLock   lock = new InterProcessReadWriteLock(client, "/lock", nodeData);
+
+            // mutate passed-in node data, lock has made copy
+            nodeData[0] = 5;
+
+            lock.writeLock().acquire();
+
+            List<String> children = client.getChildren().forPath("/lock");
+            Assert.assertEquals(1, children.size());
+
+            byte dataInZk[] = client.getData().forPath("/lock/" + children.get(0));
+            Assert.assertNotNull(dataInZk);
+            Assert.assertEquals(new byte[] { 1, 2, 3, 4 }, dataInZk);
+
+            lock.writeLock().release();
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     private void doLocking(InterProcessLock lock, AtomicInteger concurrentCount, AtomicInteger maxConcurrentCount, Random random, int maxAllowed) throws Exception
     {
         try
