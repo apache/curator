@@ -33,9 +33,12 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import static com.jayway.awaitility.Awaitility.await;
 
 public class TestServiceCache
 {
@@ -261,5 +264,62 @@ public class TestServiceCache
                 CloseableUtils.closeQuietly(c);
             }
         }
+    }
+
+    @Test
+    public void testRegisterInCacheAfterRemoveServiceWithoutInstances() throws Exception
+    {
+        final String        SERVICE_ONE = "one";
+
+        List<Closeable>     closeables = Lists.newArrayList();
+        TestingServer       server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<Void>       s1_i1 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
+            ServiceInstance<Void>       s1_i2 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
+
+            ServiceDiscovery<Void>      discovery = ServiceDiscoveryBuilder.builder(Void.class).client(client).basePath("/test").build();
+            ServiceCache<Void>          serviceCache = discovery.serviceCacheBuilder().name(SERVICE_ONE).build();
+
+            closeables.add(discovery);
+            serviceCache.start();
+            discovery.start();
+
+            discovery.registerService(s1_i1);
+            discovery.registerService(s1_i2);
+            waitUntilServicesInstancesRegisteredInCache(2, serviceCache);
+
+            discovery.unregisterService(s1_i1);
+            discovery.unregisterService(s1_i2);
+            Assert.assertEquals(serviceCache.getInstances().size(), 0);
+
+            discovery.registerService(s1_i1);
+            waitUntilServicesInstancesRegisteredInCache(1, serviceCache);
+
+            Assert.assertEquals(serviceCache.getInstances().size(), 1);
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    private void waitUntilServicesInstancesRegisteredInCache(final int instances, final ServiceCache<Void> serviceCache) {
+        await().atMost(5, TimeUnit.SECONDS).until(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                return serviceCache.getInstances().size() == instances;
+            }
+        });
     }
 }

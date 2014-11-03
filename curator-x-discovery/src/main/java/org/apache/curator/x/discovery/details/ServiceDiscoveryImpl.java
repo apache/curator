@@ -197,8 +197,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         try
         {
             client.delete().forPath(path);
-            if (client.getChildren().forPath(pathToService).isEmpty())
-            {
+            if (client.getChildren().forPath(pathToService).isEmpty()) {
                 client.delete().forPath(pathToService);
             }
         }
@@ -230,7 +229,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public ServiceCacheBuilder<T> serviceCacheBuilder()
     {
-        return new ServiceCacheBuilderImpl<T>(this)
+        return new ServiceCacheBuilderImpl<T>(this, basePath)
             .threadFactory(ThreadUtils.newThreadFactory("ServiceCache"));
     }
 

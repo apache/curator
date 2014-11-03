@@ -28,12 +28,14 @@ import java.util.concurrent.ThreadFactory;
 class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
 {
     private ServiceDiscoveryImpl<T> discovery;
+    private final String basePath;
     private String name;
     private ThreadFactory threadFactory;
 
-    ServiceCacheBuilderImpl(ServiceDiscoveryImpl<T> discovery)
+    ServiceCacheBuilderImpl(ServiceDiscoveryImpl<T> discovery, String basePath)
     {
         this.discovery = discovery;
+        this.basePath = basePath;
     }
 
     /**
@@ -44,7 +46,7 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
     @Override
     public ServiceCache<T> build()
     {
-        return new ServiceCacheImpl<T>(discovery, name, threadFactory);
+        return new ServiceCacheImpl<T>(discovery, basePath, name, threadFactory);
     }
 
     /**

@@ -19,33 +19,28 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceInstance;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheListener
+public class ServiceCacheImpl<T> extends AbstractNodeCache<T> implements ServiceCache<T>
 {
     private final ListenerContainer<ServiceCacheListener>           listenerContainer = new ListenerContainer<ServiceCacheListener>();
-    private final ServiceDiscoveryImpl<T>                           discovery;
     private final AtomicReference<State>                            state = new AtomicReference<State>(State.LATENT);
-    private final PathChildrenCache                                 cache;
-    private final ConcurrentMap<String, ServiceInstance<T>>         instances = Maps.newConcurrentMap();
+    private final String                                            serviceName;
+
+    private Optional<ServiceInstancesCache<T>> serviceInstancesCache = Optional.absent();
 
     private enum State
     {
@@ -54,22 +49,47 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         STOPPED
     }
 
-    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory)
+    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String basePath, String name, ThreadFactory threadFactory)
     {
-        Preconditions.checkNotNull(discovery, "discovery cannot be null");
-        Preconditions.checkNotNull(name, "name cannot be null");
-        Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
+        super(discovery, basePath, threadFactory);
+        serviceName = name;
+    }
 
-        this.discovery = discovery;
+    @Override
+    void onChildAdded(PathChildrenCacheEvent event) throws Exception
+    {
+        if (isEventRelatedWithService(event))
+        {
+            ServiceInstancesCache<T> instance = new ServiceInstancesCache<T>(discovery, serviceName, threadFactory, this);
+            instance.start();
+            serviceInstancesCache = Optional.of(instance);
+        }
 
-        cache = new PathChildrenCache(discovery.getClient(), discovery.pathForName(name), true, threadFactory);
-        cache.getListenable().addListener(this);
+    }
+
+    @Override
+    void onChildUpdated(PathChildrenCacheEvent event) {
+
+    }
+
+    @Override
+    void onChildRemoved(PathChildrenCacheEvent event) throws Exception
+    {
+        if (isEventRelatedWithService(event))
+        {
+            serviceInstancesCache.get().close();
+            serviceInstancesCache = Optional.absent();
+        }
+    }
+
+    private boolean isEventRelatedWithService(PathChildrenCacheEvent event) {
+        return event.getData().getPath().endsWith(String.format("/%s",serviceName));
     }
 
     @Override
     public List<ServiceInstance<T>> getInstances()
     {
-        return Lists.newArrayList(instances.values());
+        return serviceInstancesCache.isPresent() ? Lists.newArrayList(serviceInstancesCache.get().getInstances()) : Collections.EMPTY_LIST;
     }
 
     @Override
@@ -77,11 +97,8 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        cache.start(true);
-        for ( ChildData childData : cache.getCurrentData() )
-        {
-            addInstance(childData, true);
-        }
+        super.start();
+
         discovery.cacheOpened(this);
     }
 
@@ -91,17 +108,15 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         Preconditions.checkState(state.compareAndSet(State.STARTED, State.STOPPED), "Already closed or has not been started");
 
         listenerContainer.forEach
-            (
-                new Function<ServiceCacheListener, Void>()
-                {
-                    @Override
-                    public Void apply(ServiceCacheListener listener)
-                    {
-                        discovery.getClient().getConnectionStateListenable().removeListener(listener);
-                        return null;
-                    }
-                }
-            );
+                (
+                        new Function<ServiceCacheListener, Void>() {
+                            @Override
+                            public Void apply(ServiceCacheListener listener) {
+                                discovery.getClient().getConnectionStateListenable().removeListener(listener);
+                                return null;
+                            }
+                        }
+                );
         listenerContainer.clear();
 
         CloseableUtils.closeQuietly(cache);
@@ -130,62 +145,9 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         discovery.getClient().getConnectionStateListenable().removeListener(listener);
     }
 
-    @Override
-    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+    void forEach(Function<ServiceCacheListener, Void> function)
     {
-        boolean         notifyListeners = false;
-        switch ( event.getType() )
-        {
-            case CHILD_ADDED:
-            case CHILD_UPDATED:
-            {
-                addInstance(event.getData(), false);
-                notifyListeners = true;
-                break;
-            }
-
-            case CHILD_REMOVED:
-            {
-                instances.remove(instanceIdFromData(event.getData()));
-                notifyListeners = true;
-                break;
-            }
-        }
-
-        if ( notifyListeners )
-        {
-            listenerContainer.forEach
-            (
-                new Function<ServiceCacheListener, Void>()
-                {
-                    @Override
-                    public Void apply(ServiceCacheListener listener)
-                    {
-                        listener.cacheChanged();
-                        return null;
-                    }
-                }
-            );
-        }
-    }
-
-    private String instanceIdFromData(ChildData childData)
-    {
-        return ZKPaths.getNodeFromPath(childData.getPath());
-    }
-
-    private void addInstance(ChildData childData, boolean onlyIfAbsent) throws Exception
-    {
-        String                  instanceId = instanceIdFromData(childData);
-        ServiceInstance<T>      serviceInstance = discovery.getSerializer().deserialize(childData.getData());
-        if ( onlyIfAbsent )
-        {
-            instances.putIfAbsent(instanceId, serviceInstance);
-        }
-        else
-        {
-            instances.put(instanceId, serviceInstance);
-        }
-        cache.clearDataBytes(childData.getPath(), childData.getStat().getVersion());
+        listenerContainer.forEach(function);
     }
 }
+
