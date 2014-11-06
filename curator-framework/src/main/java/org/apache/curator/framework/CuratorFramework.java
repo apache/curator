@@ -122,6 +122,18 @@ public interface CuratorFramework extends Closeable
     public SetACLBuilder setACL();
 
     /**
+     * Start a reconfig builder
+     * @return builder object
+     */
+    public ReconfigBuilder reconfig();
+
+    /**
+     * Start a getConfig builder
+     * @return
+     */
+    public GetConfigBuilder getConfig();
+
+    /**
      * Start a transaction builder
      *
      * @return builder object
