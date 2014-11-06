@@ -249,6 +249,7 @@ public class TestingCluster implements Closeable
 
     private static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty)
     {
+        InstanceSpec.reset();
         ImmutableList.Builder<InstanceSpec> builder = ImmutableList.builder();
         for ( int i = 0; i < instanceQty; ++i )
         {

@@ -20,16 +20,17 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
-import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -41,15 +42,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestReconfiguration {
 
-    static TestingCluster cluster;
+    TestingCluster cluster;
 
-    @BeforeClass
+    @BeforeMethod
     public void setup() throws Exception {
         cluster = new TestingCluster(5);
         cluster.start();
     }
 
-    @AfterClass
+    @AfterMethod
     public void tearDown() throws IOException {
         cluster.close();
     }
@@ -61,28 +62,28 @@ public class TestReconfiguration {
         client.blockUntilConnected();
         try {
             Stat stat = new Stat();
-            byte[] bytes = client.getConfig().storingStatIn(stat);
+            byte[] bytes = client.getConfig().storingStatIn(stat).forEnsemble();
             Assert.assertNotNull(bytes);
             QuorumVerifier qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(5, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 5);
             String server1 = getServerString(qv, cluster, 1L);
             String server2 = getServerString(qv, cluster, 2L);
 
             //Remove Servers
-            bytes = client.reconfig().leave("1").storingStatIn(stat).fromConfig(qv.getVersion());
+            bytes = client.reconfig().leaving("1").storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
             qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(4, qv.getAllMembers().size());
-            bytes = client.reconfig().leave("2").storingStatIn(stat).fromConfig(qv.getVersion());
+            Assert.assertEquals(qv.getAllMembers().size(), 4);
+            bytes = client.reconfig().leaving("2").storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
             qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(3, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 3);
 
             //Add Servers
-            bytes = client.reconfig().join("server.1=" + server1).storingStatIn(stat).fromConfig(qv.getVersion());
+            bytes = client.reconfig().joining("server.1=" + server1).storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
             qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(4, qv.getAllMembers().size());
-            bytes = client.reconfig().join("server.2=" + server2).storingStatIn(stat).fromConfig(qv.getVersion());
+            Assert.assertEquals(qv.getAllMembers().size(), 4);
+            bytes = client.reconfig().joining("server.2=" + server2).storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
             qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(5, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 5);
         } finally {
             client.close();
         }
@@ -95,47 +96,48 @@ public class TestReconfiguration {
         client.blockUntilConnected();
         try {
             final AtomicReference<byte[]> bytes = new AtomicReference<byte[]>();
-            final AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback() {
+            final BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-                    bytes.set(data);
-                    ((CountDownLatch)ctx).countDown();
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                    bytes.set(event.getData());
+                    ((CountDownLatch)event.getContext()).countDown();
                 }
+
             };
 
             CountDownLatch latch = new CountDownLatch(1);
-            client.getConfig().usingDataCallback(callback, latch);
+            client.getConfig().inBackground(callback, latch).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             Assert.assertNotNull(bytes.get());
             QuorumVerifier qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(5, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 5);
             String server1 = getServerString(qv, cluster, 1L);
             String server2 = getServerString(qv, cluster, 2L);
 
 
             //Remove Servers
             latch = new CountDownLatch(1);
-            client.reconfig().leave("1").usingDataCallback(callback, latch).fromConfig(qv.getVersion());
+            client.reconfig().leaving("1").inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(4, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 4);
             latch = new CountDownLatch(1);
-            client.reconfig().leave("2").usingDataCallback(callback, latch).fromConfig(qv.getVersion());
+            client.reconfig().leaving("2").inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(3, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 3);
 
             //Add Servers
             latch = new CountDownLatch(1);
-            client.reconfig().join("server.1=" + server1).usingDataCallback(callback, latch).fromConfig(qv.getVersion());
+            client.reconfig().joining("server.1=" + server1).inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(4, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 4);
             latch = new CountDownLatch(1);
-            client.reconfig().join("server.2=" + server2).usingDataCallback(callback, latch).fromConfig(qv.getVersion());
+            client.reconfig().joining("server.2=" + server2).inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(5, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 5);
         } finally {
             client.close();
         }
@@ -148,10 +150,10 @@ public class TestReconfiguration {
         client.blockUntilConnected();
         try {
             Stat stat = new Stat();
-            byte[] bytes = client.getConfig().storingStatIn(stat);
+            byte[] bytes = client.getConfig().storingStatIn(stat).forEnsemble();
             Assert.assertNotNull(bytes);
             QuorumVerifier qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(5, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 5);
             String server1 = getServerString(qv, cluster, 1L);
             String server2 = getServerString(qv, cluster, 2L);
             String server3 = getServerString(qv, cluster, 3L);
@@ -160,40 +162,40 @@ public class TestReconfiguration {
 
             //Remove Servers
             bytes = client.reconfig()
-                    .withMember("server.2="+server2)
-                    .withMember("server.3="+server3)
-                    .withMember("server.4="+server4)
-                    .withMember("server.5="+server5)
-                    .storingStatIn(stat).fromConfig(qv.getVersion());
+                    .withMembers("server.2=" + server2,
+                            "server.3=" + server3,
+                            "server.4=" + server4,
+                            "server.5=" + server5)
+                    .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
             qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(4, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 4);
             bytes = client.reconfig()
-                    .withMember("server.3=" + server3)
-                    .withMember("server.4=" + server4)
-                    .withMember("server.5=" + server5)
-                    .storingStatIn(stat).fromConfig(qv.getVersion());
+                    .withMembers("server.3=" + server3,
+                            "server.4=" + server4,
+                            "server.5=" + server5)
+                    .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
 
             qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(3, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 3);
 
             //Add Servers
             bytes = client.reconfig()
-                    .withMember("server.1="+server1)
-                    .withMember("server.3=" + server3)
-                    .withMember("server.4="+server4)
-                    .withMember("server.5="+server5)
-                    .storingStatIn(stat).fromConfig(qv.getVersion());
+                    .withMembers("server.1=" + server1,
+                            "server.3=" + server3,
+                            "server.4=" + server4,
+                            "server.5=" + server5)
+                    .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
             qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(4, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 4);
             bytes = client.reconfig()
-                    .withMember("server.1="+server1)
-                    .withMember("server.2="+server2)
-                    .withMember("server.3=" + server3)
-                    .withMember("server.4="+server4)
-                    .withMember("server.5="+server5)
-                    .storingStatIn(stat).fromConfig(qv.getVersion());
+                    .withMembers("server.1=" + server1,
+                            "server.2=" + server2,
+                            "server.3=" + server3,
+                            "server.4=" + server4,
+                            "server.5=" + server5)
+                    .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
             qv = getQuorumVerifier(bytes);
-            Assert.assertEquals(5, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 5);
         } finally {
             client.close();
         }
@@ -206,70 +208,70 @@ public class TestReconfiguration {
         client.blockUntilConnected();
         try {
             final AtomicReference<byte[]> bytes = new AtomicReference<byte[]>();
-            final AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback() {
+            final BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-                    bytes.set(data);
-                    ((CountDownLatch)ctx).countDown();
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                    bytes.set(event.getData());
+                    ((CountDownLatch)event.getContext()).countDown();
                 }
+
             };
 
             CountDownLatch latch = new CountDownLatch(1);
-            client.getConfig().usingDataCallback(callback, latch);
+            client.getConfig().inBackground(callback, latch).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             Assert.assertNotNull(bytes.get());
             QuorumVerifier qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(5, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 5);
             String server1 = getServerString(qv, cluster, 1L);
             String server2 = getServerString(qv, cluster, 2L);
             String server3 = getServerString(qv, cluster, 3L);
             String server4 = getServerString(qv, cluster, 4L);
             String server5 = getServerString(qv, cluster, 5L);
 
-
             //Remove Servers
             latch = new CountDownLatch(1);
             client.reconfig()
-                    .withMember("server.2=" + server2)
-                    .withMember("server.3="+server3)
-                    .withMember("server.4="+server4)
-                    .withMember("server.5="+server5)
-            .usingDataCallback(callback, latch).fromConfig(qv.getVersion());
+                    .withMembers("server.2=" + server2,
+                            "server.3=" + server3,
+                            "server.4=" + server4,
+                            "server.5=" + server5)
+            .inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(4, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 4);
             latch = new CountDownLatch(1);
             client.reconfig()
-                    .withMember("server.3="+server3)
-                    .withMember("server.4=" + server4)
-                    .withMember("server.5=" + server5)
-                    .usingDataCallback(callback, latch).fromConfig(qv.getVersion());
+                    .withMembers("server.3=" + server3,
+                            "server.4=" + server4,
+                            "server.5=" + server5)
+                    .inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(3, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 3);
 
             //Add Servers
             latch = new CountDownLatch(1);
             client.reconfig()
-                    .withMember("server.1="+server1)
-                    .withMember("server.3=" + server3)
-                    .withMember("server.4=" + server4)
-                    .withMember("server.5=" + server5)
-                    .usingDataCallback(callback, latch).fromConfig(qv.getVersion());
+                    .withMembers("server.1=" + server1,
+                            "server.3=" + server3,
+                            "server.4=" + server4,
+                            "server.5=" + server5)
+                    .inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(4, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 4);
             latch = new CountDownLatch(1);
             client.reconfig()
-                    .withMember("server.1="+server1)
-                    .withMember("server.2="+server2)
-                    .withMember("server.3="+server3)
-                    .withMember("server.4=" + server4)
-                    .withMember("server.5=" + server5)
-                    .usingDataCallback(callback, latch).fromConfig(qv.getVersion());
+                    .withMembers("server.1=" + server1,
+                            "server.2=" + server2,
+                            "server.3=" + server3,
+                            "server.4=" + server4,
+                            "server.5=" + server5)
+                    .inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
             latch.await(5, TimeUnit.SECONDS);
             qv = getQuorumVerifier(bytes.get());
-            Assert.assertEquals(5, qv.getAllMembers().size());
+            Assert.assertEquals(qv.getAllMembers().size(), 5);
         } finally {
             client.close();
         }

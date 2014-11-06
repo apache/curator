@@ -18,14 +18,13 @@
  */
 package org.apache.curator.framework.api;
 
+/**
+ * An incremental reconfiguration builder.
+ * This builder has access only to the incremental reconfiguration methods joining and leaving, so that we prevent
+ * mixing concepts that can't be used together.
+ */
+public interface JoinBackgroundStatConfigurable extends
+        Joinable<BackgroundStatConfigurable<byte[]>>,
+        BackgroundStatConfigurable<byte[]> {
 
-public interface Memberable<T> {
-
-    /**
-     * Sets one or more members that are meant to be part of the ensemble.
-     * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
-     * @param server The server to add as a member of the ensemble.
-     * @return this.
-     */
-    T withMembers(String... server);
 }

@@ -19,8 +19,8 @@
 package org.apache.curator.framework.api;
 
 public interface ReconfigBuilder extends
-        Joinable<IncrementalReconfigBuilder<byte[]>>,
-        Leaveable<IncrementalReconfigBuilder<byte[]>>,
-        Memberable<NonIncrementalReconfigBuilder<byte[]>> {
+        Joinable<LeaveBackgroundStatConfigurable>,
+        Leaveable<JoinBackgroundStatConfigurable>,
+        Memberable<BackgroundStatConfigurable<byte[]>> {
 
 }
