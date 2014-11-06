@@ -59,13 +59,6 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
         super.startup(new ChaosMonkeyZookeeperServer(zks));
     }
 
-    /**
-     * Build a connection with a Chaos Monkey ZookeeperServer
-     */
-    protected NIOServerCnxn createConnection(SocketChannel sock, SelectionKey sk) throws IOException
-    {
-        return new NIOServerCnxn(zkServer, sock, sk, this);
-    }
 
     public static class ChaosMonkeyZookeeperServer extends ZooKeeperServer
     {

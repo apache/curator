@@ -74,7 +74,7 @@
         <jetty-version>6.1.26</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
         <resteasy-jaxrs-version>2.3.0.GA</resteasy-jaxrs-version>
-        <zookeeper-version>3.4.6</zookeeper-version>
+        <zookeeper-version>3.5.0-alpha</zookeeper-version>
         <guava-version>16.0.1</guava-version>
         <testng-version>6.8.8</testng-version>
         <swift-version>0.12.0</swift-version>
