@@ -213,9 +213,14 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     public void     unregisterService(ServiceInstance<T> service) throws Exception
     {
         String          path = pathForInstance(service.getName(), service.getId());
+        String          pathToService = pathForName(service.getName());
         try
         {
             client.delete().forPath(path);
+            if (client.getChildren().forPath(pathToService).isEmpty())
+            {
+                client.delete().forPath(pathToService);
+            }
         }
         catch ( KeeperException.NoNodeException ignore )
         {

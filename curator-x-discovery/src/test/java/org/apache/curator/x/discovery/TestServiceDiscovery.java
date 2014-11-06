@@ -234,6 +234,52 @@ public class TestServiceDiscovery extends BaseClassForTests
     }
 
     @Test
+    public void testRemoveServicesWithoutInstances() throws Exception
+    {
+        final String        SERVICE_ONE = "one";
+        final String        SERVICE_TWO = "two";
+
+        List<Closeable>     closeables = Lists.newArrayList();
+        TestingServer       server = new TestingServer();
+        closeables.add(server);
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<Void>       s1_i1 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
+            ServiceInstance<Void>       s1_i2 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
+            ServiceInstance<Void>       s2_i1 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
+            ServiceInstance<Void>       s2_i2 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
+
+            ServiceDiscovery<Void>      discovery = ServiceDiscoveryBuilder.builder(Void.class).client(client).basePath("/test").build();
+            closeables.add(discovery);
+            discovery.start();
+
+            discovery.registerService(s1_i1);
+            discovery.registerService(s1_i2);
+            discovery.registerService(s2_i1);
+            discovery.registerService(s2_i2);
+
+            discovery.unregisterService(s1_i1);
+            discovery.unregisterService(s1_i2);
+
+            discovery.unregisterService(s2_i1);
+
+            Assert.assertEquals(Sets.newHashSet(discovery.queryForNames()), Sets.newHashSet(SERVICE_TWO));
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
     public void         testBasic() throws Exception
     {
         List<Closeable>     closeables = Lists.newArrayList();
