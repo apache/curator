@@ -158,11 +158,11 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
         };
         if ( watching.isWatched() )
         {
-            client.getZooKeeper().getConfig(watching.getWatcher(), callback, backgrounding.getContext());
+            client.getZooKeeper().getConfig(false, callback, backgrounding.getContext());
         }
         else
         {
-            client.getZooKeeper().getConfig(false, callback, backgrounding.getContext());
+            client.getZooKeeper().getConfig(watching.getWatcher(), callback, backgrounding.getContext());
         }
     }
 
