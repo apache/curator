@@ -63,6 +63,16 @@ public class TestZKPaths
         Assert.assertEquals(ZKPaths.makePath("/foo", "bar"), "/foo/bar");
         Assert.assertEquals(ZKPaths.makePath("foo", "/bar"), "/foo/bar");
         Assert.assertEquals(ZKPaths.makePath("/foo", "/bar"), "/foo/bar");
+        Assert.assertEquals(ZKPaths.makePath("/foo", "bar/"), "/foo/bar");
+        Assert.assertEquals(ZKPaths.makePath("/foo/", "/bar/"), "/foo/bar");
+
+        Assert.assertEquals(ZKPaths.makePath("foo", "bar", "baz"), "/foo/bar/baz");
+        Assert.assertEquals(ZKPaths.makePath("foo", "bar", "baz", "qux"), "/foo/bar/baz/qux");
+        Assert.assertEquals(ZKPaths.makePath("/foo", "/bar", "/baz"), "/foo/bar/baz");
+        Assert.assertEquals(ZKPaths.makePath("/foo/", "/bar/", "/baz/"), "/foo/bar/baz");
+        Assert.assertEquals(ZKPaths.makePath("foo", null, null), "/foo");
+        Assert.assertEquals(ZKPaths.makePath("foo", "bar", null), "/foo/bar");
+        Assert.assertEquals(ZKPaths.makePath("foo", null, "baz"), "/foo/baz");
     }
 
     @Test
