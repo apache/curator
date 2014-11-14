@@ -18,63 +18,170 @@
  */
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.RetryLoop;
+import org.apache.curator.TimeTrace;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.BackgroundStatable;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.api.Ensembleable;
 import org.apache.curator.framework.api.GetConfigBuilder;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 
-public class GetConfigBuilderImpl implements GetConfigBuilder {
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+
+public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperation<Void> {
 
     private final CuratorFrameworkImpl client;
-    private boolean watched;
-    private Watcher watcher;
+
+    private Backgrounding backgrounding;
+    private Watching watching;
+    private Stat stat;
 
     public GetConfigBuilderImpl(CuratorFrameworkImpl client) {
         this.client = client;
+        backgrounding = new Backgrounding();
+        watching = new Watching();
     }
 
     @Override
-    public Void usingDataCallback(AsyncCallback.DataCallback callback, Object ctx) {
-        try {
-            if (watcher != null) {
-                client.getZooKeeper().getConfig(watcher, callback, ctx);
-            } else {
-                client.getZooKeeper().getConfig(watched, callback, ctx);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return null;
+    public Ensembleable<byte[]> storingStatIn(Stat stat) {
+        this.stat = new Stat();
+        return this;
     }
 
     @Override
-    public byte[] storingStatIn(Stat stat) {
-        try {
-            if (watcher != null) {
-               return client.getZooKeeper().getConfig(watcher, stat);
-            } else {
-                return client.getZooKeeper().getConfig(watched, stat);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public GetConfigBuilder watched() {
-        this.watched = true;
+    public BackgroundStatable<Ensembleable<byte[]>> watched() {
+        watching = new Watching(true);
         return this;
     }
 
     @Override
     public GetConfigBuilder usingWatcher(Watcher watcher) {
-        this.watcher = watcher;
-        return null;
+        watching = new Watching(client, watcher);
+        return this;
     }
 
     @Override
     public GetConfigBuilder usingWatcher(final CuratorWatcher watcher) {
-        throw new UnsupportedOperationException("GetConfigBuilder doesn't support CuratorWatcher, please use Watcher instead.");
+        watching = new Watching(client, watcher);
+        return this;
+    }
+
+    @Override
+    public Ensembleable<byte[]> inBackground() {
+        backgrounding = new Backgrounding();
+        return this;
+    }
+
+    @Override
+    public Ensembleable<byte[]> inBackground(Object context) {
+        backgrounding = new Backgrounding(context);
+        return this;
+    }
+
+    @Override
+    public Ensembleable<byte[]> inBackground(BackgroundCallback callback) {
+        backgrounding = new Backgrounding(callback);
+        return this;
+    }
+
+    @Override
+    public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context) {
+        backgrounding = new Backgrounding(callback, context);
+        return this;
+    }
+
+    @Override
+    public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Executor executor) {
+        backgrounding = new Backgrounding(callback, executor);
+        return this;
+    }
+
+    @Override
+    public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor) {
+        backgrounding = new Backgrounding(client, callback, context, executor);
+        return this;
+    }
+
+    private void performBackgroundOperation() {
+        try {
+            client.getZooKeeper().getConfig(watching.getWatcher(),
+                    new AsyncCallback.DataCallback() {
+                        @Override
+                        public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
+                            try {
+                                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_CONFIG,
+                                        rc, path, null, ctx, stat, data, null, null, null);
+                                backgrounding.getCallback().processResult(client, event);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }, backgrounding.getContext());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public byte[] forEnsemble() throws Exception {
+        byte[] responseData = null;
+        if ( backgrounding.inBackground() )
+        {
+            client.processBackgroundOperation(new OperationAndData<Void>(this, null, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+        }
+        else
+        {
+            responseData = configInForeground();
+        }
+        return responseData;
+    }
+
+    @Override
+    public void performBackgroundOperation(final OperationAndData<Void> operationAndData) throws Exception
+    {
+        final TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");
+        AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback()
+        {
+            @Override
+            public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
+            {
+                trace.commit();
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_CONFIG, rc, path, null, ctx, stat, data, null, null, null);
+                client.processBackgroundOperation(operationAndData, event);
+            }
+        };
+        if ( watching.isWatched() )
+        {
+            client.getZooKeeper().getConfig(false, callback, backgrounding.getContext());
+        }
+        else
+        {
+            client.getZooKeeper().getConfig(watching.getWatcher(), callback, backgrounding.getContext());
+        }
+    }
+
+
+    private byte[] configInForeground() throws Exception {
+        TimeTrace   trace = client.getZookeeperClient().startTracer("GetConfigBuilderImpl-Foreground");
+        try {
+            return RetryLoop.callWithRetry
+                    (
+                            client.getZookeeperClient(),
+                            new Callable<byte[]>() {
+                                @Override
+                                public byte[] call() throws Exception {
+                                    return client.getZooKeeper().getConfig(watching.getWatcher(), stat);
+                                }
+                            }
+                    );
+        } finally {
+            trace.commit();
+        }
     }
 }

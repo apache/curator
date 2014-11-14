@@ -18,21 +18,13 @@
  */
 package org.apache.curator.framework.api;
 
-import java.util.Collection;
-
 public interface Leaveable<T> {
 
     /**
-     * Sets a server to leave the ensemble.
-     * @param server The server id.
+     * Sets one or more servers to leaving the ensemble.
+     * @param server The server ids.
      * @return this
      */
-    T leave(String server);
+    T leaving(String... server);
 
-    /**
-     * Sets a collection of servers to leave the ensemble.
-     * @param servers The collection of server ids.
-     * @return this.
-     */
-    T leave(Collection<String> servers);
 }

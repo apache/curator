@@ -19,9 +19,9 @@
 package org.apache.curator.framework.api;
 
 public interface GetConfigBuilder extends
-        Watchable<GetConfigBuilder>,
-        DataCallbackable<Void>,
-        Statable<byte[]> {
+        Watchable<BackgroundStatable<Ensembleable<byte[]>>>,
+        BackgroundStatable<Ensembleable<byte[]>>,
+        Ensembleable<byte[]> {
 }
 
 

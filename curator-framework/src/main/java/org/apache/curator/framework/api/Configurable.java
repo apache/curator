@@ -18,14 +18,12 @@
  */
 package org.apache.curator.framework.api;
 
-
-public interface Memberable<T> {
+public interface Configurable<T> {
 
     /**
-     * Sets one or more members that are meant to be part of the ensemble.
-     * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
-     * @param server The server to add as a member of the ensemble.
-     * @return this.
+     * Sets the configuration version to use.
+     * @param config The version of the configuration.
+     * @throws Exception
      */
-    T withMembers(String... server);
+    Ensembleable<T> fromConfig(long config) throws Exception;
 }

@@ -99,7 +99,7 @@ public class QuorumConfigBuilder
         {
             for ( InstanceSpec thisSpec : instanceSpecs )
             {
-                properties.setProperty("server." + thisSpec.getServerId(), String.format("localhost:%d:%d", thisSpec.getQuorumPort(), thisSpec.getElectionPort()));
+                properties.setProperty("server." + thisSpec.getServerId(), String.format("localhost:%d:%d;localhost:%d", thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getPort()));
             }
         }
 

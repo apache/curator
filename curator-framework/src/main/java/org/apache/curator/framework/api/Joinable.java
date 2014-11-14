@@ -18,23 +18,14 @@
  */
 package org.apache.curator.framework.api;
 
-import java.util.Collection;
-
 public interface Joinable<T> {
 
     /**
-     * Adds a server to join the ensemble.
+     * Adds one or more servers to joining the ensemble.
      * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
-     * @param server The server to join.
+     * @param server The server to joining.
      * @return this.
      */
-    T join(String server);
+    T joining(String... server);
 
-    /**
-     * Adds a collection of servers to the ensemble.
-     * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
-     * @param servers The collection of servers to join
-     * @return this
-     */
-    T join(Collection<String> servers);
 }
