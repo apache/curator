@@ -282,18 +282,61 @@ public class ZKPaths
         Collections.sort(sortedList);
         return sortedList;
     }
-    
+
     /**
-     * Given a parent path and a list of children nodes, create a combined full path
+     * Given a parent path and a child node, create a combined full path
      *
      * @param parent the parent
-     * @param children  the children
+     * @param child  the child
      * @return full path
      */
-    public static String makePath(String parent, String... children)
+    public static String makePath(String parent, String child)
     {
         StringBuilder path = new StringBuilder();
 
+        joinPath(path, parent, child);
+
+        return path.toString();
+    }
+
+    /**
+     * Given a parent path and a list of children nodes, create a combined full path
+     *
+     * @param parent       the parent
+     * @param firstChild   the first children in the path
+     * @param restChildren the rest of the children in the path
+     * @return full path
+     */
+    public static String makePath(String parent, String firstChild, String... restChildren)
+    {
+        StringBuilder path = new StringBuilder();
+
+        joinPath(path, parent, firstChild);
+
+        if ( restChildren == null )
+        {
+            return path.toString();
+        }
+        else
+        {
+            for ( String child : restChildren )
+            {
+                joinPath(path, "", child);
+            }
+
+            return path.toString();
+        }
+    }
+
+    /**
+     * Given a parent and a child node, join them in the given {@link StringBuilder path}
+     *
+     * @param path   the {@link StringBuilder} used to make the path
+     * @param parent the parent
+     * @param child  the child
+     */
+    private static void joinPath(StringBuilder path, String parent, String child)
+    {
         // Add parent piece, with no trailing slash.
         if ( (parent != null) && (parent.length() > 0) )
         {
@@ -311,47 +354,31 @@ public class ZKPaths
             }
         }
 
-        if (children == null || children.length == 0)
+        if ( (child == null) || (child.length() == 0) || (child.equals(PATH_SEPARATOR)) )
         {
             // Special case, empty parent and child
             if ( path.length() == 0 )
             {
-                return PATH_SEPARATOR;
+                path.append(PATH_SEPARATOR);
             }
-            return path.toString();
+            return;
         }
 
-        for (String child : children)
+        // Now add the separator between parent and child.
+        path.append(PATH_SEPARATOR);
+
+        if ( child.startsWith(PATH_SEPARATOR) )
         {
-            if ( (child == null) || (child.length() == 0) || (child.equals(PATH_SEPARATOR)) )
-            {
-                // Special case, empty parent and child
-                if ( path.length() == 0 )
-                {
-                    path.append(PATH_SEPARATOR);
-                }
-
-                continue;
-            }
-
-            // Now add the separator between parent and child.
-            path.append(PATH_SEPARATOR);
-
-            if ( child.startsWith(PATH_SEPARATOR) )
-            {
-                child = child.substring(1);
-            }
-
-            if ( child.endsWith(PATH_SEPARATOR) )
-            {
-                child = child.substring(0, child.length() - 1);
-            }
-
-            // Finally, add the child.
-            path.append(child);
+            child = child.substring(1);
         }
 
-        return path.toString();
+        if ( child.endsWith(PATH_SEPARATOR) )
+        {
+            child = child.substring(0, child.length() - 1);
+        }
+
+        // Finally, add the child.
+        path.append(child);
     }
 
     private ZKPaths()
