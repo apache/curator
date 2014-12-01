@@ -72,6 +72,11 @@ public enum CuratorEventType
      * Corresponds to {@link Watchable#usingWatcher(Watcher)} or {@link Watchable#watched()}
      */
     WATCHED,
+    
+    /**
+     * Corresponds to {@link CuratorFramework#removeWatches()}
+     */
+    REMOVE_WATCHES,
 
     /**
      * Event sent when client is being closed

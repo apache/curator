@@ -453,6 +453,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         return new SyncBuilderImpl(this);
     }
+    
+    @Override
+    public RemoveWatchesBuilder removeWatches()
+    {
+        return new RemoveWatchesBuilderImpl(this);
+    }
 
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
@@ -471,7 +477,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         return namespace.newNamespaceAwareEnsurePath(path);
     }
-
+    
     ACLProvider getAclProvider()
     {
         return aclProvider;

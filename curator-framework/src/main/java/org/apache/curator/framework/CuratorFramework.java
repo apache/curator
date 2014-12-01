@@ -24,7 +24,6 @@ import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
@@ -144,6 +143,12 @@ public interface CuratorFramework extends Closeable
      * @return builder object
      */
     public SyncBuilder sync();
+
+    /**
+     * Start a remove watches builder.
+     * @return builder object
+     */
+    public RemoveWatchesBuilder removeWatches();    
 
     /**
      * Returns the listenable interface for the Connect State
