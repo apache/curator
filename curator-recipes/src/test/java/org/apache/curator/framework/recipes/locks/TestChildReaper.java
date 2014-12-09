@@ -100,6 +100,43 @@ public class TestChildReaper extends BaseClassForTests
     }
 
     @Test
+    public void     testMultiPath() throws Exception
+    {
+        Timing                  timing = new Timing();
+        ChildReaper             reaper = null;
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            for ( int i = 0; i < 10; ++i )
+            {
+                client.create().creatingParentsIfNeeded().forPath("/test1/" + Integer.toString(i));
+                client.create().creatingParentsIfNeeded().forPath("/test2/" + Integer.toString(i));
+                client.create().creatingParentsIfNeeded().forPath("/test3/" + Integer.toString(i));
+            }
+
+            reaper = new ChildReaper(client, "/test2", Reaper.Mode.REAP_UNTIL_DELETE, 1);
+            reaper.start();
+            reaper.addPath("/test1");
+
+            timing.forWaiting().sleepABit();
+
+            Stat    stat = client.checkExists().forPath("/test1");
+            Assert.assertEquals(stat.getNumChildren(), 0);
+            stat = client.checkExists().forPath("/test2");
+            Assert.assertEquals(stat.getNumChildren(), 0);
+            stat = client.checkExists().forPath("/test3");
+            Assert.assertEquals(stat.getNumChildren(), 10);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void     testNamespace() throws Exception
     {
         Timing                  timing = new Timing();

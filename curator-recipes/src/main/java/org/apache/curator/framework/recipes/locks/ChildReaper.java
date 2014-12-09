@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.CloseableScheduledExecutorService;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,7 +48,7 @@ public class ChildReaper implements Closeable
     private final Reaper reaper;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final CuratorFramework client;
-    private final String path;
+    private final Collection<String> paths = Sets.newConcurrentHashSet();
     private final Reaper.Mode mode;
     private final CloseableScheduledExecutorService executor;
     private final int reapingThresholdMs;
@@ -104,11 +106,11 @@ public class ChildReaper implements Closeable
     public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath)
     {
         this.client = client;
-        this.path = PathUtils.validatePath(path);
         this.mode = mode;
         this.executor = new CloseableScheduledExecutorService(executor);
         this.reapingThresholdMs = reapingThresholdMs;
         this.reaper = new Reaper(client, executor, reapingThresholdMs, leaderPath);
+        addPath(path);
     }
 
     /**
@@ -148,6 +150,26 @@ public class ChildReaper implements Closeable
         }
     }
 
+    /**
+     * Add a path to reap children from
+     *
+     * @param path the path
+     */
+    public void addPath(String path)
+    {
+        paths.add(PathUtils.validatePath(path));
+    }
+
+    /**
+     * Remove a path from reaping
+     *
+     * @param path the path
+     */
+    public void removePath(String path)
+    {
+        paths.remove(PathUtils.validatePath(path));
+    }
+
     private static ScheduledExecutorService newExecutorService()
     {
         return ThreadUtils.newFixedThreadScheduledPool(2, "ChildReaper");
@@ -155,22 +177,25 @@ public class ChildReaper implements Closeable
 
     private void doWork()
     {
-        try
+        for ( String path : paths )
         {
-            List<String>        children = client.getChildren().forPath(path);
-            for ( String name : children )
+            try
             {
-                String  thisPath = ZKPaths.makePath(path, name);
-                Stat    stat = client.checkExists().forPath(thisPath);
-                if ( (stat != null) && (stat.getNumChildren() == 0) )
+                List<String> children = client.getChildren().forPath(path);
+                for ( String name : children )
                 {
-                    reaper.addPath(thisPath, mode);
+                    String thisPath = ZKPaths.makePath(path, name);
+                    Stat stat = client.checkExists().forPath(thisPath);
+                    if ( (stat != null) && (stat.getNumChildren() == 0) )
+                    {
+                        reaper.addPath(thisPath, mode);
+                    }
                 }
             }
-        }
-        catch ( Exception e )
-        {
-            log.error("Could not get children for path: " + path, e);
+            catch ( Exception e )
+            {
+                log.error("Could not get children for path: " + path, e);
+            }
         }
     }
 }
