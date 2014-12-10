@@ -154,10 +154,12 @@ public class ChildReaper implements Closeable
      * Add a path to reap children from
      *
      * @param path the path
+     * @return this for chaining
      */
-    public void addPath(String path)
+    public ChildReaper addPath(String path)
     {
         paths.add(PathUtils.validatePath(path));
+        return this;
     }
 
     /**
