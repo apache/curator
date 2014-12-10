@@ -166,10 +166,11 @@ public class ChildReaper implements Closeable
      * Remove a path from reaping
      *
      * @param path the path
+     * @return true if the path existed and was removed
      */
-    public void removePath(String path)
+    public boolean removePath(String path)
     {
-        paths.remove(PathUtils.validatePath(path));
+        return paths.remove(PathUtils.validatePath(path));
     }
 
     private static ScheduledExecutorService newExecutorService()
