@@ -69,7 +69,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
-            if ( newState == ConnectionState.RECONNECTED )
+            if ( newState == ConnectionState.RECONNECTED || newState == ConnectionState.CONNECTED )
             {
                 try
                 {
@@ -109,8 +109,12 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void start() throws Exception
     {
+        try {
+    	    reRegisterServices();
+        } catch (Exception ex) {
+            log.error("Could not register instances", ex);
+        }
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        reRegisterServices();
     }
 
     @Override
