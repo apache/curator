@@ -34,7 +34,9 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -106,6 +108,7 @@ public class CuratorFrameworkFactory
         private String              namespace;
         private String              authScheme = null;
         private byte[]              authValue = null;
+        private List<AuthInfo>      authInfos = null;
         private byte[]              defaultData = LOCAL_ADDRESS;
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
         private ZookeeperFactory    zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
@@ -161,6 +164,21 @@ public class CuratorFrameworkFactory
         {
             this.authScheme = scheme;
             this.authValue = (auth != null) ? Arrays.copyOf(auth, auth.length) : null;
+            return this;
+        }
+
+        /**
+         * Add connection authorization. The supplied authInfos are appended to those added via call to
+         * {@link #authorization(java.lang.String, byte[])} for backward compatibility.
+         *
+         * Subsequent calls to this method overwrite the prior calls.
+         *
+         * @param authInfos list of {@link AuthInfo} objects with scheme and auth
+         * @return this
+         */
+        public Builder authorization(List<AuthInfo> authInfos) {
+            this.authInfos = new ArrayList<AuthInfo>(authInfos.size());
+            this.authInfos.addAll(authInfos);
             return this;
         }
 
@@ -354,6 +372,11 @@ public class CuratorFrameworkFactory
         public byte[] getAuthValue()
         {
             return (authValue != null) ? Arrays.copyOf(authValue, authValue.length) : null;
+        }
+
+        public List<AuthInfo> getAuthInfos()
+        {
+            return authInfos;
         }
 
         public byte[] getDefaultData()

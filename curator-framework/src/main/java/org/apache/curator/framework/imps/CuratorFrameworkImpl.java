@@ -24,6 +24,7 @@ import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.*;
@@ -43,7 +44,10 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.DelayQueue;
@@ -65,7 +69,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final BlockingQueue<OperationAndData<?>>                    backgroundOperations;
     private final NamespaceImpl                                         namespace;
     private final ConnectionStateManager                                connectionStateManager;
-    private final AtomicReference<AuthInfo>                             authInfo = new AtomicReference<AuthInfo>();
+    private final List<AuthInfo>                                        authInfos;
     private final byte[]                                                defaultData;
     private final FailedDeleteManager                                   failedDeleteManager;
     private final CompressionProvider                                   compressionProvider;
@@ -85,27 +89,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     volatile DebugBackgroundListener        debugListener = null;
 
     private final AtomicReference<CuratorFrameworkState>                    state;
-
-    private static class AuthInfo
-    {
-        final String    scheme;
-        final byte[]    auth;
-
-        private AuthInfo(String scheme, byte[] auth)
-        {
-            this.scheme = scheme;
-            this.auth = auth;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "AuthInfo{" +
-                "scheme='" + scheme + '\'' +
-                ", auth=" + Arrays.toString(auth) +
-                '}';
-        }
-    }
 
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
@@ -155,9 +138,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
         byte[]      builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
 
+        authInfos = new ArrayList<AuthInfo>();
         if ( builder.getAuthScheme() != null )
         {
-            authInfo.set(new AuthInfo(builder.getAuthScheme(), builder.getAuthValue()));
+            authInfos.add(new AuthInfo(builder.getAuthScheme(), builder.getAuthValue()));
+        }
+        if ( builder.getAuthInfos() != null )
+        {
+            authInfos.addAll(builder.getAuthInfos());
         }
 
         failedDeleteManager = new FailedDeleteManager(this);
@@ -172,10 +160,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
             public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
             {
                 ZooKeeper zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
-                AuthInfo auth = authInfo.get();
-                if ( auth != null )
+                for (AuthInfo auth : authInfos)
                 {
-                    zooKeeper.addAuthInfo(auth.scheme, auth.auth);
+                    zooKeeper.addAuthInfo(auth.getScheme(), auth.getAuth());
                 }
 
                 return zooKeeper;
@@ -208,6 +195,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespaceFacadeCache = parent.namespaceFacadeCache;
         namespace = new NamespaceImpl(this, null);
         state = parent.state;
+        authInfos = parent.authInfos;
     }
 
     @Override
