@@ -24,11 +24,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.discovery.ServiceCache;
@@ -41,12 +44,11 @@ import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -64,6 +66,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final Map<String, ServiceInstance<T>> services = Maps.newConcurrentMap();
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
     private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
+    private final boolean watchInstances;
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -89,9 +92,11 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      * @param basePath base path to store data
      * @param serializer serializer for instances (e.g. {@link JsonInstanceSerializer})
      * @param thisInstance instance that represents the service that is running. The instance will get auto-registered
+     * @param watchInstances if true, watches for changes to locally registered instances
      */
-    public ServiceDiscoveryImpl(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance)
+    public ServiceDiscoveryImpl(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance, boolean watchInstances)
     {
+        this.watchInstances = watchInstances;
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
         this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
         this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
@@ -192,6 +197,10 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             {
                 CreateMode      mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
                 client.create().creatingParentsIfNeeded().withMode(mode).forPath(path, bytes);
+                if ( watchInstances )
+                {
+                    resetWatchedInstance(service);
+                }
                 isDone = true;
             }
             catch ( KeeperException.NodeExistsException e )
@@ -365,6 +374,37 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         return builder.build();
     }
 
+    private void resetWatchedInstance(final ServiceInstance<T> service) throws Exception
+    {
+        CuratorWatcher watcher = new CuratorWatcher()
+        {
+            @Override
+            public void process(WatchedEvent event) throws Exception
+            {
+                if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
+                {
+                    resetWatchedInstance(service);
+                }
+            }
+        };
+
+        BackgroundCallback callback = new BackgroundCallback()
+        {
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                if ( event.getType() == CuratorEventType.GET_DATA )
+                {
+                    ServiceInstance<T> newInstance = serializer.deserialize(event.getData());
+                    services.put(newInstance.getId(), newInstance);
+                }
+            }
+        };
+
+        String path = pathForInstance(service.getName(), service.getId());
+        client.getData().usingWatcher(watcher).inBackground(callback).forPath(path);
+    }
+
     private List<String> getChildrenWatched(String path, Watcher watcher, boolean recurse) throws Exception
     {
         List<String>    instanceIds;
@@ -394,9 +434,16 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         return instanceIds;
     }
 
-    private String  pathForInstance(String name, String id) throws UnsupportedEncodingException
+    @VisibleForTesting
+    String pathForInstance(String name, String id)
     {
         return ZKPaths.makePath(pathForName(name), id);
+    }
+
+    @VisibleForTesting
+    ServiceInstance<T> getRegisteredService(String id)
+    {
+        return services.get(id);
     }
 
     private void reRegisterServices() throws Exception
