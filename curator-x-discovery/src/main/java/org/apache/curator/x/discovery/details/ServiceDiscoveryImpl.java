@@ -174,6 +174,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     public void updateService(ServiceInstance<T> service) throws Exception
     {
         Preconditions.checkArgument(services.containsKey(service.getId()), "Service is not registered: " + service);
+        services.put(service.getId(), service);
 
         byte[]          bytes = serializer.serialize(service);
         String          path = pathForInstance(service.getName(), service.getId());
