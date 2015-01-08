@@ -431,7 +431,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             data = client.getCompressionProvider().compress(givenPath, data);
         }
 
-        final String adjustedPath = adjustPath(client.fixForNamespace(givenPath));
+        final String adjustedPath = adjustPath(client.fixForNamespace(givenPath, createMode.isSequential()));
 
         String returnPath = null;
         if ( backgrounding.inBackground() )
