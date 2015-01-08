@@ -767,4 +767,22 @@ public class TestFramework extends BaseClassForTests
             client.close();
         }
     }
+    
+    @Test
+    public void     testSequentialWithTrailingSeparator() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            client.create().forPath("/test");
+            //This should create a node in the form of "/test/00000001"
+            String    path = client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/test/");
+            Assert.assertTrue(path.startsWith("/test/"));
+        }
+        finally
+        {
+            client.close();
+        }
+    }    
 }
