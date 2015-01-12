@@ -19,11 +19,13 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorTempFramework;
 import org.apache.curator.framework.api.TempGetDataBuilder;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.curator.utils.ThreadUtils;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -98,7 +100,13 @@ public class CuratorTempFrameworkImpl implements CuratorTempFramework
         if ( cleanup == null )
         {
             ThreadFactory threadFactory = factory.getThreadFactory();
-            cleanup = (threadFactory != null) ? Executors.newScheduledThreadPool(1, threadFactory) : Executors.newScheduledThreadPool(1);
+
+            if (threadFactory == null)
+            {
+                threadFactory = ThreadUtils.newGenericThreadFactory("CuratorTempFrameworkImpl");
+            }
+
+            cleanup = Executors.newScheduledThreadPool(1, threadFactory);
 
             Runnable        command = new Runnable()
             {

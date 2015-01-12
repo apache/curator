@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
@@ -40,7 +41,7 @@ import java.util.concurrent.Semaphore;
 
 public class TestServiceDiscovery extends BaseClassForTests
 {
-    private static final Comparator<ServiceInstance<Void>>      comparator = new Comparator<ServiceInstance<Void>>()
+    private static final Comparator<ServiceInstance<Void>> comparator = new Comparator<ServiceInstance<Void>>()
     {
         @Override
         public int compare(ServiceInstance<Void> o1, ServiceInstance<Void> o2)
@@ -50,20 +51,20 @@ public class TestServiceDiscovery extends BaseClassForTests
     };
 
     @Test
-    public void         testCrashedServerMultiInstances() throws Exception
+    public void testCrashedServerMultiInstances() throws Exception
     {
-        List<Closeable>     closeables = Lists.newArrayList();
+        List<Closeable> closeables = Lists.newArrayList();
         try
         {
-            Timing              timing = new Timing();
-            CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            Timing timing = new Timing();
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
-            final Semaphore             semaphore = new Semaphore(0);
-            ServiceInstance<String>     instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceInstance<String>     instance2 = ServiceInstance.<String>builder().payload("thing").name("test").port(10065).build();
-            ServiceDiscovery<String>    discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance1)
+            final Semaphore semaphore = new Semaphore(0);
+            ServiceInstance<String> instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceInstance<String> instance2 = ServiceInstance.<String>builder().payload("thing").name("test").port(10065).build();
+            ServiceDiscovery<String> discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance1, false)
             {
                 @Override
                 protected void internalRegisterService(ServiceInstance<String> service) throws Exception
@@ -98,19 +99,19 @@ public class TestServiceDiscovery extends BaseClassForTests
     }
 
     @Test
-    public void         testCrashedServer() throws Exception
+    public void testCrashedServer() throws Exception
     {
-        List<Closeable>     closeables = Lists.newArrayList();
+        List<Closeable> closeables = Lists.newArrayList();
         try
         {
-            Timing              timing = new Timing();
-            CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            Timing timing = new Timing();
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
-            final Semaphore             semaphore = new Semaphore(0);
-            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String>    discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance)
+            final Semaphore semaphore = new Semaphore(0);
+            ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String> discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance, false)
             {
                 @Override
                 protected void internalRegisterService(ServiceInstance<String> service) throws Exception
@@ -144,24 +145,24 @@ public class TestServiceDiscovery extends BaseClassForTests
     }
 
     @Test
-    public void         testCrashedInstance() throws Exception
+    public void testCrashedInstance() throws Exception
     {
-        List<Closeable>     closeables = Lists.newArrayList();
+        List<Closeable> closeables = Lists.newArrayList();
         try
         {
-            Timing              timing = new Timing();
+            Timing timing = new Timing();
 
-            CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
-            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String>    discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance);
+            ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String> discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance, false);
             closeables.add(discovery);
             discovery.start();
 
             Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
-            
+
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
             Thread.sleep(timing.multiple(1.5).session());
 
@@ -178,24 +179,24 @@ public class TestServiceDiscovery extends BaseClassForTests
     }
 
     @Test
-    public void         testMultipleInstances() throws Exception
+    public void testMultipleInstances() throws Exception
     {
-        final String        SERVICE_ONE = "one";
-        final String        SERVICE_TWO = "two";
+        final String SERVICE_ONE = "one";
+        final String SERVICE_TWO = "two";
 
-        List<Closeable>     closeables = Lists.newArrayList();
+        List<Closeable> closeables = Lists.newArrayList();
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
-            ServiceInstance<Void>       s1_i1 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
-            ServiceInstance<Void>       s1_i2 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
-            ServiceInstance<Void>       s2_i1 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
-            ServiceInstance<Void>       s2_i2 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
+            ServiceInstance<Void> s1_i1 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
+            ServiceInstance<Void> s1_i2 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
+            ServiceInstance<Void> s2_i1 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
+            ServiceInstance<Void> s2_i2 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
 
-            ServiceDiscovery<Void>      discovery = ServiceDiscoveryBuilder.builder(Void.class).client(client).basePath("/test").build();
+            ServiceDiscovery<Void> discovery = ServiceDiscoveryBuilder.builder(Void.class).client(client).basePath("/test").build();
             closeables.add(discovery);
             discovery.start();
 
@@ -234,20 +235,53 @@ public class TestServiceDiscovery extends BaseClassForTests
     }
 
     @Test
-    public void         testBasic() throws Exception
+    public void testBasic() throws Exception
     {
+        List<Closeable> closeables = Lists.newArrayList();
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            Assert.assertEquals(discovery.queryForNames(), Arrays.asList("test"));
+
+            List<ServiceInstance<String>> list = Lists.newArrayList();
+            list.add(instance);
+            Assert.assertEquals(discovery.queryForInstances("test"), list);
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
+    public void testNoServerOnStart() throws Exception
+    {
+        server.stop();
         List<Closeable>     closeables = Lists.newArrayList();
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             closeables.add(client);
             client.start();
-            
+
             ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
             ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
             closeables.add(discovery);
             discovery.start();
 
+            server.restart();
             Assert.assertEquals(discovery.queryForNames(), Arrays.asList("test"));
 
             List<ServiceInstance<String>> list = Lists.newArrayList();

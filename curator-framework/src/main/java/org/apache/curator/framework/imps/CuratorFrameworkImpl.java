@@ -174,7 +174,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         ThreadFactory threadFactory = builder.getThreadFactory();
         if ( threadFactory == null )
         {
-            threadFactory = ThreadUtils.newThreadFactory("CuratorFramework");
+            threadFactory = ThreadUtils.newThreadFactory("Framework");
         }
         return threadFactory;
     }
