@@ -32,6 +32,12 @@ import java.util.List;
 public class ZKPaths
 {
     /**
+     * Zookeeper's path separator character.
+     */
+    public static final String PATH_SEPARATOR = "/";
+    
+    
+    /**
      * Apply the namespace to the given path
      *
      * @param namespace namespace (can be null)
@@ -59,7 +65,7 @@ public class ZKPaths
     public static String getNodeFromPath(String path)
     {
         PathUtils.validatePath(path);
-        int i = path.lastIndexOf('/');
+        int i = path.lastIndexOf(PATH_SEPARATOR);
         if ( i < 0 )
         {
             return path;
@@ -102,21 +108,21 @@ public class ZKPaths
     public static PathAndNode getPathAndNode(String path)
     {
         PathUtils.validatePath(path);
-        int i = path.lastIndexOf('/');
+        int i = path.lastIndexOf(PATH_SEPARATOR);
         if ( i < 0 )
         {
             return new PathAndNode(path, "");
         }
         if ( (i + 1) >= path.length() )
         {
-            return new PathAndNode("/", "");
+            return new PathAndNode(PATH_SEPARATOR, "");
         }
         String node = path.substring(i + 1);
-        String parentPath = (i > 0) ? path.substring(0, i) : "/";
+        String parentPath = (i > 0) ? path.substring(0, i) : PATH_SEPARATOR;
         return new PathAndNode(parentPath, node);
     }
 
-    private static final Splitter PATH_SPLITTER = Splitter.on('/').omitEmptyStrings();
+    private static final Splitter PATH_SPLITTER = Splitter.on(PATH_SEPARATOR).omitEmptyStrings();
 
     /**
      * Given a full path, return the the individual parts, without slashes.
@@ -178,7 +184,7 @@ public class ZKPaths
         int pos = 1; // skip first slash, root is guaranteed to exist
         do
         {
-            pos = path.indexOf('/', pos + 1);
+            pos = path.indexOf(PATH_SEPARATOR, pos + 1);
 
             if ( pos == -1 )
             {
@@ -288,14 +294,57 @@ public class ZKPaths
     {
         StringBuilder path = new StringBuilder();
 
+        joinPath(path, parent, child);
+
+        return path.toString();
+    }
+
+    /**
+     * Given a parent path and a list of children nodes, create a combined full path
+     *
+     * @param parent       the parent
+     * @param firstChild   the first children in the path
+     * @param restChildren the rest of the children in the path
+     * @return full path
+     */
+    public static String makePath(String parent, String firstChild, String... restChildren)
+    {
+        StringBuilder path = new StringBuilder();
+
+        joinPath(path, parent, firstChild);
+
+        if ( restChildren == null )
+        {
+            return path.toString();
+        }
+        else
+        {
+            for ( String child : restChildren )
+            {
+                joinPath(path, "", child);
+            }
+
+            return path.toString();
+        }
+    }
+
+    /**
+     * Given a parent and a child node, join them in the given {@link StringBuilder path}
+     *
+     * @param path   the {@link StringBuilder} used to make the path
+     * @param parent the parent
+     * @param child  the child
+     */
+    private static void joinPath(StringBuilder path, String parent, String child)
+    {
         // Add parent piece, with no trailing slash.
         if ( (parent != null) && (parent.length() > 0) )
         {
-            if ( !parent.startsWith("/") )
+            if ( !parent.startsWith(PATH_SEPARATOR) )
             {
-                path.append('/');
+                path.append(PATH_SEPARATOR);
             }
-            if ( parent.endsWith("/") )
+            if ( parent.endsWith(PATH_SEPARATOR) )
             {
                 path.append(parent.substring(0, parent.length() - 1));
             }
@@ -305,30 +354,31 @@ public class ZKPaths
             }
         }
 
-        if ( (child == null) || (child.length() == 0) || (child.equals("/")) )
+        if ( (child == null) || (child.length() == 0) || (child.equals(PATH_SEPARATOR)) )
         {
             // Special case, empty parent and child
             if ( path.length() == 0 )
             {
-                return "/";
+                path.append(PATH_SEPARATOR);
             }
-            return path.toString();
+            return;
         }
 
         // Now add the separator between parent and child.
-        path.append('/');
+        path.append(PATH_SEPARATOR);
+
+        if ( child.startsWith(PATH_SEPARATOR) )
+        {
+            child = child.substring(1);
+        }
+
+        if ( child.endsWith(PATH_SEPARATOR) )
+        {
+            child = child.substring(0, child.length() - 1);
+        }
 
         // Finally, add the child.
-        if ( child.startsWith("/") )
-        {
-            path.append(child.substring(1));
-        }
-        else
-        {
-            path.append(child);
-        }
-
-        return path.toString();
+        path.append(child);
     }
 
     private ZKPaths()
