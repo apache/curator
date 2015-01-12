@@ -19,6 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -41,6 +42,7 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -168,10 +170,16 @@ public class TestFramework extends BaseClassForTests
     @Test
     public void     testCreateACL() throws Exception
     {
+        // Add a few authInfos
+        List<AuthInfo> authInfos = new ArrayList<AuthInfo>();
+        authInfos.add(new AuthInfo("digest", "me1:pass1".getBytes()));
+        authInfos.add(new AuthInfo("digest", "me2:pass2".getBytes()));
+
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
         CuratorFramework client = builder
             .connectString(server.getConnectString())
             .authorization("digest", "me:pass".getBytes())
+            .authorization(authInfos)
             .retryPolicy(new RetryOneTime(1))
             .build();
         client.start();
@@ -182,6 +190,7 @@ public class TestFramework extends BaseClassForTests
             client.create().withACL(aclList).forPath("/test", "test".getBytes());
             client.close();
 
+            // Try setting data with me:pass
             client = builder
                 .connectString(server.getConnectString())
                 .authorization("digest", "me:pass".getBytes())
@@ -198,6 +207,41 @@ public class TestFramework extends BaseClassForTests
             }
             client.close();
 
+            // Try setting data with me1:pass1
+            client = builder
+                    .connectString(server.getConnectString())
+                    .authorization("digest", "me1:pass1".getBytes())
+                    .retryPolicy(new RetryOneTime(1))
+                    .build();
+            client.start();
+            try
+            {
+                client.setData().forPath("/test", "test".getBytes());
+            }
+            catch ( KeeperException.NoAuthException e )
+            {
+                Assert.fail("Auth failed");
+            }
+            client.close();
+
+            // Try setting data with me2:pass2
+            client = builder
+                    .connectString(server.getConnectString())
+                    .authorization("digest", "me:pass2".getBytes())
+                    .retryPolicy(new RetryOneTime(1))
+                    .build();
+            client.start();
+            try
+            {
+                client.setData().forPath("/test", "test".getBytes());
+            }
+            catch ( KeeperException.NoAuthException e )
+            {
+                Assert.fail("Auth failed");
+            }
+            client.close();
+
+            // Try setting data with something:else
             client = builder
                 .connectString(server.getConnectString())
                 .authorization("digest", "something:else".getBytes())
