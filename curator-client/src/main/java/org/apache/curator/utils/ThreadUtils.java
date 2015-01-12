@@ -48,10 +48,7 @@ public class ThreadUtils
 
     public static ThreadFactory newThreadFactory(String processName)
     {
-        return new ThreadFactoryBuilder()
-            .setNameFormat("Curator-" + processName + "-%d")
-            .setDaemon(true)
-            .build();
+        return newGenericThreadFactory("Curator-" + processName);
     }
 
     public static ThreadFactory newGenericThreadFactory(String processName)
