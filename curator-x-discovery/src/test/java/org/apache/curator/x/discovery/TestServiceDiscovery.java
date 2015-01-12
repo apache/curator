@@ -264,4 +264,37 @@ public class TestServiceDiscovery extends BaseClassForTests
             }
         }
     }
+
+    @Test
+    public void testNoServerOnStart() throws Exception
+    {
+        server.stop();
+        List<Closeable>     closeables = Lists.newArrayList();
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            server.restart();
+            Assert.assertEquals(discovery.queryForNames(), Arrays.asList("test"));
+
+            List<ServiceInstance<String>> list = Lists.newArrayList();
+            list.add(instance);
+            Assert.assertEquals(discovery.queryForInstances("test"), list);
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
 }
