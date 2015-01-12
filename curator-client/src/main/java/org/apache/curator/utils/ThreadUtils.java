@@ -54,6 +54,14 @@ public class ThreadUtils
             .build();
     }
 
+    public static ThreadFactory newGenericThreadFactory(String processName)
+    {
+        return new ThreadFactoryBuilder()
+            .setNameFormat(processName + "-%d")
+            .setDaemon(true)
+            .build();
+    }
+
     public static String getProcessName(Class<?> clazz)
     {
         if ( clazz.isAnonymousClass() )

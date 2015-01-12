@@ -25,6 +25,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorTempFramework;
 import org.apache.curator.framework.api.TempGetDataBuilder;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.curator.utils.ThreadUtils;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -102,9 +103,7 @@ public class CuratorTempFrameworkImpl implements CuratorTempFramework
 
             if (threadFactory == null)
             {
-                threadFactory = new ThreadFactoryBuilder()
-                    .setNameFormat("CuratorTempFrameworkImpl-%d")
-                    .build();
+                threadFactory = ThreadUtils.newGenericThreadFactory("CuratorTempFrameworkImpl");
             }
 
             cleanup = Executors.newScheduledThreadPool(1, threadFactory);
