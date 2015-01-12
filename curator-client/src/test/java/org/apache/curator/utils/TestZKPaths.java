@@ -26,6 +26,7 @@ import java.util.Collections;
 
 public class TestZKPaths
 {
+    @SuppressWarnings("NullArgumentToVariableArgMethod")
     @Test
     public void testMakePath()
     {
