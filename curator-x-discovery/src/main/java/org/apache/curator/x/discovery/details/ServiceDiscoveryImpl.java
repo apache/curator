@@ -192,6 +192,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         byte[]          bytes = serializer.serialize(service);
         String          path = pathForInstance(service.getName(), service.getId());
         client.setData().forPath(path, bytes);
+        services.put(service.getId(), service);
     }
 
     @VisibleForTesting
