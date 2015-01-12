@@ -68,6 +68,20 @@ public class TestTreeCache extends BaseTestTreeCache
     }
 
     @Test
+    public void testStartEmptyDeeper() throws Exception
+    {
+        cache = newTreeCacheWithListeners(client, "/test/foo/bar");
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+
+        client.create().creatingParentsIfNeeded().forPath("/test/foo");
+        assertNoMoreEvents();
+        client.create().forPath("/test/foo/bar");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar");
+        assertNoMoreEvents();
+    }
+
+    @Test
     public void testDepth0() throws Exception
     {
         client.create().forPath("/test");
