@@ -46,8 +46,21 @@ public class ZKPaths
      */
     public static String fixForNamespace(String namespace, String path)
     {
+        return fixForNamespace(namespace, path, false);
+    }
+
+    /**
+     * Apply the namespace to the given path
+     *
+     * @param namespace    namespace (can be null)
+     * @param path         path
+     * @param isSequential if the path is being created with a sequential flag
+     * @return adjusted path
+     */
+    public static String fixForNamespace(String namespace, String path, boolean isSequential)
+    {
         // Child path must be valid in and of itself.
-        PathUtils.validatePath(path);
+        PathUtils.validatePath(path, isSequential);
 
         if ( namespace != null )
         {
