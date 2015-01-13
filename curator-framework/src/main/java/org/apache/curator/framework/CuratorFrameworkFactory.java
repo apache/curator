@@ -406,20 +406,20 @@ public class CuratorFrameworkFactory
         {
             switch ( authInfos.size() )
             {
-            case 0:
-            {
-                return null;
-            }
+                case 0:
+                {
+                    return null;
+                }
 
-            case 1:
-            {
-                return authInfos.get(0).getAuth();
-            }
+                case 1:
+                {
+                    return authInfos.get(0).getAuth();
+                }
 
-            default:
-            {
-                throw new IllegalStateException("More than 1 auth has been added");
-            }
+                default:
+                {
+                    throw new IllegalStateException("More than 1 auth has been added");
+                }
             }
         }
 
