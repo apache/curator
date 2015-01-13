@@ -129,10 +129,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private List<AuthInfo> buildAuths(CuratorFrameworkFactory.Builder builder)
     {
         ImmutableList.Builder<AuthInfo> builder1 = ImmutableList.builder();
-        if ( builder.getAuthScheme() != null )
-        {
-            builder1.add(new AuthInfo(builder.getAuthScheme(), builder.getAuthValue()));
-        }
         if ( builder.getAuthInfos() != null )
         {
             builder1.addAll(builder.getAuthInfos());

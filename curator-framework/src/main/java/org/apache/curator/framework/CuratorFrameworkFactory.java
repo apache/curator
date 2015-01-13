@@ -20,6 +20,8 @@
 package org.apache.curator.framework;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
@@ -34,6 +36,7 @@ import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -107,8 +110,6 @@ public class CuratorFrameworkFactory
         private RetryPolicy retryPolicy;
         private ThreadFactory threadFactory = null;
         private String namespace;
-        private String authScheme = null;
-        private byte[] authValue = null;
         private List<AuthInfo> authInfos = null;
         private byte[] defaultData = LOCAL_ADDRESS;
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
@@ -156,6 +157,8 @@ public class CuratorFrameworkFactory
 
         /**
          * Add connection authorization
+         * 
+         * Subsequent calls to this method overwrite the prior calls.
          *
          * @param scheme the scheme
          * @param auth   the auth bytes
@@ -163,8 +166,8 @@ public class CuratorFrameworkFactory
          */
         public Builder authorization(String scheme, byte[] auth)
         {
-            this.authScheme = scheme;
-            this.authValue = (auth != null) ? Arrays.copyOf(auth, auth.length) : null;
+            this.authInfos = Lists.newArrayList();
+            this.authInfos.add(new AuthInfo(scheme, (auth != null) ? Arrays.copyOf(auth, auth.length) : null));
             return this;
         }
 
@@ -378,16 +381,6 @@ public class CuratorFrameworkFactory
         public String getNamespace()
         {
             return namespace;
-        }
-
-        public String getAuthScheme()
-        {
-            return authScheme;
-        }
-
-        public byte[] getAuthValue()
-        {
-            return (authValue != null) ? Arrays.copyOf(authValue, authValue.length) : null;
         }
 
         public List<AuthInfo> getAuthInfos()
