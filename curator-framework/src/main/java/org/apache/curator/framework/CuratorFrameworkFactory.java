@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -107,8 +108,6 @@ public class CuratorFrameworkFactory
         private RetryPolicy retryPolicy;
         private ThreadFactory threadFactory = null;
         private String namespace;
-        private String authScheme = null;
-        private byte[] authValue = null;
         private List<AuthInfo> authInfos = null;
         private byte[] defaultData = LOCAL_ADDRESS;
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
@@ -156,6 +155,8 @@ public class CuratorFrameworkFactory
 
         /**
          * Add connection authorization
+         * 
+         * Subsequent calls to this method overwrite the prior calls.
          *
          * @param scheme the scheme
          * @param auth   the auth bytes
@@ -163,9 +164,7 @@ public class CuratorFrameworkFactory
          */
         public Builder authorization(String scheme, byte[] auth)
         {
-            this.authScheme = scheme;
-            this.authValue = (auth != null) ? Arrays.copyOf(auth, auth.length) : null;
-            return this;
+            return authorization(ImmutableList.of(new AuthInfo(scheme, (auth != null) ? Arrays.copyOf(auth, auth.length) : null)));
         }
 
         /**
@@ -380,14 +379,48 @@ public class CuratorFrameworkFactory
             return namespace;
         }
 
+        @Deprecated
         public String getAuthScheme()
         {
-            return authScheme;
+            switch ( authInfos.size() )
+            {
+                case 0:
+                {
+                    return null;
+                }
+
+                case 1:
+                {
+                    return authInfos.get(0).scheme;
+                }
+
+                default:
+                {
+                    throw new IllegalStateException("More than 1 auth has been added");
+                }
+            }
         }
 
+        @Deprecated
         public byte[] getAuthValue()
         {
-            return (authValue != null) ? Arrays.copyOf(authValue, authValue.length) : null;
+            switch ( authInfos.size() )
+            {
+                case 0:
+                {
+                    return null;
+                }
+
+                case 1:
+                {
+                    return authInfos.get(0).getAuth();
+                }
+
+                default:
+                {
+                    throw new IllegalStateException("More than 1 auth has been added");
+                }
+            }
         }
 
         public List<AuthInfo> getAuthInfos()
