@@ -227,7 +227,21 @@ public class TestFramework extends BaseClassForTests
     }    
 
     @Test
-    public void     testCreateACLMultipleAuths() throws Exception
+    public void     testACLDeprecatedApis() throws Exception
+    {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1));
+        Assert.assertNull(builder.getAuthScheme());
+        Assert.assertNull(builder.getAuthValue());
+
+        builder = builder.authorization("digest", "me1:pass1".getBytes());
+        Assert.assertEquals(builder.getAuthScheme(), "digest");
+        Assert.assertEquals(builder.getAuthValue(), "me1:pass1".getBytes());
+    }
+
+    @Test
+    public void testCreateACLMultipleAuths() throws Exception
     {
         // Add a few authInfos
         List<AuthInfo> authInfos = new ArrayList<AuthInfo>();
@@ -483,20 +497,20 @@ public class TestFramework extends BaseClassForTests
         try
         {
             client.getCuratorListenable().addListener
-            (
-                new CuratorListener()
-                {
-                    @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                (
+                    new CuratorListener()
                     {
-                        if ( event.getType() == CuratorEventType.SYNC )
+                        @Override
+                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
                         {
-                            Assert.assertEquals(event.getPath(), "/head");
-                            ((CountDownLatch)event.getContext()).countDown();
+                            if ( event.getType() == CuratorEventType.SYNC )
+                            {
+                                Assert.assertEquals(event.getPath(), "/head");
+                                ((CountDownLatch)event.getContext()).countDown();
+                            }
                         }
                     }
-                }
-            );
+                );
 
             client.create().forPath("/head");
             Assert.assertNotNull(client.checkExists().forPath("/head"));
@@ -587,20 +601,20 @@ public class TestFramework extends BaseClassForTests
         try
         {
             client.getCuratorListenable().addListener
-                    (
-                            new CuratorListener()
+                (
+                    new CuratorListener()
+                    {
+                        @Override
+                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                        {
+                            if ( event.getType() == CuratorEventType.DELETE )
                             {
-                                @Override
-                                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-                                {
-                                    if ( event.getType() == CuratorEventType.DELETE )
-                                    {
-                                        Assert.assertEquals(event.getPath(), "/one/two");
-                                        ((CountDownLatch)event.getContext()).countDown();
-                                    }
-                                }
+                                Assert.assertEquals(event.getPath(), "/one/two");
+                                ((CountDownLatch)event.getContext()).countDown();
                             }
-                    );
+                        }
+                    }
+                );
 
             client.create().creatingParentsIfNeeded().forPath("/one/two/three/four");
             Assert.assertNotNull(client.checkExists().forPath("/one/two/three/four"));

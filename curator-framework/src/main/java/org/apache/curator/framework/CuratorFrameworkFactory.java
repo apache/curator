@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -382,7 +381,8 @@ public class CuratorFrameworkFactory
         @Deprecated
         public String getAuthScheme()
         {
-            switch ( authInfos.size() )
+            int qty = (authInfos != null) ? authInfos.size() : 0;
+            switch ( qty )
             {
                 case 0:
                 {
@@ -404,7 +404,8 @@ public class CuratorFrameworkFactory
         @Deprecated
         public byte[] getAuthValue()
         {
-            switch ( authInfos.size() )
+            int qty = (authInfos != null) ? authInfos.size() : 0;
+            switch ( qty )
             {
                 case 0:
                 {
@@ -413,7 +414,8 @@ public class CuratorFrameworkFactory
 
                 case 1:
                 {
-                    return authInfos.get(0).getAuth();
+                    byte[] bytes = authInfos.get(0).getAuth();
+                    return (bytes != null) ? Arrays.copyOf(bytes, bytes.length) : null;
                 }
 
                 default:
