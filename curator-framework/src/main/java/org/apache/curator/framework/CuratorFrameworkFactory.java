@@ -19,9 +19,8 @@
 
 package org.apache.curator.framework;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
@@ -36,7 +35,6 @@ import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -166,9 +164,7 @@ public class CuratorFrameworkFactory
          */
         public Builder authorization(String scheme, byte[] auth)
         {
-            this.authInfos = Lists.newArrayList();
-            this.authInfos.add(new AuthInfo(scheme, (auth != null) ? Arrays.copyOf(auth, auth.length) : null));
-            return this;
+            return authorization(ImmutableList.of(new AuthInfo(scheme, (auth != null) ? Arrays.copyOf(auth, auth.length) : null)));
         }
 
         /**
@@ -381,6 +377,50 @@ public class CuratorFrameworkFactory
         public String getNamespace()
         {
             return namespace;
+        }
+
+        @Deprecated
+        public String getAuthScheme()
+        {
+            switch ( authInfos.size() )
+            {
+                case 0:
+                {
+                    return null;
+                }
+
+                case 1:
+                {
+                    return authInfos.get(0).scheme;
+                }
+
+                default:
+                {
+                    throw new IllegalStateException("More than 1 auth has been added");
+                }
+            }
+        }
+
+        @Deprecated
+        public byte[] getAuthValue()
+        {
+            switch ( authInfos.size() )
+            {
+            case 0:
+            {
+                return null;
+            }
+
+            case 1:
+            {
+                return authInfos.get(0).getAuth();
+            }
+
+            default:
+            {
+                throw new IllegalStateException("More than 1 auth has been added");
+            }
+            }
         }
 
         public List<AuthInfo> getAuthInfos()
