@@ -316,6 +316,11 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test/foo", "two".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
 
+        client.delete().forPath("/test/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
+
         assertNoMoreEvents();
     }
 
