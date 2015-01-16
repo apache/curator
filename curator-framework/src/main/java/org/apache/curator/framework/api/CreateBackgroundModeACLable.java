@@ -19,8 +19,6 @@
 package org.apache.curator.framework.api;
 
 public interface CreateBackgroundModeACLable extends
-    BackgroundPathAndBytesable<String>,
-    CreateModable<ACLBackgroundPathAndBytesable<String>>,
     ACLCreateModeBackgroundPathAndBytesable<String>
 {
     /**

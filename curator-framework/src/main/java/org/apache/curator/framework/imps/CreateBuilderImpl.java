@@ -266,7 +266,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         return new ProtectACLCreateModePathAndBytesable<String>()
         {
             @Override
-            public ACLCreateModeBackgroundPathAndBytesable<String> withProtection()
+            public CompressACLCreateModeBackgroundPathAndBytesable<String> withProtection()
             {
                 return CreateBuilderImpl.this.withProtection();
             }
@@ -334,7 +334,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     }
 
     @Override
-    public ACLCreateModeBackgroundPathAndBytesable<String> withProtection()
+    public CompressACLCreateModeBackgroundPathAndBytesable<String> withProtection()
     {
         setProtected();
         return this;
