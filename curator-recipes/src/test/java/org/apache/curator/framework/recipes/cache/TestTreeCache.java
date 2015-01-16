@@ -325,6 +325,30 @@ public class TestTreeCache extends BaseTestTreeCache
     }
 
     @Test
+    public void testDeleteThenCreateRoot() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/foo", "one".getBytes());
+
+        cache = newTreeCacheWithListeners(client, "/test/foo");
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+
+        client.delete().forPath("/test/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
+
+        client.delete().forPath("/test/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
+
+        assertNoMoreEvents();
+    }
+
+    @Test
     public void testKilledSession() throws Exception
     {
         client.create().forPath("/test");
