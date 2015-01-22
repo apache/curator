@@ -68,7 +68,7 @@
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
         <javassist-version>3.18.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
-        <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
+        <jackson-version>2.3.2</jackson-version>
         <jersey-version>1.18.1</jersey-version>
         <jsr311-api-version>1.1.1</jsr311-api-version>
         <jetty-version>6.1.26</jetty-version>
@@ -347,9 +347,21 @@
             </dependency>
 
             <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-mapper-asl</artifactId>
-                <version>${jackson-mapper-asl-version}</version>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson-version}</version>
             </dependency>
 
             <dependency>
