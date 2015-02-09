@@ -20,6 +20,8 @@ package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.CloseableScheduledExecutorService;
@@ -52,6 +54,7 @@ public class ChildReaper implements Closeable
     private final Reaper.Mode mode;
     private final CloseableScheduledExecutorService executor;
     private final int reapingThresholdMs;
+    private final LeaderLatch leaderLatch;
 
     private volatile Future<?> task;
 
@@ -109,7 +112,15 @@ public class ChildReaper implements Closeable
         this.mode = mode;
         this.executor = new CloseableScheduledExecutorService(executor);
         this.reapingThresholdMs = reapingThresholdMs;
-        this.reaper = new Reaper(client, executor, reapingThresholdMs, leaderPath);
+        if (leaderPath != null)
+        {
+            leaderLatch = new LeaderLatch(client, leaderPath);
+        }
+        else
+        {
+            leaderLatch = null;
+        }
+        this.reaper = new Reaper(client, executor, reapingThresholdMs, leaderLatch);
         addPath(path);
     }
 
@@ -136,7 +147,10 @@ public class ChildReaper implements Closeable
             reapingThresholdMs,
             TimeUnit.MILLISECONDS
         );
-
+        if (leaderLatch != null)
+        {
+            leaderLatch.start();
+        }
         reaper.start();
     }
 
@@ -146,6 +160,10 @@ public class ChildReaper implements Closeable
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
             CloseableUtils.closeQuietly(reaper);
+            if (leaderLatch != null)
+            {
+                CloseableUtils.closeQuietly(leaderLatch);
+            }
             task.cancel(true);
         }
     }
@@ -173,32 +191,40 @@ public class ChildReaper implements Closeable
         return paths.remove(PathUtils.validatePath(path));
     }
 
-    private static ScheduledExecutorService newExecutorService()
+    public static ScheduledExecutorService newExecutorService()
     {
         return ThreadUtils.newFixedThreadScheduledPool(2, "ChildReaper");
     }
 
     private void doWork()
     {
-        for ( String path : paths )
+        if (shouldDoWork())
         {
-            try
+            for ( String path : paths )
             {
-                List<String> children = client.getChildren().forPath(path);
-                for ( String name : children )
+                try
                 {
-                    String thisPath = ZKPaths.makePath(path, name);
-                    Stat stat = client.checkExists().forPath(thisPath);
-                    if ( (stat != null) && (stat.getNumChildren() == 0) )
+                    List<String> children = client.getChildren().forPath(path);
+                    for ( String name : children )
                     {
-                        reaper.addPath(thisPath, mode);
+                        String thisPath = ZKPaths.makePath(path, name);
+                        Stat stat = client.checkExists().forPath(thisPath);
+                        if ( (stat != null) && (stat.getNumChildren() == 0) )
+                        {
+                            reaper.addPath(thisPath, mode);
+                        }
                     }
                 }
-            }
-            catch ( Exception e )
-            {
-                log.error("Could not get children for path: " + path, e);
+                catch ( Exception e )
+                {
+                    log.error("Could not get children for path: " + path, e);
+                }
             }
         }
+    }
+
+    private boolean shouldDoWork()
+    {
+        return this.leaderLatch == null || this.leaderLatch.hasLeadership();
     }
 }

@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -95,6 +96,52 @@ public class TestChildReaper extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(reaper);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void     testLeaderElection() throws Exception
+    {
+        Timing                  timing = new Timing();
+        ChildReaper             reaper = null;
+        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        LeaderLatch otherLeader = null;
+        try
+        {
+            client.start();
+
+            for ( int i = 0; i < 10; ++i )
+            {
+                client.create().creatingParentsIfNeeded().forPath("/test/" + Integer.toString(i));
+            }
+
+            otherLeader = new LeaderLatch(client, "/test-leader");
+            otherLeader.start();
+
+            reaper = new ChildReaper(client, "/test", Reaper.Mode.REAP_UNTIL_DELETE, ChildReaper.newExecutorService(), 1, "/test-leader");
+            reaper.start();
+
+            timing.forWaiting().sleepABit();
+
+            //Should not have reaped anything at this point since otherLeader is still leader
+            Stat    stat = client.checkExists().forPath("/test");
+            Assert.assertEquals(stat.getNumChildren(), 10);
+
+            CloseableUtils.closeQuietly(otherLeader);
+
+            timing.forWaiting().sleepABit();
+
+            stat = client.checkExists().forPath("/test");
+            Assert.assertEquals(stat.getNumChildren(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(reaper);
+            if (otherLeader != null && otherLeader.getState() == LeaderLatch.State.STARTED)
+            {
+                CloseableUtils.closeQuietly(otherLeader);
+            }
             CloseableUtils.closeQuietly(client);
         }
     }
