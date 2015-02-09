@@ -21,6 +21,8 @@ package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
+
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.CuratorFramework;
@@ -92,6 +94,12 @@ public class InterProcessSemaphoreV2
     private static final String LOCK_PARENT = "locks";
     private static final String LEASE_PARENT = "leases";
     private static final String LEASE_BASE_NAME = "lease-";
+    public static final LockSchema LOCK_SCHEMA = new LockSchema(
+            Sets.newHashSet(
+                    LOCK_PARENT,
+                    LEASE_PARENT
+            )
+    );
 
     /**
      * @param client    the client

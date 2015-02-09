@@ -55,6 +55,7 @@ public class ChildReaper implements Closeable
     private final CloseableScheduledExecutorService executor;
     private final int reapingThresholdMs;
     private final LeaderLatch leaderLatch;
+    private final LockSchema lockSchema;
 
     private volatile Future<?> task;
 
@@ -108,6 +109,21 @@ public class ChildReaper implements Closeable
      */
     public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath)
     {
+        this(client, path, mode, executor, reapingThresholdMs, leaderPath, new LockSchema());
+    }
+
+
+    /**
+     * @param client the client
+     * @param path path to reap children from
+     * @param executor executor to use for background tasks
+     * @param reapingThresholdMs threshold in milliseconds that determines that a path can be deleted
+     * @param mode reaping mode
+     * @param leaderPath if not null, uses a leader selection so that only 1 reaper is active in the cluster
+     * @param lockSchema a set of the possible subnodes of the children of path that must be reaped in addition to the child nodes
+     */
+    public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath, LockSchema lockSchema)
+    {
         this.client = client;
         this.mode = mode;
         this.executor = new CloseableScheduledExecutorService(executor);
@@ -121,6 +137,7 @@ public class ChildReaper implements Closeable
             leaderLatch = null;
         }
         this.reaper = new Reaper(client, executor, reapingThresholdMs, leaderLatch);
+        this.lockSchema = lockSchema;
         addPath(path);
     }
 
@@ -207,12 +224,13 @@ public class ChildReaper implements Closeable
                     List<String> children = client.getChildren().forPath(path);
                     for ( String name : children )
                     {
-                        String thisPath = ZKPaths.makePath(path, name);
-                        Stat stat = client.checkExists().forPath(thisPath);
-                        if ( (stat != null) && (stat.getNumChildren() == 0) )
+                        String childPath = ZKPaths.makePath(path, name);
+                        addPathToReaperIfEmpty(childPath);
+                        for ( String subNode : lockSchema.getPaths() )
                         {
-                            reaper.addPath(thisPath, mode);
+                            addPathToReaperIfEmpty(ZKPaths.makePath(childPath, subNode));
                         }
+
                     }
                 }
                 catch ( Exception e )
@@ -220,6 +238,15 @@ public class ChildReaper implements Closeable
                     log.error("Could not get children for path: " + path, e);
                 }
             }
+        }
+    }
+
+    private void addPathToReaperIfEmpty(String path) throws Exception
+    {
+        Stat stat = client.checkExists().forPath(path);
+        if ( (stat != null) && (stat.getNumChildren() == 0) )
+        {
+            reaper.addPath(path, mode);
         }
     }
 
