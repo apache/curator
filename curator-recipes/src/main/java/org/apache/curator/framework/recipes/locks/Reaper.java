@@ -336,7 +336,6 @@ public class Reaper implements Closeable
 
     private void addListenerToLeaderLatch(LeaderLatch leaderLatch)
     {
-        reapingIsActive.set(false);
 
         LeaderLatchListener listener = new LeaderLatchListener()
         {
@@ -357,6 +356,8 @@ public class Reaper implements Closeable
             }
         };
         leaderLatch.addListener(listener);
+
+        reapingIsActive.set(leaderLatch.hasLeadership());
     }
 
     private static LeaderLatch makeLeaderLatchIfPathNotNull(CuratorFramework client, String leaderPath)
