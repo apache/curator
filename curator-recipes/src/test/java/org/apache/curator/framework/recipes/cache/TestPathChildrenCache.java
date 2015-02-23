@@ -28,7 +28,6 @@ import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
@@ -103,8 +102,6 @@ public class TestPathChildrenCache extends BaseClassForTests
     @Test
     public void testClientClosedDuringRefreshErrorMessage() throws Exception
     {
-        Timing timing = new Timing();
-
         // Fiddle with logging so we can intercept the error events for org.apache.curator
         final List<LoggingEvent> events = Lists.newArrayList();
         Collection<String> messages = Collections2.transform(events, new Function<LoggingEvent, String>() {
@@ -157,15 +154,25 @@ public class TestPathChildrenCache extends BaseClassForTests
                 "The expected error was not logged. This is an indication that this test could be broken due to" +
                         " an incomplete logging setup.");
 
+        CuratorFramework initialClient = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        initialClient.start();
+        try
+        {
+            initialClient.create().forPath("/test");
+            initialClient.create().forPath("/test/aaa");
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(initialClient);
+        }
+
         // try to reproduce a bunch of times because it doesn't happen reliably
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 500; i++) {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client.start();
             try {
                 PathChildrenCache cache = new PathChildrenCache(client, "/test", true);
                 cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
-                client.newNamespaceAwareEnsurePath("/test/aaa").ensure(client.getZookeeperClient());
-                client.setData().forPath("/test/aaa", new byte[]{1, 2, 3, 4, 5});
                 cache.rebuildNode("/test/aaa");
                 CloseableUtils.closeQuietly(cache);
             } finally {
