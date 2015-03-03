@@ -336,7 +336,7 @@ public class PersistentEphemeralNode implements Closeable
         try
         {
             String existingPath = nodePath.get();
-            String createPath = (existingPath != null) ? existingPath : basePath;
+            String createPath = (existingPath != null && !mode.isProtected()) ? existingPath : basePath;
             createMethod.withMode(mode.getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data.get());
         }
         catch ( Exception e )
