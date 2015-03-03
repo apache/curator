@@ -675,14 +675,27 @@ public class PathChildrenCache implements Closeable
         if ( resultCode == KeeperException.Code.OK.intValue() ) // otherwise - node must have dropped or something - we should be getting another event
         {
             ChildData data = new ChildData(fullPath, stat, bytes);
-            ChildData previousData = currentData.put(fullPath, data);
-            if ( previousData == null ) // i.e. new
-            {
-                offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data)));
-            }
-            else if ( previousData.getStat().getVersion() != stat.getVersion() )
-            {
-                offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
+            while (true) { // loop to support concurrent writes to currentData
+                ChildData previousData = currentData.get(fullPath);
+                if ( previousData == null ) // i.e. new
+                {
+                    if (currentData.putIfAbsent(fullPath, data) == null) // is currentData still missing the key?
+                    {
+                        offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data)));
+                        break;
+                    }
+                }
+                else if ( previousData.getStat().getVersion() < stat.getVersion() ) // Newer version of something that existed
+                {
+                    if (currentData.replace(fullPath, previousData, data)) // is the value of currentData still what we think it is?
+                    {
+                        offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
+                        break;
+                    }
+                } else // Old version, ignore
+                {
+                  break;
+                }
             }
             updateInitialSet(ZKPaths.getNodeFromPath(fullPath), data);
         }
