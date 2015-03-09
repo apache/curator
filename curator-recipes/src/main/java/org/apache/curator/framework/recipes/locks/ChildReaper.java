@@ -33,7 +33,9 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +57,7 @@ public class ChildReaper implements Closeable
     private final CloseableScheduledExecutorService executor;
     private final int reapingThresholdMs;
     private final LeaderLatch leaderLatch;
-    private final LockSchema lockSchema;
+    private final Set<String> lockSchema;
 
     private volatile Future<?> task;
 
@@ -109,7 +111,7 @@ public class ChildReaper implements Closeable
      */
     public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath)
     {
-        this(client, path, mode, executor, reapingThresholdMs, leaderPath, new LockSchema());
+        this(client, path, mode, executor, reapingThresholdMs, leaderPath, Collections.<String>emptySet());
     }
 
 
@@ -122,7 +124,7 @@ public class ChildReaper implements Closeable
      * @param leaderPath if not null, uses a leader selection so that only 1 reaper is active in the cluster
      * @param lockSchema a set of the possible subnodes of the children of path that must be reaped in addition to the child nodes
      */
-    public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath, LockSchema lockSchema)
+    public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath, Set<String> lockSchema)
     {
         this.client = client;
         this.mode = mode;
@@ -226,7 +228,7 @@ public class ChildReaper implements Closeable
                     {
                         String childPath = ZKPaths.makePath(path, name);
                         addPathToReaperIfEmpty(childPath);
-                        for ( String subNode : lockSchema.getPaths() )
+                        for ( String subNode : lockSchema )
                         {
                             addPathToReaperIfEmpty(ZKPaths.makePath(childPath, subNode));
                         }

@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.utils.PathUtils;
 
@@ -94,11 +95,9 @@ public class InterProcessSemaphoreV2
     private static final String LOCK_PARENT = "locks";
     private static final String LEASE_PARENT = "leases";
     private static final String LEASE_BASE_NAME = "lease-";
-    public static final LockSchema LOCK_SCHEMA = new LockSchema(
-            Sets.newHashSet(
-                    LOCK_PARENT,
-                    LEASE_PARENT
-            )
+    public static final Set<String> LOCK_SCHEMA = Sets.newHashSet(
+            LOCK_PARENT,
+            LEASE_PARENT
     );
 
     /**
