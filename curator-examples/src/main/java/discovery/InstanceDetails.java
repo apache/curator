@@ -18,7 +18,7 @@
  */
 package discovery;
 
-import org.codehaus.jackson.map.annotate.JsonRootName;
+import com.fasterxml.jackson.annotation.JsonRootName;
 
 /**
  * In a real application, the Service payload will most likely
