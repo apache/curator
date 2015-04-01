@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -37,9 +38,11 @@ import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -453,6 +456,42 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         {
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));
+        }
+        finally
+        {
+            node.close();
+        }
+    }
+    
+    /**
+     * See CURATOR-190
+     * For protected nodes on reconnect the current protected name was passed to the create builder meaning that it got
+     * appended to the new protected node name. This meant that a new node got created on each reconnect.
+     * @throws Exception
+     */
+    @Test
+    public void testProtected() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH,
+                                                                   new byte[0]);
+        node.start();
+        try
+        {
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            assertNodeExists(curator, node.getActualPath());
+
+            server.restart();            
+            
+            curator.blockUntilConnected(5, TimeUnit.SECONDS);
+
+            assertNodeExists(curator, node.getActualPath());
+            
+            //There should only be a single child, the persisted ephemeral node
+            List<String> children = curator.getChildren().forPath(DIR);
+            assertFalse(children == null);
+            assertEquals(children.size(), 1);
         }
         finally
         {
