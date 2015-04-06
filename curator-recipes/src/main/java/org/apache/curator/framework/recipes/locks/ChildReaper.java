@@ -219,7 +219,7 @@ public class ChildReaper implements Closeable
      * If a node has so many children that {@link CuratorFramework#getChildren()} will fail
      * (due to jute.maxbuffer) it can cause connection instability. Set the max number of
      * children here to prevent the path from being queried in these cases. The number should usually
-     * be: avergage-node-name/1000000
+     * be: average-node-name-length/1000000
      *
      * @param maxChildren max children
      */
