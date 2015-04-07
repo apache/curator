@@ -264,6 +264,7 @@ public class ChildReaper implements Closeable
                     }
 
                     List<String> children = client.getChildren().forPath(path);
+                    log.info(String.format("Found %d children for %s", children.size(), path));
                     for ( String name : children )
                     {
                         String childPath = ZKPaths.makePath(path, name);
@@ -288,6 +289,7 @@ public class ChildReaper implements Closeable
         Stat stat = client.checkExists().forPath(path);
         if ( (stat != null) && (stat.getNumChildren() == 0) )
         {
+            log.info("Adding " + path);
             reaper.addPath(path, mode);
         }
     }
