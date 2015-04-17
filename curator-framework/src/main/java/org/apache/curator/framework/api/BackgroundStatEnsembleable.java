@@ -18,13 +18,7 @@
  */
 package org.apache.curator.framework.api;
 
-/**
- * An non-incremental reconfiguration builder.
- * This builder has access only to the non-incremental reconfiguration methods withMembers, so that we prevent
- * mixing concepts that can't be used together.
- */
-public interface LeaveBackgroundStatConfigurable extends
-        Leaveable<BackgroundStatConfigurable<byte[]>>,
-        BackgroundStatConfigurable<byte[]> {
-
+public interface BackgroundStatEnsembleable<T> extends
+    BackgroundStatable<Ensembleable<T>>,
+    Ensembleable<T> {
 }
