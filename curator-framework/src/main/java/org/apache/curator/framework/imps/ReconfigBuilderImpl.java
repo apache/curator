@@ -21,13 +21,13 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.BackgroundStatConfigurable;
-import org.apache.curator.framework.api.Configurable;
+import org.apache.curator.framework.api.BackgroundStatConfigEnsembleable;
+import org.apache.curator.framework.api.BackgroundStatEnsembleable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.Ensembleable;
-import org.apache.curator.framework.api.JoinBackgroundStatConfigurable;
-import org.apache.curator.framework.api.LeaveBackgroundStatConfigurable;
+import org.apache.curator.framework.api.JoinBackgroundStatConfigEnsembleable;
+import org.apache.curator.framework.api.LeaveBackgroundStatConfigEnsembleable;
 import org.apache.curator.framework.api.ReconfigBuilder;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.data.Stat;
@@ -46,7 +46,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder {
         this.client = client;
     }
 
-    private static class ReconfigBuilderBase implements BackgroundStatConfigurable<byte[]>, Ensembleable<byte[]>, BackgroundOperation<EnsembleServersAndConfig> {
+    private static class ReconfigBuilderBase implements BackgroundStatConfigEnsembleable<byte[]>, Ensembleable<byte[]>, BackgroundOperation<EnsembleServersAndConfig> {
 
         final CuratorFrameworkImpl client;
         final List<String> joiningServers = new LinkedList<String>();
@@ -62,49 +62,49 @@ public class ReconfigBuilderImpl implements ReconfigBuilder {
         }
 
         @Override
-        public Configurable<byte[]> inBackground() {
+        public Ensembleable<byte[]> inBackground() {
             backgrounding = new Backgrounding();
             return this;
         }
 
         @Override
-        public Configurable<byte[]> inBackground(Object context) {
+        public Ensembleable<byte[]> inBackground(Object context) {
             backgrounding = new Backgrounding(context);
             return this;
         }
 
         @Override
-        public Configurable<byte[]> inBackground(BackgroundCallback callback) {
+        public Ensembleable<byte[]> inBackground(BackgroundCallback callback) {
             backgrounding = new Backgrounding(callback);
             return this;
         }
 
         @Override
-        public Configurable<byte[]> inBackground(BackgroundCallback callback, Object context) {
+        public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context) {
             backgrounding = new Backgrounding(callback, context);
             return this;
         }
 
         @Override
-        public Configurable<byte[]> inBackground(BackgroundCallback callback, Executor executor) {
+        public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Executor executor) {
             backgrounding = new Backgrounding(callback, executor);
             return this;
         }
 
         @Override
-        public Configurable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor) {
+        public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor) {
             backgrounding = new Backgrounding(client, callback, context, executor);
             return this;
         }
 
         @Override
-        public Ensembleable<byte[]> fromConfig(long config) throws Exception {
+        public BackgroundStatEnsembleable<byte[]> fromConfig(long config) throws Exception {
             this.config = config;
             return this;
         }
 
         @Override
-        public Configurable<byte[]> storingStatIn(Stat stat) {
+        public Ensembleable<byte[]> storingStatIn(Stat stat) {
             this.stat = stat;
             return this;
         }
@@ -166,27 +166,27 @@ public class ReconfigBuilderImpl implements ReconfigBuilder {
         }
     }
 
-    private static class JoinReconfigBuilder extends ReconfigBuilderBase implements JoinBackgroundStatConfigurable {
+    private static class JoinReconfigBuilderConfig extends ReconfigBuilderBase implements JoinBackgroundStatConfigEnsembleable {
 
-        private JoinReconfigBuilder(CuratorFrameworkImpl client) {
+        private JoinReconfigBuilderConfig(CuratorFrameworkImpl client) {
             super(client);
         }
 
         @Override
-        public BackgroundStatConfigurable<byte[]> joining(String... servers) {
+        public BackgroundStatConfigEnsembleable<byte[]> joining(String... servers) {
             joiningServers.addAll(Arrays.asList(servers));
             return this;
         }
     }
 
-    private static class LeaveReconfigBuilder extends ReconfigBuilderBase implements LeaveBackgroundStatConfigurable {
+    private static class LeaveReconfigBuilderConfig extends ReconfigBuilderBase implements LeaveBackgroundStatConfigEnsembleable {
 
-        private LeaveReconfigBuilder(CuratorFrameworkImpl client) {
+        private LeaveReconfigBuilderConfig(CuratorFrameworkImpl client) {
             super(client);
         }
 
         @Override
-        public BackgroundStatConfigurable<byte[]> leaving(String... servers) {
+        public BackgroundStatConfigEnsembleable<byte[]> leaving(String... servers) {
             leavingServers.addAll(Arrays.asList(servers));
             return this;
         }
@@ -194,21 +194,21 @@ public class ReconfigBuilderImpl implements ReconfigBuilder {
 
 
     @Override
-    public LeaveBackgroundStatConfigurable joining(String... servers) {
-        LeaveReconfigBuilder builder = new LeaveReconfigBuilder(client);
+    public LeaveBackgroundStatConfigEnsembleable joining(String... servers) {
+        LeaveReconfigBuilderConfig builder = new LeaveReconfigBuilderConfig(client);
         builder.joiningServers.addAll(Arrays.asList(servers));
         return builder;
     }
 
     @Override
-    public JoinBackgroundStatConfigurable leaving(String... servers) {
-        JoinReconfigBuilder builder = new JoinReconfigBuilder(client);
+    public JoinBackgroundStatConfigEnsembleable leaving(String... servers) {
+        JoinReconfigBuilderConfig builder = new JoinReconfigBuilderConfig(client);
         builder.leavingServers.addAll(Arrays.asList(servers));
         return builder;
     }
 
     @Override
-    public BackgroundStatConfigurable<byte[]> withMembers(String... servers) {
+    public BackgroundStatConfigEnsembleable<byte[]> withMembers(String... servers) {
         ReconfigBuilderBase builder = new ReconfigBuilderBase(client);
         builder.members.addAll(Arrays.asList(servers));
         return builder;

@@ -101,14 +101,14 @@ public class TestReconfiguration {
         String server2 = getServerString(qv, cluster, 2L);
 
         //Remove Servers
-        bytes = client.reconfig().leaving("1").storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
+        bytes = client.reconfig().leaving("1").fromConfig(qv.getVersion()).storingStatIn(stat).forEnsemble();
         qv = getQuorumVerifier(bytes);
         Assert.assertEquals(qv.getAllMembers().size(), 4);
 
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString2to5);
 
-        bytes = client.reconfig().leaving("2").storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
+        bytes = client.reconfig().leaving("2").fromConfig(qv.getVersion()).storingStatIn(stat).forEnsemble();
         qv = getQuorumVerifier(bytes);
         Assert.assertEquals(qv.getAllMembers().size(), 3);
 
@@ -116,14 +116,14 @@ public class TestReconfiguration {
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString3to5);
 
         //Add Servers
-        bytes = client.reconfig().joining("server.2=" + server2).storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
+        bytes = client.reconfig().joining("server.2=" + server2).fromConfig(qv.getVersion()).storingStatIn(stat).forEnsemble();
         qv = getQuorumVerifier(bytes);
         Assert.assertEquals(qv.getAllMembers().size(), 4);
 
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString2to5);
 
-        bytes = client.reconfig().joining("server.1=" + server1).storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
+        bytes = client.reconfig().joining("server.1=" + server1).fromConfig(qv.getVersion()).storingStatIn(stat).forEnsemble();
         qv = getQuorumVerifier(bytes);
         Assert.assertEquals(qv.getAllMembers().size(), 5);
 
@@ -157,27 +157,27 @@ public class TestReconfiguration {
 
 
         //Remove Servers
-        client.reconfig().leaving("1").inBackground(callback).fromConfig(qv.getVersion()).forEnsemble();
+        client.reconfig().leaving("1").fromConfig(qv.getVersion()).inBackground(callback).forEnsemble();
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString2to5);
         qv = getQuorumVerifier(bytes.get());
         Assert.assertEquals(qv.getAllMembers().size(), 4);
 
-        client.reconfig().leaving("2").inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
+        client.reconfig().leaving("2").fromConfig(qv.getVersion()).inBackground(callback, latch).forEnsemble();
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString3to5);
         qv = getQuorumVerifier(bytes.get());
         Assert.assertEquals(qv.getAllMembers().size(), 3);
 
         //Add Servers
-        client.reconfig().joining("server.2=" + server2).inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
+        client.reconfig().joining("server.2=" + server2).fromConfig(qv.getVersion()).inBackground(callback, latch).forEnsemble();
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString2to5);
         qv = getQuorumVerifier(bytes.get());
         Assert.assertEquals(qv.getAllMembers().size(), 4);
 
 
-        client.reconfig().joining("server.1=" + server1).inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
+        client.reconfig().joining("server.1=" + server1).fromConfig(qv.getVersion()).inBackground(callback, latch).forEnsemble();
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString1to5);
         qv = getQuorumVerifier(bytes.get());
@@ -203,7 +203,7 @@ public class TestReconfiguration {
                         "server.3=" + server3,
                         "server.4=" + server4,
                         "server.5=" + server5)
-                .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
+                .fromConfig(qv.getVersion()).storingStatIn(stat).forEnsemble();
         qv = getQuorumVerifier(bytes);
         Assert.assertEquals(qv.getAllMembers().size(), 4);
 
@@ -214,7 +214,7 @@ public class TestReconfiguration {
                 .withMembers("server.3=" + server3,
                         "server.4=" + server4,
                         "server.5=" + server5)
-                .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
+                .fromConfig(qv.getVersion()).storingStatIn(stat).forEnsemble();
 
         qv = getQuorumVerifier(bytes);
         Assert.assertEquals(qv.getAllMembers().size(), 3);
@@ -228,7 +228,7 @@ public class TestReconfiguration {
                         "server.3=" + server3,
                         "server.4=" + server4,
                         "server.5=" + server5)
-                .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
+                .fromConfig(qv.getVersion()).storingStatIn(stat).forEnsemble();
         qv = getQuorumVerifier(bytes);
         Assert.assertEquals(qv.getAllMembers().size(), 4);
 
@@ -241,7 +241,7 @@ public class TestReconfiguration {
                         "server.3=" + server3,
                         "server.4=" + server4,
                         "server.5=" + server5)
-                .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
+                .fromConfig(qv.getVersion()).storingStatIn(stat).forEnsemble();
         qv = getQuorumVerifier(bytes);
         Assert.assertEquals(qv.getAllMembers().size(), 5);
 
@@ -279,7 +279,7 @@ public class TestReconfiguration {
                         "server.3=" + server3,
                         "server.4=" + server4,
                         "server.5=" + server5)
-                .inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
+                .fromConfig(qv.getVersion()).inBackground(callback, latch).forEnsemble();
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString2to5);
         qv = getQuorumVerifier(bytes.get());
@@ -289,7 +289,7 @@ public class TestReconfiguration {
                 .withMembers("server.3=" + server3,
                         "server.4=" + server4,
                         "server.5=" + server5)
-                .inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
+                .fromConfig(qv.getVersion()).inBackground(callback, latch).forEnsemble();
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString3to5);
         qv = getQuorumVerifier(bytes.get());
@@ -301,7 +301,7 @@ public class TestReconfiguration {
                         "server.3=" + server3,
                         "server.4=" + server4,
                         "server.5=" + server5)
-                .inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
+                .fromConfig(qv.getVersion()).inBackground(callback, latch).forEnsemble();
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString2to5);
         qv = getQuorumVerifier(bytes.get());
@@ -313,7 +313,7 @@ public class TestReconfiguration {
                         "server.3=" + server3,
                         "server.4=" + server4,
                         "server.5=" + server5)
-                .inBackground(callback, latch).fromConfig(qv.getVersion()).forEnsemble();
+                .fromConfig(qv.getVersion()).inBackground(callback, latch).forEnsemble();
         waitOnDelegateListener.waitForEvent();
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString1to5);
         qv = getQuorumVerifier(bytes.get());
