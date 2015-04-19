@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
@@ -34,6 +35,7 @@ import org.testng.annotations.Test;
 import org.testng.internal.annotations.Sets;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -46,6 +48,71 @@ import static org.testng.Assert.fail;
 public class TestLeaderSelector extends BaseClassForTests
 {
     private static final String PATH_NAME = "/one/two/me";
+
+    @Test
+    public void testLeaderNodeDeleteOnInterrupt() throws Exception
+    {
+        Timing timing = new Timing();
+        LeaderSelector selector = null;
+        CuratorFramework client = null;
+        try
+        {
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            final CountDownLatch reconnectedLatch = new CountDownLatch(1);
+            ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.RECONNECTED )
+                    {
+                        reconnectedLatch.countDown();
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(connectionStateListener);
+            client.start();
+
+            final BlockingQueue<Thread> queue = new ArrayBlockingQueue<Thread>(1);
+            LeaderSelectorListener listener = new LeaderSelectorListener()
+            {
+                @Override
+                public void takeLeadership(CuratorFramework client) throws Exception
+                {
+                    queue.add(Thread.currentThread());
+                    try
+                    {
+                        Thread.currentThread().join();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+            selector = new LeaderSelector(client, "/leader", listener);
+            selector.start();
+
+            Thread leaderThread = queue.take();
+            server.stop();
+            leaderThread.interrupt();
+            server.restart();
+            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+            timing.sleepABit();
+
+            Assert.assertEquals(client.getChildren().forPath("/leader").size(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(selector);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 
     @Test
     public void testInterruptLeadershipWithRequeue() throws Exception
