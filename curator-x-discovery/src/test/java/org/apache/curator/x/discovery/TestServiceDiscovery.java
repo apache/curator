@@ -340,7 +340,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             client.start();
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name(name).port(10064).build();
-            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).serializer(slowSerializer).build();
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).serializer(slowSerializer).watchInstances(true).build();
             closeables.add(discovery);
             discovery.start();
 
@@ -352,7 +352,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery.unregisterService(instance);
             restartLatch.countDown();
 
-            TimeUnit.SECONDS.sleep(1); // Wait for the rest of registration to finish.
+            new Timing().sleepABit(); // Wait for the rest of registration to finish.
 
             Assert.assertTrue(discovery.queryForInstances(name).isEmpty(), "Service should have unregistered.");
         }
