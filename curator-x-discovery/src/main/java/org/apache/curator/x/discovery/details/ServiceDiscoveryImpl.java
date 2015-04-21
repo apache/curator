@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -149,7 +150,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             ServiceInstance<T> service = it.next();
             String path = pathForInstance(service.getName(), service.getId());
             boolean doRemove = true;
-            
+
             try
             {
                 client.delete().forPath(path);
@@ -163,13 +164,13 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                 doRemove = false;
                 log.error("Could not unregister instance: " + service.getName(), e);
             }
-            
+
             if ( doRemove )
             {
                 it.remove();
             }
         }
-        
+
         client.getConnectionStateListenable().removeListener(connectionStateListener);
     }
 
@@ -189,25 +190,25 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void updateService(ServiceInstance<T> service) throws Exception
     {
-        byte[]          bytes = serializer.serialize(service);
-        String          path = pathForInstance(service.getName(), service.getId());
+        byte[] bytes = serializer.serialize(service);
+        String path = pathForInstance(service.getName(), service.getId());
         client.setData().forPath(path, bytes);
         services.put(service.getId(), service);
     }
 
     @VisibleForTesting
-    protected void     internalRegisterService(ServiceInstance<T> service) throws Exception
+    protected void internalRegisterService(ServiceInstance<T> service) throws Exception
     {
-        byte[]          bytes = serializer.serialize(service);
-        String          path = pathForInstance(service.getName(), service.getId());
+        byte[] bytes = serializer.serialize(service);
+        String path = pathForInstance(service.getName(), service.getId());
 
-        final int       MAX_TRIES = 2;
-        boolean         isDone = false;
+        final int MAX_TRIES = 2;
+        boolean isDone = false;
         for ( int i = 0; !isDone && (i < MAX_TRIES); ++i )
         {
             try
             {
-                CreateMode      mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
+                CreateMode mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
                 client.create().creatingParentsIfNeeded().withMode(mode).forPath(path, bytes);
                 isDone = true;
             }
@@ -225,18 +226,19 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      * @throws Exception errors
      */
     @Override
-    public void     unregisterService(ServiceInstance<T> service) throws Exception
+    public void unregisterService(ServiceInstance<T> service) throws Exception
     {
-        String          path = pathForInstance(service.getName(), service.getId());
+        services.remove(service.getId());
+
+        String path = pathForInstance(service.getName(), service.getId());
         try
         {
-            client.delete().forPath(path);
+            client.delete().guaranteed().forPath(path);
         }
         catch ( KeeperException.NoNodeException ignore )
         {
             // ignore
         }
-        services.remove(service.getId());
     }
 
     /**
@@ -271,9 +273,9 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      * @throws Exception errors
      */
     @Override
-    public Collection<String>   queryForNames() throws Exception
+    public Collection<String> queryForNames() throws Exception
     {
-        List<String>        names = client.getChildren().forPath(basePath);
+        List<String> names = client.getChildren().forPath(basePath);
         return ImmutableList.copyOf(names);
     }
 
@@ -285,7 +287,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      * @throws Exception errors
      */
     @Override
-    public Collection<ServiceInstance<T>>  queryForInstances(String name) throws Exception
+    public Collection<ServiceInstance<T>> queryForInstances(String name) throws Exception
     {
         return queryForInstances(name, null);
     }
@@ -301,10 +303,10 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public ServiceInstance<T> queryForInstance(String name, String id) throws Exception
     {
-        String          path = pathForInstance(name, id);
+        String path = pathForInstance(name, id);
         try
         {
-            byte[]          bytes = client.getData().forPath(path);
+            byte[] bytes = client.getData().forPath(path);
             return serializer.deserialize(bytes);
         }
         catch ( KeeperException.NoNodeException ignore )
@@ -314,22 +316,22 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         return null;
     }
 
-    void    cacheOpened(ServiceCache<T> cache)
+    void cacheOpened(ServiceCache<T> cache)
     {
         caches.add(cache);
     }
 
-    void    cacheClosed(ServiceCache<T> cache)
+    void cacheClosed(ServiceCache<T> cache)
     {
         caches.remove(cache);
     }
 
-    void    providerOpened(ServiceProvider<T> provider)
+    void providerOpened(ServiceProvider<T> provider)
     {
         providers.add(provider);
     }
 
-    void    providerClosed(ServiceProvider<T> cache)
+    void providerClosed(ServiceProvider<T> cache)
     {
         providers.remove(cache);
     }
@@ -339,7 +341,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         return client;
     }
 
-    String  pathForName(String name)
+    String pathForName(String name)
     {
         return ZKPaths.makePath(basePath, name);
     }
@@ -349,11 +351,11 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         return serializer;
     }
 
-    List<ServiceInstance<T>>  queryForInstances(String name, Watcher watcher) throws Exception
+    List<ServiceInstance<T>> queryForInstances(String name, Watcher watcher) throws Exception
     {
-        ImmutableList.Builder<ServiceInstance<T>>   builder = ImmutableList.builder();
-        String                  path = pathForName(name);
-        List<String>            instanceIds;
+        ImmutableList.Builder<ServiceInstance<T>> builder = ImmutableList.builder();
+        String path = pathForName(name);
+        List<String> instanceIds;
 
         if ( watcher != null )
         {
@@ -384,7 +386,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 
     private List<String> getChildrenWatched(String path, Watcher watcher, boolean recurse) throws Exception
     {
-        List<String>    instanceIds;
+        List<String> instanceIds;
         try
         {
             instanceIds = client.getChildren().usingWatcher(watcher).forPath(path);
