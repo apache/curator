@@ -518,8 +518,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         Holder<T> newHolder = new Holder<T>(instance, nodeCache);
         Holder<T> oldHolder = services.putIfAbsent(instance.getId(), newHolder);
-        Holder<T> useHolder = (oldHolder != null) ? oldHolder : newHolder;
-        return useHolder;
+        return (oldHolder != null) ? oldHolder : newHolder;
     }
 
     private void clean()

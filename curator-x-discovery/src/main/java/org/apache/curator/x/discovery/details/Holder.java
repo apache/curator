@@ -2,6 +2,7 @@ package org.apache.curator.x.discovery.details;
 
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.x.discovery.ServiceInstance;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 class Holder<T>
@@ -128,7 +129,7 @@ class Holder<T>
         }
     }
 
-    ReentrantLock getLock()
+    Lock getLock()
     {
         return lock;
     }
