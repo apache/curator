@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -44,6 +44,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -56,6 +57,69 @@ public class TestFrameworkEdges extends BaseClassForTests
     private final Timing timing = new Timing();
 
     @Test
+    public void testPathsFromProtectingInBackground() throws Exception
+    {
+        for ( CreateMode mode : CreateMode.values() )
+        {
+            internalTestPathsFromProtectingInBackground(mode);
+        }
+    }
+
+    private void internalTestPathsFromProtectingInBackground(CreateMode mode) throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            client.create().creatingParentsIfNeeded().forPath("/a/b/c");
+
+            final BlockingQueue<String> paths = new ArrayBlockingQueue<String>(2);
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    paths.put(event.getName());
+                    paths.put(event.getPath());
+                }
+            };
+            final String TEST_PATH = "/a/b/c/test-";
+            client.create().withMode(mode).inBackground(callback).forPath(TEST_PATH);
+
+            String name1 = paths.take();
+            String path1 = paths.take();
+
+            client.close();
+
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryOneTime(1));
+            client.start();
+            CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create().withProtection();
+
+            client.create().forPath(createBuilder.adjustPath(TEST_PATH));
+
+            createBuilder.debugForceFindProtectedNode = true;
+            createBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
+
+            String name2 = paths.take();
+            String path2 = paths.take();
+
+            Assert.assertEquals(ZKPaths.getPathAndNode(name1).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
+            Assert.assertEquals(ZKPaths.getPathAndNode(name2).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
+            Assert.assertEquals(ZKPaths.getPathAndNode(path1).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
+            Assert.assertEquals(ZKPaths.getPathAndNode(path2).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
+
+            client.delete().deletingChildrenIfNeeded().forPath("/a/b/c");
+            client.delete().forPath("/a/b");
+            client.delete().forPath("/a");
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void connectionLossWithBackgroundTest() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryOneTime(1));
@@ -66,20 +130,20 @@ public class TestFrameworkEdges extends BaseClassForTests
             client.getZookeeperClient().blockUntilConnectedOrTimedOut();
             server.close();
             client.getChildren().inBackground
-            (
-                new BackgroundCallback()
-                {
-                    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                (
+                    new BackgroundCallback()
                     {
-                        latch.countDown();
+                        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                        {
+                            latch.countDown();
+                        }
                     }
-                }
-            ).forPath("/");
+                ).forPath("/");
             Assert.assertTrue(timing.awaitLatch(latch));
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 

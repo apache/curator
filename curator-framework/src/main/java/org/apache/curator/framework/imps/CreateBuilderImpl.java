@@ -597,6 +597,9 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         };
     }
 
+    @VisibleForTesting
+    volatile boolean debugForceFindProtectedNode = false;
+
     private void pathInBackground(final String path, final byte[] data, final String givenPath)
     {
         final AtomicBoolean firstTime = new AtomicBoolean(true);
@@ -620,9 +623,10 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             void callPerformBackgroundOperation() throws Exception
             {
                 boolean callSuper = true;
-                boolean localFirstTime = firstTime.getAndSet(false);
+                boolean localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
                 if ( !localFirstTime && doProtected )
                 {
+                    debugForceFindProtectedNode = false;
                     String createdPath = null;
                     try
                     {
@@ -637,7 +641,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     {
                         try
                         {
-                            sendBackgroundResponse(KeeperException.Code.OK.intValue(), createdPath, backgrounding.getContext(), ZKPaths.getNodeFromPath(createdPath), this);
+                            sendBackgroundResponse(KeeperException.Code.OK.intValue(), createdPath, backgrounding.getContext(), createdPath, this);
                         }
                         catch ( Exception e )
                         {
@@ -676,11 +680,12 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     @Override
                     public String call() throws Exception
                     {
-                        boolean localFirstTime = firstTime.getAndSet(false);
+                        boolean localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
 
                         String createdPath = null;
                         if ( !localFirstTime && doProtected )
                         {
+                            debugForceFindProtectedNode = false;
                             createdPath = findProtectedNodeInForeground(path);
                         }
 
@@ -751,7 +756,8 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         return returnPath;
     }
 
-    private String adjustPath(String path) throws Exception
+    @VisibleForTesting
+    String adjustPath(String path) throws Exception
     {
         if ( doProtected )
         {
