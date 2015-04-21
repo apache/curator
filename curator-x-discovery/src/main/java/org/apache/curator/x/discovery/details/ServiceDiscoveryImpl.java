@@ -21,7 +21,9 @@ package org.apache.curator.x.discovery.details;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -53,12 +55,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A mechanism to register and query service instances using ZooKeeper
  */
-@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -91,33 +91,6 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     };
 
     private final int CLEAN_THRESHOLD_MS = Integer.getInteger("curator-discovery-clean-threshold-ms", (int)TimeUnit.MINUTES.toMillis(5));
-
-    private enum State
-    {
-        NEW,
-        REGISTERED,
-        UNREGISTERED
-    }
-
-    private static class Holder<T>
-    {
-        private final AtomicReference<ServiceInstance<T>> service = new AtomicReference<ServiceInstance<T>>();
-        private final AtomicReference<NodeCache> cache = new AtomicReference<NodeCache>();
-        private final AtomicReference<State> state = new AtomicReference<State>();
-        private final AtomicLong stateChangeMs = new AtomicLong();
-
-        public Holder(ServiceInstance<T> instance)
-        {
-            service.set(instance);
-            setState(State.NEW);
-        }
-
-        public void setState(State state)
-        {
-            this.state.set(state);
-            stateChangeMs.set(System.currentTimeMillis());
-        }
-    }
 
     /**
      * @param client the client
@@ -181,7 +154,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
             catch ( Exception e )
             {
-                log.error("Could not unregister instance: " + holder.service.get().getName(), e);
+                log.error("Could not unregister instance: " + holder.getService().getName(), e);
             }
         }
 
@@ -204,22 +177,27 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     }
 
     @Override
-    public void updateService(ServiceInstance<T> service) throws Exception
+    public void updateService(final ServiceInstance<T> service) throws Exception
     {
         clean();
 
-        final Holder<T> holder = getOrMakeHolder(service, null);
-        synchronized(holder)
+        Holder<T> holder = getOrMakeHolder(service, null);
+        holder.getLock().lock();
+        try
         {
-            if ( holder.state.get() == State.UNREGISTERED )
+            if ( holder.getState() == Holder.State.UNREGISTERED )
             {
                 throw new Exception("Service has been unregistered: " + service);
             }
 
-            holder.service.set(service);
+            holder.setService(service);
             byte[] bytes = serializer.serialize(service);
             String path = pathForInstance(service.getName(), service.getId());
             client.setData().forPath(path, bytes);
+        }
+        finally
+        {
+            holder.getLock().unlock();
         }
     }
 
@@ -418,7 +396,21 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @VisibleForTesting
     int debugServicesQty()
     {
-        return services.size();
+        return Iterables.size
+            (
+                Iterables.filter
+                    (
+                        services.values(),
+                        new Predicate<Holder<T>>()
+                        {
+                            @Override
+                            public boolean apply(Holder<T> holder)
+                            {
+                                return holder.isRegistered();
+                            }
+                        }
+                    )
+            );
     }
 
     private List<String> getChildrenWatched(String path, Watcher watcher, boolean recurse) throws Exception
@@ -459,27 +451,25 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @VisibleForTesting
     ServiceInstance<T> getRegisteredService(String id)
     {
-        final Holder<T> holder = services.get(id);
-        if ( holder != null )
-        {
-            synchronized(holder)
-            {
-                return (holder.state.get() == State.REGISTERED) ? holder.service.get() : null;
-            }
-        }
-        return null;
+        Holder<T> holder = services.get(id);
+        return (holder != null) ? holder.getServiceIfRegistered() : null;
     }
 
     private void reRegisterServices() throws Exception
     {
         for ( final Holder<T> holder : services.values() )
         {
-            synchronized(holder)
+            holder.getLock().lock();
+            try
             {
-                if ( holder.state.get() == State.REGISTERED )
+                if ( holder.isRegistered() )
                 {
-                    internalRegisterService(holder.service.get());
+                    internalRegisterService(holder.getService());
                 }
+            }
+            finally
+            {
+                holder.getLock().unlock();
             }
         }
     }
@@ -488,7 +478,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         final NodeCache nodeCache = watchInstances ? new NodeCache(client, pathForInstance(instance.getName(), instance.getId())) : null;
         Holder<T> holder = getOrMakeHolder(instance, nodeCache);
-        holder.setState(State.REGISTERED);
+        holder.setState(Holder.State.REGISTERED);
 
         if ( nodeCache != null )
         {
@@ -511,7 +501,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                         Holder<T> holder = services.get(newInstance.getId());
                         if ( holder != null )
                         {
-                            holder.service.set(newInstance);
+                            holder.setService(newInstance);
                         }
                     }
                     else
@@ -529,7 +519,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         Holder<T> newHolder = new Holder<T>(instance);
         Holder<T> oldHolder = services.putIfAbsent(instance.getId(), newHolder);
         Holder<T> useHolder = (oldHolder != null) ? oldHolder : newHolder;
-        useHolder.cache.set(nodeCache);
+        useHolder.setCache(nodeCache);
         return useHolder;
     }
 
@@ -540,20 +530,13 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         long elpased = now - localLastCleanMs;
         if ( (elpased >= CLEAN_THRESHOLD_MS) && lastCleanMs.compareAndSet(localLastCleanMs, now + 1) )
         {
-            Iterator<Holder<T>> iterator = services.values().iterator();
+            final Iterator<Holder<T>> iterator = services.values().iterator();
             while ( iterator.hasNext() )
             {
-                final Holder<T> holder = iterator.next();
-                synchronized(holder)
+                Holder<T> holder = iterator.next();
+                if ( holder.isLapsedUnregistered(CLEAN_THRESHOLD_MS) )
                 {
-                    if ( holder.state.get() == State.UNREGISTERED )
-                    {
-                        long elapsed = System.currentTimeMillis() - holder.stateChangeMs.get();
-                        if ( elapsed >= CLEAN_THRESHOLD_MS )
-                        {
-                            iterator.remove();
-                        }
-                    }
+                    iterator.remove();
                 }
             }
         }
@@ -563,16 +546,17 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         if ( holder != null )
         {
-            synchronized(holder)
+            holder.getLock().lock();
+            try
             {
-                holder.setState(State.UNREGISTERED);
-                NodeCache cache = holder.cache.getAndSet(null);
+                holder.setState(Holder.State.UNREGISTERED);
+                NodeCache cache = holder.getAndClearCache();
                 if ( cache != null )
                 {
                     CloseableUtils.closeQuietly(cache);
                 }
 
-                ServiceInstance<T> service = holder.service.get();
+                ServiceInstance<T> service = holder.getService();
                 String path = pathForInstance(service.getName(), service.getId());
                 try
                 {
@@ -582,6 +566,10 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                 {
                     // ignore
                 }
+            }
+            finally
+            {
+                holder.getLock().unlock();
             }
         }
     }
