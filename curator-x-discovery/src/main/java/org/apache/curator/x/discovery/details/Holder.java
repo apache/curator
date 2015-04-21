@@ -19,8 +19,9 @@ class Holder<T>
     private long stateChangeMs;
     private final ReentrantLock lock = new ReentrantLock();
 
-    Holder(ServiceInstance<T> service)
+    Holder(ServiceInstance<T> service, NodeCache nodeCache)
     {
+        cache = nodeCache;
         this.service = service;
         setState(State.NEW);
     }
@@ -64,19 +65,6 @@ class Holder<T>
         }
     }
 
-    NodeCache getCache()
-    {
-        lock.lock();
-        try
-        {
-            return cache;
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
     NodeCache getAndClearCache()
     {
         lock.lock();
@@ -85,32 +73,6 @@ class Holder<T>
             NodeCache localCache = cache;
             cache = null;
             return localCache;
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    void setCache(NodeCache cache)
-    {
-        lock.lock();
-        try
-        {
-            this.cache = cache;
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    State getState()
-    {
-        lock.lock();
-        try
-        {
-            return state;
         }
         finally
         {

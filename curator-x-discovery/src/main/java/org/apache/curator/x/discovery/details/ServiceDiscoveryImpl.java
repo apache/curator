@@ -185,7 +185,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         holder.getLock().lock();
         try
         {
-            if ( holder.getState() == Holder.State.UNREGISTERED )
+            if ( !holder.isRegistered() )
             {
                 throw new Exception("Service has been unregistered: " + service);
             }
@@ -516,10 +516,9 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 
     private Holder<T> getOrMakeHolder(ServiceInstance<T> instance, NodeCache nodeCache)
     {
-        Holder<T> newHolder = new Holder<T>(instance);
+        Holder<T> newHolder = new Holder<T>(instance, nodeCache);
         Holder<T> oldHolder = services.putIfAbsent(instance.getId(), newHolder);
         Holder<T> useHolder = (oldHolder != null) ? oldHolder : newHolder;
-        useHolder.setCache(nodeCache);
         return useHolder;
     }
 
