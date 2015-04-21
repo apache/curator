@@ -16,36 +16,36 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package discovery;
 
-import com.fasterxml.jackson.annotation.JsonRootName;
+package org.apache.curator.framework;
 
-/**
- * In a real application, the Service payload will most likely
- * be more detailed than this. But, this gives a good example.
- */
-@JsonRootName("details")
-public class InstanceDetails
+import java.util.Arrays;
+
+public class AuthInfo
 {
-    private String        description;
+    final String    scheme;
+    final byte[]    auth;
 
-    public InstanceDetails()
+    public AuthInfo(String scheme, byte[] auth)
     {
-        this("");
+        this.scheme = scheme;
+        this.auth = auth;
     }
 
-    public InstanceDetails(String description)
-    {
-        this.description = description;
+    public String getScheme() {
+        return scheme;
     }
 
-    public void setDescription(String description)
-    {
-        this.description = description;
+    public byte[] getAuth() {
+        return auth;
     }
 
-    public String getDescription()
+    @Override
+    public String toString()
     {
-        return description;
+        return "AuthInfo{" +
+            "scheme='" + scheme + '\'' +
+            ", auth=" + Arrays.toString(auth) +
+            '}';
     }
 }

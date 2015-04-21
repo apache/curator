@@ -646,20 +646,10 @@ public class PathChildrenCache implements Closeable
 
     private void processChildren(List<String> children, RefreshMode mode) throws Exception
     {
-        List<String> fullPaths = Lists.newArrayList(Lists.transform
-            (
-                children,
-                new Function<String, String>()
-                {
-                    @Override
-                    public String apply(String child)
-                    {
-                        return ZKPaths.makePath(path, child);
-                    }
-                }
-            ));
         Set<String> removedNodes = Sets.newHashSet(currentData.keySet());
-        removedNodes.removeAll(fullPaths);
+        for ( String child : children ) {
+            removedNodes.remove(ZKPaths.makePath(path, child));
+        }
 
         for ( String fullPath : removedNodes )
         {

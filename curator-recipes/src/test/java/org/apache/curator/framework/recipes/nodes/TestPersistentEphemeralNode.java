@@ -44,6 +44,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -534,6 +535,42 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         {
             node.close();
         }    	
+    }
+    
+    /**
+     * See CURATOR-190
+     * For protected nodes on reconnect the current protected name was passed to the create builder meaning that it got
+     * appended to the new protected node name. This meant that a new node got created on each reconnect.
+     * @throws Exception
+     */
+    @Test
+    public void testProtected() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH,
+                                                                   new byte[0]);
+        node.start();
+        try
+        {
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            assertNodeExists(curator, node.getActualPath());
+
+            server.restart();            
+            
+            curator.blockUntilConnected(5, TimeUnit.SECONDS);
+
+            assertNodeExists(curator, node.getActualPath());
+            
+            //There should only be a single child, the persisted ephemeral node
+            List<String> children = curator.getChildren().forPath(DIR);
+            assertFalse(children == null);
+            assertEquals(children.size(), 1);
+        }
+        finally
+        {
+            node.close();
+        }
     }
 
     private void assertNodeExists(CuratorFramework curator, String path) throws Exception

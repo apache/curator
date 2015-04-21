@@ -133,7 +133,13 @@ class NamespaceFacade extends CuratorFrameworkImpl
     @Override
     String fixForNamespace(String path)
     {
-        return namespace.fixForNamespace(path);
+        return namespace.fixForNamespace(path, false);
+    }
+
+    @Override
+    String fixForNamespace(String path, boolean isSequential)
+    {
+        return namespace.fixForNamespace(path, isSequential);
     }
 
     @Override

@@ -24,11 +24,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.NodeCache;
+import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.discovery.ServiceCache;
@@ -44,9 +45,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -62,6 +61,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final String basePath;
     private final InstanceSerializer<T> serializer;
     private final Map<String, ServiceInstance<T>> services = Maps.newConcurrentMap();
+    private final Map<String, NodeCache> watchedServices;
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
     private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -69,7 +69,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
-            if ( newState == ConnectionState.RECONNECTED )
+            if ( (newState == ConnectionState.RECONNECTED) || (newState == ConnectionState.CONNECTED) )
             {
                 try
                 {
@@ -89,15 +89,17 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      * @param basePath base path to store data
      * @param serializer serializer for instances (e.g. {@link JsonInstanceSerializer})
      * @param thisInstance instance that represents the service that is running. The instance will get auto-registered
+     * @param watchInstances if true, watches for changes to locally registered instances
      */
-    public ServiceDiscoveryImpl(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance)
+    public ServiceDiscoveryImpl(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance, boolean watchInstances)
     {
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
         this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
         this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
+        watchedServices = watchInstances ? Maps.<String, NodeCache>newConcurrentMap() : null;
         if ( thisInstance != null )
         {
-            services.put(thisInstance.getId(), thisInstance);
+            setService(thisInstance);
         }
     }
 
@@ -109,8 +111,15 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void start() throws Exception
     {
+        try
+        {
+            reRegisterServices();
+        }
+        catch ( KeeperException e )
+        {
+            log.error("Could not register instances - will try again later", e);
+        }
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        reRegisterServices();
     }
 
     @Override
@@ -123,6 +132,13 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         for ( ServiceProvider<T> provider : Lists.newArrayList(providers) )
         {
             CloseableUtils.closeQuietly(provider);
+        }
+        if ( watchedServices != null )
+        {
+            for ( NodeCache nodeCache : watchedServices.values() )
+            {
+                CloseableUtils.closeQuietly(nodeCache);
+            }
         }
 
         Iterator<ServiceInstance<T>> it = services.values().iterator();
@@ -166,18 +182,17 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void registerService(ServiceInstance<T> service) throws Exception
     {
-        services.put(service.getId(), service);
+        setService(service);
         internalRegisterService(service);
     }
 
     @Override
     public void updateService(ServiceInstance<T> service) throws Exception
     {
-        Preconditions.checkArgument(services.containsKey(service.getId()), "Service is not registered: " + service);
-
         byte[]          bytes = serializer.serialize(service);
         String          path = pathForInstance(service.getName(), service.getId());
         client.setData().forPath(path, bytes);
+        services.put(service.getId(), service);
     }
 
     @VisibleForTesting
@@ -396,9 +411,16 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         return instanceIds;
     }
 
-    private String  pathForInstance(String name, String id) throws UnsupportedEncodingException
+    @VisibleForTesting
+    String pathForInstance(String name, String id)
     {
         return ZKPaths.makePath(pathForName(name), id);
+    }
+
+    @VisibleForTesting
+    ServiceInstance<T> getRegisteredService(String id)
+    {
+        return services.get(id);
     }
 
     private void reRegisterServices() throws Exception
@@ -406,6 +428,41 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         for ( ServiceInstance<T> service : services.values() )
         {
             internalRegisterService(service);
+        }
+    }
+
+    private void setService(final ServiceInstance<T> instance)
+    {
+        services.put(instance.getId(), instance);
+        if ( watchedServices != null )
+        {
+            final NodeCache nodeCache = new NodeCache(client, pathForInstance(instance.getName(), instance.getId()));
+            try
+            {
+                nodeCache.start(true);
+            }
+            catch ( Exception e )
+            {
+                log.error("Could not start node cache for: " + instance, e);
+            }
+            NodeCacheListener listener = new NodeCacheListener()
+            {
+                @Override
+                public void nodeChanged() throws Exception
+                {
+                    if ( nodeCache.getCurrentData() != null )
+                    {
+                        ServiceInstance<T> newInstance = serializer.deserialize(nodeCache.getCurrentData().getData());
+                        services.put(newInstance.getId(), newInstance);
+                    }
+                    else
+                    {
+                        log.warn("Instance data has been deleted for: " + instance);
+                    }
+                }
+            };
+            nodeCache.getListenable().addListener(listener);
+            watchedServices.put(instance.getId(), nodeCache);
         }
     }
 }

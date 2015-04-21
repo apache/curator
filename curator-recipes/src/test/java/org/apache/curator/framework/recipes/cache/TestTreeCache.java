@@ -68,6 +68,20 @@ public class TestTreeCache extends BaseTestTreeCache
     }
 
     @Test
+    public void testStartEmptyDeeper() throws Exception
+    {
+        cache = newTreeCacheWithListeners(client, "/test/foo/bar");
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+
+        client.create().creatingParentsIfNeeded().forPath("/test/foo");
+        assertNoMoreEvents();
+        client.create().forPath("/test/foo/bar");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo/bar");
+        assertNoMoreEvents();
+    }
+
+    @Test
     public void testDepth0() throws Exception
     {
         client.create().forPath("/test");
@@ -296,6 +310,35 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
+
+        client.delete().forPath("/test/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
+
+        client.delete().forPath("/test/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
+
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testDeleteThenCreateRoot() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/foo", "one".getBytes());
+
+        cache = newTreeCacheWithListeners(client, "/test/foo");
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+
+        client.delete().forPath("/test/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
 
         client.delete().forPath("/test/foo");
         assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
