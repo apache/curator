@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.curator.x.discovery;
+package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -28,19 +28,20 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.x.discovery.ServiceDiscovery;
+import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
+import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.details.InstanceSerializer;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.curator.x.discovery.details.ServiceDiscoveryImpl;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 public class TestServiceDiscovery extends BaseClassForTests
 {
@@ -252,7 +253,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             closeables.add(discovery);
             discovery.start();
 
-            Assert.assertEquals(discovery.queryForNames(), Arrays.asList("test"));
+            Assert.assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
 
             List<ServiceInstance<String>> list = Lists.newArrayList();
             list.add(instance);
@@ -285,7 +286,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery.start();
 
             server.restart();
-            Assert.assertEquals(discovery.queryForNames(), Arrays.asList("test"));
+            Assert.assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
 
             List<ServiceInstance<String>> list = Lists.newArrayList();
             list.add(instance);
@@ -358,6 +359,39 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
         finally
         {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
+    public void testCleaning() throws Exception
+    {
+        System.setProperty("curator-discovery-clean-threshold-ms", "10");
+        List<Closeable> closeables = Lists.newArrayList();
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
+            closeables.add(discovery);
+            discovery.start();
+            discovery.unregisterService(instance);
+
+            Thread.sleep(100);
+
+            discovery.queryForNames();  // causes a clean
+            Assert.assertEquals(((ServiceDiscoveryImpl)discovery).debugServicesQty(), 0);
+        }
+        finally
+        {
+            System.clearProperty("curator-discovery-clean-threshold-ms");
             Collections.reverse(closeables);
             for ( Closeable c : closeables )
             {

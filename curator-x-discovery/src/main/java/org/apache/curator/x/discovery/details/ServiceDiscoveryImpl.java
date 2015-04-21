@@ -50,7 +50,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A mechanism to register and query service instances using ZooKeeper
@@ -61,10 +64,11 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final CuratorFramework client;
     private final String basePath;
     private final InstanceSerializer<T> serializer;
-    private final Map<String, ServiceInstance<T>> services = Maps.newConcurrentMap();
-    private final Map<String, NodeCache> watchedServices;
+    private final ConcurrentMap<String, Holder<T>> services = Maps.newConcurrentMap();
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
     private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
+    private final boolean watchInstances;
+    private final AtomicLong lastCleanMs = new AtomicLong(System.currentTimeMillis());
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -85,6 +89,35 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         }
     };
 
+    private static final int CLEAN_THRESHOLD_MS = Integer.getInteger("curator-discovery-clean-threshold-ms", (int)TimeUnit.MINUTES.toMillis(5));
+
+    private enum State
+    {
+        NEW,
+        REGISTERED,
+        UNREGISTERED
+    }
+
+    private static class Holder<T>
+    {
+        private final AtomicReference<ServiceInstance<T>> service = new AtomicReference<ServiceInstance<T>>();
+        private final AtomicReference<NodeCache> cache = new AtomicReference<NodeCache>();
+        private final AtomicReference<State> state = new AtomicReference<State>();
+        private final AtomicLong stateChangeMs = new AtomicLong();
+
+        public Holder(ServiceInstance<T> instance)
+        {
+            service.set(instance);
+            setState(State.NEW);
+        }
+
+        public void setState(State state)
+        {
+            this.state.set(state);
+            stateChangeMs.set(System.currentTimeMillis());
+        }
+    }
+
     /**
      * @param client the client
      * @param basePath base path to store data
@@ -94,10 +127,10 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      */
     public ServiceDiscoveryImpl(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance, boolean watchInstances)
     {
+        this.watchInstances = watchInstances;
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
         this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
         this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
-        watchedServices = watchInstances ? Maps.<String, NodeCache>newConcurrentMap() : null;
         if ( thisInstance != null )
         {
             setService(thisInstance);
@@ -134,26 +167,12 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             CloseableUtils.closeQuietly(provider);
         }
-        if ( watchedServices != null )
-        {
-            for ( NodeCache nodeCache : watchedServices.values() )
-            {
-                CloseableUtils.closeQuietly(nodeCache);
-            }
-        }
 
-        Iterator<ServiceInstance<T>> it = services.values().iterator();
-        while ( it.hasNext() )
+        for ( Holder<T> holder : services.values() )
         {
-            // Should not use unregisterService because of potential ConcurrentModificationException
-            // so we in-line the bulk of the method here
-            ServiceInstance<T> service = it.next();
-            String path = pathForInstance(service.getName(), service.getId());
-            boolean doRemove = true;
-
             try
             {
-                client.delete().forPath(path);
+                internalUnregisterService(holder);
             }
             catch ( KeeperException.NoNodeException ignore )
             {
@@ -161,13 +180,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
             catch ( Exception e )
             {
-                doRemove = false;
-                log.error("Could not unregister instance: " + service.getName(), e);
-            }
-
-            if ( doRemove )
-            {
-                it.remove();
+                log.error("Could not unregister instance: " + holder.service.get().getName(), e);
             }
         }
 
@@ -183,6 +196,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void registerService(ServiceInstance<T> service) throws Exception
     {
+        clean();
+
         setService(service);
         internalRegisterService(service);
     }
@@ -190,10 +205,18 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void updateService(ServiceInstance<T> service) throws Exception
     {
+        clean();
+
+        Holder<T> holder = getOrMakeHolder(service, null);
+        if ( holder.state.get() == State.UNREGISTERED )
+        {
+            throw new Exception("Service has been unregistered: " + service);
+        }
+
+        holder.service.set(service);
         byte[] bytes = serializer.serialize(service);
         String path = pathForInstance(service.getName(), service.getId());
         client.setData().forPath(path, bytes);
-        services.put(service.getId(), service);
     }
 
     @VisibleForTesting
@@ -228,17 +251,9 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void unregisterService(ServiceInstance<T> service) throws Exception
     {
-        services.remove(service.getId());
+        clean();
 
-        String path = pathForInstance(service.getName(), service.getId());
-        try
-        {
-            client.delete().guaranteed().forPath(path);
-        }
-        catch ( KeeperException.NoNodeException ignore )
-        {
-            // ignore
-        }
+        internalUnregisterService(getOrMakeHolder(service, null));
     }
 
     /**
@@ -249,6 +264,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public ServiceProviderBuilder<T> serviceProviderBuilder()
     {
+        clean();
+
         return new ServiceProviderBuilderImpl<T>(this)
             .providerStrategy(new RoundRobinStrategy<T>())
             .threadFactory(ThreadUtils.newThreadFactory("ServiceProvider"));
@@ -262,6 +279,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public ServiceCacheBuilder<T> serviceCacheBuilder()
     {
+        clean();
+
         return new ServiceCacheBuilderImpl<T>(this)
             .threadFactory(ThreadUtils.newThreadFactory("ServiceCache"));
     }
@@ -275,6 +294,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public Collection<String> queryForNames() throws Exception
     {
+        clean();
+
         List<String> names = client.getChildren().forPath(basePath);
         return ImmutableList.copyOf(names);
     }
@@ -303,6 +324,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public ServiceInstance<T> queryForInstance(String name, String id) throws Exception
     {
+        clean();
+
         String path = pathForInstance(name, id);
         try
         {
@@ -338,6 +361,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 
     CuratorFramework getClient()
     {
+        clean();
+
         return client;
     }
 
@@ -353,6 +378,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 
     List<ServiceInstance<T>> queryForInstances(String name, Watcher watcher) throws Exception
     {
+        clean();
+
         ImmutableList.Builder<ServiceInstance<T>> builder = ImmutableList.builder();
         String path = pathForName(name);
         List<String> instanceIds;
@@ -382,6 +409,12 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
         }
         return builder.build();
+    }
+
+    @VisibleForTesting
+    int debugServicesQty()
+    {
+        return services.size();
     }
 
     private List<String> getChildrenWatched(String path, Watcher watcher, boolean recurse) throws Exception
@@ -422,23 +455,29 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @VisibleForTesting
     ServiceInstance<T> getRegisteredService(String id)
     {
-        return services.get(id);
+        Holder<T> holder = services.get(id);
+        return ((holder != null) && (holder.state.get() == State.REGISTERED)) ? holder.service.get() : null;
     }
 
     private void reRegisterServices() throws Exception
     {
-        for ( ServiceInstance<T> service : services.values() )
+        for ( Holder<T> service : services.values() )
         {
-            internalRegisterService(service);
+            if ( service.state.get() == State.REGISTERED )
+            {
+                internalRegisterService(service.service.get());
+            }
         }
     }
 
     private void setService(final ServiceInstance<T> instance)
     {
-        services.put(instance.getId(), instance);
-        if ( watchedServices != null )
+        final NodeCache nodeCache = watchInstances ? new NodeCache(client, pathForInstance(instance.getName(), instance.getId())) : null;
+        Holder<T> holder = getOrMakeHolder(instance, nodeCache);
+        holder.setState(State.REGISTERED);
+
+        if ( nodeCache != null )
         {
-            final NodeCache nodeCache = new NodeCache(client, pathForInstance(instance.getName(), instance.getId()));
             try
             {
                 nodeCache.start(true);
@@ -455,7 +494,11 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                     if ( nodeCache.getCurrentData() != null )
                     {
                         ServiceInstance<T> newInstance = serializer.deserialize(nodeCache.getCurrentData().getData());
-                        services.put(newInstance.getId(), newInstance);
+                        Holder<T> holder = services.get(newInstance.getId());
+                        if ( holder != null )
+                        {
+                            holder.service.set(newInstance);
+                        }
                     }
                     else
                     {
@@ -464,7 +507,62 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                 }
             };
             nodeCache.getListenable().addListener(listener);
-            watchedServices.put(instance.getId(), nodeCache);
+        }
+    }
+
+    private Holder<T> getOrMakeHolder(ServiceInstance<T> instance, NodeCache nodeCache)
+    {
+        Holder<T> newHolder = new Holder<T>(instance);
+        Holder<T> oldHolder = services.putIfAbsent(instance.getId(), newHolder);
+        Holder<T> useHolder = (oldHolder != null) ? oldHolder : newHolder;
+        useHolder.cache.set(nodeCache);
+        return useHolder;
+    }
+
+    private void clean()
+    {
+        long localLastCleanMs = lastCleanMs.get();
+        long now = System.currentTimeMillis();
+        long elpased = now - localLastCleanMs;
+        if ( (elpased >= CLEAN_THRESHOLD_MS) && lastCleanMs.compareAndSet(localLastCleanMs, now + 1) )
+        {
+            Iterator<Holder<T>> iterator = services.values().iterator();
+            while ( iterator.hasNext() )
+            {
+                Holder<T> holder = iterator.next();
+                if ( holder.state.get() == State.UNREGISTERED )
+                {
+                    long elapsed = System.currentTimeMillis() - holder.stateChangeMs.get();
+                    if ( elapsed >= CLEAN_THRESHOLD_MS )
+                    {
+                        iterator.remove();
+                    }
+                }
+            }
+        }
+    }
+
+    private void internalUnregisterService(Holder<T> holder) throws Exception
+    {
+        if ( holder != null )
+        {
+            holder.setState(State.UNREGISTERED);
+            NodeCache cache = holder.cache.getAndSet(null);
+            if ( cache != null )
+            {
+                CloseableUtils.closeQuietly(cache);
+            }
+
+            ServiceInstance<T> service = holder.service.get();
+            String path = pathForInstance(service.getName(), service.getId());
+            try
+            {
+                client.delete().guaranteed().forPath(path);
+            }
+            catch ( KeeperException.NoNodeException ignore )
+            {
+                // ignore
+            }
         }
     }
 }
