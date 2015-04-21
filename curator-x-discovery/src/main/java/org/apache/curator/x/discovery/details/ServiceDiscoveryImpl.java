@@ -89,7 +89,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         }
     };
 
-    private static final int CLEAN_THRESHOLD_MS = Integer.getInteger("curator-discovery-clean-threshold-ms", (int)TimeUnit.MINUTES.toMillis(5));
+    private final int CLEAN_THRESHOLD_MS = Integer.getInteger("curator-discovery-clean-threshold-ms", (int)TimeUnit.MINUTES.toMillis(5));
 
     private enum State
     {
