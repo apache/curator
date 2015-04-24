@@ -207,9 +207,15 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             try
             {
-                CreateMode      mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
-                client.create().creatingParentsIfNeeded().withMode(mode).forPath(path, bytes);
-                isDone = true;
+                synchronized(service) {
+                    // Check that the service didn't get deleted while we were reconnecting
+                    if (services.containsKey(service.getId()))
+                    {
+                        CreateMode      mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
+                        client.create().creatingParentsIfNeeded().withMode(mode).forPath(path, bytes);
+                        isDone = true;
+                    }
+                }
             }
             catch ( KeeperException.NodeExistsException e )
             {
@@ -228,15 +234,18 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     public void     unregisterService(ServiceInstance<T> service) throws Exception
     {
         String          path = pathForInstance(service.getName(), service.getId());
-        try
-        {
-            client.delete().forPath(path);
+        synchronized(service) {
+            // Since we add services to the cache after registering them in zk, we remove them in the opposite order.
+            services.remove(service.getId());
+            try
+            {
+                client.delete().forPath(path);
+            }
+            catch ( KeeperException.NoNodeException ignore )
+            {
+                // ignore
+            }
         }
-        catch ( KeeperException.NoNodeException ignore )
-        {
-            // ignore
-        }
-        services.remove(service.getId());
     }
 
     /**

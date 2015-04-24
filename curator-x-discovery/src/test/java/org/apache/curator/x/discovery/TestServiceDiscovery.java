@@ -37,10 +37,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import org.apache.curator.x.discovery.details.InstanceSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestServiceDiscovery extends BaseClassForTests
 {
+    private static final Logger logger = LoggerFactory.getLogger(TestServiceDiscovery.class);
+
     private static final Comparator<ServiceInstance<Void>> comparator = new Comparator<ServiceInstance<Void>>()
     {
         @Override
@@ -287,6 +294,72 @@ public class TestServiceDiscovery extends BaseClassForTests
             List<ServiceInstance<String>> list = Lists.newArrayList();
             list.add(instance);
             Assert.assertEquals(discovery.queryForInstances("test"), list);
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    // CURATOR-164
+    @Test
+    public void testUnregisterService() throws Exception {
+        final String name = "name";
+
+        final CountDownLatch restartLatch = new CountDownLatch(1);
+        final CountDownLatch serializeLatch = new CountDownLatch(1);
+
+        List<Closeable>     closeables = Lists.newArrayList();
+
+        InstanceSerializer<String> slowSerializer = new JsonInstanceSerializer<String>(String.class)
+        {
+            private boolean first = true;
+
+            @Override
+            public byte[] serialize(ServiceInstance<String> instance) throws Exception
+            {
+                if (first)
+                {
+                    logger.debug("Serializer first registration.");
+                    first = false;
+                }
+                else
+                {
+                    logger.debug("Waiting for reconnect to finish.");
+                    // Simulate the serialize method being slow.
+                    // This could just be a timed wait, but that's kind of non-deterministic.
+                    restartLatch.await();
+                }
+                return super.serialize(instance);
+            }
+        };
+
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name(name).port(10064).build();
+            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).serializer(slowSerializer).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            Assert.assertFalse(discovery.queryForInstances(name).isEmpty(), "Service should start registered.");
+
+            server.stop();
+            server.restart();
+
+            discovery.unregisterService(instance);
+            restartLatch.countDown();
+
+            TimeUnit.SECONDS.sleep(1); // Wait for the rest of registration to finish.
+
+            Assert.assertTrue(discovery.queryForInstances(name).isEmpty(), "Service should have unregistered.");
         }
         finally
         {
