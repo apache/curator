@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * A mechanism to register and query service instances using ZooKeeper
  */
+@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -181,9 +182,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         clean();
 
-        Holder<T> holder = getOrMakeHolder(service, null);
-        holder.getLock().lock();
-        try
+        final Holder<T> holder = getOrMakeHolder(service, null);
+        synchronized(holder)
         {
             if ( !holder.isRegistered() )
             {
@@ -194,10 +194,6 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             byte[] bytes = serializer.serialize(service);
             String path = pathForInstance(service.getName(), service.getId());
             client.setData().forPath(path, bytes);
-        }
-        finally
-        {
-            holder.getLock().unlock();
         }
     }
 
@@ -459,17 +455,12 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         for ( final Holder<T> holder : services.values() )
         {
-            holder.getLock().lock();
-            try
+            synchronized(holder)
             {
                 if ( holder.isRegistered() )
                 {
                     internalRegisterService(holder.getService());
                 }
-            }
-            finally
-            {
-                holder.getLock().unlock();
             }
         }
     }
@@ -544,8 +535,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     {
         if ( holder != null )
         {
-            holder.getLock().lock();
-            try
+            synchronized(holder)
             {
                 holder.setState(Holder.State.UNREGISTERED);
                 NodeCache cache = holder.getAndClearCache();
@@ -564,10 +554,6 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                 {
                     // ignore
                 }
-            }
-            finally
-            {
-                holder.getLock().unlock();
             }
         }
     }

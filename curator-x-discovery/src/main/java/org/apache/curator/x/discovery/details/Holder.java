@@ -2,8 +2,6 @@ package org.apache.curator.x.discovery.details;
 
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.x.discovery.ServiceInstance;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 class Holder<T>
 {
@@ -18,7 +16,6 @@ class Holder<T>
     private NodeCache cache;
     private State state;
     private long stateChangeMs;
-    private final ReentrantLock lock = new ReentrantLock();
 
     Holder(ServiceInstance<T> service, NodeCache nodeCache)
     {
@@ -27,110 +24,49 @@ class Holder<T>
         setState(State.NEW);
     }
 
-    ServiceInstance<T> getService()
+    synchronized ServiceInstance<T> getService()
     {
-        lock.lock();
-        try
-        {
-            return service;
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        return service;
     }
 
-    ServiceInstance<T> getServiceIfRegistered()
+    synchronized ServiceInstance<T> getServiceIfRegistered()
     {
-        lock.lock();
-        try
-        {
-            return (state == State.REGISTERED) ? service : null;
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        return (state == State.REGISTERED) ? service : null;
     }
 
-    void setService(ServiceInstance<T> service)
+    synchronized void setService(ServiceInstance<T> service)
     {
-        lock.lock();
-        try
-        {
-            this.service = service;
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        this.service = service;
     }
 
-    NodeCache getAndClearCache()
+    synchronized NodeCache getAndClearCache()
     {
-        lock.lock();
-        try
-        {
-            NodeCache localCache = cache;
-            cache = null;
-            return localCache;
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        NodeCache localCache = cache;
+        cache = null;
+        return localCache;
     }
 
-    boolean isRegistered()
+    synchronized boolean isRegistered()
     {
-        lock.lock();
-        try
-        {
-            return state == State.REGISTERED;
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        return state == State.REGISTERED;
     }
 
-    boolean isLapsedUnregistered(int cleanThresholdMs)
+    synchronized boolean isLapsedUnregistered(int cleanThresholdMs)
     {
-        lock.lock();
-        try
+        if ( state == State.UNREGISTERED )
         {
-            if ( state == State.UNREGISTERED )
+            long elapsed = System.currentTimeMillis() - stateChangeMs;
+            if ( elapsed >= cleanThresholdMs )
             {
-                long elapsed = System.currentTimeMillis() - stateChangeMs;
-                if ( elapsed >= cleanThresholdMs )
-                {
-                    return true;
-                }
+                return true;
             }
-            return false;
         }
-        finally
-        {
-            lock.unlock();
-        }
+        return false;
     }
 
-    void setState(State state)
+    synchronized void setState(State state)
     {
-        lock.lock();
-        try
-        {
-            this.state = state;
-            stateChangeMs = System.currentTimeMillis();
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    Lock getLock()
-    {
-        return lock;
+        this.state = state;
+        stateChangeMs = System.currentTimeMillis();
     }
 }
