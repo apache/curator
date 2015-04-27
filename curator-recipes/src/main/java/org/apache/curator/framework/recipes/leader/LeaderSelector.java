@@ -383,7 +383,7 @@ public class LeaderSelector implements Closeable
         hasLeadership = false;
         try
         {
-            mutex.acquire();
+            mutex.acquire(true);
 
             hasLeadership = true;
             try

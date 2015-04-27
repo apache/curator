@@ -86,7 +86,15 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
     @Override
     public void acquire() throws Exception
     {
-        if ( !internalLock(-1, null) )
+        if ( !internalLock(-1, null, false) )
+        {
+            throw new IOException("Lost connection while trying to acquire lock: " + basePath);
+        }
+    }
+
+    public void acquire(boolean resurrect) throws Exception
+    {
+        if ( !internalLock(-1, null, resurrect) )
         {
             throw new IOException("Lost connection while trying to acquire lock: " + basePath);
         }
@@ -105,7 +113,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
     @Override
     public boolean acquire(long time, TimeUnit unit) throws Exception
     {
-        return internalLock(time, unit);
+        return internalLock(time, unit, false);
     }
 
     /**
@@ -212,7 +220,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         return lockData != null ? lockData.lockPath : null;
     }
 
-    private boolean internalLock(long time, TimeUnit unit) throws Exception
+    private boolean internalLock(long time, TimeUnit unit, boolean resurrect) throws Exception
     {
         /*
            Note on concurrency: a given lockData instance
@@ -229,7 +237,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
             return true;
         }
 
-        String lockPath = internals.attemptLock(time, unit, getLockNodeBytes());
+        String lockPath = internals.attemptLock(time, unit, getLockNodeBytes(), resurrect);
         if ( lockPath != null )
         {
             LockData newLockData = new LockData(currentThread, lockPath);
