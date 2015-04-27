@@ -195,7 +195,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         Entry<T> entry = services.get(service.getId());
         if ( entry == null )
         {
-            throw new Exception("Service has been unregistered: " + service);
+            throw new Exception("Service not registered: " + service);
         }
         synchronized(entry)
         {
@@ -238,7 +238,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void unregisterService(ServiceInstance<T> service) throws Exception
     {
-        internalUnregisterService(services.remove(service.getId()));
+        Entry<T> entry = services.remove(service.getId());
+        internalUnregisterService(entry);
     }
 
     /**
@@ -445,42 +446,44 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 
     private NodeCache makeNodeCache(final ServiceInstance<T> instance)
     {
-        final NodeCache nodeCache = watchInstances ? new NodeCache(client, pathForInstance(instance.getName(), instance.getId())) : null;
-        if ( nodeCache != null )
+        if ( !watchInstances )
         {
-            try
+            return null;
+        }
+
+        final NodeCache nodeCache = new NodeCache(client, pathForInstance(instance.getName(), instance.getId()));
+        try
+        {
+            nodeCache.start(true);
+        }
+        catch ( Exception e )
+        {
+            log.error("Could not start node cache for: " + instance, e);
+        }
+        NodeCacheListener listener = new NodeCacheListener()
+        {
+            @Override
+            public void nodeChanged() throws Exception
             {
-                nodeCache.start(true);
-            }
-            catch ( Exception e )
-            {
-                log.error("Could not start node cache for: " + instance, e);
-            }
-            NodeCacheListener listener = new NodeCacheListener()
-            {
-                @Override
-                public void nodeChanged() throws Exception
+                if ( nodeCache.getCurrentData() != null )
                 {
-                    if ( nodeCache.getCurrentData() != null )
+                    ServiceInstance<T> newInstance = serializer.deserialize(nodeCache.getCurrentData().getData());
+                    Entry<T> entry = services.get(newInstance.getId());
+                    if ( entry != null )
                     {
-                        ServiceInstance<T> newInstance = serializer.deserialize(nodeCache.getCurrentData().getData());
-                        Entry<T> entry = services.get(newInstance.getId());
-                        if ( entry != null )
+                        synchronized(entry)
                         {
-                            synchronized(entry)
-                            {
-                                entry.service = newInstance;
-                            }
+                            entry.service = newInstance;
                         }
                     }
-                    else
-                    {
-                        log.warn("Instance data has been deleted for: " + instance);
-                    }
                 }
-            };
-            nodeCache.getListenable().addListener(listener);
-        }
+                else
+                {
+                    log.warn("Instance data has been deleted for: " + instance);
+                }
+            }
+        };
+        nodeCache.getListenable().addListener(listener);
         return nodeCache;
     }
 
