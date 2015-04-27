@@ -367,7 +367,6 @@ public class TestServiceDiscovery extends BaseClassForTests
     @Test
     public void testCleaning() throws Exception
     {
-        System.setProperty("curator-discovery-clean-threshold-ms", "10");
         List<Closeable> closeables = Lists.newArrayList();
         try
         {
@@ -381,14 +380,10 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery.start();
             discovery.unregisterService(instance);
 
-            Thread.sleep(100);
-
-            discovery.queryForNames();  // causes a clean
             Assert.assertEquals(((ServiceDiscoveryImpl)discovery).debugServicesQty(), 0);
         }
         finally
         {
-            System.clearProperty("curator-discovery-clean-threshold-ms");
             Collections.reverse(closeables);
             for ( Closeable c : closeables )
             {
