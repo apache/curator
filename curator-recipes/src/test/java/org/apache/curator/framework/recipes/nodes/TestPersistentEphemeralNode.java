@@ -127,7 +127,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     @Test
     public void testNoServerAtStart() throws Exception
     {
-        server.close();
+        server.stop();
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
@@ -152,7 +152,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
             timing.sleepABit();
 
-            server = new TestingServer(server.getPort());
+            server.restart();
 
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
 

@@ -82,8 +82,6 @@ public class TestBackgroundStates extends BaseClassForTests
             Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
             server.restart();
             timing.sleepABit();
-            //server = new TestingServer(server.getPort());
-            timing.sleepABit();
             Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
             timing.sleepABit();
             Assert.assertEquals(lastState.get(), ConnectionState.RECONNECTED);

@@ -48,7 +48,7 @@ public class TestFrameworkBackground extends BaseClassForTests
     @Test
     public void testListenerConnectedAtStart() throws Exception
     {
-        server.close();
+        server.stop();
 
         Timing timing = new Timing(2);
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(0, 0));
@@ -80,7 +80,7 @@ public class TestFrameworkBackground extends BaseClassForTests
             // due to CURATOR-72, this was causing a LOST event to precede the CONNECTED event
             client.create().inBackground().forPath("/foo");
 
-            server = new TestingServer(server.getPort());
+            server.restart();
 
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
             Assert.assertFalse(firstListenerAction.get());

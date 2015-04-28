@@ -170,7 +170,7 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             client.checkExists().forPath("/");
 
-            server.close();
+            server.stop();
 
             Assert.assertTrue(timing.awaitLatch(lostLatch));
 
@@ -184,7 +184,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 // correct
             }
 
-            server = new TestingServer(server.getPort());
+            server.restart();
             client.checkExists().forPath("/");
         }
         finally
