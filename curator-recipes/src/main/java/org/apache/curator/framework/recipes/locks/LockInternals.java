@@ -204,6 +204,7 @@ public class LockInternals
         boolean         isDone = false;
         while ( !isDone )
         {
+            ourPath = null;
             isDone = true;
             if ( resurrect )
             {
