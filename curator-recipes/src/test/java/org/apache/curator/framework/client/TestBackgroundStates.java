@@ -48,10 +48,11 @@ public class TestBackgroundStates extends BaseClassForTests
 
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        PersistentEphemeralNode node = null;
         try
         {
             client.start();
-            PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
+            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
             node.start();
 
             final CountDownLatch connectedLatch = new CountDownLatch(1);
@@ -79,9 +80,9 @@ public class TestBackgroundStates extends BaseClassForTests
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
             timing.sleepABit();
             Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-            server.close();
+            server.restart();
             timing.sleepABit();
-            server = new TestingServer(server.getPort());
+            //server = new TestingServer(server.getPort());
             timing.sleepABit();
             Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
             timing.sleepABit();
@@ -90,6 +91,7 @@ public class TestBackgroundStates extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(node);
         }
     }
 
@@ -103,8 +105,6 @@ public class TestBackgroundStates extends BaseClassForTests
         try
         {
             client.start();
-            PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
-            node.start();
 
             final BlockingQueue<ConnectionState> stateVector = Queues.newLinkedBlockingQueue(1);
             ConnectionStateListener listener = new ConnectionStateListener()
@@ -121,10 +121,10 @@ public class TestBackgroundStates extends BaseClassForTests
             client.getConnectionStateListenable().addListener(listener);
             server = new TestingServer(server.getPort());
             Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
-            server.close();
+            server.stop();
             Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
             Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
-            server = new TestingServer(server.getPort());
+            server.restart();
             Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);
             server.close();
             Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
