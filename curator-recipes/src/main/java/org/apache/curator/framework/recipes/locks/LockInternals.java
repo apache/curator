@@ -157,17 +157,17 @@ public class LockInternals
     {
         List<String> sortedList = Lists.newArrayList(children);
         Collections.sort
-                (
-                        sortedList,
-                        new Comparator<String>()
-                        {
-                            @Override
-                            public int compare(String lhs, String rhs)
-                            {
-                                return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
-                            }
-                        }
-                );
+        (
+            sortedList,
+            new Comparator<String>()
+            {
+                @Override
+                public int compare(String lhs, String rhs)
+                {
+                    return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
+                }
+            }
+        );
         return sortedList;
     }
 
