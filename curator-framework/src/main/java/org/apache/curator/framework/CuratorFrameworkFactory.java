@@ -16,8 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
@@ -35,6 +37,7 @@ import org.apache.zookeeper.ZooKeeper;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -43,23 +46,23 @@ import java.util.concurrent.TimeUnit;
  */
 public class CuratorFrameworkFactory
 {
-    private static final int        DEFAULT_SESSION_TIMEOUT_MS = Integer.getInteger("curator-default-session-timeout", 60 * 1000);
-    private static final int        DEFAULT_CONNECTION_TIMEOUT_MS = Integer.getInteger("curator-default-connection-timeout", 15 * 1000);
+    private static final int DEFAULT_SESSION_TIMEOUT_MS = Integer.getInteger("curator-default-session-timeout", 60 * 1000);
+    private static final int DEFAULT_CONNECTION_TIMEOUT_MS = Integer.getInteger("curator-default-connection-timeout", 15 * 1000);
 
-    private static final byte[]     LOCAL_ADDRESS = getLocalAddress();
+    private static final byte[] LOCAL_ADDRESS = getLocalAddress();
 
-    private static final CompressionProvider        DEFAULT_COMPRESSION_PROVIDER = new GzipCompressionProvider();
-    private static final DefaultZookeeperFactory    DEFAULT_ZOOKEEPER_FACTORY = new DefaultZookeeperFactory();
-    private static final DefaultACLProvider         DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
-    private static final long                       DEFAULT_INACTIVE_THRESHOLD_MS = (int)TimeUnit.MINUTES.toMillis(3);
-    private static final int                        DEFAULT_CLOSE_WAIT_MS = (int)TimeUnit.SECONDS.toMillis(1);
+    private static final CompressionProvider DEFAULT_COMPRESSION_PROVIDER = new GzipCompressionProvider();
+    private static final DefaultZookeeperFactory DEFAULT_ZOOKEEPER_FACTORY = new DefaultZookeeperFactory();
+    private static final DefaultACLProvider DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
+    private static final long DEFAULT_INACTIVE_THRESHOLD_MS = (int)TimeUnit.MINUTES.toMillis(3);
+    private static final int DEFAULT_CLOSE_WAIT_MS = (int)TimeUnit.SECONDS.toMillis(1);
 
     /**
      * Return a new builder that builds a CuratorFramework
      *
      * @return new builder
      */
-    public static Builder       builder()
+    public static Builder builder()
     {
         return new Builder();
     }
@@ -67,9 +70,8 @@ public class CuratorFrameworkFactory
     /**
      * Create a new client with default session timeout and default connection timeout
      *
-     *
      * @param connectString list of servers to connect to
-     * @param retryPolicy retry policy to use
+     * @param retryPolicy   retry policy to use
      * @return client
      */
     public static CuratorFramework newClient(String connectString, RetryPolicy retryPolicy)
@@ -80,11 +82,10 @@ public class CuratorFrameworkFactory
     /**
      * Create a new client
      *
-     *
-     * @param connectString list of servers to connect to
-     * @param sessionTimeoutMs session timeout
+     * @param connectString       list of servers to connect to
+     * @param sessionTimeoutMs    session timeout
      * @param connectionTimeoutMs connection timeout
-     * @param retryPolicy retry policy to use
+     * @param retryPolicy         retry policy to use
      * @return client
      */
     public static CuratorFramework newClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, RetryPolicy retryPolicy)
@@ -99,20 +100,19 @@ public class CuratorFrameworkFactory
 
     public static class Builder
     {
-        private EnsembleProvider    ensembleProvider;
-        private int                 sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
-        private int                 connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
-        private int                 maxCloseWaitMs = DEFAULT_CLOSE_WAIT_MS;
-        private RetryPolicy         retryPolicy;
-        private ThreadFactory       threadFactory = null;
-        private String              namespace;
-        private String              authScheme = null;
-        private byte[]              authValue = null;
-        private byte[]              defaultData = LOCAL_ADDRESS;
+        private EnsembleProvider ensembleProvider;
+        private int sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
+        private int connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
+        private int maxCloseWaitMs = DEFAULT_CLOSE_WAIT_MS;
+        private RetryPolicy retryPolicy;
+        private ThreadFactory threadFactory = null;
+        private String namespace;
+        private List<AuthInfo> authInfos = null;
+        private byte[] defaultData = LOCAL_ADDRESS;
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
-        private ZookeeperFactory    zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
-        private ACLProvider         aclProvider = DEFAULT_ACL_PROVIDER;
-        private boolean             canBeReadOnly = false;
+        private ZookeeperFactory zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
+        private ACLProvider aclProvider = DEFAULT_ACL_PROVIDER;
+        private boolean canBeReadOnly = false;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -144,7 +144,7 @@ public class CuratorFrameworkFactory
          * are limited. Further, the connection will be closed after <code>inactiveThresholdMs</code> milliseconds of inactivity.
          *
          * @param inactiveThreshold number of milliseconds of inactivity to cause connection close
-         * @param unit threshold unit
+         * @param unit              threshold unit
          * @return temp instance
          */
         public CuratorTempFramework buildTemp(long inactiveThreshold, TimeUnit unit)
@@ -154,15 +154,30 @@ public class CuratorFrameworkFactory
 
         /**
          * Add connection authorization
+         * 
+         * Subsequent calls to this method overwrite the prior calls.
          *
          * @param scheme the scheme
-         * @param auth the auth bytes
+         * @param auth   the auth bytes
          * @return this
          */
-        public Builder  authorization(String scheme, byte[] auth)
+        public Builder authorization(String scheme, byte[] auth)
         {
-            this.authScheme = scheme;
-            this.authValue = (auth != null) ? Arrays.copyOf(auth, auth.length) : null;
+            return authorization(ImmutableList.of(new AuthInfo(scheme, (auth != null) ? Arrays.copyOf(auth, auth.length) : null)));
+        }
+
+        /**
+         * Add connection authorization. The supplied authInfos are appended to those added via call to
+         * {@link #authorization(java.lang.String, byte[])} for backward compatibility.
+         * <p/>
+         * Subsequent calls to this method overwrite the prior calls.
+         *
+         * @param authInfos list of {@link AuthInfo} objects with scheme and auth
+         * @return this
+         */
+        public Builder authorization(List<AuthInfo> authInfos)
+        {
+            this.authInfos = ImmutableList.copyOf(authInfos);
             return this;
         }
 
@@ -363,14 +378,56 @@ public class CuratorFrameworkFactory
             return namespace;
         }
 
+        @Deprecated
         public String getAuthScheme()
         {
-            return authScheme;
+            int qty = (authInfos != null) ? authInfos.size() : 0;
+            switch ( qty )
+            {
+                case 0:
+                {
+                    return null;
+                }
+
+                case 1:
+                {
+                    return authInfos.get(0).scheme;
+                }
+
+                default:
+                {
+                    throw new IllegalStateException("More than 1 auth has been added");
+                }
+            }
         }
 
+        @Deprecated
         public byte[] getAuthValue()
         {
-            return (authValue != null) ? Arrays.copyOf(authValue, authValue.length) : null;
+            int qty = (authInfos != null) ? authInfos.size() : 0;
+            switch ( qty )
+            {
+                case 0:
+                {
+                    return null;
+                }
+
+                case 1:
+                {
+                    byte[] bytes = authInfos.get(0).getAuth();
+                    return (bytes != null) ? Arrays.copyOf(bytes, bytes.length) : null;
+                }
+
+                default:
+                {
+                    throw new IllegalStateException("More than 1 auth has been added");
+                }
+            }
+        }
+
+        public List<AuthInfo> getAuthInfos()
+        {
+            return authInfos;
         }
 
         public byte[] getDefaultData()

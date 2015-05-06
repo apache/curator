@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -31,15 +32,19 @@ import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -75,7 +80,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     @Test
     public void testListenersReconnectedIsFast() throws Exception
     {
-        server.close();
+        server.stop();
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
@@ -103,13 +108,13 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             };
             client.getConnectionStateListenable().addListener(listener);
             timing.sleepABit();
-            server = new TestingServer(server.getPort());
+            server.restart();
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
             timing.sleepABit();
             Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-            server.close();
+            server.stop();
             timing.sleepABit();
-            server = new TestingServer(server.getPort());
+            server.restart();
             timing.sleepABit();
             Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
         }
@@ -122,7 +127,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     @Test
     public void testNoServerAtStart() throws Exception
     {
-        server.close();
+        server.stop();
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
@@ -147,7 +152,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
             timing.sleepABit();
 
-            server = new TestingServer(server.getPort());
+            server.restart();
 
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
 
@@ -453,6 +458,114 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         {
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));
+        }
+        finally
+        {
+            node.close();
+        }
+    }
+    
+    /**
+     * Test that if a persistent ephemeral node is created and the node already exists
+     * that if data is present in the PersistentEphermalNode that it is still set. 
+     * @throws Exception
+     */
+    @Test
+    public void testSetDataWhenNodeExists() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+        curator.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(PATH, "InitialData".getBytes());
+        
+        byte[] data = "Hello World".getBytes();
+             
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
+        node.start();
+        try
+        {
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));
+        }
+        finally
+        {
+            node.close();
+        }
+    }
+    
+    @Test
+    public void testSetDataWhenDisconnected() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+        
+        byte[] initialData = "Hello World".getBytes();
+        byte[] updatedData = "Updated".getBytes();
+             
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
+        node.start();
+        try
+        {
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
+            
+            server.stop();
+            
+            final CountDownLatch dataUpdateLatch = new CountDownLatch(1);
+            
+            Watcher watcher = new Watcher()
+            {
+				@Override
+				public void process(WatchedEvent event)
+				{
+					if ( event.getType() == EventType.NodeDataChanged )
+					{
+						dataUpdateLatch.countDown();
+					}
+				}            	
+            };
+            
+            curator.getData().usingWatcher(watcher).inBackground().forPath(node.getActualPath());
+            
+            node.setData(updatedData);
+            server.restart();
+
+            assertTrue(timing.awaitLatch(dataUpdateLatch));
+                       
+            assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), updatedData));
+        }
+        finally
+        {
+            node.close();
+        }    	
+    }
+    
+    /**
+     * See CURATOR-190
+     * For protected nodes on reconnect the current protected name was passed to the create builder meaning that it got
+     * appended to the new protected node name. This meant that a new node got created on each reconnect.
+     * @throws Exception
+     */
+    @Test
+    public void testProtected() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH,
+                                                                   new byte[0]);
+        node.start();
+        try
+        {
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            assertNodeExists(curator, node.getActualPath());
+
+            server.restart();            
+            
+            curator.blockUntilConnected(5, TimeUnit.SECONDS);
+
+            assertNodeExists(curator, node.getActualPath());
+            
+            //There should only be a single child, the persisted ephemeral node
+            List<String> children = curator.getChildren().forPath(DIR);
+            assertFalse(children == null);
+            assertEquals(children.size(), 1);
         }
         finally
         {

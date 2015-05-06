@@ -51,7 +51,7 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
     @Test
     public void testConnectionStateListener() throws Exception
     {
-        server.close();
+        server.stop();
 
         final StringBuilder listenerSequence = new StringBuilder();
         LeaderSelector selector = null;
@@ -85,15 +85,15 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
 
             client.getConnectionStateListenable().addListener(listener1);
             log.debug("Starting ZK server");
-            server = new TestingServer(server.getPort());
+            server.restart();
             timing.forWaiting().sleepABit();
 
             log.debug("Stopping ZK server");
-            server.close();
+            server.stop();
             timing.forWaiting().sleepABit();
 
             log.debug("Starting ZK server");
-            server = new TestingServer(server.getPort());
+            server.restart();
             timing.forWaiting().sleepABit();
 
             log.debug("Stopping ZK server");

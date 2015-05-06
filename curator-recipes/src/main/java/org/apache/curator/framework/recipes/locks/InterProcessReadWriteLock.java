@@ -193,7 +193,7 @@ public class InterProcessReadWriteLock
 
         int         index = 0;
         int         firstWriteIndex = Integer.MAX_VALUE;
-        int         ourIndex = Integer.MAX_VALUE;
+        int         ourIndex = -1;
         for ( String node : children )
         {
             if ( node.contains(WRITE_LOCK_NAME) )
@@ -208,6 +208,7 @@ public class InterProcessReadWriteLock
 
             ++index;
         }
+
         StandardLockInternalsDriver.validateOurIndex(sequenceNodeName, ourIndex);
 
         boolean     getsTheLock = (ourIndex < firstWriteIndex);

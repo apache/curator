@@ -65,7 +65,7 @@ class NamespaceImpl
         return path;
     }
 
-    String    fixForNamespace(String path)
+    String    fixForNamespace(String path, boolean isSequential)
     {
         if ( ensurePath != null )
         {
@@ -79,11 +79,11 @@ class NamespaceImpl
             }
         }
 
-        return ZKPaths.fixForNamespace(namespace, path);
+        return ZKPaths.fixForNamespace(namespace, path, isSequential);
     }
 
     EnsurePath newNamespaceAwareEnsurePath(String path)
     {
-        return new EnsurePath(fixForNamespace(path), client.getAclProvider());
+        return new EnsurePath(fixForNamespace(path, false), client.getAclProvider());
     }
 }

@@ -39,7 +39,7 @@ public class TestPersistentEphemeralNodeListener extends BaseClassForTests
     @Test
     public void testListenersReconnectedIsOK() throws Exception
     {
-        server.close();
+        server.stop();
 
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
@@ -66,18 +66,15 @@ public class TestPersistentEphemeralNodeListener extends BaseClassForTests
                     {
                         reconnectedLatch.countDown();
                     }
-                    System.out.println("XXXX " + newState);
                 }
             };
             client.getConnectionStateListenable().addListener(listener);
             timing.sleepABit();
-            server = new TestingServer(server.getPort());
+            server.restart();
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
             timing.sleepABit();
             Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-            server.close();
-            timing.sleepABit();
-            server = new TestingServer(server.getPort());
+            server.restart();
             timing.sleepABit();
             Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
             timing.sleepABit();

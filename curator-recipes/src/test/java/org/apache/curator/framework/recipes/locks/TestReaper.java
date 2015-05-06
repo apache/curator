@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.state.ConnectionState;
@@ -48,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestReaper extends BaseClassForTests
 {
     @Test
-    public void testUsingLeader() throws Exception
+    public void testUsingLeaderPath() throws Exception
     {
         final Timing timing = new Timing();
         CuratorFramework client = makeClient(timing, null);
@@ -113,6 +114,93 @@ public class TestReaper extends BaseClassForTests
         {
             CloseableUtils.closeQuietly(reaper1);
             CloseableUtils.closeQuietly(reaper2);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testUsingLeaderLatch() throws Exception
+    {
+        final Timing timing = new Timing();
+        CuratorFramework client = makeClient(timing, null);
+        Reaper reaper1 = null;
+        Reaper reaper2 = null;
+        LeaderLatch leaderLatch1 = null;
+        LeaderLatch leaderLatch2 = null;
+        try
+        {
+            final AtomicInteger reaper1Count = new AtomicInteger();
+            leaderLatch1 = new LeaderLatch(client, "/reaper/leader");
+            reaper1 = new Reaper(client, Reaper.newExecutorService(), 1, leaderLatch1)
+            {
+                @Override
+                protected void reap(PathHolder holder)
+                {
+                    reaper1Count.incrementAndGet();
+                    super.reap(holder);
+                }
+            };
+
+            final AtomicInteger reaper2Count = new AtomicInteger();
+            leaderLatch2 = new LeaderLatch(client, "/reaper/leader");
+            reaper2 = new Reaper(client, Reaper.newExecutorService(), 1, leaderLatch2)
+            {
+                @Override
+                protected void reap(PathHolder holder)
+                {
+                    reaper2Count.incrementAndGet();
+                    super.reap(holder);
+                }
+            };
+
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/one/two/three");
+
+            leaderLatch1.start();
+            leaderLatch2.start();
+
+            reaper1.start();
+            reaper2.start();
+
+            reaper1.addPath("/one/two/three");
+            reaper2.addPath("/one/two/three");
+
+            timing.sleepABit();
+
+            Assert.assertTrue((reaper1Count.get() == 0) || (reaper2Count.get() == 0));
+            Assert.assertTrue((reaper1Count.get() > 0) || (reaper2Count.get() > 0));
+
+            Reaper activeReaper;
+            LeaderLatch activeLeaderLeatch;
+            AtomicInteger inActiveReaperCount;
+            if ( reaper1Count.get() > 0 )
+            {
+                activeReaper = reaper1;
+                activeLeaderLeatch = leaderLatch1;
+                inActiveReaperCount = reaper2Count;
+            }
+            else
+            {
+                activeReaper = reaper2;
+                activeLeaderLeatch = leaderLatch2;
+                inActiveReaperCount = reaper1Count;
+            }
+            Assert.assertEquals(inActiveReaperCount.get(), 0);
+            activeReaper.close();
+            activeLeaderLeatch.close();
+            timing.sleepABit();
+            Assert.assertTrue(inActiveReaperCount.get() > 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(reaper1);
+            CloseableUtils.closeQuietly(reaper2);
+            if (leaderLatch1 != null && LeaderLatch.State.STARTED == leaderLatch1.getState()) {
+                CloseableUtils.closeQuietly(leaderLatch1);
+            }
+            if (leaderLatch2 != null && LeaderLatch.State.STARTED == leaderLatch2.getState()) {
+                CloseableUtils.closeQuietly(leaderLatch2);
+            }
             CloseableUtils.closeQuietly(client);
         }
     }

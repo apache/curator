@@ -52,6 +52,7 @@ public class Reaper implements Closeable
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final LeaderLatch leaderLatch;
     private final AtomicBoolean reapingIsActive = new AtomicBoolean(true);
+    private final boolean ownsLeaderLatch;
 
     private enum State
     {
@@ -111,7 +112,7 @@ public class Reaper implements Closeable
      */
     public Reaper(CuratorFramework client)
     {
-        this(client, newExecutorService(), DEFAULT_REAPING_THRESHOLD_MS, null);
+        this(client, newExecutorService(), DEFAULT_REAPING_THRESHOLD_MS, (String) null);
     }
 
     /**
@@ -122,7 +123,7 @@ public class Reaper implements Closeable
      */
     public Reaper(CuratorFramework client, int reapingThresholdMs)
     {
-        this(client, newExecutorService(), reapingThresholdMs, null);
+        this(client, newExecutorService(), reapingThresholdMs, (String) null);
     }
 
     /**
@@ -132,7 +133,7 @@ public class Reaper implements Closeable
      */
     public Reaper(CuratorFramework client, ScheduledExecutorService executor, int reapingThresholdMs)
     {
-        this(client, executor, reapingThresholdMs, null);
+        this(client, executor, reapingThresholdMs, (String) null);
     }
 
     /**
@@ -143,17 +144,40 @@ public class Reaper implements Closeable
      */
     public Reaper(CuratorFramework client, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath)
     {
+        this(client, executor, reapingThresholdMs, makeLeaderLatchIfPathNotNull(client, leaderPath), true);
+    }
+
+    /**
+     * @param client             client
+     * @param executor           thread pool
+     * @param reapingThresholdMs threshold in milliseconds that determines that a path can be deleted
+     * @param leaderLatch        a pre-created leader latch to ensure only 1 reaper is active in the cluster
+     */
+    public Reaper(CuratorFramework client, ScheduledExecutorService executor, int reapingThresholdMs, LeaderLatch leaderLatch)
+    {
+        this(client, executor, reapingThresholdMs, leaderLatch, false);
+    }
+
+    /**
+     * @param client             client
+     * @param executor           thread pool
+     * @param reapingThresholdMs threshold in milliseconds that determines that a path can be deleted
+     * @param leaderLatch        a pre-created leader latch to ensure only 1 reaper is active in the cluster
+     * @param ownsLeaderLatch    indicates whether or not the reaper owns the leader latch (if it exists) and thus should start/stop it
+     * */
+    private Reaper(CuratorFramework client, ScheduledExecutorService executor, int reapingThresholdMs, LeaderLatch leaderLatch, boolean ownsLeaderLatch)
+    {
         this.client = client;
         this.executor = new CloseableScheduledExecutorService(executor);
         this.reapingThresholdMs = reapingThresholdMs / EMPTY_COUNT_THRESHOLD;
-
-        LeaderLatch localLeaderLatch = null;
-        if ( leaderPath != null )
+        this.leaderLatch = leaderLatch;
+        if (leaderLatch != null)
         {
-            localLeaderLatch = makeLeaderLatch(client, leaderPath);
+            addListenerToLeaderLatch(leaderLatch);
         }
-        leaderLatch = localLeaderLatch;
+        this.ownsLeaderLatch = ownsLeaderLatch;
     }
+
 
     /**
      * Add a path (using Mode.REAP_INDEFINITELY) to be checked by the reaper. The path will be checked periodically
@@ -200,7 +224,7 @@ public class Reaper implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        if ( leaderLatch != null )
+        if ( leaderLatch != null && ownsLeaderLatch)
         {
             leaderLatch.start();
         }
@@ -212,7 +236,7 @@ public class Reaper implements Closeable
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
             executor.close();
-            if ( leaderLatch != null )
+            if ( leaderLatch != null && ownsLeaderLatch )
             {
                 leaderLatch.close();
             }
@@ -310,11 +334,9 @@ public class Reaper implements Closeable
         return ThreadUtils.newSingleThreadScheduledExecutor("Reaper");
     }
 
-    private LeaderLatch makeLeaderLatch(CuratorFramework client, String leaderPath)
+    private void addListenerToLeaderLatch(LeaderLatch leaderLatch)
     {
-        reapingIsActive.set(false);
 
-        LeaderLatch localLeaderLatch = new LeaderLatch(client, leaderPath);
         LeaderLatchListener listener = new LeaderLatchListener()
         {
             @Override
@@ -333,7 +355,20 @@ public class Reaper implements Closeable
                 reapingIsActive.set(false);
             }
         };
-        localLeaderLatch.addListener(listener);
-        return localLeaderLatch;
+        leaderLatch.addListener(listener);
+
+        reapingIsActive.set(leaderLatch.hasLeadership());
+    }
+
+    private static LeaderLatch makeLeaderLatchIfPathNotNull(CuratorFramework client, String leaderPath)
+    {
+        if (leaderPath == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new LeaderLatch(client, leaderPath);
+        }
     }
 }
