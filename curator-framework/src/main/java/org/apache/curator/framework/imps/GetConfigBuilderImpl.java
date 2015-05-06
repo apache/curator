@@ -50,7 +50,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
 
     @Override
     public Ensembleable<byte[]> storingStatIn(Stat stat) {
-        this.stat = new Stat();
+        this.stat = stat;
         return this;
     }
 

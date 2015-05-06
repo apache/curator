@@ -18,12 +18,7 @@
  */
 package org.apache.curator.framework.api;
 
-public interface Configurable<T> {
-
-    /**
-     * Sets the configuration version to use.
-     * @param config The version of the configuration.
-     * @throws Exception
-     */
-    BackgroundStatEnsembleable<byte[]> fromConfig(long config) throws Exception;
+public interface BackgroundStatEnsembleable<T> extends
+    BackgroundStatable<Ensembleable<T>>,
+    Ensembleable<T> {
 }
