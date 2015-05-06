@@ -150,7 +150,8 @@ public class RetryLoop
         return (rc == KeeperException.Code.CONNECTIONLOSS.intValue()) ||
             (rc == KeeperException.Code.OPERATIONTIMEOUT.intValue()) ||
             (rc == KeeperException.Code.SESSIONMOVED.intValue()) ||
-            (rc == KeeperException.Code.SESSIONEXPIRED.intValue());
+            (rc == KeeperException.Code.SESSIONEXPIRED.intValue()) ||
+            (rc == KeeperException.Code.NEWCONFIGNOQUORUM.intValue());
     }
 
     /**
