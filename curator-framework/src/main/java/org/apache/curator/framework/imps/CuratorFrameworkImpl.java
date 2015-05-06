@@ -22,11 +22,12 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.*;
@@ -46,8 +47,8 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.DelayQueue;
@@ -69,7 +70,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final BlockingQueue<OperationAndData<?>> backgroundOperations;
     private final NamespaceImpl namespace;
     private final ConnectionStateManager connectionStateManager;
-    private final AtomicReference<AuthInfo> authInfo = new AtomicReference<AuthInfo>();
+    private final List<AuthInfo> authInfos;
     private final byte[] defaultData;
     private final FailedDeleteManager failedDeleteManager;
     private final CompressionProvider compressionProvider;
@@ -92,27 +93,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public volatile UnhandledErrorListener debugUnhandledErrorListener = null;
 
     private final AtomicReference<CuratorFrameworkState> state;
-
-    private static class AuthInfo
-    {
-        final String scheme;
-        final byte[] auth;
-
-        private AuthInfo(String scheme, byte[] auth)
-        {
-            this.scheme = scheme;
-            this.auth = auth;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "AuthInfo{" +
-                "scheme='" + scheme + '\'' +
-                ", auth=" + Arrays.toString(auth) +
-                '}';
-        }
-    }
 
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
@@ -140,14 +120,20 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
-
-        if ( builder.getAuthScheme() != null )
-        {
-            authInfo.set(new AuthInfo(builder.getAuthScheme(), builder.getAuthValue()));
-        }
+        authInfos = buildAuths(builder);
 
         failedDeleteManager = new FailedDeleteManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
+    }
+
+    private List<AuthInfo> buildAuths(CuratorFrameworkFactory.Builder builder)
+    {
+        ImmutableList.Builder<AuthInfo> builder1 = ImmutableList.builder();
+        if ( builder.getAuthInfos() != null )
+        {
+            builder1.addAll(builder.getAuthInfos());
+        }
+        return builder1.build();
     }
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
@@ -158,10 +144,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
             public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
             {
                 ZooKeeper zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
-                AuthInfo auth = authInfo.get();
-                if ( auth != null )
+                for ( AuthInfo auth : authInfos )
                 {
-                    zooKeeper.addAuthInfo(auth.scheme, auth.auth);
+                    zooKeeper.addAuthInfo(auth.getScheme(), auth.getAuth());
                 }
 
                 return zooKeeper;
@@ -174,7 +159,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         ThreadFactory threadFactory = builder.getThreadFactory();
         if ( threadFactory == null )
         {
-            threadFactory = ThreadUtils.newThreadFactory("CuratorFramework");
+            threadFactory = ThreadUtils.newThreadFactory("Framework");
         }
         return threadFactory;
     }
@@ -195,6 +180,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespaceFacadeCache = parent.namespaceFacadeCache;
         namespace = new NamespaceImpl(this, null);
         state = parent.state;
+        authInfos = parent.authInfos;
     }
 
     @Override
@@ -238,8 +224,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         log.info("Starting");
         if ( !state.compareAndSet(CuratorFrameworkState.LATENT, CuratorFrameworkState.STARTED) )
         {
-            IllegalStateException ise = new IllegalStateException("Cannot be started more than once");
-            throw ise;
+            throw new IllegalStateException("Cannot be started more than once");
         }
 
         try
@@ -265,14 +250,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
             executorService = Executors.newFixedThreadPool(2, threadFactory);  // 1 for listeners, 1 for background ops
 
             executorService.submit(new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
                 {
-                    @Override
-                    public Object call() throws Exception
-                    {
-                        backgroundOperationsLoop();
-                        return null;
-                    }
-                });
+                    backgroundOperationsLoop();
+                    return null;
+                }
+            });
         }
         catch ( Exception e )
         {
@@ -287,22 +272,22 @@ public class CuratorFrameworkImpl implements CuratorFramework
         if ( state.compareAndSet(CuratorFrameworkState.STARTED, CuratorFrameworkState.STOPPED) )
         {
             listeners.forEach(new Function<CuratorListener, Void>()
+            {
+                @Override
+                public Void apply(CuratorListener listener)
                 {
-                    @Override
-                    public Void apply(CuratorListener listener)
+                    CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
+                    try
                     {
-                        CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
-                        try
-                        {
-                            listener.eventReceived(CuratorFrameworkImpl.this, event);
-                        }
-                        catch ( Exception e )
-                        {
-                            log.error("Exception while sending Closing event", e);
-                        }
-                        return null;
+                        listener.eventReceived(CuratorFrameworkImpl.this, event);
                     }
-                });
+                    catch ( Exception e )
+                    {
+                        log.error("Exception while sending Closing event", e);
+                    }
+                    return null;
+                }
+            });
 
             if ( executorService != null )
             {
@@ -574,14 +559,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         final String localReason = reason;
         unhandledErrorListeners.forEach(new Function<UnhandledErrorListener, Void>()
+        {
+            @Override
+            public Void apply(UnhandledErrorListener listener)
             {
-                @Override
-                public Void apply(UnhandledErrorListener listener)
-                {
-                    listener.unhandledError(localReason, e);
-                    return null;
-                }
-            });
+                listener.unhandledError(localReason, e);
+                return null;
+            }
+        });
 
         if ( debugUnhandledErrorListener != null )
         {
@@ -596,7 +581,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     String fixForNamespace(String path)
     {
-        return namespace.fixForNamespace(path);
+        return namespace.fixForNamespace(path, false);
+    }
+
+    String fixForNamespace(String path, boolean isSequential)
+    {
+        return namespace.fixForNamespace(path, isSequential);
     }
 
     byte[] getDefaultData()

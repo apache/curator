@@ -1,3 +1,4 @@
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,10 +19,14 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.apache.curator.utils.CloseableUtils;
+import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.utils.CloseableScheduledExecutorService;
+import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
@@ -29,12 +34,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.curator.utils.PathUtils;
 
 /**
  * Utility to reap empty child nodes of a parent node. Periodically calls getChildren on
@@ -46,10 +55,14 @@ public class ChildReaper implements Closeable
     private final Reaper reaper;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final CuratorFramework client;
-    private final String path;
+    private final Collection<String> paths = Sets.newConcurrentHashSet();
+    private volatile Iterator<String> pathIterator = null;
     private final Reaper.Mode mode;
     private final CloseableScheduledExecutorService executor;
     private final int reapingThresholdMs;
+    private final LeaderLatch leaderLatch;
+    private final Set<String> lockSchema;
+    private final AtomicInteger maxChildren = new AtomicInteger(-1);
 
     private volatile Future<?> task;
 
@@ -103,12 +116,36 @@ public class ChildReaper implements Closeable
      */
     public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath)
     {
+        this(client, path, mode, executor, reapingThresholdMs, leaderPath, Collections.<String>emptySet());
+    }
+
+
+    /**
+     * @param client the client
+     * @param path path to reap children from
+     * @param executor executor to use for background tasks
+     * @param reapingThresholdMs threshold in milliseconds that determines that a path can be deleted
+     * @param mode reaping mode
+     * @param leaderPath if not null, uses a leader selection so that only 1 reaper is active in the cluster
+     * @param lockSchema a set of the possible subnodes of the children of path that must be reaped in addition to the child nodes
+     */
+    public ChildReaper(CuratorFramework client, String path, Reaper.Mode mode, ScheduledExecutorService executor, int reapingThresholdMs, String leaderPath, Set<String> lockSchema)
+    {
         this.client = client;
-        this.path = PathUtils.validatePath(path);
         this.mode = mode;
         this.executor = new CloseableScheduledExecutorService(executor);
         this.reapingThresholdMs = reapingThresholdMs;
-        this.reaper = new Reaper(client, executor, reapingThresholdMs, leaderPath);
+        if (leaderPath != null)
+        {
+            leaderLatch = new LeaderLatch(client, leaderPath);
+        }
+        else
+        {
+            leaderLatch = null;
+        }
+        this.reaper = new Reaper(client, executor, reapingThresholdMs, leaderLatch);
+        this.lockSchema = lockSchema;
+        addPath(path);
     }
 
     /**
@@ -134,7 +171,10 @@ public class ChildReaper implements Closeable
             reapingThresholdMs,
             TimeUnit.MILLISECONDS
         );
-
+        if (leaderLatch != null)
+        {
+            leaderLatch.start();
+        }
         reaper.start();
     }
 
@@ -144,33 +184,118 @@ public class ChildReaper implements Closeable
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
             CloseableUtils.closeQuietly(reaper);
+            if (leaderLatch != null)
+            {
+                CloseableUtils.closeQuietly(leaderLatch);
+            }
             task.cancel(true);
         }
     }
 
-    private static ScheduledExecutorService newExecutorService()
+    /**
+     * Add a path to reap children from
+     *
+     * @param path the path
+     * @return this for chaining
+     */
+    public ChildReaper addPath(String path)
+    {
+        paths.add(PathUtils.validatePath(path));
+        return this;
+    }
+
+    /**
+     * Remove a path from reaping
+     *
+     * @param path the path
+     * @return true if the path existed and was removed
+     */
+    public boolean removePath(String path)
+    {
+        return paths.remove(PathUtils.validatePath(path));
+    }
+
+    /**
+     * If a node has so many children that {@link CuratorFramework#getChildren()} will fail
+     * (due to jute.maxbuffer) it can cause connection instability. Set the max number of
+     * children here to prevent the path from being queried in these cases. The number should usually
+     * be: average-node-name-length/1000000
+     *
+     * @param maxChildren max children
+     */
+    public void setMaxChildren(int maxChildren)
+    {
+        this.maxChildren.set(maxChildren);
+    }
+
+    public static ScheduledExecutorService newExecutorService()
     {
         return ThreadUtils.newFixedThreadScheduledPool(2, "ChildReaper");
     }
 
+    @VisibleForTesting
+    protected void warnMaxChildren(String path, Stat stat)
+    {
+        log.warn(String.format("Skipping %s as it has too many children: %d", path, stat.getNumChildren()));
+    }
+
     private void doWork()
     {
-        try
+        if ( shouldDoWork() )
         {
-            List<String>        children = client.getChildren().forPath(path);
-            for ( String name : children )
+            if ( (pathIterator == null) || !pathIterator.hasNext() )
             {
-                String  thisPath = ZKPaths.makePath(path, name);
-                Stat    stat = client.checkExists().forPath(thisPath);
-                if ( (stat != null) && (stat.getNumChildren() == 0) )
+                pathIterator = paths.iterator();
+            }
+            while ( pathIterator.hasNext() )
+            {
+                String path = pathIterator.next();
+                try
                 {
-                    reaper.addPath(thisPath, mode);
+                    int maxChildren = this.maxChildren.get();
+                    if ( maxChildren > 0 )
+                    {
+                        Stat stat = client.checkExists().forPath(path);
+                        if ( (stat != null) && (stat.getNumChildren() > maxChildren) )
+                        {
+                            warnMaxChildren(path, stat);
+                            continue;
+                        }
+                    }
+
+                    List<String> children = client.getChildren().forPath(path);
+                    log.info(String.format("Found %d children for %s", children.size(), path));
+                    for ( String name : children )
+                    {
+                        String childPath = ZKPaths.makePath(path, name);
+                        addPathToReaperIfEmpty(childPath);
+                        for ( String subNode : lockSchema )
+                        {
+                            addPathToReaperIfEmpty(ZKPaths.makePath(childPath, subNode));
+                        }
+
+                    }
+                }
+                catch ( Exception e )
+                {
+                    log.error("Could not get children for path: " + path, e);
                 }
             }
         }
-        catch ( Exception e )
+    }
+
+    private void addPathToReaperIfEmpty(String path) throws Exception
+    {
+        Stat stat = client.checkExists().forPath(path);
+        if ( (stat != null) && (stat.getNumChildren() == 0) )
         {
-            log.error("Could not get children for path: " + path, e);
+            log.info("Adding " + path);
+            reaper.addPath(path, mode);
         }
+    }
+
+    private boolean shouldDoWork()
+    {
+        return this.leaderLatch == null || this.leaderLatch.hasLeadership();
     }
 }

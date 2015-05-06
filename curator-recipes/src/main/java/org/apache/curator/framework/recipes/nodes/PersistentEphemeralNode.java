@@ -20,6 +20,7 @@
 package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.base.Preconditions;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -31,14 +32,17 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.curator.utils.PathUtils;
 
 /**
@@ -67,7 +71,10 @@ public class PersistentEphemeralNode implements Closeable
         @Override
         public void process(WatchedEvent event)
         {
-            createNode();
+        	if ( event.getType() == EventType.NodeDeleted)
+        	{
+        		createNode();
+        	}
         }
     };
     private final BackgroundCallback checkExistsCallback = new BackgroundCallback()
@@ -81,6 +88,21 @@ public class PersistentEphemeralNode implements Closeable
             }
         }
     };
+    private final BackgroundCallback setDataCallback = new BackgroundCallback() {
+		
+		@Override
+		public void processResult(CuratorFramework client, CuratorEvent event)
+				throws Exception {
+			//If the result is ok then initialisation is complete (if we're still initialising)
+			//Don't retry on other errors as the only recoverable cases will be connection loss
+			//and the node not existing, both of which are already handled by other watches.
+			if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+			{
+				//Update is ok, mark initialisation as complete if required.
+				initialisationComplete();
+			}
+		}
+	};	
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -188,12 +210,12 @@ public class PersistentEphemeralNode implements Closeable
      * @param basePath the base path for the node
      * @param data     data for the node
      */
-    public PersistentEphemeralNode(CuratorFramework client, Mode mode, String basePath, byte[] data)
+    public PersistentEphemeralNode(CuratorFramework client, Mode mode, String basePath, byte[] initData)
     {
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
         this.basePath = PathUtils.validatePath(basePath);
         this.mode = Preconditions.checkNotNull(mode, "mode cannot be null");
-        data = Preconditions.checkNotNull(data, "data cannot be null");
+        final byte[] data = Preconditions.checkNotNull(initData, "data cannot be null");
 
         backgroundCallback = new BackgroundCallback()
         {
@@ -201,9 +223,11 @@ public class PersistentEphemeralNode implements Closeable
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
                 String path = null;
+                boolean nodeExists = false;
                 if ( event.getResultCode() == KeeperException.Code.NODEEXISTS.intValue() )
-                {
-                    path = event.getPath();
+                {                	
+                	path = event.getPath();
+                	nodeExists = true;
                 }
                 else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
@@ -214,10 +238,13 @@ public class PersistentEphemeralNode implements Closeable
                     nodePath.set(path);
                     watchNode();
 
-                    CountDownLatch localLatch = initialCreateLatch.getAndSet(null);
-                    if ( localLatch != null )
+                    if(nodeExists)
                     {
-                        localLatch.countDown();
+                    	client.setData().inBackground(setDataCallback).forPath(getActualPath(), data);
+                    }
+                    else
+                    {
+                    	initialisationComplete();
                     }
                 }
                 else
@@ -229,6 +256,15 @@ public class PersistentEphemeralNode implements Closeable
 
         createMethod = mode.isProtected() ? client.create().creatingParentsIfNeeded().withProtection() : client.create().creatingParentsIfNeeded();
         this.data.set(Arrays.copyOf(data, data.length));
+    }
+    
+    private void initialisationComplete()
+    {
+        CountDownLatch localLatch = initialCreateLatch.getAndSet(null);
+        if ( localLatch != null )
+        {
+            localLatch.countDown();
+        }
     }
 
     /**
@@ -336,7 +372,7 @@ public class PersistentEphemeralNode implements Closeable
         try
         {
             String existingPath = nodePath.get();
-            String createPath = (existingPath != null) ? existingPath : basePath;
+            String createPath = (existingPath != null && !mode.isProtected()) ? existingPath : basePath;
             createMethod.withMode(mode.getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data.get());
         }
         catch ( Exception e )
