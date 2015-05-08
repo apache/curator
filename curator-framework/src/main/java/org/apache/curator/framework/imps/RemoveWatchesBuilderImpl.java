@@ -38,21 +38,21 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     }
     
     @Override
-    public RemoveWatchesType watcher(Watcher watcher)
+    public RemoveWatchesType remove(Watcher watcher)
     {
         this.watcher = watcher == null ? null : client.getNamespaceWatcherMap().getNamespaceWatcher(watcher);
         return this;
     }
     
     @Override
-    public RemoveWatchesType watcher(CuratorWatcher watcher)
+    public RemoveWatchesType remove(CuratorWatcher watcher)
     {
         this.watcher = watcher == null ? null : client.getNamespaceWatcherMap().getNamespaceWatcher(watcher);
         return this;
     }    
 
     @Override
-    public RemoveWatchesType allWatches()
+    public RemoveWatchesType removeAll()
     {
         this.watcher = null;
         return this;
@@ -109,9 +109,9 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     }
 
     @Override
-    public BackgroundPathable<Void> local(boolean local)
+    public BackgroundPathable<Void> local()
     {
-        this.local = local;
+        local = true;
         return this;
     }
     

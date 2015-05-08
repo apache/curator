@@ -1,7 +1,7 @@
 package org.apache.curator.framework.imps;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -52,7 +52,7 @@ public class TestRemoveWatches extends BaseClassForTests
                         
             client.checkExists().watched().forPath(path);
             
-            client.removeWatches().allWatches().ofType(WatcherType.Data).forPath(path);
+            client.watches().removeAll().ofType(WatcherType.Data).forPath(path);
             
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
@@ -91,7 +91,7 @@ public class TestRemoveWatches extends BaseClassForTests
                         
             client.checkExists().usingWatcher(watcher).forPath(path);
             
-            client.removeWatches().watcher(watcher).ofType(WatcherType.Data).forPath(path);
+            client.watches().remove(watcher).ofType(WatcherType.Data).forPath(path);
             
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
@@ -129,7 +129,7 @@ public class TestRemoveWatches extends BaseClassForTests
             
             client.checkExists().usingWatcher(watcher).forPath(path);
             
-            client.removeWatches().watcher(watcher).ofType(WatcherType.Data).forPath(path);
+            client.watches().remove(watcher).ofType(WatcherType.Data).forPath(path);
             
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
@@ -181,7 +181,7 @@ public class TestRemoveWatches extends BaseClassForTests
             
             client.checkExists().usingWatcher(watcher).forPath(path);
             
-            client.removeWatches().watcher(watcher).ofType(WatcherType.Any).inBackground(callback).forPath(path);
+            client.watches().remove(watcher).ofType(WatcherType.Any).inBackground(callback).forPath(path);
             
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
             
@@ -219,7 +219,7 @@ public class TestRemoveWatches extends BaseClassForTests
             
             client.checkExists().usingWatcher(watcher).forPath(path);
             
-            client.removeWatches().watcher(watcher).ofType(WatcherType.Any).inBackground().forPath(path);
+            client.watches().remove(watcher).ofType(WatcherType.Any).inBackground().forPath(path);
             
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
             
@@ -271,7 +271,7 @@ public class TestRemoveWatches extends BaseClassForTests
             client.checkExists().usingWatcher(watcher1).forPath(path);
             client.checkExists().usingWatcher(watcher2).forPath(path);
             
-            client.removeWatches().allWatches().ofType(WatcherType.Any).forPath(path);
+            client.watches().removeAll().ofType(WatcherType.Any).forPath(path);
             
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
@@ -279,5 +279,56 @@ public class TestRemoveWatches extends BaseClassForTests
         {
             CloseableUtils.closeQuietly(client);
         }
-    }    
+    }  
+    
+    /**
+     * TODO: THIS IS STILL A WORK IN PROGRESS. local() is currently broken if no connection to ZK is available.
+     * @throws Exception
+     */
+    @Test
+    public void testRemoveLocalWatch() throws Exception {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.builder().
+                connectString(server.getConnectString()).
+                retryPolicy(new RetryOneTime(1)).
+                build();
+        try
+        {
+            client.start();
+            
+            final String path = "/";
+            
+            final CountDownLatch removedLatch = new CountDownLatch(1);
+            
+            Watcher watcher = new Watcher()
+            {                
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    if(event.getPath() == null || event.getType() == null) {
+                        return;
+                    }
+                    
+                    if(event.getPath().equals(path) && event.getType() == EventType.DataWatchRemoved) {
+                        removedLatch.countDown();
+                    }
+                }
+            };            
+            
+            client.checkExists().usingWatcher(watcher).forPath(path);
+            
+            //Stop the server so we can check if we can remove watches locally when offline
+            server.stop();
+            
+            timing.sleepABit();
+            
+            client.watches().removeAll().ofType(WatcherType.Any).local().forPath(path);
+            
+            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 }

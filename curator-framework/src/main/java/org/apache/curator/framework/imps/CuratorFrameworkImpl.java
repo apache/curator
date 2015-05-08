@@ -455,7 +455,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
     
     @Override
-    public RemoveWatchesBuilder removeWatches()
+    public RemoveWatchesBuilder watches()
     {
         return new RemoveWatchesBuilderImpl(this);
     }

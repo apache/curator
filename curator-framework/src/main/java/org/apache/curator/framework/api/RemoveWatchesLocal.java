@@ -10,9 +10,8 @@ public interface RemoveWatchesLocal extends BackgroundPathable<Void>
     /**
      * Specify if the client should just remove client side watches if a connection to ZK
      * is not available.
-     * @param local
      * @return
      */
-    public BackgroundPathable<Void> local(boolean local);
+    public BackgroundPathable<Void> local();
     
 }

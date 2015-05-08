@@ -12,18 +12,18 @@ public interface RemoveWatchesBuilder
      * @param watcher
      * @return
      */
-    public RemoveWatchesType watcher(Watcher watcher);
+    public RemoveWatchesType remove(Watcher watcher);
     
     /**
      * Specify the watcher to be removed
      * @param watcher
      * @return
      */
-    public RemoveWatchesType watcher(CuratorWatcher watcher);
+    public RemoveWatchesType remove(CuratorWatcher watcher);
     
     /**
      * Specify that all watches should be removed
      * @return
      */
-    public RemoveWatchesType allWatches();
+    public RemoveWatchesType removeAll();
 }
