@@ -1,0 +1,10 @@
+h1. API Compatibility
+
+A [[Clirr|http://clirr.sourceforge.net/]] report is generated for each Curator module:
+
+* [[Curator Client Report|curator-client/clirr-report.html]]
+* [[Curator Framework Report|curator-framework/clirr-report.html]]
+* [[Curator Recipes Report|curator-recipes/clirr-report.html]]
+* [[Curator Discovery Report|curator-x-discovery/clirr-report.html]]
+* [[Curator Discovery Server Report|curator-x-discovery-server/clirr-report.html]]
+* [[Curator RPC Report|curator-x-rpc/clirr-report.html]]
