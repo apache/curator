@@ -18,10 +18,11 @@
  */
 package org.apache.curator.framework.api.transaction;
 
-import org.apache.curator.framework.api.Backgroundable;
+import org.apache.zookeeper.Op;
 
-public interface CuratorMultiTransaction extends
-    Backgroundable<CuratorMultiTransactionMain>,
-    CuratorMultiTransactionMain
+public interface CuratorOp
 {
+    Op get();
+
+    TypeAndPath getTypeAndPath();
 }

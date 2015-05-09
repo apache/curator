@@ -69,6 +69,11 @@ public enum CuratorEventType
     SET_ACL,
 
     /**
+     * Corresponds to {@link CuratorFramework#transaction()}
+     */
+    TRANSACTION,
+
+    /**
      * Corresponds to {@link Watchable#usingWatcher(Watcher)} or {@link Watchable#watched()}
      */
     WATCHED,

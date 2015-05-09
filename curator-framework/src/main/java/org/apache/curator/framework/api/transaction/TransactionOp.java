@@ -18,10 +18,13 @@
  */
 package org.apache.curator.framework.api.transaction;
 
-import org.apache.curator.framework.api.Backgroundable;
-
-public interface CuratorMultiTransaction extends
-    Backgroundable<CuratorMultiTransactionMain>,
-    CuratorMultiTransactionMain
+public interface TransactionOp
 {
+    TransactionCreateBuilder<CuratorOp> create();
+
+    TransactionDeleteBuilder<CuratorOp> delete();
+
+    TransactionSetDataBuilder<CuratorOp> setData();
+
+    TransactionCheckBuilder<CuratorOp> check();
 }
