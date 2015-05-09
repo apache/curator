@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.curator.framework.imps;
+package org.apache.curator.framework.ensemble;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -31,6 +31,7 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
@@ -40,7 +41,6 @@ import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -50,9 +50,8 @@ public class EnsembleTracker implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
-    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final ListenerContainer<EnsembleListener> listeners = new ListenerContainer<EnsembleListener>();
-    private final AtomicBoolean isConnected = new AtomicBoolean(true);
+    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final ListenerContainer<EnsembleListener> listeners = new ListenerContainer<>();
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -60,21 +59,14 @@ public class EnsembleTracker implements Closeable
         {
             if ( (newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED) )
             {
-                if ( isConnected.compareAndSet(false, true) )
+                try
                 {
-                    try
-                    {
-                        reset();
-                    }
-                    catch ( Exception e )
-                    {
-                        log.error("Trying to reset after reconnection", e);
-                    }
+                    reset();
                 }
-            }
-            else
-            {
-                isConnected.set(false);
+                catch ( Exception e )
+                {
+                    log.error("Trying to reset after reconnection", e);
+                }
             }
         }
     };
@@ -84,7 +76,10 @@ public class EnsembleTracker implements Closeable
         @Override
         public void process(WatchedEvent event) throws Exception
         {
-            reset();
+            if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
+            {
+                reset();
+            }
         }
     };
 
@@ -147,13 +142,13 @@ public class EnsembleTracker implements Closeable
     {
         switch ( event.getType() )
         {
-        case GET_CONFIG:
-        {
-            if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+            case GET_CONFIG:
             {
-                processConfigData(event.getData());
+                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
+                    processConfigData(event.getData());
+                }
             }
-        }
         }
     }
 
