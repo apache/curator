@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.api;
 
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -78,6 +80,11 @@ public interface CuratorEvent
      * @return any ACL list or null
      */
     public List<ACL> getACLList();
+
+    /**
+     * @return any operation results or null
+     */
+    public List<CuratorTransactionResult> getOpResults();
 
     /**
      * If {@link #getType()} returns {@link CuratorEventType#WATCHED} this will

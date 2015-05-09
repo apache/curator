@@ -18,13 +18,11 @@
  */
 package org.apache.curator.framework.api.transaction;
 
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import java.util.List;
 
 public interface CuratorMultiTransactionMain
 {
-    List<OpResult> forOperations(Op... operations) throws Exception;
+    List<CuratorTransactionResult> forOperations(CuratorOp... operations) throws Exception;
 
-    List<OpResult> forOperations(List<Op> operations) throws Exception;
+    List<CuratorTransactionResult> forOperations(List<CuratorOp> operations) throws Exception;
 }

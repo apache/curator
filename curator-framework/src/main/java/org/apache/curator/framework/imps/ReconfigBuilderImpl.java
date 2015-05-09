@@ -476,7 +476,7 @@ public class ReconfigBuilderImpl implements
                 {
                     DataTree.copyStat(stat, responseStat);
                 }
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.RECONFIG, rc, path, null, ctx, stat, bytes, null, null, null);
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.RECONFIG, rc, path, null, ctx, stat, bytes, null, null, null, null);
                 client.processBackgroundOperation(data, event);
             }
         };

@@ -21,8 +21,8 @@ package org.apache.curator.framework.api.transaction;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.Versionable;
 
-public interface TransactionCheckBuilder extends
-    Pathable<CuratorTransactionBridge>,
-    Versionable<Pathable<CuratorTransactionBridge>>
+public interface TransactionCheckBuilder<T> extends
+    Pathable<T>,
+    Versionable<Pathable<T>>
 {
 }

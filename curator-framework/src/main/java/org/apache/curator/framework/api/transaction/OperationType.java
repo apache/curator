@@ -24,22 +24,22 @@ package org.apache.curator.framework.api.transaction;
 public enum OperationType
 {
     /**
-     * {@link CuratorTransaction#create()}
+     * {@link TransactionOp#create()}
      */
     CREATE,
 
     /**
-     * {@link CuratorTransaction#delete()}
+     * {@link TransactionOp#delete()}
      */
     DELETE,
 
     /**
-     * {@link CuratorTransaction#setData()}
+     * {@link TransactionOp#setData()}
      */
     SET_DATA,
 
     /**
-     * {@link CuratorTransaction#check()}
+     * {@link TransactionOp#check()}
      */
     CHECK
 }
