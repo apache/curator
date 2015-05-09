@@ -57,3 +57,8 @@ _ChildReaper_
 Utility to reap the empty child nodes in a parent node. Periodically calls getChildren() on the node and adds empty nodes to an internally managed Reaper.
 
 *NOTE:* You should consider using LeaderSelector to run the Reapers as they don't need to run in every client.
+
+h2. EnsembleTracker
+
+Utility to listen for ensemble/configuration changes via registered EnsembleListeners. Allocate a EnsembleTracker, add one or more listeners
+and start it.
