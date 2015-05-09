@@ -42,7 +42,8 @@ h3. Methods
 |getData()|Begins an operation to get a ZNode's data. Call additional methods (watch, background or get stat) and finalize the operation by calling forPath()|
 |setData()|Begins an operation to set a ZNode's data. Call additional methods (version or background) and finalize the operation by calling forPath()|
 |getChildren()|Begins an operation to get a ZNode's list of children ZNodes. Call additional methods (watch, background or get stat) and finalize the operation by calling forPath()|
-|inTransaction()|Begins an atomic ZooKeeper transaction. Combine create, setData, check, and/or delete operations and then commit() as a unit.|
+|transactionOp()|Used to allocate operations to be used with transaction().|
+|transaction()|Atomically submit a set of operations as a transaction.|
 
 h3. Notifications
 Notifications for background operations and watches are published via the ClientListener interface. You register listeners with the
@@ -62,6 +63,10 @@ ClientEvent depend on the type of event which is exposed via the getType() metho
 |GET_DATA|getResultCode(), getPath(), getStat() and getData()|
 |SET_DATA|getResultCode(), getPath() and getStat()|
 |CHILDREN|getResultCode(), getPath(), getStat(), getChildren()|
+|SYNC|getResultCode(), getStat()|
+|GET\_ACL|getResultCode(), getACLList()|
+|SET\_ACL|getResultCode()|
+|TRANSACTION|getResultCode(), getOpResults()|
 |WATCHED|getWatchedEvent()|
 
 h2. Namespaces
