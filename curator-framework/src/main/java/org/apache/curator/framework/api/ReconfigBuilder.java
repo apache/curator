@@ -16,11 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
 public interface ReconfigBuilder extends
-        Joinable<LeaveBackgroundStatConfigEnsembleable>,
-        Leaveable<JoinBackgroundStatConfigEnsembleable>,
-        Memberable<BackgroundStatConfigEnsembleable<byte[]>> {
-
+    Joinable<LeaveAddStatConfigEnsembleable>,
+    Leaveable<JoinAddStatConfigEnsembleable>,
+    Addable<JoinLeaveStatConfigEnsembleable>,
+    Backgroundable<ReconfigBuilderMain>
+{
 }

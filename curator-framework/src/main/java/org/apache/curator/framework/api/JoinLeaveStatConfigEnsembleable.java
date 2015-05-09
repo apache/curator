@@ -16,9 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-public interface BackgroundStatConfigEnsembleable<T> extends
-        Configurable<BackgroundStatEnsembleable<T>>,
-        BackgroundStatEnsembleable<T> {
+/**
+ * An incremental reconfiguration builder.
+ * This builder has access only to the incremental reconfiguration methods joining and leaving, so that we prevent
+ * mixing concepts that can't be used together.
+ */
+public interface JoinLeaveStatConfigEnsembleable extends
+    Joinable<LeaveStatConfigEnsembleable>,
+    Leaveable<JoinStatConfigEnsembleable>,
+    StatConfigEnsembleable
+{
+
 }

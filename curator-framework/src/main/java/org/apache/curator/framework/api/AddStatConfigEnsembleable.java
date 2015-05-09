@@ -16,9 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-public interface BackgroundStatEnsembleable<T> extends
-    BackgroundStatable<Ensembleable<T>>,
-    Ensembleable<T> {
+/**
+ * An non-incremental reconfiguration builder.
+ * This builder has access only to the non-incremental reconfiguration methods withMembers, so that we prevent
+ * mixing concepts that can't be used together.
+ */
+public interface AddStatConfigEnsembleable extends
+    Addable<StatConfigEnsembleable>,
+    StatConfigEnsembleable
+{
+
 }

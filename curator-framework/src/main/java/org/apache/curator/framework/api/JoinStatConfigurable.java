@@ -19,13 +19,12 @@
 
 package org.apache.curator.framework.api;
 
-public interface Configurable
+/**
+ * An incremental reconfiguration builder.
+ * This builder has access only to the incremental reconfiguration methods joining and leaving, so that we prevent
+ * mixing concepts that can't be used together.
+ */
+public interface JoinStatConfigurable extends
+    Joinable<Configurable>
 {
-
-    /**
-     * Sets the configuration version to use.
-     * @param config The version of the configuration.
-     * @throws Exception
-     */
-    StatEnsembleable<byte[]> fromConfig(long config) throws Exception;
 }

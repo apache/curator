@@ -19,13 +19,9 @@
 
 package org.apache.curator.framework.api;
 
-public interface Configurable
+public interface ReconfigBuilderMain extends
+    Joinable<LeaveAddStatConfigEnsembleable>,
+    Leaveable<JoinAddStatConfigEnsembleable>,
+    Addable<JoinLeaveStatConfigEnsembleable>
 {
-
-    /**
-     * Sets the configuration version to use.
-     * @param config The version of the configuration.
-     * @throws Exception
-     */
-    StatEnsembleable<byte[]> fromConfig(long config) throws Exception;
 }

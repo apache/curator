@@ -16,16 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-public interface Joinable<T> {
+import java.util.List;
+
+public interface Joinable<T>
+{
+    /**
+     * Adds one or more servers to joining the ensemble.
+     * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
+     *
+     * @param server The server joining.
+     * @return this
+     */
+    T joining(String... server);
 
     /**
      * Adds one or more servers to joining the ensemble.
      * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
-     * @param server The server to joining.
-     * @return this.
+     *
+     * @param servers The servers joining.
+     * @return this
      */
-    T joining(String... server);
-
+    T joining(List<String> servers);
 }

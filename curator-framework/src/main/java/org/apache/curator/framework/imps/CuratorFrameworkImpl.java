@@ -398,12 +398,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
-    public ReconfigBuilder reconfig() {
+    public ReconfigBuilder reconfig()
+    {
         return new ReconfigBuilderImpl(this);
     }
 
     @Override
-    public GetConfigBuilder getConfig() {
+    public GetConfigBuilder getConfig()
+    {
         return new GetConfigBuilderImpl(this);
     }
 
