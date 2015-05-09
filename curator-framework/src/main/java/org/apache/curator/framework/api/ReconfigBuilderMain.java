@@ -16,9 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-public interface BackgroundStatConfigEnsembleable<T> extends
-        Configurable<BackgroundStatEnsembleable<T>>,
-        BackgroundStatEnsembleable<T> {
+public interface ReconfigBuilderMain extends
+    Joinable<LeaveAddStatConfigEnsembleable>,
+    Leaveable<JoinAddStatConfigEnsembleable>,
+    Addable<JoinLeaveStatConfigEnsembleable>
+{
 }

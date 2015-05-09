@@ -751,7 +751,8 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         return returnPath;
     }
 
-    private String adjustPath(String path) throws Exception
+    @VisibleForTesting
+    String adjustPath(String path) throws Exception
     {
         if ( doProtected )
         {

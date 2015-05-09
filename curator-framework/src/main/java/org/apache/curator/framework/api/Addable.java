@@ -19,13 +19,25 @@
 
 package org.apache.curator.framework.api;
 
-public interface Configurable
+import java.util.List;
+
+public interface Addable<T>
 {
+    /**
+     * Sets one or more members that are meant to be part of the ensemble.
+     * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
+     *
+     * @param server The server to add as a member of the ensemble.
+     * @return this
+     */
+    T adding(String... server);
 
     /**
-     * Sets the configuration version to use.
-     * @param config The version of the configuration.
-     * @throws Exception
+     * Sets one or more members that are meant to be part of the ensemble.
+     * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
+     *
+     * @param servers The server to add as a member of the ensemble.
+     * @return this
      */
-    StatEnsembleable<byte[]> fromConfig(long config) throws Exception;
+    T adding(List<String> servers);
 }

@@ -123,13 +123,15 @@ public interface CuratorFramework extends Closeable
 
     /**
      * Start a reconfig builder
+     *
      * @return builder object
      */
     public ReconfigBuilder reconfig();
 
     /**
      * Start a getConfig builder
-     * @return
+     *
+     * @return builder object
      */
     public GetConfigBuilder getConfig();
 

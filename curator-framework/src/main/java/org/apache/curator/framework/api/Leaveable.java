@@ -16,15 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-public interface Leaveable<T> {
+import java.util.List;
 
+public interface Leaveable<T>
+{
     /**
      * Sets one or more servers to leaving the ensemble.
-     * @param server The server ids.
+     *
+     * @param server The server ids
      * @return this
      */
     T leaving(String... server);
 
+    /**
+     * Sets one or more servers to leaving the ensemble.
+     *
+     * @param servers The server ids
+     * @return this
+     */
+    T leaving(List<String> servers);
 }

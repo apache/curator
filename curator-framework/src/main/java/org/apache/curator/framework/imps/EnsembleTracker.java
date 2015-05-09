@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.base.Function;
@@ -35,7 +36,6 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -46,65 +46,81 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Tracks changes to the ensemble and notifies registered {@link org.apache.curator.ensemble.EnsembleListener} instances.
  */
-public class EnsembleTracker implements Closeable {
-
+public class EnsembleTracker implements Closeable
+{
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final ListenerContainer<EnsembleListener> listeners = new ListenerContainer<EnsembleListener>();
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
-    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener() {
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    {
         @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState) {
-            if ((newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED)) {
-                if (isConnected.compareAndSet(false, true)) {
-                    try {
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            if ( (newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED) )
+            {
+                if ( isConnected.compareAndSet(false, true) )
+                {
+                    try
+                    {
                         reset();
-                    } catch (Exception e) {
+                    }
+                    catch ( Exception e )
+                    {
                         log.error("Trying to reset after reconnection", e);
                     }
                 }
-            } else {
+            }
+            else
+            {
                 isConnected.set(false);
             }
         }
     };
 
-    private final CuratorWatcher watcher = new CuratorWatcher() {
+    private final CuratorWatcher watcher = new CuratorWatcher()
+    {
         @Override
-        public void process(WatchedEvent event) throws Exception {
+        public void process(WatchedEvent event) throws Exception
+        {
             reset();
         }
     };
 
-
-    private enum State {
+    private enum State
+    {
         LATENT,
         STARTED,
         CLOSED
     }
 
-    private final BackgroundCallback backgroundCallback = new BackgroundCallback() {
+    private final BackgroundCallback backgroundCallback = new BackgroundCallback()
+    {
         @Override
-        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+        {
             processBackgroundResult(event);
         }
     };
 
-
-    public EnsembleTracker(CuratorFramework client) {
+    public EnsembleTracker(CuratorFramework client)
+    {
         this.client = client;
     }
 
-    public void start() throws Exception {
+    public void start() throws Exception
+    {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
         client.getConnectionStateListenable().addListener(connectionStateListener);
         reset();
     }
 
     @Override
-    public void close() throws IOException {
-        if (state.compareAndSet(State.STARTED, State.CLOSED)) {
+    public void close() throws IOException
+    {
+        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
+        {
             listeners.clear();
         }
         client.getConnectionStateListenable().removeListener(connectionStateListener);
@@ -122,27 +138,35 @@ public class EnsembleTracker implements Closeable {
         return listeners;
     }
 
-    private void reset() throws Exception {
+    private void reset() throws Exception
+    {
         client.getConfig().usingWatcher(watcher).inBackground(backgroundCallback).forEnsemble();
     }
 
-    private void processBackgroundResult(CuratorEvent event) throws Exception {
-        switch (event.getType()) {
-            case GET_CONFIG: {
-                if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
-                    processConfigData(event.getData());
-                }
+    private void processBackgroundResult(CuratorEvent event) throws Exception
+    {
+        switch ( event.getType() )
+        {
+        case GET_CONFIG:
+        {
+            if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+            {
+                processConfigData(event.getData());
             }
+        }
         }
     }
 
-    private void processConfigData(byte[] data) throws Exception {
+    private void processConfigData(byte[] data) throws Exception
+    {
         Properties properties = new Properties();
         properties.load(new ByteArrayInputStream(data));
         QuorumVerifier qv = new QuorumMaj(properties);
         StringBuilder sb = new StringBuilder();
-        for (QuorumPeer.QuorumServer server : qv.getAllMembers().values()) {
-            if (sb.length() != 0) {
+        for ( QuorumPeer.QuorumServer server : qv.getAllMembers().values() )
+        {
+            if ( sb.length() != 0 )
+            {
                 sb.append(",");
             }
             sb.append(server.clientAddr.getAddress().getHostAddress()).append(":").append(server.clientAddr.getPort());
@@ -150,18 +174,23 @@ public class EnsembleTracker implements Closeable {
 
         final String connectionString = sb.toString();
         listeners.forEach
-                (
-                        new Function<EnsembleListener, Void>() {
-                            @Override
-                            public Void apply(EnsembleListener listener) {
-                                try {
-                                    listener.connectionStringUpdated(connectionString);
-                                } catch (Exception e) {
-                                    log.error("Calling listener", e);
-                                }
-                                return null;
-                            }
+            (
+                new Function<EnsembleListener, Void>()
+                {
+                    @Override
+                    public Void apply(EnsembleListener listener)
+                    {
+                        try
+                        {
+                            listener.connectionStringUpdated(connectionString);
                         }
-                );
+                        catch ( Exception e )
+                        {
+                            log.error("Calling listener", e);
+                        }
+                        return null;
+                    }
+                }
+            );
     }
 }
