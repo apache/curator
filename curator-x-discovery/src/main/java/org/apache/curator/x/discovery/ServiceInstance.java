@@ -18,13 +18,15 @@
  */
 package org.apache.curator.x.discovery;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+
+import org.codehaus.jackson.annotate.JsonTypeInfo;
+import org.codehaus.jackson.annotate.JsonTypeInfo.Id;
 
 /**
  * POJO that represents a service instance
@@ -122,7 +124,7 @@ public class ServiceInstance<T>
         return sslPort;
     }
 
-    @JsonTypeInfo(use= JsonTypeInfo.Id.CLASS, defaultImpl=Object.class)
+    @JsonTypeInfo(use=Id.CLASS, defaultImpl=Object.class)
     public T getPayload()
     {
         return payload;

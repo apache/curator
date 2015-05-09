@@ -164,6 +164,14 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>clirr-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip> <!-- Clirr plugin can't handle shaded JARs - TODO -->
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

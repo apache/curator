@@ -64,11 +64,11 @@
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
         <maven-bundle-plugin-version>2.3.7</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
-        <doxia-module-confluence-version>1.5</doxia-module-confluence-version>
+        <doxia-module-confluence-version>1.6</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
         <javassist-version>3.18.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
-        <jackson-version>2.3.2</jackson-version>
+        <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
         <jersey-version>1.18.1</jersey-version>
         <jsr311-api-version>1.1.1</jsr311-api-version>
         <jetty-version>6.1.26</jetty-version>
@@ -81,6 +81,7 @@
         <dropwizard-version>0.7.0</dropwizard-version>
         <maven-shade-plugin-version>2.3</maven-shade-plugin-version>
         <slf4j-version>1.7.6</slf4j-version>
+        <clirr-maven-plugin-version>2.6.1</clirr-maven-plugin-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -346,21 +347,9 @@
             </dependency>
 
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jackson-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson-version}</version>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-mapper-asl</artifactId>
+                <version>${jackson-mapper-asl-version}</version>
             </dependency>
 
             <dependency>
@@ -528,6 +517,16 @@
                     <failOnError>false</failOnError>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>clirr-maven-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>org/apache/curator/**</include>
+                    </includes>
+                </configuration>
+            </plugin>
         </plugins>
     </reporting>
 
@@ -561,6 +560,12 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>${maven-shade-plugin-version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>clirr-maven-plugin</artifactId>
+                    <version>${clirr-maven-plugin-version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -770,6 +775,26 @@
                         <exclude>**/generated/**</exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>clirr-maven-plugin</artifactId>
+                <configuration>
+                    <failOnError>false</failOnError>
+                    <logResults>true</logResults>
+                    <includes>
+                        <include>org/apache/curator/**</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
