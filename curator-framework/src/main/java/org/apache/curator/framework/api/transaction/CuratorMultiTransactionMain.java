@@ -18,11 +18,28 @@
  */
 package org.apache.curator.framework.api.transaction;
 
+import org.apache.curator.framework.CuratorFramework;
 import java.util.List;
 
 public interface CuratorMultiTransactionMain
 {
+    /**
+     * Commit the given operations as a single transaction. Create the
+     * operation instances via {@link CuratorFramework#transactionOp()}
+     *
+     * @param operations operations that make up the transaction.
+     * @return result details
+     * @throws Exception errors
+     */
     List<CuratorTransactionResult> forOperations(CuratorOp... operations) throws Exception;
 
+    /**
+     * Commit the given operations as a single transaction. Create the
+     * operation instances via {@link CuratorFramework#transactionOp()}
+     *
+     * @param operations operations that make up the transaction.
+     * @return result details
+     * @throws Exception errors
+     */
     List<CuratorTransactionResult> forOperations(List<CuratorOp> operations) throws Exception;
 }

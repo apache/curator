@@ -18,13 +18,39 @@
  */
 package org.apache.curator.framework.api.transaction;
 
+import org.apache.curator.framework.CuratorFramework;
+
+/**
+ * Builds operations that can be committed as a transaction
+ * via {@link CuratorFramework#transaction()}
+ */
 public interface TransactionOp
 {
+    /**
+     * Start a create builder in the transaction
+     *
+     * @return builder object
+     */
     TransactionCreateBuilder<CuratorOp> create();
 
+    /**
+     * Start a delete builder in the transaction
+     *
+     * @return builder object
+     */
     TransactionDeleteBuilder<CuratorOp> delete();
 
+    /**
+     * Start a setData builder in the transaction
+     *
+     * @return builder object
+     */
     TransactionSetDataBuilder<CuratorOp> setData();
 
+    /**
+     * Start a check builder in the transaction
+     *
+     * @return builder object
+     */
     TransactionCheckBuilder<CuratorOp> check();
 }
