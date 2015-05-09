@@ -63,14 +63,14 @@ CuratorEvent depend on the type of event which is exposed via the getType() meth
 |CREATE|getResultCode() and getPath()|
 |DELETE|getResultCode() and getPath()|
 |EXISTS|getResultCode(), getPath() and getStat()|
-|GET_DATA|getResultCode(), getPath(), getStat() and getData()|
-|SET_DATA|getResultCode(), getPath() and getStat()|
+|GET\_DATA|getResultCode(), getPath(), getStat() and getData()|
+|SET\_DATA|getResultCode(), getPath() and getStat()|
 |CHILDREN|getResultCode(), getPath(), getStat(), getChildren()|
 |SYNC|getResultCode(), getStat()|
-|GET_ACL|getResultCode(), getACLList()|
-|SET_ACL|getResultCode()|
+|GET\_ACL|getResultCode(), getACLList()|
+|SET\_ACL|getResultCode()|
 |WATCHED|getWatchedEvent()|
-|GET_CONFIG|getResultCode(), getData()|
+|GET\_CONFIG|getResultCode(), getData()|
 |RECONFIG|getResultCode(), getData()|
 
 h2. Namespaces
