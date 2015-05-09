@@ -16,12 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
 public interface GetConfigBuilder extends
-        Watchable<BackgroundStatable<Ensembleable<byte[]>>>,
-        BackgroundStatable<Ensembleable<byte[]>>,
-        Ensembleable<byte[]> {
+    Watchable<BackgroundStatable<Ensembleable<byte[]>>>,
+    BackgroundStatable<Ensembleable<byte[]>>,
+    Ensembleable<byte[]>
+{
 }
 
 

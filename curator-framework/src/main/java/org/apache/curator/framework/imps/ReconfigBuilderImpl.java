@@ -41,7 +41,7 @@ public class ReconfigBuilderImpl implements
 {
     private final CuratorFrameworkImpl client;
 
-    private Backgrounding backgrounding;
+    private Backgrounding backgrounding = new Backgrounding();
     private Stat responseStat;
     private long fromConfig = -1;
     private List<String> adding;
@@ -56,7 +56,7 @@ public class ReconfigBuilderImpl implements
     @Override
     public byte[] forEnsemble() throws Exception
     {
-        if ( backgrounding != null )
+        if ( backgrounding.inBackground() )
         {
             client.processBackgroundOperation(new OperationAndData<>(this, null, backgrounding.getCallback(), null, backgrounding.getContext()), null);
             return new byte[0];
