@@ -21,6 +21,7 @@ package org.apache.curator.framework;
 
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
@@ -127,6 +128,13 @@ public interface CuratorFramework extends Closeable
      * @return builder object
      */
     public CuratorTransaction inTransaction();
+
+    /**
+     * Start a transaction builder
+     *
+     * @return builder object
+     */
+    public CuratorMultiTransaction transaction();
 
     /**
      * Perform a sync on the given path - syncs are always in the background
