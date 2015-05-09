@@ -20,6 +20,9 @@ package org.apache.curator.framework.api.transaction;
 
 import org.apache.zookeeper.Op;
 
+/**
+ * Internal representation of a transaction operation
+ */
 public interface CuratorOp
 {
     Op get();

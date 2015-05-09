@@ -78,7 +78,7 @@ public interface CuratorTransaction
 
     /**
      * Start a check builder in the transaction
-     *ChildData
+     *
      * @return builder object
      */
     public TransactionCheckBuilder<CuratorTransactionBridge> check();
