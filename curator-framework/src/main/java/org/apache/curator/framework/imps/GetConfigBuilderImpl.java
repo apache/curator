@@ -80,7 +80,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     @Override
     public Ensembleable<byte[]> inBackground()
     {
-        backgrounding = new Backgrounding();
+        backgrounding = new Backgrounding(true);
         return this;
     }
 

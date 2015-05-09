@@ -203,7 +203,7 @@ public class ReconfigBuilderImpl implements
     @Override
     public ReconfigBuilderMain inBackground()
     {
-        backgrounding = new Backgrounding();
+        backgrounding = new Backgrounding(true);
         return this;
     }
 
