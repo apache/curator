@@ -43,6 +43,10 @@ h3. Methods
 |setData()|Begins an operation to set a ZNode's data. Call additional methods (version or background) and finalize the operation by calling forPath()|
 |getChildren()|Begins an operation to get a ZNode's list of children ZNodes. Call additional methods (watch, background or get stat) and finalize the operation by calling forPath()|
 |inTransaction()|Begins an atomic ZooKeeper transaction. Combine create, setData, check, and/or delete operations and then commit() as a unit.|
+|getACL()|Begins an operation to return a ZNode's ACL settings. Call additional methods and finalize the operation by calling forPath()|
+|setACL()|Begins an operation to set a ZNode's ACL settings. Call additional methods and finalize the operation by calling forPath()|
+|getConfig()|Begins an operation to return the last committed configuration. Call additional methods and finalize the operation by calling forEnsemble()|
+|reconfig()|Begins an operation to change the configuration. Call additional methods and finalize the operation by calling forEnsemble()|
 
 h3. Notifications
 Notifications for background operations and watches are published via the ClientListener interface. You register listeners with the
