@@ -14,6 +14,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -331,4 +332,67 @@ public class TestRemoveWatches extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+    
+    /**
+     * Test the case where we try and remove an unregistered watcher. In this case we expect a NoWatcherException to
+     * be thrown. 
+     * @throws Exception
+     */
+    @Test(expectedExceptions=KeeperException.NoWatcherException.class)
+    public void testRemoveUnregisteredWatcher() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.builder().
+                connectString(server.getConnectString()).
+                retryPolicy(new RetryOneTime(1)).
+                build();
+        try
+        {
+            client.start();
+            
+            final String path = "/";            
+            Watcher watcher = new Watcher() {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                }                
+            };
+            
+            client.watches().remove(watcher).ofType(WatcherType.Data).forPath(path);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+    
+    /**
+     * Test the case where we try and remove an unregistered watcher but have the quietly flag set. In this case we expect success. 
+     * @throws Exception
+     */
+    @Test
+    public void testRemoveUnregisteredWatcherQuietly() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.builder().
+                connectString(server.getConnectString()).
+                retryPolicy(new RetryOneTime(1)).
+                build();
+        try
+        {
+            client.start();
+            
+            final String path = "/";            
+            Watcher watcher = new Watcher() {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                }                
+            };
+            
+            client.watches().remove(watcher).ofType(WatcherType.Data).quietly().forPath(path);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }    
 }

@@ -4,7 +4,7 @@ package org.apache.curator.framework.api;
  * Builder to allow the specification of whether it is acceptable to remove client side watch information
  * in the case where ZK cannot be contacted. 
  */
-public interface RemoveWatchesLocal extends BackgroundPathable<Void>
+public interface RemoveWatchesLocal extends BackgroundPathableQuietly<Void>
 {
    
     /**
@@ -12,6 +12,6 @@ public interface RemoveWatchesLocal extends BackgroundPathable<Void>
      * is not available.
      * @return
      */
-    public BackgroundPathable<Void> local();
+    public BackgroundPathableQuietly<Void> local();
     
 }

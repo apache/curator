@@ -7,6 +7,7 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.BackgroundPathable;
+import org.apache.curator.framework.api.BackgroundPathableQuietly;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -15,6 +16,7 @@ import org.apache.curator.framework.api.RemoveWatchesLocal;
 import org.apache.curator.framework.api.RemoveWatchesBuilder;
 import org.apache.curator.framework.api.RemoveWatchesType;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.WatcherType;
 import org.apache.zookeeper.ZooKeeper;
@@ -25,7 +27,8 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     private CuratorFrameworkImpl client;
     private Watcher watcher;
     private WatcherType watcherType;
-    private boolean local;    
+    private boolean local;
+    private boolean quietly;
     private Backgrounding backgrounding;
     
     public RemoveWatchesBuilderImpl(CuratorFrameworkImpl client)
@@ -34,6 +37,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         this.watcher = null;
         this.watcherType = null;
         this.local = false;
+        this.quietly = false;
         this.backgrounding = new Backgrounding();
     }
     
@@ -109,9 +113,16 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     }
 
     @Override
-    public BackgroundPathable<Void> local()
+    public BackgroundPathableQuietly<Void> local()
     {
         local = true;
+        return this;
+    }
+    
+    @Override
+    public BackgroundPathable<Void> quietly()
+    {
+        quietly = true;
         return this;
     }
     
@@ -146,16 +157,27 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
                     @Override
                     public Void call() throws Exception
                     {
-                        ZooKeeper zkClient = client.getZooKeeper();
-                        if(watcher == null)
+                        try
                         {
-                            zkClient.removeAllWatches(path, watcherType, local);    
+                            ZooKeeper zkClient = client.getZooKeeper();
+                            if(watcher == null)
+                            {
+                                zkClient.removeAllWatches(path, watcherType, local);    
+                            }
+                            else
+                            {
+                                zkClient.removeWatches(path, watcher, watcherType, local);
+                            }
                         }
-                        else
+                        catch(KeeperException.NoWatcherException e)
                         {
-                            zkClient.removeWatches(path, watcher, watcherType, local);
+                            //Swallow this exception if the quietly flag is set, otherwise rethrow.
+                            if(!quietly)
+                            {
+                                throw e;
+                            }
                         }
-                        
+                     
                         return null;
                     }
                 });
