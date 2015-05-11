@@ -113,7 +113,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     }
 
     @Override
-    public BackgroundPathableQuietly<Void> local()
+    public BackgroundPathableQuietly<Void> locally()
     {
         local = true;
         return this;

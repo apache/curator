@@ -12,6 +12,6 @@ public interface RemoveWatchesLocal extends BackgroundPathableQuietly<Void>
      * is not available.
      * @return
      */
-    public BackgroundPathableQuietly<Void> local();
+    public BackgroundPathableQuietly<Void> locally();
     
 }

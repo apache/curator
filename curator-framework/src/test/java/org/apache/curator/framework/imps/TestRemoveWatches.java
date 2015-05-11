@@ -323,7 +323,7 @@ public class TestRemoveWatches extends BaseClassForTests
             
             timing.sleepABit();
             
-            client.watches().removeAll().ofType(WatcherType.Any).local().forPath(path);
+            client.watches().removeAll().ofType(WatcherType.Any).locally().forPath(path);
             
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
