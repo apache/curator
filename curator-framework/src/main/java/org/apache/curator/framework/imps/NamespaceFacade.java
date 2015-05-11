@@ -42,12 +42,6 @@ class NamespaceFacade extends CuratorFrameworkImpl
     }
 
     @Override
-    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public CuratorFramework nonNamespaceView()
     {
         return usingNamespace(null);

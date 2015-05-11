@@ -63,13 +63,13 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
     @Override
     public CuratorFramework nonNamespaceView()
     {
-        return client.usingNamespace(null);
+        return client.nonNamespaceView();
     }
 
     @Override
     public CuratorFramework usingNamespace(String newNamespace)
     {
-        return client.getNamespaceFacadeCache().get(newNamespace);
+        return client.usingNamespace(newNamespace);
     }
 
     @Override

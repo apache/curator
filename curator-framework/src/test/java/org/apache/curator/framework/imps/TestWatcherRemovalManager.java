@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -23,32 +41,89 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         try
         {
             client.start();
-
-            WatcherRemoveCuratorFramework removerClient = client.newWatcherRemoveCuratorFramework();
-
-            Watcher watcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
-                {
-                    // NOP
-                }
-            };
-            removerClient.checkExists().usingWatcher(watcher).forPath("/hey");
-
-            List<String> existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
-            Assert.assertEquals(existWatches.size(), 1);
-
-            removerClient.removeWatchers();
-
-            new Timing().sleepABit();
-
-            existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
-            Assert.assertEquals(existWatches.size(), 0);
+            internalTryBasic(client);
         }
         finally
         {
             CloseableUtils.closeQuietly(client);
         }
+    }
+
+    @Test
+    public void testBasicNamespace1() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            internalTryBasic(client.usingNamespace("foo"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testBasicNamespace2() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .namespace("hey")
+            .build();
+        try
+        {
+            client.start();
+            internalTryBasic(client);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testBasicNamespace3() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .namespace("hey")
+            .build();
+        try
+        {
+            client.start();
+            internalTryBasic(client.usingNamespace("lakjsf"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    private void internalTryBasic(CuratorFramework client) throws Exception
+    {
+        WatcherRemoveCuratorFramework removerClient = client.newWatcherRemoveCuratorFramework();
+
+        Watcher watcher = new Watcher()
+        {
+            @Override
+            public void process(WatchedEvent event)
+            {
+                // NOP
+            }
+        };
+        removerClient.checkExists().usingWatcher(watcher).forPath("/hey");
+
+        List<String> existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
+        Assert.assertEquals(existWatches.size(), 1);
+
+        removerClient.removeWatchers();
+
+        new Timing().sleepABit();
+
+        existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
+        Assert.assertEquals(existWatches.size(), 0);
     }
 }
