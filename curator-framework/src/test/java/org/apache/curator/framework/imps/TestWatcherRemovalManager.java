@@ -31,6 +31,7 @@ import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 public class TestWatcherRemovalManager extends BaseClassForTests
 {
@@ -95,6 +96,73 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         {
             client.start();
             internalTryBasic(client.usingNamespace("lakjsf"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testSameWatcher() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    // NOP
+                }
+            };
+
+            removerClient.getData().usingWatcher(watcher).forPath("/");
+            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            removerClient.getData().usingWatcher(watcher).forPath("/");
+            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testTriggered() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    if ( event.getType() == Event.EventType.NodeCreated )
+                    {
+                        latch.countDown();
+                    }
+                }
+            };
+
+            removerClient.checkExists().usingWatcher(watcher).forPath("/yo");
+            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            removerClient.create().forPath("/yo");
+
+            Assert.assertTrue(new Timing().awaitLatch(latch));
+
+            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
         }
         finally
         {

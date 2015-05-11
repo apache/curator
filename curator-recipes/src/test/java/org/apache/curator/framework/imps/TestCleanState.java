@@ -35,6 +35,11 @@ public class TestCleanState
         try
         {
             CuratorFrameworkImpl internalClient = (CuratorFrameworkImpl)client;
+            if ( !internalClient.getNamespaceWatcherMap().isEmpty() )
+            {
+                throw new AssertionError("NamespaceWatcherMap is not empty");
+            }
+
             ZooKeeper zooKeeper = internalClient.getZooKeeper();
             if ( zooKeeper != null )
             {

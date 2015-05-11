@@ -18,68 +18,122 @@
  */
 package org.apache.curator.framework.imps;
 
-import com.google.common.collect.Maps;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 class WatcherRemovalManager
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl client;
-    private final Map<Watcher, String> entries = Maps.newConcurrentMap();
+    private final Set<WrappedWatcher> entries = Sets.newHashSet();  // guarded by sync
 
     WatcherRemovalManager(CuratorFrameworkImpl client)
     {
         this.client = client;
     }
 
-    Watcher add(String path, Watcher watcher)
+    synchronized Watcher add(String path, Watcher watcher)
     {
-        Watcher wrappedWatcher = new WrappedWatcher(entries, watcher);
-        entries.put(wrappedWatcher, path);
+        path = Preconditions.checkNotNull(path, "path cannot be null");
+        watcher = Preconditions.checkNotNull(watcher, "watcher cannot be null");
+
+        WrappedWatcher wrappedWatcher = new WrappedWatcher(watcher, path);
+        entries.add(wrappedWatcher);
         return wrappedWatcher;
+    }
+
+    @VisibleForTesting
+    synchronized Set<? extends Watcher> getEntries()
+    {
+        return Sets.newHashSet(entries);
     }
 
     void removeWatchers()
     {
-        for ( Map.Entry<Watcher, String> entry : entries.entrySet() )
+        HashSet<WrappedWatcher> localEntries;
+        synchronized(this)
         {
-            Watcher watcher = entry.getKey();
-            String path = entry.getValue();
+            localEntries = Sets.newHashSet(entries);
+        }
+        for ( WrappedWatcher entry : localEntries )
+        {
             try
             {
-                log.debug("Removing watcher for path: " + path);
+                log.debug("Removing watcher for path: " + entry.path);
                 RemoveWatchesBuilderImpl builder = new RemoveWatchesBuilderImpl(client);
-                builder.prepInternalRemoval(watcher);
-                builder.pathInForeground(path);
+                builder.prepInternalRemoval(entry);
+                builder.pathInForeground(entry.path);
             }
             catch ( Exception e )
             {
-                String message = "Could not remove watcher for path: " + path;
+                String message = "Could not remove watcher for path: " + entry.path;
                 log.error(message);
             }
         }
     }
 
-    private static class WrappedWatcher implements Watcher
+    private synchronized void internalRemove(WrappedWatcher entry)
     {
-        private final Map<Watcher, String> entries;
-        private final Watcher watcher;
+        entries.remove(entry);
+    }
 
-        WrappedWatcher(Map<Watcher, String> entries, Watcher watcher)
+    private class WrappedWatcher implements Watcher
+    {
+        private final Watcher watcher;
+        private final String path;
+
+        WrappedWatcher(Watcher watcher, String path)
         {
-            this.entries = entries;
             this.watcher = watcher;
+            this.path = path;
         }
 
         @Override
         public void process(WatchedEvent event)
         {
-            entries.remove(this);
+            if ( event.getType() != Event.EventType.None )
+            {
+                internalRemove(this);
+            }
             watcher.process(event);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            WrappedWatcher entry = (WrappedWatcher)o;
+
+            //noinspection SimplifiableIfStatement
+            if ( !watcher.equals(entry.watcher) )
+            {
+                return false;
+            }
+            return path.equals(entry.path);
+
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = watcher.hashCode();
+            result = 31 * result + path.hashCode();
+            return result;
         }
     }
 }

@@ -48,6 +48,11 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
         throw new UnsupportedOperationException();
     }
 
+    WatcherRemovalManager getRemovalManager()
+    {
+        return removalManager;
+    }
+
     @Override
     public void removeWatchers()
     {

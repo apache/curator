@@ -52,7 +52,7 @@ class Watching
 
     Watcher getWatcher(CuratorFrameworkImpl client, String unfixedPath)
     {
-        if ( client.getWatcherRemovalManager() != null )
+        if ( (watcher != null) && (client.getWatcherRemovalManager() != null) )
         {
             return client.getWatcherRemovalManager().add(unfixedPath, watcher);
         }
