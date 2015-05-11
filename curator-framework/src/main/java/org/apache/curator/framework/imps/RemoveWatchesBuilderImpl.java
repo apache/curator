@@ -35,7 +35,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     {
         this.client = client;
         this.watcher = null;
-        this.watcherType = null;
+        this.watcherType = WatcherType.Any;
         this.local = false;
         this.quietly = false;
         this.backgrounding = new Backgrounding();
