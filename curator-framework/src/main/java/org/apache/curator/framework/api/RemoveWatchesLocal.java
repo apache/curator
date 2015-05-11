@@ -9,7 +9,7 @@ public interface RemoveWatchesLocal extends BackgroundPathableQuietly<Void>
    
     /**
      * Specify if the client should just remove client side watches if a connection to ZK
-     * is not available.
+     * is not available. Note that the standard Curator retry loop will not be used in t
      * @return
      */
     public BackgroundPathableQuietly<Void> locally();

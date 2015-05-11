@@ -151,36 +151,52 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     
     private void pathInForeground(final String path) throws Exception
     {
-        RetryLoop.callWithRetry(client.getZookeeperClient(), 
-                new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
+        if(local)
+        {
+            ZooKeeper zkClient = client.getZooKeeper();
+            if(watcher == null)
+            {
+                zkClient.removeAllWatches(path, watcherType, local);    
+            }
+            else
+            {
+                zkClient.removeWatches(path, watcher, watcherType, local);
+            }
+        }
+        else
+        {
+            RetryLoop.callWithRetry(client.getZookeeperClient(), 
+                    new Callable<Void>()
                     {
-                        try
+                        @Override
+                        public Void call() throws Exception
                         {
-                            ZooKeeper zkClient = client.getZooKeeper();
-                            if(watcher == null)
+                            try
                             {
-                                zkClient.removeAllWatches(path, watcherType, local);    
+                                ZooKeeper zkClient = client.getZookeeperClient().getZooKeeper();    
+                                
+                                if(watcher == null)
+                                {
+                                    zkClient.removeAllWatches(path, watcherType, local);    
+                                }
+                                else
+                                {
+                                    zkClient.removeWatches(path, watcher, watcherType, local);
+                                }
                             }
-                            else
+                            catch(KeeperException.NoWatcherException e)
                             {
-                                zkClient.removeWatches(path, watcher, watcherType, local);
+                                //Swallow this exception if the quietly flag is set, otherwise rethrow.
+                                if(!quietly)
+                                {
+                                    throw e;
+                                }
                             }
-                        }
-                        catch(KeeperException.NoWatcherException e)
-                        {
-                            //Swallow this exception if the quietly flag is set, otherwise rethrow.
-                            if(!quietly)
-                            {
-                                throw e;
-                            }
-                        }
                      
-                        return null;
-                    }
-                });
+                            return null;
+                        }
+            });
+        }
     }
     
     @Override

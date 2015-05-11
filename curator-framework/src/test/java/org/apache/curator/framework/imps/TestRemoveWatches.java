@@ -20,6 +20,8 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.Watcher.WatcherType;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -302,10 +304,6 @@ public class TestRemoveWatches extends BaseClassForTests
         }
     }     
     
-    /**
-     * TODO: THIS IS STILL A WORK IN PROGRESS. local() is currently broken if no connection to ZK is available.
-     * @throws Exception
-     */
     @Test
     public void testRemoveLocalWatch() throws Exception {
         Timing timing = new Timing();
@@ -329,7 +327,7 @@ public class TestRemoveWatches extends BaseClassForTests
             server.stop();
             
             timing.sleepABit();
-            
+                       
             client.watches().removeAll().locally().forPath(path);
             
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
@@ -339,6 +337,40 @@ public class TestRemoveWatches extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+    
+    @Test
+    public void testRemoveLocalWatchInBackground() throws Exception {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.builder().
+                connectString(server.getConnectString()).
+                retryPolicy(new RetryOneTime(1)).
+                build();
+        try
+        {
+            client.start();
+            
+            final String path = "/";
+            
+            final CountDownLatch removedLatch = new CountDownLatch(1);
+            
+            Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);        
+            
+            client.checkExists().usingWatcher(watcher).forPath(path);
+            
+            //Stop the server so we can check if we can remove watches locally when offline
+            server.stop();
+            
+            timing.sleepABit();
+                       
+            client.watches().removeAll().locally().inBackground().forPath(path);
+            
+            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }    
     
     /**
      * Test the case where we try and remove an unregistered watcher. In this case we expect a NoWatcherException to
