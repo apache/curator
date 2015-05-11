@@ -40,7 +40,15 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         this.quietly = false;
         this.backgrounding = new Backgrounding();
     }
-    
+
+    void prepInternalRemoval(Watcher watcher)
+    {
+        this.watcher = watcher;
+        watcherType = WatcherType.Any;
+        quietly = true;
+        this.backgrounding = new Backgrounding();
+    }
+
     @Override
     public RemoveWatchesType remove(Watcher watcher)
     {

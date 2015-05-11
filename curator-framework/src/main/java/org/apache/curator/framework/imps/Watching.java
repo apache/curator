@@ -50,8 +50,12 @@ class Watching
         watched = false;
     }
 
-    Watcher getWatcher()
+    Watcher getWatcher(CuratorFrameworkImpl client, String unfixedPath)
     {
+        if ( client.getWatcherRemovalManager() != null )
+        {
+            return client.getWatcherRemovalManager().add(unfixedPath, watcher);
+        }
         return watcher;
     }
 
