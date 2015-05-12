@@ -143,7 +143,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
             public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
             {
                 trace.commit();
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_CONFIG, rc, path, null, ctx, stat, data, null, null, null);
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_CONFIG, rc, path, null, ctx, stat, data, null, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };
