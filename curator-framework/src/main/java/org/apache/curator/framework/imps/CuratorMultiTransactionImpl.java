@@ -38,9 +38,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-/**
- * @deprecated Use {@link CuratorFramework#transaction()}
- */
 public class CuratorMultiTransactionImpl implements
     CuratorMultiTransaction,
     CuratorMultiTransactionMain,
