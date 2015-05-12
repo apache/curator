@@ -60,6 +60,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     {
         for ( CreateMode mode : CreateMode.values() )
         {
+            System.out.println(mode);
             internalTestPathsFromProtectingInBackground(mode);
         }
     }
