@@ -170,6 +170,60 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
     }
 
+    @Test
+    public void testResetFromWatcher() throws Exception
+    {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            final WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    if ( event.getType() == Event.EventType.NodeCreated )
+                    {
+                        try
+                        {
+                            removerClient.checkExists().usingWatcher(this).forPath("/yo");
+                        }
+                        catch ( Exception e )
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                    else if ( event.getType() == Event.EventType.NodeDeleted )
+                    {
+                        latch.countDown();
+                    }
+                }
+            };
+
+            removerClient.checkExists().usingWatcher(watcher).forPath("/yo");
+            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            removerClient.create().forPath("/yo");
+
+            timing.sleepABit();
+            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+
+            removerClient.delete().forPath("/yo");
+
+            Assert.assertTrue(timing.awaitLatch(latch));
+
+            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     private void internalTryBasic(CuratorFramework client) throws Exception
     {
         WatcherRemoveCuratorFramework removerClient = client.newWatcherRemoveCuratorFramework();
