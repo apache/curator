@@ -65,7 +65,7 @@ public class LockingExample
                                 example.doWork(10, TimeUnit.SECONDS);
                             }
                         }
-                        catch ( Throwable e )
+                        catch ( Exception e )
                         {
                             e.printStackTrace();
                         }

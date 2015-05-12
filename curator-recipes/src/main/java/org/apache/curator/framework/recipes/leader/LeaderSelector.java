@@ -403,7 +403,7 @@ public class LeaderSelector implements Closeable
                 Thread.currentThread().interrupt();
                 throw e;
             }
-            catch ( Throwable e )
+            catch ( Exception e )
             {
                 log.error("The leader threw an exception", e);
             }

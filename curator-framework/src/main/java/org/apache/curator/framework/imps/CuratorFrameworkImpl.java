@@ -707,7 +707,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             {
                 e = (code != null) ? KeeperException.create(code) : null;
             }
-            catch ( Throwable ignore )
+            catch ( IllegalArgumentException ignore )
             {
             }
             if ( e == null )
@@ -812,30 +812,27 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 queueOperation(operationAndData);
             }
         }
-        catch ( Throwable e )
+        catch ( CuratorConnectionLossException e )
         {
-            /**
+            /*
              * Fix edge case reported as CURATOR-52. ConnectionState.checkTimeouts() throws KeeperException.ConnectionLossException
              * when the initial (or previously failed) connection cannot be re-established. This needs to be run through the retry policy
              * and callbacks need to get invoked, etc.
              */
-            if ( e instanceof CuratorConnectionLossException )
+            WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
+            CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null);
+            if ( checkBackgroundRetry(operationAndData, event) )
             {
-                WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
-                CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null);
-                if ( checkBackgroundRetry(operationAndData, event) )
-                {
-                    queueOperation(operationAndData);
-                }
-                else
-                {
-                    logError("Background retry gave up", e);
-                }
+                queueOperation(operationAndData);
             }
             else
             {
-                handleBackgroundOperationException(operationAndData, e);
+                logError("Background retry gave up", e);
             }
+        }
+        catch ( Exception e )
+        {
+            handleBackgroundOperationException(operationAndData, e);
         }
     }
 

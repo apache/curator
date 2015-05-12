@@ -465,23 +465,11 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
     }
 
-    @Test
-    public void testNotStarted() throws Exception
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testNotStarted()
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
-            client.getData();
-            Assert.fail();
-        }
-        catch ( Exception e )
-        {
-            // correct
-        }
-        catch ( Throwable e )
-        {
-            Assert.fail("", e);
-        }
+        client.getData();
     }
 
     @Test

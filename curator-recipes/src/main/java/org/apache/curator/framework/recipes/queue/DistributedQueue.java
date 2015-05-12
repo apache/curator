@@ -661,7 +661,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         {
             items = ItemSerializer.deserialize(bytes, serializer);
         }
-        catch ( Throwable e )
+        catch ( Exception e )
         {
             log.error("Corrupted queue item: " + itemNode, e);
             return resultCode;
@@ -679,7 +679,7 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 consumer.consumeMessage(item);
             }
-            catch ( Throwable e )
+            catch ( Exception e )
             {
                 log.error("Exception processing queue item: " + itemNode, e);
                 if ( errorMode.get() == ErrorMode.REQUEUE )

@@ -89,7 +89,7 @@ public class TestEnsurePath
             new Answer<Stat>()
             {
                 @Override
-                public Stat answer(InvocationOnMock invocation) throws Throwable
+                public Stat answer(InvocationOnMock invocation) throws InterruptedException
                 {
                     semaphore.acquire();
                     return fakeStat;
