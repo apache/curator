@@ -11,6 +11,10 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.imps.FailedRemoveWatchManager.FailedRemoveWatchDetails;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
@@ -437,6 +441,131 @@ public class TestRemoveWatches extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+    
+    @Test
+    public void testGuaranteedRemoveWatch() throws Exception {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.builder().
+                connectString(server.getConnectString()).
+                retryPolicy(new RetryOneTime(1)).
+                build();
+        try
+        {
+            client.start();
+            
+            final CountDownLatch reconnectedLatch = new CountDownLatch(1);
+            final CountDownLatch suspendedLatch = new CountDownLatch(1);
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if(newState == ConnectionState.SUSPENDED)
+                    {
+                        suspendedLatch.countDown();
+                    }
+                    else if(newState == ConnectionState.RECONNECTED)
+                    {
+                        reconnectedLatch.countDown();
+                    }
+                }
+            });
+            
+            String path = "/";
+            
+            CountDownLatch removeLatch = new CountDownLatch(1);
+            
+            Watcher watcher = new CountDownWatcher(path, removeLatch, EventType.DataWatchRemoved);            
+            client.checkExists().usingWatcher(watcher).forPath(path);
+            
+            server.stop();           
+            timing.awaitLatch(suspendedLatch);
+            
+            //Remove the watch while we're not connected
+            try 
+            {
+                client.watches().remove(watcher).guaranteed().forPath(path);
+                Assert.fail();
+            }
+            catch(KeeperException.ConnectionLossException e)
+            {
+                //Expected
+            }
+            
+            server.restart();
+            
+            timing.awaitLatch(removeLatch);            
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+    
+    @Test
+    public void testGuaranteedRemoveWatchInBackground() throws Exception {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(),
+                                                                    new ExponentialBackoffRetry(100, 3));
+        try
+        {
+            client.start();
+            
+            final CountDownLatch reconnectedLatch = new CountDownLatch(1);
+            final CountDownLatch suspendedLatch = new CountDownLatch(1);
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if(newState == ConnectionState.SUSPENDED)
+                    {
+                        suspendedLatch.countDown();
+                    }
+                    else if(newState == ConnectionState.RECONNECTED)
+                    {
+                        reconnectedLatch.countDown();
+                    }
+                }
+            });
+            
+            final CountDownLatch guaranteeAddedLatch = new CountDownLatch(1);
+            
+            ((CuratorFrameworkImpl)client).getFailedRemoveWatcherManager().debugListener = new FailedOperationManager.FailedOperationManagerListener<FailedRemoveWatchManager.FailedRemoveWatchDetails>()
+            {
+
+                @Override
+                public void pathAddedForGuaranteedOperation(
+                        FailedRemoveWatchDetails detail)
+                {
+                    guaranteeAddedLatch.countDown();
+                }
+            };
+            
+            String path = "/";
+            
+            CountDownLatch removeLatch = new CountDownLatch(1);
+            
+            Watcher watcher = new CountDownWatcher(path, removeLatch, EventType.DataWatchRemoved);            
+            client.checkExists().usingWatcher(watcher).forPath(path);
+            
+            server.stop();           
+            timing.awaitLatch(suspendedLatch);
+            
+            //Remove the watch while we're not connected
+            client.watches().remove(watcher).guaranteed().inBackground().forPath(path);
+            
+            timing.awaitLatch(guaranteeAddedLatch);
+            
+            server.restart();
+            
+            timing.awaitLatch(removeLatch);            
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }    
     
     private static class CountDownWatcher implements Watcher {
         private String path;

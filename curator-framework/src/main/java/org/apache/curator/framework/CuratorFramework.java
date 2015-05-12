@@ -216,7 +216,11 @@ public interface CuratorFramework extends Closeable
      * Call this method on watchers you are no longer interested in.
      *
      * @param watcher the watcher
+     * 
+     * @deprecated As of ZooKeeper 3.5 Curators recipes will handle removing watcher references
+     * when they are no longer used.
      */
+    @Deprecated
     public void clearWatcherReferences(Watcher watcher);
         
     /**
