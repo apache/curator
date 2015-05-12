@@ -38,28 +38,28 @@ public class TransactionOpImpl implements TransactionOp
     public TransactionCreateBuilder<CuratorOp> create()
     {
         ExtractingCuratorOp op = new ExtractingCuratorOp();
-        return new CreateBuilderImpl(client).asTransactionCreateBuilder(op.asCuratorOp(), op.getRecord());
+        return new CreateBuilderImpl(client).<CuratorOp>asTransactionCreateBuilder(op, op.getRecord());
     }
 
     @Override
     public TransactionDeleteBuilder<CuratorOp> delete()
     {
         ExtractingCuratorOp op = new ExtractingCuratorOp();
-        return new DeleteBuilderImpl(client).asTransactionDeleteBuilder(op.asCuratorOp(), op.getRecord());
+        return new DeleteBuilderImpl(client).<CuratorOp>asTransactionDeleteBuilder(op, op.getRecord());
     }
 
     @Override
     public TransactionSetDataBuilder<CuratorOp> setData()
     {
         ExtractingCuratorOp op = new ExtractingCuratorOp();
-        return new SetDataBuilderImpl(client).asTransactionSetDataBuilder(op.asCuratorOp(), op.getRecord());
+        return new SetDataBuilderImpl(client).<CuratorOp>asTransactionSetDataBuilder(op, op.getRecord());
     }
 
     @Override
     public TransactionCheckBuilder<CuratorOp> check()
     {
         ExtractingCuratorOp op = new ExtractingCuratorOp();
-        return CuratorTransactionImpl.makeTransactionCheckBuilder(client, op.asCuratorOp(), op.getRecord());
+        return CuratorTransactionImpl.<CuratorOp>makeTransactionCheckBuilder(client, op, op.getRecord());
     }
 
 }

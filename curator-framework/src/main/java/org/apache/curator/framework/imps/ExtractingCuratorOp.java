@@ -32,11 +32,6 @@ class ExtractingCuratorOp implements CuratorOp
         return record;
     }
 
-    CuratorOp asCuratorOp()
-    {
-        return this;
-    }
-
     @Override
     public TypeAndPath getTypeAndPath()
     {
