@@ -74,6 +74,16 @@ public enum CuratorEventType
     TRANSACTION,
 
     /**
+     * Corresponds to {@link CuratorFramework#getConfig()}
+     */
+    GET_CONFIG,
+
+    /**
+     * Corresponds to {@link CuratorFramework#reconfig()}
+     */
+    RECONFIG,
+
+    /**
      * Corresponds to {@link Watchable#usingWatcher(Watcher)} or {@link Watchable#watched()}
      */
     WATCHED,
