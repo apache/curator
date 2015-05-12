@@ -25,6 +25,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -465,7 +466,7 @@ public class TreeCache implements Closeable
     private final AtomicBoolean isInitialized = new AtomicBoolean(false);
 
     private final TreeNode root;
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final CloseableExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
@@ -513,7 +514,7 @@ public class TreeCache implements Closeable
     TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService)
     {
         this.root = new TreeNode(validatePath(path), null);
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.maxDepth = maxDepth;
@@ -545,6 +546,7 @@ public class TreeCache implements Closeable
     {
         if ( treeState.compareAndSet(TreeState.STARTED, TreeState.CLOSED) )
         {
+            client.removeWatchers();
             client.getConnectionStateListenable().removeListener(connectionStateListener);
             listeners.clear();
             executorService.close();

@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 
-class WatcherRemovalManager
+public class WatcherRemovalManager
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl client;
@@ -73,8 +73,7 @@ class WatcherRemovalManager
             }
             catch ( Exception e )
             {
-                String message = "Could not remove watcher for path: " + entry.path;
-                log.error(message);
+                log.error("Could not remove watcher for path: " + entry.path);
             }
         }
     }
