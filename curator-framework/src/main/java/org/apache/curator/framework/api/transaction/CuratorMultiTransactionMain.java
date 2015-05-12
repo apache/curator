@@ -28,7 +28,7 @@ public interface CuratorMultiTransactionMain
      * operation instances via {@link CuratorFramework#transactionOp()}
      *
      * @param operations operations that make up the transaction.
-     * @return result details
+     * @return result details for foreground operations or <code>null</code> for background operations
      * @throws Exception errors
      */
     List<CuratorTransactionResult> forOperations(CuratorOp... operations) throws Exception;
@@ -38,7 +38,7 @@ public interface CuratorMultiTransactionMain
      * operation instances via {@link CuratorFramework#transactionOp()}
      *
      * @param operations operations that make up the transaction.
-     * @return result details
+     * @return result details for foreground operations or <code>null</code> for background operations
      * @throws Exception errors
      */
     List<CuratorTransactionResult> forOperations(List<CuratorOp> operations) throws Exception;

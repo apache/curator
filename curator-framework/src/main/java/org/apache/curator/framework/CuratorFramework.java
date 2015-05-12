@@ -22,6 +22,7 @@ package org.apache.curator.framework;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
@@ -152,7 +153,9 @@ public interface CuratorFramework extends Closeable
     public CuratorMultiTransaction transaction();
 
     /**
-     * Allocate an operation that can be used with {@link #transaction()}
+     * Allocate an operation that can be used with {@link #transaction()}.
+     * NOTE: {@link CuratorOp} instances created by this builder are
+     * reusable.
      *
      * @return operation builder
      */
