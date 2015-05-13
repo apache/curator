@@ -4,6 +4,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -30,23 +31,51 @@ import org.testng.annotations.Test;
 
 public class TestRemoveWatches extends BaseClassForTests
 {
-    private boolean blockUntilDesiredConnectionState(CuratorFramework client, Timing timing, final ConnectionState desiredState)
+    private AtomicReference<ConnectionState> registerConnectionStateListener(CuratorFramework client)
     {
-        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<ConnectionState> state = new AtomicReference<ConnectionState>();
         client.getConnectionStateListenable().addListener(new ConnectionStateListener()
         {
             
             @Override
             public void stateChanged(CuratorFramework client, ConnectionState newState)
             {
-                if(newState == desiredState)
+                state.set(newState);
+                synchronized(state)
                 {
-                    latch.countDown();
+                    state.notify();
                 }
             }
         });
         
-        return timing.awaitLatch(latch);
+        return state;
+    }
+    
+    private boolean blockUntilDesiredConnectionState(AtomicReference<ConnectionState> stateRef, Timing timing, final ConnectionState desiredState)
+    {
+        if(stateRef.get() == desiredState)
+        {
+            return true;
+        }
+        
+        synchronized(stateRef)
+        {
+            if(stateRef.get() == desiredState)
+            {
+                return true;
+            }
+            
+            try
+            {
+                stateRef.wait(timing.milliseconds());
+                return stateRef.get() == desiredState;
+            }
+            catch(InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
     }
     
     @Test
@@ -337,6 +366,8 @@ public class TestRemoveWatches extends BaseClassForTests
         {
             client.start();
             
+            AtomicReference<ConnectionState> stateRef = registerConnectionStateListener(client);
+            
             final String path = "/";
             
             final CountDownLatch removedLatch = new CountDownLatch(1);
@@ -348,7 +379,7 @@ public class TestRemoveWatches extends BaseClassForTests
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
             
-            blockUntilDesiredConnectionState(client, timing, ConnectionState.SUSPENDED);
+            Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
                        
             client.watches().removeAll().locally().forPath(path);
             
@@ -371,6 +402,8 @@ public class TestRemoveWatches extends BaseClassForTests
         {
             client.start();
             
+            AtomicReference<ConnectionState> stateRef = registerConnectionStateListener(client);
+            
             final String path = "/";
             
             final CountDownLatch removedLatch = new CountDownLatch(1);
@@ -382,7 +415,7 @@ public class TestRemoveWatches extends BaseClassForTests
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
             
-            blockUntilDesiredConnectionState(client, timing, ConnectionState.SUSPENDED);
+            Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
                        
             client.watches().removeAll().locally().inBackground().forPath(path);
             
@@ -470,6 +503,8 @@ public class TestRemoveWatches extends BaseClassForTests
         try
         {
             client.start();
+            
+            AtomicReference<ConnectionState> stateRef = registerConnectionStateListener(client);
                        
             String path = "/";
             
@@ -480,7 +515,7 @@ public class TestRemoveWatches extends BaseClassForTests
             
             server.stop();           
             
-            blockUntilDesiredConnectionState(client, timing, ConnectionState.SUSPENDED);
+            Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
             
             //Remove the watch while we're not connected
             try 
@@ -511,6 +546,8 @@ public class TestRemoveWatches extends BaseClassForTests
         try
         {
             client.start();
+            
+            AtomicReference<ConnectionState> stateRef = registerConnectionStateListener(client);
                         
             final CountDownLatch guaranteeAddedLatch = new CountDownLatch(1);
             
@@ -533,7 +570,7 @@ public class TestRemoveWatches extends BaseClassForTests
             client.checkExists().usingWatcher(watcher).forPath(path);
             
             server.stop();           
-            blockUntilDesiredConnectionState(client, timing, ConnectionState.SUSPENDED);
+            Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
             
             //Remove the watch while we're not connected
             client.watches().remove(watcher).guaranteed().inBackground().forPath(path);
