@@ -1,8 +1,9 @@
 package org.apache.curator.framework.imps;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -24,13 +25,30 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.Watcher.WatcherType;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class TestRemoveWatches extends BaseClassForTests
 {
+    private boolean blockUntilDesiredConnectionState(CuratorFramework client, Timing timing, final ConnectionState desiredState)
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+        {
+            
+            @Override
+            public void stateChanged(CuratorFramework client, ConnectionState newState)
+            {
+                if(newState == desiredState)
+                {
+                    latch.countDown();
+                }
+            }
+        });
+        
+        return timing.awaitLatch(latch);
+    }
+    
     @Test
     public void testRemoveCuratorDefaultWatcher() throws Exception
     {
@@ -330,7 +348,7 @@ public class TestRemoveWatches extends BaseClassForTests
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
             
-            timing.sleepABit();
+            blockUntilDesiredConnectionState(client, timing, ConnectionState.SUSPENDED);
                        
             client.watches().removeAll().locally().forPath(path);
             
@@ -364,7 +382,7 @@ public class TestRemoveWatches extends BaseClassForTests
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
             
-            timing.sleepABit();
+            blockUntilDesiredConnectionState(client, timing, ConnectionState.SUSPENDED);
                        
             client.watches().removeAll().locally().inBackground().forPath(path);
             
@@ -452,25 +470,7 @@ public class TestRemoveWatches extends BaseClassForTests
         try
         {
             client.start();
-            
-            final CountDownLatch reconnectedLatch = new CountDownLatch(1);
-            final CountDownLatch suspendedLatch = new CountDownLatch(1);
-            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
-            {
-                @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                    if(newState == ConnectionState.SUSPENDED)
-                    {
-                        suspendedLatch.countDown();
-                    }
-                    else if(newState == ConnectionState.RECONNECTED)
-                    {
-                        reconnectedLatch.countDown();
-                    }
-                }
-            });
-            
+                       
             String path = "/";
             
             CountDownLatch removeLatch = new CountDownLatch(1);
@@ -479,7 +479,8 @@ public class TestRemoveWatches extends BaseClassForTests
             client.checkExists().usingWatcher(watcher).forPath(path);
             
             server.stop();           
-            timing.awaitLatch(suspendedLatch);
+            
+            blockUntilDesiredConnectionState(client, timing, ConnectionState.SUSPENDED);
             
             //Remove the watch while we're not connected
             try 
@@ -510,25 +511,7 @@ public class TestRemoveWatches extends BaseClassForTests
         try
         {
             client.start();
-            
-            final CountDownLatch reconnectedLatch = new CountDownLatch(1);
-            final CountDownLatch suspendedLatch = new CountDownLatch(1);
-            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
-            {
-                @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                    if(newState == ConnectionState.SUSPENDED)
-                    {
-                        suspendedLatch.countDown();
-                    }
-                    else if(newState == ConnectionState.RECONNECTED)
-                    {
-                        reconnectedLatch.countDown();
-                    }
-                }
-            });
-            
+                        
             final CountDownLatch guaranteeAddedLatch = new CountDownLatch(1);
             
             ((CuratorFrameworkImpl)client).getFailedRemoveWatcherManager().debugListener = new FailedOperationManager.FailedOperationManagerListener<FailedRemoveWatchManager.FailedRemoveWatchDetails>()
@@ -550,7 +533,7 @@ public class TestRemoveWatches extends BaseClassForTests
             client.checkExists().usingWatcher(watcher).forPath(path);
             
             server.stop();           
-            timing.awaitLatch(suspendedLatch);
+            blockUntilDesiredConnectionState(client, timing, ConnectionState.SUSPENDED);
             
             //Remove the watch while we're not connected
             client.watches().remove(watcher).guaranteed().inBackground().forPath(path);

@@ -821,7 +821,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         try
         {
-            if ( client.isConnected() )
+            if ( !operationAndData.isConnectionRequired() || client.isConnected() )
             {
                 operationAndData.callPerformBackgroundOperation();
             }

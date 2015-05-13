@@ -166,15 +166,23 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     
     private void pathInBackground(final String path)
     {
-        OperationAndData.ErrorCallback<String>  errorCallback = new OperationAndData.ErrorCallback<String>()
+        OperationAndData.ErrorCallback<String>  errorCallback = null;
+        
+        //Only need an error callback if we're in guaranteed mode
+        if(guaranteed)
         {
-            @Override
-            public void retriesExhausted(OperationAndData<String> operationAndData)
+            errorCallback = new OperationAndData.ErrorCallback<String>()
             {
-                client.getFailedRemoveWatcherManager().addFailedOperation(new FailedRemoveWatchManager.FailedRemoveWatchDetails(path, watcher));
-            }            
-        };        
-        client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), errorCallback, backgrounding.getContext()), null);
+                @Override
+                public void retriesExhausted(OperationAndData<String> operationAndData)
+                {
+                    client.getFailedRemoveWatcherManager().addFailedOperation(new FailedRemoveWatchManager.FailedRemoveWatchDetails(path, watcher));
+                }            
+            };
+        }
+        
+        client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(),
+                                                                       errorCallback, backgrounding.getContext(), !local), null);
     }
     
     private void pathInForeground(final String path) throws Exception
