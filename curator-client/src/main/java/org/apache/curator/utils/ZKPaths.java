@@ -38,10 +38,18 @@ public class ZKPaths
      */
     public static final String PATH_SEPARATOR = "/";
 
-    public static class CreatModeHolder
+    /**
+     * @return {@link CreateMode#CONTAINER} if the ZK JAR supports it. Otherwise {@link CreateMode#PERSISTENT}
+     */
+    public static CreateMode getContainerCreateMode()
+    {
+        return CreateModeHolder.containerCreateMode;
+    }
+
+    private static class CreateModeHolder
     {
         private static final Logger log = LoggerFactory.getLogger(ZKPaths.class);
-        public static final CreateMode containerCreateMode;
+        private static final CreateMode containerCreateMode;
 
         static
         {
@@ -442,6 +450,6 @@ public class ZKPaths
 
     private static CreateMode getCreateMode(boolean asContainers)
     {
-        return asContainers ? CreatModeHolder.containerCreateMode : CreateMode.PERSISTENT;
+        return asContainers ? getContainerCreateMode() : CreateMode.PERSISTENT;
     }
 }
