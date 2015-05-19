@@ -29,7 +29,7 @@ import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.EnsurePathContainers;
+import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.PathUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -57,7 +57,7 @@ public class NodeCache implements Closeable
     private final CuratorFramework client;
     private final String path;
     private final boolean dataIsCompressed;
-    private final EnsurePathContainers ensurePath;
+    private final EnsurePath ensurePath;
     private final AtomicReference<ChildData> data = new AtomicReference<ChildData>(null);
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final ListenerContainer<NodeCacheListener> listeners = new ListenerContainer<NodeCacheListener>();
@@ -132,7 +132,7 @@ public class NodeCache implements Closeable
         this.client = client;
         this.path = PathUtils.validatePath(path);
         this.dataIsCompressed = dataIsCompressed;
-        ensurePath = client.newNamespaceAwareEnsurePathContainers(path).excludingLastContainers();
+        ensurePath = client.newNamespaceAwareEnsurePath(path).excludingLast();
     }
 
     /**

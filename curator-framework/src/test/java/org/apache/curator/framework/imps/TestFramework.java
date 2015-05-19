@@ -447,65 +447,6 @@ public class TestFramework extends BaseClassForTests
     }
 
     @Test
-    public void testOverrideEnsureParentContainers() throws Exception
-    {
-        CuratorFramework client = CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .retryPolicy(new RetryOneTime(1))
-            .dontUseContainerParents()
-            .build();
-        try
-        {
-            client.start();
-            EnsurePath ensurePath = client.newNamespaceAwareEnsurePathContainers("/one/two");
-            ensurePath.ensure(client.getZookeeperClient());
-            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three", "foo".getBytes());
-            byte[] data = client.getData().forPath("/one/two/three");
-            Assert.assertEquals(data, "foo".getBytes());
-
-            client.delete().forPath("/one/two/three");
-            new Timing().sleepABit();
-
-            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
-            new Timing().sleepABit();
-            Assert.assertNotNull(client.checkExists().forPath("/one"));
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
-    @Test
-    public void testEnsureParentContainers() throws Exception
-    {
-        CuratorFramework client = CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .retryPolicy(new RetryOneTime(1))
-            .build();
-        try
-        {
-            client.start();
-            EnsurePath ensurePath = client.newNamespaceAwareEnsurePathContainers("/one/two");
-            ensurePath.ensure(client.getZookeeperClient());
-            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three", "foo".getBytes());
-            byte[] data = client.getData().forPath("/one/two/three");
-            Assert.assertEquals(data, "foo".getBytes());
-
-            client.delete().forPath("/one/two/three");
-            new Timing().sleepABit();
-
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
-            new Timing().sleepABit();
-            Assert.assertNull(client.checkExists().forPath("/one"));
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
-    @Test
     public void testCreateParentContainers() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();

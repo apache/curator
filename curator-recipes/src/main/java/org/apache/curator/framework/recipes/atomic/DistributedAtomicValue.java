@@ -22,7 +22,6 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.curator.utils.EnsurePathContainers;
 import org.apache.curator.utils.PathUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -43,7 +42,6 @@ public class DistributedAtomicValue
     private final RetryPolicy       retryPolicy;
     private final PromotedToLock    promotedToLock;
     private final InterProcessMutex mutex;
-    private final EnsurePathContainers ensurePath;
 
     /**
      * Creates in optimistic mode only - i.e. the promotion to a mutex is not done
@@ -74,7 +72,6 @@ public class DistributedAtomicValue
         this.retryPolicy = retryPolicy;
         this.promotedToLock = promotedToLock;
         mutex = (promotedToLock != null) ? new InterProcessMutex(client, promotedToLock.getPath()) : null;
-        ensurePath = client.newNamespaceAwareEnsurePathContainers(path).excludingLastContainers();
     }
 
     /**
@@ -103,14 +100,13 @@ public class DistributedAtomicValue
     {
         try
         {
-            ensurePath.ensure(client.getZookeeperClient());
             client.setData().forPath(path, newValue);
         }
         catch ( KeeperException.NoNodeException dummy )
         {
             try
             {
-                client.create().forPath(path, newValue);
+                client.create().creatingParentContainersIfNeeded().forPath(path, newValue);
             }
             catch ( KeeperException.NodeExistsException dummy2 )
             {
@@ -198,10 +194,9 @@ public class DistributedAtomicValue
      */
     public boolean initialize(byte[] value) throws Exception
     {
-        ensurePath.ensure(client.getZookeeperClient());
         try
         {
-            client.create().forPath(path, value);
+            client.create().creatingParentContainersIfNeeded().forPath(path, value);
         }
         catch ( KeeperException.NodeExistsException ignore )
         {
@@ -250,7 +245,6 @@ public class DistributedAtomicValue
         boolean             createIt = false;
         try
         {
-            ensurePath.ensure(client.getZookeeperClient());
             result.preValue = client.getData().storingStatIn(stat).forPath(path);
         }
         catch ( KeeperException.NoNodeException e )

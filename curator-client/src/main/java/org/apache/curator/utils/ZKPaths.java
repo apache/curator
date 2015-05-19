@@ -61,7 +61,7 @@ public class ZKPaths
             catch ( IllegalArgumentException ignore )
             {
                 localCreateMode = CreateMode.PERSISTENT;
-                log.warn("The version of ZooKeeper being used doesn't support Container nodes. CreateMode.PERSISTENT will be used instead");
+                log.warn("The version of ZooKeeper being used doesn't support Container nodes. CreateMode.PERSISTENT will be used instead.");
             }
             containerCreateMode = localCreateMode;
         }

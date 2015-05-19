@@ -32,7 +32,6 @@ import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.utils.DefaultZookeeperFactory;
-import org.apache.curator.utils.EnsurePathContainers;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
@@ -333,7 +332,7 @@ public class CuratorFrameworkFactory
         }
 
         /**
-         * By default, Curator uses {@link EnsurePathContainers} and {@link CreateBuilder#creatingParentContainersIfNeeded()}
+         * By default, Curator uses {@link CreateBuilder#creatingParentContainersIfNeeded()}
          * if the ZK JAR supports {@link CreateMode#CONTAINER}. Call this method to turn off this behavior.
          *
          * @return this

@@ -24,10 +24,8 @@ import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
-import org.apache.curator.utils.EnsurePathContainers;
 import org.apache.zookeeper.Watcher;
 
 import java.io.Closeable;
@@ -206,14 +204,6 @@ public interface CuratorFramework extends Closeable
      * @return new EnsurePath instance
      */
     public EnsurePath newNamespaceAwareEnsurePath(String path);
-
-    /**
-     * Allocates an ensure path containers instance that is namespace aware
-     *
-     * @param path path to ensure
-     * @return new EnsurePath instance
-     */
-    public EnsurePathContainers newNamespaceAwareEnsurePathContainers(String path);
 
     /**
      * Curator can hold internal references to watchers that may inhibit garbage collection.
