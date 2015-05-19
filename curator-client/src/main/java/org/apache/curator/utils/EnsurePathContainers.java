@@ -16,16 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.rpc.idl.structs;
+package org.apache.curator.utils;
 
-import com.facebook.swift.codec.ThriftEnum;
+import org.apache.zookeeper.CreateMode;
+import java.util.concurrent.atomic.AtomicReference;
 
-@ThriftEnum("CreateMode")
-public enum RpcCreateMode
+/**
+ * Same as {@link EnsurePath} but creates parents as {@link CreateMode#CONTAINER}
+ */
+public class EnsurePathContainers extends EnsurePath
 {
-    PERSISTENT,
-    PERSISTENT_SEQUENTIAL,
-    EPHEMERAL,
-    EPHEMERAL_SEQUENTIAL,
-    CONTAINER
+    public EnsurePathContainers(String path)
+    {
+        super(path);
+    }
+
+    public EnsurePathContainers(String path, InternalACLProvider aclProvider)
+    {
+        super(path, aclProvider);
+    }
+
+    EnsurePathContainers(String path, AtomicReference<EnsurePath.Helper> helper, boolean makeLastNode, InternalACLProvider aclProvider)
+    {
+        super(path, helper, makeLastNode, aclProvider);
+    }
+
+    @Override
+    protected boolean asContainers()
+    {
+        return true;
+    }
 }

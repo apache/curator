@@ -219,7 +219,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             try
             {
                 CreateMode mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
-                client.create().creatingParentsIfNeeded().withMode(mode).forPath(path, bytes);
+                client.create().creatingParentContainersIfNeeded().withMode(mode).forPath(path, bytes);
                 isDone = true;
             }
             catch ( KeeperException.NodeExistsException e )
@@ -404,7 +404,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             {
                 try
                 {
-                    client.create().creatingParentsIfNeeded().forPath(path);
+                    client.create().creatingParentContainersIfNeeded().forPath(path);
                 }
                 catch ( KeeperException.NodeExistsException ignore )
                 {

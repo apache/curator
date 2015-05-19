@@ -161,7 +161,7 @@ public class ZKPaths
      */
     public static void mkdirs(ZooKeeper zookeeper, String path) throws InterruptedException, KeeperException
     {
-        mkdirs(zookeeper, path, true, null);
+        mkdirs(zookeeper, path, true, null, false);
     }
 
     /**
@@ -176,7 +176,7 @@ public class ZKPaths
      */
     public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode) throws InterruptedException, KeeperException
     {
-        mkdirs(zookeeper, path, makeLastNode, null);
+        mkdirs(zookeeper, path, makeLastNode, null, false);
     }
 
     /**
@@ -191,6 +191,23 @@ public class ZKPaths
      * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
     public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider) throws InterruptedException, KeeperException
+    {
+        mkdirs(zookeeper, path, makeLastNode, aclProvider, false);
+    }
+
+    /**
+     * Make sure all the nodes in the path are created. NOTE: Unlike File.mkdirs(), Zookeeper doesn't distinguish
+     * between directories and files. So, every node in the path is created. The data for each node is an empty blob
+     *
+     * @param zookeeper    the client
+     * @param path         path to ensure
+     * @param makeLastNode if true, all nodes are created. If false, only the parent nodes are created
+     * @param aclProvider  if not null, the ACL provider to use when creating parent nodes
+     * @param asContainers if true, nodes are created as {@link CreateMode#CONTAINER}
+     * @throws InterruptedException                 thread interruption
+     * @throws org.apache.zookeeper.KeeperException Zookeeper errors
+     */
+    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider, boolean asContainers) throws InterruptedException, KeeperException
     {
         PathUtils.validatePath(path);
 
@@ -229,7 +246,7 @@ public class ZKPaths
                     {
                         acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
                     }
-                    zookeeper.create(subPath, new byte[0], acl, CreateMode.PERSISTENT);
+                    zookeeper.create(subPath, new byte[0], acl, asContainers ? CreateMode.CONTAINER : CreateMode.PERSISTENT);
                 }
                 catch ( KeeperException.NodeExistsException e )
                 {

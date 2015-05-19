@@ -57,6 +57,7 @@ h2. CreateSpec
 |compressed|bool|\-|if true, compress the data|
 |creatingParentsIfNeeded|bool|\-|if true, create any needed parent nodes|
 |withProtection|bool|\-|if true, use Curator protection|
+|creatingParentContainersIfNeeded|bool|\-|if true, create any needed parent nodes as CONTAINERs|
 
 h2. DeleteSpec
 

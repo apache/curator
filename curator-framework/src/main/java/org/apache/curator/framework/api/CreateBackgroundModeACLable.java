@@ -31,6 +31,13 @@ public interface CreateBackgroundModeACLable extends
     public ACLCreateModePathAndBytesable<String>    creatingParentsIfNeeded();
 
     /**
+     * Causes any parent nodes to get created as containers if they haven't already been
+     *
+     * @return this
+     */
+    public ACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded();
+
+    /**
      * <p>
      *     Hat-tip to https://github.com/sbridges for pointing this out
      * </p>

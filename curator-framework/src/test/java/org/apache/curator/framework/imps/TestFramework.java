@@ -41,6 +41,8 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +54,22 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("deprecation")
 public class TestFramework extends BaseClassForTests
 {
+    @BeforeMethod
+    @Override
+    public void setup() throws Exception
+    {
+        System.setProperty("container.checkIntervalMs", "1000");
+        super.setup();
+    }
+
+    @AfterMethod
+    @Override
+    public void teardown() throws Exception
+    {
+        System.clearProperty("container.checkIntervalMs");
+        super.teardown();
+    }
+
     @Test
     public void testConnectionState() throws Exception
     {
@@ -393,6 +411,31 @@ public class TestFramework extends BaseClassForTests
             client.create().creatingParentsIfNeeded().forPath("/one/two/another", "bar".getBytes());
             data = client.getData().forPath("/one/two/another");
             Assert.assertEquals(data, "bar".getBytes());
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void testCreateParentContainers() throws Exception
+    {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).build();
+        client.start();
+        try
+        {
+            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three", "foo".getBytes());
+            byte[] data = client.getData().forPath("/one/two/three");
+            Assert.assertEquals(data, "foo".getBytes());
+
+            client.delete().forPath("/one/two/three");
+            new Timing().sleepABit();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            new Timing().sleepABit();
+            Assert.assertNull(client.checkExists().forPath("/one"));
         }
         finally
         {

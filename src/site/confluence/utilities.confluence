@@ -43,17 +43,3 @@ h2. QueueSharder
 Due to limitations in ZooKeeper's transport layer, a single queue will break if it has more than 10K\-ish items in it. This class
 provides a facade over multiple distributed queues. It monitors the queues and if any one of them goes over a threshold, a new
 queue is added. Puts are distributed amongst the queues.
-
-h2. Reaper and ChildReaper
-
-_Reaper_
-
-A Utility to delete parent paths of locks, etc. Periodically checks paths added to the reaper. If at check time, there are no
-children, the path is deleted. Clients should create one Reaper instance per application. Add lock paths to the reaper as
-needed and the reaper will periodically delete them. Curator's lock recipes will correctly handle parents getting deleted.
-
-_ChildReaper_
-
-Utility to reap the empty child nodes in a parent node. Periodically calls getChildren() on the node and adds empty nodes to an internally managed Reaper.
-
-*NOTE:* You should consider using LeaderSelector to run the Reapers as they don't need to run in every client.

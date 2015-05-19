@@ -20,17 +20,16 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -47,6 +46,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class TestInterProcessMutexBase extends BaseClassForTests
 {
+    protected static final String LOCK_BASE_PATH = "/locks";
+
     private volatile CountDownLatch waitLatchForBar = null;
     private volatile CountDownLatch countLatchForBar = null;
 
@@ -178,6 +179,76 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    public void testContainerCleanup() throws Exception
+    {
+        server.close();
+
+        System.setProperty("container.checkIntervalMs", "10");
+        try
+        {
+            server = new TestingServer();
+
+            final int THREAD_QTY = 10;
+
+            ExecutorService service = null;
+            final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(100, 3));
+            try
+            {
+                client.start();
+
+                List<Future<Object>> threads = Lists.newArrayList();
+                service = Executors.newCachedThreadPool();
+                for ( int i = 0; i < THREAD_QTY; ++i )
+                {
+                    Future<Object> t = service.submit
+                    (
+                        new Callable<Object>()
+                        {
+                            @Override
+                            public Object call() throws Exception
+                            {
+                                InterProcessLock lock = makeLock(client);
+                                lock.acquire();
+                                try
+                                {
+                                    Thread.sleep(10);
+                                }
+                                finally
+                                {
+                                    lock.release();
+                                }
+                                return null;
+                            }
+                        }
+                    );
+                    threads.add(t);
+                }
+
+                for ( Future<Object> t : threads )
+                {
+                    t.get();
+                }
+
+                new Timing().sleepABit();
+
+                Assert.assertNull(client.checkExists().forPath(LOCK_BASE_PATH));
+            }
+            finally
+            {
+                if ( service != null )
+                {
+                    service.shutdownNow();
+                }
+                CloseableUtils.closeQuietly(client);
+            }
+        }
+        finally
+        {
+            System.clearProperty("container.checkIntervalMs");
         }
     }
 

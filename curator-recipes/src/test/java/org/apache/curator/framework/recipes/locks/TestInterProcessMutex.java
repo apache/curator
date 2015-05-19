@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestInterProcessMutex extends TestInterProcessMutexBase
 {
-    private static final String LOCK_PATH = "/locks/our-lock";
+    private static final String LOCK_PATH = LOCK_BASE_PATH + "/our-lock";
 
     @Override
     protected InterProcessLock makeLock(CuratorFramework client)

@@ -32,6 +32,13 @@ public interface CreateBuilder extends
     public ProtectACLCreateModePathAndBytesable<String> creatingParentsIfNeeded();
 
     /**
+     * Causes any parent nodes to get created as containers if they haven't already been
+     *
+     * @return this
+     */
+    public ProtectACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded();
+
+    /**
      * @deprecated this has been generalized to support all create modes. Instead, use:
      * <pre>
      *     client.create().withProtection().withMode(CreateMode.PERSISTENT_SEQUENTIAL)...

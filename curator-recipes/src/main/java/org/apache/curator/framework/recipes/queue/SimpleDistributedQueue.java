@@ -19,7 +19,8 @@
 package org.apache.curator.framework.recipes.queue;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.EnsurePathContainers;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -32,7 +33,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -50,7 +50,7 @@ public class SimpleDistributedQueue
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final String path;
-    private final EnsurePath ensurePath;
+    private final EnsurePathContainers ensurePath;
 
     private final String PREFIX = "qn-";
 
@@ -62,7 +62,7 @@ public class SimpleDistributedQueue
     {
         this.client = client;
         this.path = PathUtils.validatePath(path);
-        ensurePath = client.newNamespaceAwareEnsurePath(path);
+        ensurePath = client.newNamespaceAwareEnsurePathContainers(path);
     }
 
     /**

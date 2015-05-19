@@ -220,7 +220,7 @@ public class SharedValue implements Closeable, SharedValueReader
         client.getConnectionStateListenable().addListener(connectionStateListener);
         try
         {
-            client.create().creatingParentsIfNeeded().forPath(path, seedValue);
+            client.create().creatingParentContainersIfNeeded().forPath(path, seedValue);
         }
         catch ( KeeperException.NodeExistsException ignore )
         {

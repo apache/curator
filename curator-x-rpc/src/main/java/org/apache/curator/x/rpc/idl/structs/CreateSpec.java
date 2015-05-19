@@ -45,11 +45,14 @@ public class CreateSpec
     @ThriftField(7)
     public boolean withProtection;
 
+    @ThriftField(8)
+    public boolean creatingParentContainersIfNeeded;
+
     public CreateSpec()
     {
     }
 
-    public CreateSpec(String path, byte[] data, RpcCreateMode mode, String asyncContext, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection)
+    public CreateSpec(String path, byte[] data, RpcCreateMode mode, String asyncContext, boolean compressed, boolean creatingParentsIfNeeded, boolean withProtection, boolean creatingParentContainersIfNeeded)
     {
         this.path = path;
         this.data = data;
@@ -58,5 +61,6 @@ public class CreateSpec
         this.compressed = compressed;
         this.creatingParentsIfNeeded = creatingParentsIfNeeded;
         this.withProtection = withProtection;
+        this.creatingParentContainersIfNeeded = creatingParentContainersIfNeeded;
     }
 }

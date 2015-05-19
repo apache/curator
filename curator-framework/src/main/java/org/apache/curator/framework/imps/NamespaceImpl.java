@@ -19,6 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.EnsurePathContainers;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.utils.PathUtils;
 
@@ -85,5 +86,10 @@ class NamespaceImpl
     EnsurePath newNamespaceAwareEnsurePath(String path)
     {
         return new EnsurePath(fixForNamespace(path, false), client.getAclProvider());
+    }
+
+    EnsurePathContainers newNamespaceAwareEnsurePathContainers(String path)
+    {
+        return new EnsurePathContainers(fixForNamespace(path, false), client.getAclProvider());
     }
 }

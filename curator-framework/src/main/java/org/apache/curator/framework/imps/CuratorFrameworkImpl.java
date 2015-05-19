@@ -39,6 +39,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateManager;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.EnsurePathContainers;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
@@ -455,6 +456,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
         return namespace.newNamespaceAwareEnsurePath(path);
+    }
+
+    @Override
+    public EnsurePathContainers newNamespaceAwareEnsurePathContainers(String path)
+    {
+        return namespace.newNamespaceAwareEnsurePathContainers(path);
     }
 
     ACLProvider getAclProvider()

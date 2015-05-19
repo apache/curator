@@ -29,6 +29,7 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,9 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Utility to reap empty child nodes of a parent node. Periodically calls getChildren on
  * the node and adds empty nodes to an internally managed {@link Reaper}
+ *
+ * @deprecated Reaper/ChildReaper are no longer needed. Use {@link CreateMode#CONTAINER}.
+ * Also, all Curator recipes create container parents.
  */
 public class ChildReaper implements Closeable
 {

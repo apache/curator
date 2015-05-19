@@ -47,6 +47,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     private CreateMode createMode;
     private Backgrounding backgrounding;
     private boolean createParentsIfNeeded;
+    private boolean createParentsAsContainers;
     private boolean doProtected;
     private boolean compress;
     private String protectedId;
@@ -65,6 +66,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         backgrounding = new Backgrounding();
         acling = new ACLing(client.getAclProvider());
         createParentsIfNeeded = false;
+        createParentsAsContainers = false;
         compress = false;
         doProtected = false;
         protectedId = null;
@@ -127,6 +129,13 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             {
                 createParentsIfNeeded = true;
                 return asACLCreateModePathAndBytesable();
+            }
+
+            @Override
+            public ACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded()
+            {
+                createParentsAsContainers = true;
+                return creatingParentsIfNeeded();
             }
 
             @Override
@@ -257,6 +266,13 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 return CreateBuilderImpl.this.forPath(path);
             }
         };
+    }
+
+    @Override
+    public ProtectACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded()
+    {
+        createParentsAsContainers = true;
+        return creatingParentsIfNeeded();
     }
 
     @Override
@@ -519,7 +535,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             {
                 try
                 {
-                    ZKPaths.mkdirs(client.getZooKeeper(), mainOperationAndData.getData().getPath(), false, client.getAclProvider());
+                    ZKPaths.mkdirs(client.getZooKeeper(), mainOperationAndData.getData().getPath(), false, client.getAclProvider(), createParentsAsContainers);
                 }
                 catch ( KeeperException e )
                 {
@@ -699,7 +715,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                             {
                                 if ( createParentsIfNeeded )
                                 {
-                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider());
+                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
                                     createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
                                 }
                                 else

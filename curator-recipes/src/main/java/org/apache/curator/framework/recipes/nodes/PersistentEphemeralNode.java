@@ -254,7 +254,7 @@ public class PersistentEphemeralNode implements Closeable
             }
         };
 
-        createMethod = mode.isProtected() ? client.create().creatingParentsIfNeeded().withProtection() : client.create().creatingParentsIfNeeded();
+        createMethod = mode.isProtected() ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
         this.data.set(Arrays.copyOf(data, data.length));
     }
     

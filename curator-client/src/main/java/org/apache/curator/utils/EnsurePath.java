@@ -64,7 +64,7 @@ public class EnsurePath
         }
     };
 
-    private interface Helper
+    interface Helper
     {
         public void ensure(CuratorZookeeperClient client, String path, final boolean makeLastNode) throws Exception;
     }
@@ -110,7 +110,18 @@ public class EnsurePath
         return new EnsurePath(path, helper, false, aclProvider);
     }
 
-    private EnsurePath(String path, AtomicReference<Helper> helper, boolean makeLastNode, InternalACLProvider aclProvider)
+    /**
+     * Returns a view of this EnsurePath instance that does not make the last node and also makes containers.
+     * i.e. if the path is "/a/b/c" only "/a/b" will be ensured
+     *
+     * @return view
+     */
+    public EnsurePathContainers excludingLastContainers()
+    {
+        return new EnsurePathContainers(path, helper, false, aclProvider);
+    }
+
+    protected EnsurePath(String path, AtomicReference<Helper> helper, boolean makeLastNode, InternalACLProvider aclProvider)
     {
         this.path = path;
         this.makeLastNode = makeLastNode;
@@ -126,6 +137,11 @@ public class EnsurePath
     public String getPath()
     {
         return this.path;
+    }
+
+    protected boolean asContainers()
+    {
+        return false;
     }
 
     private class InitialHelper implements Helper
@@ -145,7 +161,7 @@ public class EnsurePath
                             @Override
                             public Object call() throws Exception
                             {
-                                ZKPaths.mkdirs(client.getZooKeeper(), path, makeLastNode, aclProvider);
+                                ZKPaths.mkdirs(client.getZooKeeper(), path, makeLastNode, aclProvider, asContainers());
                                 helper.set(doNothingHelper);
                                 isSet = true;
                                 return null;

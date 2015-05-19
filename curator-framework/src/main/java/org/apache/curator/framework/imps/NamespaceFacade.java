@@ -25,6 +25,7 @@ import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.EnsurePathContainers;
 import org.apache.zookeeper.ZooKeeper;
 
 class NamespaceFacade extends CuratorFrameworkImpl
@@ -146,6 +147,12 @@ class NamespaceFacade extends CuratorFrameworkImpl
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
         return namespace.newNamespaceAwareEnsurePath(path);
+    }
+
+    @Override
+    public EnsurePathContainers newNamespaceAwareEnsurePathContainers(String path)
+    {
+        return namespace.newNamespaceAwareEnsurePathContainers(path);
     }
 
     @Override
