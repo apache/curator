@@ -26,6 +26,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,8 +37,31 @@ public class ZKPaths
      * Zookeeper's path separator character.
      */
     public static final String PATH_SEPARATOR = "/";
-    
-    
+
+    private static class CreatModeHolder
+    {
+        private static final Logger log = LoggerFactory.getLogger(ZKPaths.class);
+        private static final CreateMode containerCreateMode;
+
+        static
+        {
+            CreateMode localCreateMode = CreateMode.PERSISTENT;
+            for ( CreateMode createMode : CreateMode.class.getEnumConstants() )
+            {
+                if ( createMode.name().equals("CONTAINER") )
+                {
+                    localCreateMode = createMode;
+                    break;
+                }
+            }
+            if ( localCreateMode == CreateMode.PERSISTENT )
+            {
+                log.warn("The version of ZooKeeper being used doesn't support Container nodes. CreateMode.PERSISTENT will be used instead");
+            }
+            containerCreateMode = localCreateMode;
+        }
+    }
+
     /**
      * Apply the namespace to the given path
      *
@@ -246,7 +271,7 @@ public class ZKPaths
                     {
                         acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
                     }
-                    zookeeper.create(subPath, new byte[0], acl, asContainers ? CreateMode.CONTAINER : CreateMode.PERSISTENT);
+                    zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers));
                 }
                 catch ( KeeperException.NodeExistsException e )
                 {
@@ -413,5 +438,10 @@ public class ZKPaths
 
     private ZKPaths()
     {
+    }
+
+    private static CreateMode getCreateMode(boolean asContainers)
+    {
+        return asContainers ? CreatModeHolder.containerCreateMode : CreateMode.PERSISTENT;
     }
 }
