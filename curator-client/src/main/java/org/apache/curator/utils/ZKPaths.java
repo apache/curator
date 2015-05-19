@@ -53,17 +53,14 @@ public class ZKPaths
 
         static
         {
-            CreateMode localCreateMode = CreateMode.PERSISTENT;
-            for ( CreateMode createMode : CreateMode.class.getEnumConstants() )
+            CreateMode localCreateMode;
+            try
             {
-                if ( createMode.name().equals("CONTAINER") )
-                {
-                    localCreateMode = createMode;
-                    break;
-                }
+                localCreateMode = CreateMode.valueOf("CONTAINER");
             }
-            if ( localCreateMode == CreateMode.PERSISTENT )
+            catch ( IllegalArgumentException ignore )
             {
+                localCreateMode = CreateMode.PERSISTENT;
                 log.warn("The version of ZooKeeper being used doesn't support Container nodes. CreateMode.PERSISTENT will be used instead");
             }
             containerCreateMode = localCreateMode;
