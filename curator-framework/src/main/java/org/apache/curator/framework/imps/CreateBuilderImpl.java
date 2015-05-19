@@ -134,7 +134,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             @Override
             public ACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded()
             {
-                createParentsAsContainers = true;
+                setCreateParentsAsContainers();
                 return creatingParentsIfNeeded();
             }
 
@@ -271,8 +271,16 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     @Override
     public ProtectACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded()
     {
-        createParentsAsContainers = true;
+        setCreateParentsAsContainers();
         return creatingParentsIfNeeded();
+    }
+
+    private void setCreateParentsAsContainers()
+    {
+        if ( client.useContainerParentsIfAvailable() )
+        {
+            createParentsAsContainers = true;
+        }
     }
 
     @Override

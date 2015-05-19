@@ -78,6 +78,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ACLProvider aclProvider;
     private final NamespaceFacadeCache namespaceFacadeCache;
     private final NamespaceWatcherMap namespaceWatcherMap = new NamespaceWatcherMap(this);
+    private final boolean useContainerParentsIfAvailable;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -118,6 +119,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
+        useContainerParentsIfAvailable = builder.useContainerParentsIfAvailable();
 
         byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -182,6 +184,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespace = new NamespaceImpl(this, null);
         state = parent.state;
         authInfos = parent.authInfos;
+        useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
     }
 
     @Override
@@ -461,7 +464,18 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public EnsurePathContainers newNamespaceAwareEnsurePathContainers(String path)
     {
-        return namespace.newNamespaceAwareEnsurePathContainers(path);
+        if ( useContainerParentsIfAvailable )
+        {
+            return namespace.newNamespaceAwareEnsurePathContainers(path);
+        }
+        return new EnsurePathContainers(path)
+        {
+            @Override
+            protected boolean asContainers()
+            {
+                return false;
+            }
+        };
     }
 
     ACLProvider getAclProvider()
@@ -487,6 +501,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     CompressionProvider getCompressionProvider()
     {
         return compressionProvider;
+    }
+
+    boolean useContainerParentsIfAvailable()
+    {
+        return useContainerParentsIfAvailable;
     }
 
     <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
