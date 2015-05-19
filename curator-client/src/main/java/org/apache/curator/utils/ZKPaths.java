@@ -38,10 +38,10 @@ public class ZKPaths
      */
     public static final String PATH_SEPARATOR = "/";
 
-    private static class CreatModeHolder
+    public static class CreatModeHolder
     {
         private static final Logger log = LoggerFactory.getLogger(ZKPaths.class);
-        private static final CreateMode containerCreateMode;
+        public static final CreateMode containerCreateMode;
 
         static
         {
