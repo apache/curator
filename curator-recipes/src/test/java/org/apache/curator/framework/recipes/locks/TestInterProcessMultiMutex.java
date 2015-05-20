@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -84,13 +85,14 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
             }
             catch ( Exception e )
             {
+                // ignore
             }
             Assert.assertFalse(goodLock.isAcquiredInThisProcess());
             Assert.assertTrue(otherGoodLock.isAcquiredInThisProcess());
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -142,13 +144,14 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
             }
             catch ( Exception e )
             {
+                // ignore
             }
             Assert.assertFalse(goodLock.isAcquiredInThisProcess());
             Assert.assertTrue(goodLockWasLocked.get());
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 }

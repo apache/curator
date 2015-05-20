@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework.api;
 
-public interface Quietly<T>
+public interface BackgroundPathableQuietly<T> extends BackgroundPathable<T>, Quietly<BackgroundPathable<T>>
 {
-    public T quietly();
 }

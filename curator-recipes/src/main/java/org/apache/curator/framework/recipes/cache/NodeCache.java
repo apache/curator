@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -54,7 +55,7 @@ import org.apache.curator.utils.PathUtils;
 public class NodeCache implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final String path;
     private final boolean dataIsCompressed;
     private final EnsurePath ensurePath;
@@ -129,7 +130,7 @@ public class NodeCache implements Closeable
      */
     public NodeCache(CuratorFramework client, String path, boolean dataIsCompressed)
     {
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.dataIsCompressed = dataIsCompressed;
         ensurePath = client.newNamespaceAwareEnsurePath(path).excludingLast();
@@ -172,6 +173,7 @@ public class NodeCache implements Closeable
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
+            client.removeWatchers();
             listeners.clear();
         }
         client.getConnectionStateListenable().removeListener(connectionStateListener);

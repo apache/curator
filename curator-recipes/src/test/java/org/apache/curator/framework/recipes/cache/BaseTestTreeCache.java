@@ -22,6 +22,7 @@ package org.apache.curator.framework.recipes.cache;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
@@ -123,7 +124,7 @@ public class BaseTestTreeCache extends BaseClassForTests
             finally
             {
                 CloseableUtils.closeQuietly(cache);
-                CloseableUtils.closeQuietly(client);
+                TestCleanState.closeAndTestClean(client);
             }
         }
         finally

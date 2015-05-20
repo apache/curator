@@ -239,4 +239,13 @@ public interface CuratorFramework extends Closeable
      * @throws InterruptedException If interrupted while waiting
      */
     public void blockUntilConnected() throws InterruptedException;
+
+    /**
+     * Returns a facade of the current instance that tracks
+     * watchers created and allows a one-shot removal of all watchers
+     * via {@link WatcherRemoveCuratorFramework#removeWatchers()}
+     *
+     * @return facade
+     */
+    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework();
 }

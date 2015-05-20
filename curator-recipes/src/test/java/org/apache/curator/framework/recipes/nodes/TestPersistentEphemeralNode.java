@@ -22,6 +22,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
@@ -36,6 +37,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Arrays;
@@ -57,6 +59,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     private final Timing timing = new Timing();
 
     @AfterMethod
+    @Override
     public void teardown() throws Exception
     {
         for ( PersistentEphemeralNode node : createdNodes )
@@ -66,10 +69,8 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
         for ( CuratorFramework curator : curatorInstances )
         {
-            curator.close();
+            TestCleanState.closeAndTestClean(curator);
         }
-
-        super.teardown();
     }
 
     @Test
@@ -115,7 +116,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -125,10 +126,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         server.close();
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        PersistentEphemeralNode node = null;
         try
         {
             client.start();
-            PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
+            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
             node.start();
 
             final CountDownLatch connectedLatch = new CountDownLatch(1);
@@ -157,7 +159,8 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(node);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -240,7 +243,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             {
                 node.close();
             }
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 

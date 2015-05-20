@@ -16,47 +16,72 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
-import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorListener;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
 
-class NamespaceFacade extends CuratorFrameworkImpl
+class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemoveCuratorFramework
 {
     private final CuratorFrameworkImpl client;
-    private final NamespaceImpl namespace;
-    private final FailedDeleteManager failedDeleteManager = new FailedDeleteManager(this);
+    private final WatcherRemovalManager removalManager;
 
-    NamespaceFacade(CuratorFrameworkImpl client, String namespace)
+    WatcherRemovalFacade(CuratorFrameworkImpl client)
     {
         super(client);
         this.client = client;
-        this.namespace = new NamespaceImpl(client, namespace);
+        removalManager = new WatcherRemovalManager(client);
+    }
+
+    @Override
+    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework()
+    {
+        return client.newWatcherRemoveCuratorFramework();
+    }
+
+    WatcherRemovalManager getRemovalManager()
+    {
+        return removalManager;
+    }
+
+    @Override
+    public void removeWatchers()
+    {
+        removalManager.removeWatchers();
+    }
+
+    @Override
+    WatcherRemovalManager getWatcherRemovalManager()
+    {
+        return removalManager;
     }
 
     @Override
     public CuratorFramework nonNamespaceView()
     {
-        return usingNamespace(null);
+        return client.nonNamespaceView();
     }
 
     @Override
     public CuratorFramework usingNamespace(String newNamespace)
     {
-        return client.getNamespaceFacadeCache().get(newNamespace);
+        return client.usingNamespace(newNamespace);
     }
 
     @Override
     public String getNamespace()
     {
-        return namespace.getNamespace();
+        return client.getNamespace();
     }
 
     @Override
@@ -80,7 +105,7 @@ class NamespaceFacade extends CuratorFrameworkImpl
     @Override
     public Listenable<CuratorListener> getCuratorListenable()
     {
-        throw new UnsupportedOperationException("getCuratorListenable() is only available from a non-namespaced CuratorFramework instance");
+        return client.getCuratorListenable();
     }
 
     @Override
@@ -92,7 +117,7 @@ class NamespaceFacade extends CuratorFrameworkImpl
     @Override
     public void sync(String path, Object context)
     {
-        internalSync(this, path, context);
+        client.sync(path, context);
     }
 
     @Override
@@ -128,24 +153,24 @@ class NamespaceFacade extends CuratorFrameworkImpl
     @Override
     String unfixForNamespace(String path)
     {
-        return namespace.unfixForNamespace(path);
+        return client.unfixForNamespace(path);
     }
 
     @Override
     String fixForNamespace(String path)
     {
-        return namespace.fixForNamespace(path);
+        return client.fixForNamespace(path);
     }
 
     @Override
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
-        return namespace.newNamespaceAwareEnsurePath(path);
+        return client.newNamespaceAwareEnsurePath(path);
     }
 
     @Override
     FailedDeleteManager getFailedDeleteManager()
     {
-        return failedDeleteManager;
+        return client.getFailedDeleteManager();
     }
 }

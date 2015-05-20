@@ -29,6 +29,7 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.listen.Listenable;
@@ -150,6 +151,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
         failedDeleteManager = new FailedDeleteManager(this);
         failedRemoveWatcherManager = new FailedRemoveWatchManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
+    }
+
+    @Override
+    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework()
+    {
+        return new WatcherRemovalFacade(this);
     }
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
@@ -578,14 +585,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         final String localReason = reason;
         unhandledErrorListeners.forEach(new Function<UnhandledErrorListener, Void>()
+        {
+            @Override
+            public Void apply(UnhandledErrorListener listener)
             {
-                @Override
-                public Void apply(UnhandledErrorListener listener)
-                {
-                    listener.unhandledError(localReason, e);
-                    return null;
-                }
-            });
+                listener.unhandledError(localReason, e);
+                return null;
+            }
+        });
 
         if ( debugUnhandledErrorListener != null )
         {
@@ -666,6 +673,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         }
         return Watcher.Event.KeeperState.fromInt(-1);
+    }
+
+    WatcherRemovalManager getWatcherRemovalManager()
+    {
+        return null;
     }
 
     private void suspendConnection()

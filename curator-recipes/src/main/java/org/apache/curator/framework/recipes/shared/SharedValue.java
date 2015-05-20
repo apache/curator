@@ -22,6 +22,7 @@ package org.apache.curator.framework.recipes.shared;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
@@ -45,7 +46,7 @@ public class SharedValue implements Closeable, SharedValueReader
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final ListenerContainer<SharedValueListener> listeners = new ListenerContainer<SharedValueListener>();
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final String path;
     private final byte[] seedValue;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
@@ -87,7 +88,7 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public SharedValue(CuratorFramework client, String path, byte[] seedValue)
     {
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.seedValue = Arrays.copyOf(seedValue, seedValue.length);
         currentValue = new AtomicReference<VersionedValue<byte[]>>(new VersionedValue<byte[]>(0, Arrays.copyOf(seedValue, seedValue.length)));
@@ -233,8 +234,9 @@ public class SharedValue implements Closeable, SharedValueReader
     @Override
     public void close() throws IOException
     {
-        client.getConnectionStateListenable().removeListener(connectionStateListener);
         state.set(State.CLOSED);
+        client.removeWatchers();
+        client.getConnectionStateListenable().removeListener(connectionStateListener);
         listeners.clear();
     }
 

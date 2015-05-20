@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.CuratorFramework;
@@ -75,7 +76,7 @@ public class InterProcessSemaphoreV2
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final InterProcessMutex lock;
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final String leasesPath;
     private final Watcher watcher = new Watcher()
     {
@@ -115,7 +116,7 @@ public class InterProcessSemaphoreV2
 
     private InterProcessSemaphoreV2(CuratorFramework client, String path, int maxLeases, SharedCountReader count)
     {
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
         path = PathUtils.validatePath(path);
         lock = new InterProcessMutex(client, ZKPaths.makePath(path, LOCK_PARENT));
         this.maxLeases = (count != null) ? count.getCount() : maxLeases;
@@ -345,35 +346,42 @@ public class InterProcessSemaphoreV2
             String nodeName = ZKPaths.getNodeFromPath(path);
             builder.add(makeLease(path));
 
-            synchronized(this)
+            try
             {
-                for(;;)
+                synchronized(this)
                 {
-                    List<String> children = client.getChildren().usingWatcher(watcher).forPath(leasesPath);
-                    if ( !children.contains(nodeName) )
+                    for(;;)
                     {
-                        log.error("Sequential path not found: " + path);
-                        return InternalAcquireResult.RETRY_DUE_TO_MISSING_NODE;
-                    }
-
-                    if ( children.size() <= maxLeases )
-                    {
-                        break;
-                    }
-                    if ( hasWait )
-                    {
-                        long thisWaitMs = getThisWaitMs(startMs, waitMs);
-                        if ( thisWaitMs <= 0 )
+                        List<String> children = client.getChildren().usingWatcher(watcher).forPath(leasesPath);
+                        if ( !children.contains(nodeName) )
                         {
-                            return InternalAcquireResult.RETURN_NULL;
+                            log.error("Sequential path not found: " + path);
+                            return InternalAcquireResult.RETRY_DUE_TO_MISSING_NODE;
                         }
-                        wait(thisWaitMs);
-                    }
-                    else
-                    {
-                        wait();
+
+                        if ( children.size() <= maxLeases )
+                        {
+                            break;
+                        }
+                        if ( hasWait )
+                        {
+                            long thisWaitMs = getThisWaitMs(startMs, waitMs);
+                            if ( thisWaitMs <= 0 )
+                            {
+                                return InternalAcquireResult.RETURN_NULL;
+                            }
+                            wait(thisWaitMs);
+                        }
+                        else
+                        {
+                            wait();
+                        }
                     }
                 }
+            }
+            finally
+            {
+                client.removeWatchers();
             }
         }
         finally
