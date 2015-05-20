@@ -228,12 +228,16 @@ public class TestWatcherRemovalManager extends BaseClassForTests
     {
         WatcherRemoveCuratorFramework removerClient = client.newWatcherRemoveCuratorFramework();
 
+        final CountDownLatch latch = new CountDownLatch(1);
         Watcher watcher = new Watcher()
         {
             @Override
             public void process(WatchedEvent event)
             {
-                // NOP
+                if ( event.getType() == Event.EventType.DataWatchRemoved )
+                {
+                    latch.countDown();
+                }
             }
         };
         removerClient.checkExists().usingWatcher(watcher).forPath("/hey");
@@ -243,7 +247,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
 
         removerClient.removeWatchers();
 
-        new Timing().sleepABit();
+        Assert.assertTrue(new Timing().awaitLatch(latch));
 
         existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
         Assert.assertEquals(existWatches.size(), 0);
