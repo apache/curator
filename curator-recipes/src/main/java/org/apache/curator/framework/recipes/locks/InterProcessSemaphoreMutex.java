@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 public class InterProcessSemaphoreMutex implements InterProcessLock
 {
     private final InterProcessSemaphoreV2 semaphore;
+    private final WatcherRemoveCuratorFramework watcherRemoveClient;
     private volatile Lease lease;
 
     /**
@@ -37,7 +39,8 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
      */
     public InterProcessSemaphoreMutex(CuratorFramework client, String path)
     {
-        this.semaphore = new InterProcessSemaphoreV2(client, path, 1);
+        watcherRemoveClient = client.newWatcherRemoveCuratorFramework();
+        this.semaphore = new InterProcessSemaphoreV2(watcherRemoveClient, path, 1);
     }
 
     @Override
@@ -66,6 +69,7 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
         try
         {
             lease.close();
+            watcherRemoveClient.removeWatchers();
         }
         finally
         {

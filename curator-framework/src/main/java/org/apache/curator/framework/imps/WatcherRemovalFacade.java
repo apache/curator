@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.CuratorZookeeperClient;
@@ -45,7 +46,7 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
     @Override
     public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework()
     {
-        throw new UnsupportedOperationException();
+        return client.newWatcherRemoveCuratorFramework();
     }
 
     WatcherRemovalManager getRemovalManager()

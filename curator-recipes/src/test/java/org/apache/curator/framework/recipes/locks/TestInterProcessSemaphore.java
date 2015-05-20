@@ -20,13 +20,14 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.recipes.shared.SharedCount;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Collection;
@@ -100,10 +101,12 @@ public class TestInterProcessSemaphore extends BaseClassForTests
 
             future1.get();
             future2.get();
+
+            count.close();
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -140,8 +143,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client1);
-            CloseableUtils.closeQuietly(client2);
+            TestCleanState.closeAndTestClean(client1);
+            TestCleanState.closeAndTestClean(client2);
         }
     }
 
@@ -226,7 +229,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                                     }
                                     finally
                                     {
-                                        client.close();
+                                        TestCleanState.closeAndTestClean(client);
                                     }
                                     return null;
                                 }
@@ -299,7 +302,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                             }
                             finally
                             {
-                                client.close();
+                                TestCleanState.closeAndTestClean(client);
                             }
                             return null;
                         }
@@ -401,7 +404,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -445,7 +448,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -463,7 +466,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -499,7 +502,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             {
                 CloseableUtils.closeQuietly(l);
             }
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -528,7 +531,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             {
                 CloseableUtils.closeQuietly(l);
             }
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 }
