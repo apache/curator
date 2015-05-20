@@ -181,7 +181,8 @@ public class TestWatcherRemovalManager extends BaseClassForTests
 
             final WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
 
-            final CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch createdLatch = new CountDownLatch(1);
+            final CountDownLatch deletedLatch = new CountDownLatch(1);
             Watcher watcher = new Watcher()
             {
                 @Override
@@ -197,10 +198,11 @@ public class TestWatcherRemovalManager extends BaseClassForTests
                         {
                             e.printStackTrace();
                         }
+                        createdLatch.countDown();
                     }
                     else if ( event.getType() == Event.EventType.NodeDeleted )
                     {
-                        latch.countDown();
+                        deletedLatch.countDown();
                     }
                 }
             };
@@ -209,12 +211,12 @@ public class TestWatcherRemovalManager extends BaseClassForTests
             Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.create().forPath("/yo");
 
-            timing.sleepABit();
+            Assert.assertTrue(timing.awaitLatch(createdLatch));
             Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
 
             removerClient.delete().forPath("/yo");
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            Assert.assertTrue(timing.awaitLatch(deletedLatch));
 
             Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
         }
