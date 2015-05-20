@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>2.8.1-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -56,7 +56,7 @@
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <jdk-version>1.6</jdk-version>
+        <jdk-version>1.7</jdk-version>
 
         <surefire-forkcount>1</surefire-forkcount>
 
@@ -74,7 +74,7 @@
         <jetty-version>6.1.26</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
         <resteasy-jaxrs-version>2.3.0.GA</resteasy-jaxrs-version>
-        <zookeeper-version>3.4.6</zookeeper-version>
+        <zookeeper-version>3.5.0-alpha</zookeeper-version>
         <guava-version>16.0.1</guava-version>
         <testng-version>6.8.8</testng-version>
         <swift-version>0.12.0</swift-version>
