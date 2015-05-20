@@ -69,7 +69,7 @@ public class WatcherRemovalManager
                 log.debug("Removing watcher for path: " + entry.path);
                 RemoveWatchesBuilderImpl builder = new RemoveWatchesBuilderImpl(client);
                 builder.prepInternalRemoval(entry);
-                builder.pathInForeground(entry.path);
+                builder.pathInBackground(entry.path);
             }
             catch ( Exception e )
             {

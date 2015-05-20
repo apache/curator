@@ -66,7 +66,8 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         this.watcher = watcher;
         watcherType = WatcherType.Any;
         quietly = true;
-        this.backgrounding = new Backgrounding();
+        this.backgrounding = new Backgrounding(true);
+        guaranteed = true;
     }
 
     @Override
@@ -190,7 +191,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         return null;
     }    
     
-    private void pathInBackground(final String path)
+    void pathInBackground(final String path)
     {
         OperationAndData.ErrorCallback<String>  errorCallback = null;
         
@@ -211,7 +212,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
                                                                        errorCallback, backgrounding.getContext(), !local), null);
     }
     
-    void pathInForeground(final String path) throws Exception
+    private void pathInForeground(final String path) throws Exception
     {
         //For the local case we don't want to use the normal retry loop and we don't want to block until a connection is available.
         //We just execute the removeWatch, and if it fails, ZK will just remove local watches.
