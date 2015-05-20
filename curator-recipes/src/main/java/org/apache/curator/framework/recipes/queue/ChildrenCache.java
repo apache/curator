@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.queue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -36,7 +37,7 @@ import org.apache.curator.utils.PathUtils;
 
 class ChildrenCache implements Closeable
 {
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final String path;
     private final AtomicReference<Data> children = new AtomicReference<Data>(new Data(Lists.<String>newArrayList(), 0));
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
@@ -79,7 +80,7 @@ class ChildrenCache implements Closeable
 
     ChildrenCache(CuratorFramework client, String path)
     {
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
     }
 
@@ -91,6 +92,7 @@ class ChildrenCache implements Closeable
     @Override
     public void close() throws IOException
     {
+        client.removeWatchers();
         isClosed.set(true);
         notifyFromCallback();
     }
