@@ -31,7 +31,9 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
@@ -102,7 +104,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             @Override
             public void process(WatchedEvent watchedEvent)
             {
-                CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null);
+                CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null, null);
                 processEvent(event);
             }
         }, builder.getRetryPolicy(), builder.canBeReadOnly());
@@ -276,7 +278,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 @Override
                 public Void apply(CuratorListener listener)
                 {
-                    CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null);
+                    CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null, null);
                     try
                     {
                         listener.eventReceived(CuratorFrameworkImpl.this, event);
@@ -398,11 +400,39 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
+    public ReconfigBuilder reconfig()
+    {
+        return new ReconfigBuilderImpl(this);
+    }
+
+    @Override
+    public GetConfigBuilder getConfig()
+    {
+        return new GetConfigBuilderImpl(this);
+    }
+
+    @Override
     public CuratorTransaction inTransaction()
     {
         Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
 
         return new CuratorTransactionImpl(this);
+    }
+
+    @Override
+    public CuratorMultiTransaction transaction()
+    {
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
+
+        return new CuratorMultiTransactionImpl(this);
+    }
+
+    @Override
+    public TransactionOp transactionOp()
+    {
+        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
+
+        return new TransactionOpImpl(this);
     }
 
     @Override
@@ -822,7 +852,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             if ( e instanceof CuratorConnectionLossException )
             {
                 WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
-                CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null);
+                CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null, null);
                 if ( checkBackgroundRetry(operationAndData, event) )
                 {
                     queueOperation(operationAndData);

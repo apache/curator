@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.api.transaction;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.ZooKeeper;
 
 /**
@@ -49,6 +50,8 @@ import org.apache.zookeeper.ZooKeeper;
  *     <b>Important:</b> the operations are not submitted until
  *     {@link CuratorTransactionFinal#commit()} is called.
  * </p>
+ *
+ * @deprecated Use {@link CuratorFramework#transaction()}
  */
 public interface CuratorTransaction
 {
@@ -57,26 +60,26 @@ public interface CuratorTransaction
      *
      * @return builder object
      */
-    public TransactionCreateBuilder create();
+    public TransactionCreateBuilder<CuratorTransactionBridge> create();
 
     /**
      * Start a delete builder in the transaction
      *
      * @return builder object
      */
-    public TransactionDeleteBuilder delete();
+    public TransactionDeleteBuilder<CuratorTransactionBridge> delete();
 
     /**
      * Start a setData builder in the transaction
      *
      * @return builder object
      */
-    public TransactionSetDataBuilder setData();
+    public TransactionSetDataBuilder<CuratorTransactionBridge> setData();
 
     /**
      * Start a check builder in the transaction
-     *ChildData
+     *
      * @return builder object
      */
-    public TransactionCheckBuilder check();
+    public TransactionCheckBuilder<CuratorTransactionBridge> check();
 }

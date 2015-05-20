@@ -42,7 +42,12 @@ h3. Methods
 |getData()|Begins an operation to get a ZNode's data. Call additional methods (watch, background or get stat) and finalize the operation by calling forPath()|
 |setData()|Begins an operation to set a ZNode's data. Call additional methods (version or background) and finalize the operation by calling forPath()|
 |getChildren()|Begins an operation to get a ZNode's list of children ZNodes. Call additional methods (watch, background or get stat) and finalize the operation by calling forPath()|
-|inTransaction()|Begins an atomic ZooKeeper transaction. Combine create, setData, check, and/or delete operations and then commit() as a unit.|
+|transactionOp()|Used to allocate operations to be used with transaction().|
+|transaction()|Atomically submit a set of operations as a transaction.|
+|getACL()|Begins an operation to return a ZNode's ACL settings. Call additional methods and finalize the operation by calling forPath()|
+|setACL()|Begins an operation to set a ZNode's ACL settings. Call additional methods and finalize the operation by calling forPath()|
+|getConfig()|Begins an operation to return the last committed configuration. Call additional methods and finalize the operation by calling forEnsemble()|
+|reconfig()|Begins an operation to change the configuration. Call additional methods and finalize the operation by calling forEnsemble()|
 
 h3. Notifications
 Notifications for background operations and watches are published via the ClientListener interface. You register listeners with the
@@ -51,18 +56,24 @@ CuratorFramework instance using the addListener() method. The listener implement
 |eventReceived()|A background operation has completed or a watch has triggered. Examine the given event for details|
 <td>clientClosedDueToError()|An unrecoverable error has occurred. The CuratorFramework instance has been shut down|
 
-h3. ClientEvent
-The ClientEvent object is a super\-set POJO that can hold every type of background notification and triggered watch. The useful fields of
-ClientEvent depend on the type of event which is exposed via the getType() method.
+h3. CuratorEvent
+The CuratorEvent object is a super\-set POJO that can hold every type of background notification and triggered watch. The useful fields of
+CuratorEvent depend on the type of event which is exposed via the getType() method.
 
 ||Event Type||Event Methods||
 |CREATE|getResultCode() and getPath()|
 |DELETE|getResultCode() and getPath()|
 |EXISTS|getResultCode(), getPath() and getStat()|
-|GET_DATA|getResultCode(), getPath(), getStat() and getData()|
-|SET_DATA|getResultCode(), getPath() and getStat()|
+|GET\_DATA|getResultCode(), getPath(), getStat() and getData()|
+|SET\_DATA|getResultCode(), getPath() and getStat()|
 |CHILDREN|getResultCode(), getPath(), getStat(), getChildren()|
+|SYNC|getResultCode(), getStat()|
+|GET\_ACL|getResultCode(), getACLList()|
+|SET\_ACL|getResultCode()|
+|TRANSACTION|getResultCode(), getOpResults()|
 |WATCHED|getWatchedEvent()|
+|GET\_CONFIG|getResultCode(), getData()|
+|RECONFIG|getResultCode(), getData()|
 
 h2. Namespaces
 Because a ZooKeeper cluster is a shared environment, it's vital that a namespace convention is

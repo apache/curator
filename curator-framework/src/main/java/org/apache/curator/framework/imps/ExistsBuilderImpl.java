@@ -119,7 +119,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx, Stat stat)
             {
                 trace.commit();
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null);
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };
