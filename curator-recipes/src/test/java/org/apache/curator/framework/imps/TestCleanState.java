@@ -35,25 +35,20 @@ public class TestCleanState
         try
         {
             CuratorFrameworkImpl internalClient = (CuratorFrameworkImpl)client;
-            if ( !internalClient.getNamespaceWatcherMap().isEmpty() )
-            {
-                throw new AssertionError("NamespaceWatcherMap is not empty");
-            }
-
             ZooKeeper zooKeeper = internalClient.getZooKeeper();
             if ( zooKeeper != null )
             {
                 if ( WatchersDebug.getChildWatches(zooKeeper).size() != 0 )
                 {
-                    throw new AssertionError("One or more child watchers are still registered");
+                    throw new AssertionError("One or more child watchers are still registered: " + WatchersDebug.getChildWatches(zooKeeper));
                 }
                 if ( WatchersDebug.getExistWatches(zooKeeper).size() != 0 )
                 {
-                    throw new AssertionError("One or more exists watchers are still registered");
+                    throw new AssertionError("One or more exists watchers are still registered: " + WatchersDebug.getExistWatches(zooKeeper));
                 }
                 if ( WatchersDebug.getDataWatches(zooKeeper).size() != 0 )
                 {
-                    throw new AssertionError("One or more data watchers are still registered");
+                    throw new AssertionError("One or more data watchers are still registered: " + WatchersDebug.getDataWatches(zooKeeper));
                 }
             }
         }

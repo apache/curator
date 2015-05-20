@@ -269,7 +269,6 @@ public class PersistentEphemeralNode implements Closeable
             return;
         }
 
-        client.removeWatchers();
         client.getConnectionStateListenable().removeListener(connectionStateListener);
 
         try
@@ -280,6 +279,8 @@ public class PersistentEphemeralNode implements Closeable
         {
             throw new IOException(e);
         }
+
+        client.removeWatchers();
     }
 
     /**

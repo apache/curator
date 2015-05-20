@@ -34,6 +34,7 @@ public class BaseClassForTests
 
     private static final int    RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
+    private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
     static
     {
         String s = null;
@@ -47,6 +48,17 @@ public class BaseClassForTests
             e.printStackTrace();
         }
         INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES = s;
+
+        try
+        {
+            // use reflection to avoid adding a circular dependency in the pom
+            s = (String)Class.forName("org.apache.curator.utils.DebugUtils").getField("PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND").get(null);
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
+        INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND = s;
     }
 
     @BeforeSuite(alwaysRun = true)
@@ -65,6 +77,7 @@ public class BaseClassForTests
         {
             System.setProperty(INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
         }
+        System.setProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND, "true");
 
         while ( server == null )
         {
@@ -83,6 +96,7 @@ public class BaseClassForTests
     @AfterMethod
     public void teardown() throws Exception
     {
+        System.clearProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND);
         server.close();
         server = null;
     }

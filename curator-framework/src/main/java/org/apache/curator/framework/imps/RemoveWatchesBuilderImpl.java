@@ -33,6 +33,7 @@ import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.RemoveWatchesLocal;
 import org.apache.curator.framework.api.RemoveWatchesBuilder;
 import org.apache.curator.framework.api.RemoveWatchesType;
+import org.apache.curator.utils.DebugUtils;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -61,13 +62,22 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         this.backgrounding = new Backgrounding();
     }
 
-    void prepInternalRemoval(Watcher watcher)
+    void internalRemoval(Watcher watcher, String path) throws Exception
     {
         this.watcher = watcher;
         watcherType = WatcherType.Any;
         quietly = true;
-        this.backgrounding = new Backgrounding(true);
         guaranteed = true;
+        if ( Boolean.getBoolean(DebugUtils.PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND) )
+        {
+            this.backgrounding = new Backgrounding();
+            pathInForeground(path);
+        }
+        else
+        {
+            this.backgrounding = new Backgrounding(true);
+            pathInBackground(path);
+        }
     }
 
     @Override
@@ -191,7 +201,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         return null;
     }    
     
-    void pathInBackground(final String path)
+    private void pathInBackground(final String path)
     {
         OperationAndData.ErrorCallback<String>  errorCallback = null;
         

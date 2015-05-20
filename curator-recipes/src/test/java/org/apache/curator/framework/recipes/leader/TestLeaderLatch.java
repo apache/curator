@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
@@ -96,7 +97,7 @@ public class TestLeaderLatch extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(latch);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -126,7 +127,7 @@ public class TestLeaderLatch extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(latch);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -158,7 +159,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -213,7 +214,7 @@ public class TestLeaderLatch extends BaseClassForTests
             {
                 CloseableUtils.closeQuietly(latch);
             }
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -256,9 +257,8 @@ public class TestLeaderLatch extends BaseClassForTests
             {
                 CloseableUtils.closeQuietly(latch);
             }
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
-
     }
 
     @Test
@@ -320,7 +320,7 @@ public class TestLeaderLatch extends BaseClassForTests
         finally
         {
             executorService.shutdownNow();
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -416,7 +416,7 @@ public class TestLeaderLatch extends BaseClassForTests
                     CloseableUtils.closeQuietly(latch);
                 }
             }
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -504,7 +504,7 @@ public class TestLeaderLatch extends BaseClassForTests
                     CloseableUtils.closeQuietly(latch);
                 }
             }
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -583,7 +583,7 @@ public class TestLeaderLatch extends BaseClassForTests
             {
                 CloseableUtils.closeQuietly(notifiedLeader);
             }
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -639,7 +639,7 @@ public class TestLeaderLatch extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(leader);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
             CloseableUtils.closeQuietly(server);
         }
     }
@@ -709,7 +709,7 @@ public class TestLeaderLatch extends BaseClassForTests
             {
                 CloseableUtils.closeQuietly(latch);
             }
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -745,6 +745,6 @@ public class TestLeaderLatch extends BaseClassForTests
     {
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        LeaderLatch latch = new LeaderLatch(client, "parent");
+        new LeaderLatch(client, "parent");
     }
 }

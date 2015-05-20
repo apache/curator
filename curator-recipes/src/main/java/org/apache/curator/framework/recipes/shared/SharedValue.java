@@ -234,9 +234,9 @@ public class SharedValue implements Closeable, SharedValueReader
     @Override
     public void close() throws IOException
     {
+        state.set(State.CLOSED);
         client.removeWatchers();
         client.getConnectionStateListenable().removeListener(connectionStateListener);
-        state.set(State.CLOSED);
         listeners.clear();
     }
 

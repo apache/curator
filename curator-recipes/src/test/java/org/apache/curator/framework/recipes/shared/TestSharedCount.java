@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -147,7 +148,7 @@ public class TestSharedCount extends BaseClassForTests
             }
             for ( CuratorFramework client : clients )
             {
-                CloseableUtils.closeQuietly(client);
+                TestCleanState.closeAndTestClean(client);
             }
         }
     }
@@ -170,7 +171,7 @@ public class TestSharedCount extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(count);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -215,7 +216,7 @@ public class TestSharedCount extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(count);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -252,8 +253,8 @@ public class TestSharedCount extends BaseClassForTests
         {
             CloseableUtils.closeQuietly(count2);
             CloseableUtils.closeQuietly(count1);
-            CloseableUtils.closeQuietly(client2);
-            CloseableUtils.closeQuietly(client1);
+            TestCleanState.closeAndTestClean(client2);
+            TestCleanState.closeAndTestClean(client1);
         }
     }
 }
