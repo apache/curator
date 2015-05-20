@@ -18,6 +18,6 @@
  */
 package org.apache.curator.framework.api;
 
-public interface DeleteBuilder extends GuaranteeableDelete, ChildrenDeletable
+public interface DeleteBuilder extends GuaranteeableDeletable, ChildrenDeletable
 {
 }
