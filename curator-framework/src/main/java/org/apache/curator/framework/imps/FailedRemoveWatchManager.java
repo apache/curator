@@ -19,18 +19,38 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.Watcher;
 
-class FailedDeleteManager extends FailedOperationManager<String>
+class FailedRemoveWatchManager extends FailedOperationManager<FailedRemoveWatchManager.FailedRemoveWatchDetails>
 {
-    FailedDeleteManager(CuratorFramework client)
+    FailedRemoveWatchManager(CuratorFramework client)
     {
         super(client);
     }
 
     @Override
-    protected void executeGuaranteedOperationInBackground(String path)
+    protected void executeGuaranteedOperationInBackground(FailedRemoveWatchDetails details)
             throws Exception
     {
-        client.delete().guaranteed().inBackground().forPath(path);
+        if(details.watcher ==  null)
+        {
+            client.watches().removeAll().guaranteed().inBackground().forPath(details.path);
+        }
+        else
+        {
+            client.watches().remove(details.watcher).guaranteed().inBackground().forPath(details.path);
+        }
+    }
+    
+    static class FailedRemoveWatchDetails
+    {
+        public final String path;
+        public final Watcher watcher;
+        
+        public FailedRemoveWatchDetails(String path, Watcher watcher)
+        {
+            this.path = path;
+            this.watcher = watcher;
+        }
     }
 }

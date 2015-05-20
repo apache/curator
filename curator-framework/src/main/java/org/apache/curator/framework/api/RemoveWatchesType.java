@@ -24,7 +24,7 @@ import org.apache.zookeeper.Watcher.WatcherType;
  * Builder to allow the specification of whether it is acceptable to remove client side watch information
  * in the case where ZK cannot be contacted. 
  */
-public interface RemoveWatchesType
+public interface RemoveWatchesType extends RemoveWatchesLocal, Guaranteeable<BackgroundPathableQuietly<Void>>
 {
    
     /**

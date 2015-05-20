@@ -45,15 +45,17 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     private CuratorFrameworkImpl client;
     private Watcher watcher;
     private WatcherType watcherType;
+    private boolean guaranteed;
     private boolean local;
-    private boolean quietly;
+    private boolean quietly;    
     private Backgrounding backgrounding;
     
     public RemoveWatchesBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
         this.watcher = null;
-        this.watcherType = null;
+        this.watcherType = WatcherType.Any;
+        this.guaranteed = false;
         this.local = false;
         this.quietly = false;
         this.backgrounding = new Backgrounding();
@@ -70,14 +72,26 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     @Override
     public RemoveWatchesType remove(Watcher watcher)
     {
-        this.watcher = watcher == null ? null : client.getNamespaceWatcherMap().getNamespaceWatcher(watcher);
+        if(watcher == null) {
+            this.watcher = null;
+        } else {
+            //Try and get the namespaced version of the watcher.
+            this.watcher = client.getNamespaceWatcherMap().get(watcher);
+            
+            //If this is not present then default to the original watcher. This shouldn't happen in practice unless the user
+            //has added a watch directly to the ZK client rather than via the CuratorFramework.
+            if(this.watcher == null) {
+                this.watcher = watcher;
+            }
+        }
+
         return this;
     }
     
     @Override
     public RemoveWatchesType remove(CuratorWatcher watcher)
     {
-        this.watcher = watcher == null ? null : client.getNamespaceWatcherMap().getNamespaceWatcher(watcher);
+        this.watcher = watcher == null ? null : client.getNamespaceWatcherMap().get(watcher);
         return this;
     }    
 
@@ -137,9 +151,16 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         backgrounding = new Backgrounding(context);
         return this;
     }
+    
+    @Override
+    public RemoveWatchesLocal guaranteed()
+    {
+        guaranteed = true;
+        return this;
+    }    
 
     @Override
-    public BackgroundPathableQuietly<Void> local()
+    public BackgroundPathableQuietly<Void> locally()
     {
         local = true;
         return this;
@@ -169,44 +190,87 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         return null;
     }    
     
-    private void pathInBackground(String path)
+    private void pathInBackground(final String path)
     {
-        OperationAndData.ErrorCallback<String>  errorCallback = null;        
-        client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), errorCallback, backgrounding.getContext()), null);
+        OperationAndData.ErrorCallback<String>  errorCallback = null;
+        
+        //Only need an error callback if we're in guaranteed mode
+        if(guaranteed)
+        {
+            errorCallback = new OperationAndData.ErrorCallback<String>()
+            {
+                @Override
+                public void retriesExhausted(OperationAndData<String> operationAndData)
+                {
+                    client.getFailedRemoveWatcherManager().addFailedOperation(new FailedRemoveWatchManager.FailedRemoveWatchDetails(path, watcher));
+                }            
+            };
+        }
+        
+        client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(),
+                                                                       errorCallback, backgrounding.getContext(), !local), null);
     }
     
     void pathInForeground(final String path) throws Exception
     {
-        RetryLoop.callWithRetry(client.getZookeeperClient(), 
-                new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
+        //For the local case we don't want to use the normal retry loop and we don't want to block until a connection is available.
+        //We just execute the removeWatch, and if it fails, ZK will just remove local watches.
+        if(local)
+        {
+            ZooKeeper zkClient = client.getZooKeeper();
+            if(watcher == null)
+            {
+                zkClient.removeAllWatches(path, watcherType, local);    
+            }
+            else
+            {
+                zkClient.removeWatches(path, watcher, watcherType, local);
+            }
+        }
+        else
+        {
+            RetryLoop.callWithRetry(client.getZookeeperClient(), 
+                    new Callable<Void>()
                     {
-                        try
+                        @Override
+                        public Void call() throws Exception
                         {
-                            ZooKeeper zkClient = client.getZooKeeper();
-                            if(watcher == null)
+                            try
                             {
-                                zkClient.removeAllWatches(path, watcherType, local);    
+                                ZooKeeper zkClient = client.getZookeeperClient().getZooKeeper();    
+                                
+                                if(watcher == null)
+                                {
+                                    zkClient.removeAllWatches(path, watcherType, local);    
+                                }
+                                else
+                                {
+                                    zkClient.removeWatches(path, watcher, watcherType, local);
+                                }
                             }
-                            else
+                            catch(Exception e)
                             {
-                                zkClient.removeWatches(path, watcher, watcherType, local);
+                                if( RetryLoop.isRetryException(e) && guaranteed )
+                                {
+                                    //Setup the guaranteed handler
+                                    client.getFailedRemoveWatcherManager().addFailedOperation(new FailedRemoveWatchManager.FailedRemoveWatchDetails(path, watcher));
+                                    throw e;
+                                }
+                                else if(e instanceof KeeperException.NoWatcherException && quietly)
+                                {
+                                    //Ignore
+                                }
+                                else
+                                {
+                                    //Rethrow
+                                    throw e;
+                                }
                             }
-                        }
-                        catch(KeeperException.NoWatcherException e)
-                        {
-                            //Swallow this exception if the quietly flag is set, otherwise rethrow.
-                            if(!quietly)
-                            {
-                                throw e;
-                            }
-                        }
                      
-                        return null;
-                    }
-                });
+                            return null;
+                        }
+            });
+        }
     }
     
     @Override

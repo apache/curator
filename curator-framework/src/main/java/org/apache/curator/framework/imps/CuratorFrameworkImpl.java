@@ -73,6 +73,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final AtomicReference<AuthInfo> authInfo = new AtomicReference<AuthInfo>();
     private final byte[] defaultData;
     private final FailedDeleteManager failedDeleteManager;
+    private final FailedRemoveWatchManager failedRemoveWatcherManager;
     private final CompressionProvider compressionProvider;
     private final ACLProvider aclProvider;
     private final NamespaceFacadeCache namespaceFacadeCache;
@@ -148,6 +149,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
 
         failedDeleteManager = new FailedDeleteManager(this);
+        failedRemoveWatcherManager = new FailedRemoveWatchManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
     }
 
@@ -197,6 +199,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
         failedDeleteManager = parent.failedDeleteManager;
+        failedRemoveWatcherManager = parent.failedRemoveWatcherManager;
         compressionProvider = parent.compressionProvider;
         aclProvider = parent.aclProvider;
         namespaceFacadeCache = parent.namespaceFacadeCache;
@@ -494,6 +497,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         return failedDeleteManager;
     }
+    
+    FailedRemoveWatchManager getFailedRemoveWatcherManager()
+    {
+        return failedRemoveWatcherManager;
+    }    
 
     RetryLoop newRetryLoop()
     {
@@ -825,7 +833,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         try
         {
-            if ( client.isConnected() )
+            if ( !operationAndData.isConnectionRequired() || client.isConnected() )
             {
                 operationAndData.callPerformBackgroundOperation();
             }

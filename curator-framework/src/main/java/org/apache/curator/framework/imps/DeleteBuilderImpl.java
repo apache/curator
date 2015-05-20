@@ -203,7 +203,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                     @Override
                     public void retriesExhausted(OperationAndData<String> operationAndData)
                     {
-                        client.getFailedDeleteManager().addFailedDelete(unfixedPath);
+                        client.getFailedDeleteManager().addFailedOperation(unfixedPath);
                     }
                 };
             }
@@ -253,7 +253,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
             //Only retry a guaranteed delete if it's a retryable error
             if( RetryLoop.isRetryException(e) && guaranteed )
             {
-                client.getFailedDeleteManager().addFailedDelete(unfixedPath);
+                client.getFailedDeleteManager().addFailedOperation(unfixedPath);
             }
             throw e;
         }
