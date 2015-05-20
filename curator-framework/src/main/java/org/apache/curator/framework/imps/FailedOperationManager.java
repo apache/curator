@@ -22,11 +22,14 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+
 abstract class FailedOperationManager<T>
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     protected final CuratorFramework client;
     
+    @VisibleForTesting
     volatile FailedOperationManagerListener<T> debugListener = null;
     
     interface FailedOperationManagerListener<T>
