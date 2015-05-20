@@ -24,7 +24,7 @@ public interface Guaranteeable<T>
      * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
      * response can be successfully returned to the client.
      * 
-     * @see org.apache.curator.framework.api.GuaranteeableDelete 
+     * @see org.apache.curator.framework.api.GuaranteeableDeletable 
      *  
      * @return this
      */

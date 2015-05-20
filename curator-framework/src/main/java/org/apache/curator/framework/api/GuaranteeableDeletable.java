@@ -34,6 +34,6 @@ package org.apache.curator.framework.api;
  *  
  * @return this
  */
-public interface GuaranteeableDelete extends Guaranteeable<ChildrenDeletable>, BackgroundVersionable
+public interface GuaranteeableDeletable extends Guaranteeable<ChildrenDeletable>, BackgroundVersionable
 {
 }

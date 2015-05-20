@@ -70,14 +70,6 @@ class NamespaceWatcherMap implements Closeable
     {
         return map.remove(key);
     }
-    
-    /**
-     * Remove all watchers for a given path
-     * @param path
-     */
-    void removeAllForPath(String path) {
-        
-    }
 
     @VisibleForTesting
     boolean isEmpty()

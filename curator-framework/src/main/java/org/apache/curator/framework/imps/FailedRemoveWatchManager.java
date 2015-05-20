@@ -32,7 +32,7 @@ class FailedRemoveWatchManager extends FailedOperationManager<FailedRemoveWatchM
     protected void executeGuaranteedOperationInBackground(FailedRemoveWatchDetails details)
             throws Exception
     {
-        if(details.watcher ==  null)
+        if(details.watcher == null)
         {
             client.watches().removeAll().guaranteed().inBackground().forPath(details.path);
         }

@@ -7,7 +7,7 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.BackgroundPathable;
-import org.apache.curator.framework.api.BackgroundPathableQuietly;
+import org.apache.curator.framework.api.BackgroundPathableQuietlyable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -134,7 +134,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     }    
 
     @Override
-    public BackgroundPathableQuietly<Void> locally()
+    public BackgroundPathableQuietlyable<Void> locally()
     {
         local = true;
         return this;
