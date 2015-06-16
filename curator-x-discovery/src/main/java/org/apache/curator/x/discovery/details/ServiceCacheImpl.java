@@ -22,6 +22,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -54,15 +56,26 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         STOPPED
     }
 
+    private static CloseableExecutorService convertThreadFactory(ThreadFactory threadFactory)
+    {
+        Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
+        return new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory));
+    }
+
     ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory)
+    {
+        this(discovery, name, convertThreadFactory(threadFactory));
+    }
+
+    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, CloseableExecutorService executorService)
     {
         Preconditions.checkNotNull(discovery, "discovery cannot be null");
         Preconditions.checkNotNull(name, "name cannot be null");
-        Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
+        Preconditions.checkNotNull(executorService, "executorService cannot be null");
 
         this.discovery = discovery;
 
-        cache = new PathChildrenCache(discovery.getClient(), discovery.pathForName(name), true, threadFactory);
+        cache = new PathChildrenCache(discovery.getClient(), discovery.pathForName(name), true, false, executorService);
         cache.getListenable().addListener(this);
     }
 

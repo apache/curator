@@ -20,6 +20,7 @@ package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -35,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -245,6 +247,57 @@ public class TestServiceCache extends BaseClassForTests
             ServiceInstance<String>     instance3 = ServiceInstance.<String>builder().payload("thing").name("another").port(10064).build();
             discovery.registerService(instance3);
             Assert.assertFalse(semaphore.tryAcquire(3, TimeUnit.SECONDS));  // should not get called for a different service
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
+    public void testExecutorServiceIsInvoked() throws Exception {
+        List<Closeable> closeables = Lists.newArrayList();
+        try {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            ExecuteCalledWatchingExecutorService exec = new ExecuteCalledWatchingExecutorService(Executors.newSingleThreadExecutor());
+            Assert.assertFalse(exec.isExecuteCalled());
+
+            ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").executorService(exec).build();
+            closeables.add(cache);
+            cache.start();
+
+            final Semaphore semaphore = new Semaphore(0);
+            ServiceCacheListener listener = new ServiceCacheListener()
+            {
+                @Override
+                public void cacheChanged()
+                {
+                    semaphore.release();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+            cache.addListener(listener);
+
+            ServiceInstance<String>     instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            discovery.registerService(instance1);
+            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
+
+            Assert.assertTrue(exec.isExecuteCalled());
         }
         finally
         {
