@@ -517,7 +517,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
                         if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
                         {
-                            backgroundCreateParentsThenNode(operationAndData);
+                            backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
                         }
                         else
                         {
@@ -534,16 +534,16 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         return PROTECTED_PREFIX + protectedId + "-";
     }
 
-    private void backgroundCreateParentsThenNode(final OperationAndData<PathAndBytes> mainOperationAndData)
+    static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final boolean createParentsAsContainers)
     {
-        BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>()
+        BackgroundOperation<T> operation = new BackgroundOperation<T>()
         {
             @Override
-            public void performBackgroundOperation(OperationAndData<PathAndBytes> dummy) throws Exception
+            public void performBackgroundOperation(OperationAndData<T> dummy) throws Exception
             {
                 try
                 {
-                    ZKPaths.mkdirs(client.getZooKeeper(), mainOperationAndData.getData().getPath(), false, client.getAclProvider(), createParentsAsContainers);
+                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
                 }
                 catch ( KeeperException e )
                 {
@@ -552,7 +552,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 client.queueOperation(mainOperationAndData);
             }
         };
-        OperationAndData<PathAndBytes> parentOperation = new OperationAndData<PathAndBytes>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
+        OperationAndData<T> parentOperation = new OperationAndData<T>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
         client.queueOperation(parentOperation);
     }
 

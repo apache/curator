@@ -202,6 +202,7 @@ public interface CuratorFramework extends Closeable
      *
      * @param path path to ensure
      * @return new EnsurePath instance
+     * @deprecated prefer {@link CreateBuilder#creatingParentContainersIfNeeded()} or {@link ExistsBuilder#creatingParentContainersIfNeeded()}
      */
     public EnsurePath newNamespaceAwareEnsurePath(String path);
 

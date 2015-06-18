@@ -328,7 +328,7 @@ public class DistributedAtomicValue
             byte[]  newValue = makeValue.makeFrom(result.preValue);
             if ( createIt )
             {
-                client.create().forPath(path, newValue);
+                client.create().creatingParentContainersIfNeeded().forPath(path, newValue);
             }
             else
             {

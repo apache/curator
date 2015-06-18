@@ -176,6 +176,8 @@ public class SimpleDistributedQueue
 
     private byte[] internalPoll(long timeout, TimeUnit unit) throws Exception
     {
+        ensurePath();
+
         long            startMs = System.currentTimeMillis();
         boolean         hasTimeout = (unit != null);
         long            maxWaitMs = hasTimeout ? TimeUnit.MILLISECONDS.convert(timeout, unit) : Long.MAX_VALUE;
@@ -213,8 +215,22 @@ public class SimpleDistributedQueue
         }
     }
 
+    private void ensurePath() throws Exception
+    {
+        try
+        {
+            client.create().creatingParentContainersIfNeeded().forPath(path);
+        }
+        catch ( KeeperException.NodeExistsException ignore )
+        {
+            // ignore
+        }
+    }
+
     private byte[] internalElement(boolean removeIt, Watcher watcher) throws Exception
     {
+        ensurePath();
+
         List<String> nodes;
         try
         {

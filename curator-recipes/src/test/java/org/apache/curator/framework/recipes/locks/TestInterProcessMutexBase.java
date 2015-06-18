@@ -30,6 +30,8 @@ import org.apache.curator.test.KillSession;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -185,6 +187,12 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     @Test
     public void testContainerCleanup() throws Exception
     {
+        if ( !ZKPaths.hasContainerSupport() )
+        {
+            System.out.println("ZooKeeper version does not support Containers. Skipping test");
+            return;
+        }
+
         server.close();
 
         System.setProperty("container.checkIntervalMs", "10");

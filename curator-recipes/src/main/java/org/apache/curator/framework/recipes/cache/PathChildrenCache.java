@@ -33,7 +33,6 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
-import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -73,7 +72,6 @@ public class PathChildrenCache implements Closeable
     private final CloseableExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
-    private final EnsurePath ensurePath;
     private final ListenerContainer<PathChildrenCacheListener> listeners = new ListenerContainer<PathChildrenCacheListener>();
     private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
@@ -220,7 +218,6 @@ public class PathChildrenCache implements Closeable
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.executorService = executorService;
-        ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 
     /**
@@ -319,7 +316,7 @@ public class PathChildrenCache implements Closeable
     {
         Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
 
-        ensurePath.ensure(client.getZookeeperClient());
+        ensurePath();
 
         clear();
 
@@ -351,7 +348,7 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkArgument(ZKPaths.getPathAndNode(fullPath).getPath().equals(path), "Node is not part of this cache: " + fullPath);
         Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
 
-        ensurePath.ensure(client.getZookeeperClient());
+        ensurePath();
         internalRebuildNode(fullPath);
 
         // this is necessary so that any updates that occurred while rebuilding are taken
@@ -480,7 +477,7 @@ public class PathChildrenCache implements Closeable
 
     void refresh(final RefreshMode mode) throws Exception
     {
-        ensurePath.ensure(client.getZookeeperClient());
+        ensurePath();
 
         final BackgroundCallback callback = new BackgroundCallback()
         {
@@ -608,6 +605,18 @@ public class PathChildrenCache implements Closeable
                 // node no longer exists - remove it
                 currentData.remove(fullPath);
             }
+        }
+    }
+
+    private void ensurePath() throws Exception
+    {
+        try
+        {
+            client.create().creatingParentContainersIfNeeded().forPath(path);
+        }
+        catch ( KeeperException.NodeExistsException ignore )
+        {
+            // ignore
         }
     }
 

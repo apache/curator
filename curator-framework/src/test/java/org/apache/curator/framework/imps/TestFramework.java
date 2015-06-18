@@ -33,6 +33,7 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -421,6 +422,11 @@ public class TestFramework extends BaseClassForTests
     @Test
     public void testOverrideCreateParentContainers() throws Exception
     {
+        if ( !checkForContainers() )
+        {
+            return;
+        }
+
         CuratorFramework client = CuratorFrameworkFactory.builder()
             .connectString(server.getConnectString())
             .retryPolicy(new RetryOneTime(1))
@@ -449,6 +455,11 @@ public class TestFramework extends BaseClassForTests
     @Test
     public void testCreateParentContainers() throws Exception
     {
+        if ( !checkForContainers() )
+        {
+            return;
+        }
+
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
         CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).build();
         try
@@ -469,6 +480,16 @@ public class TestFramework extends BaseClassForTests
         {
             client.close();
         }
+    }
+
+    private boolean checkForContainers()
+    {
+        if ( ZKPaths.getContainerCreateMode() == CreateMode.PERSISTENT )
+        {
+            System.out.println("Not using CreateMode.CONTAINER enabled version of ZooKeeper");
+            return false;
+        }
+        return true;
     }
 
     @Test

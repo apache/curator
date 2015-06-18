@@ -47,6 +47,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *         ensurePath.ensure(zk);   // subsequent times are NOPs
  *         zk.create(nodePath, ...);
  * </pre>
+ *
+ * @deprecated Prefer CuratorFramework.create().creatingParentContainersIfNeeded() or CuratorFramework.exists().creatingParentContainersIfNeeded()
  */
 public class EnsurePath
 {

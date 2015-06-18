@@ -25,6 +25,7 @@ import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
+import java.io.IOException;
 import java.net.BindException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,19 +35,24 @@ public class BaseClassForTests
 
     private static final int    RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
+    private static final String INTERNAL_RETRY_FAILED_TESTS;
     static
     {
-        String s = null;
+        String logConnectionIssues = null;
+        String retryFailedTests = null;
         try
         {
             // use reflection to avoid adding a circular dependency in the pom
-            s = (String)Class.forName("org.apache.curator.utils.DebugUtils").getField("PROPERTY_DONT_LOG_CONNECTION_ISSUES").get(null);
+            Class<?> debugUtilsClazz = Class.forName("org.apache.curator.utils.DebugUtils");
+            logConnectionIssues = (String)debugUtilsClazz.getField("PROPERTY_DONT_LOG_CONNECTION_ISSUES").get(null);
+            retryFailedTests = (String)debugUtilsClazz.getField("PROPERTY_RETRY_FAILED_TESTS").get(null);
         }
         catch ( Exception e )
         {
             e.printStackTrace();
         }
-        INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES = s;
+        INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES = logConnectionIssues;
+        INTERNAL_RETRY_FAILED_TESTS = retryFailedTests;
     }
 
     @BeforeSuite(alwaysRun = true)
@@ -83,13 +89,23 @@ public class BaseClassForTests
     @AfterMethod
     public void teardown() throws Exception
     {
-        server.close();
-        server = null;
+        if ( server != null )
+        {
+            try
+            {
+                server.close();
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+            server = null;
+        }
     }
 
     private static class RetryTest implements IRetryAnalyzer
     {
-        private final AtomicBoolean hasBeenRetried = new AtomicBoolean(false);
+        private final AtomicBoolean hasBeenRetried = new AtomicBoolean(!Boolean.getBoolean(INTERNAL_RETRY_FAILED_TESTS));
 
         @Override
         public boolean retry(ITestResult result)

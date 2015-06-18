@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.api;
 
+import org.apache.zookeeper.CreateMode;
+
 public interface CreateBackgroundModeACLable extends
     BackgroundPathAndBytesable<String>,
     CreateModable<ACLBackgroundPathAndBytesable<String>>,
@@ -31,7 +33,10 @@ public interface CreateBackgroundModeACLable extends
     public ACLCreateModePathAndBytesable<String>    creatingParentsIfNeeded();
 
     /**
-     * Causes any parent nodes to get created as containers if they haven't already been
+     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
+     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
+     * If the ZooKeeper version you're using does not support containers, the parent nodes
+     * are created as ordinary PERSISTENT nodes.
      *
      * @return this
      */

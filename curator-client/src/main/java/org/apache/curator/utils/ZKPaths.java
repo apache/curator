@@ -38,12 +38,24 @@ public class ZKPaths
      */
     public static final String PATH_SEPARATOR = "/";
 
+    private static final CreateMode NON_CONTAINER_MODE = CreateMode.PERSISTENT;
+
     /**
      * @return {@link CreateMode#CONTAINER} if the ZK JAR supports it. Otherwise {@link CreateMode#PERSISTENT}
      */
     public static CreateMode getContainerCreateMode()
     {
         return CreateModeHolder.containerCreateMode;
+    }
+
+    /**
+     * Returns true if the version of ZooKeeper client in use supports containers
+     *
+     * @return true/false
+     */
+    public static boolean hasContainerSupport()
+    {
+        return getContainerCreateMode() != NON_CONTAINER_MODE;
     }
 
     private static class CreateModeHolder
@@ -60,7 +72,7 @@ public class ZKPaths
             }
             catch ( IllegalArgumentException ignore )
             {
-                localCreateMode = CreateMode.PERSISTENT;
+                localCreateMode = NON_CONTAINER_MODE;
                 log.warn("The version of ZooKeeper being used doesn't support Container nodes. CreateMode.PERSISTENT will be used instead.");
             }
             containerCreateMode = localCreateMode;
