@@ -14,24 +14,6 @@ Various static methods to help with using ZooKeeper ZNode paths:
 * getSortedChildren: Return the children of the given path sorted by sequence number
 * makePath: Given a parent path and a child node, create a combined full path
 
-h2. EnsurePath
-Utility to ensure that a particular path is created.
-The first time it is used, a synchronized call to {{ZKPaths.mkdirs(ZooKeeper, String)}} is made to ensure that the entire path has been created (with an empty byte array if needed). Subsequent calls with the instance are un\-synchronized NOPs.
-
-Usage:
-{code}
-EnsurePath       ensurePath = new EnsurePath(aFullPathToEnsure);
-...
-String           nodePath = aFullPathToEnsure + "/foo";
-ensurePath.ensure(zk);   // first time syncs and creates if needed
-zk.create(nodePath, ...);
-...
-ensurePath.ensure(zk);   // subsequent times are NOPs
-zk.create(nodePath, ...);
-{code}
-
-*NOTE:* There's a method in the [[CuratorFramework class|curator-framework/index.html]] that returns an EnsurePath instance that is namespace aware.
-
 h2. BlockingQueueConsumer
 
 See: *[[DistributedQueue|curator-recipes/distributed-queue.html]]* and *[[DistributedPriorityQueue|curator-recipes/distributed-priority-queue.html]]*
