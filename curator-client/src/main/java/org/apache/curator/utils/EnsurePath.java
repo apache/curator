@@ -48,8 +48,9 @@ import java.util.concurrent.atomic.AtomicReference;
  *         zk.create(nodePath, ...);
  * </pre>
  *
- * @deprecated Prefer CuratorFramework.create().creatingParentContainersIfNeeded() or CuratorFramework.exists().creatingParentContainersIfNeeded()
+ * @deprecated Since 2.9.0 - Prefer CuratorFramework.create().creatingParentContainersIfNeeded() or CuratorFramework.exists().creatingParentContainersIfNeeded()
  */
+@Deprecated
 public class EnsurePath
 {
     private final String path;

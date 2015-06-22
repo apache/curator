@@ -63,6 +63,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @deprecated Use {@link InterProcessSemaphoreV2} instead of this class. It uses a better algorithm.
  */
+@Deprecated
 public class InterProcessSemaphore
 {
     private final Logger        log = LoggerFactory.getLogger(getClass());

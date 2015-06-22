@@ -140,6 +140,7 @@ public class PathChildrenCache implements Closeable
      * @param mode   caching mode
      * @deprecated use {@link #PathChildrenCache(CuratorFramework, String, boolean)} instead
      */
+    @Deprecated
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode)
     {
@@ -153,6 +154,7 @@ public class PathChildrenCache implements Closeable
      * @param threadFactory factory to use when creating internal threads
      * @deprecated use {@link #PathChildrenCache(CuratorFramework, String, boolean, ThreadFactory)} instead
      */
+    @Deprecated
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode, ThreadFactory threadFactory)
     {
@@ -239,6 +241,7 @@ public class PathChildrenCache implements Closeable
      * @throws Exception errors
      * @deprecated use {@link #start(StartMode)}
      */
+    @Deprecated
     public void start(boolean buildInitial) throws Exception
     {
         start(buildInitial ? StartMode.BUILD_INITIAL_CACHE : StartMode.NORMAL);

@@ -59,6 +59,7 @@ public interface CuratorFramework extends Closeable
      * @return true/false
      * @deprecated use {@link #getState()} instead
      */
+    @Deprecated
     public boolean isStarted();
 
     /**
@@ -134,6 +135,7 @@ public interface CuratorFramework extends Closeable
      * @param backgroundContextObject optional context
      * @deprecated use {@link #sync()} instead
      */
+    @Deprecated
     public void sync(String path, Object backgroundContextObject);
 
     /**
@@ -170,8 +172,9 @@ public interface CuratorFramework extends Closeable
      * pre-pend the namespace to all paths
      *
      * @return facade
-     * @deprecated use {@link #usingNamespace} passing <code>null</code>
+     * @deprecated Since 2.9.0 - use {@link #usingNamespace} passing <code>null</code>
      */
+    @Deprecated
     public CuratorFramework nonNamespaceView();
 
     /**
@@ -202,8 +205,9 @@ public interface CuratorFramework extends Closeable
      *
      * @param path path to ensure
      * @return new EnsurePath instance
-     * @deprecated prefer {@link CreateBuilder#creatingParentContainersIfNeeded()} or {@link ExistsBuilder#creatingParentContainersIfNeeded()}
+     * @deprecated Since 2.9.0 - prefer {@link CreateBuilder#creatingParentContainersIfNeeded()} or {@link ExistsBuilder#creatingParentContainersIfNeeded()}
      */
+    @Deprecated
     public EnsurePath newNamespaceAwareEnsurePath(String path);
 
     /**

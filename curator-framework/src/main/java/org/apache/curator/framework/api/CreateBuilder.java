@@ -50,6 +50,7 @@ public interface CreateBuilder extends
      * </pre>
      * @return this
      */
+    @Deprecated
     public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();
 
     /**

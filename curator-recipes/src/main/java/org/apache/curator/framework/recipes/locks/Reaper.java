@@ -43,9 +43,10 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Utility to clean up parent lock nodes so that they don't stay around as garbage
  *
- * @deprecated Reaper/ChildReaper are no longer needed. Use {@link CreateMode#CONTAINER}.
+ * @deprecated Since 2.9.0 - Reaper/ChildReaper are no longer needed. Use {@link CreateMode#CONTAINER}.
  * Also, all Curator recipes create container parents.
  */
+@Deprecated
 public class Reaper implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());

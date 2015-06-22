@@ -50,9 +50,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * Utility to reap empty child nodes of a parent node. Periodically calls getChildren on
  * the node and adds empty nodes to an internally managed {@link Reaper}
  *
- * @deprecated Reaper/ChildReaper are no longer needed. Use {@link CreateMode#CONTAINER}.
+ * @deprecated Since 2.9.0 - Reaper/ChildReaper are no longer needed. Use {@link CreateMode#CONTAINER}.
  * Also, all Curator recipes create container parents.
  */
+@Deprecated
 public class ChildReaper implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
