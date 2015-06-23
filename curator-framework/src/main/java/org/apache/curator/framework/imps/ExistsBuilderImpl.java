@@ -131,15 +131,8 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx, Stat stat)
             {
                 trace.commit();
-                if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentContainersIfNeeded )
-                {
-                    CreateBuilderImpl.backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData(), backgrounding, true);
-                }
-                else
-                {
-                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null);
-                    client.processBackgroundOperation(operationAndData, event);
-                }
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null);
+                client.processBackgroundOperation(operationAndData, event);
             }
         };
         if ( watching.isWatched() )
@@ -160,7 +153,15 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
         Stat        returnStat = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            OperationAndData<String> operationAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext());
+            if ( createParentContainersIfNeeded )
+            {
+                CreateBuilderImpl.backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData(), backgrounding, true);
+            }
+            else
+            {
+                client.processBackgroundOperation(operationAndData, null);
+            }
         }
         else
         {
@@ -172,6 +173,40 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
 
     private Stat pathInForeground(final String path) throws Exception
     {
+        if ( createParentContainersIfNeeded )
+        {
+            final String parent = ZKPaths.getPathAndNode(path).getPath();
+            if ( !parent.equals(ZKPaths.PATH_SEPARATOR) )
+            {
+                TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground-CreateParents");
+                RetryLoop.callWithRetry
+                (
+                    client.getZookeeperClient(),
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            try
+                            {
+                                ZKPaths.mkdirs(client.getZooKeeper(), parent, true, client.getAclProvider(), true);
+                            }
+                            catch ( KeeperException e )
+                            {
+                                // ignore
+                            }
+                            return null;
+                        }
+                    }
+                );
+                trace.commit();
+            }
+        }
+        return pathInForegroundStandard(path);
+    }
+
+    private Stat pathInForegroundStandard(final String path) throws Exception
+    {
         TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground");
         Stat        returnStat = RetryLoop.callWithRetry
         (
@@ -182,41 +217,19 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
                 public Stat call() throws Exception
                 {
                     Stat    returnStat;
-                    try
+                    if ( watching.isWatched() )
                     {
-                        returnStat = callExists(path);
+                        returnStat = client.getZooKeeper().exists(path, true);
                     }
-                    catch ( KeeperException.NoNodeException e )
+                    else
                     {
-                        if ( createParentContainersIfNeeded )
-                        {
-                            ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), true);
-                            returnStat = callExists(path);
-                        }
-                        else
-                        {
-                            throw e;
-                        }
+                        returnStat = client.getZooKeeper().exists(path, watching.getWatcher());
                     }
                     return returnStat;
                 }
             }
         );
         trace.commit();
-        return returnStat;
-    }
-
-    private Stat callExists(String path) throws Exception
-    {
-        Stat    returnStat;
-        if ( watching.isWatched() )
-        {
-            returnStat = client.getZooKeeper().exists(path, true);
-        }
-        else
-        {
-            returnStat = client.getZooKeeper().exists(path, watching.getWatcher());
-        }
         return returnStat;
     }
 }

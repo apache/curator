@@ -134,7 +134,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -182,7 +182,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -239,7 +239,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -332,7 +332,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -415,7 +415,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -448,7 +448,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -478,7 +478,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -490,6 +490,57 @@ public class TestFramework extends BaseClassForTests
             return false;
         }
         return true;
+    }
+
+    @Test
+    public void testExistsCreatingParents() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three");
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+            Assert.assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testExistsCreatingParentsInBackground() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    latch.countDown();
+                }
+            };
+            client.checkExists().creatingParentContainersIfNeeded().inBackground(callback).forPath("/one/two/three");
+            Assert.assertTrue(new Timing().awaitLatch(latch));
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+            Assert.assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
     }
 
     @Test
@@ -512,7 +563,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -544,7 +595,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -575,7 +626,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -611,7 +662,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -642,7 +693,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -679,7 +730,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -716,7 +767,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -734,7 +785,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -754,7 +805,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -774,7 +825,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -797,7 +848,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -850,7 +901,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -883,7 +934,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -937,7 +988,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -953,7 +1004,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -971,7 +1022,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 }
