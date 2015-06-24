@@ -38,6 +38,7 @@ import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -327,6 +328,86 @@ public class TestDistributedQueue extends BaseClassForTests
         {
             client.close();
         }
+    }
+
+    /**
+     * Test ErrorMode.KEEP
+     *
+     * @throws Exception
+     */
+    @Test
+    public void     testKeepMode() throws Exception
+    {
+        Timing                    timing = new Timing();
+        CuratorFramework          client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+
+        final TestQueueItem       item1 = new TestQueueItem("1");
+        final TestQueueItem       item2 = new TestQueueItem("2");
+        final CountDownLatch      startLatch    = new CountDownLatch(1);
+        final CountDownLatch      consumerLatch = new CountDownLatch(1);
+
+        try
+        {
+            QueueConsumer<TestQueueItem>            consumer = new QueueConsumer<TestQueueItem>()
+            {
+                @Override
+                public void consumeMessage(TestQueueItem message) throws Exception
+                {
+                    startLatch.await();
+
+                    //  Proceed with test when 2nd item is processed
+                    if (message.equals(item2)) {
+                        consumerLatch.countDown();
+                    }
+
+                    throw new Exception();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+            DistributedQueue<TestQueueItem> queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH)
+                    .lockPath("/locks").putInBackground(false).buildQueue();
+            try
+            {
+                queue.setErrorMode(ErrorMode.KEEP);
+                queue.start();
+
+                queue.put(item1);
+                queue.put(item2);
+
+                // Snapshot of the queue before exception
+                List<String> list1 = queue.getChildren();
+                Collections.sort(list1);
+                startLatch.countDown();
+
+                // Wait till 2n time is consumed
+                consumerLatch.await();
+
+                // Wait one more second to let queue processing complete
+                Thread.sleep(1000);
+
+                // Snapshot of the queue after exception
+                List<String> list2 = queue.getChildren();
+                Collections.sort(list2);
+
+                // Check same items are in the queue
+                Assert.assertEquals(list1, list2);
+
+            }
+            finally
+            {
+                queue.close();
+            }
+        }
+        finally
+        {
+            client.close();
+        }
+
     }
 
     @Test
