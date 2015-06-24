@@ -493,6 +493,32 @@ public class TestFramework extends BaseClassForTests
     }
 
     @Test
+    public void testCreatingParentsTheSame() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three");
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+
+            client.delete().deletingChildrenIfNeeded().forPath("/one");
+            Assert.assertNull(client.checkExists().forPath("/one"));
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three");
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testExistsCreatingParents() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -501,6 +527,7 @@ public class TestFramework extends BaseClassForTests
             client.start();
 
             Assert.assertNull(client.checkExists().forPath("/one/two"));
+            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three");
             client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three");
             Assert.assertNotNull(client.checkExists().forPath("/one/two"));
             Assert.assertNull(client.checkExists().forPath("/one/two/three"));

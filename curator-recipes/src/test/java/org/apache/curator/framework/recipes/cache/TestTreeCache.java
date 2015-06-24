@@ -56,6 +56,19 @@ public class TestTreeCache extends BaseTestTreeCache
     }
 
     @Test
+    public void testCreateParents() throws Exception
+    {
+        cache = newTreeCacheWithListeners(client, "/one/two/three");
+        cache.start();
+        Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+        cache.close();
+
+        cache = TreeCache.newBuilder(client, "/one/two/three").setCreateParentNodes(true).build();
+        cache.start();
+        Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+    }
+
+    @Test
     public void testStartEmpty() throws Exception
     {
         cache = newTreeCacheWithListeners(client, "/test");

@@ -111,7 +111,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        client.newNamespaceAwareEnsurePath(queuePath).ensure(client.getZookeeperClient());
+        client.checkExists().creatingParentContainersIfNeeded().forPath(ZKPaths.makePath(queuePath, "foo"));
 
         getInitialQueues();
         leaderLatch.start();

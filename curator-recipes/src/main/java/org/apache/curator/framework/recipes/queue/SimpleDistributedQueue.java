@@ -217,14 +217,7 @@ public class SimpleDistributedQueue
 
     private void ensurePath() throws Exception
     {
-        try
-        {
-            client.create().creatingParentContainersIfNeeded().forPath(path);
-        }
-        catch ( KeeperException.NodeExistsException ignore )
-        {
-            // ignore
-        }
+        client.checkExists().creatingParentContainersIfNeeded().forPath(path);
     }
 
     private byte[] internalElement(boolean removeIt, Watcher watcher) throws Exception
