@@ -613,7 +613,7 @@ public class PathChildrenCache implements Closeable
 
     private void ensurePath() throws Exception
     {
-        client.checkExists().creatingParentContainersIfNeeded().forPath(path);
+        client.createContainers(path);
     }
 
     private void handleStateChange(ConnectionState newState)

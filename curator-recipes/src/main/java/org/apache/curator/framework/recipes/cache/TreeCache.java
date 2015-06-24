@@ -548,7 +548,7 @@ public class TreeCache implements Closeable
         Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
         if ( createParentNodes )
         {
-            client.checkExists().creatingParentContainersIfNeeded().forPath(root.path);
+            client.createContainers(root.path);
         }
         client.getConnectionStateListenable().addListener(connectionStateListener);
         if ( client.getZookeeperClient().isConnected() )

@@ -40,6 +40,7 @@ import org.apache.curator.framework.state.ConnectionStateManager;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -184,6 +185,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
         state = parent.state;
         authInfos = parent.authInfos;
         useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
+    }
+
+    @Override
+    public void createContainers(String path) throws Exception
+    {
+        checkExists().creatingParentContainersIfNeeded().forPath(ZKPaths.makePath(path, "foo"));
     }
 
     @Override

@@ -139,6 +139,15 @@ public interface CuratorFramework extends Closeable
     public void sync(String path, Object backgroundContextObject);
 
     /**
+     * Create all nodes in the specified path as containers if they don't
+     * already exist
+     *
+     * @param path path to create
+     * @throws Exception errors
+     */
+    public void createContainers(String path) throws Exception;
+
+    /**
      * Start a sync builder. Note: sync is ALWAYS in the background even
      * if you don't use one of the background() methods
      *
@@ -205,7 +214,8 @@ public interface CuratorFramework extends Closeable
      *
      * @param path path to ensure
      * @return new EnsurePath instance
-     * @deprecated Since 2.9.0 - prefer {@link CreateBuilder#creatingParentContainersIfNeeded()} or {@link ExistsBuilder#creatingParentContainersIfNeeded()}
+     * @deprecated Since 2.9.0 - prefer {@link CreateBuilder#creatingParentContainersIfNeeded()}, {@link ExistsBuilder#creatingParentContainersIfNeeded()}
+     * or {@link CuratorFramework#createContainers(String)}
      */
     @Deprecated
     public EnsurePath newNamespaceAwareEnsurePath(String path);

@@ -65,7 +65,7 @@ public class TestTreeCache extends BaseTestTreeCache
 
         cache = TreeCache.newBuilder(client, "/one/two/three").setCreateParentNodes(true).build();
         cache.start();
-        Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+        Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
     }
 
     @Test
