@@ -527,7 +527,6 @@ public class TestFramework extends BaseClassForTests
             client.start();
 
             Assert.assertNull(client.checkExists().forPath("/one/two"));
-            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three");
             client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three");
             Assert.assertNotNull(client.checkExists().forPath("/one/two"));
             Assert.assertNull(client.checkExists().forPath("/one/two/three"));
