@@ -18,9 +18,14 @@
  */
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.CuratorZookeeperClient;
+import org.apache.curator.RetryLoop;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.ZooDefs;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class NamespaceImpl
@@ -72,7 +77,20 @@ class NamespaceImpl
         {
             try
             {
-                client.createContainers(ZKPaths.makePath("/", namespace));
+                final CuratorZookeeperClient zookeeperClient = client.getZookeeperClient();
+                RetryLoop.callWithRetry
+                (
+                    zookeeperClient,
+                    new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            ZKPaths.mkdirs(zookeeperClient.getZooKeeper(), ZKPaths.makePath("/", namespace), true, client.getAclProvider(), true);
+                            return null;
+                        }
+                    }
+                );
                 ensurePathNeeded.set(false);
             }
             catch ( Exception e )
