@@ -61,6 +61,7 @@
         <surefire-forkcount>1</surefire-forkcount>
 
         <!-- versions -->
+        <zookeeper-version>3.4.6</zookeeper-version>
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
         <maven-bundle-plugin-version>2.3.7</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
@@ -74,7 +75,6 @@
         <jetty-version>6.1.26</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
         <resteasy-jaxrs-version>2.3.0.GA</resteasy-jaxrs-version>
-        <zookeeper-version>3.4.6</zookeeper-version>
         <guava-version>16.0.1</guava-version>
         <testng-version>6.8.8</testng-version>
         <swift-version>0.12.0</swift-version>
@@ -471,31 +471,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-    </dependencies>
 
     <reporting>
         <plugins>

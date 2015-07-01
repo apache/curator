@@ -47,7 +47,10 @@ import java.util.concurrent.atomic.AtomicReference;
  *         ensurePath.ensure(zk);   // subsequent times are NOPs
  *         zk.create(nodePath, ...);
  * </pre>
+ *
+ * @deprecated Since 2.9.0 - Prefer CuratorFramework.create().creatingParentContainersIfNeeded() or CuratorFramework.exists().creatingParentContainersIfNeeded()
  */
+@Deprecated
 public class EnsurePath
 {
     private final String path;
@@ -64,7 +67,7 @@ public class EnsurePath
         }
     };
 
-    private interface Helper
+    interface Helper
     {
         public void ensure(CuratorZookeeperClient client, String path, final boolean makeLastNode) throws Exception;
     }
@@ -110,7 +113,7 @@ public class EnsurePath
         return new EnsurePath(path, helper, false, aclProvider);
     }
 
-    private EnsurePath(String path, AtomicReference<Helper> helper, boolean makeLastNode, InternalACLProvider aclProvider)
+    protected EnsurePath(String path, AtomicReference<Helper> helper, boolean makeLastNode, InternalACLProvider aclProvider)
     {
         this.path = path;
         this.makeLastNode = makeLastNode;
@@ -126,6 +129,11 @@ public class EnsurePath
     public String getPath()
     {
         return this.path;
+    }
+
+    protected boolean asContainers()
+    {
+        return false;
     }
 
     private class InitialHelper implements Helper
@@ -145,7 +153,7 @@ public class EnsurePath
                             @Override
                             public Object call() throws Exception
                             {
-                                ZKPaths.mkdirs(client.getZooKeeper(), path, makeLastNode, aclProvider);
+                                ZKPaths.mkdirs(client.getZooKeeper(), path, makeLastNode, aclProvider, asContainers());
                                 helper.set(doNothingHelper);
                                 isSet = true;
                                 return null;

@@ -26,6 +26,7 @@ import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.utils.CloseableScheduledExecutorService;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -41,7 +42,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Utility to clean up parent lock nodes so that they don't stay around as garbage
+ *
+ * @deprecated Since 2.9.0 - Reaper/ChildReaper are no longer needed. Use {@link CreateMode#CONTAINER}.
+ * Also, all Curator recipes create container parents.
  */
+@Deprecated
 public class Reaper implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());

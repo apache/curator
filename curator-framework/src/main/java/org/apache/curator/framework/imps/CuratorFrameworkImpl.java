@@ -40,6 +40,7 @@ import org.apache.curator.framework.state.ConnectionStateManager;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -77,6 +78,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ACLProvider aclProvider;
     private final NamespaceFacadeCache namespaceFacadeCache;
     private final NamespaceWatcherMap namespaceWatcherMap = new NamespaceWatcherMap(this);
+    private final boolean useContainerParentsIfAvailable;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -117,6 +119,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
+        useContainerParentsIfAvailable = builder.useContainerParentsIfAvailable();
 
         byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -181,6 +184,13 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespace = new NamespaceImpl(this, null);
         state = parent.state;
         authInfos = parent.authInfos;
+        useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
+    }
+
+    @Override
+    public void createContainers(String path) throws Exception
+    {
+        checkExists().creatingParentContainersIfNeeded().forPath(ZKPaths.makePath(path, "foo"));
     }
 
     @Override
@@ -480,6 +490,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     CompressionProvider getCompressionProvider()
     {
         return compressionProvider;
+    }
+
+    boolean useContainerParentsIfAvailable()
+    {
+        return useContainerParentsIfAvailable;
     }
 
     <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)

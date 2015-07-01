@@ -19,7 +19,7 @@
 package org.apache.curator.framework.recipes.queue;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -50,7 +49,6 @@ public class SimpleDistributedQueue
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final String path;
-    private final EnsurePath ensurePath;
 
     private final String PREFIX = "qn-";
 
@@ -62,7 +60,6 @@ public class SimpleDistributedQueue
     {
         this.client = client;
         this.path = PathUtils.validatePath(path);
-        ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 
     /**
@@ -119,10 +116,8 @@ public class SimpleDistributedQueue
      */
     public boolean offer(byte[] data) throws Exception
     {
-        ensurePath.ensure(client.getZookeeperClient());
-
         String thisPath = ZKPaths.makePath(path, PREFIX);
-        client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(thisPath, data);
+        client.create().creatingParentContainersIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(thisPath, data);
         return true;
     }
 
@@ -181,7 +176,7 @@ public class SimpleDistributedQueue
 
     private byte[] internalPoll(long timeout, TimeUnit unit) throws Exception
     {
-        ensurePath.ensure(client.getZookeeperClient());
+        ensurePath();
 
         long            startMs = System.currentTimeMillis();
         boolean         hasTimeout = (unit != null);
@@ -220,9 +215,14 @@ public class SimpleDistributedQueue
         }
     }
 
+    private void ensurePath() throws Exception
+    {
+        client.createContainers(path);
+    }
+
     private byte[] internalElement(boolean removeIt, Watcher watcher) throws Exception
     {
-        ensurePath.ensure(client.getZookeeperClient());
+        ensurePath();
 
         List<String> nodes;
         try

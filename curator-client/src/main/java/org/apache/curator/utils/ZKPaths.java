@@ -26,6 +26,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,8 +37,48 @@ public class ZKPaths
      * Zookeeper's path separator character.
      */
     public static final String PATH_SEPARATOR = "/";
-    
-    
+
+    private static final CreateMode NON_CONTAINER_MODE = CreateMode.PERSISTENT;
+
+    /**
+     * @return {@link CreateMode#CONTAINER} if the ZK JAR supports it. Otherwise {@link CreateMode#PERSISTENT}
+     */
+    public static CreateMode getContainerCreateMode()
+    {
+        return CreateModeHolder.containerCreateMode;
+    }
+
+    /**
+     * Returns true if the version of ZooKeeper client in use supports containers
+     *
+     * @return true/false
+     */
+    public static boolean hasContainerSupport()
+    {
+        return getContainerCreateMode() != NON_CONTAINER_MODE;
+    }
+
+    private static class CreateModeHolder
+    {
+        private static final Logger log = LoggerFactory.getLogger(ZKPaths.class);
+        private static final CreateMode containerCreateMode;
+
+        static
+        {
+            CreateMode localCreateMode;
+            try
+            {
+                localCreateMode = CreateMode.valueOf("CONTAINER");
+            }
+            catch ( IllegalArgumentException ignore )
+            {
+                localCreateMode = NON_CONTAINER_MODE;
+                log.warn("The version of ZooKeeper being used doesn't support Container nodes. CreateMode.PERSISTENT will be used instead.");
+            }
+            containerCreateMode = localCreateMode;
+        }
+    }
+
     /**
      * Apply the namespace to the given path
      *
@@ -161,7 +203,7 @@ public class ZKPaths
      */
     public static void mkdirs(ZooKeeper zookeeper, String path) throws InterruptedException, KeeperException
     {
-        mkdirs(zookeeper, path, true, null);
+        mkdirs(zookeeper, path, true, null, false);
     }
 
     /**
@@ -176,7 +218,7 @@ public class ZKPaths
      */
     public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode) throws InterruptedException, KeeperException
     {
-        mkdirs(zookeeper, path, makeLastNode, null);
+        mkdirs(zookeeper, path, makeLastNode, null, false);
     }
 
     /**
@@ -191,6 +233,23 @@ public class ZKPaths
      * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
     public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider) throws InterruptedException, KeeperException
+    {
+        mkdirs(zookeeper, path, makeLastNode, aclProvider, false);
+    }
+
+    /**
+     * Make sure all the nodes in the path are created. NOTE: Unlike File.mkdirs(), Zookeeper doesn't distinguish
+     * between directories and files. So, every node in the path is created. The data for each node is an empty blob
+     *
+     * @param zookeeper    the client
+     * @param path         path to ensure
+     * @param makeLastNode if true, all nodes are created. If false, only the parent nodes are created
+     * @param aclProvider  if not null, the ACL provider to use when creating parent nodes
+     * @param asContainers if true, nodes are created as {@link CreateMode#CONTAINER}
+     * @throws InterruptedException                 thread interruption
+     * @throws org.apache.zookeeper.KeeperException Zookeeper errors
+     */
+    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider, boolean asContainers) throws InterruptedException, KeeperException
     {
         PathUtils.validatePath(path);
 
@@ -229,7 +288,7 @@ public class ZKPaths
                     {
                         acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
                     }
-                    zookeeper.create(subPath, new byte[0], acl, CreateMode.PERSISTENT);
+                    zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers));
                 }
                 catch ( KeeperException.NodeExistsException e )
                 {
@@ -396,5 +455,10 @@ public class ZKPaths
 
     private ZKPaths()
     {
+    }
+
+    private static CreateMode getCreateMode(boolean asContainers)
+    {
+        return asContainers ? getContainerCreateMode() : CreateMode.PERSISTENT;
     }
 }

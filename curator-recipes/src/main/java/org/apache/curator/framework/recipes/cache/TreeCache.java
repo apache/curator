@@ -69,6 +69,7 @@ import static org.apache.curator.utils.PathUtils.validatePath;
 public class TreeCache implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
+    private final boolean createParentNodes;
 
     public static final class Builder
     {
@@ -78,6 +79,7 @@ public class TreeCache implements Closeable
         private boolean dataIsCompressed = false;
         private CloseableExecutorService executorService = null;
         private int maxDepth = Integer.MAX_VALUE;
+        private boolean createParentNodes = false;
 
         private Builder(CuratorFramework client, String path)
         {
@@ -95,7 +97,7 @@ public class TreeCache implements Closeable
             {
                 executor = new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory));
             }
-            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor);
+            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes);
         }
 
         /**
@@ -157,6 +159,19 @@ public class TreeCache implements Closeable
         public Builder setMaxDepth(int maxDepth)
         {
             this.maxDepth = maxDepth;
+            return this;
+        }
+
+        /**
+         * By default, TreeCache does not auto-create parent nodes for the cached path. Change
+         * this behavior with this method. NOTE: parent nodes are created as containers
+         *
+         * @param createParentNodes true to create parent nodes
+         * @return this for chaining
+         */
+        public Builder setCreateParentNodes(boolean createParentNodes)
+        {
+            this.createParentNodes = createParentNodes;
             return this;
         }
     }
@@ -500,7 +515,7 @@ public class TreeCache implements Closeable
      */
     public TreeCache(CuratorFramework client, String path)
     {
-        this(client, path, true, false, Integer.MAX_VALUE, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
+        this(client, path, true, false, Integer.MAX_VALUE, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true), false);
     }
 
     /**
@@ -509,9 +524,11 @@ public class TreeCache implements Closeable
      * @param cacheData        if true, node contents are cached in addition to the stat
      * @param dataIsCompressed if true, data in the path is compressed
      * @param executorService  Closeable ExecutorService to use for the TreeCache's background thread
+     * @param createParentNodes true to create parent nodes as containers
      */
-    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService)
+    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService, boolean createParentNodes)
     {
+        this.createParentNodes = createParentNodes;
         this.root = new TreeNode(validatePath(path), null);
         this.client = client;
         this.cacheData = cacheData;
@@ -529,6 +546,10 @@ public class TreeCache implements Closeable
     public TreeCache start() throws Exception
     {
         Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
+        if ( createParentNodes )
+        {
+            client.createContainers(root.path);
+        }
         client.getConnectionStateListenable().addListener(connectionStateListener);
         if ( client.getZookeeperClient().isConnected() )
         {

@@ -231,7 +231,7 @@ public class PathCacheExample
         }
         catch ( KeeperException.NoNodeException e )
         {
-            client.create().creatingParentsIfNeeded().forPath(path, bytes);
+            client.create().creatingParentContainersIfNeeded().forPath(path, bytes);
         }
     }
 

@@ -14,24 +14,6 @@ Various static methods to help with using ZooKeeper ZNode paths:
 * getSortedChildren: Return the children of the given path sorted by sequence number
 * makePath: Given a parent path and a child node, create a combined full path
 
-h2. EnsurePath
-Utility to ensure that a particular path is created.
-The first time it is used, a synchronized call to {{ZKPaths.mkdirs(ZooKeeper, String)}} is made to ensure that the entire path has been created (with an empty byte array if needed). Subsequent calls with the instance are un\-synchronized NOPs.
-
-Usage:
-{code}
-EnsurePath       ensurePath = new EnsurePath(aFullPathToEnsure);
-...
-String           nodePath = aFullPathToEnsure + "/foo";
-ensurePath.ensure(zk);   // first time syncs and creates if needed
-zk.create(nodePath, ...);
-...
-ensurePath.ensure(zk);   // subsequent times are NOPs
-zk.create(nodePath, ...);
-{code}
-
-*NOTE:* There's a method in the [[CuratorFramework class|curator-framework/index.html]] that returns an EnsurePath instance that is namespace aware.
-
 h2. BlockingQueueConsumer
 
 See: *[[DistributedQueue|curator-recipes/distributed-queue.html]]* and *[[DistributedPriorityQueue|curator-recipes/distributed-priority-queue.html]]*
@@ -43,17 +25,3 @@ h2. QueueSharder
 Due to limitations in ZooKeeper's transport layer, a single queue will break if it has more than 10K\-ish items in it. This class
 provides a facade over multiple distributed queues. It monitors the queues and if any one of them goes over a threshold, a new
 queue is added. Puts are distributed amongst the queues.
-
-h2. Reaper and ChildReaper
-
-_Reaper_
-
-A Utility to delete parent paths of locks, etc. Periodically checks paths added to the reaper. If at check time, there are no
-children, the path is deleted. Clients should create one Reaper instance per application. Add lock paths to the reaper as
-needed and the reaper will periodically delete them. Curator's lock recipes will correctly handle parents getting deleted.
-
-_ChildReaper_
-
-Utility to reap the empty child nodes in a parent node. Periodically calls getChildren() on the node and adds empty nodes to an internally managed Reaper.
-
-*NOTE:* You should consider using LeaderSelector to run the Reapers as they don't need to run in every client.

@@ -8,7 +8,7 @@ enum PathChildrenCacheStartMode {
 }
 
 enum CreateMode {
-  PERSISTENT, PERSISTENT_SEQUENTIAL, EPHEMERAL, EPHEMERAL_SEQUENTIAL
+  PERSISTENT, PERSISTENT_SEQUENTIAL, EPHEMERAL, EPHEMERAL_SEQUENTIAL, CONTAINER
 }
 
 enum CuratorEventType {
@@ -175,6 +175,7 @@ struct CreateSpec {
   5: bool compressed;
   6: bool creatingParentsIfNeeded;
   7: bool withProtection;
+  8: bool creatingParentContainersIfNeeded;
 }
 
 struct DeleteSpec {

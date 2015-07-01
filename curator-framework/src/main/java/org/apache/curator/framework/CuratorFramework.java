@@ -24,7 +24,6 @@ import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
@@ -60,6 +59,7 @@ public interface CuratorFramework extends Closeable
      * @return true/false
      * @deprecated use {@link #getState()} instead
      */
+    @Deprecated
     public boolean isStarted();
 
     /**
@@ -135,7 +135,17 @@ public interface CuratorFramework extends Closeable
      * @param backgroundContextObject optional context
      * @deprecated use {@link #sync()} instead
      */
+    @Deprecated
     public void sync(String path, Object backgroundContextObject);
+
+    /**
+     * Create all nodes in the specified path as containers if they don't
+     * already exist
+     *
+     * @param path path to create
+     * @throws Exception errors
+     */
+    public void createContainers(String path) throws Exception;
 
     /**
      * Start a sync builder. Note: sync is ALWAYS in the background even
@@ -171,8 +181,9 @@ public interface CuratorFramework extends Closeable
      * pre-pend the namespace to all paths
      *
      * @return facade
-     * @deprecated use {@link #usingNamespace} passing <code>null</code>
+     * @deprecated Since 2.9.0 - use {@link #usingNamespace} passing <code>null</code>
      */
+    @Deprecated
     public CuratorFramework nonNamespaceView();
 
     /**
@@ -203,7 +214,10 @@ public interface CuratorFramework extends Closeable
      *
      * @param path path to ensure
      * @return new EnsurePath instance
+     * @deprecated Since 2.9.0 - prefer {@link CreateBuilder#creatingParentContainersIfNeeded()}, {@link ExistsBuilder#creatingParentContainersIfNeeded()}
+     * or {@link CuratorFramework#createContainers(String)}
      */
+    @Deprecated
     public EnsurePath newNamespaceAwareEnsurePath(String path);
 
     /**

@@ -51,9 +51,9 @@ CuratorFramework instance using the addListener() method. The listener implement
 |eventReceived()|A background operation has completed or a watch has triggered. Examine the given event for details|
 <td>clientClosedDueToError()|An unrecoverable error has occurred. The CuratorFramework instance has been shut down|
 
-h3. ClientEvent
-The ClientEvent object is a super\-set POJO that can hold every type of background notification and triggered watch. The useful fields of
-ClientEvent depend on the type of event which is exposed via the getType() method.
+h3. CuratorEvent
+The CuratorEvent object is a super\-set POJO that can hold every type of background notification and triggered watch. The useful fields of
+CuratorEvent depend on the type of event which is exposed via the getType() method.
 
 ||Event Type||Event Methods||
 |CREATE|getResultCode() and getPath()|

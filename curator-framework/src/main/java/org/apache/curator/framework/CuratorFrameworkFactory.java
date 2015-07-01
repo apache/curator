@@ -25,6 +25,7 @@ import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.CompressionProvider;
+import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
@@ -32,6 +33,7 @@ import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import java.net.InetAddress;
@@ -113,6 +115,7 @@ public class CuratorFrameworkFactory
         private ZookeeperFactory zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
         private ACLProvider aclProvider = DEFAULT_ACL_PROVIDER;
         private boolean canBeReadOnly = false;
+        private boolean useContainerParentsIfAvailable = true;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -328,6 +331,18 @@ public class CuratorFrameworkFactory
             return this;
         }
 
+        /**
+         * By default, Curator uses {@link CreateBuilder#creatingParentContainersIfNeeded()}
+         * if the ZK JAR supports {@link CreateMode#CONTAINER}. Call this method to turn off this behavior.
+         *
+         * @return this
+         */
+        public Builder dontUseContainerParents()
+        {
+            this.useContainerParentsIfAvailable = false;
+            return this;
+        }
+
         public ACLProvider getAclProvider()
         {
             return aclProvider;
@@ -376,6 +391,11 @@ public class CuratorFrameworkFactory
         public String getNamespace()
         {
             return namespace;
+        }
+
+        public boolean useContainerParentsIfAvailable()
+        {
+            return useContainerParentsIfAvailable;
         }
 
         @Deprecated

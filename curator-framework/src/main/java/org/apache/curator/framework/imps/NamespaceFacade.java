@@ -21,7 +21,9 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorListener;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
@@ -38,6 +40,12 @@ class NamespaceFacade extends CuratorFrameworkImpl
         super(client);
         this.client = client;
         this.namespace = new NamespaceImpl(client, namespace);
+    }
+
+    @Override
+    public void createContainers(String path) throws Exception
+    {
+        client.createContainers(path);
     }
 
     @Override
