@@ -21,12 +21,13 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class NamespaceImpl
 {
     private final CuratorFrameworkImpl client;
     private final String namespace;
-    private final EnsurePath ensurePath;
+    private final AtomicBoolean ensurePathNeeded;
 
     NamespaceImpl(CuratorFrameworkImpl client, String namespace)
     {
@@ -44,7 +45,7 @@ class NamespaceImpl
 
         this.client = client;
         this.namespace = namespace;
-        ensurePath = (namespace != null) ? new EnsurePath(ZKPaths.makePath("/", namespace)) : null;
+        ensurePathNeeded = new AtomicBoolean(namespace != null);
     }
 
     String getNamespace()
@@ -67,11 +68,12 @@ class NamespaceImpl
 
     String    fixForNamespace(String path, boolean isSequential)
     {
-        if ( ensurePath != null )
+        if ( ensurePathNeeded.get() )
         {
             try
             {
-                ensurePath.ensure(client.getZookeeperClient());
+                client.createContainers(ZKPaths.makePath("/", namespace));
+                ensurePathNeeded.set(false);
             }
             catch ( Exception e )
             {
