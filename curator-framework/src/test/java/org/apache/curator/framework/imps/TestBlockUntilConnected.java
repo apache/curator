@@ -232,4 +232,28 @@ public class TestBlockUntilConnected extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+
+    /**
+     * Test that we are actually connected every time that we block until connection is established in a tight loop.
+     */
+    @Test
+    public void testBlockUntilConnectedTightLoop() throws InterruptedException
+    {
+        CuratorFramework client;
+        for(int i = 0 ; i < 50 ; i++)
+        {
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(100));
+            try
+            {
+                client.start();
+                client.blockUntilConnected();
+
+                Assert.assertTrue(client.getZookeeperClient().isConnected(), "Not connected after blocking for connection #" + i);
+            }
+            finally
+            {
+                client.close();
+            }
+        }
+    }
 }
