@@ -230,7 +230,7 @@ public class LeaderSelector implements Closeable
         return internalRequeue();
     }
 
-    public synchronized boolean internalRequeue()
+    private synchronized boolean internalRequeue()
     {
         if ( !isQueued && (state.get() == State.STARTED) )
         {
