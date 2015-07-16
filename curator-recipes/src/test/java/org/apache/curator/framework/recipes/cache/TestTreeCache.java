@@ -395,11 +395,16 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
         Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of());
+        Assert.assertNull(cache.getCurrentChildren("/t"));
+        Assert.assertNull(cache.getCurrentChildren("/testing"));
 
         client.create().forPath("/test/one", "hey there".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
         Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("one"));
         Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
+        Assert.assertEquals(cache.getCurrentChildren("/test/one").keySet(), ImmutableSet.of());
+        Assert.assertNull(cache.getCurrentChildren("/test/o"));
+        Assert.assertNull(cache.getCurrentChildren("/test/onely"));
 
         client.setData().forPath("/test/one", "sup!".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_UPDATED, "/test/one");

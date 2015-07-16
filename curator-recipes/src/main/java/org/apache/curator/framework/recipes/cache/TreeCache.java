@@ -33,6 +33,7 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -601,33 +603,36 @@ public class TreeCache implements Closeable
         return errorListeners;
     }
 
-    private TreeNode find(String fullPath)
+    private TreeNode find(String findPath)
     {
-        if ( !fullPath.startsWith(root.path) )
-        {
-            return null;
+        PathUtils.validatePath(findPath);
+        LinkedList<String> rootElements = new LinkedList<String>(ZKPaths.split(root.path));
+        LinkedList<String> findElements = new LinkedList<String>(ZKPaths.split(findPath));
+        while (!rootElements.isEmpty()) {
+            if (findElements.isEmpty()) {
+                // Target path shorter than root path
+                return null;
+            }
+            String nextRoot = rootElements.removeFirst();
+            String nextFind = findElements.removeFirst();
+            if (!nextFind.equals(nextRoot)) {
+                // Initial root path does not match
+                return null;
+            }
         }
 
         TreeNode current = root;
-        if ( fullPath.length() > root.path.length() )
-        {
-            if ( root.path.length() > 1 )
+        while (!findElements.isEmpty()) {
+            String nextFind = findElements.removeFirst();
+            ConcurrentMap<String, TreeNode> map = current.children.get();
+            if ( map == null )
             {
-                fullPath = fullPath.substring(root.path.length());
+                return null;
             }
-            List<String> split = ZKPaths.split(fullPath);
-            for ( String part : split )
+            current = map.get(nextFind);
+            if ( current == null )
             {
-                ConcurrentMap<String, TreeNode> map = current.children.get();
-                if ( map == null )
-                {
-                    return null;
-                }
-                current = map.get(part);
-                if ( current == null )
-                {
-                    return null;
-                }
+                return null;
             }
         }
         return current;
