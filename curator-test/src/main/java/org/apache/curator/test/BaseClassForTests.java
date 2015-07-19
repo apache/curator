@@ -18,6 +18,14 @@
  */
 package org.apache.curator.test;
 
+import com.google.common.io.Closeables;
+import java.io.Closeable;
+import java.net.BindException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.IRetryAnalyzer;
 import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
@@ -25,13 +33,13 @@ import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
-import java.io.IOException;
-import java.net.BindException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BaseClassForTests
 {
+    private static final Logger log = LoggerFactory.getLogger(BaseClassForTests.class);
+
     protected TestingServer server;
+    protected Timing timing;
 
     private static final int    RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
@@ -55,6 +63,8 @@ public class BaseClassForTests
         INTERNAL_RETRY_FAILED_TESTS = retryFailedTests;
     }
 
+    private List<Closeable> toClose;
+
     @BeforeSuite(alwaysRun = true)
     public void beforeSuite(ITestContext context)
     {
@@ -67,6 +77,9 @@ public class BaseClassForTests
     @BeforeMethod
     public void setup() throws Exception
     {
+        timing = new Timing();
+        toClose = new ArrayList<Closeable>();
+
         if ( INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES != null )
         {
             System.setProperty(INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
@@ -76,11 +89,11 @@ public class BaseClassForTests
         {
             try
             {
-                server = new TestingServer();
+                server = autoClose(new TestingServer());
             }
             catch ( BindException e )
             {
-                System.err.println("Getting bind exception - retrying to allocate server");
+                log.error("Getting bind exception - retrying to allocate server");
                 server = null;
             }
         }
@@ -89,18 +102,22 @@ public class BaseClassForTests
     @AfterMethod
     public void teardown() throws Exception
     {
-        if ( server != null )
+        for (Closeable closeable : toClose)
         {
-            try
-            {
-                server.close();
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
-            server = null;
+            // Don't need closeQuietly because we don't care that it advertises a throw
+            Closeables.close(closeable, true);
         }
+    }
+
+    /**
+     * Ask the test framework to automatically close the given resource after the test.
+     * <p>
+     * Sample usage: <tt>CuratorFramework client = autoClose(CuratorFrameworkFactory.newClient(...))</tt>
+     * @return The given resource, for fluent-style invocation
+     */
+    protected <T extends Closeable> T autoClose(T closeable) {
+        if (closeable != null) toClose.add(closeable);
+        return closeable;
     }
 
     private static class RetryTest implements IRetryAnalyzer
@@ -113,14 +130,14 @@ public class BaseClassForTests
             boolean isRetrying = hasBeenRetried.compareAndSet(false, true);
             if ( isRetrying )
             {
-                System.err.println(String.format("Waiting " + RETRY_WAIT_MS + " ms and retrying test. Name: %s - TestName: %s ", result.getName(), result.getTestName()));
+                log.error("Waiting %d ms and retrying test. Name: %s - TestName: %s ", RETRY_WAIT_MS, result.getName(), result.getTestName());
                 try
                 {
                     Thread.sleep(RETRY_WAIT_MS);
                 }
                 catch ( InterruptedException e )
                 {
-                    System.err.println(String.format("Retry interrupted. Name: %s - TestName: %s ", result.getName(), result.getTestName()));
+                    log.error("Retry interrupted. Name: %s - TestName: %s ", result.getName(), result.getTestName());
                     Thread.currentThread().interrupt();
                     isRetrying = false;
                 }
