@@ -102,7 +102,7 @@ public class BaseClassForTests
     @AfterMethod
     public void teardown() throws Exception
     {
-        for (Closeable closeable : toClose)
+        for ( Closeable closeable : toClose )
         {
             // Don't need closeQuietly because we don't care that it advertises a throw
             Closeables.close(closeable, true);
@@ -112,11 +112,17 @@ public class BaseClassForTests
     /**
      * Ask the test framework to automatically close the given resource after the test.
      * <p>
-     * Sample usage: <tt>CuratorFramework client = autoClose(CuratorFrameworkFactory.newClient(...))</tt>
+     * Sample usage: <tt>CuratorFramework client =
+     * autoClose(CuratorFrameworkFactory.newClient(...))</tt>
+     *
      * @return The given resource, for fluent-style invocation
      */
-    protected <T extends Closeable> T autoClose(T closeable) {
-        if (closeable != null) toClose.add(closeable);
+    protected <T extends Closeable> T autoClose(T closeable)
+    {
+        if ( closeable != null )
+        {
+            toClose.add(closeable);
+        }
         return closeable;
     }
 
