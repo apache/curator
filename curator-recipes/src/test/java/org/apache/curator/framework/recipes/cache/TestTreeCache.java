@@ -428,6 +428,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(TreeCacheEvent.Type.CONNECTION_LOST);
         assertEvent(TreeCacheEvent.Type.CONNECTION_RECONNECTED);
         assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/me", "data".getBytes());
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
 
         assertNoMoreEvents();
     }

@@ -69,6 +69,9 @@ public class TreeCacheEvent
          * While the connection is down, the TreeCache will continue to have its state from before it lost
          * the connection and after the connection is restored, the TreeCache will emit normal child events
          * for all of the adds, deletes and updates that happened during the time that it was disconnected.
+         * </p><p>
+         * After reconnection, the cache will resynchronize its internal state with the server, then fire a
+         * {@link #INITIALIZED} event.
          * </p>
          */
         CONNECTION_RECONNECTED,
@@ -93,6 +96,9 @@ public class TreeCacheEvent
          * state with the server, publishing a series of {@link #NODE_ADDED} events as new nodes are discovered.  Once
          * the cachehas been fully synchronized, this {@link #INITIALIZED} this event is published.  All events
          * published after this event represent actual server-side mutations.
+         * </p><p>
+         * On reconnection, the cache will resynchronize its internal state with the server, and fire this event again
+         * once its internal state is completely refreshed.
          * </p><p>
          * Note: because the initial population is inherently asynchronous, so it's possible to observe server-side changes
          * (such as a {@link #NODE_UPDATED}) prior to this event being published.
