@@ -227,6 +227,18 @@
         </developer>
 
         <developer>
+            <id>mdrob</id>
+            <name>Mike Drob</name>
+            <email>mdrob@apache.org</email>
+            <timezone>-6</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>http://people.apache.org/~mdrob</url>
+        </developer>
+
+        <developer>
             <name>Patrick Hunt</name>
             <email>phunt1@gmail.com</email>
             <roles>
