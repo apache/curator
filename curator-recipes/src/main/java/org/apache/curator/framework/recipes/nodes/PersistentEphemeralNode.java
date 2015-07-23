@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -416,7 +417,8 @@ public class PersistentEphemeralNode implements Closeable
         return (state.get() == State.STARTED);
     }
     
-    public boolean isAuthFailure()
+    @VisibleForTesting
+    boolean isAuthFailure()
     {
     	return authFailure.get();
     }
