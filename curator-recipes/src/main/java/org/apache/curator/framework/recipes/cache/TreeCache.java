@@ -301,7 +301,8 @@ public class TreeCache implements Closeable
                 return;
             }
 
-            if ( nodeState.compareAndSet(NodeState.LIVE, NodeState.DEAD) )
+            NodeState oldState = nodeState.getAndSet(NodeState.DEAD);
+            if ( oldState == NodeState.LIVE )
             {
                 publishEvent(TreeCacheEvent.Type.NODE_REMOVED, path);
             }
@@ -362,10 +363,6 @@ public class TreeCache implements Closeable
                 {
                     nodeState.compareAndSet(NodeState.DEAD, NodeState.PENDING);
                     wasCreated();
-                }
-                else if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
-                {
-                    wasDeleted();
                 }
                 break;
             case CHILDREN:
@@ -429,7 +426,8 @@ public class TreeCache implements Closeable
                     }
 
                     Stat oldStat = stat.getAndSet(newStat);
-                    if ( nodeState.compareAndSet(NodeState.PENDING, NodeState.LIVE) )
+                    NodeState oldState = nodeState.getAndSet(NodeState.LIVE);
+                    if ( oldState != NodeState.LIVE )
                     {
                         publishEvent(TreeCacheEvent.Type.NODE_ADDED, new ChildData(event.getPath(), newStat, event.getData()));
                     }
