@@ -338,11 +338,11 @@ public class PersistentEphemeralNode implements Closeable
         this.data.set(Arrays.copyOf(data, data.length));
         if ( isActive() )
         {
-            client.setData().inBackground().forPath(getActualPath(), getData());
+            client.setData().inBackground().forPath(getActualPath(), this.data.get());
         }
     }
 
-    byte[] getData() {
+    private byte[] getData() {
         return this.data.get();
     }
 
