@@ -23,6 +23,8 @@ import com.google.common.collect.Lists;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
@@ -535,6 +537,45 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         {
             node.close();
         }    	
+    }
+
+    @Test
+    public void testSetUpdatedDataWhenReconnected() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+
+        byte[] initialData = "Hello World".getBytes();
+        byte[] updatedData = "Updated".getBytes();
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
+        node.start();
+        try
+        {
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
+
+            node.setData(updatedData);
+            assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), updatedData));
+
+            server.restart();
+
+            final CountDownLatch dataUpdateLatch = new CountDownLatch(1);
+            curator.getData().inBackground(new BackgroundCallback() {
+
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                    dataUpdateLatch.countDown();
+                }
+            }).forPath(node.getActualPath());
+
+            assertTrue(timing.awaitLatch(dataUpdateLatch));
+
+            assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), updatedData));
+        }
+        finally
+        {
+            node.close();
+        }
     }
     
     /**
