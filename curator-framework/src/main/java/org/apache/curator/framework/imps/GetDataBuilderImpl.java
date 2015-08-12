@@ -250,7 +250,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
                         rc = KeeperException.Code.DATAINCONSISTENCY.intValue();
                     }
                 }
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null);
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };

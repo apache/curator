@@ -18,13 +18,14 @@
  */
 package org.apache.curator.framework.api.transaction;
 
-import org.apache.curator.framework.api.Compressible;
-import org.apache.curator.framework.api.PathAndBytesable;
-import org.apache.curator.framework.api.Versionable;
+import org.apache.zookeeper.Op;
 
-public interface TransactionSetDataBuilder<T> extends
-    PathAndBytesable<T>,
-    Versionable<PathAndBytesable<T>>,
-    Compressible<PathAndBytesable<T>>
+/**
+ * Internal representation of a transaction operation
+ */
+public interface CuratorOp
 {
+    Op get();
+
+    TypeAndPath getTypeAndPath();
 }

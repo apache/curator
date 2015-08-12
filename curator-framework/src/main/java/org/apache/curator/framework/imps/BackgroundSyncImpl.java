@@ -46,7 +46,7 @@ class BackgroundSyncImpl implements BackgroundOperation<String>
                 public void processResult(int rc, String path, Object ctx)
                 {
                     trace.commit();
-                    CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.SYNC, rc, path, null, ctx, null, null, null, null, null);
+                    CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.SYNC, rc, path, null, ctx, null, null, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
                 }
             },

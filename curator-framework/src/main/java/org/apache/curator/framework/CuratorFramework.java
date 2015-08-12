@@ -21,10 +21,12 @@ package org.apache.curator.framework;
 
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
@@ -139,8 +141,25 @@ public interface CuratorFramework extends Closeable
      * Start a transaction builder
      *
      * @return builder object
+     * @deprecated use {@link #transaction()} instead
      */
     public CuratorTransaction inTransaction();
+
+    /**
+     * Start a transaction builder
+     *
+     * @return builder object
+     */
+    public CuratorMultiTransaction transaction();
+
+    /**
+     * Allocate an operation that can be used with {@link #transaction()}.
+     * NOTE: {@link CuratorOp} instances created by this builder are
+     * reusable.
+     *
+     * @return operation builder
+     */
+    public TransactionOp transactionOp();
 
     /**
      * Perform a sync on the given path - syncs are always in the background

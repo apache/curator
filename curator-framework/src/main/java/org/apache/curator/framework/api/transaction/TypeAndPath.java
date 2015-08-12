@@ -16,38 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.imps;
+package org.apache.curator.framework.api.transaction;
 
-import com.google.common.collect.Lists;
-import org.apache.curator.framework.api.transaction.OperationType;
-import org.apache.curator.framework.api.transaction.TypeAndPath;
-import org.apache.zookeeper.MultiTransactionRecord;
-import org.apache.zookeeper.Op;
-import java.util.List;
-
-class CuratorMultiTransactionRecord extends MultiTransactionRecord
+public class TypeAndPath
 {
-    private final List<TypeAndPath>     metadata = Lists.newArrayList();
+    private final OperationType type;
+    private final String forPath;
 
-    @Override
-    public final void add(Op op)
+    public TypeAndPath(OperationType type, String forPath)
     {
-        throw new UnsupportedOperationException();
+        this.type = type;
+        this.forPath = forPath;
     }
 
-    void add(Op op, OperationType type, String forPath)
+    public OperationType getType()
     {
-        super.add(op);
-        metadata.add(new TypeAndPath(type, forPath));
+        return type;
     }
 
-    TypeAndPath     getMetadata(int index)
+    public String getForPath()
     {
-        return metadata.get(index);
-    }
-
-    int             metadataSize()
-    {
-        return metadata.size();
+        return forPath;
     }
 }

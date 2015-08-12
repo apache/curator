@@ -42,7 +42,8 @@ h3. Methods
 |getData()|Begins an operation to get a ZNode's data. Call additional methods (watch, background or get stat) and finalize the operation by calling forPath()|
 |setData()|Begins an operation to set a ZNode's data. Call additional methods (version or background) and finalize the operation by calling forPath()|
 |getChildren()|Begins an operation to get a ZNode's list of children ZNodes. Call additional methods (watch, background or get stat) and finalize the operation by calling forPath()|
-|inTransaction()|Begins an atomic ZooKeeper transaction. Combine create, setData, check, and/or delete operations and then commit() as a unit.|
+|transactionOp()|Used to allocate operations to be used with transaction().|
+|transaction()|Atomically submit a set of operations as a transaction.|
 |getACL()|Begins an operation to return a ZNode's ACL settings. Call additional methods and finalize the operation by calling forPath()|
 |setACL()|Begins an operation to set a ZNode's ACL settings. Call additional methods and finalize the operation by calling forPath()|
 |getConfig()|Begins an operation to return the last committed configuration. Call additional methods and finalize the operation by calling forEnsemble()|
@@ -69,6 +70,7 @@ CuratorEvent depend on the type of event which is exposed via the getType() meth
 |SYNC|getResultCode(), getStat()|
 |GET\_ACL|getResultCode(), getACLList()|
 |SET\_ACL|getResultCode()|
+|TRANSACTION|getResultCode(), getOpResults()|
 |WATCHED|getWatchedEvent()|
 |GET\_CONFIG|getResultCode(), getData()|
 |RECONFIG|getResultCode(), getData()|

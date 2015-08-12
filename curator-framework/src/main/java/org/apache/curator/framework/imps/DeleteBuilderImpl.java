@@ -28,7 +28,6 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.DeleteBuilder;
 import org.apache.curator.framework.api.Pathable;
-import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionDeleteBuilder;
 import org.apache.curator.utils.ZKPaths;
@@ -55,20 +54,20 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         guaranteed = false;
     }
 
-    TransactionDeleteBuilder asTransactionDeleteBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
+    <T> TransactionDeleteBuilder<T> asTransactionDeleteBuilder(final T context, final CuratorMultiTransactionRecord transaction)
     {
-        return new TransactionDeleteBuilder()
+        return new TransactionDeleteBuilder<T>()
         {
             @Override
-            public CuratorTransactionBridge forPath(String path) throws Exception
+            public T forPath(String path) throws Exception
             {
                 String fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.delete(fixedPath, version), OperationType.DELETE, path);
-                return curatorTransaction;
+                return context;
             }
 
             @Override
-            public Pathable<CuratorTransactionBridge> withVersion(int version)
+            public Pathable<T> withVersion(int version)
             {
                 DeleteBuilderImpl.this.withVersion(version);
                 return this;
@@ -159,7 +158,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                         }
                         else
                         {
-                            CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null);
+                            CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null, null);
                             client.processBackgroundOperation(operationAndData, event);
                         }
                     }

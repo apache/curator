@@ -18,36 +18,37 @@
  */
 package org.apache.curator.framework.imps;
 
-import com.google.common.collect.Lists;
-import org.apache.curator.framework.api.transaction.OperationType;
+import com.google.common.base.Preconditions;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.TypeAndPath;
-import org.apache.zookeeper.MultiTransactionRecord;
 import org.apache.zookeeper.Op;
-import java.util.List;
 
-class CuratorMultiTransactionRecord extends MultiTransactionRecord
+class ExtractingCuratorOp implements CuratorOp
 {
-    private final List<TypeAndPath>     metadata = Lists.newArrayList();
+    private final CuratorMultiTransactionRecord record = new CuratorMultiTransactionRecord();
+
+    CuratorMultiTransactionRecord getRecord()
+    {
+        return record;
+    }
 
     @Override
-    public final void add(Op op)
+    public TypeAndPath getTypeAndPath()
     {
-        throw new UnsupportedOperationException();
+        validate();
+        return record.getMetadata(0);
     }
 
-    void add(Op op, OperationType type, String forPath)
+    @Override
+    public Op get()
     {
-        super.add(op);
-        metadata.add(new TypeAndPath(type, forPath));
+        validate();
+        return record.iterator().next();
     }
 
-    TypeAndPath     getMetadata(int index)
+    private void validate()
     {
-        return metadata.get(index);
-    }
-
-    int             metadataSize()
-    {
-        return metadata.size();
+        Preconditions.checkArgument(record.size() > 0, "No operation has been added");
+        Preconditions.checkArgument(record.size() == 1, "Multiple operations added");
     }
 }

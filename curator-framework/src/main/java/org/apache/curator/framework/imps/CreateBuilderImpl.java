@@ -26,7 +26,6 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
-import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
 import org.apache.curator.utils.ZKPaths;
@@ -70,39 +69,39 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         protectedId = null;
     }
 
-    TransactionCreateBuilder asTransactionCreateBuilder(final CuratorTransactionImpl curatorTransaction, final CuratorMultiTransactionRecord transaction)
+    <T> TransactionCreateBuilder<T> asTransactionCreateBuilder(final T context, final CuratorMultiTransactionRecord transaction)
     {
-        return new TransactionCreateBuilder()
+        return new TransactionCreateBuilder<T>()
         {
             @Override
-            public PathAndBytesable<CuratorTransactionBridge> withACL(List<ACL> aclList)
+            public PathAndBytesable<T> withACL(List<ACL> aclList)
             {
                 CreateBuilderImpl.this.withACL(aclList);
                 return this;
             }
 
             @Override
-            public ACLPathAndBytesable<CuratorTransactionBridge> withMode(CreateMode mode)
+            public ACLPathAndBytesable<T> withMode(CreateMode mode)
             {
                 CreateBuilderImpl.this.withMode(mode);
                 return this;
             }
             
             @Override
-            public ACLPathAndBytesable<CuratorTransactionBridge> compressed()
+            public ACLPathAndBytesable<T> compressed()
             {
                 CreateBuilderImpl.this.compressed();
                 return this;
             }
             
             @Override
-            public CuratorTransactionBridge forPath(String path) throws Exception
+            public T forPath(String path) throws Exception
             {
                 return forPath(path, client.getDefaultData());
             }
 
             @Override
-            public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception
+            public T forPath(String path, byte[] data) throws Exception
             {               
                 if ( compress )
                 {
@@ -111,7 +110,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 
                 String fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
-                return curatorTransaction;
+                return context;
             }
         };
     }
@@ -537,7 +536,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         path = client.unfixForNamespace(path);
         name = client.unfixForNamespace(name);
 
-        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, null, null, null, null, null);
+        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, null, null, null, null, null, null);
         client.processBackgroundOperation(operationAndData, event);
     }
 

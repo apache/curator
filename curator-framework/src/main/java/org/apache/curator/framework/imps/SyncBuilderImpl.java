@@ -93,7 +93,7 @@ public class SyncBuilderImpl implements SyncBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx)
             {
                 trace.commit();
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SYNC, rc, path, path, ctx, null, null, null, null, null);
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SYNC, rc, path, path, ctx, null, null, null, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };
