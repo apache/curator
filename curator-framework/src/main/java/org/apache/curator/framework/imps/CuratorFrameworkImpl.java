@@ -398,6 +398,16 @@ public class CuratorFrameworkImpl implements CuratorFramework
     }
 
     @Override
+    public ReconfigBuilder reconfig() {
+        return new ReconfigBuilderImpl(this);
+    }
+
+    @Override
+    public GetConfigBuilder getConfig() {
+        return new GetConfigBuilderImpl(this);
+    }
+
+    @Override
     public CuratorTransaction inTransaction()
     {
         Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
