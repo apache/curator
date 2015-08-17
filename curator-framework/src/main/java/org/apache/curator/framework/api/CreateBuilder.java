@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.api;
 
+import org.apache.zookeeper.CreateMode;
+
 public interface CreateBuilder extends
     BackgroundPathAndBytesable<String>,
     CreateModable<ACLBackgroundPathAndBytesable<String>>,
@@ -32,12 +34,23 @@ public interface CreateBuilder extends
     public ProtectACLCreateModePathAndBytesable<String> creatingParentsIfNeeded();
 
     /**
+     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
+     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
+     * If the ZooKeeper version you're using does not support containers, the parent nodes
+     * are created as ordinary PERSISTENT nodes.
+     *
+     * @return this
+     */
+    public ProtectACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded();
+
+    /**
      * @deprecated this has been generalized to support all create modes. Instead, use:
      * <pre>
      *     client.create().withProtection().withMode(CreateMode.PERSISTENT_SEQUENTIAL)...
      * </pre>
      * @return this
      */
+    @Deprecated
     public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();
 
     /**

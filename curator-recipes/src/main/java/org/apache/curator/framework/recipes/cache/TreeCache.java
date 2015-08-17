@@ -33,6 +33,7 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -69,6 +71,7 @@ import static org.apache.curator.utils.PathUtils.validatePath;
 public class TreeCache implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
+    private final boolean createParentNodes;
 
     public static final class Builder
     {
@@ -78,6 +81,7 @@ public class TreeCache implements Closeable
         private boolean dataIsCompressed = false;
         private CloseableExecutorService executorService = null;
         private int maxDepth = Integer.MAX_VALUE;
+        private boolean createParentNodes = false;
 
         private Builder(CuratorFramework client, String path)
         {
@@ -95,7 +99,7 @@ public class TreeCache implements Closeable
             {
                 executor = new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory));
             }
-            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor);
+            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes);
         }
 
         /**
@@ -157,6 +161,19 @@ public class TreeCache implements Closeable
         public Builder setMaxDepth(int maxDepth)
         {
             this.maxDepth = maxDepth;
+            return this;
+        }
+
+        /**
+         * By default, TreeCache does not auto-create parent nodes for the cached path. Change
+         * this behavior with this method. NOTE: parent nodes are created as containers
+         *
+         * @param createParentNodes true to create parent nodes
+         * @return this for chaining
+         */
+        public Builder setCreateParentNodes(boolean createParentNodes)
+        {
+            this.createParentNodes = createParentNodes;
             return this;
         }
     }
@@ -284,7 +301,8 @@ public class TreeCache implements Closeable
                 return;
             }
 
-            if ( nodeState.compareAndSet(NodeState.LIVE, NodeState.DEAD) )
+            NodeState oldState = nodeState.getAndSet(NodeState.DEAD);
+            if ( oldState == NodeState.LIVE )
             {
                 publishEvent(TreeCacheEvent.Type.NODE_REMOVED, path);
             }
@@ -345,10 +363,6 @@ public class TreeCache implements Closeable
                 {
                     nodeState.compareAndSet(NodeState.DEAD, NodeState.PENDING);
                     wasCreated();
-                }
-                else if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
-                {
-                    wasDeleted();
                 }
                 break;
             case CHILDREN:
@@ -412,7 +426,8 @@ public class TreeCache implements Closeable
                     }
 
                     Stat oldStat = stat.getAndSet(newStat);
-                    if ( nodeState.compareAndSet(NodeState.PENDING, NodeState.LIVE) )
+                    NodeState oldState = nodeState.getAndSet(NodeState.LIVE);
+                    if ( oldState != NodeState.LIVE )
                     {
                         publishEvent(TreeCacheEvent.Type.NODE_ADDED, new ChildData(event.getPath(), newStat, event.getData()));
                     }
@@ -500,7 +515,7 @@ public class TreeCache implements Closeable
      */
     public TreeCache(CuratorFramework client, String path)
     {
-        this(client, path, true, false, Integer.MAX_VALUE, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
+        this(client, path, true, false, Integer.MAX_VALUE, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true), false);
     }
 
     /**
@@ -509,9 +524,11 @@ public class TreeCache implements Closeable
      * @param cacheData        if true, node contents are cached in addition to the stat
      * @param dataIsCompressed if true, data in the path is compressed
      * @param executorService  Closeable ExecutorService to use for the TreeCache's background thread
+     * @param createParentNodes true to create parent nodes as containers
      */
-    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService)
+    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService, boolean createParentNodes)
     {
+        this.createParentNodes = createParentNodes;
         this.root = new TreeNode(validatePath(path), null);
         this.client = client;
         this.cacheData = cacheData;
@@ -529,6 +546,10 @@ public class TreeCache implements Closeable
     public TreeCache start() throws Exception
     {
         Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
+        if ( createParentNodes )
+        {
+            client.createContainers(root.path);
+        }
         client.getConnectionStateListenable().addListener(connectionStateListener);
         if ( client.getZookeeperClient().isConnected() )
         {
@@ -580,33 +601,36 @@ public class TreeCache implements Closeable
         return errorListeners;
     }
 
-    private TreeNode find(String fullPath)
+    private TreeNode find(String findPath)
     {
-        if ( !fullPath.startsWith(root.path) )
-        {
-            return null;
+        PathUtils.validatePath(findPath);
+        LinkedList<String> rootElements = new LinkedList<String>(ZKPaths.split(root.path));
+        LinkedList<String> findElements = new LinkedList<String>(ZKPaths.split(findPath));
+        while (!rootElements.isEmpty()) {
+            if (findElements.isEmpty()) {
+                // Target path shorter than root path
+                return null;
+            }
+            String nextRoot = rootElements.removeFirst();
+            String nextFind = findElements.removeFirst();
+            if (!nextFind.equals(nextRoot)) {
+                // Initial root path does not match
+                return null;
+            }
         }
 
         TreeNode current = root;
-        if ( fullPath.length() > root.path.length() )
-        {
-            if ( root.path.length() > 1 )
+        while (!findElements.isEmpty()) {
+            String nextFind = findElements.removeFirst();
+            ConcurrentMap<String, TreeNode> map = current.children.get();
+            if ( map == null )
             {
-                fullPath = fullPath.substring(root.path.length());
+                return null;
             }
-            List<String> split = ZKPaths.split(fullPath);
-            for ( String part : split )
+            current = map.get(nextFind);
+            if ( current == null )
             {
-                ConcurrentMap<String, TreeNode> map = current.children.get();
-                if ( map == null )
-                {
-                    return null;
-                }
-                current = map.get(part);
-                if ( current == null )
-                {
-                    return null;
-                }
+                return null;
             }
         }
         return current;

@@ -26,8 +26,11 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.api.ExistsBuilder;
+import org.apache.curator.framework.api.ExistsBuilderMain;
 import org.apache.curator.framework.api.Pathable;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
@@ -38,12 +41,21 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
     private final CuratorFrameworkImpl client;
     private Backgrounding backgrounding;
     private Watching watching;
+    private boolean createParentContainersIfNeeded;
 
     ExistsBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
         backgrounding = new Backgrounding();
         watching = new Watching();
+        createParentContainersIfNeeded = false;
+    }
+
+    @Override
+    public ExistsBuilderMain creatingParentContainersIfNeeded()
+    {
+        createParentContainersIfNeeded = true;
+        return this;
     }
 
     @Override
@@ -141,7 +153,15 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
         Stat        returnStat = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            OperationAndData<String> operationAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext());
+            if ( createParentContainersIfNeeded )
+            {
+                CreateBuilderImpl.backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData(), backgrounding, true);
+            }
+            else
+            {
+                client.processBackgroundOperation(operationAndData, null);
+            }
         }
         else
         {
@@ -152,6 +172,40 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
     }
 
     private Stat pathInForeground(final String path) throws Exception
+    {
+        if ( createParentContainersIfNeeded )
+        {
+            final String parent = ZKPaths.getPathAndNode(path).getPath();
+            if ( !parent.equals(ZKPaths.PATH_SEPARATOR) )
+            {
+                TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground-CreateParents");
+                RetryLoop.callWithRetry
+                (
+                    client.getZookeeperClient(),
+                    new Callable<Void>()
+                    {
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            try
+                            {
+                                ZKPaths.mkdirs(client.getZooKeeper(), parent, true, client.getAclProvider(), true);
+                            }
+                            catch ( KeeperException e )
+                            {
+                                // ignore
+                            }
+                            return null;
+                        }
+                    }
+                );
+                trace.commit();
+            }
+        }
+        return pathInForegroundStandard(path);
+    }
+
+    private Stat pathInForegroundStandard(final String path) throws Exception
     {
         TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground");
         Stat        returnStat = RetryLoop.callWithRetry

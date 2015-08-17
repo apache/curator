@@ -118,7 +118,7 @@ public class DistributedDoubleBarrier
         long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
         boolean         readyPathExists = (client.checkExists().usingWatcher(watcher).forPath(readyPath) != null);
-        client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
+        client.create().creatingParentContainersIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
 
         boolean         result = (readyPathExists || internalEnter(startMs, hasMaxWait, maxWaitMs));
         if ( connectionLost.get() )

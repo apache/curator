@@ -163,7 +163,7 @@ public class DistributedQueue<T> implements QueueBase<T>
 
         try
         {
-            client.create().creatingParentsIfNeeded().forPath(queuePath);
+            client.create().creatingParentContainersIfNeeded().forPath(queuePath);
         }
         catch ( KeeperException.NodeExistsException ignore )
         {
@@ -173,7 +173,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         {
             try
             {
-                client.create().creatingParentsIfNeeded().forPath(lockPath);
+                client.create().creatingParentContainersIfNeeded().forPath(lockPath);
             }
             catch ( KeeperException.NodeExistsException ignore )
             {
@@ -756,7 +756,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                 client.inTransaction()
                     .delete().forPath(itemPath)
                     .and()
-                    .create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(makeItemPath(), bytes)
+                    .create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(itemPath, bytes)
                     .and()
                     .commit();
             }

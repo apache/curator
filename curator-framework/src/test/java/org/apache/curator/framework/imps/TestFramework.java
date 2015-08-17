@@ -33,6 +33,7 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -41,6 +42,8 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +55,22 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("deprecation")
 public class TestFramework extends BaseClassForTests
 {
+    @BeforeMethod
+    @Override
+    public void setup() throws Exception
+    {
+        System.setProperty("container.checkIntervalMs", "1000");
+        super.setup();
+    }
+
+    @AfterMethod
+    @Override
+    public void teardown() throws Exception
+    {
+        System.clearProperty("container.checkIntervalMs");
+        super.teardown();
+    }
+
     @Test
     public void testConnectionState() throws Exception
     {
@@ -115,7 +134,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -163,7 +182,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -220,7 +239,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -313,7 +332,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -396,7 +415,157 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testOverrideCreateParentContainers() throws Exception
+    {
+        if ( !checkForContainers() )
+        {
+            return;
+        }
+
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .dontUseContainerParents()
+            .build();
+        try
+        {
+            client.start();
+            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three", "foo".getBytes());
+            byte[] data = client.getData().forPath("/one/two/three");
+            Assert.assertEquals(data, "foo".getBytes());
+
+            client.delete().forPath("/one/two/three");
+            new Timing().sleepABit();
+
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            new Timing().sleepABit();
+            Assert.assertNotNull(client.checkExists().forPath("/one"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testCreateParentContainers() throws Exception
+    {
+        if ( !checkForContainers() )
+        {
+            return;
+        }
+
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).build();
+        try
+        {
+            client.start();
+            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three", "foo".getBytes());
+            byte[] data = client.getData().forPath("/one/two/three");
+            Assert.assertEquals(data, "foo".getBytes());
+
+            client.delete().forPath("/one/two/three");
+            new Timing().sleepABit();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            new Timing().sleepABit();
+            Assert.assertNull(client.checkExists().forPath("/one"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    private boolean checkForContainers()
+    {
+        if ( ZKPaths.getContainerCreateMode() == CreateMode.PERSISTENT )
+        {
+            System.out.println("Not using CreateMode.CONTAINER enabled version of ZooKeeper");
+            return false;
+        }
+        return true;
+    }
+
+    @Test
+    public void testCreatingParentsTheSame() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            client.create().creatingParentContainersIfNeeded().forPath("/one/two/three");
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+
+            client.delete().deletingChildrenIfNeeded().forPath("/one");
+            Assert.assertNull(client.checkExists().forPath("/one"));
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three");
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testExistsCreatingParents() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three");
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+            Assert.assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testExistsCreatingParentsInBackground() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            Assert.assertNull(client.checkExists().forPath("/one/two"));
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    latch.countDown();
+                }
+            };
+            client.checkExists().creatingParentContainersIfNeeded().inBackground(callback).forPath("/one/two/three");
+            Assert.assertTrue(new Timing().awaitLatch(latch));
+            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+            Assert.assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -420,7 +589,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -452,7 +621,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -483,7 +652,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -519,7 +688,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -550,7 +719,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -587,7 +756,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -624,7 +793,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -642,7 +811,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -662,7 +831,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -682,7 +851,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -705,7 +874,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -758,7 +927,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -791,7 +960,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -845,7 +1014,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -861,7 +1030,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -879,7 +1048,7 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 }

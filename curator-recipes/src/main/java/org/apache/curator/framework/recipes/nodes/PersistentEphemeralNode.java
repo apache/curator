@@ -240,7 +240,7 @@ public class PersistentEphemeralNode implements Closeable
 
                     if(nodeExists)
                     {
-                    	client.setData().inBackground(setDataCallback).forPath(getActualPath(), data);
+                       client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
                     }
                     else
                     {
@@ -254,7 +254,7 @@ public class PersistentEphemeralNode implements Closeable
             }
         };
 
-        createMethod = mode.isProtected() ? client.create().creatingParentsIfNeeded().withProtection() : client.create().creatingParentsIfNeeded();
+        createMethod = mode.isProtected() ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
         this.data.set(Arrays.copyOf(data, data.length));
     }
     
@@ -338,8 +338,12 @@ public class PersistentEphemeralNode implements Closeable
         this.data.set(Arrays.copyOf(data, data.length));
         if ( isActive() )
         {
-            client.setData().inBackground().forPath(getActualPath(), this.data.get());
+            client.setData().inBackground().forPath(getActualPath(), getData());
         }
+    }
+
+    private byte[] getData() {
+        return this.data.get();
     }
 
     private void deleteNode() throws Exception

@@ -125,6 +125,10 @@ public class CuratorProjectionService
             {
                 builder = castBuilder(builder, CreateBuilder.class).creatingParentsIfNeeded();
             }
+            if ( spec.creatingParentContainersIfNeeded )
+            {
+                builder = castBuilder(builder, CreateBuilder.class).creatingParentContainersIfNeeded();
+            }
             if ( spec.compressed )
             {
                 builder = castBuilder(builder, Compressible.class).compressed();

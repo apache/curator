@@ -46,6 +46,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     private CreateMode createMode;
     private Backgrounding backgrounding;
     private boolean createParentsIfNeeded;
+    private boolean createParentsAsContainers;
     private boolean doProtected;
     private boolean compress;
     private String protectedId;
@@ -64,6 +65,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         backgrounding = new Backgrounding();
         acling = new ACLing(client.getAclProvider());
         createParentsIfNeeded = false;
+        createParentsAsContainers = false;
         compress = false;
         doProtected = false;
         protectedId = null;
@@ -126,6 +128,13 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             {
                 createParentsIfNeeded = true;
                 return asACLCreateModePathAndBytesable();
+            }
+
+            @Override
+            public ACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded()
+            {
+                setCreateParentsAsContainers();
+                return creatingParentsIfNeeded();
             }
 
             @Override
@@ -256,6 +265,21 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 return CreateBuilderImpl.this.forPath(path);
             }
         };
+    }
+
+    @Override
+    public ProtectACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded()
+    {
+        setCreateParentsAsContainers();
+        return creatingParentsIfNeeded();
+    }
+
+    private void setCreateParentsAsContainers()
+    {
+        if ( client.useContainerParentsIfAvailable() )
+        {
+            createParentsAsContainers = true;
+        }
     }
 
     @Override
@@ -492,7 +516,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
                         if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
                         {
-                            backgroundCreateParentsThenNode(operationAndData);
+                            backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
                         }
                         else
                         {
@@ -509,16 +533,16 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         return PROTECTED_PREFIX + protectedId + "-";
     }
 
-    private void backgroundCreateParentsThenNode(final OperationAndData<PathAndBytes> mainOperationAndData)
+    static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final boolean createParentsAsContainers)
     {
-        BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>()
+        BackgroundOperation<T> operation = new BackgroundOperation<T>()
         {
             @Override
-            public void performBackgroundOperation(OperationAndData<PathAndBytes> dummy) throws Exception
+            public void performBackgroundOperation(OperationAndData<T> dummy) throws Exception
             {
                 try
                 {
-                    ZKPaths.mkdirs(client.getZooKeeper(), mainOperationAndData.getData().getPath(), false, client.getAclProvider());
+                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
                 }
                 catch ( KeeperException e )
                 {
@@ -527,7 +551,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 client.queueOperation(mainOperationAndData);
             }
         };
-        OperationAndData<PathAndBytes> parentOperation = new OperationAndData<PathAndBytes>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
+        OperationAndData<T> parentOperation = new OperationAndData<T>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
         client.queueOperation(parentOperation);
     }
 
@@ -698,7 +722,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                             {
                                 if ( createParentsIfNeeded )
                                 {
-                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider());
+                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
                                     createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
                                 }
                                 else

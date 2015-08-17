@@ -16,12 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.CreateMode;
 
 public interface ExistsBuilder extends
-    Watchable<BackgroundPathable<Stat>>,
-    BackgroundPathable<Stat>
+    ExistsBuilderMain
 {
+    /**
+     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
+     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
+     * If the ZooKeeper version you're using does not support containers, the parent nodes
+     * are created as ordinary PERSISTENT nodes.
+     *
+     * @return this
+     */
+    ExistsBuilderMain creatingParentContainersIfNeeded();
 }

@@ -124,4 +124,51 @@ public class TestDistributedIdQueue extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+
+    @Test
+    public void testRequeuingWithLock() throws Exception
+    {
+        DistributedIdQueue<TestQueueItem>  queue = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final CountDownLatch        consumingLatch = new CountDownLatch(1);
+
+            QueueConsumer<TestQueueItem> consumer = new QueueConsumer<TestQueueItem>()
+            {
+                @Override
+                public void consumeMessage(TestQueueItem message) throws Exception
+                {
+                    consumingLatch.countDown();
+                    // Throw an exception so requeuing occurs
+                    throw new Exception("Consumer failed");
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+
+            queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH).lockPath("/locks").buildIdQueue();
+            queue.start();
+
+            queue.put(new TestQueueItem("test"), "id");
+
+            Assert.assertTrue(consumingLatch.await(10, TimeUnit.SECONDS));  // wait until consumer has it
+
+            // Sleep one more second
+
+            Thread.sleep(1000);
+
+            Assert.assertEquals(queue.remove("id"), 1);
+
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(queue);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 }

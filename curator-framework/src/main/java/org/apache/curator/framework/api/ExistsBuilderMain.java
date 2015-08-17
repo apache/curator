@@ -16,16 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.rpc.idl.structs;
+package org.apache.curator.framework.api;
 
-import com.facebook.swift.codec.ThriftEnum;
+import org.apache.zookeeper.data.Stat;
 
-@ThriftEnum("CreateMode")
-public enum RpcCreateMode
+public interface ExistsBuilderMain extends
+    Watchable<BackgroundPathable<Stat>>,
+    BackgroundPathable<Stat>
 {
-    PERSISTENT,
-    PERSISTENT_SEQUENTIAL,
-    EPHEMERAL,
-    EPHEMERAL_SEQUENTIAL,
-    CONTAINER
 }

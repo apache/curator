@@ -24,7 +24,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
@@ -34,7 +33,7 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
-import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -54,7 +53,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
@@ -74,7 +72,6 @@ public class PathChildrenCache implements Closeable
     private final CloseableExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
-    private final EnsurePath ensurePath;
     private final ListenerContainer<PathChildrenCacheListener> listeners = new ListenerContainer<PathChildrenCacheListener>();
     private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
@@ -143,6 +140,7 @@ public class PathChildrenCache implements Closeable
      * @param mode   caching mode
      * @deprecated use {@link #PathChildrenCache(CuratorFramework, String, boolean)} instead
      */
+    @Deprecated
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode)
     {
@@ -156,6 +154,7 @@ public class PathChildrenCache implements Closeable
      * @param threadFactory factory to use when creating internal threads
      * @deprecated use {@link #PathChildrenCache(CuratorFramework, String, boolean, ThreadFactory)} instead
      */
+    @Deprecated
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode, ThreadFactory threadFactory)
     {
@@ -200,7 +199,7 @@ public class PathChildrenCache implements Closeable
      * @param path             path to watch
      * @param cacheData        if true, node contents are cached in addition to the stat
      * @param dataIsCompressed if true, data in the path is compressed
-     * @param executorService  ExecutorService to use for the PathChildrenCache's background thread
+     * @param executorService  ExecutorService to use for the PathChildrenCache's background thread. This service should be single threaded, otherwise the cache may see inconsistent results.
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final ExecutorService executorService)
     {
@@ -212,7 +211,7 @@ public class PathChildrenCache implements Closeable
      * @param path             path to watch
      * @param cacheData        if true, node contents are cached in addition to the stat
      * @param dataIsCompressed if true, data in the path is compressed
-     * @param executorService  Closeable ExecutorService to use for the PathChildrenCache's background thread
+     * @param executorService  Closeable ExecutorService to use for the PathChildrenCache's background thread. This service should be single threaded, otherwise the cache may see inconsistent results.
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final CloseableExecutorService executorService)
     {
@@ -221,7 +220,6 @@ public class PathChildrenCache implements Closeable
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.executorService = executorService;
-        ensurePath = client.newNamespaceAwareEnsurePath(path);
     }
 
     /**
@@ -243,6 +241,7 @@ public class PathChildrenCache implements Closeable
      * @throws Exception errors
      * @deprecated use {@link #start(StartMode)}
      */
+    @Deprecated
     public void start(boolean buildInitial) throws Exception
     {
         start(buildInitial ? StartMode.BUILD_INITIAL_CACHE : StartMode.NORMAL);
@@ -320,7 +319,7 @@ public class PathChildrenCache implements Closeable
     {
         Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
 
-        ensurePath.ensure(client.getZookeeperClient());
+        ensurePath();
 
         clear();
 
@@ -352,7 +351,7 @@ public class PathChildrenCache implements Closeable
         Preconditions.checkArgument(ZKPaths.getPathAndNode(fullPath).getPath().equals(path), "Node is not part of this cache: " + fullPath);
         Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
 
-        ensurePath.ensure(client.getZookeeperClient());
+        ensurePath();
         internalRebuildNode(fullPath);
 
         // this is necessary so that any updates that occurred while rebuilding are taken
@@ -481,7 +480,7 @@ public class PathChildrenCache implements Closeable
 
     void refresh(final RefreshMode mode) throws Exception
     {
-        ensurePath.ensure(client.getZookeeperClient());
+        ensurePath();
 
         final BackgroundCallback callback = new BackgroundCallback()
         {
@@ -610,6 +609,11 @@ public class PathChildrenCache implements Closeable
                 currentData.remove(fullPath);
             }
         }
+    }
+
+    private void ensurePath() throws Exception
+    {
+        client.createContainers(path);
     }
 
     private void handleStateChange(ConnectionState newState)

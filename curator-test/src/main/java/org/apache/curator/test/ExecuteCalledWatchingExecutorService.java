@@ -16,16 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.rpc.idl.structs;
+package org.apache.curator.test;
 
-import com.facebook.swift.codec.ThriftEnum;
+import java.util.concurrent.ExecutorService;
 
-@ThriftEnum("CreateMode")
-public enum RpcCreateMode
+public class ExecuteCalledWatchingExecutorService extends DelegatingExecutorService
 {
-    PERSISTENT,
-    PERSISTENT_SEQUENTIAL,
-    EPHEMERAL,
-    EPHEMERAL_SEQUENTIAL,
-    CONTAINER
+    boolean executeCalled = false;
+
+    public ExecuteCalledWatchingExecutorService(ExecutorService delegate)
+    {
+        super(delegate);
+    }
+
+    @Override
+    public synchronized void execute(Runnable command)
+    {
+        executeCalled = true;
+        super.execute(command);
+    }
+
+    public synchronized boolean isExecuteCalled()
+    {
+        return executeCalled;
+    }
+
+    public synchronized void setExecuteCalled(boolean executeCalled)
+    {
+        this.executeCalled = executeCalled;
+    }
 }

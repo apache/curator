@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadFactory;
  * @deprecated no longer used. Instead use either {@link PathChildrenCache#PathChildrenCache(CuratorFramework, String, boolean)}
  * or {@link PathChildrenCache#PathChildrenCache(CuratorFramework, String, boolean, ThreadFactory)}
  */
+@Deprecated
 public enum PathChildrenCacheMode
 {
     /**

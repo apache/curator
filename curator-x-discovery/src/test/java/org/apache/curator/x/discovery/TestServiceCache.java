@@ -16,17 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.Timing;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.TestingServer;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
+import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.discovery.details.ServiceCacheListener;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -35,13 +36,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class TestServiceCache extends BaseClassForTests
 {
     @Test
-    public void     testInitialLoad() throws Exception
+    public void testInitialLoad() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
         try
@@ -50,15 +52,15 @@ public class TestServiceCache extends BaseClassForTests
             closeables.add(client);
             client.start();
 
-            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
             closeables.add(discovery);
             discovery.start();
 
-            ServiceCache<String>        cache = discovery.serviceCacheBuilder().name("test").build();
+            ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").build();
             closeables.add(cache);
 
-            final CountDownLatch        latch = new CountDownLatch(3);
-            ServiceCacheListener        listener = new ServiceCacheListener()
+            final CountDownLatch latch = new CountDownLatch(3);
+            ServiceCacheListener listener = new ServiceCacheListener()
             {
                 @Override
                 public void cacheChanged()
@@ -74,16 +76,16 @@ public class TestServiceCache extends BaseClassForTests
             cache.addListener(listener);
             cache.start();
 
-            ServiceInstance<String>     instance1 = ServiceInstance.<String>builder().payload("test").name("test").port(10064).build();
-            ServiceInstance<String>     instance2 = ServiceInstance.<String>builder().payload("test").name("test").port(10065).build();
-            ServiceInstance<String>     instance3 = ServiceInstance.<String>builder().payload("test").name("test").port(10066).build();
+            ServiceInstance<String> instance1 = ServiceInstance.<String>builder().payload("test").name("test").port(10064).build();
+            ServiceInstance<String> instance2 = ServiceInstance.<String>builder().payload("test").name("test").port(10065).build();
+            ServiceInstance<String> instance3 = ServiceInstance.<String>builder().payload("test").name("test").port(10066).build();
             discovery.registerService(instance1);
             discovery.registerService(instance2);
             discovery.registerService(instance3);
 
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-            ServiceCache<String>        cache2 = discovery.serviceCacheBuilder().name("test").build();
+            ServiceCache<String> cache2 = discovery.serviceCacheBuilder().name("test").build();
             closeables.add(cache2);
             cache2.start();
 
@@ -100,7 +102,7 @@ public class TestServiceCache extends BaseClassForTests
     }
 
     @Test
-    public void     testViaProvider() throws Exception
+    public void testViaProvider() throws Exception
     {
         Timing timing = new Timing();
 
@@ -111,19 +113,19 @@ public class TestServiceCache extends BaseClassForTests
             closeables.add(client);
             client.start();
 
-            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
             closeables.add(discovery);
             discovery.start();
 
-            ServiceProvider<String>     serviceProvider = discovery.serviceProviderBuilder().serviceName("test").build();
+            ServiceProvider<String> serviceProvider = discovery.serviceProviderBuilder().serviceName("test").build();
             closeables.add(serviceProvider);
             serviceProvider.start();
 
-            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
             discovery.registerService(instance);
 
-            int                         count = 0;
-            ServiceInstance<String>     foundInstance = null;
+            int count = 0;
+            ServiceInstance<String> foundInstance = null;
             while ( foundInstance == null )
             {
                 Assert.assertTrue(count++ < 5);
@@ -132,7 +134,7 @@ public class TestServiceCache extends BaseClassForTests
             }
             Assert.assertEquals(foundInstance, instance);
 
-            ServiceInstance<String>     instance2 = ServiceInstance.<String>builder().address("foo").payload("thing").name("test").port(10064).build();
+            ServiceInstance<String> instance2 = ServiceInstance.<String>builder().address("foo").payload("thing").name("test").port(10064).build();
             discovery.registerService(instance2);
             timing.sleepABit();
             Collection<ServiceInstance<String>> allInstances = serviceProvider.getAllInstances();
@@ -149,24 +151,24 @@ public class TestServiceCache extends BaseClassForTests
     }
 
     @Test
-    public void     testUpdate() throws Exception
+    public void testUpdate() throws Exception
     {
-        List<Closeable>     closeables = Lists.newArrayList();
+        List<Closeable> closeables = Lists.newArrayList();
         try
         {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
-            ServiceInstance<String>     instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
+            ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
             closeables.add(discovery);
             discovery.start();
 
             final CountDownLatch latch = new CountDownLatch(1);
-            ServiceCache<String>        cache = discovery.serviceCacheBuilder().name("test").build();
+            ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").build();
             closeables.add(cache);
-            ServiceCacheListener        listener = new ServiceCacheListener()
+            ServiceCacheListener listener = new ServiceCacheListener()
             {
                 @Override
                 public void cacheChanged()
@@ -210,7 +212,7 @@ public class TestServiceCache extends BaseClassForTests
             closeables.add(client);
             client.start();
 
-            ServiceDiscovery<String>    discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
             closeables.add(discovery);
             discovery.start();
 
@@ -219,7 +221,7 @@ public class TestServiceCache extends BaseClassForTests
             cache.start();
 
             final Semaphore semaphore = new Semaphore(0);
-            ServiceCacheListener    listener = new ServiceCacheListener()
+            ServiceCacheListener listener = new ServiceCacheListener()
             {
                 @Override
                 public void cacheChanged()
@@ -234,17 +236,70 @@ public class TestServiceCache extends BaseClassForTests
             };
             cache.addListener(listener);
 
-            ServiceInstance<String>     instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceInstance<String>     instance2 = ServiceInstance.<String>builder().payload("thing").name("test").port(10065).build();
+            ServiceInstance<String> instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            ServiceInstance<String> instance2 = ServiceInstance.<String>builder().payload("thing").name("test").port(10065).build();
             discovery.registerService(instance1);
             Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
 
             discovery.registerService(instance2);
             Assert.assertTrue(semaphore.tryAcquire(3, TimeUnit.SECONDS));
 
-            ServiceInstance<String>     instance3 = ServiceInstance.<String>builder().payload("thing").name("another").port(10064).build();
+            ServiceInstance<String> instance3 = ServiceInstance.<String>builder().payload("thing").name("another").port(10064).build();
             discovery.registerService(instance3);
             Assert.assertFalse(semaphore.tryAcquire(3, TimeUnit.SECONDS));  // should not get called for a different service
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
+    public void testExecutorServiceIsInvoked() throws Exception
+    {
+        List<Closeable> closeables = Lists.newArrayList();
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            ExecuteCalledWatchingExecutorService exec = new ExecuteCalledWatchingExecutorService(Executors.newSingleThreadExecutor());
+            Assert.assertFalse(exec.isExecuteCalled());
+
+            ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").executorService(exec).build();
+            closeables.add(cache);
+            cache.start();
+
+            final Semaphore semaphore = new Semaphore(0);
+            ServiceCacheListener listener = new ServiceCacheListener()
+            {
+                @Override
+                public void cacheChanged()
+                {
+                    semaphore.release();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                }
+            };
+            cache.addListener(listener);
+
+            ServiceInstance<String> instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
+            discovery.registerService(instance1);
+            Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
+
+            Assert.assertTrue(exec.isExecuteCalled());
         }
         finally
         {

@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
 {
-    private static final String     LOCK_PATH_1 = "/locks/our-lock-1";
-    private static final String     LOCK_PATH_2 = "/locks/our-lock-2";
+    private static final String     LOCK_PATH_1 = LOCK_BASE_PATH + "/our-lock-1";
+    private static final String     LOCK_PATH_2 = LOCK_BASE_PATH + "/our-lock-2";
 
     @Override
     protected InterProcessLock makeLock(CuratorFramework client)
