@@ -650,7 +650,8 @@ public class DistributedQueue<T> implements QueueBase<T>
     private enum ProcessMessageBytesCode
     {
         NORMAL,
-        REQUEUE
+        REQUEUE,
+        KEEP
     }
 
     private ProcessMessageBytesCode processMessageBytes(String itemNode, byte[] bytes) throws Exception
@@ -685,6 +686,9 @@ public class DistributedQueue<T> implements QueueBase<T>
                 if ( errorMode.get() == ErrorMode.REQUEUE )
                 {
                     resultCode = ProcessMessageBytesCode.REQUEUE;
+                    break;
+                } else if ( errorMode.get() == ErrorMode.KEEP ) {
+                    resultCode = ProcessMessageBytesCode.KEEP;
                     break;
                 }
             }
@@ -743,28 +747,30 @@ public class DistributedQueue<T> implements QueueBase<T>
             lockCreated = true;
 
             String  itemPath = ZKPaths.makePath(queuePath, itemNode);
-            boolean requeue = false;
+            ProcessMessageBytesCode code = ProcessMessageBytesCode.NORMAL;
             byte[]  bytes = null;
             if ( type == ProcessType.NORMAL )
             {
                 bytes = client.getData().forPath(itemPath);
-                requeue = (processMessageBytes(itemNode, bytes) == ProcessMessageBytesCode.REQUEUE);
+                code = processMessageBytes(itemNode, bytes);
             }
 
-            if ( requeue )
+            if ( code == ProcessMessageBytesCode.REQUEUE )
             {
                 client.inTransaction()
-                    .delete().forPath(itemPath)
-                    .and()
-                    .create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(itemPath, bytes)
-                    .and()
-                    .commit();
+                        .delete().forPath(itemPath)
+                        .and()
+                        .create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(makeItemPath(), bytes)
+                        .and()
+                        .commit();
+            } else if (code == ProcessMessageBytesCode.KEEP) {
+                // Need to update the node with the same data so watcher will pick up the node again
+                client.setData().forPath(itemPath, bytes);
             }
             else
             {
                 client.delete().forPath(itemPath);
             }
-
             return true;
         }
         catch ( KeeperException.NodeExistsException ignore )

@@ -32,5 +32,10 @@ public enum ErrorMode
     /**
      * If the consumer throws an exception, delete the message
      */
-    DELETE
+    DELETE,
+
+    /**
+     * If the consumer throws an exception, keep the message in queue.
+     */
+    KEEP
 }
