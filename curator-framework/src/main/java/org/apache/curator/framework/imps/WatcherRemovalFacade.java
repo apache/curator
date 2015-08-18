@@ -161,6 +161,12 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
     {
         return client.fixForNamespace(path);
     }
+    
+    @Override
+    String fixForNamespace(String path, boolean isSequential)
+    {
+    	return client.fixForNamespace(path, isSequential);
+    }
 
     @Override
     public EnsurePath newNamespaceAwareEnsurePath(String path)
