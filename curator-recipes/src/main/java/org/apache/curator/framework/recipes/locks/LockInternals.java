@@ -24,11 +24,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class LockInternals
 {
-    private final CuratorFramework                  client;
+    private final WatcherRemoveCuratorFramework     client;
     private final String                            path;
     private final String                            basePath;
     private final LockInternalsDriver               driver;
@@ -100,7 +100,7 @@ public class LockInternals
         this.lockName = lockName;
         this.maxLeases = maxLeases;
 
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
         this.basePath = PathUtils.validatePath(path);
         this.path = ZKPaths.makePath(path, lockName);
     }
@@ -116,8 +116,9 @@ public class LockInternals
         revocable.set(entry);
     }
 
-    void releaseLock(String lockPath) throws Exception
+    final void releaseLock(String lockPath) throws Exception
     {
+        client.removeWatchers();
         revocable.set(null);
         deleteOurPath(lockPath);
     }

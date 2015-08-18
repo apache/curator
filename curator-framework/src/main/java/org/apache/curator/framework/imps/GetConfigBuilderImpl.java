@@ -30,6 +30,7 @@ import org.apache.curator.framework.api.Ensembleable;
 import org.apache.curator.framework.api.GetConfigBuilder;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -153,7 +154,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
         }
         else
         {
-            client.getZooKeeper().getConfig(watching.getWatcher(), callback, backgrounding.getContext());
+            client.getZooKeeper().getConfig(watching.getWatcher(client, ZooDefs.CONFIG_NODE), callback, backgrounding.getContext());
         }
     }
 
@@ -174,7 +175,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
                         {
                             return client.getZooKeeper().getConfig(true, stat);
                         }
-                        return client.getZooKeeper().getConfig(watching.getWatcher(), stat);
+                        return client.getZooKeeper().getConfig(watching.getWatcher(client, ZooDefs.CONFIG_NODE), stat);
                     }
                 }
             );

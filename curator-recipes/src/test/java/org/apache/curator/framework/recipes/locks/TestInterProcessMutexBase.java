@@ -22,12 +22,12 @@ package org.apache.curator.framework.recipes.locks;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
-import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -126,7 +126,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -278,7 +278,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -344,7 +344,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -390,7 +390,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -407,7 +407,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -539,11 +539,14 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                 Assert.assertTrue(acquiredLatchForClient1.await(10, TimeUnit.SECONDS));
                 Assert.assertTrue(mutexForClient1.isAcquiredInThisProcess());
             }
+
+            future1.get();
+            future2.get();
         }
         finally
         {
-            CloseableUtils.closeQuietly(client1);
-            CloseableUtils.closeQuietly(client2);
+            TestCleanState.closeAndTestClean(client1);
+            TestCleanState.closeAndTestClean(client2);
         }
     }
 }

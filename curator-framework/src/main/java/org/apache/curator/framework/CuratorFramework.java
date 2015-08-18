@@ -190,6 +190,12 @@ public interface CuratorFramework extends Closeable
     public SyncBuilder sync();
 
     /**
+     * Start a remove watches builder.
+     * @return builder object
+     */
+    public RemoveWatchesBuilder watches();
+
+    /**
      * Returns the listenable interface for the Connect State
      *
      * @return listenable
@@ -259,7 +265,11 @@ public interface CuratorFramework extends Closeable
      * Call this method on watchers you are no longer interested in.
      *
      * @param watcher the watcher
+     * 
+     * @deprecated As of ZooKeeper 3.5 Curators recipes will handle removing watcher references
+     * when they are no longer used.
      */
+    @Deprecated
     public void clearWatcherReferences(Watcher watcher);
         
     /**
@@ -278,4 +288,13 @@ public interface CuratorFramework extends Closeable
      * @throws InterruptedException If interrupted while waiting
      */
     public void blockUntilConnected() throws InterruptedException;
+
+    /**
+     * Returns a facade of the current instance that tracks
+     * watchers created and allows a one-shot removal of all watchers
+     * via {@link WatcherRemoveCuratorFramework#removeWatchers()}
+     *
+     * @return facade
+     */
+    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework();
 }

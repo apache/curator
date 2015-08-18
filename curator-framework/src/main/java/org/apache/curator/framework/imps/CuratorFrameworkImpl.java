@@ -30,6 +30,7 @@ import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
@@ -76,6 +77,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final List<AuthInfo> authInfos;
     private final byte[] defaultData;
     private final FailedDeleteManager failedDeleteManager;
+    private final FailedRemoveWatchManager failedRemoveWatcherManager;
     private final CompressionProvider compressionProvider;
     private final ACLProvider aclProvider;
     private final NamespaceFacadeCache namespaceFacadeCache;
@@ -128,6 +130,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         authInfos = buildAuths(builder);
 
         failedDeleteManager = new FailedDeleteManager(this);
+        failedRemoveWatcherManager = new FailedRemoveWatchManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
     }
 
@@ -139,6 +142,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
             builder1.addAll(builder.getAuthInfos());
         }
         return builder1.build();
+    }
+
+    @Override
+    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework()
+    {
+        return new WatcherRemovalFacade(this);
     }
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
@@ -180,6 +189,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
         failedDeleteManager = parent.failedDeleteManager;
+        failedRemoveWatcherManager = parent.failedRemoveWatcherManager;
         compressionProvider = parent.compressionProvider;
         aclProvider = parent.aclProvider;
         namespaceFacadeCache = parent.namespaceFacadeCache;
@@ -479,6 +489,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return new SyncBuilderImpl(this);
     }
 
+    @Override
+    public RemoveWatchesBuilder watches()
+    {
+        return new RemoveWatchesBuilderImpl(this);
+    }
+
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
@@ -505,6 +521,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     FailedDeleteManager getFailedDeleteManager()
     {
         return failedDeleteManager;
+    }
+
+    FailedRemoveWatchManager getFailedRemoveWatcherManager()
+    {
+        return failedRemoveWatcherManager;
     }
 
     RetryLoop newRetryLoop()
@@ -689,6 +710,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return Watcher.Event.KeeperState.fromInt(-1);
     }
 
+    WatcherRemovalManager getWatcherRemovalManager()
+    {
+        return null;
+    }
+
     private void suspendConnection()
     {
         if ( !connectionStateManager.setToSuspended() )
@@ -842,7 +868,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         try
         {
-            if ( client.isConnected() )
+            if ( !operationAndData.isConnectionRequired() || client.isConnected() )
             {
                 operationAndData.callPerformBackgroundOperation();
             }

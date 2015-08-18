@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.locks;
 
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.RetryPolicy;
@@ -74,7 +75,7 @@ public class TestLockACLs extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 

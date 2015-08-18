@@ -141,7 +141,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
         }
         else
         {
-            client.getZooKeeper().exists(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            client.getZooKeeper().exists(operationAndData.getData(), watching.getWatcher(client, operationAndData.getData()), callback, backgrounding.getContext());
         }
     }
 
@@ -223,7 +223,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
                     }
                     else
                     {
-                        returnStat = client.getZooKeeper().exists(path, watching.getWatcher());
+                        returnStat = client.getZooKeeper().exists(path, watching.getWatcher(client, path));
                     }
                     return returnStat;
                 }

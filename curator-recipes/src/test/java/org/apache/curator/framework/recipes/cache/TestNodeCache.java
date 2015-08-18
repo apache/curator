@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -98,7 +99,7 @@ public class TestNodeCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -161,7 +162,7 @@ public class TestNodeCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -204,7 +205,7 @@ public class TestNodeCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -252,7 +253,7 @@ public class TestNodeCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 }
