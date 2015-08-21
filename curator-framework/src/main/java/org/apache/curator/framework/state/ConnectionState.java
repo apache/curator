@@ -19,6 +19,8 @@
 package org.apache.curator.framework.state;
 
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Watcher;
 
 /**
  * Represents state changes in the connection to ZK
@@ -39,8 +41,7 @@ public enum ConnectionState
 
     /**
      * There has been a loss of connection. Leaders, locks, etc. should suspend
-     * until the connection is re-established. If the connection times-out you will
-     * receive a {@link #LOST} notice
+     * until the connection is re-established.
      */
     SUSPENDED
     {
@@ -62,9 +63,29 @@ public enum ConnectionState
     },
 
     /**
-     * The connection is confirmed to be lost. Close any locks, leaders, etc. and
-     * attempt to re-create them. NOTE: it is possible to get a {@link #RECONNECTED}
-     * state after this but you should still consider any locks, etc. as dirty/unstable
+     * <p>
+     *     NOTE: the meaning of this state depends on how your CuratorFramework instance
+     *     is created.
+     * </p>
+     *
+     * <p>
+     *     The default meaning of LOST (and the only meaning prior to Curator 3.0.0) is:
+     *     The connection is confirmed to be lost (i.e. the retry policy has given up). Close any locks, leaders, etc. and
+     *     attempt to re-create them. NOTE: it is possible to get a {@link #RECONNECTED}
+     *     state after this but you should still consider any locks, etc. as dirty/unstable
+     * </p>
+     *
+     * <p>
+     *     <strong>Since 3.0.0</strong>, you can alter the meaning of LOST by calling
+     *     {@link CuratorFrameworkFactory.Builder#enableSessionExpiredState()}. In this mode,
+     *     Curator will set the LOST state only when it believes that the ZooKeeper session
+     *     has expired. ZooKeeper connections have a session. When the session expires, clients must take appropriate
+     *     action. In Curator, this is complicated by the fact that Curator internally manages the ZooKeeper
+     *     connection. In this mode, Curator will set the LOST state when any of the following occurs:
+     *     a) ZooKeeper returns a {@link Watcher.Event.KeeperState#Expired} or {@link KeeperException.Code#SESSIONEXPIRED};
+     *     b) Curator closes the internally managed ZooKeeper instance; c) The configured session timeout
+     *     elapses during a network partition.
+     * </p>
      */
     LOST
     {
@@ -87,7 +108,9 @@ public enum ConnectionState
         {
             return true;
         }
-    };
+    }
+
+    ;
     
     /**
      * Check if this state indicates that Curator has a connection to ZooKeeper

@@ -24,9 +24,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 public interface UnhandledErrorListener
 {
     /**
-     * Called when an exception is caught in a background thread, handler, etc. Before this
-     * listener is called, the error will have been logged and a {@link ConnectionState#LOST}
-     * event will have been queued for any {@link ConnectionStateListener}s.
+     * Called when an exception is caught in a background thread, handler, etc.
      *
      * @param message Source message
      * @param e exception

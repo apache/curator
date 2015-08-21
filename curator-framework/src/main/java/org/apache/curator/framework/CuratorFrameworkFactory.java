@@ -31,6 +31,7 @@ import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
@@ -116,6 +117,7 @@ public class CuratorFrameworkFactory
         private ACLProvider aclProvider = DEFAULT_ACL_PROVIDER;
         private boolean canBeReadOnly = false;
         private boolean useContainerParentsIfAvailable = true;
+        private boolean enableSessionExpiredState = false;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -343,6 +345,18 @@ public class CuratorFrameworkFactory
             return this;
         }
 
+        /**
+         * Changes the meaning of {@link ConnectionState#LOST} from it's pre Curator 3.0.0 meaning
+         * to a true lost session state. See the {@link ConnectionState#LOST} doc for details.
+         *
+         * @return this
+         */
+        public Builder enableSessionExpiredState()
+        {
+            this.enableSessionExpiredState = true;
+            return this;
+        }
+
         public ACLProvider getAclProvider()
         {
             return aclProvider;
@@ -396,6 +410,11 @@ public class CuratorFrameworkFactory
         public boolean useContainerParentsIfAvailable()
         {
             return useContainerParentsIfAvailable;
+        }
+
+        public boolean getEnableSessionExpiredState()
+        {
+            return enableSessionExpiredState;
         }
 
         @Deprecated
