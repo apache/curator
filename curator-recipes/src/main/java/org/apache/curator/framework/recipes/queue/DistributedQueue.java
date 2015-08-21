@@ -756,7 +756,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                 client.inTransaction()
                     .delete().forPath(itemPath)
                     .and()
-                    .create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(itemPath, bytes)
+                    .create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(makeRequeueItemPath(itemPath), bytes)
                     .and()
                     .commit();
             }
@@ -788,5 +788,10 @@ public class DistributedQueue<T> implements QueueBase<T>
         }
 
         return false;
+    }
+
+    protected String makeRequeueItemPath(String itemPath)
+    {
+        return makeItemPath();
     }
 }

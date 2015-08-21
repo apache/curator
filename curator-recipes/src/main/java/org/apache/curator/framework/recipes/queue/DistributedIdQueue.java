@@ -78,6 +78,12 @@ public class DistributedIdQueue<T> implements QueueBase<T>
             {
                 internalSortChildren(children);
             }
+
+            @Override
+            protected String makeRequeueItemPath(String itemPath)
+            {
+                return makeIdPath(parseId(itemPath).id);
+            }
         };
 
         if ( queue.makeItemPath().contains(Character.toString(SEPARATOR)) )
@@ -153,7 +159,7 @@ public class DistributedIdQueue<T> implements QueueBase<T>
 
         queue.checkState();
 
-        return queue.internalPut(item, null, queue.makeItemPath() + SEPARATOR + fixId(itemId) + SEPARATOR, maxWait, unit);
+        return queue.internalPut(item, null, makeIdPath(itemId), maxWait, unit);
     }
 
     /**
@@ -196,6 +202,11 @@ public class DistributedIdQueue<T> implements QueueBase<T>
         }
 
         return false;
+    }
+
+    private String makeIdPath(String itemId)
+    {
+        return queue.makeItemPath() + SEPARATOR + fixId(itemId) + SEPARATOR;
     }
 
     private void internalSortChildren(List<String> children)
