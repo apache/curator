@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -76,6 +77,12 @@ public class DistributedIdQueue<T> implements QueueBase<T>
             protected void sortChildren(List<String> children)
             {
                 internalSortChildren(children);
+            }
+
+            @Override
+            protected String makeRequeueItemPath(String itemPath)
+            {
+                return makeIdPath(parseId(itemPath).id);
             }
         };
 
@@ -152,7 +159,7 @@ public class DistributedIdQueue<T> implements QueueBase<T>
 
         queue.checkState();
 
-        return queue.internalPut(item, null, queue.makeItemPath() + SEPARATOR + fixId(itemId) + SEPARATOR, maxWait, unit);
+        return queue.internalPut(item, null, makeIdPath(itemId), maxWait, unit);
     }
 
     /**
@@ -181,6 +188,25 @@ public class DistributedIdQueue<T> implements QueueBase<T>
         }
 
         return count;
+    }
+
+    @VisibleForTesting
+    boolean debugIsQueued(String id) throws Exception
+    {
+        for ( String name : queue.getChildren() )
+        {
+            if ( parseId(name).id.equals(id) )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private String makeIdPath(String itemId)
+    {
+        return queue.makeItemPath() + SEPARATOR + fixId(itemId) + SEPARATOR;
     }
 
     private void internalSortChildren(List<String> children)

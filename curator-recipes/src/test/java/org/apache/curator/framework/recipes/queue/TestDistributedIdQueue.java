@@ -162,7 +162,7 @@ public class TestDistributedIdQueue extends BaseClassForTests
 
             Thread.sleep(1000);
 
-            Assert.assertEquals(queue.remove("id"), 1);
+            Assert.assertTrue(queue.debugIsQueued("id"));
 
         }
         finally
