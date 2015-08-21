@@ -51,6 +51,7 @@ public class TestEnsurePath
         CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
         RetryPolicy             retryPolicy = new RetryOneTime(1);
         RetryLoop               retryLoop = new RetryLoop(retryPolicy, null);
+        when(curator.retryConnectionTimeouts()).thenReturn(true);
         when(curator.getZooKeeper()).thenReturn(client);
         when(curator.getRetryPolicy()).thenReturn(retryPolicy);
         when(curator.newRetryLoop()).thenReturn(retryLoop);
@@ -76,6 +77,7 @@ public class TestEnsurePath
         RetryPolicy             retryPolicy = new RetryOneTime(1);
         RetryLoop               retryLoop = new RetryLoop(retryPolicy, null);
         final CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
+        when(curator.retryConnectionTimeouts()).thenReturn(true);
         when(curator.getZooKeeper()).thenReturn(client);
         when(curator.getRetryPolicy()).thenReturn(retryPolicy);
         when(curator.newRetryLoop()).thenReturn(retryLoop);
