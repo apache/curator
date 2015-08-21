@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -181,6 +182,20 @@ public class DistributedIdQueue<T> implements QueueBase<T>
         }
 
         return count;
+    }
+
+    @VisibleForTesting
+    boolean debugIsQueued(String id) throws Exception
+    {
+        for ( String name : queue.getChildren() )
+        {
+            if ( parseId(name).id.equals(id) )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void internalSortChildren(List<String> children)
