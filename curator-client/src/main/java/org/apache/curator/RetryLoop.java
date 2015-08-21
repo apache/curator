@@ -98,11 +98,17 @@ public class RetryLoop
     {
         T               result = null;
         RetryLoop       retryLoop = client.newRetryLoop();
+        boolean         connectionFailed = false;
         while ( retryLoop.shouldContinue() )
         {
             try
             {
                 client.internalBlockUntilConnectedOrTimedOut();
+                if ( !client.isConnected() && !client.retryConnectionTimeouts() )
+                {
+                    connectionFailed = true;
+                    break;
+                }
                 
                 result = proc.call();
                 retryLoop.markComplete();
@@ -112,6 +118,12 @@ public class RetryLoop
                 retryLoop.takeException(e);
             }
         }
+
+        if ( connectionFailed )
+        {
+            throw new KeeperException.ConnectionLossException();
+        }
+
         return result;
     }
 

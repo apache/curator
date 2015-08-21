@@ -171,6 +171,18 @@ class ConnectionState implements Watcher, Closeable
         return ensembleProvider;
     }
 
+    synchronized void reset() throws Exception
+    {
+        log.debug("reset");
+
+        instanceIndex.incrementAndGet();
+
+        isConnected.set(false);
+        connectionStartMs = System.currentTimeMillis();
+        zooKeeper.closeAndReset();
+        zooKeeper.getZooKeeper();   // initiate connection
+    }
+
     private synchronized void checkTimeouts() throws Exception
     {
         int minTimeout = Math.min(sessionTimeoutMs, connectionTimeoutMs);
@@ -204,18 +216,6 @@ class ConnectionState implements Watcher, Closeable
                 }
             }
         }
-    }
-
-    private synchronized void reset() throws Exception
-    {
-        log.debug("reset");
-
-        instanceIndex.incrementAndGet();
-
-        isConnected.set(false);
-        connectionStartMs = System.currentTimeMillis();
-        zooKeeper.closeAndReset();
-        zooKeeper.getZooKeeper();   // initiate connection
     }
 
     private boolean checkState(Event.KeeperState state, boolean wasConnected)

@@ -114,6 +114,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.builder().
             connectString(server.getConnectString()).
+            sessionTimeoutMs(timing.session()).
             retryPolicy(new RetryOneTime(1)).
             build();
 

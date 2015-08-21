@@ -117,7 +117,7 @@ public class CuratorFrameworkFactory
         private ACLProvider aclProvider = DEFAULT_ACL_PROVIDER;
         private boolean canBeReadOnly = false;
         private boolean useContainerParentsIfAvailable = true;
-        private boolean enableSessionExpiredState = false;
+        private boolean enableSessionExpiredState = Boolean.getBoolean("curator-enable-session-expired-state");
 
         /**
          * Apply the current values and build a new CuratorFramework

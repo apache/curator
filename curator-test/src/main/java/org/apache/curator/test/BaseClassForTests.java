@@ -16,10 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.test;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.IInvokedMethod;
+import org.testng.IInvokedMethodListener;
 import org.testng.IRetryAnalyzer;
 import org.testng.ITestContext;
+import org.testng.ITestNGListener;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
@@ -32,11 +38,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class BaseClassForTests
 {
     protected TestingServer server;
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private static final int    RETRY_WAIT_MS = 5000;
+    private static final int RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
     private static final String INTERNAL_RETRY_FAILED_TESTS;
+
     static
     {
         String logConnectionIssues = null;
@@ -70,8 +78,30 @@ public class BaseClassForTests
     @BeforeSuite(alwaysRun = true)
     public void beforeSuite(ITestContext context)
     {
+        if ( !enabledSessionExpiredStateAware() )
+        {
+            ITestNGListener listener = new IInvokedMethodListener()
+            {
+                @Override
+                public void beforeInvocation(IInvokedMethod method, ITestResult testResult)
+                {
+                    int invocationCount = method.getTestMethod().getCurrentInvocationCount();
+                    System.setProperty("curator-enable-session-expired-state", Boolean.toString(invocationCount == 1));
+                    log.info("curator-enable-session-expired-state: " + Boolean.toString(invocationCount == 1));
+                }
+
+                @Override
+                public void afterInvocation(IInvokedMethod method, ITestResult testResult)
+                {
+                    System.clearProperty("curator-enable-session-expired-state");
+                }
+            };
+            context.getSuite().addListener(listener);
+        }
+
         for ( ITestNGMethod method : context.getAllTestMethods() )
         {
+            method.setInvocationCount(enabledSessionExpiredStateAware() ? 1 : 2);
             method.setRetryAnalyzer(new RetryTest());
         }
     }
@@ -115,6 +145,11 @@ public class BaseClassForTests
             }
             server = null;
         }
+    }
+
+    protected boolean enabledSessionExpiredStateAware()
+    {
+        return false;
     }
 
     private static class RetryTest implements IRetryAnalyzer

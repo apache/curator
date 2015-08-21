@@ -251,7 +251,8 @@ public class ConnectionStateManager implements Closeable
         {
             while ( !Thread.currentThread().isInterrupted() )
             {
-                final ConnectionState newState = eventQueue.poll(sessionTimeoutMs, TimeUnit.MILLISECONDS);
+                int pollMaxMs = (sessionTimeoutMs * 2) / 3; // 2/3 of session timeout
+                final ConnectionState newState = eventQueue.poll(pollMaxMs, TimeUnit.MILLISECONDS);
                 if ( newState != null )
                 {
                     if ( listeners.size() == 0 )
@@ -294,7 +295,15 @@ public class ConnectionStateManager implements Closeable
             long elapsedMs = System.currentTimeMillis() - startOfSuspendedEpoch;
             if ( elapsedMs >= sessionTimeoutMs )
             {
-                log.info(String.format("Session timeout has elapsed while SUSPENDED. Posting LOST event. Elapsed ms: %d", elapsedMs));
+                log.info(String.format("Session timeout has elapsed while SUSPENDED. Posting LOST event and resetting the connection. Elapsed ms: %d", elapsedMs));
+                try
+                {
+                    client.getZookeeperClient().reset();
+                }
+                catch ( Exception e )
+                {
+                    log.error("Could not reset the connection", e);
+                }
                 addStateChange(ConnectionState.LOST);
             }
         }

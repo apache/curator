@@ -61,6 +61,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorFrameworkImpl implements CuratorFramework
@@ -84,6 +85,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final NamespaceWatcherMap namespaceWatcherMap = new NamespaceWatcherMap(this);
     private final boolean useContainerParentsIfAvailable;
     private final boolean enableSessionExpiredState;
+    private final AtomicLong currentInstanceIndex = new AtomicLong(-1);
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -104,15 +106,31 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
         ZookeeperFactory localZookeeperFactory = makeZookeeperFactory(builder.getZookeeperFactory());
-        this.client = new CuratorZookeeperClient(localZookeeperFactory, builder.getEnsembleProvider(), builder.getSessionTimeoutMs(), builder.getConnectionTimeoutMs(), new Watcher()
+        this.client = new CuratorZookeeperClient
+        (
+            localZookeeperFactory,
+            builder.getEnsembleProvider(),
+            builder.getSessionTimeoutMs(),
+            builder.getConnectionTimeoutMs(),
+            new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent watchedEvent)
+                {
+                    CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null, null);
+                    processEvent(event);
+                }
+            },
+            builder.getRetryPolicy(),
+            builder.canBeReadOnly()
+        )
         {
             @Override
-            public void process(WatchedEvent watchedEvent)
+            public boolean retryConnectionTimeouts()
             {
-                CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null, null);
-                processEvent(event);
+                return !enableSessionExpiredState;
             }
-        }, builder.getRetryPolicy(), builder.canBeReadOnly());
+        };
 
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
@@ -675,11 +693,26 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         else if ( state == Watcher.Event.KeeperState.SyncConnected )
         {
+            checkNewConnection();
             connectionStateManager.addStateChange(ConnectionState.RECONNECTED);
         }
         else if ( state == Watcher.Event.KeeperState.ConnectedReadOnly )
         {
+            checkNewConnection();
             connectionStateManager.addStateChange(ConnectionState.READ_ONLY);
+        }
+    }
+
+    private void checkNewConnection()
+    {
+        if ( enableSessionExpiredState )
+        {
+            long instanceIndex = client.getInstanceIndex();
+            long newInstanceIndex = currentInstanceIndex.getAndSet(instanceIndex);
+            if ( (newInstanceIndex >= 0) && (instanceIndex != newInstanceIndex) )   // currentInstanceIndex is initially -1 - ignore this
+            {
+                connectionStateManager.addStateChange(ConnectionState.LOST);
+            }
         }
     }
 

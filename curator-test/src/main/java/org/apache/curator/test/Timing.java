@@ -34,7 +34,7 @@ public class Timing
 
     private static final int DEFAULT_SECONDS = 10;
     private static final int DEFAULT_WAITING_MULTIPLE = 5;
-    private static final double SESSION_MULTIPLE = .25;
+    private static final double SESSION_MULTIPLE = 1.5;
 
     /**
      * Use the default base time

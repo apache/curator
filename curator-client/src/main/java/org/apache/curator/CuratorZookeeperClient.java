@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator;
 
 import com.google.common.base.Preconditions;
@@ -43,12 +44,12 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings("UnusedDeclaration")
 public class CuratorZookeeperClient implements Closeable
 {
-    private final Logger                            log = LoggerFactory.getLogger(getClass());
-    private final ConnectionState                   state;
-    private final AtomicReference<RetryPolicy>      retryPolicy = new AtomicReference<RetryPolicy>();
-    private final int                               connectionTimeoutMs;
-    private final AtomicBoolean                     started = new AtomicBoolean(false);
-    private final AtomicReference<TracerDriver>     tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final ConnectionState state;
+    private final AtomicReference<RetryPolicy> retryPolicy = new AtomicReference<RetryPolicy>();
+    private final int connectionTimeoutMs;
+    private final AtomicBoolean started = new AtomicBoolean(false);
+    private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
 
     /**
      *
@@ -159,7 +160,7 @@ public class CuratorZookeeperClient implements Closeable
         Preconditions.checkState(started.get(), "Client is not started");
 
         log.debug("blockUntilConnectedOrTimedOut() start");
-        TimeTrace       trace = startTracer("blockUntilConnectedOrTimedOut");
+        TimeTrace trace = startTracer("blockUntilConnectedOrTimedOut");
 
         internalBlockUntilConnectedOrTimedOut();
 
@@ -176,7 +177,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @throws IOException errors
      */
-    public void     start() throws Exception
+    public void start() throws Exception
     {
         log.debug("Starting");
 
@@ -192,7 +193,7 @@ public class CuratorZookeeperClient implements Closeable
     /**
      * Close the client
      */
-    public void     close()
+    public void close()
     {
         log.debug("Closing");
 
@@ -212,7 +213,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @param policy new policy
      */
-    public void     setRetryPolicy(RetryPolicy policy)
+    public void setRetryPolicy(RetryPolicy policy)
     {
         Preconditions.checkNotNull(policy, "policy cannot be null");
 
@@ -234,7 +235,7 @@ public class CuratorZookeeperClient implements Closeable
      * @param name name of the event
      * @return the new tracer ({@link TimeTrace#commit()} must be called)
      */
-    public TimeTrace          startTracer(String name)
+    public TimeTrace startTracer(String name)
     {
         return new TimeTrace(name, tracer.get());
     }
@@ -244,7 +245,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return tracing driver
      */
-    public TracerDriver       getTracerDriver()
+    public TracerDriver getTracerDriver()
     {
         return tracer.get();
     }
@@ -254,7 +255,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @param tracer new tracing driver
      */
-    public void               setTracerDriver(TracerDriver tracer)
+    public void setTracerDriver(TracerDriver tracer)
     {
         this.tracer.set(tracer);
     }
@@ -265,7 +266,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return connection string
      */
-    public String             getCurrentConnectionString()
+    public String getCurrentConnectionString()
     {
         return state.getEnsembleProvider().getConnectionString();
     }
@@ -281,6 +282,16 @@ public class CuratorZookeeperClient implements Closeable
     }
 
     /**
+     * For internal use only - reset the internally managed ZK handle
+     *
+     * @throws Exception errors
+     */
+    public void reset() throws Exception
+    {
+        state.reset();
+    }
+
+    /**
      * Every time a new {@link ZooKeeper} instance is allocated, the "instance index"
      * is incremented.
      *
@@ -291,22 +302,27 @@ public class CuratorZookeeperClient implements Closeable
         return state.getInstanceIndex();
     }
 
-    void        addParentWatcher(Watcher watcher)
+    public boolean retryConnectionTimeouts()
+    {
+        return true;
+    }
+
+    void addParentWatcher(Watcher watcher)
     {
         state.addParentWatcher(watcher);
     }
 
-    void        removeParentWatcher(Watcher watcher)
+    void removeParentWatcher(Watcher watcher)
     {
         state.removeParentWatcher(watcher);
     }
 
     void internalBlockUntilConnectedOrTimedOut() throws InterruptedException
     {
-        long            waitTimeMs = connectionTimeoutMs;
+        long waitTimeMs = connectionTimeoutMs;
         while ( !state.isConnected() && (waitTimeMs > 0) )
         {
-            final CountDownLatch            latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(1);
             Watcher tempWatcher = new Watcher()
             {
                 @Override
@@ -315,9 +331,9 @@ public class CuratorZookeeperClient implements Closeable
                     latch.countDown();
                 }
             };
-            
+
             state.addParentWatcher(tempWatcher);
-            long        startTimeMs = System.currentTimeMillis();
+            long startTimeMs = System.currentTimeMillis();
             try
             {
                 latch.await(1, TimeUnit.SECONDS);
@@ -326,7 +342,7 @@ public class CuratorZookeeperClient implements Closeable
             {
                 state.removeParentWatcher(tempWatcher);
             }
-            long        elapsed = Math.max(1, System.currentTimeMillis() - startTimeMs);
+            long elapsed = Math.max(1, System.currentTimeMillis() - startTimeMs);
             waitTimeMs -= elapsed;
         }
     }

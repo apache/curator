@@ -86,6 +86,11 @@ public enum ConnectionState
      *     b) Curator closes the internally managed ZooKeeper instance; c) The configured session timeout
      *     elapses during a network partition.
      * </p>
+     *
+     * <p>
+     *     NOTE: the new behavior for the LOST state can also be enabled via the command line
+     *     property "curator-enable-session-expired-state" (e.g. -Dcurator-enable-session-expired-state=true)
+     * </p>
      */
     LOST
     {
