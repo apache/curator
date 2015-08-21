@@ -109,7 +109,7 @@ public class TestDistributedQueue extends BaseClassForTests
             retryCounter.await(10, TimeUnit.SECONDS);
             Assert.assertEquals(retryCounter.getCount(), 0, "Queue item was not consumed. Retry counter is " + retryCounter.getCount());
             Assert.assertEquals(names.size(), 2);
-            Assert.assertEquals(names.get(0).length(), names.get(1).length());
+            Assert.assertEquals(names.get(0).length(), names.get(1).length(), "name1: " + names.get(0) + " - " + "name2: " + names.get(1));
         }
         finally
         {
