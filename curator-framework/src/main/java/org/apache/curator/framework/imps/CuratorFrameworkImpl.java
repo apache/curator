@@ -122,15 +122,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             },
             builder.getRetryPolicy(),
-            builder.canBeReadOnly()
-        )
-        {
-            @Override
-            public boolean retryConnectionTimeouts()
-            {
-                return !enableSessionExpiredState;
-            }
-        };
+            builder.canBeReadOnly(),
+            !builder.getEnableSessionExpiredState() // inverse is correct here. By default, CuratorZookeeperClient manages timeouts. The new SessionExpiredState needs this disabled.
+        );
 
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();

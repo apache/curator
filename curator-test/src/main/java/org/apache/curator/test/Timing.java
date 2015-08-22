@@ -35,6 +35,7 @@ public class Timing
     private static final int DEFAULT_SECONDS = 10;
     private static final int DEFAULT_WAITING_MULTIPLE = 5;
     private static final double SESSION_MULTIPLE = 1.5;
+    private static final double SESSION_SLEEP_MULTIPLE = 1.75;  // has to be at least session + 2/3 of a session to account for missed heartbeat then session expiration
 
     /**
      * Use the default base time
@@ -197,6 +198,26 @@ public class Timing
     public void sleepABit() throws InterruptedException
     {
         unit.sleep(value / 4);
+    }
+
+    /**
+     * Sleep enough so that the session should expire
+     *
+     * @throws InterruptedException if interrupted
+     */
+    public void sleepForSession() throws InterruptedException
+    {
+        TimeUnit.MILLISECONDS.sleep(sessionSleep());
+    }
+
+    /**
+     * Return the value to sleep to ensure a ZK session timeout
+     *
+     * @return session sleep timeout
+     */
+    public int sessionSleep()
+    {
+        return multiple(SESSION_SLEEP_MULTIPLE).session();
     }
 
     /**

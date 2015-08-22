@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.client;
 
+import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
@@ -36,6 +37,8 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
 {
@@ -53,7 +56,6 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
     {
         server.stop();
 
-        final StringBuilder listenerSequence = new StringBuilder();
         LeaderSelector selector = null;
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
@@ -74,12 +76,13 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
             selector.autoRequeue();
             selector.start();
 
+            final BlockingQueue<ConnectionState> states = Queues.newLinkedBlockingQueue();
             ConnectionStateListener listener1 = new ConnectionStateListener()
             {
                 @Override
                 public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
-                    listenerSequence.append("-").append(newState);
+                    states.add(newState);
                 }
             };
 
@@ -90,17 +93,21 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
 
             log.debug("Stopping ZK server");
             server.stop();
-            timing.forWaiting().sleepABit();
+            timing.sleepForSession();
 
             log.debug("Starting ZK server");
             server.restart();
-            timing.forWaiting().sleepABit();
+
+            Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
+            Assert.assertEquals(states.poll(timing.sessionSleep(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+            Assert.assertEquals(states.poll(timing.sessionSleep(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+            Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);
 
             log.debug("Stopping ZK server");
             server.close();
-            timing.forWaiting().sleepABit();
 
-            Assert.assertEquals(listenerSequence.toString(), "-CONNECTED-SUSPENDED-LOST-RECONNECTED-SUSPENDED-LOST");
+            Assert.assertEquals(states.poll(timing.sessionSleep(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+            Assert.assertEquals(states.poll(timing.sessionSleep(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
         }
         finally
         {

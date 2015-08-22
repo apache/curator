@@ -52,6 +52,7 @@ class ConnectionState implements Watcher, Closeable
     private final Queue<Watcher> parentWatchers = new ConcurrentLinkedQueue<Watcher>();
     private final AtomicLong instanceIndex = new AtomicLong();
     private volatile long connectionStartMs = 0;
+    private final AtomicBoolean enableTimeoutChecks = new AtomicBoolean(true);
 
     ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer, boolean canBeReadOnly)
     {
@@ -65,6 +66,11 @@ class ConnectionState implements Watcher, Closeable
         }
 
         zooKeeper = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs, canBeReadOnly);
+    }
+
+    void disableTimeoutChecks()
+    {
+        enableTimeoutChecks.set(false);
     }
 
     ZooKeeper getZooKeeper() throws Exception
@@ -81,10 +87,13 @@ class ConnectionState implements Watcher, Closeable
             throw exception;
         }
 
-        boolean localIsConnected = isConnected.get();
-        if ( !localIsConnected )
+        if ( enableTimeoutChecks.get() )
         {
-            checkTimeouts();
+            boolean localIsConnected = isConnected.get();
+            if ( !localIsConnected )
+            {
+                checkTimeouts();
+            }
         }
 
         return zooKeeper.getZooKeeper();
