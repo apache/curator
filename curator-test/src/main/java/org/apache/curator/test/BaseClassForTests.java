@@ -44,17 +44,20 @@ public class BaseClassForTests
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
     private static final String INTERNAL_RETRY_FAILED_TESTS;
+    private static final String INTERNAL_CHECK_INJECTED_DEBUG_EXCEPTIONS;
 
     static
     {
         String logConnectionIssues = null;
         String retryFailedTests = null;
+        String checkInjectedDebugExceptions = null;
         try
         {
             // use reflection to avoid adding a circular dependency in the pom
             Class<?> debugUtilsClazz = Class.forName("org.apache.curator.utils.DebugUtils");
             logConnectionIssues = (String)debugUtilsClazz.getField("PROPERTY_DONT_LOG_CONNECTION_ISSUES").get(null);
             retryFailedTests = (String)debugUtilsClazz.getField("PROPERTY_RETRY_FAILED_TESTS").get(null);
+            checkInjectedDebugExceptions = (String)debugUtilsClazz.getField("PROPERTY_CHECK_INJECTED_DEBUG_EXCEPTIONS").get(null);
         }
         catch ( Exception e )
         {
@@ -62,6 +65,7 @@ public class BaseClassForTests
         }
         INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES = logConnectionIssues;
         INTERNAL_RETRY_FAILED_TESTS = retryFailedTests;
+        INTERNAL_CHECK_INJECTED_DEBUG_EXCEPTIONS = checkInjectedDebugExceptions;
         String s = null;
         try
         {
@@ -114,6 +118,7 @@ public class BaseClassForTests
             System.setProperty(INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
         }
         System.setProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND, "true");
+        System.setProperty(INTERNAL_CHECK_INJECTED_DEBUG_EXCEPTIONS, "true");
 
         while ( server == null )
         {

@@ -19,6 +19,7 @@
 
 package org.apache.curator;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -51,6 +52,7 @@ public class CuratorZookeeperClient implements Closeable
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
     private final boolean manageTimeouts;
+    private final AtomicReference<Exception> debugException = new AtomicReference<>();
 
     /**
      *
@@ -207,8 +209,7 @@ public class CuratorZookeeperClient implements Closeable
 
         if ( !started.compareAndSet(false, true) )
         {
-            IllegalStateException ise = new IllegalStateException("Already started");
-            throw ise;
+            throw new IllegalStateException("Already started");
         }
 
         state.start();
@@ -335,6 +336,18 @@ public class CuratorZookeeperClient implements Closeable
     public boolean retryConnectionTimeouts()
     {
         return manageTimeouts;
+    }
+
+    @VisibleForTesting
+    public void setDebugException(Exception e)
+    {
+        debugException.set(e);
+    }
+
+    @VisibleForTesting
+    Exception getDebugException()
+    {
+        return debugException.get();
     }
 
     void addParentWatcher(Watcher watcher)
