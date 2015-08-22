@@ -74,7 +74,6 @@ public class RetryLoop
             unit.sleep(time);
         }
     };
-    private static final boolean checkInjectedDebugExceptions = Boolean.getBoolean(DebugUtils.PROPERTY_CHECK_INJECTED_DEBUG_EXCEPTIONS);
 
     /**
      * Returns the default retry sleeper
@@ -104,13 +103,10 @@ public class RetryLoop
         {
             try
             {
-                if ( checkInjectedDebugExceptions )
+                Exception debugException = client.getDebugException();
+                if ( debugException != null )
                 {
-                    Exception debugException = client.getDebugException();
-                    if ( debugException != null )
-                    {
-                        throw debugException;
-                    }
+                    throw debugException;
                 }
 
                 client.internalBlockUntilConnectedOrTimedOut();

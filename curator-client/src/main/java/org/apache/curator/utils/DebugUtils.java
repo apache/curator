@@ -26,7 +26,6 @@ public class DebugUtils
     public static final String PROPERTY_LOG_ONLY_FIRST_CONNECTION_ISSUE_AS_ERROR_LEVEL = "curator-log-only-first-connection-issue-as-error-level";
     public static final String PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND = "curator-remove-watchers-in-foreground";
     public static final String PROPERTY_RETRY_FAILED_TESTS = "curator-retry-failed-tests";
-    public static final String PROPERTY_CHECK_INJECTED_DEBUG_EXCEPTIONS = "curator-check-injected-debug-exceptions";
 
     private DebugUtils()
     {
