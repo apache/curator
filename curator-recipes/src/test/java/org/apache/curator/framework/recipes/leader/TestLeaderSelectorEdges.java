@@ -158,7 +158,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
         final CuratorFramework client =
             CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
-                .retryPolicy(new RetryNTimes(2, 1))
+                .retryPolicy(new RetryNTimes(2, 100))
                 .connectionTimeoutMs(1000)
                 .sessionTimeoutMs(60000)
                 .build();
