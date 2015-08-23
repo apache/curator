@@ -63,6 +63,11 @@ public interface ConnectionHandlingPolicy
         CALL_PROC,
 
         /**
+         * Wait again for connection success or timeout
+         */
+        WAIT_FOR_CONNECTION,
+
+        /**
          * Do not call the procedure and exit the retry loop
          */
         EXIT_RETRIES,

@@ -1,10 +1,15 @@
 package org.apache.curator.connection;
 
+import com.google.common.base.Splitter;
 import org.apache.curator.CuratorZookeeperClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 
 public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolicy
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
     @Override
     public boolean isEmulatingClassicHandling()
     {
@@ -24,9 +29,15 @@ public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolic
     @Override
     public PreRetryResult preRetry(CuratorZookeeperClient client) throws Exception
     {
-        // TODO - see if there are other servers to connect to
         if ( !client.isConnected() )
         {
+            int serverCount = Splitter.on(",").omitEmptyStrings().splitToList(client.getCurrentConnectionString()).size();
+            if ( serverCount > 1 )
+            {
+                log.info("Connection timed out and connection string is > 1. Resetting connection and trying again.");
+                client.reset(); // unfortunately, there's no way to guarantee that ZK tries a different server. Internally it calls Collections.shuffle(). Hopefully, this will result in a different server each time.
+                return PreRetryResult.WAIT_FOR_CONNECTION;
+            }
             return PreRetryResult.CONNECTION_TIMEOUT;
         }
 

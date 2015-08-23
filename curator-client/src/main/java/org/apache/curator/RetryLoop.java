@@ -121,6 +121,11 @@ public class RetryLoop
                         break;
                     }
 
+                    case WAIT_FOR_CONNECTION:
+                    {
+                        break;  // just loop
+                    }
+
                     case EXIT_RETRIES:
                     {
                         retryLoop.markComplete();
