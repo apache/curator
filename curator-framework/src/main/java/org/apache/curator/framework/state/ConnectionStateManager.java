@@ -21,7 +21,6 @@ package org.apache.curator.framework.state;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import org.apache.curator.connection.ConnectionHandlingPolicyStyle;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.utils.ThreadUtils;
@@ -67,6 +66,7 @@ public class ConnectionStateManager implements Closeable
     private final BlockingQueue<ConnectionState> eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
     private final CuratorFramework client;
     private final int sessionTimeoutMs;
+    private final boolean checkSessionExpiration;
     private final ListenerContainer<ConnectionStateListener> listeners = new ListenerContainer<ConnectionStateListener>();
     private final AtomicBoolean initialConnectMessageSent = new AtomicBoolean(false);
     private final ExecutorService service;
@@ -88,11 +88,13 @@ public class ConnectionStateManager implements Closeable
      * @param client        the client
      * @param threadFactory thread factory to use or null for a default
      * @param sessionTimeoutMs the ZK session timeout in milliseconds
+     * @param checkSessionExpiration if true, check for session timeouts, etc. ala new connection handling method
      */
-    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs)
+    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, boolean checkSessionExpiration)
     {
         this.client = client;
         this.sessionTimeoutMs = sessionTimeoutMs;
+        this.checkSessionExpiration = checkSessionExpiration;
         if ( threadFactory == null )
         {
             threadFactory = ThreadUtils.newThreadFactory("ConnectionStateManager");
@@ -270,7 +272,7 @@ public class ConnectionStateManager implements Closeable
                             }
                         );
                 }
-                else if ( !client.getZookeeperClient().getConnectionHandlingPolicy().isEmulatingClassicHandling() )
+                else if ( checkSessionExpiration )
                 {
                     synchronized(this)
                     {
