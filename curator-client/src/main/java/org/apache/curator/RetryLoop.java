@@ -96,62 +96,13 @@ public class RetryLoop
      */
     public static<T> T      callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
     {
-        T               result = null;
-        RetryLoop       retryLoop = client.newRetryLoop();
-        boolean         connectionFailed = false;
-        while ( retryLoop.shouldContinue() )
+        Exception debugException = client.getDebugException();
+        if ( debugException != null )
         {
-            try
-            {
-                Exception debugException = client.getDebugException();
-                if ( debugException != null )
-                {
-                    throw debugException;
-                }
-
-                client.internalBlockUntilConnectedOrTimedOut();
-
-                switch ( client.getConnectionHandlingPolicy().preRetry(client) )
-                {
-                    default:
-                    case CALL_PROC:
-                    {
-                        result = proc.call();
-                        retryLoop.markComplete();
-                        break;
-                    }
-
-                    case WAIT_FOR_CONNECTION:
-                    {
-                        break;  // just loop
-                    }
-
-                    case EXIT_RETRIES:
-                    {
-                        retryLoop.markComplete();
-                        break;
-                    }
-
-                    case CONNECTION_TIMEOUT:
-                    {
-                        connectionFailed = true;
-                        retryLoop.markComplete();
-                        break;
-                    }
-                }
-            }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
+            throw debugException;
         }
 
-        if ( connectionFailed )
-        {
-            throw new KeeperException.ConnectionLossException();
-        }
-
-        return result;
+        return client.getConnectionHandlingPolicy().callWithRetry(client, proc);
     }
 
     RetryLoop(RetryPolicy retryPolicy, AtomicReference<TracerDriver> tracer)

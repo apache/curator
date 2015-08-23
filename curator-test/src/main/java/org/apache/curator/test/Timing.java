@@ -35,7 +35,7 @@ public class Timing
     private static final int DEFAULT_SECONDS = 10;
     private static final int DEFAULT_WAITING_MULTIPLE = 5;
     private static final double SESSION_MULTIPLE = 1.5;
-    private static final double SESSION_SLEEP_MULTIPLE = 1.75;  // has to be at least session + 2/3 of a session to account for missed heartbeat then session expiration
+    private static final double SESSION_SLEEP_MULTIPLE = SESSION_MULTIPLE * 1.75;  // has to be at least session + 2/3 of a session to account for missed heartbeat then session expiration
 
     /**
      * Use the default base time
@@ -180,6 +180,18 @@ public class Timing
     }
 
     /**
+     * Return a new timing that is a multiple of the this timing
+     *
+     * @param n the multiple
+     * @param waitingMultiple new waitingMultiple
+     * @return this timing times the multiple
+     */
+    public Timing multiple(double n, int waitingMultiple)
+    {
+        return new Timing((int)(value * n), unit, waitingMultiple);
+    }
+
+    /**
      * Return a new timing with the standard multiple for waiting on latches, etc.
      *
      * @return this timing multiplied
@@ -188,6 +200,16 @@ public class Timing
     public Timing forWaiting()
     {
         return multiple(waitingMultiple);
+    }
+
+    /**
+     * Return a new timing with a multiple that ensures a ZK session timeout
+     *
+     * @return this timing multiplied
+     */
+    public Timing forSessionSleep()
+    {
+        return multiple(SESSION_SLEEP_MULTIPLE, 1);
     }
 
     /**
@@ -201,23 +223,13 @@ public class Timing
     }
 
     /**
-     * Sleep enough so that the session should expire
+     * Sleep for a the full amount of time
      *
      * @throws InterruptedException if interrupted
      */
-    public void sleepForSession() throws InterruptedException
+    public void sleep() throws InterruptedException
     {
-        TimeUnit.MILLISECONDS.sleep(sessionSleep());
-    }
-
-    /**
-     * Return the value to sleep to ensure a ZK session timeout
-     *
-     * @return session sleep timeout
-     */
-    public int sessionSleep()
-    {
-        return multiple(SESSION_SLEEP_MULTIPLE).session();
+        unit.sleep(value);
     }
 
     /**

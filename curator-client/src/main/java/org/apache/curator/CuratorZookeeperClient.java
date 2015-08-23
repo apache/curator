@@ -358,7 +358,12 @@ public class CuratorZookeeperClient implements Closeable
         state.removeParentWatcher(watcher);
     }
 
-    void internalBlockUntilConnectedOrTimedOut() throws InterruptedException
+    /**
+     * For internal use only
+     *
+     * @throws InterruptedException interruptions
+     */
+    public void internalBlockUntilConnectedOrTimedOut() throws InterruptedException
     {
         long waitTimeMs = connectionTimeoutMs;
         while ( !state.isConnected() && (waitTimeMs > 0) )

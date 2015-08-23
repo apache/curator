@@ -1,7 +1,6 @@
 package org.apache.curator.connection;
 
 import org.apache.curator.CuratorZookeeperClient;
-import org.apache.zookeeper.KeeperException;
 import java.util.concurrent.Callable;
 
 public interface ConnectionHandlingPolicy
@@ -12,6 +11,8 @@ public interface ConnectionHandlingPolicy
      * @return true/false
      */
     boolean isEmulatingClassicHandling();
+
+    <T> T callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception;
 
     enum CheckTimeoutsResult
     {
@@ -55,35 +56,9 @@ public interface ConnectionHandlingPolicy
      */
     CheckTimeoutsResult checkTimeouts(Callable<Boolean> hasNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception;
 
-    enum PreRetryResult
-    {
-        /**
-         * The retry loop should call the procedure
-         */
-        CALL_PROC,
+/*
+    int getDefaultConnectionTimeoutMs();
 
-        /**
-         * Wait again for connection success or timeout
-         */
-        WAIT_FOR_CONNECTION,
-
-        /**
-         * Do not call the procedure and exit the retry loop
-         */
-        EXIT_RETRIES,
-
-        /**
-         * Do not call the procedure and throw {@link KeeperException.ConnectionLossException}
-         */
-        CONNECTION_TIMEOUT
-    }
-
-    /**
-     * Called prior to each iteration of a procedure in a retry loop
-     *
-     * @param client the client
-     * @return result
-     * @throws Exception errors
-     */
-    PreRetryResult preRetry(CuratorZookeeperClient client) throws Exception;
+    int getDefaultSessionTimeoutMs();
+*/
 }

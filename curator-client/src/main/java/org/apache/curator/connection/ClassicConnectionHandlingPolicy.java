@@ -1,6 +1,7 @@
 package org.apache.curator.connection;
 
 import org.apache.curator.CuratorZookeeperClient;
+import org.apache.curator.RetryLoop;
 import java.util.concurrent.Callable;
 
 public class ClassicConnectionHandlingPolicy implements ConnectionHandlingPolicy
@@ -9,6 +10,28 @@ public class ClassicConnectionHandlingPolicy implements ConnectionHandlingPolicy
     public boolean isEmulatingClassicHandling()
     {
         return true;
+    }
+
+    @Override
+    public <T> T callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
+    {
+        T result = null;
+        RetryLoop retryLoop = client.newRetryLoop();
+        while ( retryLoop.shouldContinue() )
+        {
+            try
+            {
+                client.internalBlockUntilConnectedOrTimedOut();
+                result = proc.call();
+                retryLoop.markComplete();
+            }
+            catch ( Exception e )
+            {
+                retryLoop.takeException(e);
+            }
+        }
+
+        return result;
     }
 
     @Override
@@ -38,11 +61,5 @@ public class ClassicConnectionHandlingPolicy implements ConnectionHandlingPolicy
         }
 
         return result;
-    }
-
-    @Override
-    public PreRetryResult preRetry(CuratorZookeeperClient client) throws Exception
-    {
-        return PreRetryResult.CALL_PROC;
     }
 }

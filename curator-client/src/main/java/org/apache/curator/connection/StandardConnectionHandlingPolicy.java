@@ -1,7 +1,7 @@
 package org.apache.curator.connection;
 
-import com.google.common.base.Splitter;
 import org.apache.curator.CuratorZookeeperClient;
+import org.apache.curator.RetryLoop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
@@ -17,6 +17,29 @@ public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolic
     }
 
     @Override
+    public <T> T callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
+    {
+        client.internalBlockUntilConnectedOrTimedOut();
+
+        T result = null;
+        RetryLoop retryLoop = client.newRetryLoop();
+        while ( retryLoop.shouldContinue() )
+        {
+            try
+            {
+                result = proc.call();
+                retryLoop.markComplete();
+            }
+            catch ( Exception e )
+            {
+                retryLoop.takeException(e);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public CheckTimeoutsResult checkTimeouts(Callable<Boolean> hasNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception
     {
         if ( hasNewConnectionString.call() )
@@ -24,23 +47,5 @@ public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolic
             return CheckTimeoutsResult.NEW_CONNECTION_STRING;
         }
         return CheckTimeoutsResult.NOP;
-    }
-
-    @Override
-    public PreRetryResult preRetry(CuratorZookeeperClient client) throws Exception
-    {
-        if ( !client.isConnected() )
-        {
-            int serverCount = Splitter.on(",").omitEmptyStrings().splitToList(client.getCurrentConnectionString()).size();
-            if ( serverCount > 1 )
-            {
-                log.info("Connection timed out and connection string is > 1. Resetting connection and trying again.");
-                client.reset(); // unfortunately, there's no way to guarantee that ZK tries a different server. Internally it calls Collections.shuffle(). Hopefully, this will result in a different server each time.
-                return PreRetryResult.WAIT_FOR_CONNECTION;
-            }
-            return PreRetryResult.CONNECTION_TIMEOUT;
-        }
-
-        return PreRetryResult.CALL_PROC;
     }
 }
