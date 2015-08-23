@@ -368,11 +368,10 @@ public class CuratorFrameworkFactory
          *         by the CuratorFramework instance. There should be no noticeable differences.
          *     </li>
          *     <li>
-         *         Prior to 3.0.0, an elapsed connection timeout would be presented to the retry policy, possibly
-         *         causing retries. Now, elapsed connection timeouts are only retried if there is an another server
-         *         in the connection string. i.e. a new instance will be retried should the retry policy allow a retry.
-         *         If no other servers remain, a {@link KeeperException.ConnectionLossException} is thrown immediately
-         *         without notifying the retry policy.
+         *         Prior to 3.0.0, each iteration of the retry policy would allow the connection timeout to elapse
+         *         if the connection hadn't yet succeeded. This meant that the true connection timeout was the configured
+         *         value times the maximum retries in the retry policy. This longstanding issue has been address.
+         *         Now, the connection timeout can elapse only once for a single API call.
          *     </li>
          *     <li>
          *         <strong>MOST IMPORTANTLY!</strong> Prior to 3.0.0, {@link ConnectionState#LOST} did not imply
