@@ -96,12 +96,6 @@ public class RetryLoop
      */
     public static<T> T      callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
     {
-        Exception debugException = client.getDebugException();
-        if ( debugException != null )
-        {
-            throw debugException;
-        }
-
         return client.getConnectionHandlingPolicy().callWithRetry(client, proc);
     }
 

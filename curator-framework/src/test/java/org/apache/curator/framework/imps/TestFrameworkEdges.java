@@ -423,7 +423,6 @@ public class TestFrameworkEdges extends BaseClassForTests
                         {
                             throw new Error(e);
                         }
-                        client.getZookeeperClient().setDebugException(null);
                     }
                     try
                     {
@@ -441,7 +440,6 @@ public class TestFrameworkEdges extends BaseClassForTests
             server.stop();
 
             // test foreground retry
-            client.getZookeeperClient().setDebugException(new KeeperException.ConnectionLossException());
             client.checkExists().forPath("/hey");
             Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, timing.forWaiting().seconds(), TimeUnit.SECONDS), "Remaining leases: " + semaphore.availablePermits());
 
@@ -456,7 +454,6 @@ public class TestFrameworkEdges extends BaseClassForTests
             server.stop();
 
             // test background retry
-            client.getZookeeperClient().setDebugException(new KeeperException.ConnectionLossException());
             client.checkExists().inBackground().forPath("/hey");
             Assert.assertTrue(semaphore.tryAcquire(MAX_RETRIES, timing.forWaiting().seconds(), TimeUnit.SECONDS), "Remaining leases: " + semaphore.availablePermits());
         }

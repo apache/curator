@@ -19,7 +19,6 @@
 
 package org.apache.curator;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.connection.ClassicConnectionHandlingPolicy;
 import org.apache.curator.connection.ConnectionHandlingPolicy;
@@ -54,7 +53,6 @@ public class CuratorZookeeperClient implements Closeable
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
     private final ConnectionHandlingPolicy connectionHandlingPolicy;
-    private final AtomicReference<Exception> debugException = new AtomicReference<>();
 
     /**
      *
@@ -334,18 +332,6 @@ public class CuratorZookeeperClient implements Closeable
     public ConnectionHandlingPolicy getConnectionHandlingPolicy()
     {
         return connectionHandlingPolicy;
-    }
-
-    @VisibleForTesting
-    public void setDebugException(Exception e)
-    {
-        debugException.set(e);
-    }
-
-    @VisibleForTesting
-    Exception getDebugException()
-    {
-        return debugException.get();
     }
 
     void addParentWatcher(Watcher watcher)
