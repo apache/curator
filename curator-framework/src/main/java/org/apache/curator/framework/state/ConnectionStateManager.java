@@ -248,7 +248,7 @@ public class ConnectionStateManager implements Closeable
     {
         try
         {
-            while ( !Thread.currentThread().isInterrupted() )
+            while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
             {
                 int pollMaxMs = (sessionTimeoutMs * 2) / 3; // 2/3 of session timeout
                 final ConnectionState newState = eventQueue.poll(pollMaxMs, TimeUnit.MILLISECONDS);

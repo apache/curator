@@ -195,7 +195,6 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void testGetAclNoStat() throws Exception
     {
-
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
