@@ -1,8 +1,13 @@
 package org.apache.curator.connection;
 
 import org.apache.curator.CuratorZookeeperClient;
+import org.apache.curator.RetryLoop;
 import java.util.concurrent.Callable;
 
+/**
+ * Abstracts connection handling so that Curator can emulate it's old, pre 3.0.0
+ * handling and update to newer handling.
+ */
 public interface ConnectionHandlingPolicy
 {
     /**
@@ -12,6 +17,15 @@ public interface ConnectionHandlingPolicy
      */
     boolean isEmulatingClassicHandling();
 
+    /**
+     * Called by {@link RetryLoop#callWithRetry(CuratorZookeeperClient, Callable)} to do the work
+     * of retrying
+     *
+     * @param client client
+     * @param proc the procedure to retry
+     * @return result
+     * @throws Exception errors
+     */
     <T> T callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception;
 
     enum CheckTimeoutsResult
@@ -55,10 +69,4 @@ public interface ConnectionHandlingPolicy
      * @throws Exception errors
      */
     CheckTimeoutsResult checkTimeouts(Callable<Boolean> hasNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception;
-
-/*
-    int getDefaultConnectionTimeoutMs();
-
-    int getDefaultSessionTimeoutMs();
-*/
 }

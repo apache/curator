@@ -6,6 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 
+/**
+ * Curator's standard connection handling since 3.0.0
+ *
+ * @since 3.0.0
+ */
 public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolicy
 {
     private final Logger log = LoggerFactory.getLogger(getClass());

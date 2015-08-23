@@ -4,6 +4,9 @@ import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import java.util.concurrent.Callable;
 
+/**
+ * Emulates the pre 3.0.0 Curator connection handling
+ */
 public class ClassicConnectionHandlingPolicy implements ConnectionHandlingPolicy
 {
     @Override
