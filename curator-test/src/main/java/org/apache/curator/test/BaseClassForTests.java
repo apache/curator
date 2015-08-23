@@ -86,14 +86,14 @@ public class BaseClassForTests
                 public void beforeInvocation(IInvokedMethod method, ITestResult testResult)
                 {
                     int invocationCount = method.getTestMethod().getCurrentInvocationCount();
-                    System.setProperty("curator-enable-session-expired-state", Boolean.toString(invocationCount == 1));
-                    log.info("curator-enable-session-expired-state: " + Boolean.toString(invocationCount == 1));
+                    System.setProperty("curator-use-classic-connection-handling", Boolean.toString(invocationCount == 1));
+                    log.info("curator-use-classic-connection-handling: " + Boolean.toString(invocationCount == 1));
                 }
 
                 @Override
                 public void afterInvocation(IInvokedMethod method, ITestResult testResult)
                 {
-                    System.clearProperty("curator-enable-session-expired-state");
+                    System.clearProperty("curator-use-classic-connection-handling");
                 }
             };
             context.getSuite().addListener(listener);

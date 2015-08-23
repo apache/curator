@@ -110,14 +110,30 @@ public class RetryLoop
                 }
 
                 client.internalBlockUntilConnectedOrTimedOut();
-                if ( !client.isConnected() && !client.retryConnectionTimeouts() )
-                {
-                    connectionFailed = true;
-                    break;
-                }
 
-                result = proc.call();
-                retryLoop.markComplete();
+                switch ( client.getConnectionHandlingPolicy().preRetry(client) )
+                {
+                    default:
+                    case CALL_PROC:
+                    {
+                        result = proc.call();
+                        retryLoop.markComplete();
+                        break;
+                    }
+
+                    case EXIT_RETRIES:
+                    {
+                        retryLoop.markComplete();
+                        break;
+                    }
+
+                    case CONNECTION_TIMEOUT:
+                    {
+                        connectionFailed = true;
+                        retryLoop.markComplete();
+                        break;
+                    }
+                }
             }
             catch ( Exception e )
             {

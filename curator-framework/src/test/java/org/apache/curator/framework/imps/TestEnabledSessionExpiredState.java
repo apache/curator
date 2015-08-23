@@ -53,7 +53,6 @@ public class TestEnabledSessionExpiredState extends BaseClassForTests
             .connectString(server.getConnectString())
             .connectionTimeoutMs(timing.connection())
             .sessionTimeoutMs(timing.session())
-            .enableSessionExpiredState()
             .retryPolicy(new RetryOneTime(1))
             .build();
         client.start();
@@ -115,7 +114,7 @@ public class TestEnabledSessionExpiredState extends BaseClassForTests
         Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
         server.stop();
         Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
-        Assert.assertEquals(states.poll(timing.multiple(2).session(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+        Assert.assertEquals(states.poll(timing.sessionSleep(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
     }
 
     @Test
@@ -125,7 +124,7 @@ public class TestEnabledSessionExpiredState extends BaseClassForTests
         server.stop();
         timing.sleepForSession();
         Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
-        Assert.assertEquals(states.poll(timing.multiple(2).session(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+        Assert.assertEquals(states.poll(timing.sessionSleep(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
         server.restart();
         client.checkExists().forPath("/");
         Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);

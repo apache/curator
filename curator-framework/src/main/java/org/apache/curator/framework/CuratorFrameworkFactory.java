@@ -21,6 +21,9 @@ package org.apache.curator.framework;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.RetryPolicy;
+import org.apache.curator.connection.ClassicConnectionHandlingPolicy;
+import org.apache.curator.connection.ConnectionHandlingPolicy;
+import org.apache.curator.connection.StandardConnectionHandlingPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.framework.api.ACLProvider;
@@ -35,6 +38,7 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import java.net.InetAddress;
@@ -117,7 +121,7 @@ public class CuratorFrameworkFactory
         private ACLProvider aclProvider = DEFAULT_ACL_PROVIDER;
         private boolean canBeReadOnly = false;
         private boolean useContainerParentsIfAvailable = true;
-        private boolean enableSessionExpiredState = Boolean.getBoolean("curator-enable-session-expired-state");
+        private ConnectionHandlingPolicy connectionHandlingPolicy = Boolean.getBoolean("curator-use-classic-connection-handling") ? new ClassicConnectionHandlingPolicy() : new StandardConnectionHandlingPolicy();
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -346,14 +350,50 @@ public class CuratorFrameworkFactory
         }
 
         /**
-         * Changes the meaning of {@link ConnectionState#LOST} from it's pre Curator 3.0.0 meaning
-         * to a true lost session state. See the {@link ConnectionState#LOST} doc for details.
+         * <p>
+         *     Change the connection handling policy. The default policy is {@link StandardConnectionHandlingPolicy}.
+         * </p>
+         * <p>
+         *     <strong>IMPORTANT: </strong> StandardConnectionHandlingPolicy has different behavior than the connection
+         *     policy handling prior to version 3.0.0. You can specify that the connection handling be the method
+         *     prior to 3.0.0 by passing in an instance of {@link ClassicConnectionHandlingPolicy} here or by
+         *     setting the command line value "curator-use-classic-connection-handling" to true (e.g. <tt>-Dcurator-use-classic-connection-handling=true</tt>).
+         * </p>
+         * <p>
+         *     Major differences from the older behavior are:
+         * </p>
+         * <ul>
+         *     <li>
+         *         Session/connection timeouts are no longer managed by the low-level client. They are managed
+         *         by the CuratorFramework instance. There should be no noticeable differences.
+         *     </li>
+         *     <li>
+         *         Prior to 3.0.0, an elapsed connection timeout would be presented to the retry policy, possibly
+         *         causing retries. Now, elapsed connection timeouts are only retried if there is an another server
+         *         in the connection string. i.e. a new instance will be retried should the retry policy allow a retry.
+         *         If no other servers remain, a {@link KeeperException.ConnectionLossException} is thrown immediately
+         *         without notifying the retry policy.
+         *     </li>
+         *     <li>
+         *         <strong>MOST IMPORTANTLY!</strong> Prior to 3.0.0, {@link ConnectionState#LOST} did not imply
+         *         a lost session (much to the confusion of users). Now,
+         *         Curator will set the LOST state only when it believes that the ZooKeeper session
+         *         has expired. ZooKeeper connections have a session. When the session expires, clients must take appropriate
+         *         action. In Curator, this is complicated by the fact that Curator internally manages the ZooKeeper
+         *         connection. Now, Curator will set the LOST state when any of the following occurs:
+         *         a) ZooKeeper returns a {@link Watcher.Event.KeeperState#Expired} or {@link KeeperException.Code#SESSIONEXPIRED};
+         *         b) Curator closes the internally managed ZooKeeper instance; c) The configured session timeout
+         *         elapses during a network partition.
+         *     </li>
+         * </ul>
          *
+         * @param connectionHandlingPolicy the policy
          * @return this
+         * @since 3.0.0
          */
-        public Builder enableSessionExpiredState()
+        public Builder connectionHandlingPolicy(ConnectionHandlingPolicy connectionHandlingPolicy)
         {
-            this.enableSessionExpiredState = true;
+            this.connectionHandlingPolicy = connectionHandlingPolicy;
             return this;
         }
 
@@ -412,9 +452,9 @@ public class CuratorFrameworkFactory
             return useContainerParentsIfAvailable;
         }
 
-        public boolean getEnableSessionExpiredState()
+        public ConnectionHandlingPolicy getConnectionHandlingPolicy()
         {
-            return enableSessionExpiredState;
+            return connectionHandlingPolicy;
         }
 
         @Deprecated

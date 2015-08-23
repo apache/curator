@@ -21,6 +21,8 @@ package org.apache.curator;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.apache.curator.connection.ClassicConnectionHandlingPolicy;
+import org.apache.curator.connection.ConnectionHandlingPolicy;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
@@ -51,7 +53,7 @@ public class CuratorZookeeperClient implements Closeable
     private final int connectionTimeoutMs;
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
-    private final boolean manageTimeouts;
+    private final ConnectionHandlingPolicy connectionHandlingPolicy;
     private final AtomicReference<Exception> debugException = new AtomicReference<>();
 
     /**
@@ -64,7 +66,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public CuratorZookeeperClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy)
     {
-        this(new DefaultZookeeperFactory(), new FixedEnsembleProvider(connectString), sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, false, true);
+        this(new DefaultZookeeperFactory(), new FixedEnsembleProvider(connectString), sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, false, new ClassicConnectionHandlingPolicy());
     }
 
     /**
@@ -76,7 +78,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public CuratorZookeeperClient(EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy)
     {
-        this(new DefaultZookeeperFactory(), ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, false, true);
+        this(new DefaultZookeeperFactory(), ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, false, new ClassicConnectionHandlingPolicy());
     }
 
     /**
@@ -93,7 +95,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly)
     {
-        this(new DefaultZookeeperFactory(), ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, canBeReadOnly, true);
+        this(new DefaultZookeeperFactory(), ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, canBeReadOnly, new ClassicConnectionHandlingPolicy());
     }
 
     /**
@@ -107,11 +109,12 @@ public class CuratorZookeeperClient implements Closeable
      *                      read only mode in case of a network partition. See
      *                      {@link ZooKeeper#ZooKeeper(String, int, Watcher, long, byte[], boolean)}
      *                      for details
-     * @param manageTimeouts in general, Curator clients try to manage session/connection timeouts. If this is false, that management is turned off
+     * @param connectionHandlingPolicy connection handling policy - use one of the pre-defined policies or write your own
+     * @since 3.0.0
      */
-    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly, boolean manageTimeouts)
+    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy)
     {
-        this.manageTimeouts = manageTimeouts;
+        this.connectionHandlingPolicy = connectionHandlingPolicy;
         if ( sessionTimeoutMs < connectionTimeoutMs )
         {
             log.warn(String.format("session timeout [%d] is less than connection timeout [%d]", sessionTimeoutMs, connectionTimeoutMs));
@@ -121,11 +124,7 @@ public class CuratorZookeeperClient implements Closeable
         ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
 
         this.connectionTimeoutMs = connectionTimeoutMs;
-        state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly);
-        if ( !manageTimeouts )
-        {
-            state.disableTimeoutChecks();
-        }
+        state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly, connectionHandlingPolicy);
         setRetryPolicy(retryPolicy);
     }
 
@@ -328,14 +327,13 @@ public class CuratorZookeeperClient implements Closeable
     }
 
     /**
-     * Returns true if connection timeouts should cause the retry policy to be checked. If false
-     * is returned, throw a connection exception without retrying
+     * Return the configured connection handling policy
      *
-     * @return true/false
+     * @return ConnectionHandlingPolicy
      */
-    public boolean retryConnectionTimeouts()
+    public ConnectionHandlingPolicy getConnectionHandlingPolicy()
     {
-        return manageTimeouts;
+        return connectionHandlingPolicy;
     }
 
     @VisibleForTesting

@@ -84,7 +84,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final NamespaceFacadeCache namespaceFacadeCache;
     private final NamespaceWatcherMap namespaceWatcherMap = new NamespaceWatcherMap(this);
     private final boolean useContainerParentsIfAvailable;
-    private final boolean enableSessionExpiredState;
     private final AtomicLong currentInstanceIndex = new AtomicLong(-1);
 
     private volatile ExecutorService executorService;
@@ -107,24 +106,24 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         ZookeeperFactory localZookeeperFactory = makeZookeeperFactory(builder.getZookeeperFactory());
         this.client = new CuratorZookeeperClient
-        (
-            localZookeeperFactory,
-            builder.getEnsembleProvider(),
-            builder.getSessionTimeoutMs(),
-            builder.getConnectionTimeoutMs(),
-            new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent watchedEvent)
+            (
+                localZookeeperFactory,
+                builder.getEnsembleProvider(),
+                builder.getSessionTimeoutMs(),
+                builder.getConnectionTimeoutMs(),
+                new Watcher()
                 {
-                    CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null, null);
-                    processEvent(event);
-                }
-            },
-            builder.getRetryPolicy(),
-            builder.canBeReadOnly(),
-            !builder.getEnableSessionExpiredState() // inverse is correct here. By default, CuratorZookeeperClient manages timeouts. The new SessionExpiredState needs this disabled.
-        );
+                    @Override
+                    public void process(WatchedEvent watchedEvent)
+                    {
+                        CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null, null);
+                        processEvent(event);
+                    }
+                },
+                builder.getRetryPolicy(),
+                builder.canBeReadOnly(),
+                builder.getConnectionHandlingPolicy()
+            );
 
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
@@ -132,12 +131,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespace = new NamespaceImpl(this, builder.getNamespace());
         threadFactory = getThreadFactory(builder);
         maxCloseWaitMs = builder.getMaxCloseWaitMs();
-        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory(), builder.getEnableSessionExpiredState(), builder.getSessionTimeoutMs());
+        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory(), builder.getSessionTimeoutMs());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
         useContainerParentsIfAvailable = builder.useContainerParentsIfAvailable();
-        enableSessionExpiredState = builder.getEnableSessionExpiredState();
 
         byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -211,7 +209,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         state = parent.state;
         authInfos = parent.authInfos;
         useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
-        enableSessionExpiredState = parent.enableSessionExpiredState;
     }
 
     @Override
@@ -699,7 +696,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void checkNewConnection()
     {
-        if ( enableSessionExpiredState )
+        if ( !client.getConnectionHandlingPolicy().isEmulatingClassicHandling() )
         {
             long instanceIndex = client.getInstanceIndex();
             long newInstanceIndex = currentInstanceIndex.getAndSet(instanceIndex);
@@ -752,7 +749,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             return;
         }
 
-        if ( !enableSessionExpiredState )
+        if ( client.getConnectionHandlingPolicy().isEmulatingClassicHandling() )
         {
             doSyncForSuspendedConnection(client.getInstanceIndex());
         }

@@ -21,6 +21,7 @@ package org.apache.curator.framework.state;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import org.apache.curator.connection.ConnectionHandlingPolicyStyle;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.utils.ThreadUtils;
@@ -35,7 +36,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -66,7 +66,6 @@ public class ConnectionStateManager implements Closeable
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final BlockingQueue<ConnectionState> eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
     private final CuratorFramework client;
-    private final boolean enableSessionExpiredState;
     private final int sessionTimeoutMs;
     private final ListenerContainer<ConnectionStateListener> listeners = new ListenerContainer<ConnectionStateListener>();
     private final AtomicBoolean initialConnectMessageSent = new AtomicBoolean(false);
@@ -88,13 +87,11 @@ public class ConnectionStateManager implements Closeable
     /**
      * @param client        the client
      * @param threadFactory thread factory to use or null for a default
-     * @param enableSessionExpiredState if true, applies new meaning for LOST as described here: {@link ConnectionState#LOST}
      * @param sessionTimeoutMs the ZK session timeout in milliseconds
      */
-    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, boolean enableSessionExpiredState, int sessionTimeoutMs)
+    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs)
     {
         this.client = client;
-        this.enableSessionExpiredState = enableSessionExpiredState;
         this.sessionTimeoutMs = sessionTimeoutMs;
         if ( threadFactory == null )
         {
@@ -273,7 +270,7 @@ public class ConnectionStateManager implements Closeable
                             }
                         );
                 }
-                else if ( enableSessionExpiredState )
+                else if ( !client.getZookeeperClient().getConnectionHandlingPolicy().isEmulatingClassicHandling() )
                 {
                     synchronized(this)
                     {
