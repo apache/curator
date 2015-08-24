@@ -44,7 +44,7 @@ class ConnectionState implements Watcher, Closeable
 {
     private static final int MAX_BACKGROUND_EXCEPTIONS = 10;
     private static final boolean LOG_EVENTS = Boolean.getBoolean(DebugUtils.PROPERTY_LOG_EVENTS);
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(ConnectionState.class);
     private final HandleHolder zooKeeper;
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
     private final AtomicInteger lastNegotiatedSessionTimeoutMs = new AtomicInteger(0);
@@ -156,29 +156,27 @@ class ConnectionState implements Watcher, Closeable
             log.debug("ConnectState watcher: " + event);
         }
 
+        if ( event.getType() == Watcher.Event.EventType.None )
+        {
+            boolean wasConnected = isConnected.get();
+            boolean newIsConnected = checkState(event.getState(), wasConnected);
+            if ( newIsConnected != wasConnected )
+            {
+                isConnected.set(newIsConnected);
+                connectionStartMs = System.currentTimeMillis();
+                if ( newIsConnected )
+                {
+                    lastNegotiatedSessionTimeoutMs.set(zooKeeper.getNegotiatedSessionTimeoutMs());
+                    log.debug("Negotiated session timeout: " + lastNegotiatedSessionTimeoutMs.get());
+                }
+            }
+        }
+
         for ( Watcher parentWatcher : parentWatchers )
         {
             TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.get());
             parentWatcher.process(event);
             timeTrace.commit();
-        }
-
-        boolean wasConnected = isConnected.get();
-        boolean newIsConnected = wasConnected;
-        if ( event.getType() == Watcher.Event.EventType.None )
-        {
-            newIsConnected = checkState(event.getState(), wasConnected);
-        }
-
-        if ( newIsConnected != wasConnected )
-        {
-            isConnected.set(newIsConnected);
-            connectionStartMs = System.currentTimeMillis();
-            if ( newIsConnected )
-            {
-                lastNegotiatedSessionTimeoutMs.set(zooKeeper.getNegotiatedSessionTimeoutMs());
-                log.debug("Negotiated session timeout: " + lastNegotiatedSessionTimeoutMs.get());
-            }
         }
     }
 
