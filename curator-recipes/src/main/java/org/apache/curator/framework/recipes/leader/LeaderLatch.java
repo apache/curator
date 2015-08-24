@@ -160,20 +160,20 @@ public class LeaderLatch implements Closeable
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         startTask.set(AfterConnectionEstablished.execute(client, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
                 {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            internalStart();
-                        }
-                        finally
-                        {
-                            startTask.set(null);
-                        }
-                    }
-                }));
+                    internalStart();
+                }
+                finally
+                {
+                    startTask.set(null);
+                }
+            }
+        }));
     }
 
     /**
@@ -604,7 +604,10 @@ public class LeaderLatch implements Closeable
             {
                 try
                 {
-                    reset();
+                    if ( client.getErrorPolicy().isErrorState(ConnectionState.SUSPENDED) || !hasLeadership.get() )
+                    {
+                        reset();
+                    }
                 }
                 catch ( Exception e )
                 {
@@ -615,6 +618,14 @@ public class LeaderLatch implements Closeable
             }
 
             case SUSPENDED:
+            {
+                if ( client.getErrorPolicy().isErrorState(ConnectionState.SUSPENDED) )
+                {
+                    setLeadership(false);
+                }
+                break;
+            }
+
             case LOST:
             {
                 setLeadership(false);
