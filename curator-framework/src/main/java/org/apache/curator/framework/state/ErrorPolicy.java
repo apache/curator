@@ -3,6 +3,8 @@ package org.apache.curator.framework.state;
 /**
  * Recipes should use the configured error policy to decide how to handle
  * errors such as {@link ConnectionState} changes.
+ *
+ * @since 3.0.0
  */
 public interface ErrorPolicy
 {

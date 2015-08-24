@@ -349,6 +349,7 @@ public class CuratorFrameworkFactory
         /**
          * Set the error policy to use. The default is {@link StandardErrorPolicy}
          *
+         * @since 3.0.0
          * @param errorPolicy new error policy
          * @return this
          */
