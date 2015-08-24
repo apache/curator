@@ -296,16 +296,18 @@ public class ConnectionStateManager implements Closeable
             int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
             if ( elapsedMs >= useSessionTimeoutMs )
             {
-                log.warn(String.format("Session timeout has elapsed while SUSPENDED. Posting LOST event and resetting the connection. Elapsed ms: %d. Session Timeout ms: %d", elapsedMs, useSessionTimeoutMs));
+                log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Session Timeout ms: %d", elapsedMs, useSessionTimeoutMs));
                 try
                 {
-                    client.getZookeeperClient().reset();
+                    // LOL - this method was proposed by me (JZ) in 2013 for totally unrelated reasons
+                    // it got added to ZK 3.5 and now does exactly what we need
+                    // https://issues.apache.org/jira/browse/ZOOKEEPER-1730
+                    client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
                 }
                 catch ( Exception e )
                 {
-                    log.error("Could not reset the connection", e);
+                    log.error("Could not inject session expiration", e);
                 }
-                addStateChange(ConnectionState.LOST);
             }
         }
     }

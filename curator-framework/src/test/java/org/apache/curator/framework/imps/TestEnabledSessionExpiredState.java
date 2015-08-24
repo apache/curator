@@ -29,11 +29,14 @@ import org.apache.curator.test.KillSession;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class TestEnabledSessionExpiredState extends BaseClassForTests
@@ -76,6 +79,31 @@ public class TestEnabledSessionExpiredState extends BaseClassForTests
         CloseableUtils.closeQuietly(client);
 
         super.teardown();
+    }
+
+    @Test
+    public void testInjectedWatchedEvent() throws Exception
+    {
+        Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        Watcher watcher = new Watcher()
+        {
+            @Override
+            public void process(WatchedEvent event)
+            {
+                if ( event.getType() == Event.EventType.None )
+                {
+                    if ( event.getState() == Event.KeeperState.Expired )
+                    {
+                        latch.countDown();
+                    }
+                }
+            }
+        };
+        client.checkExists().usingWatcher(watcher).forPath("/");
+        server.stop();
+        Assert.assertTrue(timing.forSessionSleep().awaitLatch(latch));
     }
 
     @Test
