@@ -334,6 +334,16 @@ public class CuratorZookeeperClient implements Closeable
         return connectionHandlingPolicy;
     }
 
+    /**
+     * Return the most recent value of {@link ZooKeeper#getSessionTimeout()} or 0
+     *
+     * @return session timeout or 0
+     */
+    public int getLastNegotiatedSessionTimeoutMs()
+    {
+        return state.getLastNegotiatedSessionTimeoutMs();
+    }
+
     void addParentWatcher(Watcher watcher)
     {
         state.addParentWatcher(watcher);

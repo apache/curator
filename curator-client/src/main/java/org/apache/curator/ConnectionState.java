@@ -36,6 +36,7 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,6 +47,7 @@ class ConnectionState implements Watcher, Closeable
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final HandleHolder zooKeeper;
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
+    private final AtomicInteger lastNegotiatedSessionTimeoutMs = new AtomicInteger(0);
     private final EnsembleProvider ensembleProvider;
     private final int sessionTimeoutMs;
     private final int connectionTimeoutMs;
@@ -141,6 +143,11 @@ class ConnectionState implements Watcher, Closeable
         return instanceIndex.get();
     }
 
+    int getLastNegotiatedSessionTimeoutMs()
+    {
+        return lastNegotiatedSessionTimeoutMs.get();
+    }
+
     @Override
     public void process(WatchedEvent event)
     {
@@ -167,6 +174,11 @@ class ConnectionState implements Watcher, Closeable
         {
             isConnected.set(newIsConnected);
             connectionStartMs = System.currentTimeMillis();
+            if ( newIsConnected )
+            {
+                lastNegotiatedSessionTimeoutMs.set(zooKeeper.getNegotiatedSessionTimeoutMs());
+                log.debug("Negotiated session timeout: " + lastNegotiatedSessionTimeoutMs.get());
+            }
         }
     }
 
