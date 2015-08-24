@@ -31,6 +31,8 @@ import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
+import org.apache.curator.framework.state.ErrorPolicy;
+import org.apache.curator.framework.state.StandardErrorPolicy;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
@@ -116,6 +118,7 @@ public class CuratorFrameworkFactory
         private ACLProvider aclProvider = DEFAULT_ACL_PROVIDER;
         private boolean canBeReadOnly = false;
         private boolean useContainerParentsIfAvailable = true;
+        private ErrorPolicy errorPolicy = new StandardErrorPolicy();
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -343,6 +346,18 @@ public class CuratorFrameworkFactory
             return this;
         }
 
+        /**
+         * Set the error policy to use. The default is {@link StandardErrorPolicy}
+         *
+         * @param errorPolicy new error policy
+         * @return this
+         */
+        public Builder errorPolicy(ErrorPolicy errorPolicy)
+        {
+            this.errorPolicy = errorPolicy;
+            return this;
+        }
+
         public ACLProvider getAclProvider()
         {
             return aclProvider;
@@ -396,6 +411,11 @@ public class CuratorFrameworkFactory
         public boolean useContainerParentsIfAvailable()
         {
             return useContainerParentsIfAvailable;
+        }
+
+        public ErrorPolicy getErrorPolicy()
+        {
+            return errorPolicy;
         }
 
         @Deprecated
