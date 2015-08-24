@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.state;
 
+import org.apache.curator.connection.ConnectionHandlingPolicy;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -64,17 +65,17 @@ public enum ConnectionState
 
     /**
      * <p>
-     *     Curator will set the LOST state only when it believes that the ZooKeeper session
+     *     Curator will set the LOST state when it believes that the ZooKeeper session
      *     has expired. ZooKeeper connections have a session. When the session expires, clients must take appropriate
      *     action. In Curator, this is complicated by the fact that Curator internally manages the ZooKeeper
      *     connection. Curator will set the LOST state when any of the following occurs:
      *     a) ZooKeeper returns a {@link Watcher.Event.KeeperState#Expired} or {@link KeeperException.Code#SESSIONEXPIRED};
-     *     b) Curator closes the internally managed ZooKeeper instance; c) The configured session timeout
+     *     b) Curator closes the internally managed ZooKeeper instance; c) The session timeout
      *     elapses during a network partition.
      * </p>
      *
      * <p>
-     *     NOTE: see {@link CuratorFrameworkFactory.Builder#connectionHandlingPolicy} for an important note about a
+     *     NOTE: see {@link CuratorFrameworkFactory.Builder#connectionHandlingPolicy(ConnectionHandlingPolicy)} for an important note about a
      *     change in meaning to LOST since 3.0.0
      * </p>
      */

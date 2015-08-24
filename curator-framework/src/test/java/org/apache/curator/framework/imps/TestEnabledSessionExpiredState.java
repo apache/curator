@@ -82,6 +82,17 @@ public class TestEnabledSessionExpiredState extends BaseClassForTests
     }
 
     @Test
+    public void testResetCausesLost() throws Exception
+    {
+        Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
+        client.checkExists().forPath("/");  // establish initial connection
+
+        client.getZookeeperClient().reset();
+        Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+        Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);
+    }
+
+    @Test
     public void testInjectedWatchedEvent() throws Exception
     {
         Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
