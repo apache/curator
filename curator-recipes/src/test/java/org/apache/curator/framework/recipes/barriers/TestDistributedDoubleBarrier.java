@@ -28,6 +28,7 @@ import org.apache.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -38,10 +39,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestDistributedDoubleBarrier extends BaseClassForTests
 {
-    private static final int           QTY = 5;
+    private static final int QTY = 5;
+
+    private static final Logger logger = LoggerFactory.getLogger(TestDistributedDoubleBarrier.class);
 
     @Test
     public void     testMultiClient() throws Exception
@@ -235,6 +241,32 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
             {
                 CloseableUtils.closeQuietly(c);
             }
+        }
+    }
+
+    @Test(description = "CURATOR-233", timeOut = 15 * 1000)
+    public void testNotEnoughClients() throws Exception
+    {
+        int numClients = 2;
+        String path = "/barrier";
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1000));
+        try
+        {
+            client.start();
+
+            final DistributedDoubleBarrier barrier1 = new DistributedDoubleBarrier(client, path, numClients);
+            final DistributedDoubleBarrier barrier2 = new DistributedDoubleBarrier(client, path, numClients);
+
+            Assert.assertFalse(barrier1.enter(1, TimeUnit.SECONDS), "Not enough clients to enter.");
+            Assert.assertTrue(barrier2.enter(1, TimeUnit.SECONDS), "Second client enters immediately.");
+
+            Assert.assertFalse(barrier1.leave(1, TimeUnit.SECONDS), "Not enough clients to leave.");
+            Assert.assertTrue(barrier2.leave(1, TimeUnit.SECONDS), "Second client leaves immediately.");
+        }
+        finally
+        {
+            client.close();
         }
     }
 }
