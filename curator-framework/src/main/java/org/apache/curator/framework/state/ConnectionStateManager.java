@@ -292,7 +292,8 @@ public class ConnectionStateManager implements Closeable
         if ( (currentConnectionState == ConnectionState.SUSPENDED) && (startOfSuspendedEpoch != 0) )
         {
             long elapsedMs = System.currentTimeMillis() - startOfSuspendedEpoch;
-            int useSessionTimeoutMs = Math.max(client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs(), sessionTimeoutMs);
+            int lastNegotiatedSessionTimeoutMs = client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
+            int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
             if ( elapsedMs >= useSessionTimeoutMs )
             {
                 log.warn(String.format("Session timeout has elapsed while SUSPENDED. Posting LOST event and resetting the connection. Elapsed ms: %d. Session Timeout ms: %d", elapsedMs, useSessionTimeoutMs));
