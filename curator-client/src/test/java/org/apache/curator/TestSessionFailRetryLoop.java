@@ -18,6 +18,7 @@
  */
 package org.apache.curator;
 
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.retry.RetryOneTime;
@@ -34,7 +35,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
     public void     testRetry() throws Exception
     {
         Timing                          timing = new Timing();
-        final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new RetryOneTime(1));
+        final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new ExponentialBackoffRetry(100, 3));
         SessionFailRetryLoop            retryLoop = client.newSessionFailRetryLoop(SessionFailRetryLoop.Mode.RETRY);
         retryLoop.start();
         try
@@ -103,7 +104,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
     public void     testRetryStatic() throws Exception
     {
         Timing                          timing = new Timing();
-        final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new RetryOneTime(1));
+        final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new ExponentialBackoffRetry(100, 3));
         SessionFailRetryLoop            retryLoop = client.newSessionFailRetryLoop(SessionFailRetryLoop.Mode.RETRY);
         retryLoop.start();
         try
@@ -175,7 +176,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
     public void     testBasic() throws Exception
     {
         Timing                          timing = new Timing();
-        final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new RetryOneTime(1));
+        final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new ExponentialBackoffRetry(100, 3));
         SessionFailRetryLoop            retryLoop = client.newSessionFailRetryLoop(SessionFailRetryLoop.Mode.FAIL);
         retryLoop.start();
         try
@@ -230,7 +231,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
     public void     testBasicStatic() throws Exception
     {
         Timing                          timing = new Timing();
-        final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new RetryOneTime(1));
+        final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new ExponentialBackoffRetry(100, 3));
         SessionFailRetryLoop            retryLoop = client.newSessionFailRetryLoop(SessionFailRetryLoop.Mode.FAIL);
         retryLoop.start();
         try

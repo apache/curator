@@ -377,7 +377,6 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/me");
 
         KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
-        assertEvent(TreeCacheEvent.Type.CONNECTION_SUSPENDED);
         assertEvent(TreeCacheEvent.Type.CONNECTION_LOST);
         assertEvent(TreeCacheEvent.Type.CONNECTION_RECONNECTED);
         assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/me");
