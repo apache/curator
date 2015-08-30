@@ -33,3 +33,10 @@ most users, the only artifact you need is curator\-recipes.
 |org.apache.curator|curator\-x\-discovery|A Service Discovery implementation built on the Curator Framework.|
 |org.apache.curator|curator\-x\-discovery-server|A RESTful server that can be used with Curator Discovery.|
 |org.apache.curator|curator\-x\-rpc|A proxy that bridges non\-java environments with the Curator framework and recipes.|
+
+h2. Versions
+
+The are currently two released versions of Curator, 2.x.x and 3.x.x:
+
+* Curator 2.x.x \- compatible with both ZooKeeper 3.4.x and ZooKeeper 3.5.x
+* Curator 3.x.x \- compatible only with ZooKeeper 3.5.x and includes support for new features such as containers, dynamic reconfiguration, etc.
