@@ -39,4 +39,4 @@ h2. Versions
 The are currently two released versions of Curator, 2.x.x and 3.x.x:
 
 * Curator 2.x.x \- compatible with both ZooKeeper 3.4.x and ZooKeeper 3.5.x
-* Curator 3.x.x \- compatible only with ZooKeeper 3.5.x and includes support for new features such as containers, dynamic reconfiguration, etc.
+* Curator 3.x.x \- compatible only with ZooKeeper 3.5.x and includes support for new features such as dynamic reconfiguration, etc.
