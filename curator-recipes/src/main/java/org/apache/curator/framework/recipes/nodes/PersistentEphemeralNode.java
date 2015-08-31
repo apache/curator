@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.curator.utils.PathUtils;
@@ -65,6 +67,7 @@ public class PersistentEphemeralNode implements Closeable
     private final Mode mode;
     private final AtomicReference<byte[]> data = new AtomicReference<byte[]>();
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+    private final AtomicBoolean authFailure = new AtomicBoolean(false);
     private final BackgroundCallback backgroundCallback;
     private final Watcher watcher = new Watcher()
     {
@@ -233,8 +236,15 @@ public class PersistentEphemeralNode implements Closeable
                 {
                     path = event.getName();
                 }
+                else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
+                {
+                	log.warn("Client does not have authorisation to write ephemeral node at path {}", path);
+                	authFailure.set(true);
+                	return;
+                }
                 if ( path != null )
                 {
+                	authFailure.set(false);
                     nodePath.set(path);
                     watchNode();
 
@@ -409,5 +419,11 @@ public class PersistentEphemeralNode implements Closeable
     private boolean isActive()
     {
         return (state.get() == State.STARTED);
+    }
+    
+    @VisibleForTesting
+    boolean isAuthFailure()
+    {
+    	return authFailure.get();
     }
 }
