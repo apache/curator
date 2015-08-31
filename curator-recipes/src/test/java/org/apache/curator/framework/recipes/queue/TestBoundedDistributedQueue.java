@@ -67,7 +67,6 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
         final int           CLIENT_QTY = 4;
         final int           MAX_ITEMS = 10;
         final int           ADD_ITEMS = MAX_ITEMS * 100;
-        final int           SLOP_FACTOR = 2;
 
         final QueueConsumer<String>     consumer = new QueueConsumer<String>()
         {
@@ -181,7 +180,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
 
             for ( int count : counts )
             {
-                Assert.assertTrue(count <= (MAX_ITEMS * SLOP_FACTOR), counts.toString());
+                Assert.assertTrue(count <= (MAX_ITEMS * CLIENT_QTY), counts.toString());
             }
         }
         finally
