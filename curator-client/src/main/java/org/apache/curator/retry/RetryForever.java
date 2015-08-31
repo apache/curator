@@ -51,8 +51,9 @@ public class RetryForever implements RetryPolicy
         }
         catch (InterruptedException e)
         {
-            log.warn("Error occurred while sleeping", e);
             Thread.currentThread().interrupt();
+            log.warn("Error occurred while sleeping", e);
+            return false;
         }
         return true;
     }
