@@ -93,7 +93,9 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryOneTime(1));
             client.start();
-            CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create().withProtection();
+            
+            CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
+            createBuilder.withProtection();
 
             client.create().forPath(createBuilder.adjustPath(TEST_PATH));
 
