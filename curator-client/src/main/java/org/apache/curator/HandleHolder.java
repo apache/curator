@@ -39,6 +39,8 @@ class HandleHolder
         ZooKeeper getZooKeeper() throws Exception;
         
         String getConnectionString();
+
+        int getNegotiatedSessionTimeoutMs();
     }
 
     HandleHolder(ZookeeperFactory zookeeperFactory, Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout, boolean canBeReadOnly)
@@ -53,6 +55,11 @@ class HandleHolder
     ZooKeeper getZooKeeper() throws Exception
     {
         return (helper != null) ? helper.getZooKeeper() : null;
+    }
+
+    int getNegotiatedSessionTimeoutMs()
+    {
+        return (helper != null) ? helper.getNegotiatedSessionTimeoutMs() : 0;
     }
 
     String  getConnectionString()
@@ -107,6 +114,12 @@ class HandleHolder
                         {
                             return connectionString;
                         }
+
+                        @Override
+                        public int getNegotiatedSessionTimeoutMs()
+                        {
+                            return (zooKeeperHandle != null) ? zooKeeperHandle.getSessionTimeout() : 0;
+                        }
                     };
 
                     return zooKeeperHandle;
@@ -117,6 +130,12 @@ class HandleHolder
             public String getConnectionString()
             {
                 return connectionString;
+            }
+
+            @Override
+            public int getNegotiatedSessionTimeoutMs()
+            {
+                return (zooKeeperHandle != null) ? zooKeeperHandle.getSessionTimeout() : 0;
             }
         };
     }

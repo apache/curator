@@ -158,8 +158,8 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
         final CuratorFramework client =
             CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
-                .retryPolicy(new RetryNTimes(2, 1))
-                .connectionTimeoutMs(100)
+                .retryPolicy(new RetryNTimes(2, 100))
+                .connectionTimeoutMs(1000)
                 .sessionTimeoutMs(60000)
                 .build();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -211,7 +211,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
             CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryNTimes(0, 0))
-                .connectionTimeoutMs(100)
+                .connectionTimeoutMs(1000)
                 .sessionTimeoutMs(60000)
                 .build();
         final CountDownLatch latch = new CountDownLatch(1);
