@@ -207,7 +207,9 @@ class ConnectionState implements Watcher, Closeable
                 return zooKeeper.hasNewConnectionString();
             }
         };
-        ConnectionHandlingPolicy.CheckTimeoutsResult result = connectionHandlingPolicy.checkTimeouts(hasNewConnectionString, connectionStartMs, sessionTimeoutMs, connectionTimeoutMs);
+        int lastNegotiatedSessionTimeoutMs = getLastNegotiatedSessionTimeoutMs();
+        int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
+        ConnectionHandlingPolicy.CheckTimeoutsResult result = connectionHandlingPolicy.checkTimeouts(hasNewConnectionString, connectionStartMs, useSessionTimeoutMs, connectionTimeoutMs);
         switch ( result )
         {
             default:
@@ -227,7 +229,7 @@ class ConnectionState implements Watcher, Closeable
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
                     long elapsed = System.currentTimeMillis() - connectionStartMs;
-                    int maxTimeout = Math.max(sessionTimeoutMs, connectionTimeoutMs);
+                    int maxTimeout = Math.max(useSessionTimeoutMs, connectionTimeoutMs);
                     log.warn(String.format("Connection attempt unsuccessful after %d (greater than max timeout of %d). Resetting connection and trying again with a new connection.", elapsed, maxTimeout));
                 }
                 reset();

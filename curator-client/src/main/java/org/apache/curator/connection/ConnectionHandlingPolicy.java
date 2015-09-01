@@ -63,7 +63,7 @@ public interface ConnectionHandlingPolicy
      * @param hasNewConnectionString proc to call to check if there is a new connection string. Important: the internal state is cleared after
      *                               this is called so you MUST handle the new connection string if <tt>true</tt> is returned
      * @param connectionStartMs the epoch/ms time that the connection was first initiated
-     * @param sessionTimeoutMs the configured session timeout in milliseconds
+     * @param sessionTimeoutMs the configured/negotiated session timeout in milliseconds
      * @param connectionTimeoutMs the configured connection timeout in milliseconds
      * @return result
      * @throws Exception errors
