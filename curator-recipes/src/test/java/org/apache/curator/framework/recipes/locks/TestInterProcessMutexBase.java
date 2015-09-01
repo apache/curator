@@ -32,7 +32,6 @@ import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -71,7 +70,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                 @Override
                 public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
-                    if ( newState == ConnectionState.LOST )
+                    if ( !newState.isConnected() )
                     {
                         latch.countDown();
                     }
@@ -80,6 +79,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
             client.getConnectionStateListenable().addListener(listener);
 
             final AtomicBoolean isFirst = new AtomicBoolean(true);
+            final Object result = new Object();
             ExecutorCompletionService<Object> service = new ExecutorCompletionService<Object>(Executors.newFixedThreadPool(2));
             for ( int i = 0; i < 2; ++i )
             {
@@ -99,22 +99,15 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                                     timing.sleepABit();
 
                                     server.stop();
-                                    Assert.assertTrue(timing.awaitLatch(latch));
+                                    Assert.assertTrue(timing.forWaiting().awaitLatch(latch));
                                     server.restart();
                                 }
                             }
                             finally
                             {
-                                try
-                                {
-                                    lock.release();
-                                }
-                                catch ( Exception e )
-                                {
-                                    // ignore
-                                }
+                                lock.release();
                             }
-                            return null;
+                            return result;
                         }
                     }
                 );
@@ -122,7 +115,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
             for ( int i = 0; i < 2; ++i )
             {
-                service.take().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+                Assert.assertEquals(service.take().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), result);
             }
         }
         finally

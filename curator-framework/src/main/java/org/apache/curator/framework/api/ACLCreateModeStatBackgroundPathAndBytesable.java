@@ -18,16 +18,8 @@
  */
 package org.apache.curator.framework.api;
 
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
-
-public interface UnhandledErrorListener
+public interface ACLCreateModeStatBackgroundPathAndBytesable<T> extends
+    ACLCreateModeBackgroundPathAndBytesable<T>,
+    Statable<ACLCreateModeBackgroundPathAndBytesable<T>>
 {
-    /**
-     * Called when an exception is caught in a background thread, handler, etc.
-     *
-     * @param message Source message
-     * @param e exception
-     */
-    public void     unhandledError(String message, Throwable e);
 }

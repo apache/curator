@@ -269,6 +269,7 @@ public class TestServiceDiscovery extends BaseClassForTests
     @Test
     public void testNoServerOnStart() throws Exception
     {
+        Timing timing = new Timing();
         server.stop();
         List<Closeable> closeables = Lists.newArrayList();
         try
@@ -283,6 +284,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery.start();
 
             server.restart();
+            timing.sleepABit();
             Assert.assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
 
             List<ServiceInstance<String>> list = Lists.newArrayList();
