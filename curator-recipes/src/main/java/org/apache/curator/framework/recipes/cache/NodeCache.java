@@ -22,20 +22,22 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Exchanger;
@@ -61,7 +63,7 @@ public class NodeCache implements Closeable
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final ListenerContainer<NodeCacheListener> listeners = new ListenerContainer<NodeCacheListener>();
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
-    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    private ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState)
@@ -87,12 +89,19 @@ public class NodeCache implements Closeable
         }
     };
 
-    private final CuratorWatcher watcher = new CuratorWatcher()
+    private Watcher watcher = new Watcher()
     {
         @Override
-        public void process(WatchedEvent event) throws Exception
+        public void process(WatchedEvent event)
         {
-            reset();
+            try
+            {
+                reset();
+            }
+            catch(Exception e)
+            {
+                handleException(e);
+            }
         }
     };
 
@@ -172,8 +181,16 @@ public class NodeCache implements Closeable
         {
             client.removeWatchers();
             listeners.clear();
-        }
-        client.getConnectionStateListenable().removeListener(connectionStateListener);
+            client.clearWatcherReferences(watcher);
+            client.getConnectionStateListenable().removeListener(connectionStateListener);
+
+            // TODO
+            // From PathChildrenCache
+            // This seems to enable even more GC - I'm not sure why yet - it
+            // has something to do with Guava's cache and circular references
+            connectionStateListener = null;
+            watcher = null;
+        }        
     }
 
     /**
@@ -313,5 +330,15 @@ public class NodeCache implements Closeable
                 }
             }
         }
+    }
+    
+    /**
+     * Default behavior is just to log the exception
+     *
+     * @param e the exception
+     */
+    protected void handleException(Throwable e)
+    {
+        log.error("", e);
     }
 }
