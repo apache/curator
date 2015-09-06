@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Locker implements AutoCloseable
 {
     private final InterProcessLock lock;
-    private final AtomicBoolean acquired;
+    private final AtomicBoolean acquired = new AtomicBoolean(false);
 
     /**
      * @param lock a lock implementation (e.g. {@link InterProcessMutex}, {@link InterProcessSemaphoreV2}, etc.)
@@ -35,11 +35,22 @@ public class Locker implements AutoCloseable
     public Locker(InterProcessLock lock, long timeout, TimeUnit unit) throws Exception
     {
         this.lock = lock;
-        acquired = new AtomicBoolean(acquireLock(lock, timeout, unit));
+        acquired.set(acquireLock(lock, timeout, unit));
         if ( !acquired.get() )
         {
             throw new TimeoutException("Could not acquire lock within timeout of " + unit.toMillis(timeout) + "ms");
         }
+    }
+
+    /**
+     * @param lock a lock implementation (e.g. {@link InterProcessMutex}, {@link InterProcessSemaphoreV2}, etc.)
+     * @throws Exception errors
+     */
+    public Locker(InterProcessLock lock) throws Exception
+    {
+        this.lock = lock;
+        acquireLock(lock);
+        acquired.set(true);
     }
 
     @Override
@@ -58,6 +69,11 @@ public class Locker implements AutoCloseable
     protected void releaseLock() throws Exception
     {
         lock.release();
+    }
+
+    protected void acquireLock(InterProcessLock lock) throws Exception
+    {
+        lock.acquire();
     }
 
     protected boolean acquireLock(InterProcessLock lock, long timeout, TimeUnit unit) throws Exception
