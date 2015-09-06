@@ -96,23 +96,7 @@ public class RetryLoop
      */
     public static<T> T      callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
     {
-        T               result = null;
-        RetryLoop       retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
-        {
-            try
-            {
-                client.internalBlockUntilConnectedOrTimedOut();
-                
-                result = proc.call();
-                retryLoop.markComplete();
-            }
-            catch ( Exception e )
-            {
-                retryLoop.takeException(e);
-            }
-        }
-        return result;
+        return client.getConnectionHandlingPolicy().callWithRetry(client, proc);
     }
 
     RetryLoop(RetryPolicy retryPolicy, AtomicReference<TracerDriver> tracer)

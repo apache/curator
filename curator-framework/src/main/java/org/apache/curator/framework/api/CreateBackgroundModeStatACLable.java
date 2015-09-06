@@ -20,19 +20,18 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.CreateMode;
 
-public interface CreateBuilder extends
+public interface CreateBackgroundModeStatACLable extends
     BackgroundPathAndBytesable<String>,
     CreateModable<ACLBackgroundPathAndBytesable<String>>,
     ACLCreateModeBackgroundPathAndBytesable<String>,
-    Compressible<CreateBackgroundModeStatACLable>,
-    Statable<CreateProtectACLCreateModePathAndBytesable<String>>
+    Statable<CreateBackgroundModeACLable>
 {
     /**
      * Causes any parent nodes to get created if they haven't already been
      *
      * @return this
      */
-    public ProtectACLCreateModeStatPathAndBytesable<String> creatingParentsIfNeeded();
+    public ACLCreateModePathAndBytesable<String>    creatingParentsIfNeeded();
 
     /**
      * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
@@ -42,17 +41,7 @@ public interface CreateBuilder extends
      *
      * @return this
      */
-    public ProtectACLCreateModeStatPathAndBytesable<String> creatingParentContainersIfNeeded();
-
-    /**
-     * @deprecated this has been generalized to support all create modes. Instead, use:
-     * <pre>
-     *     client.create().withProtection().withMode(CreateMode.PERSISTENT_SEQUENTIAL)...
-     * </pre>
-     * @return this
-     */
-    @Deprecated
-    public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();
+    public ACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded();
 
     /**
      * <p>
@@ -68,12 +57,7 @@ public interface CreateBuilder extends
      * </p>
      *
      * <p>
-     *     Even without sequential-ephemeral, however, the create can succeed on the sever
-     *     but the client (for various reasons) will not know it.
-     * </p>
-     *
-     * <p>
-     *     Putting the create builder into protection mode works around this.
+     *     Putting the create builder into protected-ephemeral-sequential mode works around this.
      *     The name of the node that is created is prefixed with a GUID. If node creation fails
      *     the normal retry mechanism will occur. On the retry, the parent path is first searched
      *     for a node that has the GUID in it. If that node is found, it is assumed to be the lost
@@ -82,5 +66,5 @@ public interface CreateBuilder extends
      *
      * @return this
      */
-    public ACLCreateModeStatBackgroundPathAndBytesable<String>    withProtection();
+    public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();
 }

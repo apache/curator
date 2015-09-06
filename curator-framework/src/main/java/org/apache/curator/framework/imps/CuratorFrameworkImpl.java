@@ -61,6 +61,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CuratorFrameworkImpl implements CuratorFramework
@@ -83,6 +84,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final NamespaceFacadeCache namespaceFacadeCache;
     private final NamespaceWatcherMap namespaceWatcherMap = new NamespaceWatcherMap(this);
     private final boolean useContainerParentsIfAvailable;
+    private final AtomicLong currentInstanceIndex = new AtomicLong(-1);
+    private final InternalConnectionHandler internalConnectionHandler;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -103,23 +106,34 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
         ZookeeperFactory localZookeeperFactory = makeZookeeperFactory(builder.getZookeeperFactory());
-        this.client = new CuratorZookeeperClient(localZookeeperFactory, builder.getEnsembleProvider(), builder.getSessionTimeoutMs(), builder.getConnectionTimeoutMs(), new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent watchedEvent)
-            {
-                CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null, null);
-                processEvent(event);
-            }
-        }, builder.getRetryPolicy(), builder.canBeReadOnly());
+        this.client = new CuratorZookeeperClient
+            (
+                localZookeeperFactory,
+                builder.getEnsembleProvider(),
+                builder.getSessionTimeoutMs(),
+                builder.getConnectionTimeoutMs(),
+                new Watcher()
+                {
+                    @Override
+                    public void process(WatchedEvent watchedEvent)
+                    {
+                        CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.WATCHED, watchedEvent.getState().getIntValue(), unfixForNamespace(watchedEvent.getPath()), null, null, null, null, null, watchedEvent, null, null);
+                        processEvent(event);
+                    }
+                },
+                builder.getRetryPolicy(),
+                builder.canBeReadOnly(),
+                builder.getConnectionHandlingPolicy()
+            );
 
+        internalConnectionHandler = builder.getConnectionHandlingPolicy().isEmulatingClassicHandling() ? new ClassicInternalConnectionHandler() : new StandardInternalConnectionHandler();
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
         backgroundOperations = new DelayQueue<OperationAndData<?>>();
         namespace = new NamespaceImpl(this, builder.getNamespace());
         threadFactory = getThreadFactory(builder);
         maxCloseWaitMs = builder.getMaxCloseWaitMs();
-        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory());
+        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory(), builder.getSessionTimeoutMs(), internalConnectionHandler.checkSessionExpirationEnabled());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
@@ -197,6 +211,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         state = parent.state;
         authInfos = parent.authInfos;
         useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
+        internalConnectionHandler = parent.internalConnectionHandler;
     }
 
     @Override
@@ -664,7 +679,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     {
         if ( state == Watcher.Event.KeeperState.Disconnected )
         {
-            suspendConnection();
+            internalConnectionHandler.suspendConnection(this);
         }
         else if ( state == Watcher.Event.KeeperState.Expired )
         {
@@ -672,11 +687,23 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         else if ( state == Watcher.Event.KeeperState.SyncConnected )
         {
+            internalConnectionHandler.checkNewConnection(this);
             connectionStateManager.addStateChange(ConnectionState.RECONNECTED);
         }
         else if ( state == Watcher.Event.KeeperState.ConnectedReadOnly )
         {
+            internalConnectionHandler.checkNewConnection(this);
             connectionStateManager.addStateChange(ConnectionState.READ_ONLY);
+        }
+    }
+
+    void checkInstanceIndex()
+    {
+        long instanceIndex = client.getInstanceIndex();
+        long newInstanceIndex = currentInstanceIndex.getAndSet(instanceIndex);
+        if ( (newInstanceIndex >= 0) && (instanceIndex != newInstanceIndex) )   // currentInstanceIndex is initially -1 - ignore this
+        {
+            connectionStateManager.addStateChange(ConnectionState.LOST);
         }
     }
 
@@ -715,41 +742,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return null;
     }
 
-    private void suspendConnection()
+    boolean setToSuspended()
     {
-        if ( !connectionStateManager.setToSuspended() )
-        {
-            return;
-        }
-
-        doSyncForSuspendedConnection(client.getInstanceIndex());
+        return connectionStateManager.setToSuspended();
     }
 
-    private void doSyncForSuspendedConnection(final long instanceIndex)
+    void addStateChange(ConnectionState newConnectionState)
     {
-        // we appear to have disconnected, force a new ZK event and see if we can connect to another server
-        final BackgroundOperation<String> operation = new BackgroundSyncImpl(this, null);
-        OperationAndData.ErrorCallback<String> errorCallback = new OperationAndData.ErrorCallback<String>()
-        {
-            @Override
-            public void retriesExhausted(OperationAndData<String> operationAndData)
-            {
-                // if instanceIndex != newInstanceIndex, the ZooKeeper instance was reset/reallocated
-                // so the pending background sync is no longer valid.
-                // if instanceIndex is -1, this is the second try to sync - punt and mark the connection lost
-                if ( (instanceIndex < 0) || (instanceIndex == client.getInstanceIndex()) )
-                {
-                    connectionStateManager.addStateChange(ConnectionState.LOST);
-                }
-                else
-                {
-                    log.debug("suspendConnection() failure ignored as the ZooKeeper instance was reset. Retrying.");
-                    // send -1 to signal that if it happens again, punt and mark the connection lost
-                    doSyncForSuspendedConnection(-1);
-                }
-            }
-        };
-        performBackgroundOperation(new OperationAndData<String>(operation, "/", null, errorCallback, null));
+        connectionStateManager.addStateChange(newConnectionState);
     }
 
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
@@ -864,7 +864,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    private void performBackgroundOperation(OperationAndData<?> operationAndData)
+    void performBackgroundOperation(OperationAndData<?> operationAndData)
     {
         try
         {

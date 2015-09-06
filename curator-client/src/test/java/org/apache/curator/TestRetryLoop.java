@@ -19,13 +19,18 @@
 package org.apache.curator;
 
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
+import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import java.util.concurrent.TimeUnit;
+
+import static org.mockito.Mockito.times;
 
 public class TestRetryLoop extends BaseClassForTests
 {
@@ -140,6 +145,21 @@ public class TestRetryLoop extends BaseClassForTests
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    public void     testRetryForever() throws Exception
+    {
+        int retryIntervalMs = 1;
+        RetrySleeper sleeper = Mockito.mock(RetrySleeper.class);
+        RetryForever retryForever = new RetryForever(retryIntervalMs);
+
+        for (int i = 0; i < 10; i++)
+        {
+            boolean allowed = retryForever.allowRetry(i, 0, sleeper);
+            Assert.assertTrue(allowed);
+            Mockito.verify(sleeper, times(i + 1)).sleepFor(retryIntervalMs, TimeUnit.MILLISECONDS);
         }
     }
 }
