@@ -28,7 +28,7 @@ import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.framework.state.ErrorPolicy;
+import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
 
@@ -304,5 +304,5 @@ public interface CuratorFramework extends Closeable
      *
      * @return error policy
      */
-    public ErrorPolicy getErrorPolicy();
+    public ConnectionStateErrorPolicy getConnectionStateErrorPolicy();
 }

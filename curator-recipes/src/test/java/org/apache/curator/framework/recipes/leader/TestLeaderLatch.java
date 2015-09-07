@@ -28,8 +28,8 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.framework.state.SessionErrorPolicy;
-import org.apache.curator.framework.state.StandardErrorPolicy;
+import org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
+import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -73,7 +73,7 @@ public class TestLeaderLatch extends BaseClassForTests
                     .connectionTimeoutMs(10000)
                     .sessionTimeoutMs(60000)
                     .retryPolicy(new RetryOneTime(1))
-                    .errorPolicy(isSessionIteration ? new SessionErrorPolicy() : new StandardErrorPolicy())
+                    .errorPolicy(isSessionIteration ? new SessionConnectionStateErrorPolicy() : new StandardConnectionStateErrorPolicy())
                     .build();
                 final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
                 ConnectionStateListener stateListener = new ConnectionStateListener()
@@ -143,7 +143,7 @@ public class TestLeaderLatch extends BaseClassForTests
             .connectionTimeoutMs(1000)
             .sessionTimeoutMs(timing.session())
             .retryPolicy(new RetryOneTime(1))
-            .errorPolicy(new StandardErrorPolicy())
+            .errorPolicy(new StandardConnectionStateErrorPolicy())
             .build();
         try
         {
@@ -195,7 +195,7 @@ public class TestLeaderLatch extends BaseClassForTests
                 .connectionTimeoutMs(1000)
                 .sessionTimeoutMs(timing.session())
                 .retryPolicy(new RetryOneTime(1))
-                .errorPolicy(new SessionErrorPolicy())
+                .errorPolicy(new SessionConnectionStateErrorPolicy())
                 .build();
             client.getConnectionStateListenable().addListener(stateListener);
             client.start();

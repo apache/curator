@@ -21,13 +21,12 @@ package org.apache.curator.framework.recipes.leader;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
-import org.apache.curator.connection.StandardConnectionHandlingPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.framework.state.SessionErrorPolicy;
-import org.apache.curator.framework.state.StandardErrorPolicy;
+import org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
+import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
@@ -65,7 +64,7 @@ public class TestLeaderSelector extends BaseClassForTests
             .connectionTimeoutMs(timing.connection())
             .sessionTimeoutMs(timing.session())
             .retryPolicy(new RetryOneTime(1))
-            .errorPolicy(new StandardErrorPolicy())
+            .errorPolicy(new StandardConnectionStateErrorPolicy())
             .build();
         try
         {
@@ -122,7 +121,7 @@ public class TestLeaderSelector extends BaseClassForTests
                 .connectionTimeoutMs(timing.connection())
                 .sessionTimeoutMs(timing.session())
                 .retryPolicy(new RetryOneTime(1))
-                .errorPolicy(new SessionErrorPolicy())
+                .errorPolicy(new SessionConnectionStateErrorPolicy())
                 .build();
             client.getConnectionStateListenable().addListener(stateListener);
             client.start();

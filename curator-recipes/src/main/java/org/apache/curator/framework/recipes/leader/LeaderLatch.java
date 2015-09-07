@@ -604,7 +604,7 @@ public class LeaderLatch implements Closeable
             {
                 try
                 {
-                    if ( client.getErrorPolicy().isErrorState(ConnectionState.SUSPENDED) || !hasLeadership.get() )
+                    if ( client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED) || !hasLeadership.get() )
                     {
                         reset();
                     }
@@ -619,7 +619,7 @@ public class LeaderLatch implements Closeable
 
             case SUSPENDED:
             {
-                if ( client.getErrorPolicy().isErrorState(ConnectionState.SUSPENDED) )
+                if ( client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED) )
                 {
                     setLeadership(false);
                 }

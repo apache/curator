@@ -34,8 +34,8 @@ import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
-import org.apache.curator.framework.state.ErrorPolicy;
-import org.apache.curator.framework.state.StandardErrorPolicy;
+import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
+import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
@@ -123,7 +123,7 @@ public class CuratorFrameworkFactory
         private ACLProvider aclProvider = DEFAULT_ACL_PROVIDER;
         private boolean canBeReadOnly = false;
         private boolean useContainerParentsIfAvailable = true;
-        private ErrorPolicy errorPolicy = new StandardErrorPolicy();
+        private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
         private ConnectionHandlingPolicy connectionHandlingPolicy = Boolean.getBoolean("curator-use-classic-connection-handling") ? new ClassicConnectionHandlingPolicy() : new StandardConnectionHandlingPolicy();
 
         /**
@@ -353,15 +353,15 @@ public class CuratorFrameworkFactory
         }
 
         /**
-         * Set the error policy to use. The default is {@link StandardErrorPolicy}
+         * Set the error policy to use. The default is {@link StandardConnectionStateErrorPolicy}
          *
          * @since 3.0.0
-         * @param errorPolicy new error policy
+         * @param connectionStateErrorPolicy new error policy
          * @return this
          */
-        public Builder errorPolicy(ErrorPolicy errorPolicy)
+        public Builder errorPolicy(ConnectionStateErrorPolicy connectionStateErrorPolicy)
         {
-            this.errorPolicy = errorPolicy;
+            this.connectionStateErrorPolicy = connectionStateErrorPolicy;
             return this;
         }
 
@@ -467,9 +467,9 @@ public class CuratorFrameworkFactory
             return useContainerParentsIfAvailable;
         }
 
-        public ErrorPolicy getErrorPolicy()
+        public ConnectionStateErrorPolicy getConnectionStateErrorPolicy()
         {
-            return errorPolicy;
+            return connectionStateErrorPolicy;
         }
 
         public ConnectionHandlingPolicy getConnectionHandlingPolicy()
