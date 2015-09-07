@@ -56,6 +56,28 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     protected abstract InterProcessLock makeLock(CuratorFramework client);
 
     @Test
+    public void testLocker() throws Exception
+    {
+        final Timing timing = new Timing();
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
+        try
+        {
+            client.start();
+
+            InterProcessLock lock = makeLock(client);
+            try ( Locker locker = new Locker(lock, timing.milliseconds(), TimeUnit.MILLISECONDS) )
+            {
+                Assert.assertTrue(lock.isAcquiredInThisProcess());
+            }
+            Assert.assertFalse(lock.isAcquiredInThisProcess());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testWaitingProcessKilledServer() throws Exception
     {
         final Timing timing = new Timing();

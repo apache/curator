@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -111,10 +112,25 @@ public class PersistentEphemeralNode implements Closeable
         {
             if ( newState == ConnectionState.RECONNECTED )
             {
+                if ( debugReconnectLatch != null )
+                {
+                    try
+                    {
+                        debugReconnectLatch.await();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        e.printStackTrace();
+                    }
+                }
                 createNode();
             }
         }
     };
+
+    @VisibleForTesting
+    volatile CountDownLatch debugReconnectLatch = null;
 
     private enum State
     {
