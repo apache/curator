@@ -311,7 +311,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             KillSession.kill(curator.getZookeeperClient().getZooKeeper());
 
             // Make sure the node got deleted
-            assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertTrue(deletedTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
             node.debugReconnectLatch.countDown();
         }
         finally
@@ -340,7 +340,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             KillSession.kill(curator.getZookeeperClient().getZooKeeper());
 
             // Make sure the node got deleted...
-            assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertTrue(deletedTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
             node.debugReconnectLatch.countDown();
 
             // Check for it to be recreated...
@@ -379,7 +379,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
                 KillSession.kill(curator.getZookeeperClient().getZooKeeper());
 
                 // Make sure the node ended up getting deleted...
-                assertTrue(deletionTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+                assertTrue(deletionTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
                 node.debugReconnectLatch.countDown();
 
                 // Now put a watch in the background looking to see if it gets created...
