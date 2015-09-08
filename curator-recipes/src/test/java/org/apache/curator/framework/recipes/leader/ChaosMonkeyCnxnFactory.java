@@ -89,7 +89,7 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
             log.debug("Applied : " + si.toString());
             super.submitRequest(si);
             // Raise an error if a lock is created
-            if ( si.type == ZooDefs.OpCode.create )
+            if ( (si.type == ZooDefs.OpCode.create) || (si.type == ZooDefs.OpCode.create2) )
             {
                 CreateRequest createRequest = new CreateRequest();
                 try
