@@ -40,3 +40,6 @@ The are currently two released versions of Curator, 2.x.x and 3.x.x:
 
 * Curator 2.x.x \- compatible with both ZooKeeper 3.4.x and ZooKeeper 3.5.x
 * Curator 3.x.x \- compatible only with ZooKeeper 3.5.x and includes support for new features such as dynamic reconfiguration, etc.
+
+ZooKeeper 3.5.x adds a number of new features including dynamic reconfiguration, watcher removal and others. The Curator 3.x.x Jira
+issues tracking these features are here: [[https://issues.apache.org/jira/browse/CURATOR-159]].
