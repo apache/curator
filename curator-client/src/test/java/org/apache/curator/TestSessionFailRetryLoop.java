@@ -175,7 +175,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
     @Test
     public void     testBasic() throws Exception
     {
-        Timing                          timing = new Timing();
+        final Timing                          timing = new Timing();
         final CuratorZookeeperClient    client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, new ExponentialBackoffRetry(100, 3));
         SessionFailRetryLoop            retryLoop = client.newSessionFailRetryLoop(SessionFailRetryLoop.Mode.FAIL);
         retryLoop.start();
@@ -198,6 +198,8 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                 {
                                     Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                     KillSession.kill(client.getZooKeeper(), server.getConnectString());
+
+                                    timing.sleepABit();
 
                                     client.getZooKeeper();
                                     client.blockUntilConnectedOrTimedOut();
