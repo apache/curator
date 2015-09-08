@@ -14,6 +14,18 @@ Various static methods to help with using ZooKeeper ZNode paths:
 * getSortedChildren: Return the children of the given path sorted by sequence number
 * makePath: Given a parent path and a child node, create a combined full path
 
+h2. Locker
+
+Curator's Locker uses Java 7's try\-with\-resources feature to making using Curator locks safer:
+
+{code}
+InterProcessMutex mutex = new InterProcessMutex(...) // or any InterProcessLock
+try ( Locker locker = new Locker(mutex, maxTimeout, unit) )
+{
+   // do work
+}
+{code}
+
 h2. BlockingQueueConsumer
 
 See: *[[DistributedQueue|curator-recipes/distributed-queue.html]]* and *[[DistributedPriorityQueue|curator-recipes/distributed-priority-queue.html]]*
