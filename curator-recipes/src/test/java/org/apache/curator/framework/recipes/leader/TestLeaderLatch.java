@@ -73,7 +73,7 @@ public class TestLeaderLatch extends BaseClassForTests
                     .connectionTimeoutMs(10000)
                     .sessionTimeoutMs(60000)
                     .retryPolicy(new RetryOneTime(1))
-                    .errorPolicy(isSessionIteration ? new SessionConnectionStateErrorPolicy() : new StandardConnectionStateErrorPolicy())
+                    .connectionStateErrorPolicy(isSessionIteration ? new SessionConnectionStateErrorPolicy() : new StandardConnectionStateErrorPolicy())
                     .build();
                 final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
                 ConnectionStateListener stateListener = new ConnectionStateListener()
@@ -143,7 +143,7 @@ public class TestLeaderLatch extends BaseClassForTests
             .connectionTimeoutMs(1000)
             .sessionTimeoutMs(timing.session())
             .retryPolicy(new RetryOneTime(1))
-            .errorPolicy(new StandardConnectionStateErrorPolicy())
+            .connectionStateErrorPolicy(new StandardConnectionStateErrorPolicy())
             .build();
         try
         {
@@ -195,7 +195,7 @@ public class TestLeaderLatch extends BaseClassForTests
                 .connectionTimeoutMs(1000)
                 .sessionTimeoutMs(timing.session())
                 .retryPolicy(new RetryOneTime(1))
-                .errorPolicy(new SessionConnectionStateErrorPolicy())
+                .connectionStateErrorPolicy(new SessionConnectionStateErrorPolicy())
                 .build();
             client.getConnectionStateListenable().addListener(stateListener);
             client.start();

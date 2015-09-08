@@ -36,7 +36,7 @@ h2. Error Policy
 Curator has a pluggable error policy. The default policy takes the conservative approach of treating connection states SUSPENDED and LOST the same way.
 i.e. when a recipe sees the state change to SUSPENDED it will assume that the ZooKeeper session is lost and will clean up any watchers, nodes, etc. You can choose,
 however, a more aggressive approach by setting the error policy to only treat LOST (i.e. true session loss) as an error state. Do this in the CuratorFrameworkFactory via:
-{{errorPolicy(new SessionErrorPolicy())}}.
+{{connectionStateErrorPolicy(new SessionConnectionStateErrorPolicy())}}.
 
 h2. Recipes
 In general, the recipes attempt to deal with errors and connection issues. See the doc for each recipe for details on how it deals with errors.

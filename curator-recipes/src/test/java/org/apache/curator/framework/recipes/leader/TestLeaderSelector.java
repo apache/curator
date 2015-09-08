@@ -64,7 +64,7 @@ public class TestLeaderSelector extends BaseClassForTests
             .connectionTimeoutMs(timing.connection())
             .sessionTimeoutMs(timing.session())
             .retryPolicy(new RetryOneTime(1))
-            .errorPolicy(new StandardConnectionStateErrorPolicy())
+            .connectionStateErrorPolicy(new StandardConnectionStateErrorPolicy())
             .build();
         try
         {
@@ -121,7 +121,7 @@ public class TestLeaderSelector extends BaseClassForTests
                 .connectionTimeoutMs(timing.connection())
                 .sessionTimeoutMs(timing.session())
                 .retryPolicy(new RetryOneTime(1))
-                .errorPolicy(new SessionConnectionStateErrorPolicy())
+                .connectionStateErrorPolicy(new SessionConnectionStateErrorPolicy())
                 .build();
             client.getConnectionStateListenable().addListener(stateListener);
             client.start();

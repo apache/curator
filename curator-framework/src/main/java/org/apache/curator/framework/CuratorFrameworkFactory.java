@@ -359,7 +359,7 @@ public class CuratorFrameworkFactory
          * @param connectionStateErrorPolicy new error policy
          * @return this
          */
-        public Builder errorPolicy(ConnectionStateErrorPolicy connectionStateErrorPolicy)
+        public Builder connectionStateErrorPolicy(ConnectionStateErrorPolicy connectionStateErrorPolicy)
         {
             this.connectionStateErrorPolicy = connectionStateErrorPolicy;
             return this;
