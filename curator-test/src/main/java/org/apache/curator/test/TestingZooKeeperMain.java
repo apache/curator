@@ -119,7 +119,15 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     @Override
     public void close() throws IOException
     {
-        shutdown();
+        try
+        {
+            shutdown();
+        }
+        catch ( Throwable e )
+        {
+            // ignore any errors
+            e.printStackTrace();
+        }
 
         try
         {
@@ -138,7 +146,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
                 }
             }
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             e.printStackTrace();    // just ignore - this class is only for testing
         }
