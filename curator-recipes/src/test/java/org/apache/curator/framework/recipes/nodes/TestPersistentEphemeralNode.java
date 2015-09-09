@@ -36,7 +36,9 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -626,6 +628,43 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         finally
         {
             node.close();
+        }
+    }
+    
+    @Test
+    public void testNoWritePermission() throws Exception
+    {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder
+            .connectString(server.getConnectString())
+            .authorization("digest", "me1:pass1".getBytes())
+            .retryPolicy(new RetryOneTime(1))
+            .build();
+        client.start();
+        
+        ACL acl = new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.AUTH_IDS);
+        List<ACL> aclList = Lists.newArrayList(acl);
+        client.create().withACL(aclList).forPath(DIR, new byte[0]);
+        client.close();
+        
+        PersistentEphemeralNode node = null;
+        try {
+        	//New client without authentication
+        	client = newCurator();
+        
+        	node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH,
+                                                                   new byte[0]);
+        	node.start();
+        
+            node.waitForInitialCreate(timing.seconds(), TimeUnit.SECONDS);
+            assertNodeDoesNotExist(client, PATH);
+            assertTrue(node.isAuthFailure());
+        } finally {
+        	if(node != null) {
+        	    node.close();
+        	}
+        	
+        	client.close();
         }
     }
 
