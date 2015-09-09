@@ -22,8 +22,10 @@ package org.apache.curator.test;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtField;
 import javassist.CtMethod;
 import javassist.NotFoundException;
+import javassist.bytecode.AccessFlag;
 
 public class ByteCodeRewrite
 {
@@ -73,11 +75,43 @@ public class ByteCodeRewrite
             {
                 // ignore
             }
+
+            try
+            {
+                CtClass cc = pool.get("org.apache.zookeeper.server.ZooKeeperServerMain");
+                makeVolatile(cc);
+            }
+            catch ( NotFoundException e )
+            {
+                // ignore
+            }
+
+            try
+            {
+                CtClass cc = pool.get("org.apache.zookeeper.server.ServerCnxnFactory");
+                makeVolatile(cc);
+            }
+            catch ( NotFoundException e )
+            {
+                // ignore
+            }
         }
         catch ( Exception e )
         {
             e.printStackTrace();
         }
+    }
+
+    private static void makeVolatile(CtClass cc) throws CannotCompileException
+    {
+        for ( CtField field : cc.getDeclaredFields() )
+        {
+            if ( (field.getModifiers() & (AccessFlag.ABSTRACT | AccessFlag.NATIVE | AccessFlag.SYNTHETIC | AccessFlag.STATIC | AccessFlag.FINAL)) == 0 )
+            {
+                field.setModifiers(field.getModifiers() | AccessFlag.VOLATILE);
+            }
+        }
+        cc.toClass();
     }
 
     private static void fixMethods(CtClass cc, String... methodNames) throws CannotCompileException
