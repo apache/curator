@@ -58,8 +58,6 @@
 
         <jdk-version>1.7</jdk-version>
 
-        <surefire-forkcount>1</surefire-forkcount>
-
         <!-- versions -->
         <zookeeper-version>3.5.0-alpha</zookeeper-version>
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
@@ -82,6 +80,7 @@
         <maven-shade-plugin-version>2.3</maven-shade-plugin-version>
         <slf4j-version>1.7.6</slf4j-version>
         <clirr-maven-plugin-version>2.6.1</clirr-maven-plugin-version>
+        <maven-surefire-plugin-version>2.18.1</maven-surefire-plugin-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -554,6 +553,12 @@
                     <artifactId>clirr-maven-plugin</artifactId>
                     <version>${clirr-maven-plugin-version}</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin-version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -631,8 +636,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <forkCount>${surefire-forkcount}</forkCount>
-                    <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
             </plugin>
