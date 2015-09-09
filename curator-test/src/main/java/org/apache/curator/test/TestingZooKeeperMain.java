@@ -188,15 +188,13 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
 
     private ZooKeeperServer getZooKeeperServer(ServerCnxnFactory cnxnFactory) throws Exception
     {
-        Field zkServerField = ServerCnxnFactory.class.getDeclaredField("zkServer");
-        zkServerField.setAccessible(true);
         ZooKeeperServer zkServer;
 
         // Wait until the zkServer field is non-null
         long startTime = System.currentTimeMillis();
         do
         {
-            zkServer = (ZooKeeperServer)zkServerField.get(cnxnFactory);
+            zkServer = cnxnFactory.getZooKeeperServer();
             if ( zkServer == null )
             {
                 try
@@ -210,7 +208,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
                 }
             }
         }
-        while ( (zkServer == null) && ((System.currentTimeMillis() - startTime) < MAX_WAIT_MS) );
+        while ( (zkServer == null) && ((System.currentTimeMillis() - startTime) <= MAX_WAIT_MS) );
 
         return zkServer;
     }
