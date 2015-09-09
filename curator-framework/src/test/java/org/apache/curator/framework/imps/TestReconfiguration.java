@@ -29,6 +29,7 @@ import org.apache.curator.framework.ensemble.EnsembleTracker;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
+import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
@@ -43,12 +44,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TestReconfiguration
 {
+    private static final Timing timing = new Timing();
     private TestingCluster cluster;
     private DynamicEnsembleProvider dynamicEnsembleProvider;
     private WaitOnDelegateListener waitOnDelegateListener;
@@ -157,7 +158,7 @@ public class TestReconfiguration
 
         CountDownLatch latch = new CountDownLatch(1);
         client.getConfig().inBackground(callback, latch).forEnsemble();
-        latch.await(5, TimeUnit.SECONDS);
+        Assert.assertTrue(timing.awaitLatch(latch));
         Assert.assertNotNull(bytes.get());
         QuorumVerifier qv = getQuorumVerifier(bytes.get());
         Assert.assertEquals(qv.getAllMembers().size(), 5);
@@ -274,7 +275,7 @@ public class TestReconfiguration
 
         CountDownLatch latch = new CountDownLatch(1);
         client.getConfig().inBackground(callback, latch).forEnsemble();
-        latch.await(5, TimeUnit.SECONDS);
+        Assert.assertTrue(timing.awaitLatch(latch));
         Assert.assertNotNull(bytes.get());
         QuorumVerifier qv = getQuorumVerifier(bytes.get());
         Assert.assertEquals(qv.getAllMembers().size(), 5);
@@ -404,7 +405,7 @@ public class TestReconfiguration
 
         public void waitForEvent() throws InterruptedException, TimeoutException
         {
-            if ( latch.await(5, TimeUnit.SECONDS) )
+            if ( timing.awaitLatch(latch) )
             {
                 latch = new CountDownLatch(1);
             }
