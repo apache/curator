@@ -387,10 +387,8 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
                 // Kill the session, thus cleaning up the node...
                 KillSession.kill(curator.getZookeeperClient().getZooKeeper());
 
-                timing.sleepABit();
-
                 // Make sure the node ended up getting deleted...
-                assertTrue(deletionTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
+                assertTrue(deletionTrigger.firedWithin(timing.multiple(1.5).forSessionSleep().seconds(), TimeUnit.SECONDS));
                 node.debugReconnectLatch.countDown();
 
                 // Now put a watch in the background looking to see if it gets created...
@@ -718,6 +716,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             }
             catch ( InterruptedException e )
             {
+                Thread.currentThread().interrupt();
                 throw Throwables.propagate(e);
             }
         }

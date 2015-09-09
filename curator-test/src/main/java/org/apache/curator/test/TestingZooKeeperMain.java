@@ -37,7 +37,7 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     private final CountDownLatch latch = new CountDownLatch(1);
     private final AtomicReference<Exception> startingException = new AtomicReference<Exception>(null);
 
-    private static final int MAX_WAIT_MS = 1000;
+    static final int MAX_WAIT_MS = new Timing().milliseconds();
 
     @Override
     public void kill()
@@ -105,9 +105,15 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
                     }
                 }
             }
+            else
+            {
+                throw new Exception("No zkServer");
+            }
         }
-
-        Thread.sleep(1000);
+        else
+        {
+            throw new Exception("No connection factory");
+        }
 
         Exception exception = startingException.get();
         if ( exception != null )
@@ -162,8 +168,20 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         do
         {
             cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
+            if ( cnxnFactory == null )
+            {
+                try
+                {
+                    Thread.sleep(10);
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
         }
-        while ( (cnxnFactory == null) && ((System.currentTimeMillis() - startTime) < MAX_WAIT_MS) );
+        while ( (cnxnFactory == null) && ((System.currentTimeMillis() - startTime) <= MAX_WAIT_MS) );
 
         return cnxnFactory;
     }
@@ -174,11 +192,23 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         zkServerField.setAccessible(true);
         ZooKeeperServer zkServer;
 
-        // Wait until the zkServer field is non-null or up to 1s, whichever comes first.
+        // Wait until the zkServer field is non-null
         long startTime = System.currentTimeMillis();
         do
         {
             zkServer = (ZooKeeperServer)zkServerField.get(cnxnFactory);
+            if ( zkServer == null )
+            {
+                try
+                {
+                    Thread.sleep(10);
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
         }
         while ( (zkServer == null) && ((System.currentTimeMillis() - startTime) < MAX_WAIT_MS) );
 

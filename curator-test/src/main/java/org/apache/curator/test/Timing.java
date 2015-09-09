@@ -213,13 +213,23 @@ public class Timing
     }
 
     /**
+     * Return a new timing with a multiple for sleeping a smaller amount of time
+     *
+     * @return this timing multiplied
+     */
+    public Timing forSleepingABit()
+    {
+        return multiple(.25);
+    }
+
+    /**
      * Sleep for a small amount of time
      *
      * @throws InterruptedException if interrupted
      */
     public void sleepABit() throws InterruptedException
     {
-        unit.sleep(value / 4);
+        forSleepingABit().sleep();
     }
 
     /**
