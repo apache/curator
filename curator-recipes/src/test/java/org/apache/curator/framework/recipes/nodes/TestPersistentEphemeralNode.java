@@ -66,14 +66,21 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     @Override
     public void teardown() throws Exception
     {
-        for ( PersistentEphemeralNode node : createdNodes )
+        try
         {
-            node.close();
-        }
+            for ( PersistentEphemeralNode node : createdNodes )
+            {
+                node.close();
+            }
 
-        for ( CuratorFramework curator : curatorInstances )
+            for ( CuratorFramework curator : curatorInstances )
+            {
+                TestCleanState.closeAndTestClean(curator);
+            }
+        }
+        finally
         {
-            TestCleanState.closeAndTestClean(curator);
+            super.teardown();
         }
     }
 

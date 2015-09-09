@@ -76,9 +76,14 @@ public class TestEnabledSessionExpiredState extends BaseClassForTests
     @Override
     public void teardown() throws Exception
     {
-        CloseableUtils.closeQuietly(client);
-
-        super.teardown();
+        try
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+        finally
+        {
+            super.teardown();
+        }
     }
 
     @Test
