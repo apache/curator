@@ -30,12 +30,14 @@ import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import javax.management.JMException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TestingZooKeeperMain implements ZooKeeperMainFace
@@ -48,7 +50,9 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     private volatile ServerCnxnFactory cnxnFactory;
     private volatile ZooKeeperServer zkServer;
 
-    static final int MAX_WAIT_MS = new Timing().milliseconds();
+    private static final Timing timing = new Timing();
+
+    static final int MAX_WAIT_MS = timing.milliseconds();
 
     @Override
     public void kill()
@@ -124,7 +128,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     @Override
     public void blockUntilStarted() throws Exception
     {
-        latch.await();
+        Assert.assertTrue(timing.awaitLatch(latch));
 
         if ( zkServer != null )
         {
@@ -139,7 +143,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
         else
         {
-            throw new Exception("No zkServer. zkServer is volatile: " + Modifier.isVolatile(cnxnFactory.getClass().getDeclaredField("zkServer").getModifiers()));
+            throw new Exception("No zkServer.");
         }
 
         Exception exception = startingException.get();
@@ -201,9 +205,17 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             txnLog = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
             zkServer = new TestZooKeeperServer(txnLog, config);
 
-            cnxnFactory = ServerCnxnFactory.createFactory();
-            cnxnFactory.configure(config.getClientPortAddress(),
-                config.getMaxClientCnxns());
+            try
+            {
+                cnxnFactory = ServerCnxnFactory.createFactory();
+                cnxnFactory.configure(config.getClientPortAddress(),
+                    config.getMaxClientCnxns());
+            }
+            catch ( IOException e )
+            {
+                log.info("Could not server. Waiting and trying one more time.", e);
+                timing.sleepABit();
+            }
             cnxnFactory.startup(zkServer);
             latch.countDown();
             cnxnFactory.join();
@@ -228,6 +240,8 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             super(txnLog, config.getTickTime(), config.getMinSessionTimeout(), config.getMaxSessionTimeout(), null);
         }
 
+        private final AtomicBoolean isRunning = new AtomicBoolean(false);
+
         protected void registerJMX()
         {
             // NOP
@@ -239,11 +253,17 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             // NOP
         }
 
+        @Override
+        public boolean isRunning()
+        {
+            return isRunning.get() || super.isRunning();
+        }
+
         public void noteStartup()
         {
             synchronized (this) {
-                running = true;
-                notifyAll();
+                isRunning.set(true);
+                this.notifyAll();
             }
         }
     }

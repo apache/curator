@@ -59,7 +59,7 @@
         <jdk-version>1.7</jdk-version>
 
         <!-- versions -->
-        <zookeeper-version>3.5.0-alpha</zookeeper-version>
+        <zookeeper-version>3.5.1-alpha</zookeeper-version>
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
         <maven-bundle-plugin-version>2.3.7</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
@@ -79,7 +79,6 @@
         <maven-shade-plugin-version>2.3</maven-shade-plugin-version>
         <slf4j-version>1.7.6</slf4j-version>
         <clirr-maven-plugin-version>2.6.1</clirr-maven-plugin-version>
-        <maven-surefire-plugin-version>2.18.1</maven-surefire-plugin-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -546,12 +545,6 @@
                     <artifactId>clirr-maven-plugin</artifactId>
                     <version>${clirr-maven-plugin-version}</version>
                 </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin-version}</version>
-                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -630,8 +623,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <threadCount>1</threadCount>
-                    <reuseForks>false</reuseForks>
                 </configuration>
             </plugin>
 
