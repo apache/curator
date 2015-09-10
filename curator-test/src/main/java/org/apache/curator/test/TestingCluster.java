@@ -38,11 +38,6 @@ import java.util.Map;
  */
 public class TestingCluster implements Closeable
 {
-    static
-    {
-        ByteCodeRewrite.apply();
-    }
-
     private final List<TestingZooKeeperServer>  servers;
 
     /**

@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.leader;
 
+import org.apache.curator.test.TestingZooKeeperMain;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.proto.CreateRequest;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -49,27 +50,38 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
     /* How long after the first error, connections are rejected */
     public static final long LOCKOUT_DURATION_MS = 6000;
 
-    public ChaosMonkeyCnxnFactory() throws IOException
-    {
-    }
-
     @Override
     public void startup(ZooKeeperServer zks) throws IOException, InterruptedException
     {
         super.startup(new ChaosMonkeyZookeeperServer(zks));
     }
 
-
     public static class ChaosMonkeyZookeeperServer extends ZooKeeperServer
     {
+        private final ZooKeeperServer zks;
         private long firstError = 0;
 
         public ChaosMonkeyZookeeperServer(ZooKeeperServer zks)
         {
+            this.zks = zks;
             setTxnLogFactory(zks.getTxnLogFactory());
             setTickTime(zks.getTickTime());
             setMinSessionTimeout(zks.getMinSessionTimeout());
             setMaxSessionTimeout(zks.getMaxSessionTimeout());
+        }
+
+        @Override
+        public void startup()
+        {
+            super.startup();
+            if ( zks instanceof TestingZooKeeperMain.TestZooKeeperServer )
+            {
+                ((TestingZooKeeperMain.TestZooKeeperServer)zks).noteStartup();
+            }
+            else
+            {
+                throw new RuntimeException("Unknown ZooKeeperServer: " + zks.getClass());
+            }
         }
 
         @Override

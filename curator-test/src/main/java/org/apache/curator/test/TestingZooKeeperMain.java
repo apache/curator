@@ -19,23 +19,34 @@
 
 package org.apache.curator.test;
 
+import org.apache.zookeeper.jmx.MBeanRegistry;
+import org.apache.zookeeper.jmx.ZKMBeanInfo;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
-import org.apache.zookeeper.server.ZooKeeperServerMain;
+import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import javax.management.JMException;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeeperMainFace
+public class TestingZooKeeperMain implements ZooKeeperMainFace
 {
+    private static final Logger log = LoggerFactory.getLogger(TestingZooKeeperMain.class);
+
     private final CountDownLatch latch = new CountDownLatch(1);
     private final AtomicReference<Exception> startingException = new AtomicReference<Exception>(null);
+
+    private volatile ServerCnxnFactory cnxnFactory;
+    private volatile ZooKeeperServer zkServer;
 
     static final int MAX_WAIT_MS = new Timing().milliseconds();
 
@@ -44,15 +55,15 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     {
         try
         {
-            Field cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
-            cnxnFactoryField.setAccessible(true);
-            ServerCnxnFactory cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
-            cnxnFactory.closeAll();
+            if ( cnxnFactory != null )
+            {
+                cnxnFactory.closeAll();
 
-            Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
-            ssField.setAccessible(true);
-            ServerSocketChannel ss = (ServerSocketChannel)ssField.get(cnxnFactory);
-            ss.close();
+                Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
+                ssField.setAccessible(true);
+                ServerSocketChannel ss = (ServerSocketChannel)ssField.get(cnxnFactory);
+                ss.close();
+            }
 
             close();
         }
@@ -65,12 +76,36 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     @Override
     public void runFromConfig(QuorumPeerConfig config) throws Exception
     {
-        ServerConfig serverConfig = new ServerConfig();
-        serverConfig.readFrom(config);
-        latch.countDown();
         try
         {
-            super.runFromConfig(serverConfig);
+            Field instance = MBeanRegistry.class.getDeclaredField("instance");
+            instance.setAccessible(true);
+            MBeanRegistry nopMBeanRegistry = new MBeanRegistry()
+            {
+                @Override
+                public void register(ZKMBeanInfo bean, ZKMBeanInfo parent) throws JMException
+                {
+                    // NOP
+                }
+
+                @Override
+                public void unregister(ZKMBeanInfo bean)
+                {
+                    // NOP
+                }
+            };
+            instance.set(null, nopMBeanRegistry);
+        }
+        catch ( Exception e )
+        {
+            log.error("Could not fix MBeanRegistry");
+        }
+
+        ServerConfig serverConfig = new ServerConfig();
+        serverConfig.readFrom(config);
+        try
+        {
+            internalRunFromConfig(serverConfig);
         }
         catch ( IOException e )
         {
@@ -91,28 +126,20 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     {
         latch.await();
 
-        ServerCnxnFactory cnxnFactory = getServerConnectionFactory();
-        if ( cnxnFactory != null )
+        if ( zkServer != null )
         {
-            final ZooKeeperServer zkServer = getZooKeeperServer(cnxnFactory);
-            if ( zkServer != null )
+            //noinspection SynchronizeOnNonFinalField
+            synchronized(zkServer)
             {
-                synchronized(zkServer)
+                while ( !zkServer.isRunning() )
                 {
-                    if ( !zkServer.isRunning() )
-                    {
-                        zkServer.wait();
-                    }
+                    zkServer.wait();
                 }
-            }
-            else
-            {
-                throw new Exception("No zkServer");
             }
         }
         else
         {
-            throw new Exception("No connection factory");
+            throw new Exception("No zkServer. zkServer is volatile: " + Modifier.isVolatile(cnxnFactory.getClass().getDeclaredField("zkServer").getModifiers()));
         }
 
         Exception exception = startingException.get();
@@ -127,27 +154,27 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     {
         try
         {
-            shutdown();
+            cnxnFactory.shutdown();
         }
         catch ( Throwable e )
         {
             e.printStackTrace();    // just ignore - this class is only for testing
+        }
+        finally
+        {
+            cnxnFactory = null;
         }
 
         try
         {
-            ServerCnxnFactory cnxnFactory = getServerConnectionFactory();
-            if ( cnxnFactory != null )
+            if ( zkServer != null )
             {
-                ZooKeeperServer zkServer = getZooKeeperServer(cnxnFactory);
-                if ( zkServer != null )
+                zkServer.shutdown();
+                ZKDatabase zkDb = zkServer.getZKDatabase();
+                if ( zkDb != null )
                 {
-                    ZKDatabase zkDb = zkServer.getZKDatabase();
-                    if ( zkDb != null )
-                    {
-                        // make ZK server close its log files
-                        zkDb.close();
-                    }
+                    // make ZK server close its log files
+                    zkDb.close();
                 }
             }
         }
@@ -155,61 +182,69 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         {
             e.printStackTrace();    // just ignore - this class is only for testing
         }
+        finally
+        {
+            zkServer = null;
+        }
     }
 
-    private ServerCnxnFactory getServerConnectionFactory() throws Exception
+    // copied from ZooKeeperServerMain.java
+    private void internalRunFromConfig(ServerConfig config) throws IOException
     {
-        Field cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
-        cnxnFactoryField.setAccessible(true);
-        ServerCnxnFactory cnxnFactory;
+        log.info("Starting server");
+        FileTxnSnapLog txnLog = null;
+        try {
+            // Note that this thread isn't going to be doing anything else,
+            // so rather than spawning another thread, we will just call
+            // run() in this thread.
+            // create a file logger url from the command line args
+            txnLog = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
+            zkServer = new TestZooKeeperServer(txnLog, config);
 
-        // Wait until the cnxnFactory field is non-null or up to 1s, whichever comes first.
-        long startTime = System.currentTimeMillis();
-        do
-        {
-            cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
-            if ( cnxnFactory == null )
-            {
-                try
-                {
-                    Thread.sleep(10);
-                }
-                catch ( InterruptedException e )
-                {
-                    Thread.currentThread().interrupt();
-                    throw e;
-                }
+            cnxnFactory = ServerCnxnFactory.createFactory();
+            cnxnFactory.configure(config.getClientPortAddress(),
+                config.getMaxClientCnxns());
+            cnxnFactory.startup(zkServer);
+            latch.countDown();
+            cnxnFactory.join();
+            if ( zkServer.isRunning()) {
+                zkServer.shutdown();
+            }
+        } catch (InterruptedException e) {
+            // warn, but generally this is ok
+            Thread.currentThread().interrupt();
+            log.warn("Server interrupted", e);
+        } finally {
+            if (txnLog != null) {
+                txnLog.close();
             }
         }
-        while ( (cnxnFactory == null) && ((System.currentTimeMillis() - startTime) <= MAX_WAIT_MS) );
-
-        return cnxnFactory;
     }
 
-    private ZooKeeperServer getZooKeeperServer(ServerCnxnFactory cnxnFactory) throws Exception
+    public static class TestZooKeeperServer extends ZooKeeperServer
     {
-        ZooKeeperServer zkServer;
-
-        // Wait until the zkServer field is non-null
-        long startTime = System.currentTimeMillis();
-        do
+        public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config)
         {
-            zkServer = cnxnFactory.getZooKeeperServer();
-            if ( zkServer == null )
-            {
-                try
-                {
-                    Thread.sleep(10);
-                }
-                catch ( InterruptedException e )
-                {
-                    Thread.currentThread().interrupt();
-                    throw e;
-                }
+            super(txnLog, config.getTickTime(), config.getMinSessionTimeout(), config.getMaxSessionTimeout(), null);
+        }
+
+        protected void registerJMX()
+        {
+            // NOP
+        }
+
+        @Override
+        protected void unregisterJMX()
+        {
+            // NOP
+        }
+
+        public void noteStartup()
+        {
+            synchronized (this) {
+                running = true;
+                notifyAll();
             }
         }
-        while ( (zkServer == null) && ((System.currentTimeMillis() - startTime) <= MAX_WAIT_MS) );
-
-        return zkServer;
     }
 }

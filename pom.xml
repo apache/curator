@@ -65,7 +65,6 @@
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
         <doxia-module-confluence-version>1.6</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
-        <javassist-version>3.18.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
         <jersey-version>1.18.1</jersey-version>
@@ -343,12 +342,6 @@
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-x-discovery-server</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.javassist</groupId>
-                <artifactId>javassist</artifactId>
-                <version>${javassist-version}</version>
             </dependency>
 
             <dependency>

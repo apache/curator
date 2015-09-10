@@ -19,6 +19,7 @@
 
 package org.apache.curator.test;
 
+import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.IInvokedMethod;
