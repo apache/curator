@@ -21,6 +21,8 @@ package org.apache.curator.test;
 
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.jmx.ZKMBeanInfo;
+import org.apache.zookeeper.server.ContainerManager;
+import org.apache.zookeeper.server.RequestProcessor;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
@@ -37,6 +39,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -48,7 +51,8 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     private final AtomicReference<Exception> startingException = new AtomicReference<Exception>(null);
 
     private volatile ServerCnxnFactory cnxnFactory;
-    private volatile ZooKeeperServer zkServer;
+    private volatile TestZooKeeperServer zkServer;
+    private volatile ContainerManager containerManager;
 
     private static final Timing timing = new Timing();
 
@@ -169,6 +173,11 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             cnxnFactory = null;
         }
 
+        if ( containerManager != null ) {
+            containerManager.stop();
+            containerManager = null;
+        }
+
         try
         {
             if ( zkServer != null )
@@ -217,6 +226,8 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
                 timing.sleepABit();
             }
             cnxnFactory.startup(zkServer);
+            containerManager = new ContainerManager(zkServer.getZKDatabase(), zkServer.getFirstProcessor(), Integer.getInteger("znode.container.checkIntervalMs", (int)TimeUnit.MINUTES.toMillis(1L)).intValue(), Integer.getInteger("znode.container.maxPerMinute", 10000).intValue());
+            containerManager.start();
             latch.countDown();
             cnxnFactory.join();
             if ( zkServer.isRunning()) {
@@ -241,6 +252,11 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
 
         private final AtomicBoolean isRunning = new AtomicBoolean(false);
+
+        public RequestProcessor getFirstProcessor()
+        {
+            return firstProcessor;
+        }
 
         protected void registerJMX()
         {

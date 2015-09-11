@@ -211,7 +211,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
         server.close();
 
-        System.setProperty("container.checkIntervalMs", "10");
+        System.setProperty("znode.container.checkIntervalMs", "10");
         try
         {
             server = new TestingServer();
@@ -272,7 +272,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            System.clearProperty("container.checkIntervalMs");
+            System.clearProperty("znode.container.checkIntervalMs");
         }
     }
 
