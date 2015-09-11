@@ -224,6 +224,9 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             {
                 log.info("Could not server. Waiting and trying one more time.", e);
                 timing.sleepABit();
+                cnxnFactory = ServerCnxnFactory.createFactory();
+                cnxnFactory.configure(config.getClientPortAddress(),
+                    config.getMaxClientCnxns());
             }
             cnxnFactory.startup(zkServer);
             containerManager = new ContainerManager(zkServer.getZKDatabase(), zkServer.getFirstProcessor(), Integer.getInteger("znode.container.checkIntervalMs", (int)TimeUnit.MINUTES.toMillis(1L)).intValue(), Integer.getInteger("znode.container.maxPerMinute", 10000).intValue());
