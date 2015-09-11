@@ -403,9 +403,8 @@ public class TestLeaderLatch extends BaseClassForTests
                 LeaderLatch latch = new LeaderLatch(client, PATH_NAME);
                 latch.start();
                 latches.add(latch);
+                waitForALeader(latches, timing);
             }
-
-            waitForALeader(latches, timing);
 
             //we need to close a Participant that doesn't be actual leader (first Participant) nor the last
             latches.get(PARTICIPANT_ID).close();
