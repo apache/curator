@@ -192,7 +192,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
             Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            Assert.assertTrue(timing.forSessionSleep().acquireSemaphore(semaphore, 1));
         }
         finally
         {
