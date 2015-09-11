@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.imps;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.curator.ensemble.EnsembleListener;
 import org.apache.curator.ensemble.dynamic.DynamicEnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
@@ -64,7 +65,13 @@ public class TestReconfiguration extends BaseClassForTests
     @BeforeMethod
     public void setup() throws Exception
     {
-        cluster = new TestingCluster(5);
+        ImmutableList.Builder<InstanceSpec> builder = ImmutableList.builder();
+        for ( int i = 1; i <= 5; ++i )
+        {
+            builder.add(new InstanceSpec(null, -1, -1, -1, true, i, -1, -1));
+        }
+
+        cluster = new TestingCluster(builder.build());
         cluster.start();
 
         connectionString1to5 = cluster.getConnectString();
@@ -333,14 +340,14 @@ public class TestReconfiguration extends BaseClassForTests
         Assert.assertEquals(qv.getAllMembers().size(), 5);
     }
 
-    static QuorumVerifier getQuorumVerifier(byte[] bytes) throws Exception
+    private static QuorumVerifier getQuorumVerifier(byte[] bytes) throws Exception
     {
         Properties properties = new Properties();
         properties.load(new StringReader(new String(bytes)));
         return new QuorumMaj(properties);
     }
 
-    static InstanceSpec getInstance(TestingCluster cluster, int id)
+    private static InstanceSpec getInstance(TestingCluster cluster, int id)
     {
         for ( InstanceSpec spec : cluster.getInstances() )
         {
@@ -352,7 +359,7 @@ public class TestReconfiguration extends BaseClassForTests
         throw new IllegalStateException("InstanceSpec with id:" + id + " not found");
     }
 
-    static String getServerString(QuorumVerifier qv, TestingCluster cluster, long id) throws Exception
+    private static String getServerString(QuorumVerifier qv, TestingCluster cluster, long id) throws Exception
     {
         String str = qv.getAllMembers().get(id).toString();
         //check if connection string is already there.
@@ -366,7 +373,7 @@ public class TestReconfiguration extends BaseClassForTests
         }
     }
 
-    static String getConnectionString(TestingCluster cluster, long... ids) throws Exception
+    private static String getConnectionString(TestingCluster cluster, long... ids) throws Exception
     {
         StringBuilder sb = new StringBuilder();
         Map<Long, InstanceSpec> specs = new HashMap<>();
