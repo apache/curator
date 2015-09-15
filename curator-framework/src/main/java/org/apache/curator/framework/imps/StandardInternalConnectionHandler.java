@@ -27,12 +27,6 @@ class StandardInternalConnectionHandler implements InternalConnectionHandler
     }
 
     @Override
-    public boolean checkSessionExpirationEnabled()
-    {
-        return true;
-    }
-
-    @Override
     public void checkNewConnection(CuratorFrameworkImpl client)
     {
         client.checkInstanceIndex();

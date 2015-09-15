@@ -33,12 +33,6 @@ class ClassicInternalConnectionHandler implements InternalConnectionHandler
     }
 
     @Override
-    public boolean checkSessionExpirationEnabled()
-    {
-        return false;
-    }
-
-    @Override
     public void suspendConnection(CuratorFrameworkImpl client)
     {
         if ( client.setToSuspended() )

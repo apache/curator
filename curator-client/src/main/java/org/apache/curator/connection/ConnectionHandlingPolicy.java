@@ -29,11 +29,32 @@ import java.util.concurrent.Callable;
 public interface ConnectionHandlingPolicy
 {
     /**
-     * Return true if this policy should behave like the pre-3.0.0 version of Curator
+     * <p>
+     *     Prior to 3.0.0, Curator did not try to manage session expiration
+     *     other than the functionality provided by ZooKeeper itself. Starting with
+     *     3.0.0, Curator has the option of attempting to monitor session expiration
+     *     above what is provided by ZooKeeper. The percentage returned by this method
+     *     determines how and if Curator will check for session expiration.
+     * </p>
      *
-     * @return true/false
+     * <p>
+     *     If this method returns <tt>0</tt>, Curator does not
+     *     do any additional checking for session expiration.
+     * </p>
+     *
+     * <p>
+     *     If a positive number is returned, Curator will check for session expiration
+     *     as follows: when ZooKeeper sends a Disconnect event, Curator will start a timer.
+     *     If re-connection is not achieved before the elapsed time exceeds the negotiated
+     *     session time multiplied by the session expiration percent, Curator will simulate
+     *     a session expiration. Due to timing/network issues, it is <b>not possible</b> for
+     *     a client to match the server's session timeout with complete accuracy. Thus, the need
+     *     for a session expiration percentage.
+     * </p>
+     *
+     * @return a percentage from 0 to 100 (0 implied no extra session checking)
      */
-    boolean isEmulatingClassicHandling();
+    int getSimulatedSessionExpirationPercent();
 
     /**
      * Called by {@link RetryLoop#callWithRetry(CuratorZookeeperClient, Callable)} to do the work

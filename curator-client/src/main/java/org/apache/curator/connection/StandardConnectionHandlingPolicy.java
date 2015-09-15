@@ -18,6 +18,7 @@
  */
 package org.apache.curator.connection;
 
+import com.google.common.base.Preconditions;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.slf4j.Logger;
@@ -32,11 +33,23 @@ import java.util.concurrent.Callable;
 public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolicy
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
+    private final int expirationPercent;
+
+    public StandardConnectionHandlingPolicy()
+    {
+        this(100);
+    }
+
+    public StandardConnectionHandlingPolicy(int expirationPercent)
+    {
+        Preconditions.checkArgument((expirationPercent > 0) && (expirationPercent <= 100), "expirationPercent must be > 0 and <= 100");
+        this.expirationPercent = expirationPercent;
+    }
 
     @Override
-    public boolean isEmulatingClassicHandling()
+    public int getSimulatedSessionExpirationPercent()
     {
-        return false;
+        return expirationPercent;
     }
 
     @Override
