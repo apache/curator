@@ -464,13 +464,13 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
         else
         {
-            String path = protectedPathInForeground(adjustedPath, data);
+            String path = protectedPathInForeground(givenPath, adjustedPath, data);
             returnPath = client.unfixForNamespace(path);
         }
         return returnPath;
     }
 
-    private String protectedPathInForeground(String adjustedPath, byte[] data) throws Exception
+    private String protectedPathInForeground(String givenPath, String adjustedPath, byte[] data) throws Exception
     {
         try
         {
@@ -486,7 +486,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                  * register the znode to be sure it is deleted later.
                  */
                 String localProtectedId = protectedId;
-                findAndDeleteProtectedNodeInBackground(adjustedPath, localProtectedId, null);
+                findAndDeleteProtectedNodeInBackground(givenPath, localProtectedId, null);
                 /*
                 * The current UUID is scheduled to be deleted, it is not safe to use it again.
                 * If this builder is used again later create a new UUID
@@ -635,7 +635,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     if ( doProtected )
                     {
                         // all retries have failed, findProtectedNodeInForeground(..) included, schedule a clean up
-                        findAndDeleteProtectedNodeInBackground(path, protectedId, null);
+                        findAndDeleteProtectedNodeInBackground(givenPath, protectedId, null);
                         // assign a new id if this builder is used again later
                         protectedId = UUID.randomUUID().toString();
                     }
@@ -795,25 +795,25 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     /**
      * Attempt to delete a protected znode
      *
-     * @param path        the path
-     * @param protectedId the protected id
-     * @param callback    callback to use, <code>null</code> to create a new one
+     * @param unAdjustedPath the path - raw without namespace resolution
+     * @param protectedId    the protected id
+     * @param callback       callback to use, <code>null</code> to create a new one
      */
-    private void findAndDeleteProtectedNodeInBackground(String path, String protectedId, FindProtectedNodeCB callback)
+    private void findAndDeleteProtectedNodeInBackground(String unAdjustedPath, String protectedId, FindProtectedNodeCB callback)
     {
         if ( client.getState() == CuratorFrameworkState.STARTED )
         {
             if ( callback == null )
             {
-                callback = new FindProtectedNodeCB(path, protectedId);
+                callback = new FindProtectedNodeCB(unAdjustedPath, protectedId);
             }
             try
             {
-                client.getChildren().inBackground(callback).forPath(ZKPaths.getPathAndNode(path).getPath());
+                client.getChildren().inBackground(callback).forPath(ZKPaths.getPathAndNode(unAdjustedPath).getPath());
             }
             catch ( Exception e )
             {
-                findAndDeleteProtectedNodeInBackground(path, protectedId, callback);
+                findAndDeleteProtectedNodeInBackground(unAdjustedPath, protectedId, callback);
             }
         }
     }
@@ -830,7 +830,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
 
         @Override
-        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+        public void processResult(CuratorFramework ignoreClient, CuratorEvent event) throws Exception
         {
             if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
             {
