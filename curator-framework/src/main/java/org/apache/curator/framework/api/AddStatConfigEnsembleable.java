@@ -25,8 +25,9 @@ package org.apache.curator.framework.api;
  * mixing concepts that can't be used together.
  */
 public interface AddStatConfigEnsembleable extends
-    Addable<StatConfigEnsembleable>,
-    StatConfigEnsembleable
+    Addable<Statable<ConfigureEnsembleable>>,
+    ConfigureEnsembleable,
+    Statable<ConfigureEnsembleable>
 {
 
 }

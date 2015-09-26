@@ -34,10 +34,8 @@ import java.util.concurrent.Executor;
 public class ReconfigBuilderImpl implements
     ReconfigBuilder,
     ReconfigBuilderMain,
-    StatEnsembleable<byte[]>,
-    Configurable,
-    StatConfigEnsembleable,
-    BackgroundOperation<Void>
+    ConfigureEnsembleable,
+    BackgroundOperation<Void>,Statable<Ensembleable<byte[]>>,Ensembleable<byte[]>
 {
     private final CuratorFrameworkImpl client;
 
@@ -75,7 +73,7 @@ public class ReconfigBuilderImpl implements
     }
 
     @Override
-    public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+    public Ensembleable<byte[]> fromConfig(long config) throws Exception
     {
         fromConfig = config;
         return this;
@@ -101,13 +99,26 @@ public class ReconfigBuilderImpl implements
             }
 
             @Override
-            public Ensembleable<byte[]> storingStatIn(Stat stat)
+            public ConfigureEnsembleable storingStatIn(Stat stat)
             {
-                return ReconfigBuilderImpl.this.storingStatIn(stat);
+                return new ConfigureEnsembleable()
+                {
+                    @Override
+                    public Ensembleable<byte[]> fromConfig(long config) throws Exception
+                    {
+                        return ReconfigBuilderImpl.this.fromConfig(config);
+                    }
+
+                    @Override
+                    public byte[] forEnsemble() throws Exception
+                    {
+                        return ReconfigBuilderImpl.this.forEnsemble();
+                    }
+                };
             }
 
             @Override
-            public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+            public Ensembleable<byte[]> fromConfig(long config) throws Exception
             {
                 return ReconfigBuilderImpl.this.fromConfig(config);
             }
@@ -130,25 +141,25 @@ public class ReconfigBuilderImpl implements
                     }
 
                     @Override
-                    public Ensembleable<byte[]> storingStatIn(Stat stat)
+                    public ConfigureEnsembleable storingStatIn(Stat stat)
                     {
-                        return ReconfigBuilderImpl.this.storingStatIn(stat);
+                        return new InternalConfigureEnsembleable();
                     }
 
                     @Override
-                    public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+                    public Ensembleable<byte[]> fromConfig(long config) throws Exception
                     {
                         return ReconfigBuilderImpl.this.fromConfig(config);
                     }
 
                     @Override
-                    public StatConfigEnsembleable leaving(List<String> servers)
+                    public Statable<ConfigureEnsembleable> leaving(List<String> servers)
                     {
                         return ReconfigBuilderImpl.this.leaving(servers);
                     }
 
                     @Override
-                    public StatConfigEnsembleable leaving(String... server)
+                    public Statable<ConfigureEnsembleable> leaving(String... server)
                     {
                         return ReconfigBuilderImpl.this.leaving(server);
                     }
@@ -173,25 +184,25 @@ public class ReconfigBuilderImpl implements
                     }
 
                     @Override
-                    public Ensembleable<byte[]> storingStatIn(Stat stat)
+                    public ConfigureEnsembleable storingStatIn(Stat stat)
                     {
-                        return ReconfigBuilderImpl.this.storingStatIn(stat);
+                        return new InternalConfigureEnsembleable();
                     }
 
                     @Override
-                    public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+                    public Ensembleable<byte[]> fromConfig(long config) throws Exception
                     {
                         return ReconfigBuilderImpl.this.fromConfig(config);
                     }
 
                     @Override
-                    public StatConfigEnsembleable joining(List<String> servers)
+                    public ConfigureEnsembleable joining(List<String> servers)
                     {
                         return ReconfigBuilderImpl.this.joining(servers);
                     }
 
                     @Override
-                    public StatConfigEnsembleable joining(String... server)
+                    public ConfigureEnsembleable joining(String... server)
                     {
                         return ReconfigBuilderImpl.this.joining(server);
                     }
@@ -262,13 +273,13 @@ public class ReconfigBuilderImpl implements
             }
 
             @Override
-            public Ensembleable<byte[]> storingStatIn(Stat stat)
+            public ConfigureEnsembleable storingStatIn(Stat stat)
             {
-                return ReconfigBuilderImpl.this.storingStatIn(stat);
+                return new InternalConfigureEnsembleable();
             }
 
             @Override
-            public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+            public Ensembleable<byte[]> fromConfig(long config) throws Exception
             {
                 return ReconfigBuilderImpl.this.fromConfig(config);
             }
@@ -291,25 +302,25 @@ public class ReconfigBuilderImpl implements
                     }
 
                     @Override
-                    public Ensembleable<byte[]> storingStatIn(Stat stat)
+                    public ConfigureEnsembleable storingStatIn(Stat stat)
                     {
-                        return ReconfigBuilderImpl.this.storingStatIn(stat);
+                        return new InternalConfigureEnsembleable();
                     }
 
                     @Override
-                    public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+                    public Ensembleable<byte[]> fromConfig(long config) throws Exception
                     {
                         return ReconfigBuilderImpl.this.fromConfig(config);
                     }
 
                     @Override
-                    public StatConfigEnsembleable leaving(List<String> servers)
+                    public Statable<ConfigureEnsembleable> leaving(List<String> servers)
                     {
                         return ReconfigBuilderImpl.this.leaving(servers);
                     }
 
                     @Override
-                    public StatConfigEnsembleable leaving(String... server)
+                    public Statable<ConfigureEnsembleable> leaving(String... server)
                     {
                         return ReconfigBuilderImpl.this.leaving(server);
                     }
@@ -334,25 +345,25 @@ public class ReconfigBuilderImpl implements
                     }
 
                     @Override
-                    public Ensembleable<byte[]> storingStatIn(Stat stat)
+                    public ConfigureEnsembleable storingStatIn(Stat stat)
                     {
-                        return ReconfigBuilderImpl.this.storingStatIn(stat);
+                        return new InternalConfigureEnsembleable();
                     }
 
                     @Override
-                    public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+                    public ConfigureEnsembleable fromConfig(long config) throws Exception
                     {
-                        return ReconfigBuilderImpl.this.fromConfig(config);
+                        return new InternalConfigureEnsembleable();
                     }
 
                     @Override
-                    public StatConfigEnsembleable adding(List<String> servers)
+                    public Statable<ConfigureEnsembleable> adding(List<String> servers)
                     {
                         return ReconfigBuilderImpl.this.adding(servers);
                     }
 
                     @Override
-                    public StatConfigEnsembleable adding(String... server)
+                    public Statable<ConfigureEnsembleable> adding(String... server)
                     {
                         return ReconfigBuilderImpl.this.adding(server);
                     }
@@ -381,13 +392,13 @@ public class ReconfigBuilderImpl implements
             }
 
             @Override
-            public Ensembleable<byte[]> storingStatIn(Stat stat)
+            public ConfigureEnsembleable storingStatIn(Stat stat)
             {
-                return ReconfigBuilderImpl.this.storingStatIn(stat);
+                return new InternalConfigureEnsembleable();
             }
 
             @Override
-            public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+            public Ensembleable<byte[]> fromConfig(long config) throws Exception
             {
                 return ReconfigBuilderImpl.this.fromConfig(config);
             }
@@ -404,13 +415,13 @@ public class ReconfigBuilderImpl implements
                 return new JoinStatConfigurable()
                 {
                     @Override
-                    public Configurable joining(List<String> servers)
+                    public ConfigureEnsembleable joining(List<String> servers)
                     {
                         return ReconfigBuilderImpl.this.joining(servers);
                     }
 
                     @Override
-                    public Configurable joining(String... server)
+                    public ConfigureEnsembleable joining(String... server)
                     {
                         return ReconfigBuilderImpl.this.joining(server);
                     }
@@ -435,25 +446,25 @@ public class ReconfigBuilderImpl implements
                     }
 
                     @Override
-                    public Ensembleable<byte[]> storingStatIn(Stat stat)
+                    public ConfigureEnsembleable storingStatIn(Stat stat)
                     {
-                        return ReconfigBuilderImpl.this.storingStatIn(stat);
+                        return new InternalConfigureEnsembleable();
                     }
 
                     @Override
-                    public StatEnsembleable<byte[]> fromConfig(long config) throws Exception
+                    public Ensembleable<byte[]> fromConfig(long config) throws Exception
                     {
                         return ReconfigBuilderImpl.this.fromConfig(config);
                     }
 
                     @Override
-                    public StatConfigEnsembleable adding(List<String> servers)
+                    public Statable<ConfigureEnsembleable> adding(List<String> servers)
                     {
                         return ReconfigBuilderImpl.this.adding(servers);
                     }
 
                     @Override
-                    public StatConfigEnsembleable adding(String... server)
+                    public Statable<ConfigureEnsembleable> adding(String... server)
                     {
                         return ReconfigBuilderImpl.this.adding(server);
                     }
@@ -500,5 +511,20 @@ public class ReconfigBuilderImpl implements
             );
         trace.commit();
         return responseData;
+    }
+
+    private class InternalConfigureEnsembleable implements ConfigureEnsembleable
+    {
+        @Override
+        public Ensembleable<byte[]> fromConfig(long config) throws Exception
+        {
+            return ReconfigBuilderImpl.this.fromConfig(config);
+        }
+
+        @Override
+        public byte[] forEnsemble() throws Exception
+        {
+            return ReconfigBuilderImpl.this.forEnsemble();
+        }
     }
 }

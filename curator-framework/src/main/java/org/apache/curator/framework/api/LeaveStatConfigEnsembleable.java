@@ -25,8 +25,9 @@ package org.apache.curator.framework.api;
  * mixing concepts that can't be used together.
  */
 public interface LeaveStatConfigEnsembleable extends
-    Leaveable<StatConfigEnsembleable>,
-    StatConfigEnsembleable
+    Leaveable<Statable<ConfigureEnsembleable>>,
+    ConfigureEnsembleable,
+    Statable<ConfigureEnsembleable>
 {
 
 }

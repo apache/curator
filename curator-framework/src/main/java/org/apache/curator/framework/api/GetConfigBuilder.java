@@ -20,10 +20,9 @@
 package org.apache.curator.framework.api;
 
 public interface GetConfigBuilder extends
-    Watchable<BackgroundStatable<Ensembleable<byte[]>>>,
-    BackgroundStatable<Ensembleable<byte[]>>,
-    Ensembleable<byte[]>
+    Ensembleable<byte[]>,
+    Backgroundable<Ensembleable<byte[]>>,
+    Watchable<BackgroundEnsembleable<byte[]>>,
+    Statable<WatchBackgroundEnsembleable<byte[]>>
 {
 }
-
-

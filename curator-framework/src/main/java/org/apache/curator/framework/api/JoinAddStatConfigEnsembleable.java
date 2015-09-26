@@ -27,7 +27,8 @@ package org.apache.curator.framework.api;
 public interface JoinAddStatConfigEnsembleable extends
     Joinable<AddStatConfigEnsembleable>,
     Addable<JoinStatConfigurable>,
-    StatConfigEnsembleable
+    ConfigureEnsembleable,
+    Statable<ConfigureEnsembleable>
 {
 
 }

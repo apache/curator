@@ -19,8 +19,14 @@
 
 package org.apache.curator.framework.api;
 
-public interface StatEnsembleable<T> extends
-    Statable<Ensembleable<T>>,
-    Ensembleable<T>
+public interface ConfigureEnsembleable extends
+    Ensembleable<byte[]>
 {
+
+    /**
+     * Sets the configuration version to use.
+     * @param config The version of the configuration.
+     * @throws Exception
+     */
+    Ensembleable<byte[]> fromConfig(long config) throws Exception;
 }
