@@ -282,7 +282,7 @@ public class TestReconfiguration extends BaseClassForTests
             client.start();
 
             QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
-            Assert.assertEquals(cluster.getInstances().size(), 5);
+            Assert.assertEquals(oldConfig.getAllMembers().size(), 5);
             assertConfig(oldConfig, cluster.getInstances());
 
             CountDownLatch latch = setChangeWaiter(client);
@@ -291,6 +291,7 @@ public class TestReconfiguration extends BaseClassForTests
 
             Assert.assertTrue(timing.awaitLatch(latch));
             QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            Assert.assertEquals(newConfig.getAllMembers().size(), 3);
             assertConfig(newConfig, smallCluster);
         }
     }
