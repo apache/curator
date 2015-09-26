@@ -322,6 +322,12 @@ public class TestReconfiguration extends BaseClassForTests
             }
 
             @Override
+            public boolean updateServerListEnabled()
+            {
+                return false;
+            }
+
+            @Override
             public String getConnectionString()
             {
                 return connectString.get();
