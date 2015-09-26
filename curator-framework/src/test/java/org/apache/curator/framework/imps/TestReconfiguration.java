@@ -19,12 +19,17 @@
 
 package org.apache.curator.framework.imps;
 
+import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
+import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -37,7 +42,12 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
 
 public class TestReconfiguration extends BaseClassForTests
 {
@@ -84,75 +94,53 @@ public class TestReconfiguration extends BaseClassForTests
 
         // ---------
 
-        client.reconfig().adding().forEnsemble();
         client.reconfig().leaving().forEnsemble();
         client.reconfig().joining().forEnsemble();
-        client.reconfig().adding().leaving().forEnsemble();
-        client.reconfig().adding().joining().forEnsemble();
         client.reconfig().leaving().joining().forEnsemble();
+        client.reconfig().joining().leaving().forEnsemble();
+        client.reconfig().withNewMembers().forEnsemble();
 
-        client.reconfig().adding().fromConfig(0).forEnsemble();
         client.reconfig().leaving().fromConfig(0).forEnsemble();
         client.reconfig().joining().fromConfig(0).forEnsemble();
-        client.reconfig().adding().leaving().fromConfig(0).forEnsemble();
-        client.reconfig().adding().joining().fromConfig(0).forEnsemble();
         client.reconfig().leaving().joining().fromConfig(0).forEnsemble();
+        client.reconfig().joining().leaving().fromConfig(0).forEnsemble();
+        client.reconfig().withNewMembers().fromConfig(0).forEnsemble();
 
-        client.reconfig().adding().fromConfig(0).forEnsemble();
-        client.reconfig().leaving().fromConfig(0).forEnsemble();
-        client.reconfig().joining().fromConfig(0).forEnsemble();
-        client.reconfig().adding().leaving().fromConfig(0).forEnsemble();
-        client.reconfig().adding().joining().fromConfig(0).forEnsemble();
-        client.reconfig().leaving().joining().fromConfig(0).forEnsemble();
-
-        client.reconfig().adding().storingStatIn(stat).forEnsemble();
         client.reconfig().leaving().storingStatIn(stat).forEnsemble();
         client.reconfig().joining().storingStatIn(stat).forEnsemble();
-        client.reconfig().adding().leaving().storingStatIn(stat).forEnsemble();
-        client.reconfig().adding().joining().storingStatIn(stat).forEnsemble();
         client.reconfig().leaving().joining().storingStatIn(stat).forEnsemble();
+        client.reconfig().joining().leaving().storingStatIn(stat).forEnsemble();
+        client.reconfig().withNewMembers().storingStatIn(stat).forEnsemble();
 
-        client.reconfig().adding().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().leaving().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
-        client.reconfig().adding().leaving().storingStatIn(stat).fromConfig(0).forEnsemble();
-        client.reconfig().adding().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().leaving().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
+        client.reconfig().joining().leaving().storingStatIn(stat).fromConfig(0).forEnsemble();
+        client.reconfig().withNewMembers().storingStatIn(stat).forEnsemble();
 
-        client.reconfig().inBackground().adding().forEnsemble();
         client.reconfig().inBackground().leaving().forEnsemble();
         client.reconfig().inBackground().joining().forEnsemble();
-        client.reconfig().inBackground().adding().leaving().forEnsemble();
-        client.reconfig().inBackground().adding().joining().forEnsemble();
         client.reconfig().inBackground().leaving().joining().forEnsemble();
+        client.reconfig().inBackground().joining().leaving().forEnsemble();
+        client.reconfig().inBackground().withNewMembers().forEnsemble();
 
-        client.reconfig().inBackground().adding().fromConfig(0).forEnsemble();
         client.reconfig().inBackground().leaving().fromConfig(0).forEnsemble();
         client.reconfig().inBackground().joining().fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().adding().leaving().fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().adding().joining().fromConfig(0).forEnsemble();
         client.reconfig().inBackground().leaving().joining().fromConfig(0).forEnsemble();
+        client.reconfig().inBackground().joining().leaving().fromConfig(0).forEnsemble();
+        client.reconfig().inBackground().withNewMembers().fromConfig(0).forEnsemble();
 
-        client.reconfig().inBackground().adding().fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().leaving().fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().joining().fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().adding().leaving().fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().adding().joining().fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().leaving().joining().fromConfig(0).forEnsemble();
-
-        client.reconfig().inBackground().adding().storingStatIn(stat).forEnsemble();
         client.reconfig().inBackground().leaving().storingStatIn(stat).forEnsemble();
         client.reconfig().inBackground().joining().storingStatIn(stat).forEnsemble();
-        client.reconfig().inBackground().adding().leaving().storingStatIn(stat).forEnsemble();
-        client.reconfig().inBackground().adding().joining().storingStatIn(stat).forEnsemble();
         client.reconfig().inBackground().leaving().joining().storingStatIn(stat).forEnsemble();
+        client.reconfig().inBackground().joining().leaving().storingStatIn(stat).forEnsemble();
+        client.reconfig().inBackground().withNewMembers().storingStatIn(stat).forEnsemble();
 
-        client.reconfig().inBackground().adding().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().inBackground().leaving().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().inBackground().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().adding().leaving().storingStatIn(stat).fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().adding().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().inBackground().leaving().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
+        client.reconfig().inBackground().joining().leaving().storingStatIn(stat).fromConfig(0).forEnsemble();
+        client.reconfig().inBackground().withNewMembers().storingStatIn(stat).forEnsemble();
     }
 
     @Test
@@ -163,33 +151,154 @@ public class TestReconfiguration extends BaseClassForTests
             client.start();
             QuorumVerifier quorumVerifier = toQuorumVerifier(client.getConfig().forEnsemble());
             System.out.println(quorumVerifier);
+            assertConfig(quorumVerifier, cluster.getInstances());
+        }
+    }
 
-            for ( InstanceSpec instance : cluster.getInstances() )
+    @Test
+    public void testAdd() throws Exception
+    {
+        Timing timing = new Timing();
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1)) )
+        {
+            client.start();
+
+            QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            assertConfig(oldConfig, cluster.getInstances());
+
+            CountDownLatch latch = setChangeWaiter(client);
+            try ( TestingCluster newCluster = new TestingCluster(1, false) )
             {
-                QuorumPeer.QuorumServer quorumServer = quorumVerifier.getAllMembers().get((long)instance.getServerId());
-                Assert.assertNotNull(quorumServer);
-                Assert.assertEquals(quorumServer.clientAddr.getPort(), instance.getPort());
+                newCluster.start();
+
+                client.reconfig().joining(toReconfigSpec(newCluster.getInstances())).fromConfig(oldConfig.getVersion()).forEnsemble();
+
+                Assert.assertTrue(timing.awaitLatch(latch));
+
+                QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+                List<InstanceSpec> newInstances = Lists.newArrayList(cluster.getInstances());
+                newInstances.addAll(newCluster.getInstances());
+                assertConfig(newConfig, newInstances);
             }
         }
     }
 
     @Test
-    public void testAdd1Sync() throws Exception
+    public void testAddAsync() throws Exception
     {
+        Timing timing = new Timing();
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1)) )
         {
             client.start();
 
-            Watcher watcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
-                {
+            QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            assertConfig(oldConfig, cluster.getInstances());
 
-                }
-            };
-            client.getConfig().usingWatcher(watcher).forEnsemble();
+            CountDownLatch latch = setChangeWaiter(client);
+            try ( TestingCluster newCluster = new TestingCluster(1, false) )
+            {
+                newCluster.start();
+
+                final CountDownLatch callbackLatch = new CountDownLatch(1);
+                BackgroundCallback callback = new BackgroundCallback()
+                {
+                    @Override
+                    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                    {
+                        if ( event.getType() == CuratorEventType.RECONFIG )
+                        {
+                            callbackLatch.countDown();
+                        }
+                    }
+                };
+                client.reconfig().inBackground(callback).joining(toReconfigSpec(newCluster.getInstances())).fromConfig(oldConfig.getVersion()).forEnsemble();
+
+                Assert.assertTrue(timing.awaitLatch(callbackLatch));
+                Assert.assertTrue(timing.awaitLatch(latch));
+
+                QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+                List<InstanceSpec> newInstances = Lists.newArrayList(cluster.getInstances());
+                newInstances.addAll(newCluster.getInstances());
+                assertConfig(newConfig, newInstances);
+            }
         }
+    }
+
+    @Test
+    public void testAddAndRemove() throws Exception
+    {
+        Timing timing = new Timing();
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1)) )
+        {
+            client.start();
+
+            QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            assertConfig(oldConfig, cluster.getInstances());
+
+            CountDownLatch latch = setChangeWaiter(client);
+
+            try ( TestingCluster newCluster = new TestingCluster(1, false) )
+            {
+                newCluster.start();
+
+                Collection<InstanceSpec> oldInstances = cluster.getInstances();
+                InstanceSpec us = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
+                InstanceSpec removeSpec = oldInstances.iterator().next();
+                if ( us.equals(removeSpec) ) {
+                    Iterator<InstanceSpec> iterator = oldInstances.iterator();
+                    iterator.next();
+                    removeSpec = iterator.next();
+                }
+
+                Collection<InstanceSpec> instances = newCluster.getInstances();
+                client.reconfig().leaving(Integer.toString(removeSpec.getServerId())).joining(toReconfigSpec(instances)).fromConfig(oldConfig.getVersion()).forEnsemble();
+
+                Assert.assertTrue(timing.awaitLatch(latch));
+
+                QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+                ArrayList<InstanceSpec> newInstances = Lists.newArrayList(oldInstances);
+                newInstances.addAll(instances);
+                newInstances.remove(removeSpec);
+                assertConfig(newConfig, newInstances);
+            }
+        }
+    }
+
+    private CountDownLatch setChangeWaiter(CuratorFramework client) throws Exception
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        Watcher watcher = new Watcher()
+        {
+            @Override
+            public void process(WatchedEvent event)
+            {
+                if ( event.getType() == Event.EventType.NodeDataChanged )
+                {
+                    latch.countDown();
+                }
+            }
+        };
+        client.getConfig().usingWatcher(watcher).forEnsemble();
+        return latch;
+    }
+
+    private void assertConfig(QuorumVerifier config, Collection<InstanceSpec> instances)
+    {
+        for ( InstanceSpec instance : instances )
+        {
+            QuorumPeer.QuorumServer quorumServer = config.getAllMembers().get((long)instance.getServerId());
+            Assert.assertNotNull(quorumServer, String.format("Looking for %s - found %s", instance.getServerId(), config.getAllMembers()));
+            Assert.assertEquals(quorumServer.clientAddr.getPort(), instance.getPort());
+        }
+    }
+
+    private List<String> toReconfigSpec(Collection<InstanceSpec> instances)
+    {
+        List<String> specs = Lists.newArrayList();
+        for ( InstanceSpec instance : instances ) {
+            specs.add("server." + instance.getServerId() + "=localhost:" + instance.getElectionPort() + ":" + instance.getQuorumPort() + ";" + instance.getPort());
+        }
+        return specs;
     }
 
     private static QuorumVerifier toQuorumVerifier(byte[] bytes) throws Exception

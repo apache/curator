@@ -19,15 +19,25 @@
 
 package org.apache.curator.framework.api;
 
-/**
- * An incremental reconfiguration builder.
- * This builder has access only to the incremental reconfiguration methods joining and leaving, so that we prevent
- * mixing concepts that can't be used together.
- */
-public interface LeaveStatConfigEnsembleable extends
-    Leaveable<JoinStatConfigEnsembleable>,
-    ConfigureEnsembleable,
-    Statable<ConfigureEnsembleable>
-{
+import java.util.List;
 
+public interface Membersable<T>
+{
+    /**
+     * Sets one or more members that are meant to be the ensemble.
+     * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
+     *
+     * @param server The server joining.
+     * @return this
+     */
+    T withNewMembers(String... server);
+
+    /**
+     * Sets one or more members that are meant to be the ensemble.
+     * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]
+     *
+     * @param servers The servers joining.
+     * @return this
+     */
+    T withNewMembers(List<String> servers);
 }

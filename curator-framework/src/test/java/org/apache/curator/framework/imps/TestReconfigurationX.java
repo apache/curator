@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.imps;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.curator.ensemble.EnsembleListener;
 import org.apache.curator.ensemble.dynamic.DynamicEnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
@@ -63,7 +64,13 @@ public class TestReconfigurationX
     @BeforeMethod
     public void setup() throws Exception
     {
-        cluster = new TestingCluster(5);
+        ImmutableList.Builder<InstanceSpec> builder = ImmutableList.builder();
+        for ( int i = 1; i <= 5; ++i )
+        {
+            builder.add(new InstanceSpec(null, -1, -1, -1, true, i, -1, -1));
+        }
+
+        cluster = new TestingCluster(builder.build());
         cluster.start();
 
         connectionString1to5 = cluster.getConnectString();
@@ -208,7 +215,7 @@ public class TestReconfigurationX
 
         //Remove Servers
         bytes = client.reconfig()
-            .adding("server.2=" + server2,
+            .withNewMembers("server.2=" + server2,
                 "server.3=" + server3,
                 "server.4=" + server4,
                 "server.5=" + server5)
@@ -220,7 +227,7 @@ public class TestReconfigurationX
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString2to5);
 
         bytes = client.reconfig()
-            .adding("server.3=" + server3,
+            .withNewMembers("server.3=" + server3,
                 "server.4=" + server4,
                 "server.5=" + server5)
             .storingStatIn(stat).fromConfig(qv.getVersion()).forEnsemble();
@@ -233,7 +240,7 @@ public class TestReconfigurationX
 
         //Add Servers
         bytes = client.reconfig()
-            .adding("server.2=" + server2,
+            .withNewMembers("server.2=" + server2,
                 "server.3=" + server3,
                 "server.4=" + server4,
                 "server.5=" + server5)
@@ -245,7 +252,7 @@ public class TestReconfigurationX
         Assert.assertEquals(dynamicEnsembleProvider.getConnectionString(), connectionString2to5);
 
         bytes = client.reconfig()
-            .adding("server.1=" + server1,
+            .withNewMembers("server.1=" + server1,
                 "server.2=" + server2,
                 "server.3=" + server3,
                 "server.4=" + server4,
@@ -287,7 +294,7 @@ public class TestReconfigurationX
 
         //Remove Servers
         client.reconfig().inBackground(callback, latch)
-            .adding("server.2=" + server2,
+            .withNewMembers("server.2=" + server2,
                 "server.3=" + server3,
                 "server.4=" + server4,
                 "server.5=" + server5)
@@ -298,7 +305,7 @@ public class TestReconfigurationX
         Assert.assertEquals(qv.getAllMembers().size(), 4);
 
         client.reconfig().inBackground(callback, latch)
-            .adding("server.3=" + server3,
+            .withNewMembers("server.3=" + server3,
                 "server.4=" + server4,
                 "server.5=" + server5)
             .fromConfig(qv.getVersion()).forEnsemble();
@@ -309,7 +316,7 @@ public class TestReconfigurationX
 
         //Add Servers
         client.reconfig().inBackground(callback, latch)
-            .adding("server.2=" + server2,
+            .withNewMembers("server.2=" + server2,
                 "server.3=" + server3,
                 "server.4=" + server4,
                 "server.5=" + server5)
@@ -320,7 +327,7 @@ public class TestReconfigurationX
         Assert.assertEquals(qv.getAllMembers().size(), 4);
 
         client.reconfig().inBackground(callback, latch)
-            .adding("server.1=" + server1,
+            .withNewMembers("server.1=" + server1,
                 "server.2=" + server2,
                 "server.3=" + server3,
                 "server.4=" + server4,
@@ -332,14 +339,14 @@ public class TestReconfigurationX
         Assert.assertEquals(qv.getAllMembers().size(), 5);
     }
 
-    static QuorumVerifier getQuorumVerifier(byte[] bytes) throws Exception
+    private static QuorumVerifier getQuorumVerifier(byte[] bytes) throws Exception
     {
         Properties properties = new Properties();
         properties.load(new StringReader(new String(bytes)));
         return new QuorumMaj(properties);
     }
 
-    static InstanceSpec getInstance(TestingCluster cluster, int id)
+    private static InstanceSpec getInstance(TestingCluster cluster, int id)
     {
         for ( InstanceSpec spec : cluster.getInstances() )
         {
@@ -351,7 +358,7 @@ public class TestReconfigurationX
         throw new IllegalStateException("InstanceSpec with id:" + id + " not found");
     }
 
-    static String getServerString(QuorumVerifier qv, TestingCluster cluster, long id) throws Exception
+    private static String getServerString(QuorumVerifier qv, TestingCluster cluster, long id) throws Exception
     {
         String str = qv.getAllMembers().get(id).toString();
         //check if connection string is already there.
@@ -365,7 +372,7 @@ public class TestReconfigurationX
         }
     }
 
-    static String getConnectionString(TestingCluster cluster, long... ids) throws Exception
+    private static String getConnectionString(TestingCluster cluster, long... ids) throws Exception
     {
         StringBuilder sb = new StringBuilder();
         Map<Long, InstanceSpec> specs = new HashMap<>();

@@ -19,15 +19,8 @@
 
 package org.apache.curator.framework.api;
 
-/**
- * An incremental reconfiguration builder.
- * This builder has access only to the incremental reconfiguration methods joining and leaving, so that we prevent
- * mixing concepts that can't be used together.
- */
-public interface LeaveStatConfigEnsembleable extends
-    Leaveable<JoinStatConfigEnsembleable>,
-    ConfigureEnsembleable,
-    Statable<ConfigureEnsembleable>
+public interface StatConfigureEnsembleable extends
+    Statable<ConfigureEnsembleable>,
+    ConfigureEnsembleable
 {
-
 }
