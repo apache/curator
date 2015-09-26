@@ -123,6 +123,8 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
 
         if ( state.compareAndSet(State.STOPPED, State.CLOSED) )
         {
+            configBuilder.close();
+
             InstanceSpec spec = getInstanceSpec();
             if ( spec.deleteDataDirectoryOnClose() )
             {

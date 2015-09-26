@@ -14,6 +14,18 @@ Various static methods to help with using ZooKeeper ZNode paths:
 * getSortedChildren: Return the children of the given path sorted by sequence number
 * makePath: Given a parent path and a child node, create a combined full path
 
+h2. Locker
+
+Curator's Locker uses Java 7's try\-with\-resources feature to making using Curator locks safer:
+
+{code}
+InterProcessMutex mutex = new InterProcessMutex(...) // or any InterProcessLock
+try ( Locker locker = new Locker(mutex, maxTimeout, unit) )
+{
+   // do work
+}
+{code}
+
 h2. BlockingQueueConsumer
 
 See: *[[DistributedQueue|curator-recipes/distributed-queue.html]]* and *[[DistributedPriorityQueue|curator-recipes/distributed-priority-queue.html]]*
@@ -25,3 +37,8 @@ h2. QueueSharder
 Due to limitations in ZooKeeper's transport layer, a single queue will break if it has more than 10K\-ish items in it. This class
 provides a facade over multiple distributed queues. It monitors the queues and if any one of them goes over a threshold, a new
 queue is added. Puts are distributed amongst the queues.
+
+h2. EnsembleTracker
+
+Utility to listen for ensemble/configuration changes via registered EnsembleListeners. Allocate a EnsembleTracker, add one or more listeners
+and start it.

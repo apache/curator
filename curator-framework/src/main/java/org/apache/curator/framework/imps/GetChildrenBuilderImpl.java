@@ -162,7 +162,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                 {
                     strings = Lists.newArrayList();
                 }
-                CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.CHILDREN, rc, path, null, o, stat, null, strings, null, null);
+                CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.CHILDREN, rc, path, null, o, stat, null, strings, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };
@@ -172,7 +172,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
         }
         else
         {
-            client.getZooKeeper().getChildren(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            client.getZooKeeper().getChildren(operationAndData.getData(), watching.getWatcher(client, operationAndData.getData()), callback, backgrounding.getContext());
         }
     }
 
@@ -211,7 +211,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                     }
                     else
                     {
-                        children = client.getZooKeeper().getChildren(path, watching.getWatcher(), responseStat);
+                        children = client.getZooKeeper().getChildren(path, watching.getWatcher(client, path), responseStat);
                     }
                     return children;
                 }

@@ -175,7 +175,7 @@ public class TestDistributedQueue extends BaseClassForTests
                 "/lock",
                 QueueBuilder.NOT_SET,
                 true,
-                5000
+                timing.milliseconds()
             )
             {
                 @SuppressWarnings("SimplifiableConditionalExpression")

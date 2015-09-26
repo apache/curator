@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
 import org.apache.zookeeper.CreateMode;
@@ -106,7 +107,7 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -151,7 +152,7 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 }

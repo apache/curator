@@ -18,8 +18,8 @@
  */
 package org.apache.curator.framework.api;
 
-public interface ACLBackgroundPathable<T> extends
-    ACLable<BackgroundPathable<T>>,
-    BackgroundPathable<T>
+public interface ACLCreateModeStatBackgroundPathAndBytesable<T> extends
+    ACLCreateModeBackgroundPathAndBytesable<T>,
+    Statable<ACLCreateModeBackgroundPathAndBytesable<T>>
 {
 }

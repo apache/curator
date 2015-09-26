@@ -24,14 +24,15 @@ public interface CreateBuilder extends
     BackgroundPathAndBytesable<String>,
     CreateModable<ACLBackgroundPathAndBytesable<String>>,
     ACLCreateModeBackgroundPathAndBytesable<String>,
-    Compressible<CreateBackgroundModeACLable>
+    Compressible<CreateBackgroundModeStatACLable>,
+    Statable<CreateProtectACLCreateModePathAndBytesable<String>>
 {
     /**
      * Causes any parent nodes to get created if they haven't already been
      *
      * @return this
      */
-    public ProtectACLCreateModePathAndBytesable<String> creatingParentsIfNeeded();
+    public ProtectACLCreateModeStatPathAndBytesable<String> creatingParentsIfNeeded();
 
     /**
      * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
@@ -41,7 +42,7 @@ public interface CreateBuilder extends
      *
      * @return this
      */
-    public ProtectACLCreateModePathAndBytesable<String> creatingParentContainersIfNeeded();
+    public ProtectACLCreateModeStatPathAndBytesable<String> creatingParentContainersIfNeeded();
 
     /**
      * @deprecated this has been generalized to support all create modes. Instead, use:
@@ -81,5 +82,5 @@ public interface CreateBuilder extends
      *
      * @return this
      */
-    public ACLCreateModeBackgroundPathAndBytesable<String>    withProtection();
+    public ACLCreateModeStatBackgroundPathAndBytesable<String>    withProtection();
 }

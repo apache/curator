@@ -63,24 +63,36 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
     {
         if ( quorumPeer != null )
         {
-            quorumPeer.shutdown();
+            try
+            {
+                quorumPeer.shutdown();
+            }
+            finally
+            {
+                quorumPeer = null;
+            }
         }
     }
 
     @Override
     public void blockUntilStarted() throws Exception
     {
-        while ( quorumPeer == null )
+        long startTime = System.currentTimeMillis();
+        while ( (quorumPeer == null) && ((System.currentTimeMillis() - startTime) <= TestingZooKeeperMain.MAX_WAIT_MS) )
         {
             try
             {
-                Thread.sleep(100);
+                Thread.sleep(10);
             }
             catch ( InterruptedException e )
             {
                 Thread.currentThread().interrupt();
                 break;
             }
+        }
+        if ( quorumPeer == null )
+        {
+            throw new Exception("quorumPeer never got set");
         }
     }
 }

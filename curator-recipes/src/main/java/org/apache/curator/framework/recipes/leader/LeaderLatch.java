@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -63,7 +64,7 @@ import org.apache.curator.utils.PathUtils;
 public class LeaderLatch implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final String latchPath;
     private final String id;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
@@ -143,7 +144,7 @@ public class LeaderLatch implements Closeable
      */
     public LeaderLatch(CuratorFramework client, String latchPath, String id, CloseMode closeMode)
     {
-        this.client = Preconditions.checkNotNull(client, "client cannot be null");
+        this.client = Preconditions.checkNotNull(client, "client cannot be null").newWatcherRemoveCuratorFramework();
         this.latchPath = PathUtils.validatePath(latchPath);
         this.id = Preconditions.checkNotNull(id, "id cannot be null");
         this.closeMode = Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
@@ -159,20 +160,20 @@ public class LeaderLatch implements Closeable
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         startTask.set(AfterConnectionEstablished.execute(client, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
                 {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            internalStart();
-                        }
-                        finally
-                        {
-                            startTask.set(null);
-                        }
-                    }
-                }));
+                    internalStart();
+                }
+                finally
+                {
+                    startTask.set(null);
+                }
+            }
+        }));
     }
 
     /**
@@ -206,6 +207,7 @@ public class LeaderLatch implements Closeable
         try
         {
             setNode(null);
+            client.removeWatchers();
         }
         catch ( Exception e )
         {
@@ -602,7 +604,10 @@ public class LeaderLatch implements Closeable
             {
                 try
                 {
-                    reset();
+                    if ( client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED) || !hasLeadership.get() )
+                    {
+                        reset();
+                    }
                 }
                 catch ( Exception e )
                 {
@@ -613,6 +618,14 @@ public class LeaderLatch implements Closeable
             }
 
             case SUSPENDED:
+            {
+                if ( client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED) )
+                {
+                    setLeadership(false);
+                }
+                break;
+            }
+
             case LOST:
             {
                 setLeadership(false);

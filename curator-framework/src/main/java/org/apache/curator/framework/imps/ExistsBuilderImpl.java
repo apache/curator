@@ -131,7 +131,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
             public void processResult(int rc, String path, Object ctx, Stat stat)
             {
                 trace.commit();
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null);
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };
@@ -141,7 +141,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
         }
         else
         {
-            client.getZooKeeper().exists(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            client.getZooKeeper().exists(operationAndData.getData(), watching.getWatcher(client, operationAndData.getData()), callback, backgrounding.getContext());
         }
     }
 
@@ -223,7 +223,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
                     }
                     else
                     {
-                        returnStat = client.getZooKeeper().exists(path, watching.getWatcher());
+                        returnStat = client.getZooKeeper().exists(path, watching.getWatcher(client, path));
                     }
                     return returnStat;
                 }

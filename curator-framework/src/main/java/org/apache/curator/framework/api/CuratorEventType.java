@@ -69,9 +69,29 @@ public enum CuratorEventType
     SET_ACL,
 
     /**
+     * Corresponds to {@link CuratorFramework#transaction()}
+     */
+    TRANSACTION,
+
+    /**
+     * Corresponds to {@link CuratorFramework#getConfig()}
+     */
+    GET_CONFIG,
+
+    /**
+     * Corresponds to {@link CuratorFramework#reconfig()}
+     */
+    RECONFIG,
+
+    /**
      * Corresponds to {@link Watchable#usingWatcher(Watcher)} or {@link Watchable#watched()}
      */
     WATCHED,
+
+    /**
+     * Corresponds to {@link CuratorFramework#watches()} ()}
+     */
+    REMOVE_WATCHES,
 
     /**
      * Event sent when client is being closed

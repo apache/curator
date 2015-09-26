@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CreateModable;
@@ -60,7 +61,7 @@ public class PersistentEphemeralNode implements Closeable
 {
     private final AtomicReference<CountDownLatch> initialCreateLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final CreateModable<ACLBackgroundPathAndBytesable<String>> createMethod;
     private final AtomicReference<String> nodePath = new AtomicReference<String>(null);
     private final String basePath;
@@ -113,10 +114,25 @@ public class PersistentEphemeralNode implements Closeable
         {
             if ( newState == ConnectionState.RECONNECTED )
             {
+                if ( debugReconnectLatch != null )
+                {
+                    try
+                    {
+                        debugReconnectLatch.await();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        e.printStackTrace();
+                    }
+                }
                 createNode();
             }
         }
     };
+
+    @VisibleForTesting
+    volatile CountDownLatch debugReconnectLatch = null;
 
     private enum State
     {
@@ -215,7 +231,7 @@ public class PersistentEphemeralNode implements Closeable
      */
     public PersistentEphemeralNode(CuratorFramework client, Mode mode, String basePath, byte[] initData)
     {
-        this.client = Preconditions.checkNotNull(client, "client cannot be null");
+        this.client = Preconditions.checkNotNull(client, "client cannot be null").newWatcherRemoveCuratorFramework();
         this.basePath = PathUtils.validatePath(basePath);
         this.mode = Preconditions.checkNotNull(mode, "mode cannot be null");
         final byte[] data = Preconditions.checkNotNull(initData, "data cannot be null");
@@ -324,6 +340,8 @@ public class PersistentEphemeralNode implements Closeable
         {
             throw new IOException(e);
         }
+
+        client.removeWatchers();
     }
 
     /**

@@ -20,17 +20,16 @@ package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
-import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -66,19 +65,25 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     private final Timing timing = new Timing();
 
     @AfterMethod
+    @Override
     public void teardown() throws Exception
     {
-        for ( PersistentEphemeralNode node : createdNodes )
+        try
         {
-            node.close();
-        }
+            for ( PersistentEphemeralNode node : createdNodes )
+            {
+                node.close();
+            }
 
-        for ( CuratorFramework curator : curatorInstances )
+            for ( CuratorFramework curator : curatorInstances )
+            {
+                TestCleanState.closeAndTestClean(curator);
+            }
+        }
+        finally
         {
-            curator.close();
+            super.teardown();
         }
-
-        super.teardown();
     }
 
     @Test
@@ -124,7 +129,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -134,10 +139,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         server.stop();
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        PersistentEphemeralNode node = null;
         try
         {
             client.start();
-            PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
+            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
             node.start();
 
             final CountDownLatch connectedLatch = new CountDownLatch(1);
@@ -166,7 +172,8 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(node);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -249,7 +256,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             {
                 node.close();
             }
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -299,6 +306,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework observer = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugReconnectLatch = new CountDownLatch(1);
         node.start();
         try
         {
@@ -309,10 +317,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             Trigger deletedTrigger = Trigger.deleted();
             observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
 
-            killSession(curator);
+            KillSession.kill(curator.getZookeeperClient().getZooKeeper());
 
             // Make sure the node got deleted
-            assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertTrue(deletedTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
+            node.debugReconnectLatch.countDown();
         }
         finally
         {
@@ -327,6 +336,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework observer = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugReconnectLatch = new CountDownLatch(1);
         node.start();
         try
         {
@@ -336,10 +346,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             Trigger deletedTrigger = Trigger.deleted();
             observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
 
-            killSession(curator);
+            KillSession.kill(curator.getZookeeperClient().getZooKeeper());
 
             // Make sure the node got deleted...
-            assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertTrue(deletedTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
+            node.debugReconnectLatch.countDown();
 
             // Check for it to be recreated...
             Trigger createdTrigger = Trigger.created();
@@ -369,14 +380,16 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             // We should be able to disconnect multiple times and each time the node should be recreated.
             for ( int i = 0; i < 5; i++ )
             {
+                node.debugReconnectLatch = new CountDownLatch(1);
                 Trigger deletionTrigger = Trigger.deleted();
                 observer.checkExists().usingWatcher(deletionTrigger).forPath(path);
 
                 // Kill the session, thus cleaning up the node...
-                killSession(curator);
+                KillSession.kill(curator.getZookeeperClient().getZooKeeper());
 
                 // Make sure the node ended up getting deleted...
-                assertTrue(deletionTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+                assertTrue(deletionTrigger.firedWithin(timing.multiple(1.5).forSessionSleep().seconds(), TimeUnit.SECONDS));
+                node.debugReconnectLatch.countDown();
 
                 // Now put a watch in the background looking to see if it gets created...
                 Trigger creationTrigger = Trigger.created();
@@ -673,11 +686,6 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         return client;
     }
 
-    public void killSession(CuratorFramework curator) throws Exception
-    {
-        KillSession.kill(curator.getZookeeperClient().getZooKeeper(), curator.getZookeeperClient().getCurrentConnectionString());
-    }
-
     private static final class Trigger implements Watcher
     {
         private final Event.EventType type;
@@ -708,6 +716,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             }
             catch ( InterruptedException e )
             {
+                Thread.currentThread().interrupt();
                 throw Throwables.propagate(e);
             }
         }

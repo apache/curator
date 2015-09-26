@@ -250,7 +250,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
                         rc = KeeperException.Code.DATAINCONSISTENCY.intValue();
                     }
                 }
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null);
+                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null, null);
                 client.processBackgroundOperation(operationAndData, event);
             }
         };
@@ -260,7 +260,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
         }
         else
         {
-            client.getZooKeeper().getData(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            client.getZooKeeper().getData(operationAndData.getData(), watching.getWatcher(client, operationAndData.getData()), callback, backgrounding.getContext());
         }
     }
 
@@ -299,7 +299,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
                     }
                     else
                     {
-                        responseData = client.getZooKeeper().getData(path, watching.getWatcher(), responseStat);
+                        responseData = client.getZooKeeper().getData(path, watching.getWatcher(client, path), responseStat);
                     }
                     return responseData;
                 }

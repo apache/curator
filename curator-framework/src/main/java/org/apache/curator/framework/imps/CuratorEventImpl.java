@@ -16,11 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -29,16 +31,17 @@ import java.util.List;
 
 class CuratorEventImpl implements CuratorEvent
 {
-    private final CuratorEventType  type;
-    private final int               resultCode;
-    private final String            path;
-    private final String            name;
-    private final List<String>      children;
-    private final Object            context;
-    private final Stat              stat;
-    private final byte[]            data;
-    private final WatchedEvent      watchedEvent;
-    private final List<ACL>         aclList;
+    private final CuratorEventType type;
+    private final int resultCode;
+    private final String path;
+    private final String name;
+    private final List<String> children;
+    private final Object context;
+    private final Stat stat;
+    private final byte[] data;
+    private final WatchedEvent watchedEvent;
+    private final List<ACL> aclList;
+    private final List<CuratorTransactionResult> opResults;
 
     @Override
     public CuratorEventType getType()
@@ -101,6 +104,12 @@ class CuratorEventImpl implements CuratorEvent
     }
 
     @Override
+    public List<CuratorTransactionResult> getOpResults()
+    {
+        return opResults;
+    }
+
+    @Override
     public String toString()
     {
         return "CuratorEventImpl{" +
@@ -114,20 +123,22 @@ class CuratorEventImpl implements CuratorEvent
             ", data=" + Arrays.toString(data) +
             ", watchedEvent=" + watchedEvent +
             ", aclList=" + aclList +
+            ", opResults=" + opResults +
             '}';
     }
 
-    CuratorEventImpl(CuratorFrameworkImpl client, CuratorEventType type, int resultCode, String path, String name, Object context, Stat stat, byte[] data, List<String> children, WatchedEvent watchedEvent, List<ACL> aclList)
+    CuratorEventImpl(CuratorFrameworkImpl client, CuratorEventType type, int resultCode, String path, String name, Object context, Stat stat, byte[] data, List<String> children, WatchedEvent watchedEvent, List<ACL> aclList, List<CuratorTransactionResult> opResults)
     {
         this.type = type;
         this.resultCode = resultCode;
+        this.opResults = (opResults != null) ? ImmutableList.copyOf(opResults) : null;
         this.path = client.unfixForNamespace(path);
         this.name = name;
         this.context = context;
         this.stat = stat;
         this.data = data;
         this.children = children;
-        this.watchedEvent = (watchedEvent != null) ? new NamespaceWatchedEvent(client, watchedEvent) : watchedEvent;
+        this.watchedEvent = (watchedEvent != null) ? new NamespaceWatchedEvent(client, watchedEvent) : null;
         this.aclList = (aclList != null) ? ImmutableList.copyOf(aclList) : null;
     }
 }

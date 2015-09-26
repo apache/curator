@@ -30,7 +30,7 @@ public abstract class LeaderSelectorListenerAdapter implements LeaderSelectorLis
     @Override
     public void stateChanged(CuratorFramework client, ConnectionState newState)
     {
-        if ( (newState == ConnectionState.SUSPENDED) || (newState == ConnectionState.LOST) )
+        if ( client.getConnectionStateErrorPolicy().isErrorState(newState) )
         {
             throw new CancelLeadershipException();
         }

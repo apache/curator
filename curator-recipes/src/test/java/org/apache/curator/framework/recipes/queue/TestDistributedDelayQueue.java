@@ -138,10 +138,13 @@ public class TestDistributedDelayQueue extends BaseClassForTests
     @Test
     public void testSorting() throws Exception
     {
+        Timing                          timing = new Timing();
+
         //Need to use a fairly large number to ensure that sorting can take some time.
         final int QTY = 1000;
 
-        Timing                          timing = new Timing();
+        final int DELAY_MS = timing.multiple(.1).milliseconds();
+
         DistributedDelayQueue<Long>     putQueue = null;
         DistributedDelayQueue<Long>     getQueue = null;
         CuratorFramework                client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
@@ -157,7 +160,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests
             //been added prior to the consumption starting. Otherwise it's possible to start
             //processing entries before they've all been added so the ordering will be 
             //incorrect.
-            long delay = System.currentTimeMillis() + 5000;            
+            long delay = System.currentTimeMillis() + DELAY_MS;
             for ( long i = 0; i < QTY; ++i )
             {
                 data.put(delay, i);
@@ -184,7 +187,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests
             long lastValue = -1;
             for ( int i = 0; i < QTY; ++i )
             {
-                Long value = consumer.take(6, TimeUnit.SECONDS);
+                Long value = consumer.take(DELAY_MS * 2, TimeUnit.MILLISECONDS);
                 Assert.assertNotNull(value);
                 Assert.assertEquals(value, new Long(lastValue + 1));
                 lastValue = value;

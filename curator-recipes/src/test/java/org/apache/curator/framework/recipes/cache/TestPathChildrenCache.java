@@ -28,7 +28,7 @@ import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
+import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
@@ -97,7 +97,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -139,7 +139,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -193,7 +193,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -242,7 +242,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -251,6 +251,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     {
         Timing timing = new Timing();
 
+        PathChildrenCache cache = null;
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
@@ -258,7 +259,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             final CountDownLatch updatedLatch = new CountDownLatch(1);
             final CountDownLatch addedLatch = new CountDownLatch(1);
             client.create().creatingParentsIfNeeded().forPath("/test");
-            PathChildrenCache cache = new PathChildrenCache(client, "/test", false);
+            cache = new PathChildrenCache(client, "/test", false);
             cache.getListenable().addListener
                 (
                     new PathChildrenCacheListener()
@@ -287,7 +288,8 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(cache);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -315,7 +317,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -391,7 +393,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -485,7 +487,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -494,6 +496,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     public void testIssue27() throws Exception
     {
         Timing timing = new Timing();
+        PathChildrenCache cache = null;
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
@@ -507,7 +510,7 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             final List<PathChildrenCacheEvent.Type> events = Lists.newArrayList();
             final Semaphore semaphore = new Semaphore(0);
-            PathChildrenCache cache = new PathChildrenCache(client, "/base", true);
+            cache = new PathChildrenCache(client, "/base", true);
             cache.getListenable().addListener
                 (
                     new PathChildrenCacheListener()
@@ -542,7 +545,8 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(cache);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -551,6 +555,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     public void testIssue27Alt() throws Exception
     {
         Timing timing = new Timing();
+        PathChildrenCache cache = null;
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try
@@ -564,7 +569,7 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             final List<PathChildrenCacheEvent.Type> events = Lists.newArrayList();
             final Semaphore semaphore = new Semaphore(0);
-            PathChildrenCache cache = new PathChildrenCache(client, "/base", true);
+            cache = new PathChildrenCache(client, "/base", true);
             cache.getListenable().addListener
                 (
                     new PathChildrenCacheListener()
@@ -594,7 +599,8 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(cache);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -602,6 +608,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     public void testKilledSession() throws Exception
     {
         Timing timing = new Timing();
+        PathChildrenCache cache = null;
         CuratorFramework client = null;
         try
         {
@@ -609,7 +616,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             client.start();
             client.create().forPath("/test");
 
-            PathChildrenCache cache = new PathChildrenCache(client, "/test", true);
+            cache = new PathChildrenCache(client, "/test", true);
             cache.start();
 
             final CountDownLatch childAddedLatch = new CountDownLatch(1);
@@ -653,7 +660,8 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(cache);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -677,7 +685,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -721,7 +729,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -809,7 +817,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -878,7 +886,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -911,8 +919,9 @@ public class TestPathChildrenCache extends BaseClassForTests
             timing.sleepABit();
             Assert.assertFalse(exec.isExecuteCalled());
         }
-        finally {
-            client.close();
+        finally
+        {
+            TestCleanState.closeAndTestClean(client);
         }
 
     }
@@ -957,9 +966,10 @@ public class TestPathChildrenCache extends BaseClassForTests
             latch.await(5, TimeUnit.SECONDS);
 
             Assert.assertTrue(latch.getCount() == 1, "Unexpected exception occurred");
-        } finally
+        }
+        finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 }

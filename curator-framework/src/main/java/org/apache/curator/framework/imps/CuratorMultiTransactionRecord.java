@@ -20,6 +20,7 @@ package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.transaction.OperationType;
+import org.apache.curator.framework.api.transaction.TypeAndPath;
 import org.apache.zookeeper.MultiTransactionRecord;
 import org.apache.zookeeper.Op;
 import java.util.List;
@@ -28,30 +29,18 @@ class CuratorMultiTransactionRecord extends MultiTransactionRecord
 {
     private final List<TypeAndPath>     metadata = Lists.newArrayList();
 
-    static class TypeAndPath
-    {
-        final OperationType type;
-        final String forPath;
-
-        TypeAndPath(OperationType type, String forPath)
-        {
-            this.type = type;
-            this.forPath = forPath;
-        }
-    }
-
     @Override
     public final void add(Op op)
     {
         throw new UnsupportedOperationException();
     }
-    
+
     void add(Op op, OperationType type, String forPath)
     {
         super.add(op);
         metadata.add(new TypeAndPath(type, forPath));
     }
-    
+
     TypeAndPath     getMetadata(int index)
     {
         return metadata.get(index);

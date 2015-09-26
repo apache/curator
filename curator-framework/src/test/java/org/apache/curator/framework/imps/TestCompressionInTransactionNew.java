@@ -18,18 +18,16 @@
  */
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.api.CompressionProvider;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-public class TestCompressionInTransaction extends BaseClassForTests
+public class TestCompressionInTransactionNew extends BaseClassForTests
 {
     @Test
     public void testSetData() throws Exception
@@ -43,11 +41,13 @@ public class TestCompressionInTransaction extends BaseClassForTests
             client.start();
 
             //Create uncompressed data in a transaction
-            client.inTransaction().create().forPath(path, data).and().commit();
+            CuratorOp op = client.transactionOp().create().forPath(path, data);
+            client.transaction().forOperations(op);
             Assert.assertEquals(data, client.getData().forPath(path));
 
             //Create compressed data in transaction
-            client.inTransaction().setData().compressed().forPath(path, data).and().commit();
+            op = client.transactionOp().setData().compressed().forPath(path, data);
+            client.transaction().forOperations(op);
             Assert.assertEquals(data, client.getData().decompressed().forPath(path));
         }
         finally
@@ -71,16 +71,18 @@ public class TestCompressionInTransaction extends BaseClassForTests
             client.start();
 
             //Create the nodes
-            client.inTransaction().create().compressed().forPath(path1).and().
-            create().forPath(path2).and().commit();
+            CuratorOp op1 = client.transactionOp().create().compressed().forPath(path1);
+            CuratorOp op2 = client.transactionOp().create().forPath(path2);
+            client.transaction().forOperations(op1, op2);
 
             //Check they exist
             Assert.assertNotNull(client.checkExists().forPath(path1));
             Assert.assertNotNull(client.checkExists().forPath(path2));
             
             //Set the nodes, path1 compressed, path2 uncompressed.
-            client.inTransaction().setData().compressed().forPath(path1, data1).and().
-            setData().forPath(path2, data2).and().commit();
+            op1 = client.transactionOp().setData().compressed().forPath(path1, data1);
+            op2 = client.transactionOp().setData().forPath(path2, data2);
+            client.transaction().forOperations(op1, op2);
             
             Assert.assertNotEquals(data1, client.getData().forPath(path1));
             Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));
@@ -107,8 +109,10 @@ public class TestCompressionInTransaction extends BaseClassForTests
         {
             client.start();
 
-            client.inTransaction().create().compressed().forPath(path1, data1).and().
-            create().compressed().forPath(path2, data2).and().commit();
+            CuratorOp op1 = client.transactionOp().create().compressed().forPath(path1, data1);
+            CuratorOp op2 = client.transactionOp().create().compressed().forPath(path2, data2);
+
+            client.transaction().forOperations(op1, op2);
 
             Assert.assertNotEquals(data1, client.getData().forPath(path1));
             Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));
@@ -141,8 +145,9 @@ public class TestCompressionInTransaction extends BaseClassForTests
         {
             client.start();
 
-            client.inTransaction().create().compressed().forPath(path1, data1).and().
-            create().forPath(path2, data2).and().commit();
+            CuratorOp op1 = client.transactionOp().create().compressed().forPath(path1, data1);
+            CuratorOp op2 = client.transactionOp().create().forPath(path2, data2);
+            client.transaction().forOperations(op1, op2);
 
             Assert.assertNotEquals(data1, client.getData().forPath(path1));
             Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));

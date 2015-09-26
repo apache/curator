@@ -100,9 +100,14 @@ public class RpcTests extends BaseClassForTests
     @Override
     public void teardown() throws Exception
     {
-        thriftServer.stop();
-
-        super.teardown();
+        try
+        {
+            thriftServer.stop();
+        }
+        finally
+        {
+            super.teardown();
+        }
     }
 
     @Test

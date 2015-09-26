@@ -38,11 +38,6 @@ import java.util.Map;
  */
 public class TestingCluster implements Closeable
 {
-    static
-    {
-        ByteCodeRewrite.apply();
-    }
-
     private final List<TestingZooKeeperServer>  servers;
 
     /**
@@ -104,17 +99,17 @@ public class TestingCluster implements Closeable
     public Collection<InstanceSpec> getInstances()
     {
         Iterable<InstanceSpec> transformed = Iterables.transform
-        (
-            servers,
-            new Function<TestingZooKeeperServer, InstanceSpec>()
-            {
-                @Override
-                public InstanceSpec apply(TestingZooKeeperServer server)
+            (
+                servers,
+                new Function<TestingZooKeeperServer, InstanceSpec>()
                 {
-                    return server.getInstanceSpec();
+                    @Override
+                    public InstanceSpec apply(TestingZooKeeperServer server)
+                    {
+                        return server.getInstanceSpec();
+                    }
                 }
-            }
-        );
+            );
         return Lists.newArrayList(transformed);
     }
 
@@ -247,8 +242,17 @@ public class TestingCluster implements Closeable
         return null;
     }
 
-    private static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty)
+    public static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty)
     {
+        return makeSpecs(instanceQty, true);
+    }
+
+    public static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty, boolean resetServerIds)
+    {
+        if ( resetServerIds )
+        {
+            InstanceSpec.reset();
+        }
         ImmutableList.Builder<InstanceSpec> builder = ImmutableList.builder();
         for ( int i = 0; i < instanceQty; ++i )
         {

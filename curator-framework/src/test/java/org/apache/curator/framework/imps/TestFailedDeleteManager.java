@@ -22,7 +22,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.imps.FailedDeleteManager.FailedDeleteManagerListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -291,11 +290,11 @@ public class TestFailedDeleteManager extends BaseClassForTests
         
         final AtomicBoolean pathAdded = new AtomicBoolean(false);
         
-        ((CuratorFrameworkImpl)client).getFailedDeleteManager().debugListener = new FailedDeleteManagerListener()
+        ((CuratorFrameworkImpl)client).getFailedDeleteManager().debugListener = new FailedOperationManager.FailedOperationManagerListener<String>()
         {
             
             @Override
-            public void pathAddedForDelete(String path)
+            public void pathAddedForGuaranteedOperation(String path)
             {
                 pathAdded.set(true);
             }
@@ -325,11 +324,11 @@ public class TestFailedDeleteManager extends BaseClassForTests
         
         final AtomicBoolean pathAdded = new AtomicBoolean(false);
         
-        ((CuratorFrameworkImpl)client).getFailedDeleteManager().debugListener = new FailedDeleteManagerListener()
+        ((CuratorFrameworkImpl)client).getFailedDeleteManager().debugListener = new FailedOperationManager.FailedOperationManagerListener<String>()
         {
             
             @Override
-            public void pathAddedForDelete(String path)
+            public void pathAddedForGuaranteedOperation(String path)
             {
                 pathAdded.set(true);
             }

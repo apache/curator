@@ -16,10 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.api;
+package org.apache.curator.framework.api.transaction;
 
-public interface ACLVersionBackgroundPathable<T> extends
-    ACLable<Versionable<BackgroundPathable<T>>>,
-    Versionable<BackgroundPathable<T>>
+import org.apache.curator.framework.api.Backgroundable;
+
+public interface CuratorMultiTransaction extends
+    Backgroundable<CuratorMultiTransactionMain>,
+    CuratorMultiTransactionMain
 {
 }

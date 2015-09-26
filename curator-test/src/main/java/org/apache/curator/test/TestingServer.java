@@ -28,11 +28,6 @@ import java.io.IOException;
  */
 public class TestingServer implements Closeable
 {
-    static
-    {
-        ByteCodeRewrite.apply();
-    }
-
     private final TestingZooKeeperServer testingZooKeeperServer;
     private final InstanceSpec spec;
 

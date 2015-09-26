@@ -23,13 +23,20 @@ Curator exposes several listenable interfaces for clients to monitor the state o
 appropriate action. These are the possible state changes:
 
 |CONNECTED|Sent for the first successful connection to the server. NOTE: You will only get one of these messages for any CuratorFramework instance.|
-|SUSPENDED|There has been a loss of connection. Leaders, locks, etc. should suspend until the connection is re\-established. If the connection times\-out you will receive a LOST notice.|
-|RECONNECTED|A suspended or lost connection has been re\-established.|
-|LOST|The connection is confirmed to be lost. Close any locks, leaders, etc. and attempt to re\-create them. NOTE: it is possible to get a RECONNECTED state after this but you should still consider any locks, etc. as dirty/unstable.|
 |READ_ONLY|The connection has gone into read\-only mode. This can only happen if you pass true for CuratorFrameworkFactory.Builder.canBeReadOnly(). See the ZooKeeper doc regarding read only connections: [[http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode]]. The connection will remain in read only mode until another state change is sent.|
+|SUSPENDED|There has been a loss of connection. Leaders, locks, etc. should suspend until the connection is re\-established.|
+|RECONNECTED|A suspended or lost connection has been re\-established.|
+|LOST|Curator will set the LOST state when it believes that the ZooKeeper session has expired. ZooKeeper connections have a session. When the session expires, clients must take appropriate action. In Curator, this is complicated by the fact that Curator internally manages the ZooKeeper connection. Curator will set the LOST state when any of the following occurs: a) ZooKeeper returns a Watcher.Event.KeeperState.Expired or KeeperException.Code.SESSIONEXPIRED; b) Curator closes the internally managed ZooKeeper instance; c) The session timeout elapses during a network partition. It is possible to get a RECONNECTED state after this but you should still consider any locks, etc. as dirty/unstable. *NOTE*: The meaning of LOST has changed since Curator 3.0.0. Prior to 3.0.0 LOST only meant that the retry policy had expired.|
 
 {{UnhandledErrorListener}} is called when a background task, etc. catches an exception. In general, Curator users shouldn't care
 about these as they are logged. However, you can listen for them if you choose.
+
+h2. Error Policy
+
+Curator has a pluggable error policy. The default policy takes the conservative approach of treating connection states SUSPENDED and LOST the same way.
+i.e. when a recipe sees the state change to SUSPENDED it will assume that the ZooKeeper session is lost and will clean up any watchers, nodes, etc. You can choose,
+however, a more aggressive approach by setting the error policy to only treat LOST (i.e. true session loss) as an error state. Do this in the CuratorFrameworkFactory via:
+{{connectionStateErrorPolicy(new SessionConnectionStateErrorPolicy())}}.
 
 h2. Recipes
 In general, the recipes attempt to deal with errors and connection issues. See the doc for each recipe for details on how it deals with errors.

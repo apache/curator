@@ -179,7 +179,7 @@ public class SessionFailRetryLoop implements Closeable
 
     static boolean sessionForThreadHasFailed()
     {
-        return (failedSessionThreads.size() > 0) && failedSessionThreads.contains(Thread.currentThread());
+        return failedSessionThreads.contains(Thread.currentThread());
     }
 
     /**

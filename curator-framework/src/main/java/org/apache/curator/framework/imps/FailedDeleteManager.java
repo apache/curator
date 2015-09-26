@@ -19,45 +19,18 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-class FailedDeleteManager
+class FailedDeleteManager extends FailedOperationManager<String>
 {
-    private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFramework client;
-    
-    volatile FailedDeleteManagerListener debugListener = null;
-    
-    interface FailedDeleteManagerListener
-    {
-       public void pathAddedForDelete(String path);
-    }
-
     FailedDeleteManager(CuratorFramework client)
     {
-        this.client = client;
+        super(client);
     }
 
-    void addFailedDelete(String path)
+    @Override
+    protected void executeGuaranteedOperationInBackground(String path)
+            throws Exception
     {
-        if ( debugListener != null )
-        {
-            debugListener.pathAddedForDelete(path);
-        }
-        
-        
-        if ( client.getState() == CuratorFrameworkState.STARTED )
-        {
-            log.debug("Path being added to guaranteed delete set: " + path);
-            try
-            {
-                client.delete().guaranteed().inBackground().forPath(path);
-            }
-            catch ( Exception e )
-            {
-                addFailedDelete(path);
-            }
-        }
+        client.delete().guaranteed().inBackground().forPath(path);
     }
 }
