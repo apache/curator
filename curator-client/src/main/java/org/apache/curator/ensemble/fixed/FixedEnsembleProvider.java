@@ -63,4 +63,10 @@ public class FixedEnsembleProvider implements EnsembleProvider
     {
         return connectionString.get();
     }
+
+    @Override
+    public boolean updateServerListEnabled()
+    {
+        return true;
+    }
 }

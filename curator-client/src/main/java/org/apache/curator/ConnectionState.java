@@ -326,7 +326,14 @@ class ConnectionState implements Watcher, Closeable
             }
             else
             {
-                zooKeeper.updateServerList(newConnectionString);
+                if ( ensembleProvider.updateServerListEnabled() )
+                {
+                    zooKeeper.updateServerList(newConnectionString);
+                }
+                else
+                {
+                    reset();
+                }
             }
         }
         catch ( Exception e )
