@@ -52,18 +52,6 @@ public class TestingCluster implements Closeable
     }
 
     /**
-     * Creates an ensemble comprised of <code>n</code> servers. Each server will use
-     * a temp directory and random ports
-     *
-     * @param instanceQty number of servers to create in the ensemble
-     * @param resetServerIds if true, server Ids are reset first
-     */
-    public TestingCluster(int instanceQty, boolean resetServerIds)
-    {
-        this(makeSpecs(instanceQty, resetServerIds));
-    }
-
-    /**
      * Creates an ensemble using the given server specs
      *
      * @param specs the server specs
@@ -254,12 +242,12 @@ public class TestingCluster implements Closeable
         return null;
     }
 
-    private static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty)
+    public static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty)
     {
         return makeSpecs(instanceQty, true);
     }
 
-    private static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty, boolean resetServerIds)
+    public static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty, boolean resetServerIds)
     {
         if ( resetServerIds )
         {

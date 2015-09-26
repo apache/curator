@@ -25,10 +25,11 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
+import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
@@ -51,6 +52,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class TestReconfiguration extends BaseClassForTests
 {
+    private final Timing timing = new Timing();
     private TestingCluster cluster;
 
     @BeforeMethod
@@ -146,7 +148,7 @@ public class TestReconfiguration extends BaseClassForTests
     @Test
     public void testBasicGetConfig() throws Exception
     {
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1)) )
+        try ( CuratorFramework client = newClient())
         {
             client.start();
             QuorumVerifier quorumVerifier = toQuorumVerifier(client.getConfig().forEnsemble());
@@ -158,8 +160,7 @@ public class TestReconfiguration extends BaseClassForTests
     @Test
     public void testAdd() throws Exception
     {
-        Timing timing = new Timing();
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1)) )
+        try ( CuratorFramework client = newClient())
         {
             client.start();
 
@@ -167,7 +168,7 @@ public class TestReconfiguration extends BaseClassForTests
             assertConfig(oldConfig, cluster.getInstances());
 
             CountDownLatch latch = setChangeWaiter(client);
-            try ( TestingCluster newCluster = new TestingCluster(1, false) )
+            try ( TestingCluster newCluster = new TestingCluster(TestingCluster.makeSpecs(1, false)) )
             {
                 newCluster.start();
 
@@ -186,8 +187,7 @@ public class TestReconfiguration extends BaseClassForTests
     @Test
     public void testAddAsync() throws Exception
     {
-        Timing timing = new Timing();
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1)) )
+        try ( CuratorFramework client = newClient())
         {
             client.start();
 
@@ -195,7 +195,7 @@ public class TestReconfiguration extends BaseClassForTests
             assertConfig(oldConfig, cluster.getInstances());
 
             CountDownLatch latch = setChangeWaiter(client);
-            try ( TestingCluster newCluster = new TestingCluster(1, false) )
+            try ( TestingCluster newCluster = new TestingCluster(TestingCluster.makeSpecs(1, false)) )
             {
                 newCluster.start();
 
@@ -227,8 +227,7 @@ public class TestReconfiguration extends BaseClassForTests
     @Test
     public void testAddAndRemove() throws Exception
     {
-        Timing timing = new Timing();
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), new RetryOneTime(1)) )
+        try ( CuratorFramework client = newClient())
         {
             client.start();
 
@@ -237,7 +236,7 @@ public class TestReconfiguration extends BaseClassForTests
 
             CountDownLatch latch = setChangeWaiter(client);
 
-            try ( TestingCluster newCluster = new TestingCluster(1, false) )
+            try ( TestingCluster newCluster = new TestingCluster(TestingCluster.makeSpecs(1, false)) )
             {
                 newCluster.start();
 
@@ -262,6 +261,43 @@ public class TestReconfiguration extends BaseClassForTests
                 assertConfig(newConfig, newInstances);
             }
         }
+    }
+
+    @Test
+    public void testNewMembers() throws Exception
+    {
+        cluster.close();
+        cluster = new TestingCluster(5);
+        List<TestingZooKeeperServer> servers = cluster.getServers();
+        List<InstanceSpec> smallCluster = Lists.newArrayList();
+        for ( int i = 0; i < 3; ++i )   // only start 3 of the 5
+        {
+            TestingZooKeeperServer server = servers.get(i);
+            server.start();
+            smallCluster.add(server.getInstanceSpec());
+        }
+
+        try ( CuratorFramework client = newClient())
+        {
+            client.start();
+
+            QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            Assert.assertEquals(cluster.getInstances().size(), 5);
+            assertConfig(oldConfig, cluster.getInstances());
+
+            CountDownLatch latch = setChangeWaiter(client);
+
+            client.reconfig().withNewMembers(toReconfigSpec(smallCluster)).forEnsemble();
+
+            Assert.assertTrue(timing.awaitLatch(latch));
+            QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            assertConfig(newConfig, smallCluster);
+        }
+    }
+
+    private CuratorFramework newClient()
+    {
+        return CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.forSleepingABit().milliseconds(), 3));
     }
 
     private CountDownLatch setChangeWaiter(CuratorFramework client) throws Exception
