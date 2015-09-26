@@ -51,4 +51,6 @@ public interface EnsembleProvider extends Closeable
      * @throws IOException errors
      */
     public void         close() throws IOException;
+
+    public void setConnectionString(String connectionString);
 }

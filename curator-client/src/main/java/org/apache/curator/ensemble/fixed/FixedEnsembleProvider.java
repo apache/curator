@@ -21,13 +21,14 @@ package org.apache.curator.ensemble.fixed;
 import com.google.common.base.Preconditions;
 import org.apache.curator.ensemble.EnsembleProvider;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Standard ensemble provider that wraps a fixed connection string
  */
 public class FixedEnsembleProvider implements EnsembleProvider
 {
-    private final String connectionString;
+    private final AtomicReference<String> connectionString = new AtomicReference<>();
 
     /**
      * The connection string to use
@@ -36,7 +37,7 @@ public class FixedEnsembleProvider implements EnsembleProvider
      */
     public FixedEnsembleProvider(String connectionString)
     {
-        this.connectionString = Preconditions.checkNotNull(connectionString, "connectionString cannot be null");
+        this.connectionString.set(Preconditions.checkNotNull(connectionString, "connectionString cannot be null"));
     }
 
     @Override
@@ -52,8 +53,14 @@ public class FixedEnsembleProvider implements EnsembleProvider
     }
 
     @Override
+    public void setConnectionString(String connectionString)
+    {
+        this.connectionString.set(connectionString);
+    }
+
+    @Override
     public String getConnectionString()
     {
-        return connectionString;
+        return connectionString.get();
     }
 }

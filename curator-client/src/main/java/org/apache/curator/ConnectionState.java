@@ -199,12 +199,14 @@ class ConnectionState implements Watcher, Closeable
 
     private synchronized void checkTimeouts() throws Exception
     {
-        Callable<Boolean> hasNewConnectionString  = new Callable<Boolean>()
+        final AtomicReference<String> newConnectionString = new AtomicReference<>();
+        Callable<String> hasNewConnectionString = new Callable<String>()
         {
             @Override
-            public Boolean call()
+            public String call()
             {
-                return zooKeeper.hasNewConnectionString();
+                newConnectionString.set(zooKeeper.getNewConnectionString());
+                return newConnectionString.get();
             }
         };
         int lastNegotiatedSessionTimeoutMs = getLastNegotiatedSessionTimeoutMs();
@@ -220,7 +222,7 @@ class ConnectionState implements Watcher, Closeable
 
             case NEW_CONNECTION_STRING:
             {
-                handleNewConnectionString();
+                handleNewConnectionString(newConnectionString.get());
                 break;
             }
 
@@ -298,22 +300,34 @@ class ConnectionState implements Watcher, Closeable
         }
         }
 
-        if ( checkNewConnectionString && zooKeeper.hasNewConnectionString() )
+        if ( checkNewConnectionString )
         {
-            handleNewConnectionString();
+            String newConnectionString = zooKeeper.getNewConnectionString();
+            if ( newConnectionString != null )
+            {
+                handleNewConnectionString(newConnectionString);
+            }
         }
 
         return isConnected;
     }
 
-    private void handleNewConnectionString()
+    private void handleNewConnectionString(String newConnectionString)
     {
-        log.info("Connection string changed");
+        log.info("Connection string changed to: " + newConnectionString);
         tracer.get().addCount("connection-string-changed", 1);
 
         try
         {
-            reset();
+            ZooKeeper zooKeeper = this.zooKeeper.getZooKeeper();
+            if ( zooKeeper == null )
+            {
+                log.warn("Could not update the connection string because getZooKeeper() returned null.");
+            }
+            else
+            {
+                zooKeeper.updateServerList(newConnectionString);
+            }
         }
         catch ( Exception e )
         {

@@ -88,6 +88,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ConnectionStateErrorPolicy connectionStateErrorPolicy;
     private final AtomicLong currentInstanceIndex = new AtomicLong(-1);
     private final InternalConnectionHandler internalConnectionHandler;
+    private final EnsembleTracker ensembleTracker;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -150,6 +151,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         failedDeleteManager = new FailedDeleteManager(this);
         failedRemoveWatcherManager = new FailedRemoveWatchManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
+
+        ensembleTracker = new EnsembleTracker(this, builder.getEnsembleProvider());
     }
 
     private List<AuthInfo> buildAuths(CuratorFrameworkFactory.Builder builder)
@@ -217,6 +220,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
         connectionStateErrorPolicy = parent.connectionStateErrorPolicy;
         internalConnectionHandler = parent.internalConnectionHandler;
+        ensembleTracker = null;
     }
 
     @Override
@@ -306,6 +310,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     return null;
                 }
             });
+
+            ensembleTracker.start();
         }
         catch ( Exception e )
         {
@@ -351,6 +357,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             }
 
+            ensembleTracker.close();
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();

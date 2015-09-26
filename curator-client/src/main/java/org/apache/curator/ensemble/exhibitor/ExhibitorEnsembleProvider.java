@@ -145,6 +145,12 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
         return connectionString.get();
     }
 
+    @Override
+    public void setConnectionString(String connectionString)
+    {
+        log.info("setConnectionString received. Ignoring. " + connectionString);
+    }
+
     @VisibleForTesting
     protected void poll()
     {

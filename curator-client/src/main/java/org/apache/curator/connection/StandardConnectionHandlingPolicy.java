@@ -76,9 +76,9 @@ public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolic
     }
 
     @Override
-    public CheckTimeoutsResult checkTimeouts(Callable<Boolean> hasNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception
+    public CheckTimeoutsResult checkTimeouts(Callable<String> hasNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception
     {
-        if ( hasNewConnectionString.call() )
+        if ( hasNewConnectionString.call() != null )
         {
             return CheckTimeoutsResult.NEW_CONNECTION_STRING;
         }

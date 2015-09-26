@@ -17,19 +17,18 @@
  * under the License.
  */
 
-package org.apache.curator.framework.ensemble;
+package org.apache.curator.framework.imps;
 
-import com.google.common.base.Function;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.apache.curator.ensemble.EnsembleListener;
+import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
@@ -39,19 +38,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Tracks changes to the ensemble and notifies registered {@link org.apache.curator.ensemble.EnsembleListener} instances.
- */
+@VisibleForTesting
 public class EnsembleTracker implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
+    private final EnsembleProvider ensembleProvider;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
-    private final ListenerContainer<EnsembleListener> listeners = new ListenerContainer<>();
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -90,18 +87,10 @@ public class EnsembleTracker implements Closeable
         CLOSED
     }
 
-    private final BackgroundCallback backgroundCallback = new BackgroundCallback()
-    {
-        @Override
-        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-        {
-            processBackgroundResult(event);
-        }
-    };
-
-    public EnsembleTracker(CuratorFramework client)
+    EnsembleTracker(CuratorFramework client, EnsembleProvider ensembleProvider)
     {
         this.client = client;
+        this.ensembleProvider = ensembleProvider;
     }
 
     public void start() throws Exception
@@ -112,47 +101,29 @@ public class EnsembleTracker implements Closeable
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
-        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
-        {
-            listeners.clear();
-        }
         client.getConnectionStateListenable().removeListener(connectionStateListener);
-    }
-
-    /**
-     * Return the ensemble listenable
-     *
-     * @return listenable
-     */
-    public ListenerContainer<EnsembleListener> getListenable()
-    {
-        Preconditions.checkState(state.get() != State.CLOSED, "Closed");
-
-        return listeners;
     }
 
     private void reset() throws Exception
     {
-        client.getConfig().usingWatcher(watcher).inBackground(backgroundCallback).forEnsemble();
-    }
-
-    private void processBackgroundResult(CuratorEvent event) throws Exception
-    {
-        switch ( event.getType() )
+        BackgroundCallback backgroundCallback = new BackgroundCallback()
         {
-            case GET_CONFIG:
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                if ( event.getType() == CuratorEventType.GET_CONFIG )
                 {
                     processConfigData(event.getData());
                 }
             }
-        }
+        };
+        client.getConfig().usingWatcher(watcher).inBackground(backgroundCallback).forEnsemble();
     }
 
-    private void processConfigData(byte[] data) throws Exception
+    @VisibleForTesting
+    public static String configToConnectionString(byte[] data) throws Exception
     {
         Properties properties = new Properties();
         properties.load(new ByteArrayInputStream(data));
@@ -167,25 +138,13 @@ public class EnsembleTracker implements Closeable
             sb.append(server.clientAddr.getAddress().getHostAddress()).append(":").append(server.clientAddr.getPort());
         }
 
-        final String connectionString = sb.toString();
-        listeners.forEach
-            (
-                new Function<EnsembleListener, Void>()
-                {
-                    @Override
-                    public Void apply(EnsembleListener listener)
-                    {
-                        try
-                        {
-                            listener.connectionStringUpdated(connectionString);
-                        }
-                        catch ( Exception e )
-                        {
-                            log.error("Calling listener", e);
-                        }
-                        return null;
-                    }
-                }
-            );
+        return sb.toString();
+    }
+
+    private void processConfigData(byte[] data) throws Exception
+    {
+        log.info("New config event received: " + Arrays.toString(data));
+        String connectionString = configToConnectionString(data);
+        ensembleProvider.setConnectionString(connectionString);
     }
 }
