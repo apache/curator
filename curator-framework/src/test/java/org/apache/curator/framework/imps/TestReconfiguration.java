@@ -118,7 +118,7 @@ public class TestReconfiguration extends BaseClassForTests
         client.reconfig().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().leaving().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().joining().leaving().storingStatIn(stat).fromConfig(0).forEnsemble();
-        client.reconfig().withNewMembers().storingStatIn(stat).forEnsemble();
+        client.reconfig().withNewMembers().storingStatIn(stat).fromConfig(0).forEnsemble();
 
         client.reconfig().inBackground().leaving().forEnsemble();
         client.reconfig().inBackground().joining().forEnsemble();
@@ -142,7 +142,7 @@ public class TestReconfiguration extends BaseClassForTests
         client.reconfig().inBackground().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().inBackground().leaving().joining().storingStatIn(stat).fromConfig(0).forEnsemble();
         client.reconfig().inBackground().joining().leaving().storingStatIn(stat).fromConfig(0).forEnsemble();
-        client.reconfig().inBackground().withNewMembers().storingStatIn(stat).forEnsemble();
+        client.reconfig().inBackground().withNewMembers().storingStatIn(stat).fromConfig(0).forEnsemble();
     }
 
     @Test
