@@ -20,6 +20,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -30,15 +31,15 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException.Code;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -149,24 +150,22 @@ public class TestFrameworkBackground extends BaseClassForTests
         {
             client.start();
 
-            final CountDownLatch latch = new CountDownLatch(3);
-            final List<String> paths = Lists.newArrayList();
-            BackgroundCallback callback = new BackgroundCallback()
+            final BlockingQueue<String> paths = Queues.newLinkedBlockingQueue();
+                BackgroundCallback callback = new BackgroundCallback()
             {
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                 {
                     paths.add(event.getPath());
-                    latch.countDown();
                 }
             };
             client.create().inBackground(callback).forPath("/one");
             client.create().inBackground(callback).forPath("/one/two");
             client.create().inBackground(callback).forPath("/one/two/three");
 
-            latch.await();
-
-            Assert.assertEquals(paths, Arrays.asList("/one", "/one/two", "/one/two/three"));
+            Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one");
+            Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one/two");
+            Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one/two/three");
         }
         finally
         {
