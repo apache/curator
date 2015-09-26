@@ -192,7 +192,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
             Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
             KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            Assert.assertTrue(timing.forSessionSleep().acquireSemaphore(semaphore, 1));
         }
         finally
         {
@@ -211,7 +211,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
         server.close();
 
-        System.setProperty("container.checkIntervalMs", "10");
+        System.setProperty("znode.container.checkIntervalMs", "10");
         try
         {
             server = new TestingServer();
@@ -272,7 +272,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            System.clearProperty("container.checkIntervalMs");
+            System.clearProperty("znode.container.checkIntervalMs");
         }
     }
 

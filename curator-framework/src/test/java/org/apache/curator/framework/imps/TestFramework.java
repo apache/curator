@@ -59,7 +59,7 @@ public class TestFramework extends BaseClassForTests
     @Override
     public void setup() throws Exception
     {
-        System.setProperty("container.checkIntervalMs", "1000");
+        System.setProperty("znode.container.checkIntervalMs", "1000");
         super.setup();
     }
 
@@ -67,7 +67,7 @@ public class TestFramework extends BaseClassForTests
     @Override
     public void teardown() throws Exception
     {
-        System.clearProperty("container.checkIntervalMs");
+        System.clearProperty("znode.container.checkIntervalMs");
         super.teardown();
     }
 
