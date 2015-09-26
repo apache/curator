@@ -28,9 +28,9 @@ import java.util.concurrent.Callable;
 public class ClassicConnectionHandlingPolicy implements ConnectionHandlingPolicy
 {
     @Override
-    public boolean isEmulatingClassicHandling()
+    public int getSimulatedSessionExpirationPercent()
     {
-        return true;
+        return 0;
     }
 
     @Override

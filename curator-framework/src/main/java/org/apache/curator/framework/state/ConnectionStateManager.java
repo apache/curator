@@ -66,7 +66,7 @@ public class ConnectionStateManager implements Closeable
     private final BlockingQueue<ConnectionState> eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
     private final CuratorFramework client;
     private final int sessionTimeoutMs;
-    private final boolean checkSessionExpiration;
+    private final int sessionExpirationPercent;
     private final ListenerContainer<ConnectionStateListener> listeners = new ListenerContainer<ConnectionStateListener>();
     private final AtomicBoolean initialConnectMessageSent = new AtomicBoolean(false);
     private final ExecutorService service;
@@ -88,13 +88,13 @@ public class ConnectionStateManager implements Closeable
      * @param client        the client
      * @param threadFactory thread factory to use or null for a default
      * @param sessionTimeoutMs the ZK session timeout in milliseconds
-     * @param checkSessionExpiration if true, check for session timeouts, etc. ala new connection handling method
+     * @param sessionExpirationPercent percentage of negotiated session timeout to use when simulating a session timeout. 0 means don't simulate at all
      */
-    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, boolean checkSessionExpiration)
+    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent)
     {
         this.client = client;
         this.sessionTimeoutMs = sessionTimeoutMs;
-        this.checkSessionExpiration = checkSessionExpiration;
+        this.sessionExpirationPercent = sessionExpirationPercent;
         if ( threadFactory == null )
         {
             threadFactory = ThreadUtils.newThreadFactory("ConnectionStateManager");
@@ -274,7 +274,7 @@ public class ConnectionStateManager implements Closeable
                             }
                         );
                 }
-                else if ( checkSessionExpiration )
+                else if ( sessionExpirationPercent > 0 )
                 {
                     synchronized(this)
                     {
@@ -296,9 +296,10 @@ public class ConnectionStateManager implements Closeable
             long elapsedMs = System.currentTimeMillis() - startOfSuspendedEpoch;
             int lastNegotiatedSessionTimeoutMs = client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
             int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
+            useSessionTimeoutMs = (useSessionTimeoutMs * sessionExpirationPercent) / 100;
             if ( elapsedMs >= useSessionTimeoutMs )
             {
-                log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Session Timeout ms: %d", elapsedMs, useSessionTimeoutMs));
+                log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d", elapsedMs, useSessionTimeoutMs));
                 try
                 {
                     // LOL - this method was proposed by me (JZ) in 2013 for totally unrelated reasons

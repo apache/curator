@@ -23,6 +23,4 @@ interface InternalConnectionHandler
     void checkNewConnection(CuratorFrameworkImpl client);
 
     void suspendConnection(CuratorFrameworkImpl client);
-
-    boolean checkSessionExpirationEnabled();
 }
