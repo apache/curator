@@ -68,6 +68,13 @@ public class TestGroupMember extends BaseClassForTests
             Assert.assertEquals(currentMembers1.size(), 1);
             Assert.assertTrue(currentMembers1.containsKey("1"));
             Assert.assertFalse(currentMembers1.containsKey("2"));
+
+            groupMember1.setThisData("something".getBytes());
+
+            timing.sleepABit();
+            currentMembers1 = groupMember1.getCurrentMembers();
+            Assert.assertTrue(currentMembers1.containsKey("1"));
+            Assert.assertEquals(currentMembers1.get("1"), "something".getBytes());
         }
         finally
         {

@@ -28,7 +28,6 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import java.io.Closeable;
-import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -40,7 +39,6 @@ public class GroupMember implements Closeable
     private final PersistentEphemeralNode pen;
     private final PathChildrenCache cache;
     private final String thisId;
-    private final byte[] payload;
 
     /**
      * @param client client
@@ -61,7 +59,6 @@ public class GroupMember implements Closeable
     public GroupMember(CuratorFramework client, String membershipPath, String thisId, byte[] payload)
     {
         this.thisId = Preconditions.checkNotNull(thisId, "thisId cannot be null");
-        this.payload = Arrays.copyOf(payload, payload.length);
 
         cache = newPathChildrenCache(client, membershipPath);
         pen = newPersistentEphemeralNode(client, membershipPath, thisId, payload);
@@ -77,6 +74,23 @@ public class GroupMember implements Closeable
         try
         {
             cache.start();
+        }
+        catch ( Exception e )
+        {
+            Throwables.propagate(e);
+        }
+    }
+
+    /**
+     * Change the data stored in this instance's node
+     *
+     * @param data new data (cannot be null)
+     */
+    public void setThisData(byte[] data)
+    {
+        try
+        {
+            pen.setData(data);
         }
         catch ( Exception e )
         {
@@ -112,7 +126,7 @@ public class GroupMember implements Closeable
         }
         if ( !thisIdAdded )
         {
-            builder.put(thisId, payload);   // this instance is always a member
+            builder.put(thisId, pen.getData());   // this instance is always a member
         }
         return builder.build();
     }
