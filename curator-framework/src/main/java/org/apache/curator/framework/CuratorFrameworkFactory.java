@@ -100,6 +100,24 @@ public class CuratorFrameworkFactory
             build();
     }
 
+    /**
+     * Return the local address as bytes that can be used as a node payload
+     *
+     * @return local address bytes
+     */
+    public static byte[] getLocalAddress()
+    {
+        try
+        {
+            return InetAddress.getLocalHost().getHostAddress().getBytes();
+        }
+        catch ( UnknownHostException ignore )
+        {
+            // ignore
+        }
+        return new byte[0];
+    }
+
     public static class Builder
     {
         private EnsembleProvider ensembleProvider;
@@ -463,19 +481,6 @@ public class CuratorFrameworkFactory
         private Builder()
         {
         }
-    }
-
-    private static byte[] getLocalAddress()
-    {
-        try
-        {
-            return InetAddress.getLocalHost().getHostAddress().getBytes();
-        }
-        catch ( UnknownHostException ignore )
-        {
-            // ignore
-        }
-        return new byte[0];
     }
 
     private CuratorFrameworkFactory()
