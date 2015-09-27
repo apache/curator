@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
@@ -43,10 +44,10 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
 @VisibleForTesting
-public class EnsembleTracker implements Closeable
+public class EnsembleTracker implements Closeable, CuratorWatcher
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final EnsembleProvider ensembleProvider;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -68,18 +69,6 @@ public class EnsembleTracker implements Closeable
         }
     };
 
-    private final CuratorWatcher watcher = new CuratorWatcher()
-    {
-        @Override
-        public void process(WatchedEvent event) throws Exception
-        {
-            if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
-            {
-                reset();
-            }
-        }
-    };
-
     private enum State
     {
         LATENT,
@@ -89,7 +78,7 @@ public class EnsembleTracker implements Closeable
 
     EnsembleTracker(CuratorFramework client, EnsembleProvider ensembleProvider)
     {
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
         this.ensembleProvider = ensembleProvider;
     }
 
@@ -103,7 +92,20 @@ public class EnsembleTracker implements Closeable
     @Override
     public void close()
     {
-        client.getConnectionStateListenable().removeListener(connectionStateListener);
+        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
+        {
+            client.removeWatchers();
+            client.getConnectionStateListenable().removeListener(connectionStateListener);
+        }
+    }
+
+    @Override
+    public void process(WatchedEvent event) throws Exception
+    {
+        if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
+        {
+            reset();
+        }
     }
 
     private void reset() throws Exception
@@ -119,7 +121,7 @@ public class EnsembleTracker implements Closeable
                 }
             }
         };
-        client.getConfig().usingWatcher(watcher).inBackground(backgroundCallback).forEnsemble();
+        client.getConfig().usingWatcher(this).inBackground(backgroundCallback).forEnsemble();
     }
 
     @VisibleForTesting
@@ -145,6 +147,13 @@ public class EnsembleTracker implements Closeable
     {
         log.info("New config event received: " + Arrays.toString(data));
         String connectionString = configToConnectionString(data);
-        ensembleProvider.setConnectionString(connectionString);
+        if ( connectionString.trim().length() > 0 )
+        {
+            ensembleProvider.setConnectionString(connectionString);
+        }
+        else
+        {
+            log.debug("Ignoring new config as it is empty");
+        }
     }
 }

@@ -770,6 +770,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateManager.addStateChange(newConnectionState);
     }
 
+    EnsembleTracker getEnsembleTracker()
+    {
+        return ensembleTracker;
+    }
+
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     private <DATA_TYPE> boolean checkBackgroundRetry(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
     {

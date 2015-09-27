@@ -34,6 +34,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException.Code;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -46,6 +48,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestFrameworkBackground extends BaseClassForTests
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
     @Test
     public void testListenerConnectedAtStart() throws Exception
     {
@@ -160,11 +164,10 @@ public class TestFrameworkBackground extends BaseClassForTests
                 }
             };
             client.create().inBackground(callback).forPath("/one");
-            client.create().inBackground(callback).forPath("/one/two");
-            client.create().inBackground(callback).forPath("/one/two/three");
-
             Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one");
+            client.create().inBackground(callback).forPath("/one/two");
             Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one/two");
+            client.create().inBackground(callback).forPath("/one/two/three");
             Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one/two/three");
         }
         finally

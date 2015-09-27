@@ -38,7 +38,8 @@ Due to limitations in ZooKeeper's transport layer, a single queue will break if 
 provides a facade over multiple distributed queues. It monitors the queues and if any one of them goes over a threshold, a new
 queue is added. Puts are distributed amongst the queues.
 
-h2. EnsembleTracker
+h2. WatcherRemoveCuratorFramework
 
-Utility to listen for ensemble/configuration changes via registered EnsembleListeners. Allocate a EnsembleTracker, add one or more listeners
-and start it.
+Curator has a utility that makes it easy to set watchers and remove them at a later date. It is used for all Curator recipes.
+From your CuratorFramework instance, call newWatcherRemoveCuratorFramework(). When using this proxy instance any watchers that are
+set are recorded. You can then call removeWatchers() to remove those watchers. See the Curator source code for usage details.

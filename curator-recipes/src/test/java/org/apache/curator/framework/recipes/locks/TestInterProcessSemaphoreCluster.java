@@ -70,6 +70,12 @@ public class TestInterProcessSemaphoreCluster
                 }
 
                 @Override
+                public boolean updateServerListEnabled()
+                {
+                    return false;
+                }
+
+                @Override
                 public void start() throws Exception
                 {
                 }

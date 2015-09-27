@@ -45,6 +45,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -380,11 +384,12 @@ public class TestReconfiguration extends BaseClassForTests
         }
     }
 
-    private List<String> toReconfigSpec(Collection<InstanceSpec> instances)
+    private List<String> toReconfigSpec(Collection<InstanceSpec> instances) throws Exception
     {
+        String localhost = new InetSocketAddress((InetAddress)null, 0).getAddress().getHostAddress();
         List<String> specs = Lists.newArrayList();
         for ( InstanceSpec instance : instances ) {
-            specs.add("server." + instance.getServerId() + "=localhost:" + instance.getElectionPort() + ":" + instance.getQuorumPort() + ";" + instance.getPort());
+            specs.add("server." + instance.getServerId() + "=" + localhost + ":" + instance.getElectionPort() + ":" + instance.getQuorumPort() + ";" + instance.getPort());
         }
         return specs;
     }

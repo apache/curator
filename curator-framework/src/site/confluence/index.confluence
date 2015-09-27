@@ -7,6 +7,7 @@ ZooKeeper and handles the complexity of managing connections to the ZooKeeper cl
 ** There are potential error cases that require ZooKeeper clients to recreate a connection and/or retry operations. Curator
  automatically and transparently (mostly) handles these cases.
 ** Watches for NodeDataChanged events and calls updateServerList() as needed.
+** Watches are automatically removed by Curator recipes
 * Cleaner API:
 ** simplifies the raw ZooKeeper methods, events, etc.
 ** provides a modern, fluent interface
