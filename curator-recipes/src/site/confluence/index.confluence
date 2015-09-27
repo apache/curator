@@ -30,7 +30,7 @@ regarding "Curator Recipes Own Their ZNode/Paths".
 
 ||Nodes||
 |[[Persistent Ephemeral Node|persistent-ephemeral-node.html]] \- An ephemeral node that attempts to stay present in ZooKeeper, even through connection and session interruptions.|
-|[Group Member|group-member-node.html]] \- Group membership management. Adds this instance into a group and keeps a cache of members in the group.|
+|[Group Member|group-member.html]] \- Group membership management. Adds this instance into a group and keeps a cache of members in the group.|
 
 ||Queues||
 |[[Distributed Queue|distributed-queue.html]] \- An implementation of the Distributed Queue ZK recipe. Items put into the queue are guaranteed to be ordered (by means of ZK's PERSISTENT_SEQUENTIAL node). If a single consumer takes items out of the queue, they will be ordered FIFO. If ordering is important, use a LeaderSelector to nominate a single consumer.|
