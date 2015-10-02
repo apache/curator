@@ -45,10 +45,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -164,7 +162,7 @@ public class TestReconfiguration extends BaseClassForTests
             QuorumVerifier quorumVerifier = toQuorumVerifier(configData);
             System.out.println(quorumVerifier);
             assertConfig(quorumVerifier, cluster.getInstances());
-            Assert.assertEquals(EnsembleTracker.configToConnectionString(configData), ensembleProvider.getConnectionString());
+            Assert.assertEquals(EnsembleTracker.configToConnectionString(quorumVerifier), ensembleProvider.getConnectionString());
         }
     }
 
@@ -192,7 +190,7 @@ public class TestReconfiguration extends BaseClassForTests
                 List<InstanceSpec> newInstances = Lists.newArrayList(cluster.getInstances());
                 newInstances.addAll(newCluster.getInstances());
                 assertConfig(newConfig, newInstances);
-                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfigData), ensembleProvider.getConnectionString());
+                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
             }
         }
     }
@@ -234,7 +232,7 @@ public class TestReconfiguration extends BaseClassForTests
                 List<InstanceSpec> newInstances = Lists.newArrayList(cluster.getInstances());
                 newInstances.addAll(newCluster.getInstances());
                 assertConfig(newConfig, newInstances);
-                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfigData), ensembleProvider.getConnectionString());
+                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
             }
         }
     }
@@ -275,7 +273,7 @@ public class TestReconfiguration extends BaseClassForTests
                 newInstances.addAll(instances);
                 newInstances.remove(removeSpec);
                 assertConfig(newConfig, newInstances);
-                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfigData), ensembleProvider.getConnectionString());
+                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
             }
         }
     }
@@ -311,7 +309,7 @@ public class TestReconfiguration extends BaseClassForTests
             QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
             Assert.assertEquals(newConfig.getAllMembers().size(), 3);
             assertConfig(newConfig, smallCluster);
-            Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfigData), ensembleProvider.getConnectionString());
+            Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
         }
     }
 

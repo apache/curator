@@ -31,6 +31,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
@@ -305,4 +306,11 @@ public interface CuratorFramework extends Closeable
      * @return error policy
      */
     public ConnectionStateErrorPolicy getConnectionStateErrorPolicy();
+
+    /**
+     * Current maintains a cached view of the Zookeeper quorum config.
+     *
+     * @return the current config
+     */
+    public QuorumVerifier getCurrentConfig();
 }

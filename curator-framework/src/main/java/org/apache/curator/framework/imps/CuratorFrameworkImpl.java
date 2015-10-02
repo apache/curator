@@ -50,6 +50,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Arrays;
@@ -169,6 +170,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework()
     {
         return new WatcherRemovalFacade(this);
+    }
+
+    @Override
+    public QuorumVerifier getCurrentConfig()
+    {
+        return (ensembleTracker != null) ? ensembleTracker.getCurrentConfig() : null;
     }
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)

@@ -21,6 +21,7 @@ package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
@@ -50,6 +51,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
     private final WatcherRemoveCuratorFramework client;
     private final EnsembleProvider ensembleProvider;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final AtomicReference<QuorumMaj> currentConfig = new AtomicReference<>(new QuorumMaj(Maps.<Long, QuorumPeer.QuorumServer>newHashMap()));
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -108,6 +110,16 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
         }
     }
 
+    /**
+     * Return the current quorum config
+     *
+     * @return config
+     */
+    public QuorumVerifier getCurrentConfig()
+    {
+        return currentConfig.get();
+    }
+
     private void reset() throws Exception
     {
         BackgroundCallback backgroundCallback = new BackgroundCallback()
@@ -125,13 +137,10 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
     }
 
     @VisibleForTesting
-    public static String configToConnectionString(byte[] data) throws Exception
+    public static String configToConnectionString(QuorumVerifier data) throws Exception
     {
-        Properties properties = new Properties();
-        properties.load(new ByteArrayInputStream(data));
-        QuorumVerifier qv = new QuorumMaj(properties);
         StringBuilder sb = new StringBuilder();
-        for ( QuorumPeer.QuorumServer server : qv.getAllMembers().values() )
+        for ( QuorumPeer.QuorumServer server : data.getAllMembers().values() )
         {
             if ( sb.length() != 0 )
             {
@@ -146,7 +155,13 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
     private void processConfigData(byte[] data) throws Exception
     {
         log.info("New config event received: " + Arrays.toString(data));
-        String connectionString = configToConnectionString(data);
+
+        Properties properties = new Properties();
+        properties.load(new ByteArrayInputStream(data));
+        QuorumMaj newConfig = new QuorumMaj(properties);
+        currentConfig.set(newConfig);
+
+        String connectionString = configToConnectionString(newConfig);
         if ( connectionString.trim().length() > 0 )
         {
             ensembleProvider.setConnectionString(connectionString);

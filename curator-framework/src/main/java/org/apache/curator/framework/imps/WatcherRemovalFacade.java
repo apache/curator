@@ -30,6 +30,7 @@ import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
 class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemoveCuratorFramework
 {
@@ -52,6 +53,12 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
     WatcherRemovalManager getRemovalManager()
     {
         return removalManager;
+    }
+
+    @Override
+    public QuorumVerifier getCurrentConfig()
+    {
+        return client.getCurrentConfig();
     }
 
     @Override
