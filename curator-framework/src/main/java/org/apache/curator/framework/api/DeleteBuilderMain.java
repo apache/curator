@@ -18,8 +18,6 @@
  */
 package org.apache.curator.framework.api;
 
-public interface CreateBuilder extends
-    CreateBuilderMain
+public interface DeleteBuilderMain extends GuaranteeableDeletable, ChildrenDeletable
 {
-    CreateBuilderMain orSetData();
 }

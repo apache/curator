@@ -51,6 +51,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     private boolean createParentsAsContainers;
     private boolean doProtected;
     private boolean compress;
+    private boolean setDataIfExists;
     private String protectedId;
     private ACLing acling;
     private Stat storingStat;
@@ -71,8 +72,16 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         createParentsAsContainers = false;
         compress = false;
         doProtected = false;
+        setDataIfExists = false;
         protectedId = null;
         storingStat = null;
+    }
+
+    @Override
+    public CreateBuilderMain orSetData()
+    {
+        setDataIfExists = true;
+        return this;
     }
 
     <T> TransactionCreateBuilder<T> asTransactionCreateBuilder(final T context, final CuratorMultiTransactionRecord transaction)
@@ -537,6 +546,10 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                         {
                             backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
                         }
+                        else if ( (rc == KeeperException.Code.NODEEXISTS.intValue()) && setDataIfExists )
+                        {
+                            backgroundSetData(client, operationAndData, operationAndData.getData().getPath(), backgrounding);
+                        }
                         else
                         {
                             sendBackgroundResponse(rc, path, ctx, name, null, operationAndData);
@@ -687,6 +700,42 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         };
         OperationAndData<T> parentOperation = new OperationAndData<T>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
         client.queueOperation(parentOperation);
+    }
+
+    private void backgroundSetData(final CuratorFrameworkImpl client, final OperationAndData<PathAndBytes> mainOperationAndData, final String path, final Backgrounding backgrounding)
+    {
+        final AsyncCallback.StatCallback statCallback = new AsyncCallback.StatCallback()
+        {
+            @Override
+            public void processResult(int rc, String path, Object ctx, Stat stat)
+            {
+                if ( rc == KeeperException.Code.NONODE.intValue() )
+                {
+                    client.queueOperation(mainOperationAndData);    // try to create it again
+                }
+                else
+                {
+                    sendBackgroundResponse(rc, path, ctx, path, stat, mainOperationAndData);
+                }
+            }
+        };
+        BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>()
+        {
+            @Override
+            public void performBackgroundOperation(OperationAndData<PathAndBytes> op) throws Exception
+            {
+                try
+                {
+                    client.getZooKeeper().setData(path, mainOperationAndData.getData().getData(), -1, statCallback, backgrounding.getContext());
+                }
+                catch ( KeeperException e )
+                {
+                    // ignore
+                }
+                client.queueOperation(mainOperationAndData);
+            }
+        };
+        client.queueOperation(new OperationAndData<>(operation, null, null, null, null));
     }
 
     private void sendBackgroundResponse(int rc, String path, Object ctx, String name, Stat stat, OperationAndData<PathAndBytes> operationAndData)
@@ -993,6 +1042,18 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                                 {
                                     ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
                                     createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat);
+                                }
+                                else
+                                {
+                                    throw e;
+                                }
+                            }
+                            catch ( KeeperException.NodeExistsException e )
+                            {
+                                if ( setDataIfExists )
+                                {
+                                    client.getZooKeeper().setData(path, data, -1);
+                                    createdPath = path;
                                 }
                                 else
                                 {
