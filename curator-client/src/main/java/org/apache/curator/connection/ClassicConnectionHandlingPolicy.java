@@ -56,14 +56,14 @@ public class ClassicConnectionHandlingPolicy implements ConnectionHandlingPolicy
     }
 
     @Override
-    public CheckTimeoutsResult checkTimeouts(Callable<Boolean> hasNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception
+    public CheckTimeoutsResult checkTimeouts(Callable<String> hasNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception
     {
         CheckTimeoutsResult result = CheckTimeoutsResult.NOP;
         int minTimeout = Math.min(sessionTimeoutMs, connectionTimeoutMs);
         long elapsed = System.currentTimeMillis() - connectionStartMs;
         if ( elapsed >= minTimeout )
         {
-            if ( hasNewConnectionString.call() )
+            if ( hasNewConnectionString.call() != null )
             {
                 result = CheckTimeoutsResult.NEW_CONNECTION_STRING;
             }

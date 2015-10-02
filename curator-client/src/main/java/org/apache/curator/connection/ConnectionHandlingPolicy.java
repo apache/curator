@@ -99,13 +99,13 @@ public interface ConnectionHandlingPolicy
      * Check timeouts. NOTE: this method is only called when an attempt to access to the ZooKeeper instances
      * is made and the connection has not completed.
      *
-     * @param hasNewConnectionString proc to call to check if there is a new connection string. Important: the internal state is cleared after
-     *                               this is called so you MUST handle the new connection string if <tt>true</tt> is returned
+     * @param getNewConnectionString proc to call to check if there is a new connection string. Important: the internal state is cleared after
+     *                               this is called so you MUST handle the new connection string if non null is returned
      * @param connectionStartMs the epoch/ms time that the connection was first initiated
      * @param sessionTimeoutMs the configured/negotiated session timeout in milliseconds
      * @param connectionTimeoutMs the configured connection timeout in milliseconds
      * @return result
      * @throws Exception errors
      */
-    CheckTimeoutsResult checkTimeouts(Callable<Boolean> hasNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception;
+    CheckTimeoutsResult checkTimeouts(Callable<String> getNewConnectionString, long connectionStartMs, int sessionTimeoutMs, int connectionTimeoutMs) throws Exception;
 }

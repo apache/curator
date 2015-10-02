@@ -17,19 +17,20 @@
  * under the License.
  */
 
-package org.apache.curator.framework.ensemble;
+package org.apache.curator.framework.imps;
 
-import com.google.common.base.Function;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.apache.curator.ensemble.EnsembleListener;
+import com.google.common.collect.Maps;
+import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
@@ -39,19 +40,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Tracks changes to the ensemble and notifies registered {@link org.apache.curator.ensemble.EnsembleListener} instances.
- */
-public class EnsembleTracker implements Closeable
+@VisibleForTesting
+public class EnsembleTracker implements Closeable, CuratorWatcher
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
+    private final EnsembleProvider ensembleProvider;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
-    private final ListenerContainer<EnsembleListener> listeners = new ListenerContainer<>();
+    private final AtomicReference<QuorumMaj> currentConfig = new AtomicReference<>(new QuorumMaj(Maps.<Long, QuorumPeer.QuorumServer>newHashMap()));
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -71,18 +71,6 @@ public class EnsembleTracker implements Closeable
         }
     };
 
-    private final CuratorWatcher watcher = new CuratorWatcher()
-    {
-        @Override
-        public void process(WatchedEvent event) throws Exception
-        {
-            if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
-            {
-                reset();
-            }
-        }
-    };
-
     private enum State
     {
         LATENT,
@@ -90,18 +78,10 @@ public class EnsembleTracker implements Closeable
         CLOSED
     }
 
-    private final BackgroundCallback backgroundCallback = new BackgroundCallback()
+    EnsembleTracker(CuratorFramework client, EnsembleProvider ensembleProvider)
     {
-        @Override
-        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-        {
-            processBackgroundResult(event);
-        }
-    };
-
-    public EnsembleTracker(CuratorFramework client)
-    {
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
+        this.ensembleProvider = ensembleProvider;
     }
 
     public void start() throws Exception
@@ -112,53 +92,55 @@ public class EnsembleTracker implements Closeable
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
-            listeners.clear();
+            client.removeWatchers();
+            client.getConnectionStateListenable().removeListener(connectionStateListener);
         }
-        client.getConnectionStateListenable().removeListener(connectionStateListener);
+    }
+
+    @Override
+    public void process(WatchedEvent event) throws Exception
+    {
+        if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
+        {
+            reset();
+        }
     }
 
     /**
-     * Return the ensemble listenable
+     * Return the current quorum config
      *
-     * @return listenable
+     * @return config
      */
-    public ListenerContainer<EnsembleListener> getListenable()
+    public QuorumVerifier getCurrentConfig()
     {
-        Preconditions.checkState(state.get() != State.CLOSED, "Closed");
-
-        return listeners;
+        return currentConfig.get();
     }
 
     private void reset() throws Exception
     {
-        client.getConfig().usingWatcher(watcher).inBackground(backgroundCallback).forEnsemble();
-    }
-
-    private void processBackgroundResult(CuratorEvent event) throws Exception
-    {
-        switch ( event.getType() )
+        BackgroundCallback backgroundCallback = new BackgroundCallback()
         {
-            case GET_CONFIG:
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                if ( event.getType() == CuratorEventType.GET_CONFIG )
                 {
                     processConfigData(event.getData());
                 }
             }
-        }
+        };
+        client.getConfig().usingWatcher(this).inBackground(backgroundCallback).forEnsemble();
     }
 
-    private void processConfigData(byte[] data) throws Exception
+    @VisibleForTesting
+    public static String configToConnectionString(QuorumVerifier data) throws Exception
     {
-        Properties properties = new Properties();
-        properties.load(new ByteArrayInputStream(data));
-        QuorumVerifier qv = new QuorumMaj(properties);
         StringBuilder sb = new StringBuilder();
-        for ( QuorumPeer.QuorumServer server : qv.getAllMembers().values() )
+        for ( QuorumPeer.QuorumServer server : data.getAllMembers().values() )
         {
             if ( sb.length() != 0 )
             {
@@ -167,25 +149,26 @@ public class EnsembleTracker implements Closeable
             sb.append(server.clientAddr.getAddress().getHostAddress()).append(":").append(server.clientAddr.getPort());
         }
 
-        final String connectionString = sb.toString();
-        listeners.forEach
-            (
-                new Function<EnsembleListener, Void>()
-                {
-                    @Override
-                    public Void apply(EnsembleListener listener)
-                    {
-                        try
-                        {
-                            listener.connectionStringUpdated(connectionString);
-                        }
-                        catch ( Exception e )
-                        {
-                            log.error("Calling listener", e);
-                        }
-                        return null;
-                    }
-                }
-            );
+        return sb.toString();
+    }
+
+    private void processConfigData(byte[] data) throws Exception
+    {
+        log.info("New config event received: " + Arrays.toString(data));
+
+        Properties properties = new Properties();
+        properties.load(new ByteArrayInputStream(data));
+        QuorumMaj newConfig = new QuorumMaj(properties);
+        currentConfig.set(newConfig);
+
+        String connectionString = configToConnectionString(newConfig);
+        if ( connectionString.trim().length() > 0 )
+        {
+            ensembleProvider.setConnectionString(connectionString);
+        }
+        else
+        {
+            log.debug("Ignoring new config as it is empty");
+        }
     }
 }

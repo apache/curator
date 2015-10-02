@@ -50,6 +50,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Arrays;
@@ -88,6 +89,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ConnectionStateErrorPolicy connectionStateErrorPolicy;
     private final AtomicLong currentInstanceIndex = new AtomicLong(-1);
     private final InternalConnectionHandler internalConnectionHandler;
+    private final EnsembleTracker ensembleTracker;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -150,6 +152,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         failedDeleteManager = new FailedDeleteManager(this);
         failedRemoveWatcherManager = new FailedRemoveWatchManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
+
+        ensembleTracker = new EnsembleTracker(this, builder.getEnsembleProvider());
     }
 
     private List<AuthInfo> buildAuths(CuratorFrameworkFactory.Builder builder)
@@ -166,6 +170,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework()
     {
         return new WatcherRemovalFacade(this);
+    }
+
+    @Override
+    public QuorumVerifier getCurrentConfig()
+    {
+        return (ensembleTracker != null) ? ensembleTracker.getCurrentConfig() : null;
     }
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
@@ -217,6 +227,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
         connectionStateErrorPolicy = parent.connectionStateErrorPolicy;
         internalConnectionHandler = parent.internalConnectionHandler;
+        ensembleTracker = null;
     }
 
     @Override
@@ -306,6 +317,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     return null;
                 }
             });
+
+            ensembleTracker.start();
         }
         catch ( Exception e )
         {
@@ -351,6 +364,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             }
 
+            ensembleTracker.close();
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
@@ -761,6 +775,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     void addStateChange(ConnectionState newConnectionState)
     {
         connectionStateManager.addStateChange(newConnectionState);
+    }
+
+    EnsembleTracker getEnsembleTracker()
+    {
+        return ensembleTracker;
     }
 
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})

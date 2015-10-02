@@ -20,14 +20,17 @@ package org.apache.curator.ensemble.fixed;
 
 import com.google.common.base.Preconditions;
 import org.apache.curator.ensemble.EnsembleProvider;
+import org.apache.zookeeper.ZooKeeper;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Standard ensemble provider that wraps a fixed connection string
  */
 public class FixedEnsembleProvider implements EnsembleProvider
 {
-    private final String connectionString;
+    private final AtomicReference<String> connectionString = new AtomicReference<>();
+    private final boolean updateServerListEnabled;
 
     /**
      * The connection string to use
@@ -36,7 +39,19 @@ public class FixedEnsembleProvider implements EnsembleProvider
      */
     public FixedEnsembleProvider(String connectionString)
     {
-        this.connectionString = Preconditions.checkNotNull(connectionString, "connectionString cannot be null");
+        this(connectionString, true);
+    }
+
+    /**
+     * The connection string to use
+     *
+     * @param connectionString connection string
+     * @param updateServerListEnabled if true, allow Curator to call {@link ZooKeeper#updateServerList(String)}
+     */
+    public FixedEnsembleProvider(String connectionString, boolean updateServerListEnabled)
+    {
+        this.updateServerListEnabled = updateServerListEnabled;
+        this.connectionString.set(Preconditions.checkNotNull(connectionString, "connectionString cannot be null"));
     }
 
     @Override
@@ -52,8 +67,20 @@ public class FixedEnsembleProvider implements EnsembleProvider
     }
 
     @Override
+    public void setConnectionString(String connectionString)
+    {
+        this.connectionString.set(connectionString);
+    }
+
+    @Override
     public String getConnectionString()
     {
-        return connectionString;
+        return connectionString.get();
+    }
+
+    @Override
+    public boolean updateServerListEnabled()
+    {
+        return updateServerListEnabled;
     }
 }

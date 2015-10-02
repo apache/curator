@@ -20,6 +20,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -43,17 +44,22 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TestReconfiguration extends BaseClassForTests
 {
     private final Timing timing = new Timing();
     private TestingCluster cluster;
+    private EnsembleProvider ensembleProvider;
 
     @BeforeMethod
     @Override
@@ -72,6 +78,7 @@ public class TestReconfiguration extends BaseClassForTests
     public void teardown() throws Exception
     {
         CloseableUtils.closeQuietly(cluster);
+        ensembleProvider = null;
 
         super.teardown();
     }
@@ -151,9 +158,11 @@ public class TestReconfiguration extends BaseClassForTests
         try ( CuratorFramework client = newClient())
         {
             client.start();
-            QuorumVerifier quorumVerifier = toQuorumVerifier(client.getConfig().forEnsemble());
+            byte[] configData = client.getConfig().forEnsemble();
+            QuorumVerifier quorumVerifier = toQuorumVerifier(configData);
             System.out.println(quorumVerifier);
             assertConfig(quorumVerifier, cluster.getInstances());
+            Assert.assertEquals(EnsembleTracker.configToConnectionString(quorumVerifier), ensembleProvider.getConnectionString());
         }
     }
 
@@ -176,10 +185,12 @@ public class TestReconfiguration extends BaseClassForTests
 
                 Assert.assertTrue(timing.awaitLatch(latch));
 
-                QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+                byte[] newConfigData = client.getConfig().forEnsemble();
+                QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
                 List<InstanceSpec> newInstances = Lists.newArrayList(cluster.getInstances());
                 newInstances.addAll(newCluster.getInstances());
                 assertConfig(newConfig, newInstances);
+                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
             }
         }
     }
@@ -216,10 +227,12 @@ public class TestReconfiguration extends BaseClassForTests
                 Assert.assertTrue(timing.awaitLatch(callbackLatch));
                 Assert.assertTrue(timing.awaitLatch(latch));
 
-                QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+                byte[] newConfigData = client.getConfig().forEnsemble();
+                QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
                 List<InstanceSpec> newInstances = Lists.newArrayList(cluster.getInstances());
                 newInstances.addAll(newCluster.getInstances());
                 assertConfig(newConfig, newInstances);
+                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
             }
         }
     }
@@ -254,11 +267,13 @@ public class TestReconfiguration extends BaseClassForTests
 
                 Assert.assertTrue(timing.awaitLatch(latch));
 
-                QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+                byte[] newConfigData = client.getConfig().forEnsemble();
+                QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
                 ArrayList<InstanceSpec> newInstances = Lists.newArrayList(oldInstances);
                 newInstances.addAll(instances);
                 newInstances.remove(removeSpec);
                 assertConfig(newConfig, newInstances);
+                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
             }
         }
     }
@@ -290,15 +305,53 @@ public class TestReconfiguration extends BaseClassForTests
             client.reconfig().withNewMembers(toReconfigSpec(smallCluster)).forEnsemble();
 
             Assert.assertTrue(timing.awaitLatch(latch));
-            QuorumVerifier newConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            byte[] newConfigData = client.getConfig().forEnsemble();
+            QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
             Assert.assertEquals(newConfig.getAllMembers().size(), 3);
             assertConfig(newConfig, smallCluster);
+            Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
         }
     }
 
     private CuratorFramework newClient()
     {
-        return CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(timing.forSleepingABit().milliseconds(), 3));
+        final AtomicReference<String> connectString = new AtomicReference<>(cluster.getConnectString());
+        ensembleProvider = new EnsembleProvider()
+        {
+            @Override
+            public void start() throws Exception
+            {
+            }
+
+            @Override
+            public boolean updateServerListEnabled()
+            {
+                return false;
+            }
+
+            @Override
+            public String getConnectionString()
+            {
+                return connectString.get();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+            }
+
+            @Override
+            public void setConnectionString(String connectionString)
+            {
+                connectString.set(connectionString);
+            }
+        };
+        return CuratorFrameworkFactory.builder()
+            .ensembleProvider(ensembleProvider)
+            .sessionTimeoutMs(timing.session())
+            .connectionTimeoutMs(timing.connection())
+            .retryPolicy(new ExponentialBackoffRetry(timing.forSleepingABit().milliseconds(), 3))
+            .build();
     }
 
     private CountDownLatch setChangeWaiter(CuratorFramework client) throws Exception
@@ -329,11 +382,12 @@ public class TestReconfiguration extends BaseClassForTests
         }
     }
 
-    private List<String> toReconfigSpec(Collection<InstanceSpec> instances)
+    private List<String> toReconfigSpec(Collection<InstanceSpec> instances) throws Exception
     {
+        String localhost = new InetSocketAddress((InetAddress)null, 0).getAddress().getHostAddress();
         List<String> specs = Lists.newArrayList();
         for ( InstanceSpec instance : instances ) {
-            specs.add("server." + instance.getServerId() + "=localhost:" + instance.getElectionPort() + ":" + instance.getQuorumPort() + ";" + instance.getPort());
+            specs.add("server." + instance.getServerId() + "=" + localhost + ":" + instance.getElectionPort() + ":" + instance.getQuorumPort() + ";" + instance.getPort());
         }
         return specs;
     }

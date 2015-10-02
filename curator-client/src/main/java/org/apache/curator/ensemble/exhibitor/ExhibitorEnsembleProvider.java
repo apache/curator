@@ -116,19 +116,19 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         service.scheduleWithFixedDelay
-        (
-            new Runnable()
-            {
-                @Override
-                public void run()
+            (
+                new Runnable()
                 {
-                    poll();
-                }
-            },
-            pollingMs,
-            pollingMs,
-            TimeUnit.MILLISECONDS
-        );
+                    @Override
+                    public void run()
+                    {
+                        poll();
+                    }
+                },
+                pollingMs,
+                pollingMs,
+                TimeUnit.MILLISECONDS
+            );
     }
 
     @Override
@@ -143,6 +143,18 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     public String getConnectionString()
     {
         return connectionString.get();
+    }
+
+    @Override
+    public void setConnectionString(String connectionString)
+    {
+        log.info("setConnectionString received. Ignoring. " + connectionString);
+    }
+
+    @Override
+    public boolean updateServerListEnabled()
+    {
+        return false;
     }
 
     @VisibleForTesting

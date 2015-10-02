@@ -35,6 +35,11 @@ public class TestCleanState
         try
         {
             CuratorFrameworkImpl internalClient = (CuratorFrameworkImpl)client;
+            EnsembleTracker ensembleTracker = internalClient.getEnsembleTracker();
+            if ( ensembleTracker != null )
+            {
+                ensembleTracker.close();
+            }
             ZooKeeper zooKeeper = internalClient.getZooKeeper();
             if ( zooKeeper != null )
             {
@@ -51,6 +56,10 @@ public class TestCleanState
                     throw new AssertionError("One or more data watchers are still registered: " + WatchersDebug.getDataWatches(zooKeeper));
                 }
             }
+        }
+        catch ( IllegalStateException ignore )
+        {
+            // client already closed
         }
         catch ( Exception e )
         {

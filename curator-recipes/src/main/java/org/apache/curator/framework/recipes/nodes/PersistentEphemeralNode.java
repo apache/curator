@@ -114,25 +114,13 @@ public class PersistentEphemeralNode implements Closeable
         {
             if ( newState == ConnectionState.RECONNECTED )
             {
-                if ( debugReconnectLatch != null )
-                {
-                    try
-                    {
-                        debugReconnectLatch.await();
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                        e.printStackTrace();
-                    }
-                }
                 createNode();
             }
         }
     };
 
     @VisibleForTesting
-    volatile CountDownLatch debugReconnectLatch = null;
+    volatile CountDownLatch debugCreateNodeLatch = null;
 
     private enum State
     {
@@ -399,6 +387,19 @@ public class PersistentEphemeralNode implements Closeable
         if ( !isActive() )
         {
             return;
+        }
+
+        if ( debugCreateNodeLatch != null )
+        {
+            try
+            {
+                debugCreateNodeLatch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                e.printStackTrace();
+            }
         }
 
         try

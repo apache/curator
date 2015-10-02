@@ -65,6 +65,17 @@ public class TestInterProcessSemaphoreCluster
             final EnsembleProvider          provider = new EnsembleProvider()
             {
                 @Override
+                public void setConnectionString(String connectionString)
+                {
+                }
+
+                @Override
+                public boolean updateServerListEnabled()
+                {
+                    return false;
+                }
+
+                @Override
                 public void start() throws Exception
                 {
                 }

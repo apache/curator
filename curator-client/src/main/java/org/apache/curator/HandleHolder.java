@@ -67,10 +67,10 @@ class HandleHolder
         return (helper != null) ? helper.getConnectionString() : null;
     }
 
-    boolean hasNewConnectionString() 
+    String getNewConnectionString()
     {
         String helperConnectionString = (helper != null) ? helper.getConnectionString() : null;
-        return (helperConnectionString != null) && !ensembleProvider.getConnectionString().equals(helperConnectionString);
+        return ((helperConnectionString != null) && !ensembleProvider.getConnectionString().equals(helperConnectionString)) ? helperConnectionString : null;
     }
 
     void closeAndClear() throws Exception

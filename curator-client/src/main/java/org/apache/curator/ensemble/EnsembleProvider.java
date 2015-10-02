@@ -51,4 +51,18 @@ public interface EnsembleProvider extends Closeable
      * @throws IOException errors
      */
     public void         close() throws IOException;
+
+    /**
+     * A new connection string event was received
+     *
+     * @param connectionString the new connection string
+     */
+    public void setConnectionString(String connectionString);
+
+    /**
+     * Return true if this ensemble provider supports {@link ZooKeeper#updateServerList(String)}
+     *
+     * @return true/false
+     */
+    public boolean updateServerListEnabled();
 }
