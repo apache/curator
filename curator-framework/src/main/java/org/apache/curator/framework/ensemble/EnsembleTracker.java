@@ -50,6 +50,7 @@ public class EnsembleTracker implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
+    private final AtomicReference<String> connectionString = new AtomicReference<>();
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final ListenerContainer<EnsembleListener> listeners = new ListenerContainer<>();
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -152,40 +153,40 @@ public class EnsembleTracker implements Closeable
         }
     }
 
-    private void processConfigData(byte[] data) throws Exception
-    {
+    private String readConnectionString(byte[] data) throws Exception {
         Properties properties = new Properties();
         properties.load(new ByteArrayInputStream(data));
         QuorumVerifier qv = new QuorumMaj(properties);
         StringBuilder sb = new StringBuilder();
-        for ( QuorumPeer.QuorumServer server : qv.getAllMembers().values() )
-        {
-            if ( sb.length() != 0 )
-            {
+        for (QuorumPeer.QuorumServer server : qv.getAllMembers().values()) {
+            if (sb.length() != 0) {
                 sb.append(",");
             }
             sb.append(server.clientAddr.getAddress().getHostAddress()).append(":").append(server.clientAddr.getPort());
         }
 
-        final String connectionString = sb.toString();
-        listeners.forEach
-            (
-                new Function<EnsembleListener, Void>()
-                {
-                    @Override
-                    public Void apply(EnsembleListener listener)
-                    {
-                        try
-                        {
-                            listener.connectionStringUpdated(connectionString);
-                        }
-                        catch ( Exception e )
-                        {
-                            log.error("Calling listener", e);
-                        }
-                        return null;
-                    }
-                }
-            );
+        return sb.toString();
+    }
+
+    private void processConfigData(byte[] data) throws Exception
+    {
+        final String newConnectionString = readConnectionString(data);
+        final String oldConnectionString = connectionString.getAndSet(newConnectionString);
+        if (!newConnectionString.equals(oldConnectionString)) {
+            listeners.forEach
+                    (
+                            new Function<EnsembleListener, Void>() {
+                                @Override
+                                public Void apply(EnsembleListener listener) {
+                                    try {
+                                        listener.connectionStringUpdated(newConnectionString);
+                                    } catch (Exception e) {
+                                        log.error("Calling listener", e);
+                                    }
+                                    return null;
+                                }
+                            }
+                    );
+        }
     }
 }
