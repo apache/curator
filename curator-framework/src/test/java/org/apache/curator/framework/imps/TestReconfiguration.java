@@ -27,6 +27,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.ensemble.EnsembleTracker;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
@@ -51,7 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestReconfiguration extends BaseClassForTests
 {
-    private static final Timing timing = new Timing();
+    private static final Timing timing = new Timing(2);
     private TestingCluster cluster;
     private DynamicEnsembleProvider dynamicEnsembleProvider;
     private WaitOnDelegateListener waitOnDelegateListener;
@@ -81,7 +82,7 @@ public class TestReconfiguration extends BaseClassForTests
         dynamicEnsembleProvider = new DynamicEnsembleProvider(connectionString1to5);
         client = CuratorFrameworkFactory.builder()
             .ensembleProvider(dynamicEnsembleProvider)
-            .retryPolicy(new RetryOneTime(1))
+            .retryPolicy(new RetryNTimes(3, 1000))
             .build();
         client.start();
         client.blockUntilConnected();
