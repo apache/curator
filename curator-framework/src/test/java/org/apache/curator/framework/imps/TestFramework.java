@@ -599,9 +599,9 @@ public class TestFramework extends BaseClassForTests
         final String namespace = "container1";
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
         CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).namespace(namespace).build();
-        client.start();
         try
         {
+            client.start();
             String path = "/path1/path2";
             client.createContainers(path);
             Assert.assertNotNull(client.checkExists().forPath(path));
@@ -620,10 +620,10 @@ public class TestFramework extends BaseClassForTests
         final String namespace = "container2";
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
         CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).build();
-        client.start();
-        CuratorFramework nsClient = client.usingNamespace(namespace);
         try
         {
+            client.start();
+            CuratorFramework nsClient = client.usingNamespace(namespace);
             String path = "/path1/path2";
             nsClient.createContainers(path);
             Assert.assertNotNull(nsClient.checkExists().forPath(path));

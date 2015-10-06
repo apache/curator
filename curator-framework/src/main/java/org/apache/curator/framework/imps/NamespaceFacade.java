@@ -43,13 +43,6 @@ class NamespaceFacade extends CuratorFrameworkImpl
     }
 
     @Override
-    public void createContainers(String path) throws Exception
-    {
-        path = fixForNamespace(path);
-        client.createContainers(path);
-    }
-
-    @Override
     public CuratorFramework nonNamespaceView()
     {
         return usingNamespace(null);
