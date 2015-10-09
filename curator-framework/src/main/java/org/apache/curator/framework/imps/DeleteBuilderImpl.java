@@ -27,6 +27,7 @@ import org.apache.curator.framework.api.ChildrenDeletable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.DeleteBuilder;
+import org.apache.curator.framework.api.DeleteBuilderMain;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionDeleteBuilder;
@@ -44,6 +45,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
     private Backgrounding backgrounding;
     private boolean deletingChildrenIfNeeded;
     private boolean guaranteed;
+    private boolean quietly;
 
     DeleteBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -52,6 +54,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         backgrounding = new Backgrounding();
         deletingChildrenIfNeeded = false;
         guaranteed = false;
+        quietly = false;
     }
 
     <T> TransactionDeleteBuilder<T> asTransactionDeleteBuilder(final T context, final CuratorMultiTransactionRecord transaction)
@@ -73,6 +76,13 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                 return this;
             }
         };
+    }
+
+    @Override
+    public DeleteBuilderMain quietly()
+    {
+        quietly = true;
+        return this;
     }
 
     @Override
@@ -158,6 +168,10 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                         }
                         else
                         {
+                            if ( (rc == KeeperException.Code.NONODE.intValue()) && quietly )
+                            {
+                                rc = KeeperException.Code.OK.intValue();
+                            }
                             CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null, null);
                             client.processBackgroundOperation(operationAndData, event);
                         }
@@ -239,6 +253,13 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
                             try
                             {
                                 client.getZooKeeper().delete(path, version);
+                            }
+                            catch ( KeeperException.NoNodeException e )
+                            {
+                                if ( !quietly )
+                                {
+                                    throw e;
+                                }
                             }
                             catch ( KeeperException.NotEmptyException e )
                             {

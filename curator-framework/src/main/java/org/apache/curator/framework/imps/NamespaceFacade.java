@@ -28,7 +28,6 @@ import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
 class NamespaceFacade extends CuratorFrameworkImpl
 {
@@ -41,18 +40,6 @@ class NamespaceFacade extends CuratorFrameworkImpl
         super(client);
         this.client = client;
         this.namespace = new NamespaceImpl(client, namespace);
-    }
-
-    @Override
-    public void createContainers(String path) throws Exception
-    {
-        client.createContainers(path);
-    }
-
-    @Override
-    public QuorumVerifier getCurrentConfig()
-    {
-        return client.getCurrentConfig();
     }
 
     @Override
