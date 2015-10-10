@@ -233,7 +233,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             containerManager.start();
             latch.countDown();
             cnxnFactory.join();
-            if ( zkServer.isRunning()) {
+            if ( (zkServer != null) && zkServer.isRunning()) {
                 zkServer.shutdown();
             }
         } catch (InterruptedException e) {

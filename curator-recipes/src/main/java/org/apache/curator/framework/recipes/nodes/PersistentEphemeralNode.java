@@ -398,7 +398,7 @@ public class PersistentEphemeralNode implements Closeable
             catch ( InterruptedException e )
             {
                 Thread.currentThread().interrupt();
-                e.printStackTrace();
+                return;
             }
         }
 

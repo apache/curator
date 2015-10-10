@@ -72,7 +72,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         {
             for ( PersistentEphemeralNode node : createdNodes )
             {
-                node.close();
+                CloseableUtils.closeQuietly(node);
             }
 
             for ( CuratorFramework curator : curatorInstances )
@@ -95,37 +95,39 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         try
         {
             client.start();
-            PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
-            node.start();
-
-            final CountDownLatch connectedLatch = new CountDownLatch(1);
-            final CountDownLatch reconnectedLatch = new CountDownLatch(1);
-            ConnectionStateListener listener = new ConnectionStateListener()
+            try ( PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes()) )
             {
-                @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                node.start();
+
+                final CountDownLatch connectedLatch = new CountDownLatch(1);
+                final CountDownLatch reconnectedLatch = new CountDownLatch(1);
+                ConnectionStateListener listener = new ConnectionStateListener()
                 {
-                    if ( newState == ConnectionState.CONNECTED )
+                    @Override
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
                     {
-                        connectedLatch.countDown();
+                        if ( newState == ConnectionState.CONNECTED )
+                        {
+                            connectedLatch.countDown();
+                        }
+                        if ( newState == ConnectionState.RECONNECTED )
+                        {
+                            reconnectedLatch.countDown();
+                        }
                     }
-                    if ( newState == ConnectionState.RECONNECTED )
-                    {
-                        reconnectedLatch.countDown();
-                    }
-                }
-            };
-            client.getConnectionStateListenable().addListener(listener);
-            timing.sleepABit();
-            server.restart();
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
-            timing.sleepABit();
-            Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-            server.stop();
-            timing.sleepABit();
-            server.restart();
-            timing.sleepABit();
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+                };
+                client.getConnectionStateListenable().addListener(listener);
+                timing.sleepABit();
+                server.restart();
+                Assert.assertTrue(timing.awaitLatch(connectedLatch));
+                timing.sleepABit();
+                Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+                server.stop();
+                timing.sleepABit();
+                server.restart();
+                timing.sleepABit();
+                Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+            }
         }
         finally
         {
@@ -252,10 +254,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            if ( node != null )
-            {
-                node.close();
-            }
+            CloseableUtils.closeQuietly(node);
             TestCleanState.closeAndTestClean(client);
         }
     }
@@ -276,7 +275,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            node.close();  // After closing the path is set to null...
+            CloseableUtils.closeQuietly(node);
         }
 
         assertNodeDoesNotExist(curator, path);
@@ -306,9 +305,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework observer = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertNodeExists(observer, node.getActualPath());
 
@@ -325,7 +324,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }
     }
 
@@ -336,9 +335,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework observer = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(5, TimeUnit.SECONDS);
             assertNodeExists(observer, node.getActualPath());
 
@@ -359,7 +358,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }
     }
 
@@ -370,9 +369,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework observer = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String path = node.getActualPath();
             assertNodeExists(observer, path);
@@ -399,7 +398,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }
     }
 
@@ -409,9 +408,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String originalNode = node.getActualPath();
             assertNodeExists(curator, originalNode);
@@ -427,7 +426,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }
     }
 
@@ -437,9 +436,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
 
         PersistentEphemeralNode node1 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]);
-        node1.start();
         try
         {
+            node1.start();
             node1.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String path1 = node1.getActualPath();
 
@@ -470,15 +469,15 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         byte[] data = "Hello World".getBytes();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }
     }
     
@@ -496,15 +495,15 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         byte[] data = "Hello World".getBytes();
              
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }
     }
     
@@ -517,9 +516,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         byte[] updatedData = "Updated".getBytes();
              
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
             
@@ -550,7 +549,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }    	
     }
 
@@ -563,9 +562,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         byte[] updatedData = "Updated".getBytes();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
 
@@ -589,7 +588,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }
     }
     
@@ -606,9 +605,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH,
                                                                    new byte[0]);
-        node.start();
         try
         {
+            node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertNodeExists(curator, node.getActualPath());
 
@@ -625,7 +624,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
         finally
         {
-            node.close();
+            CloseableUtils.closeQuietly(node);
         }
     }
     
@@ -638,15 +637,16 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             .authorization("digest", "me1:pass1".getBytes())
             .retryPolicy(new RetryOneTime(1))
             .build();
-        client.start();
-        
-        ACL acl = new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.AUTH_IDS);
-        List<ACL> aclList = Lists.newArrayList(acl);
-        client.create().withACL(aclList).forPath(DIR, new byte[0]);
-        client.close();
-        
+
         PersistentEphemeralNode node = null;
         try {
+            client.start();
+
+            ACL acl = new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.AUTH_IDS);
+            List<ACL> aclList = Lists.newArrayList(acl);
+            client.create().withACL(aclList).forPath(DIR, new byte[0]);
+            client.close();
+
         	//New client without authentication
         	client = newCurator();
         
@@ -658,11 +658,8 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             assertNodeDoesNotExist(client, PATH);
             assertTrue(node.isAuthFailure());
         } finally {
-        	if(node != null) {
-        	    node.close();
-        	}
-        	
-        	client.close();
+            CloseableUtils.closeQuietly(node);
+            CloseableUtils.closeQuietly(client);
         }
     }
 

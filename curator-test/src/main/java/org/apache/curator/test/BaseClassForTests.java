@@ -144,7 +144,10 @@ public class BaseClassForTests
             {
                 e.printStackTrace();
             }
-            server = null;
+            finally
+            {
+                server = null;
+            }
         }
     }
 
