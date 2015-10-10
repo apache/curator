@@ -181,7 +181,6 @@ public class NodeCache implements Closeable
         {
             client.removeWatchers();
             listeners.clear();
-            client.clearWatcherReferences(watcher);
             client.getConnectionStateListenable().removeListener(connectionStateListener);
 
             // TODO
