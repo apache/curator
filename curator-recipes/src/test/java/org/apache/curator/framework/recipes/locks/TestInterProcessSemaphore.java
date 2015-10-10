@@ -534,44 +534,4 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             TestCleanState.closeAndTestClean(client);
         }
     }
-
-    @Test
-    public void testChildReaperCleansUpLockNodes() throws Exception
-    {
-        Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        client.start();
-
-        ChildReaper childReaper = null;
-        try
-        {
-            InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test/lock", 1);
-            semaphore.returnLease(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-
-            Assert.assertTrue(client.getChildren().forPath("/test").size() > 0);
-
-            childReaper = new ChildReaper(
-                    client,
-                    "/test",
-                    Reaper.Mode.REAP_UNTIL_GONE,
-                    ChildReaper.newExecutorService(),
-                    1,
-                    "/test-leader",
-                    InterProcessSemaphoreV2.LOCK_SCHEMA
-            );
-            childReaper.start();
-
-            timing.forWaiting().sleepABit();
-
-            List<String> children = client.getChildren().forPath("/test");
-
-            Assert.assertEquals(children.size(), 0, "All children of /test should have been reaped");
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(childReaper);
-            CloseableUtils.closeQuietly(client);
-        }
-
-    }
 }
