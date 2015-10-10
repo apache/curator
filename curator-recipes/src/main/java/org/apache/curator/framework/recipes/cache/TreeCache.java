@@ -248,18 +248,24 @@ public class TreeCache implements Closeable
 
         private void doRefreshChildren() throws Exception
         {
-            client.getChildren().usingWatcher(this).inBackground(this).forPath(path);
+            if ( treeState.get() == TreeState.STARTED )
+            {
+                client.getChildren().usingWatcher(this).inBackground(this).forPath(path);
+            }
         }
 
         private void doRefreshData() throws Exception
         {
-            if ( dataIsCompressed )
+            if ( treeState.get() == TreeState.STARTED )
             {
-                client.getData().decompressed().usingWatcher(this).inBackground(this).forPath(path);
-            }
-            else
-            {
-                client.getData().usingWatcher(this).inBackground(this).forPath(path);
+                if ( dataIsCompressed )
+                {
+                    client.getData().decompressed().usingWatcher(this).inBackground(this).forPath(path);
+                }
+                else
+                {
+                    client.getData().usingWatcher(this).inBackground(this).forPath(path);
+                }
             }
         }
 
@@ -285,7 +291,6 @@ public class TreeCache implements Closeable
         {
             stat.set(null);
             data.set(null);
-            client.clearWatcherReferences(this);
             ConcurrentMap<String, TreeNode> childMap = children.getAndSet(null);
             if ( childMap != null )
             {

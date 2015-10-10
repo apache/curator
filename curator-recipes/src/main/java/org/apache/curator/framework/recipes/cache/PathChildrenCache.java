@@ -315,7 +315,7 @@ public class PathChildrenCache implements Closeable
      */
     public void rebuild() throws Exception
     {
-        Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
+        Preconditions.checkState(state.get() == State.STARTED, "cache has been closed");
 
         ensurePath();
 
@@ -347,7 +347,7 @@ public class PathChildrenCache implements Closeable
     public void rebuildNode(String fullPath) throws Exception
     {
         Preconditions.checkArgument(ZKPaths.getPathAndNode(fullPath).getPath().equals(path), "Node is not part of this cache: " + fullPath);
-        Preconditions.checkState(!executorService.isShutdown(), "cache has been closed");
+        Preconditions.checkState(state.get() == State.STARTED, "cache has been closed");
 
         ensurePath();
         internalRebuildNode(fullPath);
@@ -370,8 +370,6 @@ public class PathChildrenCache implements Closeable
             client.getConnectionStateListenable().removeListener(connectionStateListener);
             listeners.clear();
             executorService.close();
-            client.clearWatcherReferences(childrenWatcher);
-            client.clearWatcherReferences(dataWatcher);
             client.removeWatchers();
 
             // TODO
