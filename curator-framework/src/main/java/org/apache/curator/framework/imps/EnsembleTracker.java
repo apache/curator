@@ -122,18 +122,21 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
 
     private void reset() throws Exception
     {
-        BackgroundCallback backgroundCallback = new BackgroundCallback()
+        if ( client.getState() == CuratorFrameworkState.STARTED )
         {
-            @Override
-            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            BackgroundCallback backgroundCallback = new BackgroundCallback()
             {
-                if ( event.getType() == CuratorEventType.GET_CONFIG )
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                 {
-                    processConfigData(event.getData());
+                    if ( event.getType() == CuratorEventType.GET_CONFIG )
+                    {
+                        processConfigData(event.getData());
+                    }
                 }
-            }
-        };
-        client.getConfig().usingWatcher(this).inBackground(backgroundCallback).forEnsemble();
+            };
+            client.getConfig().usingWatcher(this).inBackground(backgroundCallback).forEnsemble();
+        }
     }
 
     @VisibleForTesting
