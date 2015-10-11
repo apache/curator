@@ -21,22 +21,21 @@ package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.PathUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
@@ -44,8 +43,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -69,22 +66,18 @@ public class PersistentEphemeralNode implements Closeable
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean authFailure = new AtomicBoolean(false);
     private final BackgroundCallback backgroundCallback;
-    private final Watcher watcher = new Watcher()
+    private final CuratorWatcher watcher = new CuratorWatcher()
     {
         @Override
-        public void process(WatchedEvent event)
+        public void process(WatchedEvent event) throws Exception
         {
-            if ( event.getType() == EventType.NodeDeleted)
+            if ( event.getType() == EventType.NodeDeleted )
             {
                 createNode();
             }
-            else if ( event.getType() == EventType.NodeDataChanged)
+            else if ( event.getType() == EventType.NodeDataChanged )
             {
-                try {
-                    watchNode();
-                } catch (Exception e) {
-                    log.error(String.format("Unexpected error during watching of path: %s", basePath), e);
-                }
+                watchNode();
             }
         }
     };
@@ -99,21 +92,23 @@ public class PersistentEphemeralNode implements Closeable
             }
         }
     };
-    private final BackgroundCallback setDataCallback = new BackgroundCallback() {
-		
-		@Override
-		public void processResult(CuratorFramework client, CuratorEvent event)
-				throws Exception {
-			//If the result is ok then initialisation is complete (if we're still initialising)
-			//Don't retry on other errors as the only recoverable cases will be connection loss
-			//and the node not existing, both of which are already handled by other watches.
-			if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-			{
-				//Update is ok, mark initialisation as complete if required.
-				initialisationComplete();
-			}
-		}
-	};	
+    private final BackgroundCallback setDataCallback = new BackgroundCallback()
+    {
+
+        @Override
+        public void processResult(CuratorFramework client, CuratorEvent event)
+            throws Exception
+        {
+            //If the result is ok then initialisation is complete (if we're still initialising)
+            //Don't retry on other errors as the only recoverable cases will be connection loss
+            //and the node not existing, both of which are already handled by other watches.
+            if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+            {
+                //Update is ok, mark initialisation as complete if required.
+                initialisationComplete();
+            }
+        }
+    };
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -219,7 +214,7 @@ public class PersistentEphemeralNode implements Closeable
      * @param client   client instance
      * @param mode     creation/protection mode
      * @param basePath the base path for the node
-     * @param data     data for the node
+     * @param initData     data for the node
      */
     public PersistentEphemeralNode(CuratorFramework client, Mode mode, String basePath, byte[] initData)
     {
@@ -236,9 +231,9 @@ public class PersistentEphemeralNode implements Closeable
                 String path = null;
                 boolean nodeExists = false;
                 if ( event.getResultCode() == KeeperException.Code.NODEEXISTS.intValue() )
-                {                	
-                	path = event.getPath();
-                	nodeExists = true;
+                {
+                    path = event.getPath();
+                    nodeExists = true;
                 }
                 else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
@@ -246,23 +241,23 @@ public class PersistentEphemeralNode implements Closeable
                 }
                 else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
                 {
-                	log.warn("Client does not have authorisation to write ephemeral node at path {}", path);
-                	authFailure.set(true);
-                	return;
+                    log.warn("Client does not have authorisation to write ephemeral node at path {}", event.getPath());
+                    authFailure.set(true);
+                    return;
                 }
                 if ( path != null )
                 {
-                	authFailure.set(false);
+                    authFailure.set(false);
                     nodePath.set(path);
                     watchNode();
 
-                    if(nodeExists)
+                    if ( nodeExists )
                     {
-                       client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
+                        client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
                     }
                     else
                     {
-                    	initialisationComplete();
+                        initialisationComplete();
                     }
                 }
                 else
@@ -275,7 +270,7 @@ public class PersistentEphemeralNode implements Closeable
         createMethod = mode.isProtected() ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
         this.data.set(Arrays.copyOf(data, data.length));
     }
-    
+
     private void initialisationComplete()
     {
         CountDownLatch localLatch = initialCreateLatch.getAndSet(null);
@@ -360,7 +355,8 @@ public class PersistentEphemeralNode implements Closeable
         }
     }
 
-    private byte[] getData() {
+    private byte[] getData()
+    {
         return this.data.get();
     }
 
@@ -376,10 +372,6 @@ public class PersistentEphemeralNode implements Closeable
             catch ( KeeperException.NoNodeException ignore )
             {
                 // ignore
-            }
-            catch ( Exception e )
-            {
-                throw e;
             }
         }
     }
@@ -413,14 +405,7 @@ public class PersistentEphemeralNode implements Closeable
         String localNodePath = nodePath.get();
         if ( localNodePath != null )
         {
-            try
-            {
-                client.checkExists().usingWatcher(watcher).inBackground(checkExistsCallback).forPath(localNodePath);
-            }
-            catch ( Exception e )
-            {
-                throw e;
-            }
+            client.checkExists().usingWatcher(watcher).inBackground(checkExistsCallback).forPath(localNodePath);
         }
     }
 
@@ -428,10 +413,10 @@ public class PersistentEphemeralNode implements Closeable
     {
         return (state.get() == State.STARTED);
     }
-    
+
     @VisibleForTesting
     boolean isAuthFailure()
     {
-    	return authFailure.get();
+        return authFailure.get();
     }
 }
