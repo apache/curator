@@ -429,10 +429,10 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
             assertTrue(dataChangedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
 
-            Trigger deletedTrigger = Trigger.deleted();
+            Trigger deletedTrigger = Trigger.deletedOrSetData();
             observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
 
-            killSession(nodeCreator);
+            KillSession.kill(nodeCreator.getZookeeperClient().getZooKeeper());
 
             // Make sure the node got deleted...
             assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
@@ -477,49 +477,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
 
     @Test
-    public void testRecreatesNodeWhenItGetsDeletedAfterSetData() throws Exception
-    {
-        CuratorFramework curator = newCurator();
-
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
-        node.start();
-        try
-        {
-            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            String originalNode = node.getActualPath();
-            assertNodeExists(curator, originalNode);
-
-            Trigger dataChangedTrigger = Trigger.dataChanged();
-            curator.getData().usingWatcher(dataChangedTrigger).forPath(originalNode);
-
-            // update the data of the node
-            node.setData(new byte[0]);
-
-            // wait for the data to be updated:
-            assertTrue(dataChangedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-
-            // Delete the original node...
-            curator.delete().forPath(originalNode);
-
-            // Since we're using an ephemeral node, and the original session hasn't been interrupted the name of the new
-            // node that gets created is going to be exactly the same as the original.
-            Trigger createdWatchTrigger = Trigger.created();
-            Stat stat = curator.checkExists().usingWatcher(createdWatchTrigger).forPath(originalNode);
-            assertTrue(stat != null || createdWatchTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-        }
-        finally
-        {
-            node.close();
-        }
-    }
-
-    @Test
     public void testNodesCreateUniquePaths() throws Exception
     {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node1 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]);
-        try
+        try ( PersistentEphemeralNode node1 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]) )
         {
             node1.start();
             node1.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
@@ -538,10 +500,6 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             {
                 node2.close();
             }
-        }
-        finally
-        {
-            node1.close();
         }
     }
 
@@ -589,7 +547,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             CloseableUtils.closeQuietly(node);
         }
     }
-    
+
     @Test
     public void testSetDataWhenDisconnected() throws Exception
     {
