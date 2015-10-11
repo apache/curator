@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.nodes;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -50,6 +51,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -315,7 +317,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             assertNodeExists(observer, node.getActualPath());
 
             // Register a watch that will fire when the node is deleted...
-            Trigger deletedTrigger = Trigger.deleted();
+            Trigger deletedTrigger = Trigger.deletedOrSetData();
             observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
 
             node.debugCreateNodeLatch = new CountDownLatch(1);
@@ -344,7 +346,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             node.waitForInitialCreate(5, TimeUnit.SECONDS);
             assertNodeExists(observer, node.getActualPath());
 
-            Trigger deletedTrigger = Trigger.deleted();
+            Trigger deletedTrigger = Trigger.deletedOrSetData();
             observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
 
             node.debugCreateNodeLatch = new CountDownLatch(1);
@@ -382,8 +384,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             // We should be able to disconnect multiple times and each time the node should be recreated.
             for ( int i = 0; i < 5; i++ )
             {
-                Trigger deletionTrigger = Trigger.deleted();
-                observer.checkExists().usingWatcher(deletionTrigger).forPath(path);
+                Trigger deletionTrigger = Trigger.deletedOrSetData();
+                Stat stat = observer.checkExists().usingWatcher(deletionTrigger).forPath(path);
+                Assert.assertNotNull(stat, "node should exist: " + path);
 
                 node.debugCreateNodeLatch = new CountDownLatch(1);
                 // Kill the session, thus cleaning up the node...
@@ -395,7 +398,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
                 // Now put a watch in the background looking to see if it gets created...
                 Trigger creationTrigger = Trigger.created();
-                Stat stat = observer.checkExists().usingWatcher(creationTrigger).forPath(path);
+                stat = observer.checkExists().usingWatcher(creationTrigger).forPath(path);
                 assertTrue(stat != null || creationTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
             }
         }
@@ -688,25 +691,25 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
     private static final class Trigger implements Watcher
     {
-        private final Event.EventType type;
+        private final Set<EventType> types;
         private final CountDownLatch latch;
 
-        public Trigger(Event.EventType type)
+        public Trigger(Event.EventType... types)
         {
-            assertNotNull(type);
+            assertNotNull(types);
 
-            this.type = type;
+            this.types = ImmutableSet.copyOf(types);
             this.latch = new CountDownLatch(1);
         }
 
         @Override
         public void process(WatchedEvent event)
         {
-            if ( type == event.getType() )
+            if ( types.contains(event.getType()) )
             {
                 latch.countDown();
             }
-            else if ( type != EventType.None )
+            else if ( event.getType() != EventType.None )
             {
                 log.warn("Unexpected watcher event: " + event);
             }
@@ -730,9 +733,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             return new Trigger(Event.EventType.NodeCreated);
         }
 
-        private static Trigger deleted()
+        private static Trigger deletedOrSetData()
         {
-            return new Trigger(Event.EventType.NodeDeleted);
+            return new Trigger(Event.EventType.NodeDeleted, EventType.NodeDataChanged);
         }
     }
 }
