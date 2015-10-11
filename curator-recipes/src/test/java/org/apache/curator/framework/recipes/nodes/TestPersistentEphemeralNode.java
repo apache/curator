@@ -409,6 +409,46 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
 
     @Test
+    public void testRecreatesNodeWhenEphemeralOwnerSessionExpires() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+        CuratorFramework nodeCreator = newCurator();
+        CuratorFramework observer = newCurator();
+
+        nodeCreator.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(PATH, new byte[0]);
+
+        Trigger dataChangedTrigger = Trigger.dataChanged();
+        observer.getData().usingWatcher(dataChangedTrigger).forPath(PATH);
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.start();
+        try
+        {
+            node.waitForInitialCreate(5, TimeUnit.SECONDS);
+            assertNodeExists(observer, node.getActualPath());
+
+            assertTrue(dataChangedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+
+            Trigger deletedTrigger = Trigger.deleted();
+            observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
+
+            killSession(nodeCreator);
+
+            // Make sure the node got deleted...
+            assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+
+            // Check for it to be recreated...
+            Trigger createdTrigger = Trigger.created();
+            Stat stat = observer.checkExists().usingWatcher(createdTrigger).forPath(node.getActualPath());
+            assertTrue(stat != null || createdTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+        }
+        finally
+        {
+            node.close();
+        }
+    }
+
+    @Test
     public void testRecreatesNodeWhenItGetsDeleted() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -433,6 +473,43 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(node);
+        }
+    }
+
+    @Test
+    public void testRecreatesNodeWhenItGetsDeletedAfterSetData() throws Exception
+    {
+        CuratorFramework curator = newCurator();
+
+        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.start();
+        try
+        {
+            node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            String originalNode = node.getActualPath();
+            assertNodeExists(curator, originalNode);
+
+            Trigger dataChangedTrigger = Trigger.dataChanged();
+            curator.getData().usingWatcher(dataChangedTrigger).forPath(originalNode);
+
+            // update the data of the node
+            node.setData(new byte[0]);
+
+            // wait for the data to be updated:
+            assertTrue(dataChangedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+
+            // Delete the original node...
+            curator.delete().forPath(originalNode);
+
+            // Since we're using an ephemeral node, and the original session hasn't been interrupted the name of the new
+            // node that gets created is going to be exactly the same as the original.
+            Trigger createdWatchTrigger = Trigger.created();
+            Stat stat = curator.checkExists().usingWatcher(createdWatchTrigger).forPath(originalNode);
+            assertTrue(stat != null || createdWatchTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+        }
+        finally
+        {
+            node.close();
         }
     }
 
@@ -736,6 +813,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         private static Trigger deletedOrSetData()
         {
             return new Trigger(Event.EventType.NodeDeleted, EventType.NodeDataChanged);
+        }
+
+        private static Trigger dataChanged()
+        {
+            return new Trigger(EventType.NodeDataChanged);
         }
     }
 }
