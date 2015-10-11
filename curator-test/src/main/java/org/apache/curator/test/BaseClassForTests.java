@@ -19,12 +19,10 @@
 
 package org.apache.curator.test;
 
-import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.IInvokedMethod;
 import org.testng.IInvokedMethodListener;
-import org.testng.IRetryAnalyzer;
 import org.testng.ITestContext;
 import org.testng.ITestNGListener;
 import org.testng.ITestNGMethod;
@@ -34,7 +32,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import java.io.IOException;
 import java.net.BindException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BaseClassForTests
 {
@@ -44,25 +41,21 @@ public class BaseClassForTests
     private static final int RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
-    private static final String INTERNAL_RETRY_FAILED_TESTS;
 
     static
     {
         String logConnectionIssues = null;
-        String retryFailedTests = null;
         try
         {
             // use reflection to avoid adding a circular dependency in the pom
             Class<?> debugUtilsClazz = Class.forName("org.apache.curator.utils.DebugUtils");
             logConnectionIssues = (String)debugUtilsClazz.getField("PROPERTY_DONT_LOG_CONNECTION_ISSUES").get(null);
-            retryFailedTests = (String)debugUtilsClazz.getField("PROPERTY_RETRY_FAILED_TESTS").get(null);
         }
         catch ( Exception e )
         {
             e.printStackTrace();
         }
         INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES = logConnectionIssues;
-        INTERNAL_RETRY_FAILED_TESTS = retryFailedTests;
         String s = null;
         try
         {
@@ -103,7 +96,6 @@ public class BaseClassForTests
         for ( ITestNGMethod method : context.getAllTestMethods() )
         {
             method.setInvocationCount(enabledSessionExpiredStateAware() ? 1 : 2);
-            method.setRetryAnalyzer(new RetryTest());
         }
     }
 
@@ -155,31 +147,4 @@ public class BaseClassForTests
     {
         return false;
     }
-
-    private static class RetryTest implements IRetryAnalyzer
-    {
-        private final AtomicBoolean hasBeenRetried = new AtomicBoolean(!Boolean.getBoolean(INTERNAL_RETRY_FAILED_TESTS));
-
-        @Override
-        public boolean retry(ITestResult result)
-        {
-            boolean isRetrying = hasBeenRetried.compareAndSet(false, true);
-            if ( isRetrying )
-            {
-                System.err.println(String.format("Waiting " + RETRY_WAIT_MS + " ms and retrying test. Name: %s - TestName: %s ", result.getName(), result.getTestName()));
-                try
-                {
-                    Thread.sleep(RETRY_WAIT_MS);
-                }
-                catch ( InterruptedException e )
-                {
-                    System.err.println(String.format("Retry interrupted. Name: %s - TestName: %s ", result.getName(), result.getTestName()));
-                    Thread.currentThread().interrupt();
-                    isRetrying = false;
-                }
-            }
-            return isRetrying;
-        }
-    }
-
 }
