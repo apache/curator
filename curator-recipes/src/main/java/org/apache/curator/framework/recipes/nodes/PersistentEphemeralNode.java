@@ -74,10 +74,18 @@ public class PersistentEphemeralNode implements Closeable
         @Override
         public void process(WatchedEvent event)
         {
-        	if ( event.getType() == EventType.NodeDeleted)
-        	{
-        		createNode();
-        	}
+            if ( event.getType() == EventType.NodeDeleted)
+            {
+                createNode();
+            }
+            else if ( event.getType() == EventType.NodeDataChanged)
+            {
+                try {
+                    watchNode();
+                } catch (Exception e) {
+                    log.error(String.format("Unexpected error during watching of path: %s", basePath), e);
+                }
+            }
         }
     };
     private final BackgroundCallback checkExistsCallback = new BackgroundCallback()
