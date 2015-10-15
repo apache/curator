@@ -69,7 +69,7 @@ public class SyncBuilderImpl implements SyncBuilder, BackgroundOperation<String>
     @Override
     public Pathable<Void> inBackground(BackgroundCallback callback, Executor executor)
     {
-        backgrounding = new Backgrounding(callback, executor);
+        backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
