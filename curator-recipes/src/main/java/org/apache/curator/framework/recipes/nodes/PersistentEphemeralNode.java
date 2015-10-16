@@ -361,7 +361,12 @@ public class PersistentEphemeralNode implements Closeable
         }
     }
 
-    private byte[] getData()
+    /**
+     * Return the current value of our data
+     *
+     * @return our data
+     */
+    public byte[] getData()
     {
         return this.data.get();
     }
