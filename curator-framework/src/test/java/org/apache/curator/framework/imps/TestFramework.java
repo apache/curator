@@ -592,6 +592,48 @@ public class TestFramework extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+    
+    @Test
+    public void testCreateContainersWithNamespace() throws Exception
+    {
+        final String namespace = "container1";
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).namespace(namespace).build();
+        try
+        {
+            client.start();
+            String path = "/path1/path2";
+            client.createContainers(path);
+            Assert.assertNotNull(client.checkExists().forPath(path));
+            Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/" + namespace + path, false));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+    
+    
+    @Test
+    public void testCreateContainersUsingNamespace() throws Exception
+    {
+        final String namespace = "container2";
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).build();
+        try
+        {
+            client.start();
+            CuratorFramework nsClient = client.usingNamespace(namespace);
+            String path = "/path1/path2";
+            nsClient.createContainers(path);
+            Assert.assertNotNull(nsClient.checkExists().forPath(path));
+            Assert.assertNotNull(nsClient.getZookeeperClient().getZooKeeper().exists("/" + namespace + path, false));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 
     @Test
     public void testNamespace() throws Exception
