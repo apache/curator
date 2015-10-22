@@ -18,11 +18,10 @@
  */
 package org.apache.curator.framework;
 
-import org.apache.curator.utils.EnsurePath;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Similar to {@link EnsurePath} but creates containers.
+ * Similar to {@link org.apache.curator.utils.EnsurePath} but creates containers.
  *
  */
 public class EnsureContainers
