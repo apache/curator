@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework;
 
-import org.apache.curator.utils.EnsurePath;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
