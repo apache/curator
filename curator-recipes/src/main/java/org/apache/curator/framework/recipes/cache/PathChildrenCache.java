@@ -28,6 +28,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
+import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -75,6 +76,7 @@ public class PathChildrenCache implements Closeable
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
     private final Set<Operation> operationsQuantizer = Sets.newSetFromMap(Maps.<Operation, Boolean>newConcurrentMap());
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+    private final EnsureContainers ensureContainers;
 
     private enum State
     {
@@ -218,6 +220,7 @@ public class PathChildrenCache implements Closeable
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.executorService = executorService;
+        ensureContainers = new EnsureContainers(client, path);
     }
 
     /**
@@ -560,6 +563,11 @@ public class PathChildrenCache implements Closeable
         log.error("", e);
     }
 
+    protected void ensurePath() throws Exception
+    {
+        ensureContainers.ensure();
+    }
+
     @VisibleForTesting
     protected void remove(String fullPath)
     {
@@ -606,11 +614,6 @@ public class PathChildrenCache implements Closeable
                 currentData.remove(fullPath);
             }
         }
-    }
-
-    private void ensurePath() throws Exception
-    {
-        client.createContainers(path);
     }
 
     private void handleStateChange(ConnectionState newState)

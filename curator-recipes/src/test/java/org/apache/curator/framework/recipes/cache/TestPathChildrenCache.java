@@ -277,18 +277,21 @@ public class TestPathChildrenCache extends BaseClassForTests
         client.start();
         try
         {
-            PathChildrenCache cache = new PathChildrenCache(client, "/one/two/three", false);
-            cache.start();
-            timing.sleepABit();
+            try ( PathChildrenCache cache = new PathChildrenCache(client, "/one/two/three", false) )
+            {
+                cache.start();
+                timing.sleepABit();
 
-            try
-            {
-                client.create().forPath("/one/two/three/four");
+                try
+                {
+                    client.create().forPath("/one/two/three/four");
+                }
+                catch ( KeeperException.NoNodeException e )
+                {
+                    Assert.fail("Path should exist", e);
+                }
             }
-            catch ( KeeperException.NoNodeException e )
-            {
-                Assert.fail("Path should exist", e);
-            }
+            timing.sleepABit();
         }
         finally
         {
