@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.queue;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -49,6 +50,7 @@ public class SimpleDistributedQueue
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final String path;
+    private final EnsureContainers ensureContainers;
 
     private final String PREFIX = "qn-";
 
@@ -60,6 +62,7 @@ public class SimpleDistributedQueue
     {
         this.client = client;
         this.path = PathUtils.validatePath(path);
+        ensureContainers = new EnsureContainers(client, path);
     }
 
     /**
@@ -174,6 +177,11 @@ public class SimpleDistributedQueue
         }
     }
 
+    protected void ensurePath() throws Exception
+    {
+        ensureContainers.ensure();
+    }
+
     private byte[] internalPoll(long timeout, TimeUnit unit) throws Exception
     {
         ensurePath();
@@ -213,11 +221,6 @@ public class SimpleDistributedQueue
                 latch.await();
             }
         }
-    }
-
-    private void ensurePath() throws Exception
-    {
-        client.createContainers(path);
     }
 
     private byte[] internalElement(boolean removeIt, Watcher watcher) throws Exception
