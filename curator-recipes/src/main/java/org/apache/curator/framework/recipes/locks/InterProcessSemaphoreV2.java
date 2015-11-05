@@ -422,6 +422,12 @@ public class InterProcessSemaphoreV2
             {
                 return client.getData().forPath(path);
             }
+
+            @Override
+            public String getNodeName()
+            {
+                return ZKPaths.getNodeFromPath(path);
+            }
         };
     }
 

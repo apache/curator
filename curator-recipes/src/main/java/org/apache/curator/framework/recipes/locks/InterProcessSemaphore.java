@@ -25,6 +25,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.shared.SharedCountListener;
 import org.apache.curator.framework.recipes.shared.SharedCountReader;
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -282,6 +283,12 @@ public class InterProcessSemaphore
             public byte[] getData() throws Exception
             {
                 return internals.getClient().getData().forPath(path);
+            }
+
+            @Override
+            public String getNodeName()
+            {
+                return ZKPaths.getNodeFromPath(path);
             }
         };
     }
