@@ -43,4 +43,11 @@ public interface Lease extends Closeable
      * @throws Exception errors
      */
     public byte[]   getData() throws Exception;
+
+    /**
+     * Returns the node name the corresponds to this Lease
+     *
+     * @return node name
+     */
+    public String getNodeName();
 }
