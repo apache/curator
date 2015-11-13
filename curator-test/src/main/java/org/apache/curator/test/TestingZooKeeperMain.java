@@ -32,7 +32,6 @@ import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import javax.management.JMException;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -132,7 +131,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     @Override
     public void blockUntilStarted() throws Exception
     {
-        Assert.assertTrue(timing.awaitLatch(latch));
+        assert timing.awaitLatch(latch);
 
         if ( zkServer != null )
         {
