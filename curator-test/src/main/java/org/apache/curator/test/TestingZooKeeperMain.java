@@ -131,7 +131,8 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     @Override
     public void blockUntilStarted() throws Exception
     {
-        assert timing.awaitLatch(latch);
+        if(!timing.awaitLatch(latch))
+            throw new IllegalStateException("Timed out waiting for watch removal");
 
         if ( zkServer != null )
         {
