@@ -533,7 +533,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     <DATA_TYPE> void queueOperation(OperationAndData<DATA_TYPE> operationAndData)
     {
-        backgroundOperations.offer(operationAndData);
+        if ( getState() == CuratorFrameworkState.STARTED )
+        {
+            backgroundOperations.offer(operationAndData);
+        }
     }
 
     void logError(String reason, final Throwable e)
