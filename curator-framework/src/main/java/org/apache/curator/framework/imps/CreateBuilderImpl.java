@@ -24,7 +24,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
@@ -464,13 +463,13 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
         else
         {
-            String path = protectedPathInForeground(givenPath, adjustedPath, data);
+            String path = protectedPathInForeground(adjustedPath, data);
             returnPath = client.unfixForNamespace(path);
         }
         return returnPath;
     }
 
-    private String protectedPathInForeground(String givenPath, String adjustedPath, byte[] data) throws Exception
+    private String protectedPathInForeground(String adjustedPath, byte[] data) throws Exception
     {
         try
         {
@@ -485,8 +484,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                  * CURATOR-45 + CURATOR-79: we don't know if the create operation was successful or not,
                  * register the znode to be sure it is deleted later.
                  */
-                String localProtectedId = protectedId;
-                findAndDeleteProtectedNodeInBackground(givenPath, localProtectedId, null);
+                new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(adjustedPath).getPath(), protectedId).execute();
                 /*
                 * The current UUID is scheduled to be deleted, it is not safe to use it again.
                 * If this builder is used again later create a new UUID
@@ -635,7 +633,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     if ( doProtected )
                     {
                         // all retries have failed, findProtectedNodeInForeground(..) included, schedule a clean up
-                        findAndDeleteProtectedNodeInBackground(givenPath, protectedId, null);
+                        new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(path).getPath(), protectedId).execute();
                         // assign a new id if this builder is used again later
                         protectedId = UUID.randomUUID().toString();
                     }
@@ -793,62 +791,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     }
 
     /**
-     * Attempt to delete a protected znode
-     *
-     * @param unAdjustedPath the path - raw without namespace resolution
-     * @param protectedId    the protected id
-     * @param callback       callback to use, <code>null</code> to create a new one
-     */
-    private void findAndDeleteProtectedNodeInBackground(String unAdjustedPath, String protectedId, FindProtectedNodeCB callback)
-    {
-        if ( client.getState() == CuratorFrameworkState.STARTED )
-        {
-            if ( callback == null )
-            {
-                callback = new FindProtectedNodeCB(unAdjustedPath, protectedId);
-            }
-            try
-            {
-                client.getChildren().inBackground(callback).forPath(ZKPaths.getPathAndNode(unAdjustedPath).getPath());
-            }
-            catch ( Exception e )
-            {
-                findAndDeleteProtectedNodeInBackground(unAdjustedPath, protectedId, callback);
-            }
-        }
-    }
-
-    private class FindProtectedNodeCB implements BackgroundCallback
-    {
-        final String path;
-        final String protectedId;
-
-        private FindProtectedNodeCB(String path, String protectedId)
-        {
-            this.path = path;
-            this.protectedId = protectedId;
-        }
-
-        @Override
-        public void processResult(CuratorFramework ignoreClient, CuratorEvent event) throws Exception
-        {
-            if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-            {
-                final String node = findNode(event.getChildren(), ZKPaths.getPathAndNode(path).getPath(), protectedId);
-                if ( node != null )
-                {
-                    client.delete().guaranteed().inBackground().forPath(node);
-                }
-            }
-            else if ( event.getResultCode() == KeeperException.Code.CONNECTIONLOSS.intValue() )
-            {
-                // retry
-                findAndDeleteProtectedNodeInBackground(path, protectedId, this);
-            }
-        }
-    }
-
-    /**
      * Attempt to find the znode that matches the given path and protected id
      *
      * @param children    a list of candidates znodes
@@ -856,7 +798,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
      * @param protectedId the protected id
      * @return the absolute path of the znode or <code>null</code> if it is not found
      */
-    private static String findNode(final List<String> children, final String path, final String protectedId)
+    static String findNode(final List<String> children, final String path, final String protectedId)
     {
         final String protectedPrefix = getProtectedPrefix(protectedId);
         String foundNode = Iterables.find

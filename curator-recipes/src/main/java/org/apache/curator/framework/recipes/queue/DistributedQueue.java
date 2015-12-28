@@ -583,6 +583,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         final Semaphore processedLatch = new Semaphore(0);
         final boolean   isUsingLockSafety = (lockPath != null);
         int             min = minItemsBeforeRefresh;
+        int             submittedQty = 0;
         for ( final String itemNode : children )
         {
             if ( Thread.currentThread().isInterrupted() )
@@ -602,7 +603,6 @@ public class DistributedQueue<T> implements QueueBase<T>
             {
                 if ( refreshOnWatch && (currentVersion != childrenCache.getData().version) )
                 {
-                    processedLatch.release(children.size());
                     break;
                 }
             }
@@ -642,9 +642,10 @@ public class DistributedQueue<T> implements QueueBase<T>
                     }
                 }
             );
+            ++submittedQty;
         }
 
-        processedLatch.acquire(children.size());
+        processedLatch.acquire(submittedQty);
     }
 
     private enum ProcessMessageBytesCode
