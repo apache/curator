@@ -31,6 +31,7 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
@@ -129,7 +130,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                 {
-                    if ( event.getType() == CuratorEventType.GET_CONFIG )
+                    if ( (event.getType() == CuratorEventType.GET_CONFIG) && (event.getResultCode() == KeeperException.Code.OK.intValue()) )
                     {
                         processConfigData(event.getData());
                     }
