@@ -97,7 +97,7 @@ class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void
 
                 if ( rc != KeeperException.Code.OK.intValue() )
                 {
-                    CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.CHILDREN, rc, path, null, o, stat, null, strings, null, null);
+                    CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.CHILDREN, rc, path, null, o, stat, null, strings, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
                 }
             }
