@@ -72,6 +72,7 @@ public class TestFrameworkEdges extends BaseClassForTests
 
                 CreateBuilderImpl createBuilder = (CreateBuilderImpl)localClient.create();
                 createBuilder.failNextCreateForTesting = true;
+                FindAndDeleteProtectedNodeInBackground.debugInsertError.set(true);
                 try
                 {
                     createBuilder.withProtection().forPath("/parent/test");
