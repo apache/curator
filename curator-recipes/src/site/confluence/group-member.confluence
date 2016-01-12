@@ -5,7 +5,7 @@ Group membership management. Adds this instance into a group and keeps a cache o
 
 h2. Participating Classes
 * GroupMember
-* PersistentEphemeralNode
+* PersistentNode
 * PathChildrenCache
 
 h2. Usage
