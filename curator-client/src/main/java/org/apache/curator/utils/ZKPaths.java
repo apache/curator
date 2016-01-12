@@ -278,7 +278,7 @@ public class ZKPaths
                     List<ACL> acl = null;
                     if ( aclProvider != null )
                     {
-                        acl = aclProvider.getAclForPath(path);
+                        acl = aclProvider.getAclForPath(subPath);
                         if ( acl == null )
                         {
                             acl = aclProvider.getDefaultAcl();
