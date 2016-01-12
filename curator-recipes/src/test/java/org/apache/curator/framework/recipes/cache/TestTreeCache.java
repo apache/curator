@@ -22,6 +22,7 @@ package org.apache.curator.framework.recipes.cache;
 import com.google.common.collect.ImmutableSet;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.KillSession;
+import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
@@ -30,6 +31,53 @@ import java.util.concurrent.Semaphore;
 
 public class TestTreeCache extends BaseTestTreeCache
 {
+    @Test
+    public void testSelector() throws Exception
+    {
+        client.create().forPath("/root");
+        client.create().forPath("/root/n1-a");
+        client.create().forPath("/root/n1-b");
+        client.create().forPath("/root/n1-b/n2-a");
+        client.create().forPath("/root/n1-b/n2-b");
+        client.create().forPath("/root/n1-b/n2-b/n3-a");
+        client.create().forPath("/root/n1-c");
+        client.create().forPath("/root/n1-d");
+
+        TreeCacheSelector selector = new TreeCacheSelector()
+        {
+            @Override
+            public boolean traverseChildren(String fullPath)
+            {
+                return !fullPath.equals("/root/n1-b/n2-b");
+            }
+
+            @Override
+            public boolean acceptChild(String fullPath)
+            {
+                return !fullPath.equals("/root/n1-c");
+            }
+        };
+        TreeCache treeCache = TreeCache.newBuilder(client, "/root").setSelector(selector).build();
+        try
+        {
+            treeCache.getListenable().addListener(eventListener);
+            treeCache.start();
+
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-a");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-d");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b/n2-a");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b/n2-b");
+            assertEvent(TreeCacheEvent.Type.INITIALIZED);
+            assertNoMoreEvents();
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(treeCache);
+        }
+    }
+
     @Test
     public void testStartup() throws Exception
     {
