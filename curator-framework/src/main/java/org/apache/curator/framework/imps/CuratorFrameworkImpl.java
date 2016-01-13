@@ -271,6 +271,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             handleBackgroundOperationException(null, e);
         }
     }
@@ -293,6 +294,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     }
                     catch ( Exception e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         log.error("Exception while sending Closing event", e);
                     }
                     return null;
@@ -725,8 +727,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
             {
                 e = (code != null) ? KeeperException.create(code) : null;
             }
-            catch ( Throwable ignore )
+            catch ( Throwable t )
             {
+                ThreadUtils.checkInterrupted(t);
             }
             if ( e == null )
             {
@@ -747,6 +750,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             handleBackgroundOperationException(operationAndData, e);
         }
     }
@@ -832,6 +836,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         catch ( Throwable e )
         {
+            ThreadUtils.checkInterrupted(e);
+
             /**
              * Fix edge case reported as CURATOR-52. ConnectionState.checkTimeouts() throws KeeperException.ConnectionLossException
              * when the initial (or previously failed) connection cannot be re-established. This needs to be run through the retry policy
@@ -877,6 +883,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     logError("Event listener threw exception", e);
                 }
                 return null;

@@ -26,6 +26,14 @@ import java.util.concurrent.ThreadFactory;
 
 public class ThreadUtils
 {
+    public static void checkInterrupted(Throwable e)
+    {
+        if ( e instanceof InterruptedException )
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public static ExecutorService newSingleThreadExecutor(String processName)
     {
         return Executors.newSingleThreadExecutor(newThreadFactory(processName));

@@ -153,6 +153,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -184,6 +185,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -220,6 +222,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -257,6 +260,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -285,6 +289,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -314,6 +319,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -329,6 +335,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -351,6 +358,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -380,6 +388,7 @@ public class CuratorProjectionService
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             log.error("Could not release left-over lock for path: " + path, e);
                         }
                     }
@@ -390,6 +399,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -415,6 +425,7 @@ public class CuratorProjectionService
                     }
                     catch ( IOException e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         log.error("Could not close left-over leader latch for path: " + path, e);
                     }
                 }
@@ -446,6 +457,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -475,6 +487,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -491,6 +504,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -516,6 +530,7 @@ public class CuratorProjectionService
                     }
                     catch ( IOException e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         log.error("Could not close left-over PathChildrenCache for path: " + path, e);
                     }
                 }
@@ -536,6 +551,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -563,6 +579,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -579,6 +596,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -604,6 +622,7 @@ public class CuratorProjectionService
                     }
                     catch ( IOException e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         log.error("Could not close left-over NodeCache for path: " + path, e);
                     }
                 }
@@ -624,6 +643,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -640,6 +660,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -665,6 +686,7 @@ public class CuratorProjectionService
                     }
                     catch ( Exception e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         log.error("Could not release left-over persistent ephemeral node for path: " + path, e);
                     }
                 }
@@ -674,6 +696,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -706,6 +729,7 @@ public class CuratorProjectionService
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             log.error("Could not release semaphore leases for path: " + path, e);
                         }
                     }
@@ -716,6 +740,7 @@ public class CuratorProjectionService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }

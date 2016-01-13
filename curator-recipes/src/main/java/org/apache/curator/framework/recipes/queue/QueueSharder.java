@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -279,6 +280,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Checking queue counts against threshold", e);
         }
     }

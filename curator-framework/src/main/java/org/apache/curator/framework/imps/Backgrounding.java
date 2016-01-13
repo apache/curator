@@ -21,6 +21,7 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import java.util.concurrent.Executor;
 
@@ -110,6 +111,7 @@ class Backgrounding
                             }
                             catch ( Exception e )
                             {
+                                ThreadUtils.checkInterrupted(e);
                                 if ( e instanceof KeeperException )
                                 {
                                     client.validateConnection(client.codeToState(((KeeperException)e).code()));

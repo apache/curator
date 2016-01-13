@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery.server.entity;
 
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceInstanceBuilder;
 import org.apache.curator.x.discovery.ServiceType;
@@ -95,6 +96,7 @@ public class JsonServiceInstanceMarshaller<T> implements MessageBodyReader<Servi
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new WebApplicationException(e);
         }
 
@@ -144,6 +146,7 @@ public class JsonServiceInstanceMarshaller<T> implements MessageBodyReader<Servi
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new WebApplicationException(e);
         }
     }

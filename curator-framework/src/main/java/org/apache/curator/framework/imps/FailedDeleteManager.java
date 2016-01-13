@@ -19,6 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ class FailedDeleteManager
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 addFailedDelete(path);
             }
         }

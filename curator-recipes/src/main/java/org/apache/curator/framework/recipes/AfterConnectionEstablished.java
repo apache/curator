@@ -57,6 +57,7 @@ public class AfterConnectionEstablished
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     log.error("An error occurred blocking until a connection is available", e);
                 }
                 finally

@@ -31,6 +31,7 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -633,6 +634,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             log.error("Error processing message at " + itemNode, e);
                         }
                         finally
@@ -663,6 +665,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         }
         catch ( Throwable e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Corrupted queue item: " + itemNode, e);
             return resultCode;
         }
@@ -681,6 +684,7 @@ public class DistributedQueue<T> implements QueueBase<T>
             }
             catch ( Throwable e )
             {
+                ThreadUtils.checkInterrupted(e);
                 log.error("Exception processing queue item: " + itemNode, e);
                 if ( errorMode.get() == ErrorMode.REQUEUE )
                 {

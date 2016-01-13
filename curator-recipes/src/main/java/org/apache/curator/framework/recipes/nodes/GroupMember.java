@@ -26,6 +26,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import java.io.Closeable;
 import java.util.Map;
@@ -77,6 +78,7 @@ public class GroupMember implements Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             Throwables.propagate(e);
         }
     }
@@ -94,6 +96,7 @@ public class GroupMember implements Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             Throwables.propagate(e);
         }
     }

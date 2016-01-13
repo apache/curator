@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.locks;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ThreadUtils;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -110,6 +111,7 @@ public class InterProcessMultiLock implements InterProcessLock
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 success = false;
                 exception = e;
             }
@@ -125,6 +127,7 @@ public class InterProcessMultiLock implements InterProcessLock
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     // ignore
                 }
             }
@@ -156,6 +159,7 @@ public class InterProcessMultiLock implements InterProcessLock
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 if ( baseException == null )
                 {
                     baseException = e;

@@ -21,6 +21,7 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
@@ -89,6 +90,7 @@ class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             log.error("Could not start guaranteed delete for node: " + node);
                             rc = KeeperException.Code.CONNECTIONLOSS.intValue();
                         }

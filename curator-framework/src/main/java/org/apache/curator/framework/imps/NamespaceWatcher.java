@@ -19,6 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
@@ -68,6 +69,7 @@ class NamespaceWatcher implements Watcher, Closeable
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     client.logError("Watcher exception", e);
                 }
             }
