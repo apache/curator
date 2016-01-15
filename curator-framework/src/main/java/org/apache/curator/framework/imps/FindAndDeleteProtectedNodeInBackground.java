@@ -52,6 +52,7 @@ class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void
             @Override
             public void retriesExhausted(OperationAndData<Void> operationAndData)
             {
+                operationAndData.reset();
                 client.processBackgroundOperation(operationAndData, null);
             }
         };
