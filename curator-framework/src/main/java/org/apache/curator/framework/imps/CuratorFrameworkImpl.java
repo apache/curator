@@ -22,6 +22,7 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
@@ -257,8 +258,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
             client.start();
 
-            executorService = Executors.newFixedThreadPool(2, threadFactory);  // 1 for listeners, 1 for background ops
-
+            executorService = Executors.newSingleThreadScheduledExecutor(threadFactory);
             executorService.submit(new Callable<Object>()
             {
                 @Override
@@ -794,24 +794,31 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void backgroundOperationsLoop()
     {
-        while ( !Thread.currentThread().isInterrupted() )
+        try
         {
-            OperationAndData<?> operationAndData;
-            try
+            while ( state.get() == CuratorFrameworkState.STARTED )
             {
-                operationAndData = backgroundOperations.take();
-                if ( debugListener != null )
+                OperationAndData<?> operationAndData;
+                try
                 {
-                    debugListener.listen(operationAndData);
+                    operationAndData = backgroundOperations.take();
+                    if ( debugListener != null )
+                    {
+                        debugListener.listen(operationAndData);
+                    }
+                    performBackgroundOperation(operationAndData);
+                }
+                catch ( InterruptedException e )
+                {
+                    // swallow the interrupt as it's only possible from either a background
+                    // operation and, thus, doesn't apply to this loop or the instance
+                    // is being closed in which case the while test will get it
                 }
             }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                break;
-            }
-
-            performBackgroundOperation(operationAndData);
+        }
+        finally
+        {
+            log.info("backgroundOperationsLoop exiting");
         }
     }
 
