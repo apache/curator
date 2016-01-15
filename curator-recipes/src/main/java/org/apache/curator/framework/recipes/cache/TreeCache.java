@@ -296,8 +296,8 @@ public class TreeCache implements Closeable
 
         void wasDeleted() throws Exception
         {
-            stat.set(null);
-            data.set(null);
+            Stat oldStat = stat.getAndSet(null);
+            byte[] oldData = data.getAndSet(null);
             client.clearWatcherReferences(this);
             ConcurrentMap<String, TreeNode> childMap = children.getAndSet(null);
             if ( childMap != null )
@@ -318,7 +318,7 @@ public class TreeCache implements Closeable
             NodeState oldState = nodeState.getAndSet(NodeState.DEAD);
             if ( oldState == NodeState.LIVE )
             {
-                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, path);
+                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, new ChildData(path, oldStat, oldData));
             }
 
             if ( parent == null )
