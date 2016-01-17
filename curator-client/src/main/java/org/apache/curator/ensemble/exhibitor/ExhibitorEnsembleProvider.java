@@ -301,7 +301,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                     values.putAll(decodeExhibitorList(encoded));
                     done = true;
                 }
-                catch ( Throwable e )
+                catch ( Exception e )
                 {
                     if ( retryPolicy.allowRetry(retries++, System.currentTimeMillis() - start, RetryLoop.getDefaultRetrySleeper()) )
                     {

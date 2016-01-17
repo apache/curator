@@ -53,28 +53,17 @@ public class TestCloseableExecutorService
     @Test
     public void testBasicRunnable() throws InterruptedException
     {
-        try
+        CloseableExecutorService service = new CloseableExecutorService(executorService);
+        CountDownLatch startLatch = new CountDownLatch(QTY);
+        CountDownLatch latch = new CountDownLatch(QTY);
+        for ( int i = 0; i < QTY; ++i )
         {
-            CloseableExecutorService service = new CloseableExecutorService(executorService);
-            CountDownLatch startLatch = new CountDownLatch(QTY);
-            CountDownLatch latch = new CountDownLatch(QTY);
-            for ( int i = 0; i < QTY; ++i )
-            {
-                submitRunnable(service, startLatch, latch);
-            }
+            submitRunnable(service, startLatch, latch);
+        }
 
-            Assert.assertTrue(startLatch.await(3, TimeUnit.SECONDS));
-            service.close();
-            Assert.assertTrue(latch.await(3, TimeUnit.SECONDS));
-        }
-        catch ( AssertionError e )
-        {
-            throw e;
-        }
-        catch ( Throwable e )
-        {
-            e.printStackTrace();
-        }
+        Assert.assertTrue(startLatch.await(3, TimeUnit.SECONDS));
+        service.close();
+        Assert.assertTrue(latch.await(3, TimeUnit.SECONDS));
     }
 
     @Test

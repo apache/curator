@@ -35,7 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class TestLeaderSelectorCluster
 {
     @Test

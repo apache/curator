@@ -91,7 +91,7 @@ public class ListenerContainer<T> implements Listenable<T>
                         {
                             function.apply(entry.listener);
                         }
-                        catch ( Throwable e )
+                        catch ( Exception e )
                         {
                             log.error(String.format("Listener (%s) threw an exception", entry.listener), e);
                         }
