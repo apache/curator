@@ -353,6 +353,7 @@ public class TreeCache implements Closeable
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
         }
@@ -582,6 +583,7 @@ public class TreeCache implements Closeable
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
         }
@@ -717,6 +719,7 @@ public class TreeCache implements Closeable
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     handleException(e);
                 }
                 return null;
@@ -746,6 +749,7 @@ public class TreeCache implements Closeable
                     }
                     catch ( Exception e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         LOG.error("Exception handling exception", e);
                     }
                     return null;
@@ -773,6 +777,7 @@ public class TreeCache implements Closeable
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
             break;
@@ -785,6 +790,7 @@ public class TreeCache implements Closeable
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
             break;
@@ -822,6 +828,7 @@ public class TreeCache implements Closeable
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             handleException(e);
                         }
                     }

@@ -23,6 +23,7 @@ import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.DebugUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -120,6 +121,7 @@ class ConnectionState implements Watcher, Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new IOException(e);
         }
         finally
@@ -338,6 +340,7 @@ class ConnectionState implements Watcher, Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             queueBackgroundException(e);
         }
     }
@@ -353,6 +356,7 @@ class ConnectionState implements Watcher, Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             queueBackgroundException(e);
         }
     }

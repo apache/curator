@@ -31,6 +31,7 @@ import org.apache.curator.framework.api.DeleteBuilderMain;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionDeleteBuilder;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
@@ -279,6 +280,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             //Only retry a guaranteed delete if it's a retryable error
             if( (RetryLoop.isRetryException(e) || (e instanceof InterruptedException)) && guaranteed )
             {

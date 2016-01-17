@@ -20,6 +20,7 @@ package org.apache.curator.connection;
 
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
+import org.apache.curator.utils.ThreadUtils;
 import java.util.concurrent.Callable;
 
 /**
@@ -48,6 +49,7 @@ public class ClassicConnectionHandlingPolicy implements ConnectionHandlingPolicy
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 retryLoop.takeException(e);
             }
         }

@@ -29,6 +29,7 @@ import org.apache.curator.framework.api.GetDataBuilder;
 import org.apache.curator.framework.api.GetDataWatchBackgroundStatable;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.WatchPathable;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -246,6 +247,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
                     }
                     catch ( Exception e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         log.error("Decompressing for path: " + path, e);
                         rc = KeeperException.Code.DATAINCONSISTENCY.intValue();
                     }

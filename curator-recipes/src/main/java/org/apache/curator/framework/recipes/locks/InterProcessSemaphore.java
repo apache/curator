@@ -25,6 +25,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.shared.SharedCountListener;
 import org.apache.curator.framework.recipes.shared.SharedCountReader;
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -183,6 +184,7 @@ public class InterProcessSemaphore
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             returnAll(builder.build());
             throw e;
         }
@@ -250,6 +252,7 @@ public class InterProcessSemaphore
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             returnAll(builder.build());
             throw e;
         }
@@ -274,6 +277,7 @@ public class InterProcessSemaphore
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     throw new IOException(e);
                 }
             }

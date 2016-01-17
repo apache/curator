@@ -65,9 +65,14 @@ public class LockingExample
                                 example.doWork(10, TimeUnit.SECONDS);
                             }
                         }
-                        catch ( Throwable e )
+                        catch ( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
+                        }
+                        catch ( Exception e )
                         {
                             e.printStackTrace();
+                            // log or do something
                         }
                         finally
                         {

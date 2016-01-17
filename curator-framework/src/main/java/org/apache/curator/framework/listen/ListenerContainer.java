@@ -21,6 +21,7 @@ package org.apache.curator.framework.listen;
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
@@ -93,6 +94,7 @@ public class ListenerContainer<T> implements Listenable<T>
                         }
                         catch ( Throwable e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             log.error(String.format("Listener (%s) threw an exception", entry.listener), e);
                         }
                     }

@@ -79,6 +79,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     log.error("Could not re-register instances after reconnection", e);
                 }
             }
@@ -160,6 +161,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 log.error("Could not unregister instance: " + entry.service.getName(), e);
             }
         }
@@ -458,6 +460,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Could not start node cache for: " + instance, e);
         }
         NodeCacheListener listener = new NodeCacheListener()

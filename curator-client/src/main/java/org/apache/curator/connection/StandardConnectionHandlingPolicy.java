@@ -21,6 +21,7 @@ package org.apache.curator.connection;
 import com.google.common.base.Preconditions;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
+import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
@@ -68,6 +69,7 @@ public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolic
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 retryLoop.takeException(e);
             }
         }

@@ -116,6 +116,7 @@ public class PathChildrenCache implements Closeable
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
         }
@@ -516,6 +517,7 @@ public class PathChildrenCache implements Closeable
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             handleException(e);
                         }
                         return null;
@@ -641,6 +643,7 @@ public class PathChildrenCache implements Closeable
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
             break;
@@ -774,6 +777,7 @@ public class PathChildrenCache implements Closeable
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             handleException(e);
                         }
                     }

@@ -27,6 +27,7 @@ import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.utils.DefaultTracerDriver;
 import org.apache.curator.utils.DefaultZookeeperFactory;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -226,6 +227,7 @@ public class CuratorZookeeperClient implements Closeable
         }
         catch ( IOException e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("", e);
         }
     }

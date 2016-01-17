@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory;
 import javax.management.JMException;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +56,24 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
 
     private static final Timing timing = new Timing();
 
-    static final int MAX_WAIT_MS = timing.milliseconds();
+    static final int MAX_WAIT_MS;
+    static
+    {
+        long startMs = System.currentTimeMillis();
+        try
+        {
+            // this can take forever and fails tests - ZK calls it internally so there's nothing we can do
+            // pre flight it and use it to calculate max wait
+            //noinspection ResultOfMethodCallIgnored
+            InetAddress.getLocalHost().getCanonicalHostName();
+        }
+        catch ( UnknownHostException e )
+        {
+            // ignore
+        }
+        long elapsed = System.currentTimeMillis() - startMs;
+        MAX_WAIT_MS = Math.max((int)elapsed * 2, 1000);
+    }
 
     @Override
     public void kill()
@@ -229,7 +247,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
                     config.getMaxClientCnxns());
             }
             cnxnFactory.startup(zkServer);
-            containerManager = new ContainerManager(zkServer.getZKDatabase(), zkServer.getFirstProcessor(), Integer.getInteger("znode.container.checkIntervalMs", (int)TimeUnit.MINUTES.toMillis(1L)).intValue(), Integer.getInteger("znode.container.maxPerMinute", 10000).intValue());
+            containerManager = new ContainerManager(zkServer.getZKDatabase(), zkServer.getFirstProcessor(), Integer.getInteger("znode.container.checkIntervalMs", (int)TimeUnit.MINUTES.toMillis(1L)), Integer.getInteger("znode.container.maxPerMinute", 10000));
             containerManager.start();
             latch.countDown();
             cnxnFactory.join();

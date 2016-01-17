@@ -28,6 +28,7 @@ import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.utils.PathUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -318,6 +319,7 @@ public class LockInternals
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             doDelete = true;
             throw e;
         }

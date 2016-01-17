@@ -19,6 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,7 @@ abstract class FailedOperationManager<T>
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 addFailedOperation(details);
             }
         }

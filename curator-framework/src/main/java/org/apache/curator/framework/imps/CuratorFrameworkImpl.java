@@ -22,6 +22,7 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
@@ -306,8 +307,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
             client.start();
 
-            executorService = Executors.newFixedThreadPool(2, threadFactory);  // 1 for listeners, 1 for background ops
-
+            executorService = Executors.newSingleThreadScheduledExecutor(threadFactory);
             executorService.submit(new Callable<Object>()
             {
                 @Override
@@ -322,6 +322,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             handleBackgroundOperationException(null, e);
         }
     }
@@ -344,6 +345,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     }
                     catch ( Exception e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         log.error("Exception while sending Closing event", e);
                     }
                     return null;
@@ -811,8 +813,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
             {
                 e = (code != null) ? KeeperException.create(code) : null;
             }
-            catch ( Throwable ignore )
+            catch ( Throwable t )
             {
+                ThreadUtils.checkInterrupted(t);
             }
             if ( e == null )
             {
@@ -833,6 +836,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             handleBackgroundOperationException(operationAndData, e);
         }
     }
@@ -876,24 +880,31 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private void backgroundOperationsLoop()
     {
-        while ( !Thread.currentThread().isInterrupted() )
+        try
         {
-            OperationAndData<?> operationAndData;
-            try
+            while ( state.get() == CuratorFrameworkState.STARTED )
             {
-                operationAndData = backgroundOperations.take();
-                if ( debugListener != null )
+                OperationAndData<?> operationAndData;
+                try
                 {
-                    debugListener.listen(operationAndData);
+                    operationAndData = backgroundOperations.take();
+                    if ( debugListener != null )
+                    {
+                        debugListener.listen(operationAndData);
+                    }
+                    performBackgroundOperation(operationAndData);
+                }
+                catch ( InterruptedException e )
+                {
+                    // swallow the interrupt as it's only possible from either a background
+                    // operation and, thus, doesn't apply to this loop or the instance
+                    // is being closed in which case the while test will get it
                 }
             }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                break;
-            }
-
-            performBackgroundOperation(operationAndData);
+        }
+        finally
+        {
+            log.info("backgroundOperationsLoop exiting");
         }
     }
 
@@ -918,6 +929,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         catch ( Throwable e )
         {
+            ThreadUtils.checkInterrupted(e);
+
             /**
              * Fix edge case reported as CURATOR-52. ConnectionState.checkTimeouts() throws KeeperException.ConnectionLossException
              * when the initial (or previously failed) connection cannot be re-established. This needs to be run through the retry policy
@@ -963,6 +976,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     logError("Event listener threw exception", e);
                 }
                 return null;
