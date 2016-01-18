@@ -27,7 +27,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
@@ -38,16 +37,17 @@ import java.util.List;
 
 public class TestLockACLs extends BaseClassForTests
 {
-    private static final List<ACL> ACLS = Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id("ip", "127.0.0.1")));
+    private static final List<ACL> ACLS1 = Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id("ip", "127.0.0.1")));
+    private static final List<ACL> ACLS2 = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE, new Id("ip", "127.0.0.1")));
 
-    private CuratorFramework createClient() throws Exception
+    private CuratorFramework createClient(ACLProvider provider) throws Exception
     {
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
         CuratorFramework client = CuratorFrameworkFactory.builder()
             .namespace("ns")
             .connectString(server.getConnectString())
             .retryPolicy(retryPolicy)
-            .aclProvider(new MyACLProvider())
+            .aclProvider(provider)
             .build();
         client.start();
         return client;
@@ -56,7 +56,7 @@ public class TestLockACLs extends BaseClassForTests
     @Test
     public void testLockACLs() throws Exception
     {
-        CuratorFramework client = createClient();
+        CuratorFramework client = createClient(new TestLockACLsProvider());
         try
         {
             client.create().forPath("/foo");
@@ -79,19 +79,53 @@ public class TestLockACLs extends BaseClassForTests
         }
     }
 
-    public class MyACLProvider implements ACLProvider
+    @Test
+    public void testACLsCreatingParents() throws Exception
     {
+        CuratorFramework client = createClient(new TestACLsCreatingParentsProvider());
+        try
+        {
+            client.create().creatingParentsIfNeeded().forPath("/parent/foo");
+            Assert.assertEquals(ZooDefs.Perms.CREATE, client.getACL().forPath("/parent").get(0).getPerms());
+            Assert.assertEquals(ZooDefs.Perms.ALL, client.getACL().forPath("/parent/foo").get(0).getPerms());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 
+    private class TestACLsCreatingParentsProvider implements ACLProvider
+    {
         @Override
         public List<ACL> getDefaultAcl()
         {
-            return ACLS;
+            return ACLS1;
         }
 
         @Override
         public List<ACL> getAclForPath(String path)
         {
-            return ACLS;
+            if ( path.equals("/ns/parent") )
+            {
+                return ACLS2;
+            }
+            return ACLS1;
+        }
+    }
+
+    private class TestLockACLsProvider implements ACLProvider
+    {
+        @Override
+        public List<ACL> getDefaultAcl()
+        {
+            return ACLS1;
+        }
+
+        @Override
+        public List<ACL> getAclForPath(String path)
+        {
+            return ACLS1;
         }
     }
 }
