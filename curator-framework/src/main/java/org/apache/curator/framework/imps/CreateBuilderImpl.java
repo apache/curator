@@ -103,7 +103,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             }
 
             @Override
-            public ACLPathAndBytesable<T> compressed()
+            public ACLCreateModePathAndBytesable<T> compressed()
             {
                 CreateBuilderImpl.this.compressed();
                 return this;

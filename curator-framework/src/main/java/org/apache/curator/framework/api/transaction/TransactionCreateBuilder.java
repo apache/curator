@@ -29,6 +29,6 @@ public interface TransactionCreateBuilder<T> extends
     CreateModable<ACLPathAndBytesable<T>>,
     ACLPathAndBytesable<T>,
     ACLCreateModePathAndBytesable<T>,
-    Compressible<ACLPathAndBytesable<T>>
+    Compressible<ACLCreateModePathAndBytesable<T>>
 {
 }
