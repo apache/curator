@@ -27,6 +27,6 @@ public interface TransactionSetDataBuilder<T> extends
     PathAndBytesable<T>,
     Versionable<PathAndBytesable<T>>,
     VersionPathAndBytesable<T>,
-    Compressible<PathAndBytesable<T>>
+    Compressible<VersionPathAndBytesable<T>>
 {
 }

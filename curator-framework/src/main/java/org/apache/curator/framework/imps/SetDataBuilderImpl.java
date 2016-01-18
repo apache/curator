@@ -27,6 +27,7 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.api.SetDataBackgroundVersionable;
 import org.apache.curator.framework.api.SetDataBuilder;
+import org.apache.curator.framework.api.VersionPathAndBytesable;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
 import org.apache.zookeeper.AsyncCallback;
@@ -81,7 +82,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
             }
 
             @Override
-            public PathAndBytesable<T> compressed()
+            public VersionPathAndBytesable<T> compressed()
             {
                 compress = true;
                 return this;
