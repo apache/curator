@@ -42,6 +42,11 @@ class NamespaceWatcherMap implements Closeable
     @Override
     public void close()
     {
+        clear();
+    }
+
+    void clear()
+    {
         map.clear();
     }
 
@@ -69,6 +74,12 @@ class NamespaceWatcherMap implements Closeable
     NamespaceWatcher remove(Object key)
     {
         return map.remove(key);
+    }
+
+    boolean removeWatcher(Object watcher)
+    {
+        //noinspection SuspiciousMethodCalls
+        return map.values().remove(watcher);
     }
 
     @VisibleForTesting

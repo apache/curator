@@ -41,6 +41,7 @@ public class BaseClassForTests
     private static final int RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
+    private static final String INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY;
 
     static
     {
@@ -67,6 +68,17 @@ public class BaseClassForTests
             e.printStackTrace();
         }
         INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND = s;
+        s = null;
+        try
+        {
+            // use reflection to avoid adding a circular dependency in the pom
+            s = (String)Class.forName("org.apache.curator.utils.DebugUtils").getField("PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY").get(null);
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
+        INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY = s;
     }
 
     @BeforeSuite(alwaysRun = true)
@@ -107,6 +119,7 @@ public class BaseClassForTests
             System.setProperty(INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
         }
         System.setProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND, "true");
+        System.setProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY, "true");
 
         while ( server == null )
         {
@@ -125,6 +138,7 @@ public class BaseClassForTests
     @AfterMethod
     public void teardown() throws Exception
     {
+        System.clearProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY);
         System.clearProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND);
         if ( server != null )
         {

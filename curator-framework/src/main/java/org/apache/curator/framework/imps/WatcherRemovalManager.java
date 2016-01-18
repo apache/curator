@@ -32,11 +32,13 @@ public class WatcherRemovalManager
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl client;
+    private final NamespaceWatcherMap namespaceWatcherMap;
     private final Set<WrappedWatcher> entries = Sets.newHashSet();  // guarded by sync
 
-    WatcherRemovalManager(CuratorFrameworkImpl client)
+    WatcherRemovalManager(CuratorFrameworkImpl client, NamespaceWatcherMap namespaceWatcherMap)
     {
         this.client = client;
+        this.namespaceWatcherMap = namespaceWatcherMap;
     }
 
     synchronized Watcher add(String path, Watcher watcher)
@@ -67,6 +69,7 @@ public class WatcherRemovalManager
             try
             {
                 log.debug("Removing watcher for path: " + entry.path);
+                namespaceWatcherMap.removeWatcher(entry.watcher);
                 RemoveWatchesBuilderImpl builder = new RemoveWatchesBuilderImpl(client);
                 builder.internalRemoval(entry, entry.path);
             }

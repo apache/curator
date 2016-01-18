@@ -18,12 +18,6 @@
  */
 package org.apache.curator.framework.imps;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -46,6 +40,9 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.Watcher.WatcherType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TestRemoveWatches extends BaseClassForTests
 {
@@ -75,7 +72,8 @@ public class TestRemoveWatches extends BaseClassForTests
         {
             return true;
         }
-        
+
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized(stateRef)
         {
             if(stateRef.get() == desiredState)
@@ -139,7 +137,7 @@ public class TestRemoveWatches extends BaseClassForTests
     public void testRemoveCuratorWatch() throws Exception
     {       
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
+        CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
                 connectString(server.getConnectString()).
                 retryPolicy(new RetryOneTime(1)).
                 build();
@@ -163,9 +161,11 @@ public class TestRemoveWatches extends BaseClassForTests
             };
                         
             client.checkExists().usingWatcher(watcher).forPath(path);
+            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
             
             client.watches().remove(watcher).forPath(path);
-            
+            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
+
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
@@ -178,7 +178,7 @@ public class TestRemoveWatches extends BaseClassForTests
     public void testRemoveWatch() throws Exception
     {       
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
+        CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
                 connectString(server.getConnectString()).
                 retryPolicy(new RetryOneTime(1)).
                 build();
@@ -192,9 +192,11 @@ public class TestRemoveWatches extends BaseClassForTests
             Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            
+            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
+
             client.watches().remove(watcher).forPath(path);
-            
+            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
+
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
@@ -207,7 +209,7 @@ public class TestRemoveWatches extends BaseClassForTests
     public void testRemoveWatchInBackgroundWithCallback() throws Exception
     {       
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
+        CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
                 connectString(server.getConnectString()).
                 retryPolicy(new RetryOneTime(1)).
                 build();
@@ -233,11 +235,12 @@ public class TestRemoveWatches extends BaseClassForTests
                 }
             };
             
-            
             client.checkExists().usingWatcher(watcher).forPath(path);
-            
+            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
+
             client.watches().remove(watcher).ofType(WatcherType.Any).inBackground(callback).forPath(path);
-            
+            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
+
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
             
         }
@@ -251,7 +254,7 @@ public class TestRemoveWatches extends BaseClassForTests
     public void testRemoveWatchInBackgroundWithNoCallback() throws Exception
     {       
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
+        CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
                 connectString(server.getConnectString()).
                 retryPolicy(new RetryOneTime(1)).
                 build();
@@ -264,9 +267,11 @@ public class TestRemoveWatches extends BaseClassForTests
             Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            
+            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
+
             client.watches().remove(watcher).inBackground().forPath(path);
-            
+            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
+
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
             
         }
@@ -280,7 +285,7 @@ public class TestRemoveWatches extends BaseClassForTests
     public void testRemoveAllWatches() throws Exception
     {       
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
+        CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
                 connectString(server.getConnectString()).
                 retryPolicy(new RetryOneTime(1)).
                 build();
@@ -296,9 +301,11 @@ public class TestRemoveWatches extends BaseClassForTests
             
             client.getChildren().usingWatcher(watcher1).forPath(path);
             client.checkExists().usingWatcher(watcher2).forPath(path);
-            
+            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
+
             client.watches().removeAll().forPath(path);
-            
+            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
+
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
@@ -376,7 +383,7 @@ public class TestRemoveWatches extends BaseClassForTests
     @Test
     public void testRemoveLocalWatch() throws Exception {
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
+        CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
                 connectString(server.getConnectString()).
                 retryPolicy(new RetryOneTime(1)).
                 build();
@@ -393,14 +400,16 @@ public class TestRemoveWatches extends BaseClassForTests
             Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);        
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            
+            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
+
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
             
             Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
                        
             client.watches().removeAll().locally().forPath(path);
-            
+            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
+
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
@@ -412,7 +421,7 @@ public class TestRemoveWatches extends BaseClassForTests
     @Test
     public void testRemoveLocalWatchInBackground() throws Exception {
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
+        CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
                 connectString(server.getConnectString()).
                 retryPolicy(new RetryOneTime(1)).
                 build();
@@ -429,14 +438,16 @@ public class TestRemoveWatches extends BaseClassForTests
             Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);        
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            
+            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
+
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
             
             Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
                        
             client.watches().removeAll().locally().inBackground().forPath(path);
-            
+            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
+
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally

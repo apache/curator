@@ -231,10 +231,12 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
             ZooKeeper zkClient = client.getZooKeeper();
             if(watcher == null)
             {
+                client.getNamespaceWatcherMap().clear();
                 zkClient.removeAllWatches(path, watcherType, local);    
             }
             else
             {
+                client.getNamespaceWatcherMap().removeWatcher(watcher);
                 zkClient.removeWatches(path, watcher, watcherType, local);
             }
         }
@@ -252,10 +254,12 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
                                 
                                 if(watcher == null)
                                 {
-                                    zkClient.removeAllWatches(path, watcherType, local);    
+                                    client.getNamespaceWatcherMap().clear();
+                                    zkClient.removeAllWatches(path, watcherType, local);
                                 }
                                 else
                                 {
+                                    client.getNamespaceWatcherMap().removeWatcher(watcher);
                                     zkClient.removeWatches(path, watcher, watcherType, local);
                                 }
                             }
@@ -304,10 +308,12 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         ZooKeeper zkClient = client.getZooKeeper();
         if(watcher == null)
         {
-            zkClient.removeAllWatches(operationAndData.getData(), watcherType, local, callback, operationAndData.getContext());    
+            client.getNamespaceWatcherMap().clear();
+            zkClient.removeAllWatches(operationAndData.getData(), watcherType, local, callback, operationAndData.getContext());
         }
         else
         {
+            client.getNamespaceWatcherMap().removeWatcher(watcher);
             zkClient.removeWatches(operationAndData.getData(), watcher, watcherType, local, callback, operationAndData.getContext());
         }
         

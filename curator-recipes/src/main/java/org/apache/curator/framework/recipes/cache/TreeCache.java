@@ -305,7 +305,7 @@ public class TreeCache implements Closeable
         {
             Stat oldStat = stat.getAndSet(null);
             byte[] oldData = data.getAndSet(null);
-            client.watches().remove(this).ofType(WatcherType.Any).inBackground().forPath(path);
+            client.watches().remove(this).ofType(WatcherType.Any).locally().inBackground().forPath(path);
 
             ConcurrentMap<String, TreeNode> childMap = children.getAndSet(null);
             if ( childMap != null )
