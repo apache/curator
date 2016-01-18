@@ -20,7 +20,6 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.api.ACLPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.BackgroundPathAndBytesable;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -28,6 +27,7 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.api.SetDataBackgroundVersionable;
 import org.apache.curator.framework.api.SetDataBuilder;
+import org.apache.curator.framework.api.VersionPathAndBytesable;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
@@ -64,7 +64,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
                 {
                     data = client.getCompressionProvider().compress(path, data);
                 }
-                
+
                 String      fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.setData(fixedPath, data, version), OperationType.SET_DATA, path);
                 return curatorTransaction;
@@ -84,9 +84,9 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
             }
 
             @Override
-            public PathAndBytesable<CuratorTransactionBridge> compressed() {
+            public VersionPathAndBytesable<CuratorTransactionBridge> compressed() {
                 compress = true;
-                
+
                 return this;
             }
         };
