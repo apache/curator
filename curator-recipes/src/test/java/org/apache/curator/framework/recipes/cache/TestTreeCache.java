@@ -31,6 +31,53 @@ import java.util.concurrent.Semaphore;
 public class TestTreeCache extends BaseTestTreeCache
 {
     @Test
+    public void testSelector() throws Exception
+    {
+        client.create().forPath("/root");
+        client.create().forPath("/root/n1-a");
+        client.create().forPath("/root/n1-b");
+        client.create().forPath("/root/n1-b/n2-a");
+        client.create().forPath("/root/n1-b/n2-b");
+        client.create().forPath("/root/n1-b/n2-b/n3-a");
+        client.create().forPath("/root/n1-c");
+        client.create().forPath("/root/n1-d");
+
+        TreeCacheSelector selector = new TreeCacheSelector()
+        {
+            @Override
+            public boolean traverseChildren(String fullPath)
+            {
+                return !fullPath.equals("/root/n1-b/n2-b");
+            }
+
+            @Override
+            public boolean acceptChild(String fullPath)
+            {
+                return !fullPath.equals("/root/n1-c");
+            }
+        };
+        TreeCache treeCache = TreeCache.newBuilder(client, "/root").setSelector(selector).build();
+        try
+        {
+            treeCache.getListenable().addListener(eventListener);
+            treeCache.start();
+
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-a");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-d");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b/n2-a");
+            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b/n2-b");
+            assertEvent(TreeCacheEvent.Type.INITIALIZED);
+            assertNoMoreEvents();
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(treeCache);
+        }
+    }
+
+    @Test
     public void testStartup() throws Exception
     {
         client.create().forPath("/test");
@@ -325,12 +372,12 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
 
         client.delete().forPath("/test/foo");
-        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo", "one".getBytes());
         client.create().forPath("/test/foo", "two".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
 
         client.delete().forPath("/test/foo");
-        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/foo", "two".getBytes());
         client.create().forPath("/test/foo", "two".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/foo");
 
@@ -380,7 +427,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(TreeCacheEvent.Type.CONNECTION_SUSPENDED);
         assertEvent(TreeCacheEvent.Type.CONNECTION_LOST);
         assertEvent(TreeCacheEvent.Type.CONNECTION_RECONNECTED);
-        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/me");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/me", "data".getBytes());
 
         assertNoMoreEvents();
     }
@@ -412,7 +459,7 @@ public class TestTreeCache extends BaseTestTreeCache
         Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
 
         client.delete().forPath("/test/one");
-        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/one");
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/one", "sup!".getBytes());
         Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of());
 
         assertNoMoreEvents();
@@ -460,7 +507,7 @@ public class TestTreeCache extends BaseTestTreeCache
             Assert.assertEquals(new String(cache2.getCurrentData("/test/one").getData()), "sup!");
 
             client.delete().forPath("/test/one");
-            assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/one");
+            assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/one", "sup!".getBytes());
             Assert.assertNull(cache.getCurrentData("/test/one"));
             semaphore.acquire();
             Assert.assertNull(cache2.getCurrentData("/test/one"));

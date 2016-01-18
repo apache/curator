@@ -23,6 +23,7 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.PathUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.ZooDefs;
 import java.util.concurrent.Callable;
@@ -95,6 +96,7 @@ class NamespaceImpl
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 client.logError("Ensure path threw exception", e);
             }
         }

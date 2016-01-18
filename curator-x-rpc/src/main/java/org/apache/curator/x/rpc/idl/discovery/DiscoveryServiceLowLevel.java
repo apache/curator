@@ -23,6 +23,7 @@ import com.facebook.swift.service.ThriftService;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.rpc.connections.ConnectionManager;
@@ -53,6 +54,7 @@ public class DiscoveryServiceLowLevel
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -69,6 +71,7 @@ public class DiscoveryServiceLowLevel
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -85,6 +88,7 @@ public class DiscoveryServiceLowLevel
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -101,6 +105,7 @@ public class DiscoveryServiceLowLevel
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -117,6 +122,7 @@ public class DiscoveryServiceLowLevel
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -146,6 +152,7 @@ public class DiscoveryServiceLowLevel
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }

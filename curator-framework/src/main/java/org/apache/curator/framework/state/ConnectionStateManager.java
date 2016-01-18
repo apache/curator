@@ -238,9 +238,9 @@ public class ConnectionStateManager implements Closeable
 
     private void processEvents()
     {
-        try
+        while ( state.get() == State.STARTED )
         {
-            while ( !Thread.currentThread().isInterrupted() )
+            try
             {
                 final ConnectionState newState = eventQueue.take();
 
@@ -262,10 +262,12 @@ public class ConnectionStateManager implements Closeable
                         }
                     );
             }
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
+            catch ( InterruptedException e )
+            {
+                // swallow the interrupt as it's only possible from either a background
+                // operation and, thus, doesn't apply to this loop or the instance
+                // is being closed in which case the while test will get it
+            }
         }
     }
 }

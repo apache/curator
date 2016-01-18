@@ -405,7 +405,7 @@ public class LeaderSelector implements Closeable
             }
             catch ( Throwable e )
             {
-                log.error("The leader threw an exception", e);
+                ThreadUtils.checkInterrupted(e);
             }
             finally
             {
@@ -417,10 +417,6 @@ public class LeaderSelector implements Closeable
             Thread.currentThread().interrupt();
             throw e;
         }
-        catch ( Exception e )
-        {
-            throw e;
-        }
         finally
         {
             hasLeadership = false;
@@ -428,8 +424,10 @@ public class LeaderSelector implements Closeable
             {
                 mutex.release();
             }
-            catch ( Exception ignore )
+            catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
+                log.error("The leader threw an exception", e);
                 // ignore errors - this is just a safety
             }
         }

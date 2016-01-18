@@ -20,6 +20,7 @@ package org.apache.curator;
 
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.utils.DebugUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +110,7 @@ public class RetryLoop
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 retryLoop.takeException(e);
             }
         }

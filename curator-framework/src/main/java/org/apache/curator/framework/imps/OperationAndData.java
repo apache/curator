@@ -38,7 +38,7 @@ class OperationAndData<T> implements Delayed, RetrySleeper
     private final ErrorCallback<T> errorCallback;
     private final AtomicInteger retryCount = new AtomicInteger(0);
     private final AtomicLong sleepUntilTimeMs = new AtomicLong(0);
-    private final long ordinal = nextOrdinal.getAndIncrement();
+    private final AtomicLong ordinal = new AtomicLong();
     private final Object context;
 
     interface ErrorCallback<T>
@@ -53,6 +53,13 @@ class OperationAndData<T> implements Delayed, RetrySleeper
         this.callback = callback;
         this.errorCallback = errorCallback;
         this.context = context;
+        reset();
+    }
+
+    void reset()
+    {
+        retryCount.set(0);
+        ordinal.set(nextOrdinal.getAndIncrement());
     }
 
     Object getContext()
@@ -121,7 +128,7 @@ class OperationAndData<T> implements Delayed, RetrySleeper
         {
             if ( o instanceof OperationAndData )
             {
-                diff = ordinal - ((OperationAndData)o).ordinal;
+                diff = ordinal.get() - ((OperationAndData)o).ordinal.get();
             }
         }
 

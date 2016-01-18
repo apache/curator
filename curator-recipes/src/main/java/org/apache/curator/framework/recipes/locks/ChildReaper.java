@@ -283,6 +283,7 @@ public class ChildReaper implements Closeable
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     log.error("Could not get children for path: " + path, e);
                 }
             }

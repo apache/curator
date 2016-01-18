@@ -19,6 +19,7 @@
 package org.apache.curator.x.discovery.server.rest;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.details.InstanceProvider;
@@ -101,6 +102,7 @@ public abstract class DiscoveryResource<T>
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Trying to register service", e);
             return Response.serverError().build();
         }
@@ -123,6 +125,7 @@ public abstract class DiscoveryResource<T>
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Trying to delete service", e);
             return Response.serverError().build();
         }
@@ -176,6 +179,7 @@ public abstract class DiscoveryResource<T>
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error(String.format("Trying to get instances from service (%s)", name), e);
             return Response.serverError().build();
         }
@@ -208,6 +212,7 @@ public abstract class DiscoveryResource<T>
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error(String.format("Trying to get any instance from service (%s)", name), e);
             return Response.serverError().build();
         }
@@ -231,6 +236,7 @@ public abstract class DiscoveryResource<T>
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error(String.format("Trying to get instance (%s) from service (%s)", id, name), e);
             return Response.serverError().build();
         }

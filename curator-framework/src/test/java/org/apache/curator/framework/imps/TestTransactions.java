@@ -27,6 +27,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -59,7 +60,7 @@ public class TestTransactions extends BaseClassForTests
             {
                 // correct
             }
-            
+
             Assert.assertNull(client.checkExists().forPath("/bar"));
         }
         finally
@@ -98,6 +99,49 @@ public class TestTransactions extends BaseClassForTests
             Assert.assertNotNull(ephemeralResult);
             Assert.assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             Assert.assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void     testWithCompression() throws Exception
+    {
+        CuratorFramework        client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).namespace("galt").build();
+        client.start();
+        try
+        {
+            Collection<CuratorTransactionResult>    results =
+                    client.inTransaction()
+                        .create().compressed().forPath("/foo", "one".getBytes())
+                    .and()
+                        .create().compressed().withACL(ZooDefs.Ids.READ_ACL_UNSAFE).forPath("/bar", "two".getBytes())
+                    .and()
+                        .create().compressed().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/test-", "three".getBytes())
+                    .and()
+                        .create().compressed().withMode(CreateMode.PERSISTENT).withACL(ZooDefs.Ids.READ_ACL_UNSAFE).forPath("/baz", "four".getBytes())
+                    .and()
+                        .setData().compressed().withVersion(0).forPath("/foo", "five".getBytes())
+                    .and()
+                        .commit();
+
+            Assert.assertTrue(client.checkExists().forPath("/foo") != null);
+            Assert.assertEquals(client.getData().decompressed().forPath("/foo"), "five".getBytes());
+
+            Assert.assertTrue(client.checkExists().forPath("/bar") != null);
+            Assert.assertEquals(client.getData().decompressed().forPath("/bar"), "two".getBytes());
+            Assert.assertEquals(client.getACL().forPath("/bar"), ZooDefs.Ids.READ_ACL_UNSAFE);
+
+            CuratorTransactionResult    ephemeralResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+            Assert.assertNotNull(ephemeralResult);
+            Assert.assertNotEquals(ephemeralResult.getResultPath(), "/test-");
+            Assert.assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
+
+            Assert.assertTrue(client.checkExists().forPath("/baz") != null);
+            Assert.assertEquals(client.getData().decompressed().forPath("/baz"), "four".getBytes());
+            Assert.assertEquals(client.getACL().forPath("/baz"), ZooDefs.Ids.READ_ACL_UNSAFE);
         }
         finally
         {

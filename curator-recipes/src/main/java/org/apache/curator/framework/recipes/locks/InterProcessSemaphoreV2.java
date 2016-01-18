@@ -31,6 +31,7 @@ import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.recipes.shared.SharedCountListener;
 import org.apache.curator.framework.recipes.shared.SharedCountReader;
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -413,6 +414,7 @@ public class InterProcessSemaphoreV2
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     throw new IOException(e);
                 }
             }

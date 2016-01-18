@@ -19,6 +19,7 @@
 package org.apache.curator.x.discovery.server.entity;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
 import org.codehaus.jackson.JsonNode;
@@ -91,6 +92,7 @@ public class JsonServiceInstancesMarshaller<T> implements MessageBodyReader<Serv
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new WebApplicationException(e);
         }
     }
