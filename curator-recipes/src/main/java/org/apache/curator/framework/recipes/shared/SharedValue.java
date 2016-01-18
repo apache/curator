@@ -27,6 +27,7 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.Stat;
@@ -261,6 +262,7 @@ public class SharedValue implements Closeable, SharedValueReader
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             log.error("From SharedValue listener", e);
                         }
                         return null;

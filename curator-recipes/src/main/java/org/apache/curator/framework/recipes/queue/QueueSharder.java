@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -123,17 +124,19 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
                 @Override
                 public Void call() throws Exception
                 {
-                    try
+                    while ( state.get() == State.STARTED )
                     {
-                        while ( !Thread.currentThread().isInterrupted() && (state.get() == State.STARTED) )
+                        try
                         {
                             Thread.sleep(policies.getThresholdCheckMs());
                             checkThreshold();
                         }
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
+                        catch ( InterruptedException e )
+                        {
+                            // swallow the interrupt as it's only possible from either a background
+                            // operation and, thus, doesn't apply to this loop or the instance
+                            // is being closed in which case the while test will get it
+                        }
                     }
                     return null;
                 }
@@ -279,6 +282,7 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Checking queue counts against threshold", e);
         }
     }

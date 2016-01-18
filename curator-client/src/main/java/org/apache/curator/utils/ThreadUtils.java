@@ -18,7 +18,10 @@
  */
 package org.apache.curator.utils;
 
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,6 +29,16 @@ import java.util.concurrent.ThreadFactory;
 
 public class ThreadUtils
 {
+    private static final Logger log = LoggerFactory.getLogger(ThreadUtils.class);
+
+    public static void checkInterrupted(Throwable e)
+    {
+        if ( e instanceof InterruptedException )
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public static ExecutorService newSingleThreadExecutor(String processName)
     {
         return Executors.newSingleThreadExecutor(newThreadFactory(processName));
@@ -53,9 +66,19 @@ public class ThreadUtils
 
     public static ThreadFactory newGenericThreadFactory(String processName)
     {
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = new Thread.UncaughtExceptionHandler()
+        {
+            @Override
+            public void uncaughtException(Thread t, Throwable e)
+            {
+                log.error("Unexpected exception in thread: " + t, e);
+                Throwables.propagate(e);
+            }
+        };
         return new ThreadFactoryBuilder()
             .setNameFormat(processName + "-%d")
             .setDaemon(true)
+            .setUncaughtExceptionHandler(uncaughtExceptionHandler)
             .build();
     }
 

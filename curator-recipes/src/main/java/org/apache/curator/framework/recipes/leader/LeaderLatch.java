@@ -32,6 +32,7 @@ import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -209,6 +210,7 @@ public class LeaderLatch implements Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new IOException(e);
         }
         finally
@@ -514,6 +516,7 @@ public class LeaderLatch implements Closeable
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 log.error("An error occurred checking resetting leadership.", e);
             }
         }
@@ -549,6 +552,7 @@ public class LeaderLatch implements Closeable
                         }
                         catch ( Exception ex )
                         {
+                            ThreadUtils.checkInterrupted(ex);
                             log.error("An error occurred checking the leadership.", ex);
                         }
                     }
@@ -606,6 +610,7 @@ public class LeaderLatch implements Closeable
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     log.error("Could not reset leader latch", e);
                     setLeadership(false);
                 }

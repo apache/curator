@@ -31,6 +31,7 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -544,33 +545,38 @@ public class DistributedQueue<T> implements QueueBase<T>
         long         maxWaitMs = -1;
         try
         {
-            while ( !Thread.currentThread().isInterrupted()  )
+            while ( state.get() == State.STARTED  )
             {
-                ChildrenCache.Data      data = (maxWaitMs > 0) ? childrenCache.blockingNextGetData(currentVersion, maxWaitMs, TimeUnit.MILLISECONDS) : childrenCache.blockingNextGetData(currentVersion);
-                currentVersion = data.version;
-
-                List<String>        children = Lists.newArrayList(data.children);
-                sortChildren(children); // makes sure items are processed in the correct order
-
-                if ( children.size() > 0 )
+                try
                 {
-                    maxWaitMs = getDelay(children.get(0));
-                    if ( maxWaitMs > 0 )
+                    ChildrenCache.Data      data = (maxWaitMs > 0) ? childrenCache.blockingNextGetData(currentVersion, maxWaitMs, TimeUnit.MILLISECONDS) : childrenCache.blockingNextGetData(currentVersion);
+                    currentVersion = data.version;
+
+                    List<String>        children = Lists.newArrayList(data.children);
+                    sortChildren(children); // makes sure items are processed in the correct order
+
+                    if ( children.size() > 0 )
+                    {
+                        maxWaitMs = getDelay(children.get(0));
+                        if ( maxWaitMs > 0 )
+                        {
+                            continue;
+                        }
+                    }
+                    else
                     {
                         continue;
                     }
-                }
-                else
-                {
-                    continue;
-                }
 
-                processChildren(children, currentVersion);
+                    processChildren(children, currentVersion);
+                }
+                catch ( InterruptedException e )
+                {
+                    // swallow the interrupt as it's only possible from either a background
+                    // operation and, thus, doesn't apply to this loop or the instance
+                    // is being closed in which case the while test will get it
+                }
             }
-        }
-        catch ( InterruptedException ignore )
-        {
-            Thread.currentThread().interrupt();
         }
         catch ( Exception e )
         {
@@ -633,6 +639,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             log.error("Error processing message at " + itemNode, e);
                         }
                         finally
@@ -663,6 +670,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         }
         catch ( Throwable e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Corrupted queue item: " + itemNode, e);
             return resultCode;
         }
@@ -681,6 +689,7 @@ public class DistributedQueue<T> implements QueueBase<T>
             }
             catch ( Throwable e )
             {
+                ThreadUtils.checkInterrupted(e);
                 log.error("Exception processing queue item: " + itemNode, e);
                 if ( errorMode.get() == ErrorMode.REQUEUE )
                 {
