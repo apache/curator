@@ -16,17 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.api.transaction;
+package org.apache.curator.framework.api;
 
-import org.apache.curator.framework.api.Compressible;
-import org.apache.curator.framework.api.PathAndBytesable;
-import org.apache.curator.framework.api.VersionPathAndBytesable;
-import org.apache.curator.framework.api.Versionable;
-
-public interface TransactionSetDataBuilder<T> extends
-    PathAndBytesable<T>,
-    Versionable<PathAndBytesable<T>>,
-    VersionPathAndBytesable<T>,
-    Compressible<PathAndBytesable<T>>
+public interface VersionPathAndBytesable<T> extends
+        Versionable<PathAndBytesable<T>>,
+        PathAndBytesable<T>
 {
 }

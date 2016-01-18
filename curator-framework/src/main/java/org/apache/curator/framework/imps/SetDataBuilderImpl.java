@@ -61,7 +61,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
                 {
                     data = client.getCompressionProvider().compress(path, data);
                 }
-                
+
                 String      fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.setData(fixedPath, data, version), OperationType.SET_DATA, path);
                 return context;

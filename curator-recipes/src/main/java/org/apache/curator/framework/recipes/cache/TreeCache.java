@@ -73,6 +73,7 @@ public class TreeCache implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
     private final boolean createParentNodes;
+    private final TreeCacheSelector selector;
 
     public static final class Builder
     {
@@ -83,6 +84,7 @@ public class TreeCache implements Closeable
         private CloseableExecutorService executorService = null;
         private int maxDepth = Integer.MAX_VALUE;
         private boolean createParentNodes = false;
+        private TreeCacheSelector selector = new DefaultTreeCacheSelector();
 
         private Builder(CuratorFramework client, String path)
         {
@@ -100,7 +102,7 @@ public class TreeCache implements Closeable
             {
                 executor = new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory));
             }
-            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes);
+            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, selector);
         }
 
         /**
@@ -177,6 +179,18 @@ public class TreeCache implements Closeable
             this.createParentNodes = createParentNodes;
             return this;
         }
+
+        /**
+         * By default, {@link DefaultTreeCacheSelector} is used. Change the selector here.
+         *
+         * @param selector new selector
+         * @return this for chaining
+         */
+        public Builder setSelector(TreeCacheSelector selector)
+        {
+            this.selector = selector;
+            return this;
+        }
     }
 
     /**
@@ -221,7 +235,7 @@ public class TreeCache implements Closeable
 
         private void refresh() throws Exception
         {
-            if (depth < maxDepth)
+            if ((depth < maxDepth) && selector.traverseChildren(path))
             {
                 outstandingOps.addAndGet(2);
                 doRefreshData();
@@ -233,7 +247,7 @@ public class TreeCache implements Closeable
 
         private void refreshChildren() throws Exception
         {
-            if (depth < maxDepth)
+            if ((depth < maxDepth) && selector.traverseChildren(path))
             {
                 outstandingOps.incrementAndGet();
                 doRefreshChildren();
@@ -289,8 +303,10 @@ public class TreeCache implements Closeable
 
         void wasDeleted() throws Exception
         {
-            stat.set(null);
-            data.set(null);
+            Stat oldStat = stat.getAndSet(null);
+            byte[] oldData = data.getAndSet(null);
+            client.watches().remove(this).ofType(WatcherType.Any).inBackground().forPath(path);
+
             ConcurrentMap<String, TreeNode> childMap = children.getAndSet(null);
             if ( childMap != null )
             {
@@ -310,7 +326,7 @@ public class TreeCache implements Closeable
             NodeState oldState = nodeState.getAndSet(NodeState.DEAD);
             if ( oldState == NodeState.LIVE )
             {
-                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, path);
+                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, new ChildData(path, oldStat, oldData));
             }
 
             if ( parent == null )
@@ -402,7 +418,7 @@ public class TreeCache implements Closeable
                     List<String> newChildren = new ArrayList<String>();
                     for ( String child : event.getChildren() )
                     {
-                        if ( !childMap.containsKey(child) )
+                        if ( !childMap.containsKey(child) && selector.acceptChild(ZKPaths.makePath(path, child)) )
                         {
                             newChildren.add(child);
                         }
@@ -522,7 +538,7 @@ public class TreeCache implements Closeable
      */
     public TreeCache(CuratorFramework client, String path)
     {
-        this(client, path, true, false, Integer.MAX_VALUE, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true), false);
+        this(client, path, true, false, Integer.MAX_VALUE, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true), false, new DefaultTreeCacheSelector());
     }
 
     /**
@@ -532,16 +548,19 @@ public class TreeCache implements Closeable
      * @param dataIsCompressed if true, data in the path is compressed
      * @param executorService  Closeable ExecutorService to use for the TreeCache's background thread
      * @param createParentNodes true to create parent nodes as containers
+     * @param selector         the selector to use
      */
-    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService, boolean createParentNodes)
+    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService, boolean createParentNodes, TreeCacheSelector selector)
     {
         this.createParentNodes = createParentNodes;
+        this.selector = Preconditions.checkNotNull(selector, "selector cannot be null");
         this.root = new TreeNode(validatePath(path), null);
+        Preconditions.checkNotNull(client, "client cannot be null");
         this.client = client.newWatcherRemoveCuratorFramework();
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.maxDepth = maxDepth;
-        this.executorService = executorService;
+        this.executorService = Preconditions.checkNotNull(executorService, "executorService cannot be null");
     }
 
     /**
