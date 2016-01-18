@@ -171,7 +171,7 @@ public class PersistentNode implements Closeable
                 }
                 else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
                 {
-                    log.warn("Client does not have authorisation to write ephemeral node at path {}", event.getPath());
+                    log.warn("Client does not have authorisation to write node at path {}", event.getPath());
                     authFailure.set(true);
                     return;
                 }
@@ -211,7 +211,7 @@ public class PersistentNode implements Closeable
     }
 
     /**
-     * You must call start() to initiate the persistent ephemeral node. An attempt to create the node
+     * You must call start() to initiate the persistent node. An attempt to create the node
      * in the background will be started
      */
     public void start()
@@ -270,7 +270,7 @@ public class PersistentNode implements Closeable
     }
 
     /**
-     * Set data that ephemeral node should set in ZK also writes the data to the node
+     * Set data that node should set in ZK also writes the data to the node
      *
      * @param data new data value
      * @throws Exception errors
