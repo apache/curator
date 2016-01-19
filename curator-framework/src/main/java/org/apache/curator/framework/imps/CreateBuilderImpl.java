@@ -28,6 +28,7 @@ import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
@@ -88,14 +89,14 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 CreateBuilderImpl.this.withMode(mode);
                 return this;
             }
-            
+
             @Override
-            public ACLPathAndBytesable<CuratorTransactionBridge> compressed()
+            public ACLCreateModePathAndBytesable<CuratorTransactionBridge> compressed()
             {
                 CreateBuilderImpl.this.compressed();
                 return this;
             }
-            
+
             @Override
             public CuratorTransactionBridge forPath(String path) throws Exception
             {
@@ -104,12 +105,12 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
             @Override
             public CuratorTransactionBridge forPath(String path, byte[] data) throws Exception
-            {               
+            {
                 if ( compress )
                 {
                     data = client.getCompressionProvider().compress(path, data);
                 }
-                
+
                 String fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
                 return curatorTransaction;
@@ -477,6 +478,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
         catch ( Exception e)
         {
+            ThreadUtils.checkInterrupted(e);
             if ( ( e instanceof KeeperException.ConnectionLossException ||
                 !( e instanceof KeeperException )) && protectedId != null )
             {
@@ -491,7 +493,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 */
                 protectedId = UUID.randomUUID().toString();
             }
-            
+
             throw e;
         }
     }
@@ -667,6 +669,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                         }
                         catch ( Exception e )
                         {
+                            ThreadUtils.checkInterrupted(e);
                             client.logError("Processing protected create for path: " + givenPath, e);
                         }
                         callSuper = false;

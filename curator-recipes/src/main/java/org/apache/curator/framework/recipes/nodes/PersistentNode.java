@@ -31,6 +31,7 @@ import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -255,6 +256,7 @@ public class PersistentNode implements Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new IOException(e);
         }
     }
@@ -326,6 +328,7 @@ public class PersistentNode implements Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RuntimeException("Creating node. BasePath: " + basePath, e);  // should never happen unless there's a programming error - so throw RuntimeException
         }
     }

@@ -315,6 +315,7 @@ public class Reaper implements Closeable
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Trying to reap: " + holder.path, e);
         }
 

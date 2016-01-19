@@ -16,17 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.api.transaction;
+package org.apache.curator.framework.recipes.cache;
 
-import org.apache.curator.framework.api.Compressible;
-import org.apache.curator.framework.api.PathAndBytesable;
-import org.apache.curator.framework.api.VersionPathAndBytesable;
-import org.apache.curator.framework.api.Versionable;
-
-public interface TransactionSetDataBuilder extends
-    PathAndBytesable<CuratorTransactionBridge>,
-    Versionable<PathAndBytesable<CuratorTransactionBridge>>,
-    VersionPathAndBytesable<CuratorTransactionBridge>,
-    Compressible<VersionPathAndBytesable<CuratorTransactionBridge>>
+/**
+ * Default TreeCache selector - returns true for all methods
+ */
+public class DefaultTreeCacheSelector implements TreeCacheSelector
 {
+    @Override
+    public boolean traverseChildren(String fullPath)
+    {
+        return true;
+    }
+
+    @Override
+    public boolean acceptChild(String fullPath)
+    {
+        return true;
+    }
 }

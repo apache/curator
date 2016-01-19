@@ -23,6 +23,7 @@ import com.facebook.swift.service.ThriftService;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceDiscovery;
@@ -70,6 +71,7 @@ public class DiscoveryService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -109,6 +111,7 @@ public class DiscoveryService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -168,6 +171,7 @@ public class DiscoveryService
                     }
                     catch ( IOException e )
                     {
+                        ThreadUtils.checkInterrupted(e);
                         log.error("Could not close ServiceProvider with serviceName: " + serviceName, e);
                     }
                 }
@@ -177,6 +181,7 @@ public class DiscoveryService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -193,6 +198,7 @@ public class DiscoveryService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -222,6 +228,7 @@ public class DiscoveryService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }
@@ -245,6 +252,7 @@ public class DiscoveryService
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             throw new RpcException(e);
         }
     }

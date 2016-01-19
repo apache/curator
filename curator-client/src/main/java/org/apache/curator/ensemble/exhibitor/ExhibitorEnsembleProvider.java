@@ -251,6 +251,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
         }
         catch ( Exception e )
         {
+            ThreadUtils.checkInterrupted(e);
             log.error("Couldn't get backup connection string", e);
         }
         return values;
@@ -303,6 +304,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                 }
                 catch ( Throwable e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     if ( retryPolicy.allowRetry(retries++, System.currentTimeMillis() - start, RetryLoop.getDefaultRetrySleeper()) )
                     {
                         log.warn("Couldn't get servers from Exhibitor. Retrying.", e);

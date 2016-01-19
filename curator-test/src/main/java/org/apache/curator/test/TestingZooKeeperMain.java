@@ -28,6 +28,8 @@ import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,7 +39,25 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     private final CountDownLatch latch = new CountDownLatch(1);
     private final AtomicReference<Exception> startingException = new AtomicReference<Exception>(null);
 
-    private static final int MAX_WAIT_MS = 1000;
+    private static final int MAX_WAIT_MS;
+
+    static
+    {
+        long startMs = System.currentTimeMillis();
+        try
+        {
+            // this can take forever and fails tests - ZK calls it internally so there's nothing we can do
+            // pre flight it and use it to calculate max wait
+            //noinspection ResultOfMethodCallIgnored
+            InetAddress.getLocalHost().getCanonicalHostName();
+        }
+        catch ( UnknownHostException e )
+        {
+            // ignore
+        }
+        long elapsed = System.currentTimeMillis() - startMs;
+        MAX_WAIT_MS = Math.max((int)elapsed * 2, 1000);
+    }
 
     @Override
     public void kill()
@@ -119,7 +139,14 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
     @Override
     public void close() throws IOException
     {
-        shutdown();
+        try
+        {
+            shutdown();
+        }
+        catch ( Throwable e )
+        {
+            e.printStackTrace();    // just ignore - this class is only for testing
+        }
 
         try
         {
