@@ -69,8 +69,8 @@ public class WatcherRemovalManager
             try
             {
                 log.debug("Removing watcher for path: " + entry.path);
-                namespaceWatcherMap.removeWatcher(entry.watcher);
                 RemoveWatchesBuilderImpl builder = new RemoveWatchesBuilderImpl(client);
+                namespaceWatcherMap.removeWatcher(entry.watcher);
                 builder.internalRemoval(entry, entry.path);
             }
             catch ( Exception e )
@@ -82,6 +82,7 @@ public class WatcherRemovalManager
 
     private synchronized void internalRemove(WrappedWatcher entry)
     {
+        namespaceWatcherMap.removeWatcher(entry.watcher);
         entries.remove(entry);
     }
 

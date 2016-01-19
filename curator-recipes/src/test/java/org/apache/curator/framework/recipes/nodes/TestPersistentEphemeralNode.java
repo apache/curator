@@ -37,8 +37,8 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.*;
 
+@SuppressWarnings("deprecation")
 public class TestPersistentEphemeralNode extends BaseClassForTests
 {
     private static final Logger log = LoggerFactory.getLogger(TestPersistentEphemeralNode.class);
@@ -102,6 +102,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             client.start();
             try ( PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes()) )
             {
+                node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
                 node.start();
 
                 final CountDownLatch connectedLatch = new CountDownLatch(1);
@@ -151,6 +152,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         {
             client.start();
             node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
+            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
             node.start();
 
             final CountDownLatch connectedLatch = new CountDownLatch(1);
@@ -231,6 +233,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         {
             client.start();
             node = new PersistentEphemeralNode(client, mode, PATH, "a".getBytes());
+            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
             node.start();
             Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS));
 
@@ -270,6 +273,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         node.start();
         String path = null;
         try
@@ -292,6 +296,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         node.start();
         node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
 
@@ -310,6 +315,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework observer = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         try
         {
             node.start();
@@ -340,6 +346,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework observer = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         try
         {
             node.start();
@@ -374,6 +381,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework observer = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         try
         {
             node.start();
@@ -421,6 +429,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         observer.getData().usingWatcher(dataChangedTrigger).forPath(PATH);
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         node.start();
         try
         {
@@ -454,6 +463,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         CuratorFramework curator = newCurator();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         try
         {
             node.start();
@@ -483,11 +493,13 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
         try ( PersistentEphemeralNode node1 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]) )
         {
+            node1.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
             node1.start();
             node1.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String path1 = node1.getActualPath();
 
             PersistentEphemeralNode node2 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]);
+            node2.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
             node2.start();
             try
             {
@@ -510,6 +522,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         byte[] data = "Hello World".getBytes();
 
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         try
         {
             node.start();
@@ -536,6 +549,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         byte[] data = "Hello World".getBytes();
              
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
+        node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         try
         {
             node.start();
@@ -559,6 +573,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
         try
         {
+            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
@@ -605,6 +620,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
         try
         {
+            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
@@ -648,6 +664,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
                                                                    new byte[0]);
         try
         {
+            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertNodeExists(curator, node.getActualPath());
@@ -693,6 +710,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         
         	node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH,
                                                                    new byte[0]);
+            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         	node.start();
         
             node.waitForInitialCreate(timing.seconds(), TimeUnit.SECONDS);

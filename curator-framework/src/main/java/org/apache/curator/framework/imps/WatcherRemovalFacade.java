@@ -71,7 +71,7 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
         {
             if ( !getNamespaceWatcherMap().isEmpty() )
             {
-                throw new RuntimeException("NamespaceWatcherMap is not empty: " + client.getNamespaceWatcherMap());
+                throw new RuntimeException("NamespaceWatcherMap is not empty: " + getNamespaceWatcherMap());
             }
         }
     }

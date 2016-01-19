@@ -19,6 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.Watcher;
@@ -28,10 +29,10 @@ import java.util.concurrent.ConcurrentMap;
 
 class NamespaceWatcherMap implements Closeable
 {
-    private final ConcurrentMap<Object, NamespaceWatcher> map = CacheBuilder.newBuilder()
+    private final Cache<Object, NamespaceWatcher> cache = CacheBuilder.newBuilder()
         .weakValues()
-        .<Object, NamespaceWatcher>build()
-        .asMap();
+        .<Object, NamespaceWatcher>build();
+    private final ConcurrentMap<Object, NamespaceWatcher> map = cache.asMap();
     private final CuratorFrameworkImpl client;
 
     NamespaceWatcherMap(CuratorFrameworkImpl client)
@@ -85,6 +86,7 @@ class NamespaceWatcherMap implements Closeable
     @VisibleForTesting
     boolean isEmpty()
     {
+        cache.cleanUp();
         return map.isEmpty();
     }
 
@@ -102,5 +104,11 @@ class NamespaceWatcherMap implements Closeable
     {
         NamespaceWatcher        existingNamespaceWatcher = map.putIfAbsent(watcher, newNamespaceWatcher);
         return (existingNamespaceWatcher != null) ? existingNamespaceWatcher : newNamespaceWatcher;
+    }
+
+    @Override
+    public String toString()
+    {
+        return map.toString();
     }
 }
