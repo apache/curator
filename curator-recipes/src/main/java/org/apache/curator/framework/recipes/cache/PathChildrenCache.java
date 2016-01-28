@@ -448,7 +448,10 @@ public class PathChildrenCache implements Closeable
         {
             if ( (ifVersion < 0) || (ifVersion == data.getStat().getVersion()) )
             {
-                data.clearData();
+                if ( data.getData() != null )
+                {
+                    currentData.replace(fullPath, data, new ChildData(data.getPath(), data.getStat(), null));
+                }
                 return true;
             }
         }
