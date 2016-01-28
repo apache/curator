@@ -74,8 +74,8 @@ public class PathChildrenCache implements Closeable
     private final boolean cacheData;
     private final boolean dataIsCompressed;
     private final ListenerContainer<PathChildrenCacheListener> listeners = new ListenerContainer<PathChildrenCacheListener>();
-    private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
-    private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
+    private final ConcurrentMap<String, NodeData> currentData = Maps.newConcurrentMap();
+    private final AtomicReference<Map<String, NodeData>> initialSet = new AtomicReference<Map<String, NodeData>>();
     private final Set<Operation> operationsQuantizer = Sets.newSetFromMap(Maps.<Operation, Boolean>newConcurrentMap());
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final EnsureContainers ensureContainers;
@@ -87,7 +87,27 @@ public class PathChildrenCache implements Closeable
         CLOSED
     }
 
-    private static final ChildData NULL_CHILD_DATA = new ChildData("/", null, null);
+    static class NodeData extends ChildData {
+        private final AtomicReference<byte[]> dataRef;
+
+        public NodeData(String path, Stat stat, byte[] data) {
+            super(path, stat, null);
+            dataRef = new AtomicReference<byte[]>(data);
+        }
+
+        @Override
+        public byte[] getData()
+        {
+            return dataRef.get();
+        }
+
+        void clearData()
+        {
+            dataRef.set(null);
+        }
+    }
+
+    private static final NodeData NULL_CHILD_DATA = new NodeData("/", null, null);
 
     private static final boolean USE_EXISTS = Boolean.getBoolean("curator-path-children-cache-use-exists");
 
@@ -306,7 +326,7 @@ public class PathChildrenCache implements Closeable
 
             case POST_INITIALIZED_EVENT:
             {
-                initialSet.set(Maps.<String, ChildData>newConcurrentMap());
+                initialSet.set(Maps.<String, NodeData>newConcurrentMap());
                 offerOperation(new RefreshOperation(this, RefreshMode.POST_INITIALIZED));
                 break;
             }
@@ -443,7 +463,7 @@ public class PathChildrenCache implements Closeable
      */
     public boolean clearDataBytes(String fullPath, int ifVersion)
     {
-        ChildData data = currentData.get(fullPath);
+        NodeData data = currentData.get(fullPath);
         if ( data != null )
         {
             if ( (ifVersion < 0) || (ifVersion == data.getStat().getVersion()) )
@@ -576,13 +596,13 @@ public class PathChildrenCache implements Closeable
     @VisibleForTesting
     protected void remove(String fullPath)
     {
-        ChildData data = currentData.remove(fullPath);
+        NodeData data = currentData.remove(fullPath);
         if ( data != null )
         {
             offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_REMOVED, data)));
         }
 
-        Map<String, ChildData> localInitialSet = initialSet.get();
+        Map<String, NodeData> localInitialSet = initialSet.get();
         if ( localInitialSet != null )
         {
             localInitialSet.remove(fullPath);
@@ -598,7 +618,7 @@ public class PathChildrenCache implements Closeable
             {
                 Stat stat = new Stat();
                 byte[] bytes = dataIsCompressed ? client.getData().decompressed().storingStatIn(stat).forPath(fullPath) : client.getData().storingStatIn(stat).forPath(fullPath);
-                currentData.put(fullPath, new ChildData(fullPath, stat, bytes));
+                currentData.put(fullPath, new NodeData(fullPath, stat, bytes));
             }
             catch ( KeeperException.NoNodeException ignore )
             {
@@ -611,7 +631,7 @@ public class PathChildrenCache implements Closeable
             Stat stat = client.checkExists().forPath(fullPath);
             if ( stat != null )
             {
-                currentData.put(fullPath, new ChildData(fullPath, stat, null));
+                currentData.put(fullPath, new NodeData(fullPath, stat, null));
             }
             else
             {
@@ -684,8 +704,8 @@ public class PathChildrenCache implements Closeable
     {
         if ( resultCode == KeeperException.Code.OK.intValue() ) // otherwise - node must have dropped or something - we should be getting another event
         {
-            ChildData data = new ChildData(fullPath, stat, bytes);
-            ChildData previousData = currentData.put(fullPath, data);
+            NodeData data = new NodeData(fullPath, stat, bytes);
+            NodeData previousData = currentData.put(fullPath, data);
             if ( previousData == null ) // i.e. new
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data)));
@@ -698,9 +718,9 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private void updateInitialSet(String name, ChildData data)
+    private void updateInitialSet(String name, NodeData data)
     {
-        Map<String, ChildData> localInitialSet = initialSet.get();
+        Map<String, NodeData> localInitialSet = initialSet.get();
         if ( localInitialSet != null )
         {
             localInitialSet.put(name, data);
@@ -708,7 +728,7 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private void maybeOfferInitializedEvent(Map<String, ChildData> localInitialSet)
+    private void maybeOfferInitializedEvent(Map<String, NodeData> localInitialSet)
     {
         if ( !hasUninitialized(localInitialSet) )
         {
@@ -716,7 +736,7 @@ public class PathChildrenCache implements Closeable
 
             if ( initialSet.getAndSet(null) != null )   // avoid edge case - don't send more than 1 INITIALIZED event
             {
-                final List<ChildData> children = ImmutableList.copyOf(localInitialSet.values());
+                final List<ChildData> children = ImmutableList.<ChildData>copyOf(localInitialSet.values());
                 PathChildrenCacheEvent event = new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.INITIALIZED, null)
                 {
                     @Override
@@ -730,20 +750,20 @@ public class PathChildrenCache implements Closeable
         }
     }
 
-    private boolean hasUninitialized(Map<String, ChildData> localInitialSet)
+    private boolean hasUninitialized(Map<String, NodeData> localInitialSet)
     {
         if ( localInitialSet == null )
         {
             return false;
         }
 
-        Map<String, ChildData> uninitializedChildren = Maps.filterValues
+        Map<String, NodeData> uninitializedChildren = Maps.filterValues
             (
                 localInitialSet,
-                new Predicate<ChildData>()
+                new Predicate<NodeData>()
                 {
                     @Override
-                    public boolean apply(ChildData input)
+                    public boolean apply(NodeData input)
                     {
                         return (input == NULL_CHILD_DATA);  // check against ref intentional
                     }

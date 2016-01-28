@@ -25,15 +25,15 @@ import org.apache.curator.utils.PathUtils;
 
 public class ChildData implements Comparable<ChildData>
 {
-    private final String    path;
-    private final Stat      stat;
-    private final AtomicReference<byte[]>    data;
+    private final String path;
+    private final Stat stat;
+    private final byte[] data;
 
     public ChildData(String path, Stat stat, byte[] data)
     {
         this.path = PathUtils.validatePath(path);
         this.stat = stat;
-        this.data = new AtomicReference<byte[]>(data);
+        this.data = data;
     }
 
     /**
@@ -53,7 +53,7 @@ public class ChildData implements Comparable<ChildData>
             return -1;
         }
 
-        return path.compareTo(rhs.path);
+        return getPath().compareTo(rhs.getPath());
     }
 
     @SuppressWarnings("RedundantIfStatement")
@@ -69,17 +69,19 @@ public class ChildData implements Comparable<ChildData>
             return false;
         }
 
-        ChildData childData = (ChildData)o;
+        ChildData other = (ChildData)o;
 
-        if ( !Arrays.equals(data.get(), childData.data.get()) )
+        String path = getPath();
+        if ( path != null ? !path.equals(other.getPath()) : other.getPath() != null )
         {
             return false;
         }
-        if ( path != null ? !path.equals(childData.path) : childData.path != null )
+        Stat stat = getStat();
+        if ( stat != null ? !stat.equals(other.getStat()) : other.getStat() != null )
         {
             return false;
         }
-        if ( stat != null ? !stat.equals(childData.stat) : childData.stat != null )
+        if ( !Arrays.equals(getData(), other.getData()) )
         {
             return false;
         }
@@ -90,9 +92,12 @@ public class ChildData implements Comparable<ChildData>
     @Override
     public int hashCode()
     {
+        String path = getPath();
         int result = path != null ? path.hashCode() : 0;
+        Stat stat = getStat();
         result = 31 * result + (stat != null ? stat.hashCode() : 0);
-        result = 31 * result + (data != null ? Arrays.hashCode(data.get()) : 0);
+        byte[] data = getData();
+        result = 31 * result + (data != null ? Arrays.hashCode(data) : 0);
         return result;
     }
 
@@ -126,21 +131,16 @@ public class ChildData implements Comparable<ChildData>
      */
     public byte[] getData()
     {
-        return data.get();
-    }
-
-    void clearData()
-    {
-        data.set(null);
+        return data;
     }
 
     @Override
     public String toString()
     {
         return "ChildData{" +
-            "path='" + path + '\'' +
-            ", stat=" + stat +
-            ", data=" + Arrays.toString(data.get()) +
+            "path='" + getPath() + '\'' +
+            ", stat=" + getStat() +
+            ", data=" + Arrays.toString(getData()) +
             '}';
     }
 }
