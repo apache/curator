@@ -221,8 +221,7 @@ public class TreeCache implements Closeable
         final AtomicReference<NodeState> nodeState = new AtomicReference<NodeState>(NodeState.PENDING);
         final TreeNode parent;
         final String path;
-        final AtomicReference<Stat> stat = new AtomicReference<Stat>();
-        final AtomicReference<byte[]> data = new AtomicReference<byte[]>();
+        final AtomicReference<ChildData> childData = new AtomicReference<ChildData>();
         final AtomicReference<ConcurrentMap<String, TreeNode>> children = new AtomicReference<ConcurrentMap<String, TreeNode>>();
         final int depth;
 
@@ -303,10 +302,8 @@ public class TreeCache implements Closeable
 
         void wasDeleted() throws Exception
         {
-            Stat oldStat = stat.getAndSet(null);
-            byte[] oldData = data.getAndSet(null);
+            ChildData oldChildData = childData.getAndSet(null);
             client.watches().remove(this).ofType(WatcherType.Any).locally().inBackground().forPath(path);
-
             ConcurrentMap<String, TreeNode> childMap = children.getAndSet(null);
             if ( childMap != null )
             {
@@ -326,7 +323,7 @@ public class TreeCache implements Closeable
             NodeState oldState = nodeState.getAndSet(NodeState.DEAD);
             if ( oldState == NodeState.LIVE )
             {
-                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, new ChildData(path, oldStat, oldData));
+                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData);
             }
 
             if ( parent == null )
@@ -391,12 +388,12 @@ public class TreeCache implements Closeable
             case CHILDREN:
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    Stat oldStat = stat.get();
-                    if ( oldStat != null && oldStat.getMzxid() == newStat.getMzxid() )
+                    ChildData oldChildData = childData.get();
+                    if ( oldChildData != null && oldChildData.getStat().getMzxid() == newStat.getMzxid() )
                     {
-                        // Only update stat if mzxid is different, otherwise we might obscure
+                        // Only update stat if mzxid is same, otherwise we might obscure
                         // GET_DATA event updates.
-                        stat.set(newStat);
+                        childData.compareAndSet(oldChildData, new ChildData(oldChildData.getPath(), newStat, oldChildData.getData()));
                     }
 
                     if ( event.getChildren().isEmpty() )
@@ -443,22 +440,27 @@ public class TreeCache implements Closeable
             case GET_DATA:
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
+                    ChildData toPublish = new ChildData(event.getPath(), newStat, event.getData());
+                    ChildData oldChildData;
                     if ( cacheData )
                     {
-                        data.set(event.getData());
-                    }
-
-                    Stat oldStat = stat.getAndSet(newStat);
-                    NodeState oldState = nodeState.getAndSet(NodeState.LIVE);
-                    if ( oldState != NodeState.LIVE )
-                    {
-                        publishEvent(TreeCacheEvent.Type.NODE_ADDED, new ChildData(event.getPath(), newStat, event.getData()));
+                        oldChildData = childData.getAndSet(toPublish);
                     }
                     else
                     {
-                        if ( oldStat == null || oldStat.getMzxid() != newStat.getMzxid() )
+                        oldChildData = childData.getAndSet(new ChildData(event.getPath(), newStat, null));
+                    }
+
+                    NodeState oldState = nodeState.getAndSet(NodeState.LIVE);
+                    if ( oldState != NodeState.LIVE )
+                    {
+                        publishEvent(TreeCacheEvent.Type.NODE_ADDED, toPublish);
+                    }
+                    else
+                    {
+                        if ( oldChildData == null || oldChildData.getStat().getMzxid() != newStat.getMzxid() )
                         {
-                            publishEvent(TreeCacheEvent.Type.NODE_UPDATED, new ChildData(event.getPath(), newStat, event.getData()));
+                            publishEvent(TreeCacheEvent.Type.NODE_UPDATED, toPublish);
                         }
                     }
                 }
@@ -691,9 +693,9 @@ public class TreeCache implements Closeable
             for ( Map.Entry<String, TreeNode> entry : map.entrySet() )
             {
                 TreeNode childNode = entry.getValue();
-                ChildData childData = new ChildData(childNode.path, childNode.stat.get(), childNode.data.get());
+                ChildData childData = childNode.childData.get();
                 // Double-check liveness after retreiving data.
-                if ( childNode.nodeState.get() == NodeState.LIVE )
+                if ( childData != null && childNode.nodeState.get() == NodeState.LIVE )
                 {
                     builder.put(entry.getKey(), childData);
                 }
@@ -720,7 +722,7 @@ public class TreeCache implements Closeable
         {
             return null;
         }
-        ChildData result = new ChildData(node.path, node.stat.get(), node.data.get());
+        ChildData result = node.childData.get();
         // Double-check liveness after retreiving data.
         return node.nodeState.get() == NodeState.LIVE ? result : null;
     }
