@@ -59,4 +59,50 @@ public class TestPersistentNode extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+
+    @Test
+    public void testQuickClose() throws Exception
+    {
+        Timing timing = new Timing();
+        PersistentNode pen = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test/one/two", new byte[0]);
+            pen.start();
+            pen.close();
+            timing.sleepABit();
+            Assert.assertNull(client.checkExists().forPath("/test/one/two"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(pen);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testQuickCloseNodeExists() throws Exception
+    {
+        Timing timing = new Timing();
+        PersistentNode pen = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/test/one/two");
+
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test/one/two", new byte[0]);
+            pen.start();
+            pen.close();
+            timing.sleepABit();
+            Assert.assertNull(client.checkExists().forPath("/test/one/two"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(pen);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 }
