@@ -168,10 +168,9 @@ public class NodeCache implements Closeable
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
 
-        client.checkExists().creatingParentContainersIfNeeded().forPath(path);
-
         if ( buildInitial )
         {
+            client.checkExists().creatingParentContainersIfNeeded().forPath(path);
             internalRebuild();
         }
         reset();
@@ -241,7 +240,7 @@ public class NodeCache implements Closeable
     {
         if ( (state.get() == State.STARTED) && isConnected.get() )
         {
-            client.checkExists().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+            client.checkExists().creatingParentContainersIfNeeded().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
         }
     }
 

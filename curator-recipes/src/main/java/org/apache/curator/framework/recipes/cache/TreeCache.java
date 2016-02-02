@@ -788,6 +788,7 @@ public class TreeCache implements Closeable
             break;
 
         case LOST:
+            isInitialized.set(false);
             publishEvent(TreeCacheEvent.Type.CONNECTION_LOST);
             break;
 
