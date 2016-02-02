@@ -175,52 +175,84 @@ public class PersistentNode implements Closeable
             @Override
             public void processResult(CuratorFramework dummy, CuratorEvent event) throws Exception
             {
-                if ( !isActive() )
+                if ( isActive() )
                 {
-                    return;
-                }
-
-                String path = null;
-                boolean nodeExists = false;
-                if ( event.getResultCode() == KeeperException.Code.NODEEXISTS.intValue() )
-                {
-                    path = event.getPath();
-                    nodeExists = true;
-                }
-                else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-                {
-                    path = event.getName();
-                }
-                else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
-                {
-                    log.warn("Client does not have authorization to write node at path {}", event.getPath());
-                    authFailure.set(true);
-                    return;
-                }
-                if ( path != null )
-                {
-                    authFailure.set(false);
-                    nodePath.set(path);
-                    watchNode();
-
-                    if ( nodeExists )
-                    {
-                        client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
-                    }
-                    else
-                    {
-                        initialisationComplete();
-                    }
+                    processBackgroundCallback(event);
                 }
                 else
                 {
-                    createNode();
+                    processBackgroundCallbackClosedState(event);
                 }
             }
         };
 
         createMethod = useProtection ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
         this.data.set(Arrays.copyOf(data, data.length));
+    }
+
+    private void processBackgroundCallbackClosedState(CuratorEvent event)
+    {
+        String path = null;
+        if ( event.getResultCode() == KeeperException.Code.NODEEXISTS.intValue() )
+        {
+            path = event.getPath();
+        }
+        else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+        {
+            path = event.getName();
+        }
+
+        if ( path != null )
+        {
+            try
+            {
+                client.delete().guaranteed().inBackground().forPath(path);
+            }
+            catch ( Exception e )
+            {
+                log.error("Could not delete node after close", e);
+            }
+        }
+    }
+
+    private void processBackgroundCallback(CuratorEvent event) throws Exception
+    {
+        String path = null;
+        boolean nodeExists = false;
+        if ( event.getResultCode() == KeeperException.Code.NODEEXISTS.intValue() )
+        {
+            path = event.getPath();
+            nodeExists = true;
+        }
+        else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+        {
+            path = event.getName();
+        }
+        else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
+        {
+            log.warn("Client does not have authorisation to write node at path {}", event.getPath());
+            authFailure.set(true);
+            return;
+        }
+        if ( path != null )
+        {
+            authFailure.set(false);
+            nodePath.set(path);
+            watchNode();
+
+            if ( nodeExists )
+            {
+                client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
+            }
+            else
+            {
+                initialisationComplete();
+            }
+        }
+        else
+        {
+            createNode();
+        }
     }
 
     private void initialisationComplete()
