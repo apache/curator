@@ -572,19 +572,21 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     @Override
                     public void processResult(int rc, String path, Object ctx, String name, Stat stat) {
                         trace.commit();
-                        
-                        //Need to manually populate the provided stat here.
-                        storingStat.setAversion(stat.getAversion());
-                        storingStat.setCtime(stat.getCtime());
-                        storingStat.setCversion(stat.getCversion());
-                        storingStat.setCzxid(stat.getCzxid());
-                        storingStat.setDataLength(stat.getDataLength());
-                        storingStat.setEphemeralOwner(stat.getEphemeralOwner());
-                        storingStat.setMtime(stat.getMtime());
-                        storingStat.setMzxid(stat.getMzxid());
-                        storingStat.setNumChildren(stat.getNumChildren());
-                        storingStat.setPzxid(stat.getPzxid());
-                        storingStat.setVersion(stat.getVersion());
+
+                        if ( stat != null )
+                        {
+                            storingStat.setAversion(stat.getAversion());
+                            storingStat.setCtime(stat.getCtime());
+                            storingStat.setCversion(stat.getCversion());
+                            storingStat.setCzxid(stat.getCzxid());
+                            storingStat.setDataLength(stat.getDataLength());
+                            storingStat.setEphemeralOwner(stat.getEphemeralOwner());
+                            storingStat.setMtime(stat.getMtime());
+                            storingStat.setMzxid(stat.getMzxid());
+                            storingStat.setNumChildren(stat.getNumChildren());
+                            storingStat.setPzxid(stat.getPzxid());
+                            storingStat.setVersion(stat.getVersion());
+                        }
 
                         if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
                         {
