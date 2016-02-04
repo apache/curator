@@ -18,21 +18,19 @@
  */
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
+import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestWatcherIdentity extends BaseClassForTests
@@ -63,71 +61,24 @@ public class TestWatcherIdentity extends BaseClassForTests
     }
 
     @Test
-    public void testRefExpiration() throws Exception
+    public void testSetAddition()
     {
-        final int MAX_CHECKS = 10;
-
-        final CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
+        Watcher watcher = new Watcher()
         {
-            Assert.assertNull(client.getNamespaceWatcherMap().get(new CountCuratorWatcher()));
-
-            final CountDownLatch latch = new CountDownLatch(1);
-            ExecutorService service = Executors.newSingleThreadExecutor();
-            service.submit
-            (
-                new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
-                    {
-                        CountZKWatcher watcher = new CountZKWatcher();
-                        client.getNamespaceWatcherMap().getNamespaceWatcher(watcher);
-                        Assert.assertNotNull(client.getNamespaceWatcherMap().get(watcher));
-                        latch.countDown();
-                        return null;
-                    }
-                }
-            );
-
-            latch.await();
-            service.shutdownNow();
-
-            Timing timing = new Timing();
-            for ( int i = 0; i < MAX_CHECKS; ++i )
+            @Override
+            public void process(WatchedEvent event)
             {
-                Assert.assertTrue((i + 1) < MAX_CHECKS);
-                timing.sleepABit();
 
-                client.getNamespaceWatcherMap().drain();  // just to cause drainReferenceQueues() to get called
-                if ( client.getNamespaceWatcherMap().isEmpty() )
-                {
-                    break;
-                }
             }
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(client);
-        }
-    }
-
-    @Test
-    public void testSimpleId()
-    {
-        CountCuratorWatcher curatorWatcher = new CountCuratorWatcher();
-        CountZKWatcher zkWatcher = new CountZKWatcher();
-        CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
-            Assert.assertSame(client.getNamespaceWatcherMap().getNamespaceWatcher(curatorWatcher), client.getNamespaceWatcherMap().getNamespaceWatcher(curatorWatcher));
-            Assert.assertSame(client.getNamespaceWatcherMap().getNamespaceWatcher(zkWatcher), client.getNamespaceWatcherMap().getNamespaceWatcher(zkWatcher));
-            Assert.assertNotSame(client.getNamespaceWatcherMap().getNamespaceWatcher(curatorWatcher), client.getNamespaceWatcherMap().getNamespaceWatcher(zkWatcher));
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(client);
-        }
+        };
+        NamespaceWatcher namespaceWatcher1 = new NamespaceWatcher(null, watcher, "/foo");
+        NamespaceWatcher namespaceWatcher2 = new NamespaceWatcher(null, watcher, "/foo");
+        Assert.assertEquals(namespaceWatcher1, namespaceWatcher2);
+        Assert.assertTrue(namespaceWatcher1.equals(watcher));
+        Set<Watcher> set = Sets.newHashSet();
+        set.add(namespaceWatcher1);
+        set.add(namespaceWatcher2);
+        Assert.assertEquals(set.size(), 1);
     }
 
     @Test

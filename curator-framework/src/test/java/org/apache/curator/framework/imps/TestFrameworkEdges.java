@@ -57,6 +57,21 @@ public class TestFrameworkEdges extends BaseClassForTests
     private final Timing timing = new Timing();
 
     @Test
+    public void testQuickClose() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryNTimes(0, 0));
+        try
+        {
+            client.start();
+            client.close();
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testProtectedCreateNodeDeletion() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryNTimes(0, 0));

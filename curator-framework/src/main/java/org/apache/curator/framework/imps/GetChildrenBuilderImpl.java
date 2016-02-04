@@ -137,14 +137,14 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     @Override
     public BackgroundPathable<List<String>> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(client, watcher);
+        watching = new Watching(watcher);
         return this;
     }
 
     @Override
     public BackgroundPathable<List<String>> usingWatcher(CuratorWatcher watcher)
     {
-        watching = new Watching(client, watcher);
+        watching = new Watching(watcher);
         return this;
     }
 

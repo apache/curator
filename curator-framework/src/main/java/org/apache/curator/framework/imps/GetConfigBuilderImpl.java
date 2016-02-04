@@ -129,14 +129,14 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     @Override
     public BackgroundEnsembleable<byte[]> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(client, watcher);
+        watching = new Watching(watcher);
         return new InternalBackgroundEnsembleable();
     }
 
     @Override
     public BackgroundEnsembleable<byte[]> usingWatcher(CuratorWatcher watcher)
     {
-        watching = new Watching(client, watcher);
+        watching = new Watching(watcher);
         return new InternalBackgroundEnsembleable();
     }
 

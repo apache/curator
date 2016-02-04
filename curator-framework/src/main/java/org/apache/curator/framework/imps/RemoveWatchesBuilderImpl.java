@@ -18,33 +18,24 @@
  */
 package org.apache.curator.framework.imps;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.BackgroundPathable;
-import org.apache.curator.framework.api.BackgroundPathableQuietlyable;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.api.Pathable;
-import org.apache.curator.framework.api.RemoveWatchesLocal;
-import org.apache.curator.framework.api.RemoveWatchesBuilder;
-import org.apache.curator.framework.api.RemoveWatchesType;
+import org.apache.curator.framework.api.*;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.WatcherType;
 import org.apache.zookeeper.ZooKeeper;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 
 
 public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWatchesType, RemoveWatchesLocal, BackgroundOperation<String>
 {
     private CuratorFrameworkImpl client;
     private Watcher watcher;
+    private CuratorWatcher curatorWatcher;
     private WatcherType watcherType;
     private boolean guaranteed;
     private boolean local;
@@ -55,6 +46,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     {
         this.client = client;
         this.watcher = null;
+        this.curatorWatcher = null;
         this.watcherType = WatcherType.Any;
         this.guaranteed = false;
         this.local = false;
@@ -83,26 +75,16 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     @Override
     public RemoveWatchesType remove(Watcher watcher)
     {
-        if(watcher == null) {
-            this.watcher = null;
-        } else {
-            //Try and get the namespaced version of the watcher.
-            this.watcher = client.getNamespaceWatcherMap().get(watcher);
-            
-            //If this is not present then default to the original watcher. This shouldn't happen in practice unless the user
-            //has added a watch directly to the ZK client rather than via the CuratorFramework.
-            if(this.watcher == null) {
-                this.watcher = watcher;
-            }
-        }
-
+        this.watcher = watcher;
+        this.curatorWatcher = null;
         return this;
     }
     
     @Override
     public RemoveWatchesType remove(CuratorWatcher watcher)
     {
-        this.watcher = watcher == null ? null : client.getNamespaceWatcherMap().get(watcher);
+        this.watcher = null;
+        this.curatorWatcher = watcher;
         return this;
     }    
 
@@ -110,6 +92,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     public RemoveWatchesType removeAll()
     {
         this.watcher = null;
+        this.curatorWatcher = null;
         return this;
     }
 
@@ -224,25 +207,25 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     
     private void pathInForeground(final String path) throws Exception
     {
+        NamespaceWatcher namespaceWatcher = makeNamespaceWatcher(path);
         //For the local case we don't want to use the normal retry loop and we don't want to block until a connection is available.
         //We just execute the removeWatch, and if it fails, ZK will just remove local watches.
-        if(local)
+        if ( local )
         {
             ZooKeeper zkClient = client.getZooKeeper();
-            if(watcher == null)
+            if ( namespaceWatcher != null )
             {
-                client.getNamespaceWatcherMap().clear();
-                zkClient.removeAllWatches(path, watcherType, local);    
+                zkClient.removeWatches(path, namespaceWatcher, watcherType, local);
             }
             else
             {
-                client.getNamespaceWatcherMap().removeWatcher(watcher);
-                zkClient.removeWatches(path, watcher, watcherType, local);
+                zkClient.removeAllWatches(path, watcherType, local);
             }
         }
         else
         {
-            RetryLoop.callWithRetry(client.getZookeeperClient(), 
+            final NamespaceWatcher finalNamespaceWatcher = namespaceWatcher;
+            RetryLoop.callWithRetry(client.getZookeeperClient(),
                     new Callable<Void>()
                     {
                         @Override
@@ -250,17 +233,15 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
                         {
                             try
                             {
-                                ZooKeeper zkClient = client.getZookeeperClient().getZooKeeper();    
-                                
-                                if(watcher == null)
+                                ZooKeeper zkClient = client.getZookeeperClient().getZooKeeper();
+
+                                if ( finalNamespaceWatcher != null )
                                 {
-                                    client.getNamespaceWatcherMap().clear();
-                                    zkClient.removeAllWatches(path, watcherType, local);
+                                    zkClient.removeWatches(path, finalNamespaceWatcher, watcherType, false);
                                 }
                                 else
                                 {
-                                    client.getNamespaceWatcherMap().removeWatcher(watcher);
-                                    zkClient.removeWatches(path, watcher, watcherType, local);
+                                    zkClient.removeAllWatches(path, watcherType, false);
                                 }
                             }
                             catch(Exception e)
@@ -268,12 +249,12 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
                                 if( RetryLoop.isRetryException(e) && guaranteed )
                                 {
                                     //Setup the guaranteed handler
-                                    client.getFailedRemoveWatcherManager().addFailedOperation(new FailedRemoveWatchManager.FailedRemoveWatchDetails(path, watcher));
+                                    client.getFailedRemoveWatcherManager().addFailedOperation(new FailedRemoveWatchManager.FailedRemoveWatchDetails(path, finalNamespaceWatcher));
                                     throw e;
                                 }
                                 else if(e instanceof KeeperException.NoWatcherException && quietly)
                                 {
-                                    //Ignore
+                                    // ignore
                                 }
                                 else
                                 {
@@ -287,7 +268,28 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
             });
         }
     }
-    
+
+    private NamespaceWatcher makeNamespaceWatcher(String path)
+    {
+        NamespaceWatcher namespaceWatcher = null;
+        if ( watcher != null )
+        {
+            if ( watcher instanceof NamespaceWatcher )
+            {
+                namespaceWatcher = (NamespaceWatcher)watcher;
+            }
+            else
+            {
+                namespaceWatcher = new NamespaceWatcher(client, watcher, path);
+            }
+        }
+        else if ( curatorWatcher != null )
+        {
+            namespaceWatcher = new NamespaceWatcher(client, curatorWatcher, path);
+        }
+        return namespaceWatcher;
+    }
+
     @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData)
             throws Exception
@@ -304,17 +306,16 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
                 client.processBackgroundOperation(operationAndData, event);                
             }
         };
-        
+
         ZooKeeper zkClient = client.getZooKeeper();
-        if(watcher == null)
+        NamespaceWatcher namespaceWatcher = makeNamespaceWatcher(operationAndData.getData());
+        if(namespaceWatcher == null)
         {
-            client.getNamespaceWatcherMap().clear();
             zkClient.removeAllWatches(operationAndData.getData(), watcherType, local, callback, operationAndData.getContext());
         }
         else
         {
-            client.getNamespaceWatcherMap().removeWatcher(watcher);
-            zkClient.removeWatches(operationAndData.getData(), watcher, watcherType, local, callback, operationAndData.getContext());
+            zkClient.removeWatches(operationAndData.getData(), namespaceWatcher, watcherType, local, callback, operationAndData.getContext());
         }
         
     }

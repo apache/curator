@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -23,24 +24,28 @@ import org.apache.zookeeper.Watcher;
 
 class Watching
 {
-    private final Watcher       watcher;
-    private final boolean       watched;
+    private final Watcher watcher;
+    private final CuratorWatcher curatorWatcher;
+    private final boolean watched;
 
     Watching(boolean watched)
     {
         this.watcher = null;
+        this.curatorWatcher = null;
         this.watched = watched;
     }
 
-    Watching(CuratorFrameworkImpl client, Watcher watcher)
+    Watching(Watcher watcher)
     {
-        this.watcher = (watcher != null) ? client.getNamespaceWatcherMap().getNamespaceWatcher(watcher) : null;
+        this.watcher = watcher;
+        this.curatorWatcher = null;
         this.watched = false;
     }
 
-    Watching(CuratorFrameworkImpl client, CuratorWatcher watcher)
+    Watching(CuratorWatcher watcher)
     {
-        this.watcher = (watcher != null) ? client.getNamespaceWatcherMap().getNamespaceWatcher(watcher) : null;
+        this.watcher = null;
+        this.curatorWatcher = watcher;
         this.watched = false;
     }
 
@@ -48,15 +53,30 @@ class Watching
     {
         watcher = null;
         watched = false;
+        curatorWatcher = null;
     }
 
     Watcher getWatcher(CuratorFrameworkImpl client, String unfixedPath)
     {
-        if ( (watcher != null) && (client.getWatcherRemovalManager() != null) )
+        NamespaceWatcher namespaceWatcher = null;
+        if ( watcher != null )
         {
-            return client.getWatcherRemovalManager().add(unfixedPath, watcher);
+            namespaceWatcher = new NamespaceWatcher(client, this.watcher, unfixedPath);
         }
-        return watcher;
+        else if ( curatorWatcher != null )
+        {
+            namespaceWatcher = new NamespaceWatcher(client, curatorWatcher, unfixedPath);
+        }
+
+        if ( namespaceWatcher != null )
+        {
+            if ( client.getWatcherRemovalManager() != null )
+            {
+                client.getWatcherRemovalManager().add(namespaceWatcher);
+            }
+        }
+
+        return namespaceWatcher;
     }
 
     boolean isWatched()

@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.imps;
 
+import com.google.common.base.Preconditions;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.WatchedEvent;
@@ -28,20 +29,28 @@ class NamespaceWatcher implements Watcher, Closeable
 {
     private volatile CuratorFrameworkImpl client;
     private volatile Watcher actualWatcher;
+    private final String unfixedPath;
     private volatile CuratorWatcher curatorWatcher;
 
-    NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher)
+    NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher, String unfixedPath)
     {
         this.client = client;
         this.actualWatcher = actualWatcher;
+        this.unfixedPath = Preconditions.checkNotNull(unfixedPath, "unfixedPath cannot be null");
         this.curatorWatcher = null;
     }
 
-    NamespaceWatcher(CuratorFrameworkImpl client, CuratorWatcher curatorWatcher)
+    NamespaceWatcher(CuratorFrameworkImpl client, CuratorWatcher curatorWatcher, String unfixedPath)
     {
         this.client = client;
         this.actualWatcher = null;
         this.curatorWatcher = curatorWatcher;
+        this.unfixedPath = Preconditions.checkNotNull(unfixedPath, "unfixedPath cannot be null");
+    }
+
+    String getUnfixedPath()
+    {
+        return unfixedPath;
     }
 
     @Override
@@ -57,6 +66,11 @@ class NamespaceWatcher implements Watcher, Closeable
     {
         if ( client != null )
         {
+            if ( (event.getType() != Event.EventType.None) && (client.getWatcherRemovalManager() != null) )
+            {
+                client.getWatcherRemovalManager().noteTriggeredWatcher(this);
+            }
+
             if ( actualWatcher != null )
             {
                 actualWatcher.process(new NamespaceWatchedEvent(client, event));
@@ -74,5 +88,48 @@ class NamespaceWatcher implements Watcher, Closeable
                 }
             }
         }
+    }
+
+    // specialized equals()/hashCode() that makes this instance equal to the actual watcher
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null )
+        {
+            return false;
+        }
+
+        if ( getClass() == o.getClass() )
+        {
+            NamespaceWatcher watcher = (NamespaceWatcher)o;
+
+            //noinspection SimplifiableIfStatement
+            if ( actualWatcher != null ? !actualWatcher.equals(watcher.actualWatcher) : watcher.actualWatcher != null )
+            {
+                return false;
+            }
+            return curatorWatcher != null ? curatorWatcher.equals(watcher.curatorWatcher) : watcher.curatorWatcher == null;
+        }
+
+        //noinspection SimplifiableIfStatement
+        if ( Watcher.class.isAssignableFrom(o.getClass()) )
+        {
+            return actualWatcher == o;
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = actualWatcher != null ? actualWatcher.hashCode() : 0;
+        result = 31 * result + (curatorWatcher != null ? curatorWatcher.hashCode() : 0);
+        return result;
     }
 }

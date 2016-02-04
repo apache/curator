@@ -161,10 +161,8 @@ public class TestRemoveWatches extends BaseClassForTests
             };
                         
             client.checkExists().usingWatcher(watcher).forPath(path);
-            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
-            
+
             client.watches().remove(watcher).forPath(path);
-            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
 
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
@@ -192,10 +190,8 @@ public class TestRemoveWatches extends BaseClassForTests
             Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
 
             client.watches().remove(watcher).forPath(path);
-            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
 
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
@@ -236,10 +232,8 @@ public class TestRemoveWatches extends BaseClassForTests
             };
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
 
             client.watches().remove(watcher).ofType(WatcherType.Any).inBackground(callback).forPath(path);
-            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
 
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
             
@@ -267,10 +261,8 @@ public class TestRemoveWatches extends BaseClassForTests
             Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
 
             client.watches().remove(watcher).inBackground().forPath(path);
-            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
 
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
             
@@ -301,10 +293,8 @@ public class TestRemoveWatches extends BaseClassForTests
             
             client.getChildren().usingWatcher(watcher1).forPath(path);
             client.checkExists().usingWatcher(watcher2).forPath(path);
-            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
 
             client.watches().removeAll().forPath(path);
-            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
 
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
@@ -400,7 +390,6 @@ public class TestRemoveWatches extends BaseClassForTests
             Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);        
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
 
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
@@ -408,7 +397,6 @@ public class TestRemoveWatches extends BaseClassForTests
             Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
                        
             client.watches().removeAll().locally().forPath(path);
-            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
 
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
@@ -438,7 +426,6 @@ public class TestRemoveWatches extends BaseClassForTests
             Watcher watcher = new CountDownWatcher(path, removedLatch, EventType.DataWatchRemoved);        
             
             client.checkExists().usingWatcher(watcher).forPath(path);
-            Assert.assertTrue(!client.getNamespaceWatcherMap().isEmpty());
 
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
@@ -446,7 +433,6 @@ public class TestRemoveWatches extends BaseClassForTests
             Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
                        
             client.watches().removeAll().locally().inBackground().forPath(path);
-            Assert.assertTrue(client.getNamespaceWatcherMap().isEmpty());
 
             Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }

@@ -28,8 +28,8 @@ import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
@@ -42,7 +42,7 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
     {
         super(client);
         this.client = client;
-        removalManager = new WatcherRemovalManager(client, getNamespaceWatcherMap());
+        removalManager = new WatcherRemovalManager(client);
     }
 
     @Override
@@ -66,14 +66,6 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
     public void removeWatchers()
     {
         removalManager.removeWatchers();
-
-        if ( Boolean.getBoolean(DebugUtils.PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY) )
-        {
-            if ( !getNamespaceWatcherMap().isEmpty() )
-            {
-                throw new RuntimeException("NamespaceWatcherMap is not empty: " + getNamespaceWatcherMap());
-            }
-        }
     }
 
     @Override

@@ -22,7 +22,6 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
@@ -85,7 +84,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final CompressionProvider compressionProvider;
     private final ACLProvider aclProvider;
     private final NamespaceFacadeCache namespaceFacadeCache;
-    private final NamespaceWatcherMap namespaceWatcherMap = new NamespaceWatcherMap(this);
     private final boolean useContainerParentsIfAvailable;
     private final ConnectionStateErrorPolicy connectionStateErrorPolicy;
     private final AtomicLong currentInstanceIndex = new AtomicLong(-1);
@@ -240,11 +238,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public void clearWatcherReferences(Watcher watcher)
     {
-        NamespaceWatcher namespaceWatcher = namespaceWatcherMap.remove(watcher);
-        if ( namespaceWatcher != null )
-        {
-            namespaceWatcher.close();
-        }
+        // NOP
     }
 
     @Override
@@ -371,7 +365,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
             unhandledErrorListeners.clear();
             connectionStateManager.close();
             client.close();
-            namespaceWatcherMap.close();
         }
     }
 
@@ -698,11 +691,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     NamespaceFacadeCache getNamespaceFacadeCache()
     {
         return namespaceFacadeCache;
-    }
-
-    NamespaceWatcherMap getNamespaceWatcherMap()
-    {
-        return namespaceWatcherMap;
     }
 
     void validateConnection(Watcher.Event.KeeperState state)
