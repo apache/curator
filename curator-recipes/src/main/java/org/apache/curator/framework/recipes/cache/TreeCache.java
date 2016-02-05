@@ -303,7 +303,6 @@ public class TreeCache implements Closeable
         void wasDeleted() throws Exception
         {
             ChildData oldChildData = childData.getAndSet(null);
-            client.watches().remove(this).ofType(WatcherType.Any).locally().inBackground().forPath(path);
             ConcurrentMap<String, TreeNode> childMap = children.getAndSet(null);
             if ( childMap != null )
             {
