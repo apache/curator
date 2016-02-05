@@ -108,6 +108,11 @@ class NamespaceWatcher implements Watcher, Closeable
         {
             NamespaceWatcher watcher = (NamespaceWatcher)o;
 
+            if ( !unfixedPath.equals(watcher.getUnfixedPath()) )
+            {
+                return false;
+            }
+
             //noinspection SimplifiableIfStatement
             if ( actualWatcher != null ? !actualWatcher.equals(watcher.actualWatcher) : watcher.actualWatcher != null )
             {
@@ -129,6 +134,7 @@ class NamespaceWatcher implements Watcher, Closeable
     public int hashCode()
     {
         int result = actualWatcher != null ? actualWatcher.hashCode() : 0;
+        result = 31 * result + unfixedPath.hashCode();
         result = 31 * result + (curatorWatcher != null ? curatorWatcher.hashCode() : 0);
         return result;
     }
