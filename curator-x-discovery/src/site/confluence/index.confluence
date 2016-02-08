@@ -55,6 +55,10 @@ Returns:
 the instance to use
 {code}
 
+*Note:* When using Curator 2.x (Zookeeper 3.4.x) it's essential that service provider objects are cached by your application and reused.
+Since the internal NamespaceWatcher objects added by the service provider cannot be removed in Zookeeper 3.4.x, creating a fresh service
+provider for each call to the same service will eventually exhaust the memory of the JVM.
+
 h3. ServiceDiscovery
 
 In order to allocate a ServiceProvider, you must have a ServiceDiscovery. It is created by a {{ServiceDiscoveryBuilder}}.
