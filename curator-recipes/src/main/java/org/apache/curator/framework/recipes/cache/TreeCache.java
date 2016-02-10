@@ -338,6 +338,7 @@ public class TreeCache implements Closeable
         @Override
         public void process(WatchedEvent event)
         {
+            LOG.debug("process: {}", event);
             try
             {
                 switch ( event.getType() )
@@ -367,6 +368,7 @@ public class TreeCache implements Closeable
         @Override
         public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
         {
+            LOG.debug("processResult: {}", event);
             Stat newStat = event.getStat();
             switch ( event.getType() )
             {
@@ -829,6 +831,7 @@ public class TreeCache implements Closeable
     {
         if ( treeState.get() != TreeState.CLOSED )
         {
+            LOG.debug("publishEvent: {}", event);
             executorService.submit(new Runnable()
             {
                 @Override

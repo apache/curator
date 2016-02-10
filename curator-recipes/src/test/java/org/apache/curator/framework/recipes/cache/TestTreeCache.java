@@ -56,25 +56,17 @@ public class TestTreeCache extends BaseTestTreeCache
                 return !fullPath.equals("/root/n1-c");
             }
         };
-        TreeCache treeCache = TreeCache.newBuilder(client, "/root").setSelector(selector).build();
-        try
-        {
-            treeCache.getListenable().addListener(eventListener);
-            treeCache.start();
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/root").setSelector(selector));
+        cache.start();
 
-            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root");
-            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-a");
-            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b");
-            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-d");
-            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b/n2-a");
-            assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b/n2-b");
-            assertEvent(TreeCacheEvent.Type.INITIALIZED);
-            assertNoMoreEvents();
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(treeCache);
-        }
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-a");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-d");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b/n2-a");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/root/n1-b/n2-b");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
     }
 
     @Test
@@ -107,11 +99,16 @@ public class TestTreeCache extends BaseTestTreeCache
     {
         cache = newTreeCacheWithListeners(client, "/one/two/three");
         cache.start();
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
         Assert.assertNull(client.checkExists().forPath("/one/two/three"));
         cache.close();
 
-        cache = TreeCache.newBuilder(client, "/one/two/three").setCreateParentNodes(true).build();
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/one/two/three").setCreateParentNodes(true));
         cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/one/two/three");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertNoMoreEvents();
         Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
     }
 

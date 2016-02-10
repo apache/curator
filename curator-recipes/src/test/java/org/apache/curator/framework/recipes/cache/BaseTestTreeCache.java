@@ -119,6 +119,7 @@ public class BaseTestTreeCache extends BaseClassForTests
             try
             {
                 Assert.assertFalse(hadBackgroundException.get(), "Background exceptions were thrown, see stderr for details");
+                assertNoMoreEvents();
             }
             finally
             {
@@ -138,7 +139,7 @@ public class BaseTestTreeCache extends BaseClassForTests
     void assertNoMoreEvents() throws InterruptedException
     {
         timing.sleepABit();
-        Assert.assertTrue(events.isEmpty());
+        Assert.assertTrue(events.isEmpty(), String.format("Expected no events, found %d; first event: %s", events.size(), events.peek()));
     }
 
     /**
