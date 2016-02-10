@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.imps;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.utils.ThreadUtils;
@@ -90,8 +91,9 @@ class NamespaceWatcher implements Watcher, Closeable
         }
     }
 
-    // specialized equals()/hashCode() that makes this instance equal to the actual watcher
-
+    /**
+     * NamespaceWatcher should equal other wrappers that wrap the same instance.
+     */
     @Override
     public boolean equals(Object o)
     {
@@ -107,29 +109,9 @@ class NamespaceWatcher implements Watcher, Closeable
         if ( getClass() == o.getClass() )
         {
             NamespaceWatcher watcher = (NamespaceWatcher)o;
-
-            if ( !unfixedPath.equals(watcher.getUnfixedPath()) )
-            {
-                return false;
-            }
-
-            //noinspection SimplifiableIfStatement
-            if ( actualWatcher != null ? !actualWatcher.equals(watcher.actualWatcher) : watcher.actualWatcher != null )
-            {
-                return false;
-            }
-            return curatorWatcher != null ? curatorWatcher.equals(watcher.curatorWatcher) : watcher.curatorWatcher == null;
-        }
-
-        if ( Watcher.class.isAssignableFrom(o.getClass()) )
-        {
-            return actualWatcher == o;
-        }
-
-        //noinspection SimplifiableIfStatement
-        if ( CuratorWatcher.class.isAssignableFrom(o.getClass()) )
-        {
-            return curatorWatcher == o;
+            return Objects.equal(unfixedPath, watcher.getUnfixedPath())
+                && Objects.equal(actualWatcher, watcher.actualWatcher)
+                && Objects.equal(curatorWatcher, watcher.curatorWatcher);
         }
 
         return false;
@@ -138,9 +120,6 @@ class NamespaceWatcher implements Watcher, Closeable
     @Override
     public int hashCode()
     {
-        int result = actualWatcher != null ? actualWatcher.hashCode() : 0;
-        result = 31 * result + unfixedPath.hashCode();
-        result = 31 * result + (curatorWatcher != null ? curatorWatcher.hashCode() : 0);
-        return result;
+        return Objects.hashCode(actualWatcher, unfixedPath, curatorWatcher);
     }
 }

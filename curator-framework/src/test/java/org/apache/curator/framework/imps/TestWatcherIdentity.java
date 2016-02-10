@@ -137,7 +137,8 @@ public class TestWatcherIdentity extends BaseClassForTests
         NamespaceWatcher namespaceWatcher1 = new NamespaceWatcher(null, watcher, "/foo");
         NamespaceWatcher namespaceWatcher2 = new NamespaceWatcher(null, watcher, "/foo");
         Assert.assertEquals(namespaceWatcher1, namespaceWatcher2);
-        Assert.assertTrue(namespaceWatcher1.equals(watcher));
+        Assert.assertFalse(namespaceWatcher1.equals(watcher));
+        Assert.assertFalse(watcher.equals(namespaceWatcher1));
         Set<Watcher> set = Sets.newHashSet();
         set.add(namespaceWatcher1);
         set.add(namespaceWatcher2);
