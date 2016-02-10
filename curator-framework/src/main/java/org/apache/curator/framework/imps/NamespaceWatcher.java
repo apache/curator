@@ -121,17 +121,6 @@ class NamespaceWatcher implements Watcher, Closeable
             return curatorWatcher != null ? curatorWatcher.equals(watcher.curatorWatcher) : watcher.curatorWatcher == null;
         }
 
-        if ( Watcher.class.isAssignableFrom(o.getClass()) )
-        {
-            return actualWatcher == o;
-        }
-
-        //noinspection SimplifiableIfStatement
-        if ( CuratorWatcher.class.isAssignableFrom(o.getClass()) )
-        {
-            return curatorWatcher == o;
-        }
-
         return false;
     }
 
