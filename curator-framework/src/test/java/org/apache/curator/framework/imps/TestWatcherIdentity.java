@@ -55,8 +55,71 @@ public class TestWatcherIdentity extends BaseClassForTests
         @Override
         public void process(WatchedEvent event)
         {
-            System.out.println("count=" + count);
             count.incrementAndGet();
+        }
+    }
+
+    @Test
+    public void testSameWatcherPerZKDocs() throws Exception
+    {
+        CountZKWatcher actualWatcher = new CountZKWatcher();
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().forPath("/test");
+
+            // per ZK docs, this watcher should only trigger once
+            client.checkExists().usingWatcher(actualWatcher).forPath("/test");
+            client.getData().usingWatcher(actualWatcher).forPath("/test");
+
+            client.setData().forPath("/test", "foo".getBytes());
+            client.delete().forPath("/test");
+            timing.sleepABit();
+            Assert.assertEquals(actualWatcher.count.getAndSet(0), 1);
+
+            client.create().forPath("/test");
+            client.checkExists().usingWatcher(actualWatcher).forPath("/test");
+            client.delete().forPath("/test");
+            timing.sleepABit();
+            Assert.assertEquals(actualWatcher.count.get(), 1);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testSameCuratorWatcherPerZKDocs() throws Exception
+    {
+        CountCuratorWatcher actualWatcher = new CountCuratorWatcher();
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().forPath("/test");
+
+            // per ZK docs, this watcher should only trigger once
+            client.checkExists().usingWatcher(actualWatcher).forPath("/test");
+            client.getData().usingWatcher(actualWatcher).forPath("/test");
+
+            client.setData().forPath("/test", "foo".getBytes());
+            client.delete().forPath("/test");
+            timing.sleepABit();
+            Assert.assertEquals(actualWatcher.count.getAndSet(0), 1);
+
+            client.create().forPath("/test");
+            client.checkExists().usingWatcher(actualWatcher).forPath("/test");
+            client.delete().forPath("/test");
+            timing.sleepABit();
+            Assert.assertEquals(actualWatcher.count.get(), 1);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
         }
     }
 
