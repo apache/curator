@@ -45,7 +45,7 @@ public class BoundedExponentialBackoffRetry extends ExponentialBackoffRetry
     }
 
     @Override
-    protected int getSleepTimeMs(int retryCount, long elapsedTimeMs)
+    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs)
     {
         return Math.min(maxSleepTimeMs, super.getSleepTimeMs(retryCount, elapsedTimeMs));
     }
