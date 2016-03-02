@@ -32,8 +32,8 @@ import org.apache.zookeeper.data.Stat;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+@SuppressWarnings("deprecation")
 class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBridge, CuratorTransactionFinal
 {
     private final CuratorFrameworkImpl client;
@@ -119,7 +119,6 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
         Preconditions.checkState(!isCommitted, "transaction already committed");
         isCommitted = true;
 
-        final AtomicBoolean firstTime = new AtomicBoolean(true);
         List<OpResult> resultList = RetryLoop.callWithRetry
             (
                 client.getZookeeperClient(),
@@ -128,7 +127,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
                     @Override
                     public List<OpResult> call() throws Exception
                     {
-                        return doOperation(firstTime);
+                        return doOperation();
                     }
                 }
             );
@@ -185,14 +184,8 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
         return new CuratorTransactionResult(metadata.getType(), metadata.getForPath(), resultPath, resultStat);
     }
 
-    private List<OpResult> doOperation(AtomicBoolean firstTime) throws Exception
+    private List<OpResult> doOperation() throws Exception
     {
-        boolean localFirstTime = firstTime.getAndSet(false);
-        if ( !localFirstTime )
-        {
-            // TODO
-        }
-
         List<OpResult> opResults = client.getZooKeeper().multi(transaction);
         if ( opResults.size() > 0 )
         {
