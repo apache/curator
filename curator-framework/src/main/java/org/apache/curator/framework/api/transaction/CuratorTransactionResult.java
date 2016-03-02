@@ -20,6 +20,7 @@
 package org.apache.curator.framework.api.transaction;
 
 import com.google.common.base.Predicate;
+import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.data.Stat;
 
 /**
@@ -31,6 +32,7 @@ public class CuratorTransactionResult
     private final String forPath;
     private final String resultPath;
     private final Stat resultStat;
+    private final int error;
 
     /**
      * Utility that can be passed to Google Guava to find a particular result. E.g.
@@ -56,10 +58,16 @@ public class CuratorTransactionResult
 
     public CuratorTransactionResult(OperationType type, String forPath, String resultPath, Stat resultStat)
     {
+        this(type, forPath, resultPath, resultStat, 0);
+    }
+
+    public CuratorTransactionResult(OperationType type, String forPath, String resultPath, Stat resultStat, int error)
+    {
         this.forPath = forPath;
         this.resultPath = resultPath;
         this.resultStat = resultStat;
         this.type = type;
+        this.error = error;
     }
 
     /**
@@ -102,5 +110,15 @@ public class CuratorTransactionResult
     public Stat getResultStat()
     {
         return resultStat;
+    }
+
+    /**
+     * Returns the operation generated error or <code>0</code> i.e. {@link OpResult.ErrorResult#getErr()}
+     *
+     * @return error or 0
+     */
+    public int getError()
+    {
+        return error;
     }
 }

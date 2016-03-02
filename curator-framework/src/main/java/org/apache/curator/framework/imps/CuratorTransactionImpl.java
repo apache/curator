@@ -158,6 +158,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     {
         String resultPath = null;
         Stat resultStat = null;
+        int error = 0;
         switch ( opResult.getType() )
         {
             default:
@@ -179,9 +180,16 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
                 resultStat = setDataResult.getStat();
                 break;
             }
+
+            case ZooDefs.OpCode.error:
+            {
+                OpResult.ErrorResult errorResult = (OpResult.ErrorResult)opResult;
+                error = errorResult.getErr();
+                break;
+            }
         }
 
-        return new CuratorTransactionResult(metadata.getType(), metadata.getForPath(), resultPath, resultStat);
+        return new CuratorTransactionResult(metadata.getType(), metadata.getForPath(), resultPath, resultStat, error);
     }
 
     private List<OpResult> doOperation() throws Exception

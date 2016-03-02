@@ -30,6 +30,7 @@ import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -39,10 +40,43 @@ import org.testng.annotations.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class TestTransactionsNew extends BaseClassForTests
 {
+    @Test
+    public void testErrors() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            CuratorOp createOp1 = client.transactionOp().create().forPath("/bar");
+            CuratorOp createOp2 = client.transactionOp().create().forPath("/z/blue");
+            final BlockingQueue<CuratorEvent> callbackQueue = new LinkedBlockingQueue<>();
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    callbackQueue.add(event);
+                }
+            };
+            client.transaction().inBackground(callback).forOperations(createOp1, createOp2);
+            CuratorEvent event = callbackQueue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNotNull(event);
+            Assert.assertNotNull(event.getOpResults());
+            Assert.assertEquals(event.getOpResults().size(), 2);
+            Assert.assertEquals(event.getOpResults().get(0).getError(), KeeperException.Code.OK.intValue());
+            Assert.assertEquals(event.getOpResults().get(1).getError(), KeeperException.Code.NONODE.intValue());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     @Test
     public void testCheckVersion() throws Exception
     {
