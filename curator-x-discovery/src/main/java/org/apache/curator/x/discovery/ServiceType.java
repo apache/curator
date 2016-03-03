@@ -22,5 +22,6 @@ public enum ServiceType
 {
     DYNAMIC,
     STATIC,
-    PERMANENT
+    PERMANENT, 
+    DYNAMIC_SEQUENTIAL
 }
