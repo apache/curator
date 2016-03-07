@@ -20,14 +20,7 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.BackgroundPathable;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.api.ExistsBuilder;
-import org.apache.curator.framework.api.ExistsBuilderMain;
-import org.apache.curator.framework.api.Pathable;
+import org.apache.curator.framework.api.*;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
@@ -36,7 +29,7 @@ import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
+class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, ErrorListenerPathable<Stat>
 {
     private final CuratorFrameworkImpl client;
     private Backgrounding backgrounding;
@@ -80,68 +73,82 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>
     }
 
     @Override
-    public Pathable<Stat> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerPathable<Stat> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerPathable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(BackgroundCallback callback)
+    public ErrorListenerPathable<Stat> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerPathable<Stat> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground()
+    public ErrorListenerPathable<Stat> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(Object context)
+    public ErrorListenerPathable<Stat> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
         return this;
     }
 
     @Override
+    public Pathable<Stat> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
+        return this;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
-        final TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Background");
-        AsyncCallback.StatCallback callback = new AsyncCallback.StatCallback()
+        try
         {
-            @Override
-            public void processResult(int rc, String path, Object ctx, Stat stat)
+            final TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Background");
+            AsyncCallback.StatCallback callback = new AsyncCallback.StatCallback()
             {
-                trace.commit();
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null);
-                client.processBackgroundOperation(operationAndData, event);
+                @Override
+                public void processResult(int rc, String path, Object ctx, Stat stat)
+                {
+                    trace.commit();
+                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null);
+                    client.processBackgroundOperation(operationAndData, event);
+                }
+            };
+            if ( watching.isWatched() )
+            {
+                client.getZooKeeper().exists(operationAndData.getData(), true, callback, backgrounding.getContext());
             }
-        };
-        if ( watching.isWatched() )
-        {
-            client.getZooKeeper().exists(operationAndData.getData(), true, callback, backgrounding.getContext());
+            else
+            {
+                client.getZooKeeper().exists(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            }
         }
-        else
+        catch ( Throwable e )
         {
-            client.getZooKeeper().exists(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            backgrounding.checkError(e);
         }
     }
 

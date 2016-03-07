@@ -25,8 +25,10 @@ import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.BackgroundPathable;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.api.ErrorListenerPathable;
 import org.apache.curator.framework.api.GetChildrenBuilder;
 import org.apache.curator.framework.api.Pathable;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.WatchPathable;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
@@ -35,12 +37,12 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<String>
+class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<String>>
 {
     private final CuratorFrameworkImpl client;
     private Watching watching;
     private Backgrounding backgrounding;
-    private Stat                                    responseStat;
+    private Stat responseStat;
 
     GetChildrenBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -86,44 +88,51 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     }
 
     @Override
-    public Pathable<List<String>> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerPathable<List<String>> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public Pathable<List<String>> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerPathable<List<String>> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public Pathable<List<String>> inBackground(BackgroundCallback callback)
+    public ErrorListenerPathable<List<String>> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public Pathable<List<String>> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerPathable<List<String>> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
     @Override
-    public Pathable<List<String>> inBackground()
+    public ErrorListenerPathable<List<String>> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public Pathable<List<String>> inBackground(Object context)
+    public ErrorListenerPathable<List<String>> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
+        return this;
+    }
+
+    @Override
+    public Pathable<List<String>> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
         return this;
     }
 
@@ -151,28 +160,35 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
-        final TimeTrace       trace = client.getZookeeperClient().startTracer("GetChildrenBuilderImpl-Background");
-        AsyncCallback.Children2Callback callback = new AsyncCallback.Children2Callback()
+        try
         {
-            @Override
-            public void processResult(int rc, String path, Object o, List<String> strings, Stat stat)
+            final TimeTrace       trace = client.getZookeeperClient().startTracer("GetChildrenBuilderImpl-Background");
+            AsyncCallback.Children2Callback callback = new AsyncCallback.Children2Callback()
             {
-                trace.commit();
-                if ( strings == null )
+                @Override
+                public void processResult(int rc, String path, Object o, List<String> strings, Stat stat)
                 {
-                    strings = Lists.newArrayList();
+                    trace.commit();
+                    if ( strings == null )
+                    {
+                        strings = Lists.newArrayList();
+                    }
+                    CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.CHILDREN, rc, path, null, o, stat, null, strings, null, null);
+                    client.processBackgroundOperation(operationAndData, event);
                 }
-                CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.CHILDREN, rc, path, null, o, stat, null, strings, null, null);
-                client.processBackgroundOperation(operationAndData, event);
+            };
+            if ( watching.isWatched() )
+            {
+                client.getZooKeeper().getChildren(operationAndData.getData(), true, callback, backgrounding.getContext());
             }
-        };
-        if ( watching.isWatched() )
-        {
-            client.getZooKeeper().getChildren(operationAndData.getData(), true, callback, backgrounding.getContext());
+            else
+            {
+                client.getZooKeeper().getChildren(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            }
         }
-        else
+        catch ( Throwable e )
         {
-            client.getZooKeeper().getChildren(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            backgrounding.checkError(e);
         }
     }
 

@@ -41,7 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>
+class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
     private final CuratorFrameworkImpl client;
     private CreateMode createMode;
@@ -151,37 +151,37 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
             {
                 return CreateBuilderImpl.this.inBackground(callback, context);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
             {
                 return CreateBuilderImpl.this.inBackground(callback, context, executor);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground()
+            public ErrorListenerPathAndBytesable<String> inBackground()
             {
                 return CreateBuilderImpl.this.inBackground();
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(Object context)
+            public ErrorListenerPathAndBytesable<String> inBackground(Object context)
             {
                 return CreateBuilderImpl.this.inBackground(context);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback)
             {
                 return CreateBuilderImpl.this.inBackground(callback);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
             {
                 return CreateBuilderImpl.this.inBackground(callback, executor);
             }
@@ -219,37 +219,37 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             }
 
             @Override
-            public PathAndBytesable<String> inBackground()
+            public ErrorListenerPathAndBytesable<String> inBackground()
             {
                 return CreateBuilderImpl.this.inBackground();
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
             {
                 return CreateBuilderImpl.this.inBackground(callback, context);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
             {
                 return CreateBuilderImpl.this.inBackground(callback, context, executor);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(Object context)
+            public ErrorListenerPathAndBytesable<String> inBackground(Object context)
             {
                 return CreateBuilderImpl.this.inBackground(context);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback)
             {
                 return CreateBuilderImpl.this.inBackground(callback);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
             {
                 return CreateBuilderImpl.this.inBackground(callback, executor);
             }
@@ -302,37 +302,37 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             }
 
             @Override
-            public PathAndBytesable<String> inBackground()
+            public ErrorListenerPathAndBytesable<String> inBackground()
             {
                 return CreateBuilderImpl.this.inBackground();
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(Object context)
+            public ErrorListenerPathAndBytesable<String> inBackground(Object context)
             {
                 return CreateBuilderImpl.this.inBackground(context);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback)
             {
                 return CreateBuilderImpl.this.inBackground(callback);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
             {
                 return CreateBuilderImpl.this.inBackground(callback, context);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
             {
                 return CreateBuilderImpl.this.inBackground(callback, executor);
             }
 
             @Override
-            public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
             {
                 return CreateBuilderImpl.this.inBackground(callback, context, executor);
             }
@@ -400,44 +400,51 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     }
 
     @Override
-    public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public PathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public PathAndBytesable<String> inBackground(BackgroundCallback callback)
+    public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public PathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
     @Override
-    public PathAndBytesable<String> inBackground()
+    public ErrorListenerPathAndBytesable<String> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public PathAndBytesable<String> inBackground(Object context)
+    public ErrorListenerPathAndBytesable<String> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
+        return this;
+    }
+
+    @Override
+    public PathAndBytesable<String> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
         return this;
     }
 
@@ -501,32 +508,39 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     @Override
     public void performBackgroundOperation(final OperationAndData<PathAndBytes> operationAndData) throws Exception
     {
-        final TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Background");
-        client.getZooKeeper().create
-            (
-                operationAndData.getData().getPath(),
-                operationAndData.getData().getData(),
-                acling.getAclList(operationAndData.getData().getPath()),
-                createMode,
-                new AsyncCallback.StringCallback()
-                {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx, String name)
+        try
+        {
+            final TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Background");
+            client.getZooKeeper().create
+                (
+                    operationAndData.getData().getPath(),
+                    operationAndData.getData().getData(),
+                    acling.getAclList(operationAndData.getData().getPath()),
+                    createMode,
+                    new AsyncCallback.StringCallback()
                     {
-                        trace.commit();
+                        @Override
+                        public void processResult(int rc, String path, Object ctx, String name)
+                        {
+                            trace.commit();
 
-                        if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
-                        {
-                            backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
+                            if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
+                            {
+                                backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
+                            }
+                            else
+                            {
+                                sendBackgroundResponse(rc, path, ctx, name, operationAndData);
+                            }
                         }
-                        else
-                        {
-                            sendBackgroundResponse(rc, path, ctx, name, operationAndData);
-                        }
-                    }
-                },
-                backgrounding.getContext()
-            );
+                    },
+                    backgrounding.getContext()
+                );
+        }
+        catch ( Throwable e )
+        {
+            backgrounding.checkError(e);
+        }
     }
 
     private static String getProtectedPrefix(String protectedId)

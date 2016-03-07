@@ -20,15 +20,7 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.BackgroundPathable;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.api.GetDataBuilder;
-import org.apache.curator.framework.api.GetDataWatchBackgroundStatable;
-import org.apache.curator.framework.api.Pathable;
-import org.apache.curator.framework.api.WatchPathable;
+import org.apache.curator.framework.api.*;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
@@ -39,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
+class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>, ErrorListenerPathable<byte[]>
 {
     private final Logger                log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl  client;
@@ -64,37 +56,37 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
         return new GetDataWatchBackgroundStatable()
         {
             @Override
-            public Pathable<byte[]> inBackground()
+            public ErrorListenerPathable<byte[]> inBackground()
             {
                 return GetDataBuilderImpl.this.inBackground();
             }
 
             @Override
-            public Pathable<byte[]> inBackground(BackgroundCallback callback, Object context)
+            public ErrorListenerPathable<byte[]> inBackground(BackgroundCallback callback, Object context)
             {
                 return GetDataBuilderImpl.this.inBackground(callback, context);
             }
 
             @Override
-            public Pathable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            public ErrorListenerPathable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
             {
                 return GetDataBuilderImpl.this.inBackground(callback, context, executor);
             }
 
             @Override
-            public Pathable<byte[]> inBackground(Object context)
+            public ErrorListenerPathable<byte[]> inBackground(Object context)
             {
                 return GetDataBuilderImpl.this.inBackground(context);
             }
 
             @Override
-            public Pathable<byte[]> inBackground(BackgroundCallback callback)
+            public ErrorListenerPathable<byte[]> inBackground(BackgroundCallback callback)
             {
                 return GetDataBuilderImpl.this.inBackground(callback);
             }
 
             @Override
-            public Pathable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
+            public ErrorListenerPathable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
             {
                 return GetDataBuilderImpl.this.inBackground(callback, executor);
             }
@@ -167,44 +159,51 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
     }
 
     @Override
-    public Pathable<byte[]> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerPathable<byte[]> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public Pathable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerPathable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public Pathable<byte[]> inBackground(BackgroundCallback callback)
+    public ErrorListenerPathable<byte[]> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public Pathable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerPathable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
     @Override
-    public Pathable<byte[]> inBackground()
+    public ErrorListenerPathable<byte[]> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public Pathable<byte[]> inBackground(Object context)
+    public ErrorListenerPathable<byte[]> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
+        return this;
+    }
+
+    @Override
+    public Pathable<byte[]> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
         return this;
     }
 
@@ -232,37 +231,44 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>
     @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
-        final TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");
-        AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback()
+        try
         {
-            @Override
-            public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
+            final TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");
+            AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback()
             {
-                trace.commit();
-                if ( decompress && (data != null) )
+                @Override
+                public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
                 {
-                    try
+                    trace.commit();
+                    if ( decompress && (data != null) )
                     {
-                        data = client.getCompressionProvider().decompress(path, data);
+                        try
+                        {
+                            data = client.getCompressionProvider().decompress(path, data);
+                        }
+                        catch ( Exception e )
+                        {
+                            ThreadUtils.checkInterrupted(e);
+                            log.error("Decompressing for path: " + path, e);
+                            rc = KeeperException.Code.DATAINCONSISTENCY.intValue();
+                        }
                     }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        log.error("Decompressing for path: " + path, e);
-                        rc = KeeperException.Code.DATAINCONSISTENCY.intValue();
-                    }
+                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null);
+                    client.processBackgroundOperation(operationAndData, event);
                 }
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_DATA, rc, path, null, ctx, stat, data, null, null, null);
-                client.processBackgroundOperation(operationAndData, event);
+            };
+            if ( watching.isWatched() )
+            {
+                client.getZooKeeper().getData(operationAndData.getData(), true, callback, backgrounding.getContext());
             }
-        };
-        if ( watching.isWatched() )
-        {
-            client.getZooKeeper().getData(operationAndData.getData(), true, callback, backgrounding.getContext());
+            else
+            {
+                client.getZooKeeper().getData(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            }
         }
-        else
+        catch ( Throwable e )
         {
-            client.getZooKeeper().getData(operationAndData.getData(), watching.getWatcher(), callback, backgrounding.getContext());
+            backgrounding.checkError(e);
         }
     }
 

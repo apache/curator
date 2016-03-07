@@ -22,6 +22,7 @@ package org.apache.curator.framework.imps;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -30,10 +31,10 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException.Code;
+import org.apache.zookeeper.data.ACL;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Arrays;
@@ -45,6 +46,53 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestFrameworkBackground extends BaseClassForTests
 {
+    @Test
+    public void testErrorListener() throws Exception
+    {
+        ACLProvider badAclProvider = new ACLProvider()
+        {
+            @Override
+            public List<ACL> getDefaultAcl()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<ACL> getAclForPath(String path)
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .aclProvider(badAclProvider)
+            .build();
+        try
+        {
+            client.start();
+
+            final CountDownLatch errorLatch = new CountDownLatch(1);
+            UnhandledErrorListener listener = new UnhandledErrorListener()
+            {
+                @Override
+                public void unhandledError(String message, Throwable e)
+                {
+                    if ( e instanceof UnsupportedOperationException )
+                    {
+                        errorLatch.countDown();
+                    }
+                }
+            };
+            client.create().inBackground().withUnhandledErrorListener(listener).forPath("/foo");
+            Assert.assertTrue(new Timing().awaitLatch(errorLatch));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     @Test
     public void testListenerConnectedAtStart() throws Exception
     {
