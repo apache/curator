@@ -20,14 +20,7 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.BackgroundPathAndBytesable;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.api.PathAndBytesable;
-import org.apache.curator.framework.api.SetDataBackgroundVersionable;
-import org.apache.curator.framework.api.SetDataBuilder;
-import org.apache.curator.framework.api.VersionPathAndBytesable;
+import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
 import org.apache.zookeeper.AsyncCallback;
@@ -36,7 +29,7 @@ import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndBytes>
+class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<Stat>
 {
     private final CuratorFrameworkImpl      client;
     private Backgrounding                   backgrounding;
@@ -97,37 +90,37 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
         return new SetDataBackgroundVersionable()
         {
             @Override
-            public PathAndBytesable<Stat> inBackground()
+            public ErrorListenerPathAndBytesable<Stat> inBackground()
             {
                 return SetDataBuilderImpl.this.inBackground();
             }
 
             @Override
-            public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context)
+            public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context)
             {
                 return SetDataBuilderImpl.this.inBackground(callback, context);
             }
 
             @Override
-            public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
             {
                 return SetDataBuilderImpl.this.inBackground(callback, context, executor);
             }
 
             @Override
-            public PathAndBytesable<Stat> inBackground(Object context)
+            public ErrorListenerPathAndBytesable<Stat> inBackground(Object context)
             {
                 return SetDataBuilderImpl.this.inBackground(context);
             }
 
             @Override
-            public PathAndBytesable<Stat> inBackground(BackgroundCallback callback)
+            public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback)
             {
                 return SetDataBuilderImpl.this.inBackground(callback);
             }
 
             @Override
-            public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Executor executor)
+            public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback, Executor executor)
             {
                 return SetDataBuilderImpl.this.inBackground(callback, executor);
             }
@@ -160,69 +153,83 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
     }
 
     @Override
-    public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public PathAndBytesable<Stat> inBackground(BackgroundCallback callback)
+    public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public PathAndBytesable<Stat> inBackground()
+    public ErrorListenerPathAndBytesable<Stat> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public PathAndBytesable<Stat> inBackground(Object context)
+    public ErrorListenerPathAndBytesable<Stat> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
         return this;
     }
 
     @Override
-    public PathAndBytesable<Stat> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
     @Override
+    public PathAndBytesable<Stat> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
+        return this;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<PathAndBytes> operationAndData) throws Exception
     {
-        final TimeTrace   trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Background");
-        client.getZooKeeper().setData
-        (
-            operationAndData.getData().getPath(),
-            operationAndData.getData().getData(),
-            version,
-            new AsyncCallback.StatCallback()
-            {
-                @SuppressWarnings({"unchecked"})
-                @Override
-                public void processResult(int rc, String path, Object ctx, Stat stat)
+        try
+        {
+            final TimeTrace   trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Background");
+            client.getZooKeeper().setData
+            (
+                operationAndData.getData().getPath(),
+                operationAndData.getData().getData(),
+                version,
+                new AsyncCallback.StatCallback()
                 {
-                    trace.commit();
-                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null, null);
-                    client.processBackgroundOperation(operationAndData, event);
-                }
-            },
-            backgrounding.getContext()
-        );
+                    @SuppressWarnings({"unchecked"})
+                    @Override
+                    public void processResult(int rc, String path, Object ctx, Stat stat)
+                    {
+                        trace.commit();
+                        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null, null);
+                        client.processBackgroundOperation(operationAndData, event);
+                    }
+                },
+                backgrounding.getContext()
+            );
+        }
+        catch ( Throwable e )
+        {
+            backgrounding.checkError(e);
+        }
     }
 
     @Override

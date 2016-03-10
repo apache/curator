@@ -21,14 +21,7 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.BackgroundEnsembleable;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.api.Ensembleable;
-import org.apache.curator.framework.api.GetConfigBuilder;
-import org.apache.curator.framework.api.WatchBackgroundEnsembleable;
+import org.apache.curator.framework.api.*;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
@@ -36,7 +29,7 @@ import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperation<Void>
+public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperation<Void>, ErrorListenerEnsembleable<byte[]>
 {
     private final CuratorFrameworkImpl client;
 
@@ -58,37 +51,37 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
         return new WatchBackgroundEnsembleable<byte[]>()
         {
             @Override
-            public Ensembleable<byte[]> inBackground()
+            public ErrorListenerEnsembleable<byte[]> inBackground()
             {
                 return GetConfigBuilderImpl.this.inBackground();
             }
 
             @Override
-            public Ensembleable<byte[]> inBackground(Object context)
+            public ErrorListenerEnsembleable<byte[]> inBackground(Object context)
             {
                 return GetConfigBuilderImpl.this.inBackground(context);
             }
 
             @Override
-            public Ensembleable<byte[]> inBackground(BackgroundCallback callback)
+            public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback)
             {
                 return GetConfigBuilderImpl.this.inBackground(callback);
             }
 
             @Override
-            public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context)
+            public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Object context)
             {
                 return GetConfigBuilderImpl.this.inBackground(callback, context);
             }
 
             @Override
-            public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
+            public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
             {
                 return GetConfigBuilderImpl.this.inBackground(callback, executor);
             }
 
             @Override
-            public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
+            public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
             {
                 return GetConfigBuilderImpl.this.inBackground(callback, context, executor);
             }
@@ -141,44 +134,51 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     }
 
     @Override
-    public Ensembleable<byte[]> inBackground()
+    public ErrorListenerEnsembleable<byte[]> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public Ensembleable<byte[]> inBackground(Object context)
+    public ErrorListenerEnsembleable<byte[]> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
         return this;
     }
 
     @Override
-    public Ensembleable<byte[]> inBackground(BackgroundCallback callback)
+    public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(callback, executor);
         return this;
     }
 
     @Override
-    public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
+        return this;
+    }
+
+    @Override
+    public Ensembleable<byte[]> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
         return this;
     }
 
@@ -199,24 +199,31 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     @Override
     public void performBackgroundOperation(final OperationAndData<Void> operationAndData) throws Exception
     {
-        final TimeTrace trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");
-        AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback()
+        try
         {
-            @Override
-            public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
+            final TimeTrace trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");
+            AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback()
             {
-                trace.commit();
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_CONFIG, rc, path, null, ctx, stat, data, null, null, null, null);
-                client.processBackgroundOperation(operationAndData, event);
+                @Override
+                public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
+                {
+                    trace.commit();
+                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_CONFIG, rc, path, null, ctx, stat, data, null, null, null, null);
+                    client.processBackgroundOperation(operationAndData, event);
+                }
+            };
+            if ( watching.isWatched() )
+            {
+                client.getZooKeeper().getConfig(true, callback, backgrounding.getContext());
             }
-        };
-        if ( watching.isWatched() )
-        {
-            client.getZooKeeper().getConfig(true, callback, backgrounding.getContext());
+            else
+            {
+                client.getZooKeeper().getConfig(watching.getWatcher(client, ZooDefs.CONFIG_NODE), callback, backgrounding.getContext());
+            }
         }
-        else
+        catch ( Throwable e )
         {
-            client.getZooKeeper().getConfig(watching.getWatcher(client, ZooDefs.CONFIG_NODE), callback, backgrounding.getContext());
+            backgrounding.checkError(e);
         }
     }
 
@@ -251,37 +258,37 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     private class InternalBackgroundEnsembleable implements BackgroundEnsembleable<byte[]>
     {
         @Override
-        public Ensembleable<byte[]> inBackground()
+        public ErrorListenerEnsembleable<byte[]> inBackground()
         {
             return GetConfigBuilderImpl.this.inBackground();
         }
 
         @Override
-        public Ensembleable<byte[]> inBackground(Object context)
+        public ErrorListenerEnsembleable<byte[]> inBackground(Object context)
         {
             return GetConfigBuilderImpl.this.inBackground(context);
         }
 
         @Override
-        public Ensembleable<byte[]> inBackground(BackgroundCallback callback)
+        public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback)
         {
             return GetConfigBuilderImpl.this.inBackground(callback);
         }
 
         @Override
-        public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context)
+        public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Object context)
         {
             return GetConfigBuilderImpl.this.inBackground(callback, context);
         }
 
         @Override
-        public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
+        public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Executor executor)
         {
             return GetConfigBuilderImpl.this.inBackground(callback, executor);
         }
 
         @Override
-        public Ensembleable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
+        public ErrorListenerEnsembleable<byte[]> inBackground(BackgroundCallback callback, Object context, Executor executor)
         {
             return GetConfigBuilderImpl.this.inBackground(callback, context, executor);
         }

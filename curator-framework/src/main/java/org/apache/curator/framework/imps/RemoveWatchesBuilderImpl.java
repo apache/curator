@@ -31,7 +31,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 
-public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWatchesType, RemoveWatchesLocal, BackgroundOperation<String>
+public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWatchesType, RemoveWatchesLocal, BackgroundOperation<String>, ErrorListenerPathable<Void>
 {
     private CuratorFrameworkImpl client;
     private Watcher watcher;
@@ -105,47 +105,54 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     }
 
     @Override
-    public Pathable<Void> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerPathable<Void> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerPathable<Void> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground(BackgroundCallback callback)
+    public ErrorListenerPathable<Void> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerPathable<Void> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground()
+    public ErrorListenerPathable<Void> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground(Object context)
+    public ErrorListenerPathable<Void> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
         return this;
     }
-    
+
+    @Override
+    public Pathable<Void> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
+        return this;
+    }
+
     @Override
     public RemoveWatchesLocal guaranteed()
     {
@@ -294,29 +301,35 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     public void performBackgroundOperation(final OperationAndData<String> operationAndData)
             throws Exception
     {
-        final TimeTrace   trace = client.getZookeeperClient().startTracer("RemoteWatches-Background");
-        
-        AsyncCallback.VoidCallback callback = new AsyncCallback.VoidCallback()
+        try
         {
-            @Override
-            public void processResult(int rc, String path, Object ctx)
-            {
-                trace.commit();
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.REMOVE_WATCHES, rc, path, null, ctx, null, null, null, null, null, null);
-                client.processBackgroundOperation(operationAndData, event);                
-            }
-        };
+            final TimeTrace   trace = client.getZookeeperClient().startTracer("RemoteWatches-Background");
 
-        ZooKeeper zkClient = client.getZooKeeper();
-        NamespaceWatcher namespaceWatcher = makeNamespaceWatcher(operationAndData.getData());
-        if(namespaceWatcher == null)
-        {
-            zkClient.removeAllWatches(operationAndData.getData(), watcherType, local, callback, operationAndData.getContext());
+            AsyncCallback.VoidCallback callback = new AsyncCallback.VoidCallback()
+            {
+                @Override
+                public void processResult(int rc, String path, Object ctx)
+                {
+                    trace.commit();
+                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.REMOVE_WATCHES, rc, path, null, ctx, null, null, null, null, null, null);
+                    client.processBackgroundOperation(operationAndData, event);
+                }
+            };
+
+            ZooKeeper zkClient = client.getZooKeeper();
+            NamespaceWatcher namespaceWatcher = makeNamespaceWatcher(operationAndData.getData());
+            if(namespaceWatcher == null)
+            {
+                zkClient.removeAllWatches(operationAndData.getData(), watcherType, local, callback, operationAndData.getContext());
+            }
+            else
+            {
+                zkClient.removeWatches(operationAndData.getData(), namespaceWatcher, watcherType, local, callback, operationAndData.getContext());
+            }
         }
-        else
+        catch ( Throwable e )
         {
-            zkClient.removeWatches(operationAndData.getData(), namespaceWatcher, watcherType, local, callback, operationAndData.getContext());
+            backgrounding.checkError(e);
         }
-        
     }
 }

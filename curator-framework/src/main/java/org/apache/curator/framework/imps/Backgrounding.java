@@ -16,26 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
+import com.google.common.base.Throwables;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import java.util.concurrent.Executor;
 
 class Backgrounding
 {
-    private final boolean               inBackground;
-    private final Object                context;
-    private final BackgroundCallback    callback;
+    private final boolean inBackground;
+    private final Object context;
+    private final BackgroundCallback callback;
+    private final UnhandledErrorListener errorListener;
 
     Backgrounding(Object context)
     {
         this.inBackground = true;
         this.context = context;
         this.callback = null;
+        errorListener = null;
     }
 
     Backgrounding(BackgroundCallback callback)
@@ -43,6 +48,7 @@ class Backgrounding
         this.inBackground = true;
         this.context = null;
         this.callback = callback;
+        errorListener = null;
     }
 
     Backgrounding(boolean inBackground)
@@ -50,6 +56,7 @@ class Backgrounding
         this.inBackground = inBackground;
         this.context = null;
         this.callback = null;
+        errorListener = null;
     }
 
     Backgrounding(BackgroundCallback callback, Object context)
@@ -57,6 +64,7 @@ class Backgrounding
         this.inBackground = true;
         this.context = context;
         this.callback = callback;
+        errorListener = null;
     }
 
     Backgrounding(CuratorFrameworkImpl client, BackgroundCallback callback, Object context, Executor executor)
@@ -69,11 +77,24 @@ class Backgrounding
         this(wrapCallback(client, callback, executor));
     }
 
+    Backgrounding(Backgrounding rhs, UnhandledErrorListener errorListener)
+    {
+        if ( rhs == null )
+        {
+            rhs = new Backgrounding();
+        }
+        this.inBackground = rhs.inBackground;
+        this.context = rhs.context;
+        this.callback = rhs.callback;
+        this.errorListener = errorListener;
+    }
+
     Backgrounding()
     {
         inBackground = false;
         context = null;
         this.callback = null;
+        errorListener = null;
     }
 
     boolean inBackground()
@@ -91,6 +112,25 @@ class Backgrounding
         return callback;
     }
 
+    void checkError(Throwable e) throws Exception
+    {
+        if ( e != null )
+        {
+            if ( errorListener != null )
+            {
+                errorListener.unhandledError("n/a", e);
+            }
+            else if ( e instanceof Exception )
+            {
+                throw (Exception)e;
+            }
+            else
+            {
+                Throwables.propagate(e);
+            }
+        }
+    }
+
     private static BackgroundCallback wrapCallback(final CuratorFrameworkImpl client, final BackgroundCallback callback, final Executor executor)
     {
         return new BackgroundCallback()
@@ -99,28 +139,28 @@ class Backgrounding
             public void processResult(CuratorFramework dummy, final CuratorEvent event) throws Exception
             {
                 executor.execute
-                (
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
+                    (
+                        new Runnable()
                         {
-                            try
+                            @Override
+                            public void run()
                             {
-                                callback.processResult(client, event);
-                            }
-                            catch ( Exception e )
-                            {
-                                ThreadUtils.checkInterrupted(e);
-                                if ( e instanceof KeeperException )
+                                try
                                 {
-                                    client.validateConnection(client.codeToState(((KeeperException)e).code()));
+                                    callback.processResult(client, event);
                                 }
-                                client.logError("Background operation result handling threw exception", e);
+                                catch ( Exception e )
+                                {
+                                    ThreadUtils.checkInterrupted(e);
+                                    if ( e instanceof KeeperException )
+                                    {
+                                        client.validateConnection(client.codeToState(((KeeperException)e).code()));
+                                    }
+                                    client.logError("Background operation result handling threw exception", e);
+                                }
                             }
                         }
-                    }
-                );
+                    );
             }
         };
     }

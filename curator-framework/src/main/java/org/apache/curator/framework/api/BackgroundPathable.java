@@ -19,7 +19,7 @@
 package org.apache.curator.framework.api;
 
 public interface BackgroundPathable<T> extends
-    Backgroundable<Pathable<T>>,
+    Backgroundable<ErrorListenerPathable<T>>,
     Pathable<T>
 {
 }

@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, BackgroundOperation<String>
+class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, BackgroundOperation<String>, ErrorListenerPathable<Stat>
 {
     private final CuratorFrameworkImpl client;
 
@@ -63,44 +63,51 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
     }
 
     @Override
-    public Pathable<Stat> inBackground()
+    public ErrorListenerPathable<Stat> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(Object context)
+    public ErrorListenerPathable<Stat> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(BackgroundCallback callback)
+    public ErrorListenerPathable<Stat> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerPathable<Stat> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerPathable<Stat> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public Pathable<Stat> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerPathable<Stat> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
+        return this;
+    }
+
+    @Override
+    public Pathable<Stat> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
         return this;
     }
 
@@ -124,26 +131,33 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
     @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
-        final TimeTrace     trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Background");
-        String              path = operationAndData.getData();
-        client.getZooKeeper().setACL
-        (
-            path,
-            acling.getAclList(path),
-            version,
-            new AsyncCallback.StatCallback()
-            {
-                @SuppressWarnings({"unchecked"})
-                @Override
-                public void processResult(int rc, String path, Object ctx, Stat stat)
+        try
+        {
+            final TimeTrace     trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Background");
+            String              path = operationAndData.getData();
+            client.getZooKeeper().setACL
+            (
+                path,
+                acling.getAclList(path),
+                version,
+                new AsyncCallback.StatCallback()
                 {
-                    trace.commit();
-                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_ACL, rc, path, null, ctx, stat, null, null, null, null, null);
-                    client.processBackgroundOperation(operationAndData, event);
-                }
-            },
-            backgrounding.getContext()
-        );
+                    @SuppressWarnings({"unchecked"})
+                    @Override
+                    public void processResult(int rc, String path, Object ctx, Stat stat)
+                    {
+                        trace.commit();
+                        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_ACL, rc, path, null, ctx, stat, null, null, null, null, null);
+                        client.processBackgroundOperation(operationAndData, event);
+                    }
+                },
+                backgrounding.getContext()
+            );
+        }
+        catch ( Throwable e )
+        {
+            backgrounding.checkError(e);
+        }
     }
 
     private Stat pathInForeground(final String path) throws Exception

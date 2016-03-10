@@ -23,10 +23,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.api.ErrorListenerMultiTransactionMain;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorMultiTransactionMain;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -37,11 +38,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
 
 public class CuratorMultiTransactionImpl implements
     CuratorMultiTransaction,
     CuratorMultiTransactionMain,
-    BackgroundOperation<CuratorMultiTransactionRecord>
+    BackgroundOperation<CuratorMultiTransactionRecord>,
+    ErrorListenerMultiTransactionMain
 {
     private final CuratorFrameworkImpl client;
     private Backgrounding backgrounding = new Backgrounding();
@@ -52,44 +55,51 @@ public class CuratorMultiTransactionImpl implements
     }
 
     @Override
-    public CuratorMultiTransactionMain inBackground()
+    public ErrorListenerMultiTransactionMain inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public CuratorMultiTransactionMain inBackground(Object context)
+    public ErrorListenerMultiTransactionMain inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
         return this;
     }
 
     @Override
-    public CuratorMultiTransactionMain inBackground(BackgroundCallback callback)
+    public ErrorListenerMultiTransactionMain inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public CuratorMultiTransactionMain inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerMultiTransactionMain inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public CuratorMultiTransactionMain inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerMultiTransactionMain inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(callback, executor);
         return this;
     }
 
     @Override
-    public CuratorMultiTransactionMain inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerMultiTransactionMain inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
+        return this;
+    }
+
+    @Override
+    public CuratorMultiTransactionMain withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
         return this;
     }
 
@@ -126,19 +136,26 @@ public class CuratorMultiTransactionImpl implements
     @Override
     public void performBackgroundOperation(final OperationAndData<CuratorMultiTransactionRecord> operationAndData) throws Exception
     {
-        final TimeTrace trace = client.getZookeeperClient().startTracer("CuratorMultiTransactionImpl-Background");
-        AsyncCallback.MultiCallback callback = new AsyncCallback.MultiCallback()
+        try
         {
-            @Override
-            public void processResult(int rc, String path, Object ctx, List<OpResult> opResults)
+            final TimeTrace trace = client.getZookeeperClient().startTracer("CuratorMultiTransactionImpl-Background");
+            AsyncCallback.MultiCallback callback = new AsyncCallback.MultiCallback()
             {
-                trace.commit();
-                List<CuratorTransactionResult> curatorResults = (opResults != null) ? CuratorTransactionImpl.wrapResults(client, opResults, operationAndData.getData()) : null;
-                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.TRANSACTION, rc, path, null, ctx, null, null, null, null, null, curatorResults);
-                client.processBackgroundOperation(operationAndData, event);
-            }
-        };
-        client.getZooKeeper().multi(operationAndData.getData(), callback, backgrounding.getContext());
+                @Override
+                public void processResult(int rc, String path, Object ctx, List<OpResult> opResults)
+                {
+                    trace.commit();
+                    List<CuratorTransactionResult> curatorResults = (opResults != null) ? CuratorTransactionImpl.wrapResults(client, opResults, operationAndData.getData()) : null;
+                    CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.TRANSACTION, rc, path, null, ctx, null, null, null, null, null, curatorResults);
+                    client.processBackgroundOperation(operationAndData, event);
+                }
+            };
+            client.getZooKeeper().multi(operationAndData.getData(), callback, backgrounding.getContext());
+        }
+        catch ( Throwable e )
+        {
+            backgrounding.checkError(e);
+        }
     }
 
     private List<CuratorTransactionResult> forOperationsInForeground(final CuratorMultiTransactionRecord record) throws Exception

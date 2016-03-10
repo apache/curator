@@ -19,9 +19,10 @@
 package org.apache.curator.framework.api.transaction;
 
 import org.apache.curator.framework.api.Backgroundable;
+import org.apache.curator.framework.api.ErrorListenerMultiTransactionMain;
 
 public interface CuratorMultiTransaction extends
-    Backgroundable<CuratorMultiTransactionMain>,
+    Backgroundable<ErrorListenerMultiTransactionMain>,
     CuratorMultiTransactionMain
 {
 }

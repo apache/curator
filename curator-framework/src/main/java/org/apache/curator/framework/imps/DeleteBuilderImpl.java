@@ -20,15 +20,7 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.BackgroundPathable;
-import org.apache.curator.framework.api.BackgroundVersionable;
-import org.apache.curator.framework.api.ChildrenDeletable;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.api.DeleteBuilder;
-import org.apache.curator.framework.api.DeleteBuilderMain;
-import org.apache.curator.framework.api.Pathable;
+import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionDeleteBuilder;
 import org.apache.curator.utils.ThreadUtils;
@@ -39,7 +31,7 @@ import org.apache.zookeeper.Op;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
+class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, ErrorListenerPathable<Void>
 {
     private final CuratorFrameworkImpl client;
     private int version;
@@ -108,78 +100,92 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>
     }
 
     @Override
-    public Pathable<Void> inBackground(BackgroundCallback callback, Object context)
+    public ErrorListenerPathable<Void> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground(BackgroundCallback callback, Object context, Executor executor)
+    public ErrorListenerPathable<Void> inBackground(BackgroundCallback callback, Object context, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground(BackgroundCallback callback)
+    public ErrorListenerPathable<Void> inBackground(BackgroundCallback callback)
     {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground(BackgroundCallback callback, Executor executor)
+    public ErrorListenerPathable<Void> inBackground(BackgroundCallback callback, Executor executor)
     {
         backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground()
+    public ErrorListenerPathable<Void> inBackground()
     {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public Pathable<Void> inBackground(Object context)
+    public ErrorListenerPathable<Void> inBackground(Object context)
     {
         backgrounding = new Backgrounding(context);
         return this;
     }
 
     @Override
+    public Pathable<Void> withUnhandledErrorListener(UnhandledErrorListener listener)
+    {
+        backgrounding = new Backgrounding(backgrounding, listener);
+        return this;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
-        final TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Background");
-        client.getZooKeeper().delete
-            (
-                operationAndData.getData(),
-                version,
-                new AsyncCallback.VoidCallback()
-                {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx)
+        try
+        {
+            final TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Background");
+            client.getZooKeeper().delete
+                (
+                    operationAndData.getData(),
+                    version,
+                    new AsyncCallback.VoidCallback()
                     {
-                        trace.commit();
-                        if ( (rc == KeeperException.Code.NOTEMPTY.intValue()) && deletingChildrenIfNeeded )
+                        @Override
+                        public void processResult(int rc, String path, Object ctx)
                         {
-                            backgroundDeleteChildrenThenNode(operationAndData);
-                        }
-                        else
-                        {
-                            if ( (rc == KeeperException.Code.NONODE.intValue()) && quietly )
+                            trace.commit();
+                            if ( (rc == KeeperException.Code.NOTEMPTY.intValue()) && deletingChildrenIfNeeded )
                             {
-                                rc = KeeperException.Code.OK.intValue();
+                                backgroundDeleteChildrenThenNode(operationAndData);
                             }
-                            CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null, null);
-                            client.processBackgroundOperation(operationAndData, event);
+                            else
+                            {
+                                if ( (rc == KeeperException.Code.NONODE.intValue()) && quietly )
+                                {
+                                    rc = KeeperException.Code.OK.intValue();
+                                }
+                                CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.DELETE, rc, path, null, ctx, null, null, null, null, null, null);
+                                client.processBackgroundOperation(operationAndData, event);
+                            }
                         }
-                    }
-                },
-                backgrounding.getContext()
-            );
+                    },
+                    backgrounding.getContext()
+                );
+        }
+        catch ( Throwable e )
+        {
+            backgrounding.checkError(e);
+        }
     }
 
     private void backgroundDeleteChildrenThenNode(final OperationAndData<String> mainOperationAndData)

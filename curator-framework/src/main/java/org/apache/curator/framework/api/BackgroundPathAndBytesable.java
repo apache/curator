@@ -19,7 +19,7 @@
 package org.apache.curator.framework.api;
 
 public interface BackgroundPathAndBytesable<T> extends
-    Backgroundable<PathAndBytesable<T>>,
+    Backgroundable<ErrorListenerPathAndBytesable<T>>,
     PathAndBytesable<T>
 {
 }
