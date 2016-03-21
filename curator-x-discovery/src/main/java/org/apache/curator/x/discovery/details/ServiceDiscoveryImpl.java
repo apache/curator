@@ -230,6 +230,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             		break; 
             	default:
             		mode = CreateMode.PERSISTENT;
+            		break; 
             	}
                 client.create().creatingParentContainersIfNeeded().withMode(mode).forPath(path, bytes);
                 isDone = true;

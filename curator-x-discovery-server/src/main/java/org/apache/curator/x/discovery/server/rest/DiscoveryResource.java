@@ -90,7 +90,7 @@ public abstract class DiscoveryResource<T>
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         
-        if ( instance.getServiceType() == ServiceType.DYNAMIC )
+        if ( instance.getServiceType() == ServiceType.DYNAMIC || instance.getServiceType() == ServiceType.DYNAMIC_SEQUENTIAL )
         {
             log.info("Service type cannot be dynamic");
             return Response.status(Response.Status.BAD_REQUEST).build();
