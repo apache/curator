@@ -22,5 +22,10 @@ public enum ServiceType
 {
     DYNAMIC,
     STATIC,
-    PERMANENT
+    PERMANENT, 
+    DYNAMIC_SEQUENTIAL;
+
+	public boolean isDynamic() {
+		return this == DYNAMIC || this == DYNAMIC_SEQUENTIAL;
+	}
 }
