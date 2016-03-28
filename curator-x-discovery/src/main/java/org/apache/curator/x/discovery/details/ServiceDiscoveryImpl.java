@@ -220,7 +220,18 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             try
             {
-                CreateMode mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
+				CreateMode mode;
+				switch (service.getServiceType()) {
+				case DYNAMIC:
+					mode = CreateMode.EPHEMERAL;
+					break;
+				case DYNAMIC_SEQUENTIAL:
+					mode = CreateMode.EPHEMERAL_SEQUENTIAL;
+					break;
+				default:
+					mode = CreateMode.PERSISTENT;
+					break;
+				}
                 client.create().creatingParentContainersIfNeeded().withMode(mode).forPath(path, bytes);
                 isDone = true;
             }
