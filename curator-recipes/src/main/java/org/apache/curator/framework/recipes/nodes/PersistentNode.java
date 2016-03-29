@@ -317,6 +317,7 @@ public class PersistentNode implements Closeable
     public void setData(byte[] data) throws Exception
     {
         data = Preconditions.checkNotNull(data, "data cannot be null");
+        Preconditions.checkState(nodePath.get() != null, "initial create has not been processed. Call waitForInitialCreate() to ensure.");
         this.data.set(Arrays.copyOf(data, data.length));
         if ( isActive() )
         {

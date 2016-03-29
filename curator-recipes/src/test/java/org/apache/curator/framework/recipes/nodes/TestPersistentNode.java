@@ -32,6 +32,37 @@ import java.util.concurrent.TimeUnit;
 public class TestPersistentNode extends BaseClassForTests
 {
     @Test
+    public void testQuickSetData() throws Exception
+    {
+        final byte[] TEST_DATA = "hey".getBytes();
+        final byte[] ALT_TEST_DATA = "there".getBytes();
+
+        Timing timing = new Timing();
+        PersistentNode pen = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test", TEST_DATA);
+            pen.start();
+            try
+            {
+                pen.setData(ALT_TEST_DATA);
+                Assert.fail("IllegalStateException should have been thrown");
+            }
+            catch ( IllegalStateException dummy )
+            {
+                // expected
+            }
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(pen);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testBasic() throws Exception
     {
         final byte[] TEST_DATA = "hey".getBytes();
