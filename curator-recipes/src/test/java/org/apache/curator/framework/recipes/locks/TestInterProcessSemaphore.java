@@ -20,6 +20,7 @@
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -27,6 +28,8 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.shared.SharedCount;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Collection;
@@ -571,4 +574,67 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
 
     }
+
+    @Test
+    public void testNoOrphanedNodes() throws Exception
+    {
+        final Timing timing = new Timing();
+        final ExecutorService executor = Executors.newFixedThreadPool(1);
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", 1);
+            Lease lease = semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            Assert.assertNotNull(lease);
+            final List<String> childNodes = client.getChildren().forPath("/test/leases");
+            Assert.assertEquals(childNodes.size(), 1);
+
+            final CountDownLatch nodeCreatedLatch = new CountDownLatch(1);
+            client.getChildren().usingWatcher(new CuratorWatcher() {
+                @Override
+                public void process(WatchedEvent event) throws Exception {
+                    if (event.getType() == Watcher.Event.EventType.NodeCreated) {
+                        nodeCreatedLatch.countDown();
+                    }
+                }
+            }).forPath("/test/leases");
+
+            final Future<Lease> leaseFuture = executor.submit(new Callable<Lease>() {
+                @Override
+                public Lease call() throws Exception {
+                    return semaphore.acquire(timing.forWaiting().multiple(2).seconds(), TimeUnit.SECONDS);
+                }
+            });
+
+            // wait for second lease to create its node
+            timing.awaitLatch(nodeCreatedLatch);
+            String newNode = null;
+            for (String c : client.getChildren().forPath("/test/leases")) {
+                if (!childNodes.contains(c)) {
+                    newNode = c;
+                }
+            }
+            Assert.assertNotNull(newNode);
+
+            // delete the ephemeral node to trigger a retry
+            client.delete().forPath("/test/leases/" + newNode);
+
+            // release first lease so second one can be acquired
+            lease.close();
+            lease = leaseFuture.get();
+            Assert.assertNotNull(lease);
+            lease.close();
+            Assert.assertEquals(client.getChildren().forPath("/test/leases").size(), 0);
+
+            // no more lease exist. must be possible to acquire a new one
+            Assert.assertNotNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+        }
+        finally
+        {
+            client.close();
+            executor.shutdownNow();
+        }
+    }
+
 }
