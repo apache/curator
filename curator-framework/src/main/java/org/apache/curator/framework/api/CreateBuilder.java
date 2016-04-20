@@ -46,7 +46,7 @@ public interface CreateBuilder extends
     /**
      * @deprecated this has been generalized to support all create modes. Instead, use:
      * <pre>
-     *     client.create().withProtection().withMode(CreateMode.PERSISTENT_SEQUENTIAL)...
+     *     client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL)...
      * </pre>
      * @return this
      */
