@@ -124,7 +124,7 @@ public class CuratorMultiTransactionImpl implements
 
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<>(this, record, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            client.processBackgroundOperation(new OperationAndData<>(this, record, backgrounding.getCallback(), null, backgrounding.getContext(), null), null);
             return null;
         }
         else
@@ -154,7 +154,7 @@ public class CuratorMultiTransactionImpl implements
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, null);
         }
     }
 

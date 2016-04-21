@@ -19,7 +19,6 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.BackgroundPathable;
@@ -47,7 +46,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     GetChildrenBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
-        watching = new Watching();
+        watching = new Watching(client);
         backgrounding = new Backgrounding();
         responseStat = null;
     }
@@ -139,21 +138,21 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     @Override
     public BackgroundPathable<List<String>> watched()
     {
-        watching = new Watching(true);
+        watching = new Watching(client, true);
         return this;
     }
 
     @Override
     public BackgroundPathable<List<String>> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return this;
     }
 
     @Override
     public BackgroundPathable<List<String>> usingWatcher(CuratorWatcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return this;
     }
 
@@ -168,6 +167,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                 @Override
                 public void processResult(int rc, String path, Object o, List<String> strings, Stat stat)
                 {
+                    watching.checkBackroundRc(rc);
                     trace.commit();
                     if ( strings == null )
                     {
@@ -183,12 +183,12 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
             }
             else
             {
-                client.getZooKeeper().getChildren(operationAndData.getData(), watching.getWatcher(client, operationAndData.getData()), callback, backgrounding.getContext());
+                client.getZooKeeper().getChildren(operationAndData.getData(), watching.getWatcher(operationAndData.getData()), callback, backgrounding.getContext());
             }
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, watching);
         }
     }
 
@@ -200,7 +200,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
         List<String>        children = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext(), watching), null);
         }
         else
         {
@@ -212,9 +212,8 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     private List<String> pathInForeground(final String path) throws Exception
     {
         TimeTrace       trace = client.getZookeeperClient().startTracer("GetChildrenBuilderImpl-Foreground");
-        List<String>    children = RetryLoop.callWithRetry
+        List<String>    children = watching.callWithRetry
         (
-            client.getZookeeperClient(),
             new Callable<List<String>>()
             {
                 @Override
@@ -227,7 +226,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                     }
                     else
                     {
-                        children = client.getZooKeeper().getChildren(path, watching.getWatcher(client, path), responseStat);
+                        children = client.getZooKeeper().getChildren(path, watching.getWatcher(path), responseStat);
                     }
                     return children;
                 }

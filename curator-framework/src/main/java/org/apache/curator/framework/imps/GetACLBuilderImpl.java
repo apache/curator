@@ -123,7 +123,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, E
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, null);
         }
     }
 
@@ -135,7 +135,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, E
         List<ACL>       result = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext(), null), null);
         }
         else
         {

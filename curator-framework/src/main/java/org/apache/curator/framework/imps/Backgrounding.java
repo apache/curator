@@ -112,10 +112,15 @@ class Backgrounding
         return callback;
     }
 
-    void checkError(Throwable e) throws Exception
+    void checkError(Throwable e, Watching watching) throws Exception
     {
         if ( e != null )
         {
+            if ( watching != null )
+            {
+                watching.resetCurrentWatcher();
+            }
+
             if ( errorListener != null )
             {
                 errorListener.unhandledError("n/a", e);

@@ -228,7 +228,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, null);
         }
     }
 
@@ -251,7 +251,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
         Stat        resultStat = null;
         if ( backgrounding.inBackground()  )
         {
-            client.processBackgroundOperation(new OperationAndData<>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            client.processBackgroundOperation(new OperationAndData<>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null, backgrounding.getContext(), null), null);
         }
         else
         {

@@ -533,7 +533,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
-        performBackgroundOperation(new OperationAndData<String>(operation, path, null, null, context));
+        performBackgroundOperation(new OperationAndData<String>(operation, path, null, null, context, null));
     }
 
     @Override
@@ -898,6 +898,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     void performBackgroundOperation(OperationAndData<?> operationAndData)
     {
+        operationAndData.resetCurrentWatcher();
         try
         {
             if ( !operationAndData.isConnectionRequired() || client.isConnected() )
@@ -917,6 +918,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         catch ( Throwable e )
         {
+            operationAndData.resetCurrentWatcher();
             ThreadUtils.checkInterrupted(e);
 
             /**

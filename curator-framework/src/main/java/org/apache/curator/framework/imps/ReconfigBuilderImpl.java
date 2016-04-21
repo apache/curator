@@ -51,7 +51,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
     {
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<>(this, null, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            client.processBackgroundOperation(new OperationAndData<>(this, null, backgrounding.getCallback(), null, backgrounding.getContext(), null), null);
             return new byte[0];
         }
         else
@@ -261,7 +261,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, null);
         }
     }
 

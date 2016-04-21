@@ -40,7 +40,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
     {
         this.client = client;
         backgrounding = new Backgrounding();
-        watching = new Watching();
+        watching = new Watching(client);
         createParentContainersIfNeeded = false;
     }
 
@@ -54,21 +54,21 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
     @Override
     public BackgroundPathable<Stat> watched()
     {
-        watching = new Watching(true);
+        watching = new Watching(client, true);
         return this;
     }
 
     @Override
     public BackgroundPathable<Stat> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return this;
     }
 
     @Override
     public BackgroundPathable<Stat> usingWatcher(CuratorWatcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return this;
     }
 
@@ -132,6 +132,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
                 @Override
                 public void processResult(int rc, String path, Object ctx, Stat stat)
                 {
+                    watching.checkBackroundRc(rc);
                     trace.commit();
                     CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
@@ -143,12 +144,12 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
             }
             else
             {
-                client.getZooKeeper().exists(operationAndData.getData(), watching.getWatcher(client, operationAndData.getData()), callback, backgrounding.getContext());
+                client.getZooKeeper().exists(operationAndData.getData(), watching.getWatcher(operationAndData.getData()), callback, backgrounding.getContext());
             }
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, watching);
         }
     }
 
@@ -160,7 +161,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
         Stat        returnStat = null;
         if ( backgrounding.inBackground() )
         {
-            OperationAndData<String> operationAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext());
+            OperationAndData<String> operationAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext(), watching);
             if ( createParentContainersIfNeeded )
             {
                 CreateBuilderImpl.backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData(), backgrounding, true);
@@ -215,9 +216,8 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
     private Stat pathInForegroundStandard(final String path) throws Exception
     {
         TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground");
-        Stat        returnStat = RetryLoop.callWithRetry
+        Stat        returnStat = watching.callWithRetry
         (
-            client.getZookeeperClient(),
             new Callable<Stat>()
             {
                 @Override
@@ -230,7 +230,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
                     }
                     else
                     {
-                        returnStat = client.getZooKeeper().exists(path, watching.getWatcher(client, path));
+                        returnStat = client.getZooKeeper().exists(path, watching.getWatcher(path));
                     }
                     return returnStat;
                 }

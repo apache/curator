@@ -19,46 +19,55 @@
 
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
+import java.util.concurrent.Callable;
 
 class Watching
 {
     private final Watcher watcher;
     private final CuratorWatcher curatorWatcher;
     private final boolean watched;
+    private final CuratorFrameworkImpl client;
+    private NamespaceWatcher namespaceWatcher;
 
-    Watching(boolean watched)
+    Watching(CuratorFrameworkImpl client, boolean watched)
     {
+        this.client = client;
         this.watcher = null;
         this.curatorWatcher = null;
         this.watched = watched;
     }
 
-    Watching(Watcher watcher)
+    Watching(CuratorFrameworkImpl client, Watcher watcher)
     {
+        this.client = client;
         this.watcher = watcher;
         this.curatorWatcher = null;
         this.watched = false;
     }
 
-    Watching(CuratorWatcher watcher)
+    Watching(CuratorFrameworkImpl client, CuratorWatcher watcher)
     {
+        this.client = client;
         this.watcher = null;
         this.curatorWatcher = watcher;
         this.watched = false;
     }
 
-    Watching()
+    Watching(CuratorFrameworkImpl client)
     {
+        this.client = client;
         watcher = null;
         watched = false;
         curatorWatcher = null;
     }
 
-    Watcher getWatcher(CuratorFrameworkImpl client, String unfixedPath)
+    Watcher getWatcher(String unfixedPath)
     {
-        NamespaceWatcher namespaceWatcher = null;
+        namespaceWatcher = null;
         if ( watcher != null )
         {
             namespaceWatcher = new NamespaceWatcher(client, this.watcher, unfixedPath);
@@ -82,5 +91,35 @@ class Watching
     boolean isWatched()
     {
         return watched;
+    }
+
+    <T> T callWithRetry(Callable<T> proc) throws Exception
+    {
+        resetCurrentWatcher();
+        try
+        {
+            return RetryLoop.callWithRetry(client.getZookeeperClient(), proc);
+        }
+        catch ( Exception e )
+        {
+            resetCurrentWatcher();
+            throw e;
+        }
+    }
+
+    void resetCurrentWatcher()
+    {
+        if ( (namespaceWatcher != null) && (client.getWatcherRemovalManager() != null) )
+        {
+            client.getWatcherRemovalManager().noteTriggeredWatcher(namespaceWatcher);
+        }
+    }
+
+    void checkBackroundRc(int rc)
+    {
+        if ( rc != KeeperException.Code.OK.intValue() )
+        {
+            resetCurrentWatcher();
+        }
     }
 }

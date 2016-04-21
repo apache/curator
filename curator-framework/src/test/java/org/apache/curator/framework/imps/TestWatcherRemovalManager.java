@@ -21,11 +21,14 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.WatchersDebug;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
@@ -35,6 +38,145 @@ import java.util.concurrent.CountDownLatch;
 
 public class TestWatcherRemovalManager extends BaseClassForTests
 {
+    @Test
+    public void testWithRetry() throws Exception
+    {
+        server.stop();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            Watcher w = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    // NOP
+                }
+            };
+            try
+            {
+                removerClient.checkExists().usingWatcher(w).forPath("/one/two/three");
+                Assert.fail("Should have thrown ConnectionLossException");
+            }
+            catch ( KeeperException.ConnectionLossException expected )
+            {
+                // expected
+            }
+            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testWithRetryInBackground() throws Exception
+    {
+        server.stop();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            Watcher w = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    // NOP
+                }
+            };
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    latch.countDown();
+                }
+            };
+            removerClient.checkExists().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
+            Assert.assertTrue(new Timing().awaitLatch(latch));
+            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testMissingNode() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            Watcher w = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    // NOP
+                }
+            };
+            try
+            {
+                removerClient.getData().usingWatcher(w).forPath("/one/two/three");
+                Assert.fail("Should have thrown NoNodeException");
+            }
+            catch ( KeeperException.NoNodeException expected )
+            {
+                // expected
+            }
+            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testMissingNodeInBackground() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            Watcher w = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    // NOP
+                }
+            };
+            final CountDownLatch latch = new CountDownLatch(1);
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    latch.countDown();
+                }
+            };
+            removerClient.getData().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
+            Assert.assertTrue(new Timing().awaitLatch(latch));
+            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     @Test
     public void testBasic() throws Exception
     {

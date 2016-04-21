@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.zookeeper.AsyncCallback;
@@ -41,7 +40,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     {
         this.client = client;
         backgrounding = new Backgrounding();
-        watching = new Watching();
+        watching = new Watching(client);
     }
 
     @Override
@@ -115,21 +114,21 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     @Override
     public BackgroundEnsembleable<byte[]> watched()
     {
-        watching = new Watching(true);
+        watching = new Watching(client, true);
         return new InternalBackgroundEnsembleable();
     }
 
     @Override
     public BackgroundEnsembleable<byte[]> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return new InternalBackgroundEnsembleable();
     }
 
     @Override
     public BackgroundEnsembleable<byte[]> usingWatcher(CuratorWatcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return new InternalBackgroundEnsembleable();
     }
 
@@ -187,7 +186,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     {
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<Void>(this, null, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            client.processBackgroundOperation(new OperationAndData<Void>(this, null, backgrounding.getCallback(), null, backgrounding.getContext(), watching), null);
             return null;
         }
         else
@@ -207,6 +206,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
                 @Override
                 public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
                 {
+                    watching.checkBackroundRc(rc);
                     trace.commit();
                     CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_CONFIG, rc, path, null, ctx, stat, data, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
@@ -218,12 +218,12 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
             }
             else
             {
-                client.getZooKeeper().getConfig(watching.getWatcher(client, ZooDefs.CONFIG_NODE), callback, backgrounding.getContext());
+                client.getZooKeeper().getConfig(watching.getWatcher(ZooDefs.CONFIG_NODE), callback, backgrounding.getContext());
             }
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, watching);
         }
     }
 
@@ -232,9 +232,8 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
         TimeTrace trace = client.getZookeeperClient().startTracer("GetConfigBuilderImpl-Foreground");
         try
         {
-            return RetryLoop.callWithRetry
+            return watching.callWithRetry
             (
-                client.getZookeeperClient(),
                 new Callable<byte[]>()
                 {
                     @Override
@@ -244,7 +243,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
                         {
                             return client.getZooKeeper().getConfig(true, stat);
                         }
-                        return client.getZooKeeper().getConfig(watching.getWatcher(client, ZooDefs.CONFIG_NODE), stat);
+                        return client.getZooKeeper().getConfig(watching.getWatcher(ZooDefs.CONFIG_NODE), stat);
                     }
                 }
             );

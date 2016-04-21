@@ -65,6 +65,6 @@ class ClassicInternalConnectionHandler implements InternalConnectionHandler
                 }
             }
         };
-        client.performBackgroundOperation(new OperationAndData<String>(operation, "/", null, errorCallback, null));
+        client.performBackgroundOperation(new OperationAndData<String>(operation, "/", null, errorCallback, null, null));
     }
 }

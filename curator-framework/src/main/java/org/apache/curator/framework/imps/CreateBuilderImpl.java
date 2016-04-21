@@ -613,7 +613,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, null);
         }
     }
     
@@ -714,7 +714,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 client.queueOperation(mainOperationAndData);
             }
         };
-        OperationAndData<T> parentOperation = new OperationAndData<T>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
+        OperationAndData<T> parentOperation = new OperationAndData<T>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
         client.queueOperation(parentOperation);
     }
 
@@ -751,7 +751,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 client.queueOperation(mainOperationAndData);
             }
         };
-        client.queueOperation(new OperationAndData<>(operation, null, null, null, null));
+        client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));
     }
 
     private void sendBackgroundResponse(int rc, String path, Object ctx, String name, Stat stat, OperationAndData<PathAndBytes> operationAndData)
@@ -974,7 +974,8 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                     }
                 }
             },
-            backgrounding.getContext())
+            backgrounding.getContext(),
+            null)
         {
             @Override
             void callPerformBackgroundOperation() throws Exception

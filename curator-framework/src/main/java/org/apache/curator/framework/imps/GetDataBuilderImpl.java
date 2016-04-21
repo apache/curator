@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.utils.ThreadUtils;
@@ -44,7 +43,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
     {
         this.client = client;
         responseStat = null;
-        watching = new Watching();
+        watching = new Watching(client);
         backgrounding = new Backgrounding();
         decompress = false;
     }
@@ -210,21 +209,21 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
     @Override
     public BackgroundPathable<byte[]> watched()
     {
-        watching = new Watching(true);
+        watching = new Watching(client, true);
         return this;
     }
 
     @Override
     public BackgroundPathable<byte[]> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return this;
     }
 
     @Override
     public BackgroundPathable<byte[]> usingWatcher(CuratorWatcher watcher)
     {
-        watching = new Watching(watcher);
+        watching = new Watching(client, watcher);
         return this;
     }
 
@@ -239,6 +238,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
                 @Override
                 public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
                 {
+                    watching.checkBackroundRc(rc);
                     trace.commit();
                     if ( decompress && (data != null) )
                     {
@@ -263,12 +263,12 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
             }
             else
             {
-                client.getZooKeeper().getData(operationAndData.getData(), watching.getWatcher(client, operationAndData.getData()), callback, backgrounding.getContext());
+                client.getZooKeeper().getData(operationAndData.getData(), watching.getWatcher(operationAndData.getData()), callback, backgrounding.getContext());
             }
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, watching);
         }
     }
 
@@ -280,7 +280,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
         byte[]      responseData = null;
         if ( backgrounding.inBackground() )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext()), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext(), watching), null);
         }
         else
         {
@@ -292,9 +292,8 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
     private byte[] pathInForeground(final String path) throws Exception
     {
         TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Foreground");
-        byte[]      responseData = RetryLoop.callWithRetry
+        byte[]      responseData = watching.callWithRetry
         (
-            client.getZookeeperClient(),
             new Callable<byte[]>()
             {
                 @Override
@@ -307,7 +306,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
                     }
                     else
                     {
-                        responseData = client.getZooKeeper().getData(path, watching.getWatcher(client, path), responseStat);
+                        responseData = client.getZooKeeper().getData(path, watching.getWatcher(path), responseStat);
                     }
                     return responseData;
                 }

@@ -56,7 +56,7 @@ class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void
                 client.processBackgroundOperation(operationAndData, null);
             }
         };
-        OperationAndData<Void> operationAndData = new OperationAndData<Void>(this, null, null, errorCallback, null);
+        OperationAndData<Void> operationAndData = new OperationAndData<Void>(this, null, null, errorCallback, null, null);
         client.processBackgroundOperation(operationAndData, null);
     }
 

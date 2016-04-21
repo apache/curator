@@ -209,7 +209,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         }
         
         client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(),
-                                                                       errorCallback, backgrounding.getContext(), !local), null);
+                                                                       errorCallback, backgrounding.getContext(), !local, null), null);
     }
     
     private void pathInForeground(final String path) throws Exception
@@ -329,7 +329,7 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, null);
         }
     }
 }

@@ -184,7 +184,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
         }
         catch ( Throwable e )
         {
-            backgrounding.checkError(e);
+            backgrounding.checkError(e, null);
         }
     }
 
@@ -206,7 +206,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
                 client.queueOperation(mainOperationAndData);
             }
         };
-        OperationAndData<String> parentOperation = new OperationAndData<String>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext());
+        OperationAndData<String> parentOperation = new OperationAndData<String>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
         client.queueOperation(parentOperation);
     }
 
@@ -230,7 +230,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
                     }
                 };
             }
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), errorCallback, backgrounding.getContext()), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), errorCallback, backgrounding.getContext(), null), null);
         }
         else
         {
