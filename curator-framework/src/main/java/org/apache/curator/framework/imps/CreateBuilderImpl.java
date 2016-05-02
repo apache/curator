@@ -35,7 +35,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -481,6 +480,8 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     @Override
     public String forPath(final String givenPath, byte[] data) throws Exception
     {
+        client.getSchemaSet().getSchema(givenPath).validateCreate(createMode, data);
+
         if ( compress )
         {
             data = client.getCompressionProvider().compress(givenPath, data);
@@ -714,7 +715,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 client.queueOperation(mainOperationAndData);
             }
         };
-        OperationAndData<T> parentOperation = new OperationAndData<T>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
+        OperationAndData<T> parentOperation = new OperationAndData<>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
         client.queueOperation(parentOperation);
     }
 

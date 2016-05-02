@@ -37,6 +37,7 @@ import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -89,6 +90,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final AtomicLong currentInstanceIndex = new AtomicLong(-1);
     private final InternalConnectionHandler internalConnectionHandler;
     private final EnsembleTracker ensembleTracker;
+    private final SchemaSet schemaSet;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -143,6 +145,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
         useContainerParentsIfAvailable = builder.useContainerParentsIfAvailable();
         connectionStateErrorPolicy = Preconditions.checkNotNull(builder.getConnectionStateErrorPolicy(), "errorPolicy cannot be null");
+        schemaSet = Preconditions.checkNotNull(builder.getSchemaSet(), "schemaSet cannot be null");
 
         byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -226,6 +229,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
         connectionStateErrorPolicy = parent.connectionStateErrorPolicy;
         internalConnectionHandler = parent.internalConnectionHandler;
+        schemaSet = parent.schemaSet;
         ensembleTracker = null;
     }
 
@@ -546,6 +550,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public EnsurePath newNamespaceAwareEnsurePath(String path)
     {
         return namespace.newNamespaceAwareEnsurePath(path);
+    }
+
+    SchemaSet getSchemaSet()
+    {
+        return schemaSet;
     }
 
     ACLProvider getAclProvider()
