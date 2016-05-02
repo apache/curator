@@ -49,6 +49,16 @@ public class Schema
             throw new SchemaViolation(this, "Must be ephemeral");
         }
 
+        if ( mode.isSequential() && (sequential == Allowance.CANNOT) )
+        {
+            throw new SchemaViolation(this, "Cannot be sequential");
+        }
+
+        if ( !mode.isSequential() && (sequential == Allowance.MUST) )
+        {
+            throw new SchemaViolation(this, "Must be sequential");
+        }
+
         validateData(data);
     }
 
