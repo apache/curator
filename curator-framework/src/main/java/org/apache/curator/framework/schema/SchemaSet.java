@@ -37,7 +37,7 @@ public class SchemaSet
         .softValues()
         .build(cacheLoader);
 
-    private static final Schema defaultSchema = new Schema(Pattern.compile(".*"), "__default__", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, true, true);
+    private static final Schema defaultSchema = new Schema(Pattern.compile(".*"), "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, true, true, true);
 
     public SchemaSet()
     {
