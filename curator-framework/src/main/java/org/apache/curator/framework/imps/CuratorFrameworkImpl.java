@@ -317,6 +317,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
             });
 
             ensembleTracker.start();
+
+            log.info(schemaSet.toDocumentation());
         }
         catch ( Exception e )
         {
