@@ -13,6 +13,7 @@ public class Schema
     private final Allowance sequential;
     private final boolean canBeWatched;
     private final boolean canHaveChildren;
+    private final boolean canBeDeleted;
 
     public enum Allowance
     {
@@ -26,7 +27,7 @@ public class Schema
         return new SchemaBuilder(Pattern.compile(path));
     }
 
-    public Schema(Pattern path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, boolean canBeWatched, boolean canHaveChildren)
+    public Schema(Pattern path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, boolean canBeWatched, boolean canHaveChildren, boolean canBeDeleted)
     {
         this.path = Preconditions.checkNotNull(path, "path cannot be null");
         this.documentation = Preconditions.checkNotNull(documentation, "documentation cannot be null");
@@ -35,6 +36,23 @@ public class Schema
         this.sequential = Preconditions.checkNotNull(sequential, "sequential cannot be null");
         this.canBeWatched = canBeWatched;
         this.canHaveChildren = canHaveChildren;
+        this.canBeDeleted = canBeDeleted;
+    }
+
+    public void validateDeletion()
+    {
+        if ( !canBeDeleted )
+        {
+            throw new SchemaViolation(this, "Cannot be deleted");
+        }
+    }
+
+    public void validateWatcher(boolean isWatching)
+    {
+        if ( isWatching && !canBeWatched )
+        {
+            throw new SchemaViolation(this, "Cannot be watched");
+        }
     }
 
     public void validateCreate(CreateMode mode, byte[] data)
@@ -95,14 +113,19 @@ public class Schema
         return sequential;
     }
 
-    public boolean isCanBeWatched()
+    public boolean canBeWatched()
     {
         return canBeWatched;
     }
 
-    public boolean isCanHaveChildren()
+    public boolean canHaveChildren()
     {
         return canHaveChildren;
+    }
+
+    public boolean canBeDeleted()
+    {
+        return canBeDeleted;
     }
 
     @Override
@@ -140,6 +163,7 @@ public class Schema
             ", isSequential=" + sequential +
             ", canBeWatched=" + canBeWatched +
             ", canHaveChildren=" + canHaveChildren +
+            ", canBeDeleted=" + canBeDeleted +
             '}';
     }
 
@@ -148,7 +172,7 @@ public class Schema
         return path.pattern() + '\n'
             + documentation + '\n'
             + "Validator: " + dataValidator.getClass().getSimpleName() + '\n'
-            + String.format("ephemeral: %s | sequential: %s | canBeWatched: %s | canHaveChildren: %s", ephemeral, sequential, canBeWatched, canHaveChildren) + '\n'
+            + String.format("ephemeral: %s | sequential: %s | canBeWatched: %s | canHaveChildren: %s | canBeDeleted: %s", ephemeral, sequential, canBeWatched, canHaveChildren, canBeDeleted) + '\n'
             ;
     }
 }

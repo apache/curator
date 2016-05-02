@@ -275,6 +275,8 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
     @Override
     public byte[] forPath(String path) throws Exception
     {
+        client.getSchemaSet().getSchema(path).validateWatcher(watching.isWatched() || watching.hasWatcher());
+
         path = client.fixForNamespace(path);
 
         byte[]      responseData = null;

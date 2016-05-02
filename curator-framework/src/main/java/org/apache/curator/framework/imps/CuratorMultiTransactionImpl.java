@@ -32,13 +32,17 @@ import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorMultiTransactionMain;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.schema.Schema;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.OpResult;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.proto.CreateRequest;
+import org.apache.zookeeper.proto.SetDataRequest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadFactory;
 
 public class CuratorMultiTransactionImpl implements
     CuratorMultiTransaction,
@@ -119,7 +123,23 @@ public class CuratorMultiTransactionImpl implements
         CuratorMultiTransactionRecord record = new CuratorMultiTransactionRecord();
         for ( CuratorOp curatorOp : operations )
         {
+            Schema schema = client.getSchemaSet().getSchema(curatorOp.getTypeAndPath().getForPath());
             record.add(curatorOp.get(), curatorOp.getTypeAndPath().getType(), curatorOp.getTypeAndPath().getForPath());
+            if ( (curatorOp.get().getType() == ZooDefs.OpCode.create) || (curatorOp.get().getType() == ZooDefs.OpCode.createContainer) )
+            {
+                CreateRequest createRequest = (CreateRequest)curatorOp.get().toRequestRecord();
+                CreateMode createMode = CreateMode.fromFlag(createRequest.getFlags(), CreateMode.PERSISTENT);
+                schema.validateCreate(createMode, createRequest.getData());
+            }
+            else if ( (curatorOp.get().getType() == ZooDefs.OpCode.delete) || (curatorOp.get().getType() == ZooDefs.OpCode.deleteContainer) )
+            {
+                schema.validateDeletion();
+            }
+            else if ( curatorOp.get().getType() == ZooDefs.OpCode.setData )
+            {
+                SetDataRequest setDataRequest = (SetDataRequest)curatorOp.get().toRequestRecord();
+                schema.validateData(setDataRequest.getData());
+            }
         }
 
         if ( backgrounding.inBackground() )

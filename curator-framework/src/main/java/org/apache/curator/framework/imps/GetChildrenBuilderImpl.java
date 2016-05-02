@@ -195,6 +195,8 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     @Override
     public List<String> forPath(String path) throws Exception
     {
+        client.getSchemaSet().getSchema(path).validateWatcher(watching.isWatched() || watching.hasWatcher());
+
         path = client.fixForNamespace(path);
 
         List<String>        children = null;

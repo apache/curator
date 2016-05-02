@@ -8,14 +8,15 @@ public class SchemaBuilder
     private Pattern path;
     private String documentation = "";
     private DataValidator dataValidator = new DefaultDataValidator();
-    private boolean isEphemeral = false;
-    private boolean isSequential = false;
+    private Schema.Allowance ephemeral = Schema.Allowance.CAN;
+    private Schema.Allowance sequential = Schema.Allowance.CAN;
     private boolean canBeWatched = true;
     private boolean canHaveChildren = true;
+    private boolean canBeDeleted = true;
 
     public Schema build()
     {
-        return new Schema(path, documentation, dataValidator, isEphemeral, isSequential, canBeWatched, canHaveChildren);
+        return new Schema(path, documentation, dataValidator, ephemeral, sequential, canBeWatched, canHaveChildren, canBeDeleted);
     }
 
     public SchemaBuilder documentation(String documentation)
@@ -30,15 +31,15 @@ public class SchemaBuilder
         return this;
     }
 
-    public SchemaBuilder isEphemeral(boolean isEphemeral)
+    public SchemaBuilder ephemeral(Schema.Allowance ephemeral)
     {
-        this.isEphemeral = isEphemeral;
+        this.ephemeral = ephemeral;
         return this;
     }
 
-    public SchemaBuilder isSequential(boolean isSequential)
+    public SchemaBuilder sequential(Schema.Allowance sequential)
     {
-        this.isSequential = isSequential;
+        this.sequential = sequential;
         return this;
     }
 
@@ -51,6 +52,12 @@ public class SchemaBuilder
     public SchemaBuilder canHaveChildren(boolean canHaveChildren)
     {
         this.canHaveChildren = canHaveChildren;
+        return this;
+    }
+
+    public SchemaBuilder canBeDeleted(boolean canBeDeleted)
+    {
+        this.canBeDeleted = canBeDeleted;
         return this;
     }
 

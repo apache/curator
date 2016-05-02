@@ -213,6 +213,8 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
     @Override
     public Void forPath(String path) throws Exception
     {
+        client.getSchemaSet().getSchema(path).validateDeletion();
+
         final String unfixedPath = path;
         path = client.fixForNamespace(path);
 

@@ -158,6 +158,8 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
     {
         path = client.fixForNamespace(path);
 
+        client.getSchemaSet().getSchema(path).validateWatcher(watching.isWatched() || watching.hasWatcher());
+
         Stat        returnStat = null;
         if ( backgrounding.inBackground() )
         {
