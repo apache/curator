@@ -5,7 +5,8 @@ import java.util.regex.Pattern;
 
 public class SchemaBuilder
 {
-    private Pattern path;
+    private final Pattern pathRegex;
+    private final String path;
     private String documentation = "";
     private DataValidator dataValidator = new DefaultDataValidator();
     private Schema.Allowance ephemeral = Schema.Allowance.CAN;
@@ -20,7 +21,7 @@ public class SchemaBuilder
      */
     public Schema build()
     {
-        return new Schema(path, documentation, dataValidator, ephemeral, sequential, watched, canBeDeleted);
+        return new Schema(pathRegex, path, documentation, dataValidator, ephemeral, sequential, watched, canBeDeleted);
     }
 
     /**
@@ -83,8 +84,9 @@ public class SchemaBuilder
         return this;
     }
 
-    SchemaBuilder(Pattern path)
+    SchemaBuilder(Pattern pathRegex, String path)
     {
-        this.path = Preconditions.checkNotNull(path, "path cannot be null");
+        this.pathRegex = pathRegex;
+        this.path = path;
     }
 }

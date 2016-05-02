@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
  */
 public class Schema
 {
-    private final Pattern path;
+    private final Pattern pathRegex;
+    private final String path;
     private final String documentation;
     private final DataValidator dataValidator;
     private final Allowance ephemeral;
@@ -25,30 +26,33 @@ public class Schema
     }
 
     /**
-     * Start a builder for the given path pattern.
+     * Start a builder for the given path pattern. Note: full path schemas
+     * take precedence over regex path schemas.
      *
-     * @param pathRegex regex for the path. This schema applies to all matching paths
+     * @param path full ZNode path. This schema only applies to an exact match
      * @return builder
      */
-    public static SchemaBuilder builder(String pathRegex)
+    public static SchemaBuilder builder(String path)
     {
-        return builder(Pattern.compile(pathRegex));
+        return new SchemaBuilder(null, path);
     }
 
     /**
      * Start a builder for the given path pattern.
      *
-     * @param pathRegex regex for the path. This schema applies to all matching paths
+     * @param pathRegex regex for the path. This schema applies to any matching paths
      * @return builder
      */
     public static SchemaBuilder builder(Pattern pathRegex)
     {
-        return new SchemaBuilder(pathRegex);
+        return new SchemaBuilder(pathRegex, null);
     }
 
-    Schema(Pattern path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted)
+    Schema(Pattern pathRegex, String path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted)
     {
-        this.path = Preconditions.checkNotNull(path, "path cannot be null");
+        Preconditions.checkNotNull((pathRegex != null) || (path != null), "pathRegex and path cannot both be null");
+        this.pathRegex = pathRegex;
+        this.path = path;
         this.documentation = Preconditions.checkNotNull(documentation, "documentation cannot be null");
         this.dataValidator = Preconditions.checkNotNull(dataValidator, "dataValidator cannot be null");
         this.ephemeral = Preconditions.checkNotNull(ephemeral, "ephemeral cannot be null");
@@ -111,39 +115,14 @@ public class Schema
         }
     }
 
-    public Pattern getPath()
+    public Pattern getPathRegex()
+    {
+        return pathRegex;
+    }
+
+    public String getPath()
     {
         return path;
-    }
-
-    public String getDocumentation()
-    {
-        return documentation;
-    }
-
-    public DataValidator getDataValidator()
-    {
-        return dataValidator;
-    }
-
-    public Allowance getEphemeral()
-    {
-        return ephemeral;
-    }
-
-    public Allowance getSequential()
-    {
-        return sequential;
-    }
-
-    public Schema.Allowance getWatched()
-    {
-        return watched;
-    }
-
-    public boolean canBeDeleted()
-    {
-        return canBeDeleted;
     }
 
     @Override
@@ -160,21 +139,21 @@ public class Schema
 
         Schema schema = (Schema)o;
 
-        return path.equals(schema.path);
+        return pathRegex.equals(schema.pathRegex);
 
     }
 
     @Override
     public int hashCode()
     {
-        return path.hashCode();
+        return pathRegex.hashCode();
     }
 
     @Override
     public String toString()
     {
         return "Schema{" +
-            "path=" + path +
+            "path=" + pathRegex +
             ", documentation='" + documentation + '\'' +
             ", dataValidator=" + dataValidator +
             ", isEphemeral=" + ephemeral +
@@ -186,7 +165,7 @@ public class Schema
 
     public String toDocumentation()
     {
-        return path.pattern() + '\n'
+        return pathRegex.pattern() + '\n'
             + documentation + '\n'
             + "Validator: " + dataValidator.getClass().getSimpleName() + '\n'
             + String.format("ephemeral: %s | sequential: %s | watched: %s | | canBeDeleted: %s", ephemeral, sequential, watched, canBeDeleted) + '\n'

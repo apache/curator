@@ -4,13 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Pattern;
 
 /**
  * Collection of all schemas for a Curator instance
@@ -18,15 +17,16 @@ import java.util.regex.Pattern;
 public class SchemaSet
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final Collection<Schema> schemas;
+    private final Map<SchemaKey, Schema> schemas;
+    private final Map<String, Schema> pathSchemas;
     private final CacheLoader<String, Schema> cacheLoader = new CacheLoader<String, Schema>()
     {
         @Override
         public Schema load(String path) throws Exception
         {
-            for ( Schema schema : schemas )
+            for ( Schema schema : schemas.values() )
             {
-                if ( schema.getPath().matcher(path).matches() )
+                if ( (schema.getPathRegex() != null) && schema.getPathRegex().matcher(path).matches() )
                 {
                     log.debug("path -> {}", schema);
                     return schema;
@@ -35,12 +35,12 @@ public class SchemaSet
             return defaultSchema;
         }
     };
-    private final LoadingCache<String, Schema> cache = CacheBuilder
+    private final LoadingCache<String, Schema> regexCache = CacheBuilder
         .newBuilder()
         .softValues()
         .build(cacheLoader);
 
-    private static final Schema defaultSchema = new Schema(Pattern.compile(".*"), "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
+    private static final Schema defaultSchema = new Schema(null, "", "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
 
     /**
      * Return the default (empty) schema set
@@ -49,7 +49,7 @@ public class SchemaSet
      */
     public static SchemaSet getDefaultSchemaSet()
     {
-        return new SchemaSet(Collections.<Schema>emptySet())
+        return new SchemaSet(Collections.<SchemaKey, Schema>emptyMap())
         {
             @Override
             public String toDocumentation()
@@ -60,11 +60,21 @@ public class SchemaSet
     }
 
     /**
-     * @param schemas the schemas for the set
+     * @param schemas the schemas for the set. The key of the map is a key/name for the schema that can be
+     *                used when calling {@link #getNamedSchema(SchemaKey)}
      */
-    public SchemaSet(Collection<Schema> schemas)
+    public SchemaSet(Map<SchemaKey, Schema> schemas)
     {
-        this.schemas = ImmutableSet.copyOf(Preconditions.checkNotNull(schemas, "schemas cannot be null"));
+        this.schemas = ImmutableMap.copyOf(Preconditions.checkNotNull(schemas, "schemas cannot be null"));
+        ImmutableMap.Builder<String, Schema> builder = ImmutableMap.builder();
+        for ( Schema schema : schemas.values() )
+        {
+            if ( schema.getPath() != null )
+            {
+                builder.put(schema.getPath(), schema);
+            }
+        }
+        pathSchemas = builder.build();
     }
 
     /**
@@ -79,14 +89,31 @@ public class SchemaSet
         {
             return defaultSchema;
         }
+        Schema schema = pathSchemas.get(path);
+        if ( schema != null )
+        {
+            return schema;
+        }
+
         try
         {
-            return cache.get(path);
+            return regexCache.get(path);
         }
         catch ( ExecutionException e )
         {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Return the schema with the given key/name
+     *
+     * @param name name
+     * @return schema or null
+     */
+    public Schema getNamedSchema(SchemaKey name)
+    {
+        return schemas.get(name);
     }
 
     /**
@@ -97,9 +124,9 @@ public class SchemaSet
     public String toDocumentation()
     {
         StringBuilder str = new StringBuilder("Curator Schemas:\n\n");
-        for ( Schema schema : schemas )
+        for ( Map.Entry<SchemaKey, Schema> schemaEntry : schemas.entrySet() )
         {
-            str.append(schema).append('\n');
+            str.append(schemaEntry.getKey()).append('\n').append(schemaEntry.getValue()).append('\n');
         }
         return str.toString();
     }
