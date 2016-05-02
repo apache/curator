@@ -61,6 +61,11 @@ public class Schema
         this.canBeDeleted = canBeDeleted;
     }
 
+    /**
+     * Validate that this schema allows znode deletion
+     *
+     * @throws SchemaViolation if schema does not allow znode deletion
+     */
     public void validateDeletion()
     {
         if ( !canBeDeleted )
@@ -69,6 +74,12 @@ public class Schema
         }
     }
 
+    /**
+     * Validate that this schema's watching setting matches
+     *
+     * @param isWatching true if attempt is being made to watch node
+     * @throws SchemaViolation if schema's watching setting does not match
+     */
     public void validateWatcher(boolean isWatching)
     {
         if ( isWatching && (watched == Allowance.CANNOT) )
@@ -82,6 +93,13 @@ public class Schema
         }
     }
 
+    /**
+     * Validate that this schema's create mode setting matches and that the data is valid
+     *
+     * @param mode CreateMode being used
+     * @param data data being set
+     * @throws SchemaViolation if schema's create mode setting does not match or data is invalid
+     */
     public void validateCreate(CreateMode mode, byte[] data)
     {
         if ( mode.isEphemeral() && (ephemeral == Allowance.CANNOT) )
@@ -107,6 +125,12 @@ public class Schema
         validateData(data);
     }
 
+    /**
+     * Validate that this schema validates the data
+     *
+     * @param data data being set
+     * @throws SchemaViolation if data is invalid
+     */
     public void validateData(byte[] data)
     {
         if ( !dataValidator.isValid(data) )
@@ -115,12 +139,23 @@ public class Schema
         }
     }
 
-    public Pattern getPathRegex()
+    /**
+     * Return the raw path for this schema. If a full path was used, it is returned.
+     * If a regex was used, it is returned
+     *
+     * @return path
+     */
+    public String getRawPath()
+    {
+        return (path != null) ? path : pathRegex.pattern();
+    }
+
+    Pattern getPathRegex()
     {
         return pathRegex;
     }
 
-    public String getPath()
+    String getPath()
     {
         return path;
     }
