@@ -12,6 +12,9 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
+/**
+ * Collection of all schemas for a Curator instance
+ */
 public class SchemaSet
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -37,18 +40,39 @@ public class SchemaSet
         .softValues()
         .build(cacheLoader);
 
-    private static final Schema defaultSchema = new Schema(Pattern.compile(".*"), "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, true, true, true);
+    private static final Schema defaultSchema = new Schema(Pattern.compile(".*"), "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
 
-    public SchemaSet()
+    /**
+     * Return the default (empty) schema set
+     *
+     * @return default schema set
+     */
+    public static SchemaSet getDefaultSchemaSet()
     {
-        this(Collections.<Schema>emptySet());
+        return new SchemaSet(Collections.<Schema>emptySet())
+        {
+            @Override
+            public String toDocumentation()
+            {
+                return "Default schema";
+            }
+        };
     }
 
+    /**
+     * @param schemas the schemas for the set
+     */
     public SchemaSet(Collection<Schema> schemas)
     {
         this.schemas = ImmutableSet.copyOf(Preconditions.checkNotNull(schemas, "schemas cannot be null"));
     }
 
+    /**
+     * Find the first matching schema for the path and return it
+     *
+     * @param path ZNode full path
+     * @return matching schema or a default schema
+     */
     public Schema getSchema(String path)
     {
         if ( schemas.size() == 0 )
@@ -65,6 +89,11 @@ public class SchemaSet
         }
     }
 
+    /**
+     * Build a user displayable documentation string for the schemas in this set
+     *
+     * @return documentation
+     */
     public String toDocumentation()
     {
         StringBuilder str = new StringBuilder("Curator Schemas:\n\n");

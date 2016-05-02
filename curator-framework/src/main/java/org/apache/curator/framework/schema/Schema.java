@@ -4,6 +4,9 @@ import com.google.common.base.Preconditions;
 import org.apache.zookeeper.CreateMode;
 import java.util.regex.Pattern;
 
+/**
+ * Represents and documents operations allowed for a given path pattern
+ */
 public class Schema
 {
     private final Pattern path;
@@ -11,8 +14,7 @@ public class Schema
     private final DataValidator dataValidator;
     private final Allowance ephemeral;
     private final Allowance sequential;
-    private final boolean canBeWatched;
-    private final boolean canHaveChildren;
+    private final Schema.Allowance watched;
     private final boolean canBeDeleted;
 
     public enum Allowance
@@ -22,20 +24,36 @@ public class Schema
         CANNOT
     }
 
-    public static SchemaBuilder builder(String path)
+    /**
+     * Start a builder for the given path pattern.
+     *
+     * @param pathRegex regex for the path. This schema applies to all matching paths
+     * @return builder
+     */
+    public static SchemaBuilder builder(String pathRegex)
     {
-        return new SchemaBuilder(Pattern.compile(path));
+        return builder(Pattern.compile(pathRegex));
     }
 
-    public Schema(Pattern path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, boolean canBeWatched, boolean canHaveChildren, boolean canBeDeleted)
+    /**
+     * Start a builder for the given path pattern.
+     *
+     * @param pathRegex regex for the path. This schema applies to all matching paths
+     * @return builder
+     */
+    public static SchemaBuilder builder(Pattern pathRegex)
+    {
+        return new SchemaBuilder(pathRegex);
+    }
+
+    Schema(Pattern path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted)
     {
         this.path = Preconditions.checkNotNull(path, "path cannot be null");
         this.documentation = Preconditions.checkNotNull(documentation, "documentation cannot be null");
         this.dataValidator = Preconditions.checkNotNull(dataValidator, "dataValidator cannot be null");
         this.ephemeral = Preconditions.checkNotNull(ephemeral, "ephemeral cannot be null");
         this.sequential = Preconditions.checkNotNull(sequential, "sequential cannot be null");
-        this.canBeWatched = canBeWatched;
-        this.canHaveChildren = canHaveChildren;
+        this.watched = Preconditions.checkNotNull(watched, "watched cannot be null");
         this.canBeDeleted = canBeDeleted;
     }
 
@@ -49,9 +67,14 @@ public class Schema
 
     public void validateWatcher(boolean isWatching)
     {
-        if ( isWatching && !canBeWatched )
+        if ( isWatching && (watched == Allowance.CANNOT) )
         {
             throw new SchemaViolation(this, "Cannot be watched");
+        }
+
+        if ( !isWatching && (watched == Allowance.MUST) )
+        {
+            throw new SchemaViolation(this, "Must be watched");
         }
     }
 
@@ -113,14 +136,9 @@ public class Schema
         return sequential;
     }
 
-    public boolean canBeWatched()
+    public Schema.Allowance getWatched()
     {
-        return canBeWatched;
-    }
-
-    public boolean canHaveChildren()
-    {
-        return canHaveChildren;
+        return watched;
     }
 
     public boolean canBeDeleted()
@@ -161,8 +179,7 @@ public class Schema
             ", dataValidator=" + dataValidator +
             ", isEphemeral=" + ephemeral +
             ", isSequential=" + sequential +
-            ", canBeWatched=" + canBeWatched +
-            ", canHaveChildren=" + canHaveChildren +
+            ", watched=" + watched +
             ", canBeDeleted=" + canBeDeleted +
             '}';
     }
@@ -172,7 +189,7 @@ public class Schema
         return path.pattern() + '\n'
             + documentation + '\n'
             + "Validator: " + dataValidator.getClass().getSimpleName() + '\n'
-            + String.format("ephemeral: %s | sequential: %s | canBeWatched: %s | canHaveChildren: %s | canBeDeleted: %s", ephemeral, sequential, canBeWatched, canHaveChildren, canBeDeleted) + '\n'
+            + String.format("ephemeral: %s | sequential: %s | watched: %s | | canBeDeleted: %s", ephemeral, sequential, watched, canBeDeleted) + '\n'
             ;
     }
 }

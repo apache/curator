@@ -144,14 +144,7 @@ public class CuratorFrameworkFactory
         private boolean useContainerParentsIfAvailable = true;
         private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
         private ConnectionHandlingPolicy connectionHandlingPolicy = Boolean.getBoolean("curator-use-classic-connection-handling") ? new ClassicConnectionHandlingPolicy() : new StandardConnectionHandlingPolicy();
-        private SchemaSet schemaSet = new SchemaSet()
-        {
-            @Override
-            public String toDocumentation()
-            {
-                return "Default schema";
-            }
-        };
+        private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
 
         /**
          * Apply the current values and build a new CuratorFramework
