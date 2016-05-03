@@ -16,16 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.imps;
+package org.apache.curator.framework.schema;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.schema.SchemaKey;
-import org.apache.curator.framework.schema.SchemaSet;
-import org.apache.curator.framework.schema.SchemaSetLoader;
-import org.apache.curator.framework.schema.SchemaViolation;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
