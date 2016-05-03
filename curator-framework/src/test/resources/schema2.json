@@ -1,0 +1,17 @@
+[
+  {
+    "name": "test",
+    "path": "/a/b/c",
+    "documentation": "This is a schema",
+    "ephemeral": "must",
+    "sequential": "cannot"
+  },
+
+  {
+    "name": "test2",
+    "path": "/a/.*",
+    "isRegex": true,
+    "ephemeral": "cannot",
+    "canBeDeleted": false
+  }
+]

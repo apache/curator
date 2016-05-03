@@ -136,7 +136,7 @@ public class SchemaSet
         StringBuilder str = new StringBuilder("Curator Schemas:\n\n");
         for ( Map.Entry<SchemaKey, Schema> schemaEntry : schemas.entrySet() )
         {
-            str.append(schemaEntry.getKey()).append('\n').append(schemaEntry.getValue()).append('\n');
+            str.append(schemaEntry.getKey()).append('\n').append(schemaEntry.getValue().toDocumentation()).append('\n');
         }
         return str.toString();
     }

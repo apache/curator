@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.schema.SchemaKey;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.schema.SchemaSetLoader;
 import org.apache.curator.framework.schema.SchemaViolation;
@@ -28,7 +29,7 @@ public class TestSchema extends BaseClassForTests
 
             try
             {
-                client.create().creatingParentsIfNeeded().forPath("/a/b/c");
+                client.create().creatingParentsIfNeeded().forPath(schemaSet.getNamedSchema(SchemaKey.named("test")).getRawPath());
                 Assert.fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
@@ -37,6 +38,41 @@ public class TestSchema extends BaseClassForTests
             }
 
             client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/a/b/c");
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testMulti() throws Exception
+    {
+        SchemaSet schemaSet = loadSchemaSet("schema2.json");
+        CuratorFramework client = newClient(schemaSet);
+        try
+        {
+            client.start();
+
+            try
+            {
+                client.create().creatingParentsIfNeeded().forPath("/a/b/c");
+                Assert.fail("Should've violated schema: test");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+
+            try
+            {
+                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/a/b/c/d/e");
+                Assert.fail("Should've violated schema: test2");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
         }
         finally
         {

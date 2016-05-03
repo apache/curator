@@ -200,10 +200,10 @@ public class Schema
 
     public String toDocumentation()
     {
-        return pathRegex.pattern() + '\n'
-            + documentation + '\n'
+        return "Path: " + getRawPath() + '\n'
+            + "Documentation: " + documentation + '\n'
             + "Validator: " + dataValidator.getClass().getSimpleName() + '\n'
-            + String.format("ephemeral: %s | sequential: %s | watched: %s | | canBeDeleted: %s", ephemeral, sequential, watched, canBeDeleted) + '\n'
+            + String.format("ephemeral: %s | sequential: %s | watched: %s | canBeDeleted: %s", ephemeral, sequential, watched, canBeDeleted) + '\n'
             ;
     }
 }
