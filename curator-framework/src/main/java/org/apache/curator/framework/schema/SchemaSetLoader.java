@@ -57,7 +57,7 @@ import java.util.regex.Pattern;
  */
 public class SchemaSetLoader
 {
-    private final Map<SchemaKey, Schema> schemas;
+    private final Map<String, Schema> schemas;
 
     /**
      * Called to map a data validator name in the JSON stream to an actual data validator
@@ -78,7 +78,7 @@ public class SchemaSetLoader
 
     public SchemaSetLoader(Reader in, DataValidatorMapper dataValidatorMapper)
     {
-        ImmutableMap.Builder<SchemaKey, Schema> builder = ImmutableMap.builder();
+        ImmutableMap.Builder<String, Schema> builder = ImmutableMap.builder();
         try
         {
             JsonNode root = new ObjectMapper().readTree(in);
@@ -96,7 +96,7 @@ public class SchemaSetLoader
         return new SchemaSet(schemas, useDefaultSchema);
     }
 
-    private void read(ImmutableMap.Builder<SchemaKey, Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
+    private void read(ImmutableMap.Builder<String, Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
     {
         for ( JsonNode child : node )
         {
@@ -104,7 +104,7 @@ public class SchemaSetLoader
         }
     }
 
-    private void readNode(ImmutableMap.Builder<SchemaKey, Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
+    private void readNode(ImmutableMap.Builder<String, Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
     {
         String name = getText(node, "name", null);
         String path = getText(node, "path", null);
@@ -136,7 +136,7 @@ public class SchemaSetLoader
             .watched(getAllowance(node, "watched"))
             .canBeDeleted(getBoolean(node, "canBeDeleted"))
             .build();
-        builder.put(new SchemaKey(name), schema);
+        builder.put(name, schema);
     }
 
     private String getText(JsonNode node, String name, String defaultValue)

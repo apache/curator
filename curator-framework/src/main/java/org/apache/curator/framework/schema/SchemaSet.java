@@ -35,7 +35,7 @@ import java.util.concurrent.ExecutionException;
 public class SchemaSet
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final Map<SchemaKey, Schema> schemas;
+    private final Map<String, Schema> schemas;
     private final Map<String, Schema> pathSchemas;
     private final CacheLoader<String, Schema> cacheLoader = new CacheLoader<String, Schema>()
     {
@@ -68,7 +68,7 @@ public class SchemaSet
      */
     public static SchemaSet getDefaultSchemaSet()
     {
-        return new SchemaSet(Collections.<SchemaKey, Schema>emptyMap(), true)
+        return new SchemaSet(Collections.<String, Schema>emptyMap(), true)
         {
             @Override
             public String toDocumentation()
@@ -80,10 +80,10 @@ public class SchemaSet
 
     /**
      * @param schemas the schemas for the set. The key of the map is a key/name for the schema that can be
-     *                used when calling {@link #getNamedSchema(SchemaKey)}
+     *                used when calling {@link #getNamedSchema(String)}
      * @param useDefaultSchema if true, return a default schema when there is no match. Otherwise, an exception is thrown
      */
-    public SchemaSet(Map<SchemaKey, Schema> schemas, boolean useDefaultSchema)
+    public SchemaSet(Map<String, Schema> schemas, boolean useDefaultSchema)
     {
         this.useDefaultSchema = useDefaultSchema;
         this.schemas = ImmutableMap.copyOf(Preconditions.checkNotNull(schemas, "schemas cannot be null"));
@@ -139,7 +139,7 @@ public class SchemaSet
      * @param name name
      * @return schema or null
      */
-    public Schema getNamedSchema(SchemaKey name)
+    public Schema getNamedSchema(String name)
     {
         return schemas.get(name);
     }
@@ -152,7 +152,7 @@ public class SchemaSet
     public String toDocumentation()
     {
         StringBuilder str = new StringBuilder("Curator Schemas:\n\n");
-        for ( Map.Entry<SchemaKey, Schema> schemaEntry : schemas.entrySet() )
+        for ( Map.Entry<String, Schema> schemaEntry : schemas.entrySet() )
         {
             str.append(schemaEntry.getKey()).append('\n').append(schemaEntry.getValue().toDocumentation()).append('\n');
         }

@@ -43,7 +43,9 @@ public class TestSchema extends BaseClassForTests
 
             try
             {
-                client.create().creatingParentsIfNeeded().forPath(schemaSet.getNamedSchema(SchemaKey.named("test")).getRawPath());
+                String rawPath = schemaSet.getNamedSchema("test").getRawPath();
+                Assert.assertEquals(rawPath, "/a/b/c");
+                client.create().creatingParentsIfNeeded().forPath(rawPath);
                 Assert.fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
