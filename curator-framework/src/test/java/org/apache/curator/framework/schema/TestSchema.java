@@ -222,6 +222,55 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
+    @Test
+    public void testOrdering() throws Exception
+    {
+        SchemaSet schemaSet = loadSchemaSet("schema5.json", null);
+        CuratorFramework client = newClient(schemaSet);
+        try
+        {
+            client.start();
+
+            try
+            {
+                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/exact/match");
+                Assert.fail("Should've violated schema");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+
+            try
+            {
+                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/exact/foo/bar");
+                Assert.fail("Should've violated schema");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+
+            try
+            {
+                client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/exact/other/bar");
+                Assert.fail("Should've violated schema");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+
+            client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/exact/match");   // schema "1"
+            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/exact/other/thing");   // schema "2"
+            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/exact/foo/bar");   // schema "3"
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     @Override
     protected boolean enabledSessionExpiredStateAware()
     {

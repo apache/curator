@@ -1,0 +1,25 @@
+[
+  {
+    "name": "1",
+    "path": "/exact/match",
+    "isRegex": false,
+    "ephemeral": "cannot",
+    "sequential": "must"
+  },
+
+  {
+    "name": "2",
+    "path": "/exact/other/.*",
+    "isRegex": true,
+    "ephemeral": "must",
+    "sequential": "can"
+  },
+
+  {
+    "name": "3",
+    "path": "/exact/.*",
+    "isRegex": true,
+    "ephemeral": "can",
+    "sequential": "cannot"
+  }
+]

@@ -238,8 +238,9 @@ public class Schema
 
     public String toDocumentation()
     {
+        String pathLabel = (pathRegex != null) ? "Path Regex: " : "Path: ";
         return "Name: " + name + '\n'
-            + "Path: " + getRawPath() + '\n'
+            + pathLabel + getRawPath() + '\n'
             + "Documentation: " + documentation + '\n'
             + "Validator: " + dataValidator.getClass().getSimpleName() + '\n'
             + String.format("ephemeral: %s | sequential: %s | watched: %s | canBeDeleted: %s", ephemeral, sequential, watched, canBeDeleted) + '\n'
