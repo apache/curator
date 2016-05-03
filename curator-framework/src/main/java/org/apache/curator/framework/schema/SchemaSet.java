@@ -18,14 +18,18 @@
  */
 package org.apache.curator.framework.schema;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -36,15 +40,16 @@ public class SchemaSet
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final Map<String, Schema> schemas;
-    private final Map<String, Schema> pathSchemas;
+    private final Map<String, Schema> pathToSchemas;
+    private final List<Schema> regexSchemas;
     private final CacheLoader<String, Schema> cacheLoader = new CacheLoader<String, Schema>()
     {
         @Override
         public Schema load(String path) throws Exception
         {
-            for ( Schema schema : schemas.values() )
+            for ( Schema schema : regexSchemas )
             {
-                if ( (schema.getPathRegex() != null) && schema.getPathRegex().matcher(path).matches() )
+                if ( schema.getPathRegex().matcher(path).matches() )
                 {
                     log.debug("path -> {}", schema);
                     return schema;
@@ -58,7 +63,8 @@ public class SchemaSet
         .softValues()
         .build(cacheLoader);
 
-    private static final Schema defaultSchema = new Schema(null, "", "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
+    private static final Schema nullSchema = new Schema("__null__", null, "", "Null schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
+    private static final Schema defaultSchema = new Schema("__default__", null, "", "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
     private final boolean useDefaultSchema;
 
     /**
@@ -68,7 +74,7 @@ public class SchemaSet
      */
     public static SchemaSet getDefaultSchemaSet()
     {
-        return new SchemaSet(Collections.<String, Schema>emptyMap(), true)
+        return new SchemaSet(Collections.<Schema>emptyList(), true)
         {
             @Override
             public String toDocumentation()
@@ -79,23 +85,43 @@ public class SchemaSet
     }
 
     /**
-     * @param schemas the schemas for the set. The key of the map is a key/name for the schema that can be
-     *                used when calling {@link #getNamedSchema(String)}
+     * Define a schema set. Schemas are matched in a well defined order:
+     * <ol>
+     *     <li>Exact match on full path (i.e. non-regex)</li>
+     *     <li>Match on the first regex path, searched in the order given to this constructor</li>
+     * </ol>
+     *
+     * @param schemas the schemas for the set.
      * @param useDefaultSchema if true, return a default schema when there is no match. Otherwise, an exception is thrown
      */
-    public SchemaSet(Map<String, Schema> schemas, boolean useDefaultSchema)
+    public SchemaSet(List<Schema> schemas, boolean useDefaultSchema)
     {
+        schemas = Preconditions.checkNotNull(schemas, "schemas cannot be null");
+
         this.useDefaultSchema = useDefaultSchema;
-        this.schemas = ImmutableMap.copyOf(Preconditions.checkNotNull(schemas, "schemas cannot be null"));
-        ImmutableMap.Builder<String, Schema> builder = ImmutableMap.builder();
-        for ( Schema schema : schemas.values() )
+        this.schemas = Maps.uniqueIndex(schemas, new Function<Schema, String>()
+        {
+            @Override
+            public String apply(Schema schema)
+            {
+                return schema.getName();
+            }
+        });
+        ImmutableMap.Builder<String, Schema> pathBuilder = ImmutableMap.builder();
+        ImmutableList.Builder<Schema> regexBuilder = ImmutableList.builder();
+        for ( Schema schema : schemas )
         {
             if ( schema.getPath() != null )
             {
-                builder.put(schema.getPath(), schema);
+                pathBuilder.put(schema.getPath(), schema);
+            }
+            else
+            {
+                regexBuilder.add(schema);
             }
         }
-        pathSchemas = builder.build();
+        pathToSchemas = pathBuilder.build();
+        regexSchemas = regexBuilder.build();
     }
 
     /**
@@ -108,12 +134,16 @@ public class SchemaSet
     {
         if ( schemas.size() > 0 )
         {
-            Schema schema = pathSchemas.get(path);
+            Schema schema = pathToSchemas.get(path);
             if ( schema == null )
             {
                 try
                 {
                     schema = regexCache.get(path);
+                    if ( schema.equals(nullSchema) )
+                    {
+                        schema = useDefaultSchema ? defaultSchema : null;
+                    }
                 }
                 catch ( ExecutionException e )
                 {

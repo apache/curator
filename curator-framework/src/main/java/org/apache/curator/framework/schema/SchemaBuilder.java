@@ -19,12 +19,14 @@
 package org.apache.curator.framework.schema;
 
 import com.google.common.base.Preconditions;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class SchemaBuilder
 {
     private final Pattern pathRegex;
     private final String path;
+    private String name = UUID.randomUUID().toString();
     private String documentation = "";
     private DataValidator dataValidator = new DefaultDataValidator();
     private Schema.Allowance ephemeral = Schema.Allowance.CAN;
@@ -39,7 +41,17 @@ public class SchemaBuilder
      */
     public Schema build()
     {
-        return new Schema(pathRegex, path, documentation, dataValidator, ephemeral, sequential, watched, canBeDeleted);
+        return new Schema(name, pathRegex, path, documentation, dataValidator, ephemeral, sequential, watched, canBeDeleted);
+    }
+
+    /**
+     * @param name unique name for this schema
+     * @return this for chaining
+     */
+    public SchemaBuilder name(String name)
+    {
+        this.name = Preconditions.checkNotNull(name, "name cannot be null");
+        return this;
     }
 
     /**

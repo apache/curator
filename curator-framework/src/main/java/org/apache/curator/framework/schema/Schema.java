@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
  */
 public class Schema
 {
+    private final String name;
     private final Pattern pathRegex;
     private final String path;
     private final String documentation;
@@ -44,7 +45,7 @@ public class Schema
     }
 
     /**
-     * Start a builder for the given path pattern. Note: full path schemas
+     * Start a builder for the given full path. Note: full path schemas
      * take precedence over regex path schemas.
      *
      * @param path full ZNode path. This schema only applies to an exact match
@@ -66,11 +67,12 @@ public class Schema
         return new SchemaBuilder(pathRegex, null);
     }
 
-    Schema(Pattern pathRegex, String path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted)
+    Schema(String name, Pattern pathRegex, String path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted)
     {
         Preconditions.checkNotNull((pathRegex != null) || (path != null), "pathRegex and path cannot both be null");
         this.pathRegex = pathRegex;
         this.path = path;
+        this.name = Preconditions.checkNotNull(name, "name cannot be null");
         this.documentation = Preconditions.checkNotNull(documentation, "documentation cannot be null");
         this.dataValidator = Preconditions.checkNotNull(dataValidator, "dataValidator cannot be null");
         this.ephemeral = Preconditions.checkNotNull(ephemeral, "ephemeral cannot be null");
@@ -159,6 +161,11 @@ public class Schema
         }
     }
 
+    public String getName()
+    {
+        return name;
+    }
+
     /**
      * Return the raw path for this schema. If a full path was used, it is returned.
      * If a regex was used, it is returned
@@ -217,11 +224,13 @@ public class Schema
     public String toString()
     {
         return "Schema{" +
-            "path=" + pathRegex +
+            "name='" + name + '\'' +
+            ", pathRegex=" + pathRegex +
+            ", path='" + path + '\'' +
             ", documentation='" + documentation + '\'' +
             ", dataValidator=" + dataValidator +
-            ", isEphemeral=" + ephemeral +
-            ", isSequential=" + sequential +
+            ", ephemeral=" + ephemeral +
+            ", sequential=" + sequential +
             ", watched=" + watched +
             ", canBeDeleted=" + canBeDeleted +
             '}';
@@ -229,7 +238,8 @@ public class Schema
 
     public String toDocumentation()
     {
-        return "Path: " + getRawPath() + '\n'
+        return "Name: " + name + '\n'
+            + "Path: " + getRawPath() + '\n'
             + "Documentation: " + documentation + '\n'
             + "Validator: " + dataValidator.getClass().getSimpleName() + '\n'
             + String.format("ephemeral: %s | sequential: %s | watched: %s | canBeDeleted: %s", ephemeral, sequential, watched, canBeDeleted) + '\n'

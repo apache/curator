@@ -20,12 +20,12 @@ package org.apache.curator.framework.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -57,7 +57,7 @@ import java.util.regex.Pattern;
  */
 public class SchemaSetLoader
 {
-    private final Map<String, Schema> schemas;
+    private final List<Schema> schemas;
 
     /**
      * Called to map a data validator name in the JSON stream to an actual data validator
@@ -78,7 +78,7 @@ public class SchemaSetLoader
 
     public SchemaSetLoader(Reader in, DataValidatorMapper dataValidatorMapper)
     {
-        ImmutableMap.Builder<String, Schema> builder = ImmutableMap.builder();
+        ImmutableList.Builder<Schema> builder = ImmutableList.builder();
         try
         {
             JsonNode root = new ObjectMapper().readTree(in);
@@ -96,7 +96,7 @@ public class SchemaSetLoader
         return new SchemaSet(schemas, useDefaultSchema);
     }
 
-    private void read(ImmutableMap.Builder<String, Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
+    private void read(ImmutableList.Builder<Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
     {
         for ( JsonNode child : node )
         {
@@ -104,7 +104,7 @@ public class SchemaSetLoader
         }
     }
 
-    private void readNode(ImmutableMap.Builder<String, Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
+    private void readNode(ImmutableList.Builder<Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
     {
         String name = getText(node, "name", null);
         String path = getText(node, "path", null);
@@ -130,13 +130,14 @@ public class SchemaSetLoader
             schemaBuilder.dataValidator(dataValidatorMapper.getDataValidator(dataValidatorName));
         }
 
-        Schema schema = schemaBuilder.documentation(getText(node, "documentation", ""))
+        Schema schema = schemaBuilder.name(name)
+            .documentation(getText(node, "documentation", ""))
             .ephemeral(getAllowance(node, "ephemeral"))
             .sequential(getAllowance(node, "sequential"))
             .watched(getAllowance(node, "watched"))
             .canBeDeleted(getBoolean(node, "canBeDeleted"))
             .build();
-        builder.put(name, schema);
+        builder.add(schema);
     }
 
     private String getText(JsonNode node, String name, String defaultValue)
