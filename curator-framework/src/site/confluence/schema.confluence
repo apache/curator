@@ -1,0 +1,10 @@
+h1. Schema/Documentation Support
+
+Curator provides a mechanism to:
+
+* Document your ZooKeeper paths
+* Validate operations on ZooKeeper paths
+* Map a simple string to a ZooKeeper path
+
+
+

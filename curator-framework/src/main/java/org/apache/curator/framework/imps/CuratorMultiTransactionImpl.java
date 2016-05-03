@@ -133,7 +133,7 @@ public class CuratorMultiTransactionImpl implements
             }
             else if ( (curatorOp.get().getType() == ZooDefs.OpCode.delete) || (curatorOp.get().getType() == ZooDefs.OpCode.deleteContainer) )
             {
-                schema.validateDeletion();
+                schema.validateDelete();
             }
             else if ( curatorOp.get().getType() == ZooDefs.OpCode.setData )
             {

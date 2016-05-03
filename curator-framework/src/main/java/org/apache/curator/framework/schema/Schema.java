@@ -86,7 +86,7 @@ public class Schema
      *
      * @throws SchemaViolation if schema does not allow znode deletion
      */
-    public void validateDeletion()
+    public void validateDelete()
     {
         if ( !canBeDeleted )
         {
@@ -100,7 +100,7 @@ public class Schema
      * @param isWatching true if attempt is being made to watch node
      * @throws SchemaViolation if schema's watching setting does not match
      */
-    public void validateWatcher(boolean isWatching)
+    public void validateWatch(boolean isWatching)
     {
         if ( isWatching && (watched == Allowance.CANNOT) )
         {

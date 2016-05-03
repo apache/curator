@@ -73,6 +73,7 @@
             <item name="Framework" href="curator-framework/index.html"/>
             <item name="Utilities" href="utilities.html"/>
             <item name="Client" href="curator-client/index.html"/>
+            <item name="Schema Support" href="curator-framework/schema.html"/>
         </menu>
 
         <menu name="Details" inherit="top">
