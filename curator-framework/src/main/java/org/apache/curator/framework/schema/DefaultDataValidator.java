@@ -24,7 +24,7 @@ package org.apache.curator.framework.schema;
 public class DefaultDataValidator implements DataValidator
 {
     @Override
-    public boolean isValid(byte[] data)
+    public boolean isValid(String path, byte[] data)
     {
         return true;
     }

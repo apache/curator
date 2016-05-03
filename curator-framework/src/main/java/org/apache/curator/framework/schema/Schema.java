@@ -140,18 +140,20 @@ public class Schema
             throw new SchemaViolation(this, "Must be sequential");
         }
 
-        validateData(data);
+        validateData(path, data);
     }
 
     /**
      * Validate that this schema validates the data
      *
+     *
+     * @param path the znode full path
      * @param data data being set
      * @throws SchemaViolation if data is invalid
      */
-    public void validateData(byte[] data)
+    public void validateData(String path, byte[] data)
     {
-        if ( !dataValidator.isValid(data) )
+        if ( !dataValidator.isValid(path, data) )
         {
             throw new SchemaViolation(this, "Data is not valid");
         }

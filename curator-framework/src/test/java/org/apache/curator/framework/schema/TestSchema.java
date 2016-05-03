@@ -35,7 +35,7 @@ public class TestSchema extends BaseClassForTests
     @Test
     public void testBasics() throws Exception
     {
-        SchemaSet schemaSet = loadSchemaSet("schema1.json");
+        SchemaSet schemaSet = loadSchemaSet("schema1.json", null);
         CuratorFramework client = newClient(schemaSet);
         try
         {
@@ -60,9 +60,52 @@ public class TestSchema extends BaseClassForTests
     }
 
     @Test
+    public void testDataValidator() throws Exception
+    {
+        final DataValidator dataValidator = new DataValidator()
+        {
+            @Override
+            public boolean isValid(String path, byte[] data)
+            {
+                return data.length > 0;
+            }
+        };
+        SchemaSetLoader.DataValidatorMapper dataValidatorMapper = new SchemaSetLoader.DataValidatorMapper()
+        {
+            @Override
+            public DataValidator getDataValidator(String name)
+            {
+                return dataValidator;
+            }
+        };
+        SchemaSet schemaSet = loadSchemaSet("schema3.json", dataValidatorMapper);
+        CuratorFramework client = newClient(schemaSet);
+        try
+        {
+            client.start();
+
+            try
+            {
+                client.create().forPath("/test", new byte[0]);
+                Assert.fail("Should've violated schema");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+
+            client.create().forPath("/test", "good".getBytes());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testMulti() throws Exception
     {
-        SchemaSet schemaSet = loadSchemaSet("schema2.json");
+        SchemaSet schemaSet = loadSchemaSet("schema2.json", null);
         CuratorFramework client = newClient(schemaSet);
         try
         {
@@ -94,6 +137,12 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
+    @Override
+    protected boolean enabledSessionExpiredStateAware()
+    {
+        return true;
+    }
+
     private CuratorFramework newClient(SchemaSet schemaSet)
     {
         return CuratorFrameworkFactory.builder()
@@ -103,9 +152,9 @@ public class TestSchema extends BaseClassForTests
             .build();
     }
 
-    private SchemaSet loadSchemaSet(String name) throws IOException
+    private SchemaSet loadSchemaSet(String name, SchemaSetLoader.DataValidatorMapper dataValidatorMapper) throws IOException
     {
         String json = Resources.toString(Resources.getResource(name), Charsets.UTF_8);
-        return new SchemaSetLoader(json, null).toSchemaSet(true);
+        return new SchemaSetLoader(json, dataValidatorMapper).toSchemaSet(true);
     }
 }

@@ -241,7 +241,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
     @Override
     public Stat forPath(String path, byte[] data) throws Exception
     {
-        client.getSchemaSet().getSchema(path).validateData(data);
+        client.getSchemaSet().getSchema(path).validateData(path, data);
 
         if ( compress )
         {
