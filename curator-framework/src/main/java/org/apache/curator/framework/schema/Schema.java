@@ -34,7 +34,7 @@ public class Schema
     private final DataValidator dataValidator;
     private final Allowance ephemeral;
     private final Allowance sequential;
-    private final Schema.Allowance watched;
+    private final Allowance watched;
     private final boolean canBeDeleted;
 
     public enum Allowance
