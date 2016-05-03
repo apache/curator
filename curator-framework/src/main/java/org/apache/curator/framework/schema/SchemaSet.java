@@ -26,6 +26,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collections;
@@ -160,6 +161,18 @@ public class SchemaSet
             return defaultSchema;
         }
         throw new SchemaViolation("No schema found for: " + path);
+    }
+
+    /**
+     * Utility to return a ZNode path for the given name
+     *
+     * @param client Curator client
+     * @param name path/schema name
+     * @return ZNode path
+     */
+    public static String getNamedPath(CuratorFramework client, String name)
+    {
+        return client.getSchemaSet().getNamedSchema(name).getRawPath();
     }
 
     /**

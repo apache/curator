@@ -46,7 +46,7 @@ Use SchemaSets to access ZNode paths by a simple name. E.g.
 
 {code}
 CuratorFramework client = ...
-String path = client.getSchemaSet().getNamedSchema("locks").getRawPath();
+String path = SchemaSet.getNamedPath(client, "locks");
 {code}
 
 h2. Loading JSON Schema from a file/stream
