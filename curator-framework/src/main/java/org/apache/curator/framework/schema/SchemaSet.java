@@ -106,10 +106,9 @@ public class SchemaSet
      */
     public Schema getSchema(String path)
     {
-        Schema schema = null;
         if ( schemas.size() > 0 )
         {
-            schema = pathSchemas.get(path);
+            Schema schema = pathSchemas.get(path);
             if ( schema == null )
             {
                 try
@@ -121,10 +120,10 @@ public class SchemaSet
                     throw new RuntimeException(e);
                 }
             }
-        }
-        if ( schema != null )
-        {
-            return schema;
+            if ( schema != null )
+            {
+                return schema;
+            }
         }
         if ( useDefaultSchema )
         {
