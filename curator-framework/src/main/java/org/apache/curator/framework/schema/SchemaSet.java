@@ -55,7 +55,7 @@ public class SchemaSet
                     return schema;
                 }
             }
-            return defaultSchema;
+            return nullSchema;
         }
     };
     private final LoadingCache<String, Schema> regexCache = CacheBuilder
