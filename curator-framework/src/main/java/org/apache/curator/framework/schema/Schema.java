@@ -180,6 +180,7 @@ public class Schema
         return path;
     }
 
+    // intentionally only path and pathRegex
     @Override
     public boolean equals(Object o)
     {
@@ -194,14 +195,22 @@ public class Schema
 
         Schema schema = (Schema)o;
 
-        return pathRegex.equals(schema.pathRegex);
+        //noinspection SimplifiableIfStatement
+        if ( !pathRegex.equals(schema.pathRegex) )
+        {
+            return false;
+        }
+        return path.equals(schema.path);
 
     }
 
+    // intentionally only path and pathRegex
     @Override
     public int hashCode()
     {
-        return pathRegex.hashCode();
+        int result = pathRegex.hashCode();
+        result = 31 * result + path.hashCode();
+        return result;
     }
 
     @Override
