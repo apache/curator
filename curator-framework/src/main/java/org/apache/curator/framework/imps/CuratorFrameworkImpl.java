@@ -554,7 +554,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return namespace.newNamespaceAwareEnsurePath(path);
     }
 
-    SchemaSet getSchemaSet()
+    @Override
+    public SchemaSet getSchemaSet()
     {
         return schemaSet;
     }

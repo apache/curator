@@ -40,6 +40,15 @@ data is being set. It is a functor of the form:
 boolean isValid(String path, byte[] data);
 {code}
 
+h2. Getting ZNode paths/schemas by name
+
+Use SchemaSets to access ZNode paths by a simple name. E.g.
+
+{code}
+CuratorFramework client = ...
+String path = client.getSchemaSet().getNamedSchema("locks").getRawPath();
+{code}
+
 h2. Loading JSON Schema from a file/stream
 
 An optional utility is provided to load SchemaSets from a JSON file or stream: SchemaSetLoader

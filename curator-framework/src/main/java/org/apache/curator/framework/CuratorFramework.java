@@ -27,6 +27,7 @@ import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.utils.EnsurePath;
@@ -315,4 +316,11 @@ public interface CuratorFramework extends Closeable
      * @return the current config
      */
     public QuorumVerifier getCurrentConfig();
+
+    /**
+     * Return this instance's schema set
+     *
+     * @return schema set
+     */
+    SchemaSet getSchemaSet();
 }
