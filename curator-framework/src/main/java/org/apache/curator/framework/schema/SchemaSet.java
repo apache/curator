@@ -41,6 +41,7 @@ public class SchemaSet
         .build(cacheLoader);
 
     private static final Schema defaultSchema = new Schema(null, "", "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
+    private final boolean useDefaultSchema;
 
     /**
      * Return the default (empty) schema set
@@ -49,7 +50,7 @@ public class SchemaSet
      */
     public static SchemaSet getDefaultSchemaSet()
     {
-        return new SchemaSet(Collections.<SchemaKey, Schema>emptyMap())
+        return new SchemaSet(Collections.<SchemaKey, Schema>emptyMap(), true)
         {
             @Override
             public String toDocumentation()
@@ -62,9 +63,11 @@ public class SchemaSet
     /**
      * @param schemas the schemas for the set. The key of the map is a key/name for the schema that can be
      *                used when calling {@link #getNamedSchema(SchemaKey)}
+     * @param useDefaultSchema if true, return a default schema when there is no match. Otherwise, an exception is thrown
      */
-    public SchemaSet(Map<SchemaKey, Schema> schemas)
+    public SchemaSet(Map<SchemaKey, Schema> schemas, boolean useDefaultSchema)
     {
+        this.useDefaultSchema = useDefaultSchema;
         this.schemas = ImmutableMap.copyOf(Preconditions.checkNotNull(schemas, "schemas cannot be null"));
         ImmutableMap.Builder<String, Schema> builder = ImmutableMap.builder();
         for ( Schema schema : schemas.values() )
@@ -85,24 +88,31 @@ public class SchemaSet
      */
     public Schema getSchema(String path)
     {
-        if ( schemas.size() == 0 )
+        Schema schema = null;
+        if ( schemas.size() > 0 )
         {
-            return defaultSchema;
+            schema = pathSchemas.get(path);
+            if ( schema == null )
+            {
+                try
+                {
+                    schema = regexCache.get(path);
+                }
+                catch ( ExecutionException e )
+                {
+                    throw new RuntimeException(e);
+                }
+            }
         }
-        Schema schema = pathSchemas.get(path);
         if ( schema != null )
         {
             return schema;
         }
-
-        try
+        if ( useDefaultSchema )
         {
-            return regexCache.get(path);
+            return defaultSchema;
         }
-        catch ( ExecutionException e )
-        {
-            throw new RuntimeException(e);
-        }
+        throw new SchemaViolation("No schema found for: " + path);
     }
 
     /**

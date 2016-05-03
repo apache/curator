@@ -1,0 +1,9 @@
+[
+  {
+    "name": "test",
+    "path": "/a/b/c",
+    "documentation": "This is a schema",
+    "ephemeral": "must",
+    "sequential": "cannot"
+  }
+]

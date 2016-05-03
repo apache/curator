@@ -8,6 +8,13 @@ public class SchemaViolation extends RuntimeException
     private final Schema schema;
     private final String violation;
 
+    public SchemaViolation(String violation)
+    {
+        super(String.format("Schema violation: %s", violation));
+        this.schema = null;
+        this.violation = violation;
+    }
+
     public SchemaViolation(Schema schema, String violation)
     {
         super(String.format("Schema violation: %s for schema: %s", violation, schema));
