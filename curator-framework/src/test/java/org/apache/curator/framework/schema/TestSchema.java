@@ -22,6 +22,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
@@ -132,6 +133,88 @@ public class TestSchema extends BaseClassForTests
             {
                 // expected
             }
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testTransaction() throws Exception
+    {
+        final DataValidator dataValidator = new DataValidator()
+        {
+            @Override
+            public boolean isValid(String path, byte[] data)
+            {
+                return data.length > 0;
+            }
+        };
+        SchemaSetLoader.DataValidatorMapper dataValidatorMapper = new SchemaSetLoader.DataValidatorMapper()
+        {
+            @Override
+            public DataValidator getDataValidator(String name)
+            {
+                return dataValidator;
+            }
+        };
+        SchemaSet schemaSet = loadSchemaSet("schema4.json", dataValidatorMapper);
+        CuratorFramework client = newClient(schemaSet);
+        try
+        {
+            client.start();
+
+            CuratorOp createAPersistent = client.transactionOp().create().forPath("/a");
+            CuratorOp createAEphemeral = client.transactionOp().create().withMode(CreateMode.EPHEMERAL).forPath("/a");
+            CuratorOp deleteA = client.transactionOp().delete().forPath("/a");
+            CuratorOp createBEmptyData = client.transactionOp().create().forPath("/b", new byte[0]);
+            CuratorOp createBWithData = client.transactionOp().create().forPath("/b", new byte[10]);
+            CuratorOp setBEmptyData = client.transactionOp().setData().forPath("/b", new byte[0]);
+            CuratorOp setBWithData = client.transactionOp().setData().forPath("/b", new byte[10]);
+
+            try
+            {
+                client.transaction().forOperations(createAPersistent, createAEphemeral);
+                Assert.fail("Should've violated schema");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+            client.transaction().forOperations(createAEphemeral);
+
+            try
+            {
+                client.transaction().forOperations(deleteA);
+                Assert.fail("Should've violated schema");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+
+            try
+            {
+                client.transaction().forOperations(createBEmptyData);
+                Assert.fail("Should've violated schema");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+            client.transaction().forOperations(createBWithData);
+
+            try
+            {
+                client.transaction().forOperations(setBEmptyData);
+                Assert.fail("Should've violated schema");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+            client.transaction().forOperations(setBWithData);
         }
         finally
         {
