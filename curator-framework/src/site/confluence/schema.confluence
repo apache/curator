@@ -24,7 +24,7 @@ The basic specification is the Schema class:
 | sequential | can/must/cannot | N | Whether the schema allows for sequentials at the path |
 | watched | can/must/cannot | N | Whether the schema allows for watchers at the path |
 | canBeDeleted | true/false | N | Whether the schema allows the path to be deleted |
-| metadata | map | N | Any fields-to-values you want |
+| metadata | map | N | Any fields\-to\-values you want |
 
 All the Schema instances are combined into a SchemaSet and this can be set in the CuratorFrameworkFactory
 when creating a CuratorFramework instance. Schemas in a SchemaSet are applied in the following order:
@@ -35,7 +35,7 @@ when creating a CuratorFramework instance. Schemas in a SchemaSet are applied in
 h3. SchemaValidator
 
 SchemaValidators are used to optionally validate a ZNode operation when the node is created or
-data is being set. It is a functor of the form:
+modified. It is a functor of the form:
 
 {code}
 boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl);
@@ -54,9 +54,9 @@ h2. Loading JSON Schema from a file/stream
 
 An optional utility is provided to load SchemaSets from a JSON file or stream: SchemaSetLoader
 *NOTE:* to avoid adding a new dependency to Curator, the Jackson library has been used with "provided" scope.
-You will need to add a dependency to jackson-core and jackson-databind to your project.
+You will need to add a dependency to jackson\-core and jackson\-databind to your project.
 
-The JSON stream should be an array of named schemas:
+The JSON stream should be an array of schemas:
 
 {code}
 [
@@ -72,7 +72,7 @@ The JSON stream should be an array of named schemas:
        "canBeDeleted": true/false,           optional - true if ZNode at path can be deleted - default is true
        "metadata": {                         optional - any fields -> values that you want
            "field1": "value1",
-            "field2": "value2"
+           "field2": "value2"
        }
    }
 ]
@@ -128,5 +128,5 @@ h3. Example 2
 * The ZNode "/a/b/c" must be ephemeral, cannot be sequential, can be watched, and can be deleted
 * The second schema is regex and applies to any path that matches the expression "/a/.\*"
 * The ZNodes that match "/a/.\*" cannot be ephemeral, can be sequential, can be watched, and cannot be deleted
-* The second schema also has a data validator. The data validator named "test" (configured when constructing the SchemaSetLoader) will
-be called to validate data for ZNodes that match "/a/.\*" when create() or setData() are called.
+* The second schema also has a schema validator. The schema validator named "test" (configured when constructing the SchemaSetLoader) will
+be called to validate ZNodes that match "/a/.\*".
