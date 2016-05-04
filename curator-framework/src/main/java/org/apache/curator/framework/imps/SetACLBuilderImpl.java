@@ -114,16 +114,18 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
     @Override
     public Stat forPath(String path) throws Exception
     {
-        path = client.fixForNamespace(path);
+        String fixedPath = client.fixForNamespace(path);
+        List<ACL> aclList = acling.getAclList(fixedPath);
+        client.getSchemaSet().getSchema(path).validateGeneral(path, null, aclList);
 
         Stat        resultStat = null;
         if ( backgrounding.inBackground()  )
         {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext(), null), null);
+            client.processBackgroundOperation(new OperationAndData<String>(this, fixedPath, backgrounding.getCallback(), null, backgrounding.getContext(), null), null);
         }
         else
         {
-            resultStat = pathInForeground(path);
+            resultStat = pathInForeground(fixedPath, aclList);
         }
         return resultStat;
     }
@@ -160,7 +162,7 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
         }
     }
 
-    private Stat pathInForeground(final String path) throws Exception
+    private Stat pathInForeground(final String path, final List<ACL> aclList) throws Exception
     {
         TimeTrace   trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Foreground");
         Stat        resultStat = RetryLoop.callWithRetry
@@ -171,7 +173,7 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
                 @Override
                 public Stat call() throws Exception
                 {
-                    return client.getZooKeeper().setACL(path, acling.getAclList(path), version);
+                    return client.getZooKeeper().setACL(path, aclList, version);
                 }
             }
         );

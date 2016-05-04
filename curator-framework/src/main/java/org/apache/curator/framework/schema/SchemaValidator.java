@@ -23,5 +23,12 @@ import java.util.List;
 
 public interface SchemaValidator
 {
+    /**
+     * @param schema the schema being validated
+     * @param path the path being operated on
+     * @param data data or null
+     * @param acl acls or null
+     * @return true if valid
+     */
     boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl);
 }

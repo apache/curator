@@ -74,7 +74,7 @@ public class TestSchema extends BaseClassForTests
     }
 
     @Test
-    public void testDataValidator() throws Exception
+    public void testSchemaValidator() throws Exception
     {
         final SchemaValidator schemaValidator = new SchemaValidator()
         {
