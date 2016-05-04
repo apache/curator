@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +124,16 @@ public class SchemaSet
         }
         pathToSchemas = pathBuilder.build();
         regexSchemas = regexBuilder.build();
+    }
+
+    /**
+     * Return the schemas
+     *
+     * @return schemas
+     */
+    public Collection<Schema> getSchemas()
+    {
+        return schemas.values();
     }
 
     /**
