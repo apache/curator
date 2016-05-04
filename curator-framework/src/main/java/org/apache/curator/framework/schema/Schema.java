@@ -20,6 +20,7 @@ package org.apache.curator.framework.schema;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
@@ -72,11 +73,41 @@ public class Schema
         return new SchemaBuilder(pathRegex, null);
     }
 
+    /**
+     * Start a schema builder for a typical Curator recipe's parent node
+     *
+     * @param parentPath Path to the parent node
+     * @return builder
+     */
+    public static SchemaBuilder builderForRecipeParent(String parentPath)
+    {
+        return new SchemaBuilder(null, parentPath)
+            .sequential(Allowance.CANNOT)
+            .ephemeral(Allowance.CANNOT)
+            ;
+    }
+
+    /**
+     * Start a schema builder for a typical Curator recipe's children
+     *
+     * @param parentPath Path to the parent node
+     * @return builder
+     */
+    public static SchemaBuilder builderForRecipe(String parentPath)
+    {
+        return new SchemaBuilder(Pattern.compile(ZKPaths.makePath(parentPath, ".*")), null)
+            .sequential(Allowance.MUST)
+            .ephemeral(Allowance.MUST)
+            .watched(Allowance.MUST)
+            .canBeDeleted(true)
+            ;
+    }
+
     Schema(String name, Pattern pathRegex, String path, String documentation, SchemaValidator schemaValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted, Map<String, String> metadata)
     {
         Preconditions.checkNotNull((pathRegex != null) || (path != null), "pathRegex and path cannot both be null");
         this.pathRegex = pathRegex;
-        this.path = path;
+        this.path = fixPath(path);
         this.metadata = ImmutableMap.copyOf(Preconditions.checkNotNull(metadata, "metadata cannot be null"));
         this.name = Preconditions.checkNotNull(name, "name cannot be null");
         this.documentation = Preconditions.checkNotNull(documentation, "documentation cannot be null");
@@ -85,6 +116,19 @@ public class Schema
         this.sequential = Preconditions.checkNotNull(sequential, "sequential cannot be null");
         this.watched = Preconditions.checkNotNull(watched, "watched cannot be null");
         this.canBeDeleted = canBeDeleted;
+    }
+
+    private String fixPath(String path)
+    {
+        if ( path != null )
+        {
+            if ( path.endsWith(ZKPaths.PATH_SEPARATOR) )
+            {
+                return (path.length() > 1) ? path.substring(0, path.length() - 1) : "";
+            }
+            return path;
+        }
+        return null;
     }
 
     /**

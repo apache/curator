@@ -19,6 +19,7 @@
 package org.apache.curator.framework.schema;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import org.apache.curator.framework.CuratorFramework;
@@ -34,6 +35,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class TestSchema extends BaseClassForTests
 {

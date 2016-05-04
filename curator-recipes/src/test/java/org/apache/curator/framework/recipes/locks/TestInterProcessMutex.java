@@ -16,13 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
+import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
+import org.apache.curator.framework.schema.Schema;
+import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.KillSession;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -33,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 public class TestInterProcessMutex extends TestInterProcessMutexBase
 {
@@ -45,62 +51,87 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
     }
 
     @Test
-    public void     testRevoking() throws Exception
+    public void testWithSchema() throws Exception
     {
-        final CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Schema schemaRoot = Schema.builderForRecipeParent("/foo").name("root").build();
+        Schema schemaLocks = Schema.builderForRecipe("/foo").name("locks").build();
+        SchemaSet schemaSet = new SchemaSet(Lists.newArrayList(schemaRoot, schemaLocks), false);
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .schemaSet(schemaSet)
+            .build();
         try
         {
             client.start();
-            final InterProcessMutex       lock = new InterProcessMutex(client, LOCK_PATH);
 
-            ExecutorService               executorService = Executors.newCachedThreadPool();
+            InterProcessMutex lock = new InterProcessMutex(client, "/foo");
+            lock.acquire();
+            lock.release();
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 
-            final CountDownLatch          revokeLatch = new CountDownLatch(1);
-            final CountDownLatch          lockLatch = new CountDownLatch(1);
-            Future<Void>                  f1 = executorService.submit
-            (
-                new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
+    @Test
+    public void testRevoking() throws Exception
+    {
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            final InterProcessMutex lock = new InterProcessMutex(client, LOCK_PATH);
+
+            ExecutorService executorService = Executors.newCachedThreadPool();
+
+            final CountDownLatch revokeLatch = new CountDownLatch(1);
+            final CountDownLatch lockLatch = new CountDownLatch(1);
+            Future<Void> f1 = executorService.submit
+                (
+                    new Callable<Void>()
                     {
-                        RevocationListener<InterProcessMutex> listener = new RevocationListener<InterProcessMutex>()
+                        @Override
+                        public Void call() throws Exception
                         {
-                            @Override
-                            public void revocationRequested(InterProcessMutex lock)
+                            RevocationListener<InterProcessMutex> listener = new RevocationListener<InterProcessMutex>()
                             {
-                                revokeLatch.countDown();
-                            }
-                        };
-                        lock.makeRevocable(listener);
-                        lock.acquire();
-                        lockLatch.countDown();
-                        revokeLatch.await();
-                        lock.release();
-                        return null;
+                                @Override
+                                public void revocationRequested(InterProcessMutex lock)
+                                {
+                                    revokeLatch.countDown();
+                                }
+                            };
+                            lock.makeRevocable(listener);
+                            lock.acquire();
+                            lockLatch.countDown();
+                            revokeLatch.await();
+                            lock.release();
+                            return null;
+                        }
                     }
-                }
-            );
+                );
 
-            Future<Void>                  f2 = executorService.submit
-            (
-                new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
+            Future<Void> f2 = executorService.submit
+                (
+                    new Callable<Void>()
                     {
-                        Assert.assertTrue(lockLatch.await(10, TimeUnit.SECONDS));
-                        Collection<String> nodes = lock.getParticipantNodes();
-                        Assert.assertEquals(nodes.size(), 1);
-                        Revoker.attemptRevoke(client, nodes.iterator().next());
+                        @Override
+                        public Void call() throws Exception
+                        {
+                            Assert.assertTrue(lockLatch.await(10, TimeUnit.SECONDS));
+                            Collection<String> nodes = lock.getParticipantNodes();
+                            Assert.assertEquals(nodes.size(), 1);
+                            Revoker.attemptRevoke(client, nodes.iterator().next());
 
-                        InterProcessMutex       l2 = new InterProcessMutex(client, LOCK_PATH);
-                        Assert.assertTrue(l2.acquire(5, TimeUnit.SECONDS));
-                        l2.release();
-                        return null;
+                            InterProcessMutex l2 = new InterProcessMutex(client, LOCK_PATH);
+                            Assert.assertTrue(l2.acquire(5, TimeUnit.SECONDS));
+                            l2.release();
+                            return null;
+                        }
                     }
-                }
-            );
+                );
 
             f2.get();
             f1.get();
