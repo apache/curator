@@ -4,6 +4,10 @@
     "path": "/a/b/c",
     "documentation": "This is a schema",
     "ephemeral": "must",
-    "sequential": "cannot"
+    "sequential": "cannot",
+    "metadata": {
+      "one": 1,
+      "two": "2"
+    }
   }
 ]

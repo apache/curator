@@ -9,6 +9,6 @@
   {
     "name": "testb",
     "path": "/b",
-    "dataValidator": "test"
+    "schemaValidator": "test"
   }
 ]

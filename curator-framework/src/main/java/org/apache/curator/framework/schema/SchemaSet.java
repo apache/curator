@@ -64,8 +64,8 @@ public class SchemaSet
         .softValues()
         .build(cacheLoader);
 
-    private static final Schema nullSchema = new Schema("__null__", null, "", "Null schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
-    private static final Schema defaultSchema = new Schema("__default__", null, "", "Default schema", new DefaultDataValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true);
+    private static final Schema nullSchema = new Schema("__null__", null, "", "Null schema", new DefaultSchemaValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true, ImmutableMap.<String, String>of());
+    private static final Schema defaultSchema = new Schema("__default__", null, "", "Default schema", new DefaultSchemaValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true, ImmutableMap.<String, String>of());
     private final boolean useDefaultSchema;
 
     /**

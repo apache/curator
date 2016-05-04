@@ -21,11 +21,14 @@ package org.apache.curator.framework.schema;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -44,12 +47,16 @@ import java.util.regex.Pattern;
  *         "name": "name",                       required - name of the schema
  *         "path": "path or pattern",            required - full path or regex pattern
  *         "isRegex": true/false,                optional - true if path is a regular expression - default is false
- *         "dataValidator": "name",              optional - name of a data validator - default is no validator
+ *         "schemaValidator": "name",            optional - name of a schema validator - default is no validator
  *         "documentation": "docs",              optional - user displayable docs - default is ""
  *         "ephemeral": "allowance",             optional - "can", "must" or "cannot" - default is "can"
  *         "sequential": "allowance",            optional - "can", "must" or "cannot" - default is "can"
  *         "watched": "allowance",               optional - "can", "must" or "cannot" - default is "can"
- *         "canBeDeleted": "true/false           optional - true if ZNode at path can be deleted - default is true
+ *         "canBeDeleted": true/false            optional - true if ZNode at path can be deleted - default is true
+ *         "metadata": {                         optional - any fields -> values that you want
+ *             "field1": "value1",
+ *             "field2": "value2"
+ *         }
  *     }
  * ]
  * </pre></code>
@@ -60,29 +67,29 @@ public class SchemaSetLoader
     private final List<Schema> schemas;
 
     /**
-     * Called to map a data validator name in the JSON stream to an actual data validator
+     * Called to map a schema validator name in the JSON stream to an actual data validator
      */
-    public interface DataValidatorMapper
+    public interface SchemaValidatorMapper
     {
         /**
          * @param name name of the validator
          * @return the validator
          */
-        DataValidator getDataValidator(String name);
+        SchemaValidator getSchemaValidator(String name);
     }
 
-    public SchemaSetLoader(String json, DataValidatorMapper dataValidatorMapper)
+    public SchemaSetLoader(String json, SchemaValidatorMapper schemaValidatorMapper)
     {
-        this(new StringReader(json), dataValidatorMapper);
+        this(new StringReader(json), schemaValidatorMapper);
     }
 
-    public SchemaSetLoader(Reader in, DataValidatorMapper dataValidatorMapper)
+    public SchemaSetLoader(Reader in, SchemaValidatorMapper schemaValidatorMapper)
     {
         ImmutableList.Builder<Schema> builder = ImmutableList.builder();
         try
         {
             JsonNode root = new ObjectMapper().readTree(in);
-            read(builder, root, dataValidatorMapper);
+            read(builder, root, schemaValidatorMapper);
         }
         catch ( IOException e )
         {
@@ -96,15 +103,15 @@ public class SchemaSetLoader
         return new SchemaSet(schemas, useDefaultSchema);
     }
 
-    private void read(ImmutableList.Builder<Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
+    private void read(ImmutableList.Builder<Schema> builder, JsonNode node, SchemaValidatorMapper schemaValidatorMapper)
     {
         for ( JsonNode child : node )
         {
-            readNode(builder, child, dataValidatorMapper);
+            readNode(builder, child, schemaValidatorMapper);
         }
     }
 
-    private void readNode(ImmutableList.Builder<Schema> builder, JsonNode node, DataValidatorMapper dataValidatorMapper)
+    private void readNode(ImmutableList.Builder<Schema> builder, JsonNode node, SchemaValidatorMapper schemaValidatorMapper)
     {
         String name = getText(node, "name", null);
         String path = getText(node, "path", null);
@@ -120,14 +127,26 @@ public class SchemaSetLoader
 
         SchemaBuilder schemaBuilder = isRegex ? Schema.builder(Pattern.compile(path)) : Schema.builder(path);
 
-        String dataValidatorName = getText(node, "dataValidator", null);
-        if ( dataValidatorName != null )
+        String schemaValidatorName = getText(node, "schemaValidator", null);
+        if ( schemaValidatorName != null )
         {
-            if ( dataValidatorMapper == null )
+            if ( schemaValidatorMapper == null )
             {
-                throw new RuntimeException("No DataValidatorMapper provided but needed at: " + node);
+                throw new RuntimeException("No SchemaValidatorMapper provided but needed at: " + node);
             }
-            schemaBuilder.dataValidator(dataValidatorMapper.getDataValidator(dataValidatorName));
+            schemaBuilder.dataValidator(schemaValidatorMapper.getSchemaValidator(schemaValidatorName));
+        }
+
+        Map<String, String> metadata = Maps.newHashMap();
+        if ( node.has("metadata") )
+        {
+            JsonNode metadataNode = node.get("metadata");
+            Iterator<String> fieldNameIterator = metadataNode.fieldNames();
+            while ( fieldNameIterator.hasNext() )
+            {
+                String fieldName = fieldNameIterator.next();
+                metadata.put(fieldName, getText(metadataNode, fieldName, ""));
+            }
         }
 
         Schema schema = schemaBuilder.name(name)
@@ -136,6 +155,7 @@ public class SchemaSetLoader
             .sequential(getAllowance(node, "sequential"))
             .watched(getAllowance(node, "watched"))
             .canBeDeleted(getBoolean(node, "canBeDeleted"))
+            .metadata(metadata)
             .build();
         builder.add(schema);
     }

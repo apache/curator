@@ -25,6 +25,7 @@ import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Op;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -241,7 +242,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
     @Override
     public Stat forPath(String path, byte[] data) throws Exception
     {
-        client.getSchemaSet().getSchema(path).validateData(path, data);
+        client.getSchemaSet().getSchema(path).validateGeneral(path, data, ZooDefs.Ids.CREATOR_ALL_ACL);
 
         if ( compress )
         {

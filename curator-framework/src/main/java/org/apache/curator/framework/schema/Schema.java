@@ -19,7 +19,11 @@
 package org.apache.curator.framework.schema;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.ACL;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -31,11 +35,12 @@ public class Schema
     private final Pattern pathRegex;
     private final String path;
     private final String documentation;
-    private final DataValidator dataValidator;
+    private final SchemaValidator schemaValidator;
     private final Allowance ephemeral;
     private final Allowance sequential;
     private final Allowance watched;
     private final boolean canBeDeleted;
+    private final Map<String, String> metadata;
 
     public enum Allowance
     {
@@ -67,14 +72,15 @@ public class Schema
         return new SchemaBuilder(pathRegex, null);
     }
 
-    Schema(String name, Pattern pathRegex, String path, String documentation, DataValidator dataValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted)
+    Schema(String name, Pattern pathRegex, String path, String documentation, SchemaValidator schemaValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted, Map<String, String> metadata)
     {
         Preconditions.checkNotNull((pathRegex != null) || (path != null), "pathRegex and path cannot both be null");
         this.pathRegex = pathRegex;
         this.path = path;
+        this.metadata = ImmutableMap.copyOf(Preconditions.checkNotNull(metadata, "metadata cannot be null"));
         this.name = Preconditions.checkNotNull(name, "name cannot be null");
         this.documentation = Preconditions.checkNotNull(documentation, "documentation cannot be null");
-        this.dataValidator = Preconditions.checkNotNull(dataValidator, "dataValidator cannot be null");
+        this.schemaValidator = Preconditions.checkNotNull(schemaValidator, "dataValidator cannot be null");
         this.ephemeral = Preconditions.checkNotNull(ephemeral, "ephemeral cannot be null");
         this.sequential = Preconditions.checkNotNull(sequential, "sequential cannot be null");
         this.watched = Preconditions.checkNotNull(watched, "watched cannot be null");
@@ -118,9 +124,10 @@ public class Schema
      *
      * @param mode CreateMode being used
      * @param data data being set
+     * @param acl the creation acls
      * @throws SchemaViolation if schema's create mode setting does not match or data is invalid
      */
-    public void validateCreate(CreateMode mode, byte[] data)
+    public void validateCreate(CreateMode mode, byte[] data, List<ACL> acl)
     {
         if ( mode.isEphemeral() && (ephemeral == Allowance.CANNOT) )
         {
@@ -142,7 +149,7 @@ public class Schema
             throw new SchemaViolation(this, "Must be sequential");
         }
 
-        validateData(path, data);
+        validateGeneral(path, data, acl);
     }
 
     /**
@@ -151,11 +158,12 @@ public class Schema
      *
      * @param path the znode full path
      * @param data data being set
+     * @param acl if creating, the acls otherwise null or empty list
      * @throws SchemaViolation if data is invalid
      */
-    public void validateData(String path, byte[] data)
+    public void validateGeneral(String path, byte[] data, List<ACL> acl)
     {
-        if ( !dataValidator.isValid(path, data) )
+        if ( !schemaValidator.isValid(this, path, data, acl) )
         {
             throw new SchemaViolation(this, "Data is not valid");
         }
@@ -177,14 +185,49 @@ public class Schema
         return (path != null) ? path : pathRegex.pattern();
     }
 
-    Pattern getPathRegex()
+    public Map<String, String> getMetadata()
+    {
+        return metadata;
+    }
+
+    public Pattern getPathRegex()
     {
         return pathRegex;
     }
 
-    String getPath()
+    public String getPath()
     {
         return path;
+    }
+
+    public String getDocumentation()
+    {
+        return documentation;
+    }
+
+    public SchemaValidator getSchemaValidator()
+    {
+        return schemaValidator;
+    }
+
+    public Allowance getEphemeral()
+    {
+        return ephemeral;
+    }
+
+    public Allowance getSequential()
+    {
+        return sequential;
+    }
+
+    public Allowance getWatched()
+    {
+        return watched;
+    }
+
+    public boolean canBeDeleted()
+    {
+        return canBeDeleted;
     }
 
     // intentionally only path and pathRegex
@@ -228,11 +271,12 @@ public class Schema
             ", pathRegex=" + pathRegex +
             ", path='" + path + '\'' +
             ", documentation='" + documentation + '\'' +
-            ", dataValidator=" + dataValidator +
+            ", dataValidator=" + schemaValidator +
             ", ephemeral=" + ephemeral +
             ", sequential=" + sequential +
             ", watched=" + watched +
             ", canBeDeleted=" + canBeDeleted +
+            ", metadata=" + metadata +
             '}';
     }
 
@@ -241,8 +285,9 @@ public class Schema
         String pathLabel = (pathRegex != null) ? "Path Regex: " : "Path: ";
         return "Name: " + name + '\n'
             + pathLabel + getRawPath() + '\n'
-            + "Documentation: " + documentation + '\n'
-            + "Validator: " + dataValidator.getClass().getSimpleName() + '\n'
+            + "Doc: " + documentation + '\n'
+            + "Validator: " + schemaValidator.getClass().getSimpleName() + '\n'
+            + "Meta: " + metadata + '\n'
             + String.format("ephemeral: %s | sequential: %s | watched: %s | canBeDeleted: %s", ephemeral, sequential, watched, canBeDeleted) + '\n'
             ;
     }

@@ -19,11 +19,12 @@ The basic specification is the Schema class:
 | name | String | Y | A unique name for this schema |
 | path | String | Y | A full path to a ZNode or a regex pattern to a ZNode |
 | documentation | String | N | User displayable documentation for this schema |
-| dataValidator | DataValidator | N | _see below_ |
+| schemaValidator | SchemaValidator | N | _see below_ |
 | ephemeral | can/must/cannot | N | Whether the schema allows for ephemerals at the path |
 | sequential | can/must/cannot | N | Whether the schema allows for sequentials at the path |
 | watched | can/must/cannot | N | Whether the schema allows for watchers at the path |
 | canBeDeleted | true/false | N | Whether the schema allows the path to be deleted |
+| metadata | map | N | Any fields-to-values you want |
 
 All the Schema instances are combined into a SchemaSet and this can be set in the CuratorFrameworkFactory
 when creating a CuratorFramework instance. Schemas in a SchemaSet are applied in the following order:
@@ -31,13 +32,13 @@ when creating a CuratorFramework instance. Schemas in a SchemaSet are applied in
 # Exact match on full path (i.e. non-regex)
 # Match on the first regex path, searched in the order given to the SchemaSet constructor
 
-h3. DataValidator
+h3. SchemaValidator
 
-DataValidators are used to optionally validate the data of a ZNode when the node is created or
+SchemaValidators are used to optionally validate a ZNode operation when the node is created or
 data is being set. It is a functor of the form:
 
 {code}
-boolean isValid(String path, byte[] data);
+boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl);
 {code}
 
 h2. Getting ZNode paths/schemas by name
@@ -63,12 +64,16 @@ The JSON stream should be an array of named schemas:
        "name": "name",                       required - name of the schema
        "path": "path or pattern",            required - full path or regex pattern
        "isRegex": true/false,                optional - true if path is a regular expression - default is false
-       "dataValidator": "name",              optional - name of a data validator - default is no validator
+       "schemaValidator": "name",            optional - name of a schema validator - default is no validator
        "documentation": "docs",              optional - user displayable docs - default is ""
        "ephemeral": "allowance",             optional - "can", "must" or "cannot" - default is "can"
        "sequential": "allowance",            optional - "can", "must" or "cannot" - default is "can"
        "watched": "allowance",               optional - "can", "must" or "cannot" - default is "can"
-       "canBeDeleted": "true/false           optional - true if ZNode at path can be deleted - default is true
+       "canBeDeleted": true/false,           optional - true if ZNode at path can be deleted - default is true
+       "metadata": {                         optional - any fields -> values that you want
+           "field1": "value1",
+            "field2": "value2"
+       }
    }
 ]
 {code}
@@ -83,7 +88,11 @@ h3. Example 1
         "name": "test",
         "path": "/a/b/c",
         "ephemeral": "must",
-        "sequential": "cannot"
+        "sequential": "cannot",
+        "metadata": {
+            "origin": "outside",
+            "type": "large"
+        }
     }
 ]
 {code}
@@ -107,7 +116,7 @@ h3. Example 2
         "name": "test2",
         "path": "/a/.*",
         "isRegex": true,
-        "dataValidator": "test"
+        "schemaValidator": "test"
         "ephemeral": "cannot",
         "canBeDeleted": false
     }

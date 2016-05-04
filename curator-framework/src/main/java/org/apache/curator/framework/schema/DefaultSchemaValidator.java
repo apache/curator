@@ -18,13 +18,16 @@
  */
 package org.apache.curator.framework.schema;
 
+import org.apache.zookeeper.data.ACL;
+import java.util.List;
+
 /**
  * The default data validator - always returns true
  */
-public class DefaultDataValidator implements DataValidator
+public class DefaultSchemaValidator implements SchemaValidator
 {
     @Override
-    public boolean isValid(String path, byte[] data)
+    public boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl)
     {
         return true;
     }

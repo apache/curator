@@ -19,6 +19,7 @@
 package org.apache.curator.framework.schema;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -27,9 +28,12 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.ACL;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 public class TestSchema extends BaseClassForTests
 {
@@ -37,6 +41,13 @@ public class TestSchema extends BaseClassForTests
     public void testBasics() throws Exception
     {
         SchemaSet schemaSet = loadSchemaSet("schema1.json", null);
+        Schema schema = schemaSet.getNamedSchema("test");
+        Assert.assertNotNull(schema);
+        Map<String, String> expectedMetadata = Maps.newHashMap();
+        expectedMetadata.put("one", "1");
+        expectedMetadata.put("two", "2");
+        Assert.assertEquals(schema.getMetadata(), expectedMetadata);
+
         CuratorFramework client = newClient(schemaSet);
         try
         {
@@ -44,7 +55,7 @@ public class TestSchema extends BaseClassForTests
 
             try
             {
-                String rawPath = schemaSet.getNamedSchema("test").getRawPath();
+                String rawPath = schema.getRawPath();
                 Assert.assertEquals(rawPath, "/a/b/c");
                 client.create().creatingParentsIfNeeded().forPath(rawPath);
                 Assert.fail("Should've violated schema");
@@ -65,23 +76,23 @@ public class TestSchema extends BaseClassForTests
     @Test
     public void testDataValidator() throws Exception
     {
-        final DataValidator dataValidator = new DataValidator()
+        final SchemaValidator schemaValidator = new SchemaValidator()
         {
             @Override
-            public boolean isValid(String path, byte[] data)
+            public boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl)
             {
                 return data.length > 0;
             }
         };
-        SchemaSetLoader.DataValidatorMapper dataValidatorMapper = new SchemaSetLoader.DataValidatorMapper()
+        SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper = new SchemaSetLoader.SchemaValidatorMapper()
         {
             @Override
-            public DataValidator getDataValidator(String name)
+            public SchemaValidator getSchemaValidator(String name)
             {
-                return dataValidator;
+                return schemaValidator;
             }
         };
-        SchemaSet schemaSet = loadSchemaSet("schema3.json", dataValidatorMapper);
+        SchemaSet schemaSet = loadSchemaSet("schema3.json", schemaValidatorMapper);
         CuratorFramework client = newClient(schemaSet);
         try
         {
@@ -143,23 +154,23 @@ public class TestSchema extends BaseClassForTests
     @Test
     public void testTransaction() throws Exception
     {
-        final DataValidator dataValidator = new DataValidator()
+        final SchemaValidator schemaValidator = new SchemaValidator()
         {
             @Override
-            public boolean isValid(String path, byte[] data)
+            public boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl)
             {
                 return data.length > 0;
             }
         };
-        SchemaSetLoader.DataValidatorMapper dataValidatorMapper = new SchemaSetLoader.DataValidatorMapper()
+        SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper = new SchemaSetLoader.SchemaValidatorMapper()
         {
             @Override
-            public DataValidator getDataValidator(String name)
+            public SchemaValidator getSchemaValidator(String name)
             {
-                return dataValidator;
+                return schemaValidator;
             }
         };
-        SchemaSet schemaSet = loadSchemaSet("schema4.json", dataValidatorMapper);
+        SchemaSet schemaSet = loadSchemaSet("schema4.json", schemaValidatorMapper);
         CuratorFramework client = newClient(schemaSet);
         try
         {
@@ -286,9 +297,9 @@ public class TestSchema extends BaseClassForTests
             .build();
     }
 
-    private SchemaSet loadSchemaSet(String name, SchemaSetLoader.DataValidatorMapper dataValidatorMapper) throws IOException
+    private SchemaSet loadSchemaSet(String name, SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper) throws IOException
     {
         String json = Resources.toString(Resources.getResource(name), Charsets.UTF_8);
-        return new SchemaSetLoader(json, dataValidatorMapper).toSchemaSet(true);
+        return new SchemaSetLoader(json, schemaValidatorMapper).toSchemaSet(true);
     }
 }

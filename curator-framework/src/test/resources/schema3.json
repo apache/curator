@@ -2,6 +2,6 @@
   {
     "name": "test",
     "path": "/test",
-    "dataValidator": "test"
+    "schemaValidator": "test"
   }
 ]

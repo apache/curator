@@ -19,6 +19,8 @@
 package org.apache.curator.framework.schema;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -28,11 +30,12 @@ public class SchemaBuilder
     private final String path;
     private String name = UUID.randomUUID().toString();
     private String documentation = "";
-    private DataValidator dataValidator = new DefaultDataValidator();
+    private SchemaValidator schemaValidator = new DefaultSchemaValidator();
     private Schema.Allowance ephemeral = Schema.Allowance.CAN;
     private Schema.Allowance sequential = Schema.Allowance.CAN;
     private Schema.Allowance watched = Schema.Allowance.CAN;
     private boolean canBeDeleted = true;
+    private Map<String, String> metadata = ImmutableMap.of();
 
     /**
      * Build a new schema from the currently set values
@@ -41,7 +44,7 @@ public class SchemaBuilder
      */
     public Schema build()
     {
-        return new Schema(name, pathRegex, path, documentation, dataValidator, ephemeral, sequential, watched, canBeDeleted);
+        return new Schema(name, pathRegex, path, documentation, schemaValidator, ephemeral, sequential, watched, canBeDeleted, metadata);
     }
 
     /**
@@ -65,12 +68,12 @@ public class SchemaBuilder
     }
 
     /**
-     * @param dataValidator a data validator - will be used to validate data set for the znode
+     * @param schemaValidator a data validator - will be used to validate data set for the znode
      * @return this for chaining
      */
-    public SchemaBuilder dataValidator(DataValidator dataValidator)
+    public SchemaBuilder dataValidator(SchemaValidator schemaValidator)
     {
-        this.dataValidator = Preconditions.checkNotNull(dataValidator, "dataValidator cannot be null");
+        this.schemaValidator = Preconditions.checkNotNull(schemaValidator, "dataValidator cannot be null");
         return this;
     }
 
@@ -111,6 +114,16 @@ public class SchemaBuilder
     public SchemaBuilder canBeDeleted(boolean canBeDeleted)
     {
         this.canBeDeleted = canBeDeleted;
+        return this;
+    }
+
+    /**
+     * @param metadata any field -> value you want
+     * @return this for chaining
+     */
+    public SchemaBuilder metadata(Map<String, String> metadata)
+    {
+        this.metadata = ImmutableMap.copyOf(metadata);
         return this;
     }
 

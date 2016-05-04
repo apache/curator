@@ -18,7 +18,10 @@
  */
 package org.apache.curator.framework.schema;
 
-public interface DataValidator
+import org.apache.zookeeper.data.ACL;
+import java.util.List;
+
+public interface SchemaValidator
 {
-    boolean isValid(String path, byte[] data);
+    boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl);
 }
