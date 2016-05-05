@@ -48,11 +48,12 @@ Use SchemaSets to access ZNode paths by a simple name. E.g.
 {code}
 CuratorFramework client = ...
 String path = SchemaSet.getNamedPath(client, "locks");
+client.create().forPath(path);
 {code}
 
 h2. Loading JSON Schema from a file/stream
 
-An optional utility is provided to load SchemaSets from a JSON file or stream: SchemaSetLoader
+An optional utility is provided to load SchemaSets from a JSON file or stream: SchemaSetLoader.
 *NOTE:* to avoid adding a new dependency to Curator, the Jackson library has been used with "provided" scope.
 You will need to add a dependency to jackson\-core and jackson\-databind to your project.
 
