@@ -103,6 +103,11 @@ public class SchemaSetLoader
         return new SchemaSet(schemas, useDefaultSchema);
     }
 
+    public List<Schema> getSchemas()
+    {
+        return schemas;
+    }
+
     private void read(ImmutableList.Builder<Schema> builder, JsonNode node, SchemaValidatorMapper schemaValidatorMapper)
     {
         for ( JsonNode child : node )
