@@ -347,12 +347,15 @@ public class InterProcessSemaphoreV2
         {
             lock.acquire();
         }
+
+        Lease lease = null;
+
         try
         {
             PathAndBytesable<String> createBuilder = client.create().creatingParentContainersIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
             String path = (nodeData != null) ? createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME), nodeData) : createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
             String nodeName = ZKPaths.getNodeFromPath(path);
-            builder.add(makeLease(path));
+            lease = makeLease(path);
 
             try
             {
@@ -364,6 +367,7 @@ public class InterProcessSemaphoreV2
                         if ( !children.contains(nodeName) )
                         {
                             log.error("Sequential path not found: " + path);
+                            returnLease(lease);
                             return InternalAcquireResult.RETRY_DUE_TO_MISSING_NODE;
                         }
 
@@ -376,6 +380,7 @@ public class InterProcessSemaphoreV2
                             long thisWaitMs = getThisWaitMs(startMs, waitMs);
                             if ( thisWaitMs <= 0 )
                             {
+                                returnLease(lease);
                                 return InternalAcquireResult.RETURN_NULL;
                             }
                             wait(thisWaitMs);
@@ -396,6 +401,7 @@ public class InterProcessSemaphoreV2
         {
             lock.release();
         }
+        builder.add(Preconditions.checkNotNull(lease));
         return InternalAcquireResult.CONTINUE;
     }
 
