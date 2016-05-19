@@ -1,0 +1,13 @@
+[
+  {
+    "name": "test",
+    "path": "/a/b/c",
+    "documentation": "This is a schema",
+    "ephemeral": "must",
+    "sequential": "cannot",
+    "metadata": {
+      "one": 1,
+      "two": "2"
+    }
+  }
+]

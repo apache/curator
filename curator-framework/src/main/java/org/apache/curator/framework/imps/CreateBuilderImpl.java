@@ -35,7 +35,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -487,6 +486,8 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
 
         final String adjustedPath = adjustPath(client.fixForNamespace(givenPath, createMode.isSequential()));
+        List<ACL> aclList = acling.getAclList(adjustedPath);
+        client.getSchemaSet().getSchema(givenPath).validateCreate(createMode, data, aclList);
 
         String returnPath = null;
         if ( backgrounding.inBackground() )
@@ -495,17 +496,17 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
         else
         {
-            String path = protectedPathInForeground(adjustedPath, data);
+            String path = protectedPathInForeground(adjustedPath, data, aclList);
             returnPath = client.unfixForNamespace(path);
         }
         return returnPath;
     }
 
-    private String protectedPathInForeground(String adjustedPath, byte[] data) throws Exception
+    private String protectedPathInForeground(String adjustedPath, byte[] data, List<ACL> aclList) throws Exception
     {
         try
         {
-            return pathInForeground(adjustedPath, data);
+            return pathInForeground(adjustedPath, data, aclList);
         }
         catch ( Exception e)
         {
@@ -714,7 +715,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 client.queueOperation(mainOperationAndData);
             }
         };
-        OperationAndData<T> parentOperation = new OperationAndData<T>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
+        OperationAndData<T> parentOperation = new OperationAndData<>(operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
         client.queueOperation(parentOperation);
     }
 
@@ -1012,7 +1013,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
                 if ( failNextCreateForTesting )
                 {
-                    pathInForeground(path, data);   // simulate success on server without notification to client
+                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     failNextCreateForTesting = false;
                     throw new KeeperException.ConnectionLossException();
                 }
@@ -1026,7 +1027,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         client.processBackgroundOperation(operationAndData, null);
     }
 
-    private String pathInForeground(final String path, final byte[] data) throws Exception
+    private String pathInForeground(final String path, final byte[] data, final List<ACL> aclList) throws Exception
     {
         TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
 
@@ -1052,7 +1053,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                         {
                             try
                             {
-                                createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat);
+                                createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat);
                             }
                             catch ( KeeperException.NoNodeException e )
                             {

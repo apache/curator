@@ -25,7 +25,11 @@
             <link rel="stylesheet" href="../css/site.css" />
             <script type="text/javascript">
                 $(function(){
-                    $('a[title="Framework"]').parent().addClass("active");
+                    if ( location.pathname.endsWith('schema.html') ) {
+                        $('a[title="Schema Support"]').parent().addClass("active");
+                    } else {
+                        $('a[title="Framework"]').parent().addClass("active");
+                    }
                 });
             </script>
         </head>

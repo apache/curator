@@ -16,17 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.api;
+package org.apache.curator.framework.schema;
 
-public interface ErrorListenerPathable<T> extends Pathable<T>
+import org.apache.zookeeper.data.ACL;
+import java.util.List;
+
+public interface SchemaValidator
 {
     /**
-     * Set an error listener for this background operation. If an exception
-     * occurs while processing the call in the background, this listener will
-     * be called
-     *
-     * @param listener the listener
-     * @return this for chaining
+     * @param schema the schema being validated
+     * @param path the path being operated on
+     * @param data data or null
+     * @param acl acls or null
+     * @return true if valid
      */
-    Pathable<T> withUnhandledErrorListener(UnhandledErrorListener listener);
+    boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl);
 }

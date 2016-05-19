@@ -16,17 +16,37 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.api;
+package org.apache.curator.framework.schema;
 
-public interface ErrorListenerPathable<T> extends Pathable<T>
+/**
+ * Thrown by the various <code>validation</code> methods in a Schema
+ */
+public class SchemaViolation extends RuntimeException
 {
-    /**
-     * Set an error listener for this background operation. If an exception
-     * occurs while processing the call in the background, this listener will
-     * be called
-     *
-     * @param listener the listener
-     * @return this for chaining
-     */
-    Pathable<T> withUnhandledErrorListener(UnhandledErrorListener listener);
+    private final Schema schema;
+    private final String violation;
+
+    public SchemaViolation(String violation)
+    {
+        super(String.format("Schema violation: %s", violation));
+        this.schema = null;
+        this.violation = violation;
+    }
+
+    public SchemaViolation(Schema schema, String violation)
+    {
+        super(String.format("Schema violation: %s for schema: %s", violation, schema));
+        this.schema = schema;
+        this.violation = violation;
+    }
+
+    public Schema getSchema()
+    {
+        return schema;
+    }
+
+    public String getViolation()
+    {
+        return violation;
+    }
 }

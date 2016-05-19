@@ -34,6 +34,7 @@ import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
+import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionState;
@@ -143,6 +144,7 @@ public class CuratorFrameworkFactory
         private boolean useContainerParentsIfAvailable = true;
         private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
         private ConnectionHandlingPolicy connectionHandlingPolicy = Boolean.getBoolean("curator-use-classic-connection-handling") ? new ClassicConnectionHandlingPolicy() : new StandardConnectionHandlingPolicy();
+        private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -430,6 +432,19 @@ public class CuratorFrameworkFactory
             return this;
         }
 
+        /**
+         * Add an enforced schema set
+         *
+         * @param schemaSet the schema set
+         * @return this
+         * @since 3.2.0
+         */
+        public Builder schemaSet(SchemaSet schemaSet)
+        {
+            this.schemaSet = schemaSet;
+            return this;
+        }
+
         public ACLProvider getAclProvider()
         {
             return aclProvider;
@@ -493,6 +508,11 @@ public class CuratorFrameworkFactory
         public ConnectionHandlingPolicy getConnectionHandlingPolicy()
         {
             return connectionHandlingPolicy;
+        }
+
+        public SchemaSet getSchemaSet()
+        {
+            return schemaSet;
         }
 
         @Deprecated

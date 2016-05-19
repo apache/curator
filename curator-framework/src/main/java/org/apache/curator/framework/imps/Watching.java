@@ -88,6 +88,11 @@ class Watching
         return namespaceWatcher;
     }
 
+    boolean hasWatcher()
+    {
+        return (watcher != null) || (curatorWatcher != null);
+    }
+
     boolean isWatched()
     {
         return watched;

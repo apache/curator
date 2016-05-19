@@ -1,0 +1,14 @@
+[
+  {
+    "name": "testa",
+    "path": "/a",
+    "ephemeral": "must",
+    "canBeDeleted": false
+  },
+
+  {
+    "name": "testb",
+    "path": "/b",
+    "schemaValidator": "test"
+  }
+]
