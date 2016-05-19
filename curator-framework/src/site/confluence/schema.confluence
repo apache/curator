@@ -11,7 +11,7 @@ Curator provides a mechanism to:
 * Validate operations on ZooKeeper paths
 * Map a simple string to a ZooKeeper path
 
-When a Curator operation violates a schema, {{SchemaViolationException}} is thrown.
+When a Curator operation violates a schema, {{SchemaViolation}} is thrown.
 
 h2. Schema and SchemaSet
 
