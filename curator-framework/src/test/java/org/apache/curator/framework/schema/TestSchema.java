@@ -18,8 +18,10 @@
  */
 package org.apache.curator.framework.schema;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import org.apache.curator.framework.CuratorFramework;
@@ -35,7 +37,6 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public class TestSchema extends BaseClassForTests
 {
@@ -233,6 +234,20 @@ public class TestSchema extends BaseClassForTests
         {
             CloseableUtils.closeQuietly(client);
         }
+    }
+
+    @Test
+    public void testYaml() throws Exception
+    {
+        String yaml = Resources.toString(Resources.getResource("schema.yaml"), Charsets.UTF_8);
+        JsonNode root = new ObjectMapper(new YAMLFactory()).readTree(yaml);
+        List<Schema> schemas = new SchemaSetLoader(root, null).getSchemas();
+        Assert.assertEquals(schemas.size(), 2);
+        Assert.assertEquals(schemas.get(0).getName(), "test");
+        Assert.assertEquals(schemas.get(0).getMetadata().size(), 0);
+        Assert.assertEquals(schemas.get(1).getName(), "test2");
+        Assert.assertEquals(schemas.get(1).getMetadata().size(), 2);
+        Assert.assertEquals(schemas.get(1).getMetadata().get("two"), "2");
     }
 
     @Test

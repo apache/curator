@@ -78,26 +78,39 @@ public class SchemaSetLoader
         SchemaValidator getSchemaValidator(String name);
     }
 
+    /**
+     * @param json the json to parse
+     * @param schemaValidatorMapper mapper from validator name to instance - can be null if not needed
+     */
     public SchemaSetLoader(String json, SchemaValidatorMapper schemaValidatorMapper)
     {
-        this(new StringReader(json), schemaValidatorMapper);
+        this(getRoot(new StringReader(json)), schemaValidatorMapper);
     }
 
-    public SchemaSetLoader(Reader in, SchemaValidatorMapper schemaValidatorMapper)
+    /**
+     * @param jsonStream the json stream to parse
+     * @param schemaValidatorMapper mapper from validator name to instance - can be null if not needed
+     */
+    public SchemaSetLoader(Reader jsonStream, SchemaValidatorMapper schemaValidatorMapper)
+    {
+        this(getRoot(jsonStream), schemaValidatorMapper);
+    }
+
+    /**
+     * @param root a Jackson root node
+     * @param schemaValidatorMapper mapper from validator name to instance - can be null if not needed
+     */
+    public SchemaSetLoader(JsonNode root, SchemaValidatorMapper schemaValidatorMapper)
     {
         ImmutableList.Builder<Schema> builder = ImmutableList.builder();
-        try
-        {
-            JsonNode root = new ObjectMapper().readTree(in);
-            read(builder, root, schemaValidatorMapper);
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException(e);
-        }
+        read(builder, root, schemaValidatorMapper);
         schemas = builder.build();
     }
 
+    /**
+     * @param useDefaultSchema if true, return a default schema when there is no match. Otherwise, an exception is thrown
+     * @return schema set
+     */
     public SchemaSet toSchemaSet(boolean useDefaultSchema)
     {
         return new SchemaSet(schemas, useDefaultSchema);
@@ -106,6 +119,18 @@ public class SchemaSetLoader
     public List<Schema> getSchemas()
     {
         return schemas;
+    }
+
+    private static JsonNode getRoot(Reader in)
+    {
+        try
+        {
+            return new ObjectMapper().readTree(in);
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     private void read(ImmutableList.Builder<Schema> builder, JsonNode node, SchemaValidatorMapper schemaValidatorMapper)
