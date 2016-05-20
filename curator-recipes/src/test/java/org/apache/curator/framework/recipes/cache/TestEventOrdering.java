@@ -12,7 +12,6 @@ import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.Closeable;
-import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
