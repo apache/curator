@@ -453,11 +453,11 @@ public class TreeCache implements Closeable
                     }
 
                     NodeState oldState = nodeState.getAndSet(NodeState.LIVE);
-                    if ( oldState != NodeState.LIVE )
+                    if ( oldState == NodeState.PENDING || (oldState == NodeState.DEAD && parent == null))
                     {
                         publishEvent(TreeCacheEvent.Type.NODE_ADDED, toPublish);
                     }
-                    else
+                    else if ( oldState == NodeState.LIVE )
                     {
                         if ( oldChildData == null || oldChildData.getStat().getMzxid() != newStat.getMzxid() )
                         {
