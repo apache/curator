@@ -200,7 +200,7 @@ public class SimpleDistributedQueue
                     latch.countDown();
                 }
             };
-            byte[]      bytes = new byte[0];
+            byte[]      bytes;
             try
             {
                 bytes = internalElement(true, watcher);
