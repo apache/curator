@@ -45,7 +45,7 @@ class NamespaceImpl
             }
             catch ( IllegalArgumentException e )
             {
-                throw new IllegalArgumentException("Invalid namespace: " + namespace);
+                throw new IllegalArgumentException("Invalid namespace: " + namespace + ", " + e.getMessage());
             }
         }
 
