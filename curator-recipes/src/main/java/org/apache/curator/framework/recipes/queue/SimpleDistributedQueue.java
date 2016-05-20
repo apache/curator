@@ -200,7 +200,17 @@ public class SimpleDistributedQueue
                     latch.countDown();
                 }
             };
-            byte[]      bytes = internalElement(true, watcher);
+            byte[]      bytes = new byte[0];
+            try
+            {
+                bytes = internalElement(true, watcher);
+            }
+            catch ( NoSuchElementException dummy )
+            {
+                log.debug("Parent containers appear to have lapsed - recreate and retry");
+                ensureContainers.reset();
+                continue;
+            }
             if ( bytes != null )
             {
                 return bytes;
@@ -234,7 +244,7 @@ public class SimpleDistributedQueue
         }
         catch ( KeeperException.NoNodeException dummy )
         {
-            return null;
+            throw new NoSuchElementException();
         }
         Collections.sort(nodes);
 

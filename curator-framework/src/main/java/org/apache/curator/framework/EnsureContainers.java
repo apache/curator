@@ -54,6 +54,11 @@ public class EnsureContainers
         }
     }
 
+    public void reset()
+    {
+        ensureNeeded.set(true);
+    }
+
     private synchronized void internalEnsure() throws Exception
     {
         if ( ensureNeeded.compareAndSet(true, false) )

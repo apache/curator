@@ -19,6 +19,8 @@
 package org.apache.curator.framework.recipes.queue;
 
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.TestingServer;
+import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -26,6 +28,8 @@ import org.apache.curator.retry.RetryOneTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
@@ -33,6 +37,91 @@ import static org.testng.Assert.assertTrue;
 
 public class TestSimpleDistributedQueue extends BaseClassForTests
 {
+    private static abstract class QueueUser implements Runnable
+    {
+        private static final String QUEUE_PATH = "/queue";
+        private static final int ITEM_COUNT = 10;
+
+        protected final SimpleDistributedQueue queue;
+        private final int sleepMillis;
+
+        public QueueUser(CuratorFramework curator, int sleepMillis)
+        {
+            this.queue = new SimpleDistributedQueue(curator, QUEUE_PATH);
+            this.sleepMillis = sleepMillis;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                for ( int i = 0; i < ITEM_COUNT; i++ )
+                {
+                    processItem(i);
+                    Thread.sleep(sleepMillis);
+                }
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        protected abstract void processItem(int itemNumber) throws Exception;
+    }
+
+    @Test
+    public void testHangFromContainerLoss() throws Exception
+    {
+        // for CURATOR-308
+
+        server.close();
+        System.setProperty("znode.container.checkIntervalMs", "100");
+        server = new TestingServer();
+
+        Timing timing = new Timing().multiple(.1);
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            ExecutorService executor = Executors.newFixedThreadPool(2);
+            executor.execute(new QueueUser(client, timing.milliseconds())
+            {
+                @Override
+                protected void processItem(int itemNumber) throws Exception
+                {
+                    System.out.println("Offering item");
+                    queue.offer(new byte[]{(byte)itemNumber});
+                }
+            });
+
+            executor.execute(new QueueUser(client, timing.multiple(.5).milliseconds())
+            {
+                @Override
+                protected void processItem(int itemNumber) throws Exception
+                {
+                    System.out.println("Taking item " + itemNumber);
+                    byte[] item = queue.take();
+                    if ( item == null )
+                    {
+                        throw new IllegalStateException("Null result for item " + itemNumber);
+                    }
+                    System.out.println("Got item " + item[0]);
+                }
+            });
+
+            executor.shutdown();
+            Assert.assertTrue(executor.awaitTermination((QueueUser.ITEM_COUNT * 2) * timing.milliseconds(), TimeUnit.MILLISECONDS));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+            System.clearProperty("znode.container.checkIntervalMs");
+        }
+    }
+
     @Test
     public void testPollWithTimeout() throws Exception
     {
