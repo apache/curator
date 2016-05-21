@@ -640,6 +640,7 @@ public class PathChildrenCache implements Closeable
             break;
         }
 
+        case CONNECTED:
         case RECONNECTED:
         {
             try
