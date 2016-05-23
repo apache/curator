@@ -54,6 +54,14 @@ public class EnsureContainers
         }
     }
 
+    /**
+     * Reset so that the next call to {@link #ensure()} will attempt to create containers
+     */
+    public void reset()
+    {
+        ensureNeeded.set(true);
+    }
+
     private synchronized void internalEnsure() throws Exception
     {
         if ( ensureNeeded.compareAndSet(true, false) )
