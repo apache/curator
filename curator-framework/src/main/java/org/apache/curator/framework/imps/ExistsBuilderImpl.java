@@ -201,7 +201,11 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
                             {
                                 ZKPaths.mkdirs(client.getZooKeeper(), parent, true, client.getAclProvider(), true);
                             }
-                            catch ( KeeperException e )
+                            catch ( KeeperException.NodeExistsException e )
+                            {
+                                // ignore
+                            }
+                            catch ( KeeperException.NoNodeException e )
                             {
                                 // ignore
                             }

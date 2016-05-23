@@ -29,10 +29,12 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.KillSession;
+import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -55,6 +57,42 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestFrameworkEdges extends BaseClassForTests
 {
     private final Timing timing = new Timing();
+
+    @Test
+    public void testCreateContainersForBadConnect() throws Exception
+    {
+        final int serverPort = server.getPort();
+        server.close();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 1000, 1000, new RetryForever(100));
+        try
+        {
+            new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        Thread.sleep(3000);
+                        server = new TestingServer(serverPort, true);
+                    }
+                    catch ( Exception e )
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+
+            client.start();
+            client.createContainers("/this/does/not/exist");
+            Assert.assertNotNull(client.checkExists().forPath("/this/does/not/exist"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 
     @Test
     public void testQuickClose() throws Exception
