@@ -642,7 +642,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(cache);∑
+            CloseableUtils.closeQuietly(cache);
             TestCleanState.closeAndTestClean(client);
         }
     }
