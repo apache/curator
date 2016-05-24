@@ -45,6 +45,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class SharedValue implements Closeable, SharedValueReader
 {
+	private static final int UNINITIALIZED_VERSION = -1;
+
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final ListenerContainer<SharedValueListener> listeners = new ListenerContainer<SharedValueListener>();
     private final WatcherRemoveCuratorFramework client;
@@ -92,7 +94,7 @@ public class SharedValue implements Closeable, SharedValueReader
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.seedValue = Arrays.copyOf(seedValue, seedValue.length);
-        currentValue = new AtomicReference<VersionedValue<byte[]>>(new VersionedValue<byte[]>(0, Arrays.copyOf(seedValue, seedValue.length)));
+        currentValue = new AtomicReference<VersionedValue<byte[]>>(new VersionedValue<byte[]>(UNINITIALIZED_VERSION, Arrays.copyOf(seedValue, seedValue.length)));
     }
 
     @Override

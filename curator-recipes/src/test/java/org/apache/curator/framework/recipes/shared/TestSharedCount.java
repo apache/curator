@@ -257,4 +257,31 @@ public class TestSharedCount extends BaseClassForTests
             TestCleanState.closeAndTestClean(client1);
         }
     }
+
+
+    @Test
+    public void testMultiClientDifferentSeed() throws Exception
+    {
+        CuratorFramework client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        SharedCount count1 = new SharedCount(client1, "/count", 10);
+        SharedCount count2 = new SharedCount(client2, "/count", 20);
+        try
+        {
+            client1.start();
+            client2.start();
+            count1.start();
+            count2.start();
+
+            Assert.assertEquals(count1.getCount(), 10);
+            Assert.assertEquals(count2.getCount(), 10);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(count2);
+            CloseableUtils.closeQuietly(count1);
+            CloseableUtils.closeQuietly(client2);
+            CloseableUtils.closeQuietly(client1);
+        }
+    }
 }
