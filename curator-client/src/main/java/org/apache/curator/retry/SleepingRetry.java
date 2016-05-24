@@ -55,5 +55,5 @@ abstract class SleepingRetry implements RetryPolicy
         return false;
     }
 
-    protected abstract int   getSleepTimeMs(int retryCount, long elapsedTimeMs);
+    protected abstract long   getSleepTimeMs(int retryCount, long elapsedTimeMs);
 }

@@ -32,7 +32,7 @@ public class RetryNTimes extends SleepingRetry
     }
 
     @Override
-    protected int getSleepTimeMs(int retryCount, long elapsedTimeMs)
+    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs)
     {
         return sleepMsBetweenRetries;
     }
