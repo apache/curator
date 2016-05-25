@@ -40,6 +40,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -55,18 +57,37 @@ public class TestFrameworkBackground extends BaseClassForTests
     @Test
     public void testErrorListener() throws Exception
     {
+        //The first call to the ACL provider will return a reasonable
+        //value. The second will throw an error. This is because the ACL
+        //provider is accessed prior to the backgrounding call.
+        final AtomicBoolean aclProviderCalled = new AtomicBoolean(false);
+        
         ACLProvider badAclProvider = new ACLProvider()
         {
             @Override
             public List<ACL> getDefaultAcl()
             {
-                throw new UnsupportedOperationException();
+                if(aclProviderCalled.getAndSet(true))
+                {
+                    throw new UnsupportedOperationException();
+                }
+                else
+                {
+                    return new ArrayList<>();
+                }
             }
 
             @Override
             public List<ACL> getAclForPath(String path)
             {
-                throw new UnsupportedOperationException();
+                if(aclProviderCalled.getAndSet(true))
+                {
+                    throw new UnsupportedOperationException();
+                }
+                else
+                {
+                    return new ArrayList<>();
+                }
             }
         };
         CuratorFramework client = CuratorFrameworkFactory.builder()
