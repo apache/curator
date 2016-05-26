@@ -149,11 +149,11 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             try
             {
                 client.getConfig().usingWatcher(this).inBackground(backgroundCallback).forEnsemble();
+                outstanding.incrementAndGet();  // finally block will decrement
             }
-            catch ( Exception e )
+            finally
             {
                 outstanding.decrementAndGet();
-                throw e;
             }
         }
     }
