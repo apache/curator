@@ -166,10 +166,12 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
 
     private String asString(List<Event> events)
     {
+        int qty = 0;
         StringBuilder str = new StringBuilder();
         for ( Event event : events )
         {
-            str.append(event.eventType).append(" ").append(event.path).append(" @ ").append(event.time - start);
+            qty += (event.eventType == EventType.ADDED) ? 1 : -1;
+            str.append(event.eventType).append(" ").append(event.path).append(" @ ").append(event.time - start).append(' ').append(qty);
             str.append("\n");
         }
         return str.toString();
