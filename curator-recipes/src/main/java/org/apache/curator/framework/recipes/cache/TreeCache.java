@@ -446,12 +446,26 @@ public class TreeCache implements Closeable
                         oldChildData = childData.getAndSet(new ChildData(event.getPath(), newStat, null));
                     }
 
-                    NodeState oldState = nodeState.getAndSet(NodeState.LIVE);
-                    if ( oldState == NodeState.PENDING || (oldState == NodeState.DEAD && parent == null))
+                    boolean added;
+                    if (parent == null) {
+                        // We're the singleton root.
+                        added = nodeState.getAndSet(NodeState.LIVE) != NodeState.LIVE;
+                    } else {
+                        added = nodeState.compareAndSet(NodeState.PENDING, NodeState.LIVE);
+                        if (!added) {
+                            // Ordinary nodes are not allowed to transition from dead -> live;
+                            // make sure this isn't a delayed response that came in after death.
+                            if (nodeState.get() != NodeState.LIVE) {
+                                return;
+                            }
+                        }
+                    }
+
+                    if ( added )
                     {
                         publishEvent(TreeCacheEvent.Type.NODE_ADDED, toPublish);
                     }
-                    else if ( oldState == NodeState.LIVE )
+                    else
                     {
                         if ( oldChildData == null || oldChildData.getStat().getMzxid() != newStat.getMzxid() )
                         {
