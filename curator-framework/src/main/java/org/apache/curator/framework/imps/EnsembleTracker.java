@@ -43,6 +43,7 @@ import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @VisibleForTesting
@@ -52,6 +53,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
     private final WatcherRemoveCuratorFramework client;
     private final EnsembleProvider ensembleProvider;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final AtomicInteger outstanding = new AtomicInteger(0);
     private final AtomicReference<QuorumMaj> currentConfig = new AtomicReference<>(new QuorumMaj(Maps.<Long, QuorumPeer.QuorumServer>newHashMap()));
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
@@ -121,22 +123,38 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
         return currentConfig.get();
     }
 
+    @VisibleForTesting
+    public boolean hasOutstanding()
+    {
+        return outstanding.get() > 0;
+    }
+
     private void reset() throws Exception
     {
-        if ( client.getState() == CuratorFrameworkState.STARTED )
+        if ( (client.getState() == CuratorFrameworkState.STARTED) && (state.get() == State.STARTED) )
         {
             BackgroundCallback backgroundCallback = new BackgroundCallback()
             {
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                 {
+                    outstanding.decrementAndGet();
                     if ( (event.getType() == CuratorEventType.GET_CONFIG) && (event.getResultCode() == KeeperException.Code.OK.intValue()) )
                     {
                         processConfigData(event.getData());
                     }
                 }
             };
-            client.getConfig().usingWatcher(this).inBackground(backgroundCallback).forEnsemble();
+            outstanding.incrementAndGet();
+            try
+            {
+                client.getConfig().usingWatcher(this).inBackground(backgroundCallback).forEnsemble();
+            }
+            catch ( Exception e )
+            {
+                outstanding.decrementAndGet();
+                throw e;
+            }
         }
     }
 

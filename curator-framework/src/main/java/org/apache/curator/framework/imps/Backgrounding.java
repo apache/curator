@@ -116,11 +116,6 @@ class Backgrounding
     {
         if ( e != null )
         {
-            if ( watching != null )
-            {
-                watching.resetCurrentWatcher();
-            }
-
             if ( errorListener != null )
             {
                 errorListener.unhandledError("n/a", e);

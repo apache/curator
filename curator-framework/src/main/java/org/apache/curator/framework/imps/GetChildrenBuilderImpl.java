@@ -19,6 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.BackgroundPathable;
@@ -30,6 +31,7 @@ import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.WatchPathable;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
@@ -167,7 +169,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                 @Override
                 public void processResult(int rc, String path, Object o, List<String> strings, Stat stat)
                 {
-                    watching.checkBackroundRc(rc);
+                    watching.commitWatcher(rc, false);
                     trace.commit();
                     if ( strings == null )
                     {
@@ -214,8 +216,9 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     private List<String> pathInForeground(final String path) throws Exception
     {
         TimeTrace       trace = client.getZookeeperClient().startTracer("GetChildrenBuilderImpl-Foreground");
-        List<String>    children = watching.callWithRetry
+        List<String>    children = RetryLoop.callWithRetry
         (
+            client.getZookeeperClient(),
             new Callable<List<String>>()
             {
                 @Override
@@ -229,6 +232,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                     else
                     {
                         children = client.getZooKeeper().getChildren(path, watching.getWatcher(path), responseStat);
+                        watching.commitWatcher(KeeperException.NoNodeException.Code.OK.intValue(), false);
                     }
                     return children;
                 }

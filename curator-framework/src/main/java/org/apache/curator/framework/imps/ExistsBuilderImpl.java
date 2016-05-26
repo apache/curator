@@ -132,7 +132,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
                 @Override
                 public void processResult(int rc, String path, Object ctx, Stat stat)
                 {
-                    watching.checkBackroundRc(rc);
+                    watching.commitWatcher(rc, true);
                     trace.commit();
                     CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.EXISTS, rc, path, null, ctx, stat, null, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
@@ -222,8 +222,9 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
     private Stat pathInForegroundStandard(final String path) throws Exception
     {
         TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground");
-        Stat        returnStat = watching.callWithRetry
+        Stat        returnStat = RetryLoop.callWithRetry
         (
+            client.getZookeeperClient(),
             new Callable<Stat>()
             {
                 @Override
@@ -237,6 +238,8 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
                     else
                     {
                         returnStat = client.getZooKeeper().exists(path, watching.getWatcher(path));
+                        int rc = (returnStat != null) ? KeeperException.NoNodeException.Code.OK.intValue() : KeeperException.NoNodeException.Code.NONODE.intValue();
+                        watching.commitWatcher(rc, true);
                     }
                     return returnStat;
                 }

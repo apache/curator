@@ -22,6 +22,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.WatchersDebug;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.ZooKeeper;
+import java.util.concurrent.Callable;
 
 public class TestCleanState
 {
@@ -38,6 +39,10 @@ public class TestCleanState
             EnsembleTracker ensembleTracker = internalClient.getEnsembleTracker();
             if ( ensembleTracker != null )
             {
+                while ( ensembleTracker.hasOutstanding() )
+                {
+                    Thread.sleep(100);
+                }
                 ensembleTracker.close();
             }
             ZooKeeper zooKeeper = internalClient.getZooKeeper();
@@ -68,6 +73,27 @@ public class TestCleanState
         finally
         {
             CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    public static void test(CuratorFramework client, Callable<Void> proc) throws Exception
+    {
+        boolean succeeded = false;
+        try
+        {
+            proc.call();
+            succeeded = true;
+        }
+        finally
+        {
+            if ( succeeded )
+            {
+                closeAndTestClean(client);
+            }
+            else
+            {
+                CloseableUtils.closeQuietly(client);
+            }
         }
     }
 

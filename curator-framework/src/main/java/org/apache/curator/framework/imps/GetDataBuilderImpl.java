@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.utils.ThreadUtils;
@@ -238,7 +239,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
                 @Override
                 public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
                 {
-                    watching.checkBackroundRc(rc);
+                    watching.commitWatcher(rc, false);
                     trace.commit();
                     if ( decompress && (data != null) )
                     {
@@ -294,8 +295,9 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
     private byte[] pathInForeground(final String path) throws Exception
     {
         TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Foreground");
-        byte[]      responseData = watching.callWithRetry
+        byte[]      responseData = RetryLoop.callWithRetry
         (
+            client.getZookeeperClient(),
             new Callable<byte[]>()
             {
                 @Override
@@ -309,6 +311,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
                     else
                     {
                         responseData = client.getZooKeeper().getData(path, watching.getWatcher(path), responseStat);
+                        watching.commitWatcher(KeeperException.NoNodeException.Code.OK.intValue(), false);
                     }
                     return responseData;
                 }

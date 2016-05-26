@@ -27,17 +27,140 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.WatchersDebug;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
 public class TestWatcherRemovalManager extends BaseClassForTests
 {
+    @Test
+    public void testSameWatcherDifferentPaths1Triggered() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            final CountDownLatch latch = new CountDownLatch(1);
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    latch.countDown();
+                }
+            };
+            removerClient.checkExists().usingWatcher(watcher).forPath("/a/b/c");
+            removerClient.checkExists().usingWatcher(watcher).forPath("/d/e/f");
+            removerClient.create().creatingParentsIfNeeded().forPath("/d/e/f");
+
+            Timing timing = new Timing();
+            Assert.assertTrue(timing.awaitLatch(latch));
+            timing.sleepABit();
+
+            removerClient.removeWatchers();
+        }
+        finally
+        {
+            TestCleanState.closeAndTestClean(client);
+        }
+    }
+
+    @Test
+    public void testSameWatcherDifferentPaths() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    // NOP
+                }
+            };
+            removerClient.checkExists().usingWatcher(watcher).forPath("/a/b/c");
+            removerClient.checkExists().usingWatcher(watcher).forPath("/d/e/f");
+            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 2);
+            removerClient.removeWatchers();
+        }
+        finally
+        {
+            TestCleanState.closeAndTestClean(client);
+        }
+    }
+
+    @Test
+    public void testSameWatcherDifferentKinds1Triggered() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            final CountDownLatch latch = new CountDownLatch(1);
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    latch.countDown();
+                }
+            };
+
+            removerClient.create().creatingParentsIfNeeded().forPath("/a/b/c");
+            removerClient.checkExists().usingWatcher(watcher).forPath("/a/b/c");
+            removerClient.getData().usingWatcher(watcher).forPath("/a/b/c");
+            removerClient.setData().forPath("/a/b/c", "new".getBytes());
+
+            Timing timing = new Timing();
+            Assert.assertTrue(timing.awaitLatch(latch));
+            timing.sleepABit();
+
+            removerClient.removeWatchers();
+        }
+        finally
+        {
+            TestCleanState.closeAndTestClean(client);
+        }
+    }
+
+    @Test
+    public void testSameWatcherDifferentKinds() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    // NOP
+                }
+            };
+
+            removerClient.create().creatingParentsIfNeeded().forPath("/a/b/c");
+            removerClient.checkExists().usingWatcher(watcher).forPath("/a/b/c");
+            removerClient.getData().usingWatcher(watcher).forPath("/a/b/c");
+            removerClient.removeWatchers();
+        }
+        finally
+        {
+            TestCleanState.closeAndTestClean(client);
+        }
+    }
+
     @Test
     public void testWithRetry() throws Exception
     {
@@ -68,7 +191,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -105,7 +228,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -134,47 +257,50 @@ public class TestWatcherRemovalManager extends BaseClassForTests
             {
                 // expected
             }
-            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+            removerClient.removeWatchers();
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
     public void testMissingNodeInBackground() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Callable<Void> proc = new Callable<Void>()
         {
-            client.start();
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
-            Watcher w = new Watcher()
+            @Override
+            public Void call() throws Exception
             {
-                @Override
-                public void process(WatchedEvent event)
+                client.start();
+                WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+                Watcher w = new Watcher()
                 {
-                    // NOP
-                }
-            };
-            final CountDownLatch latch = new CountDownLatch(1);
-            BackgroundCallback callback = new BackgroundCallback()
-            {
-                @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                    @Override
+                    public void process(WatchedEvent event)
+                    {
+                        // NOP
+                    }
+                };
+                final CountDownLatch latch = new CountDownLatch(1);
+                BackgroundCallback callback = new BackgroundCallback()
                 {
-                    latch.countDown();
-                }
-            };
-            removerClient.getData().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
-            Assert.assertTrue(new Timing().awaitLatch(latch));
-            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(client);
-        }
+                    @Override
+                    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                    {
+                        latch.countDown();
+                    }
+                };
+                removerClient.getData().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
+                Assert.assertTrue(new Timing().awaitLatch(latch));
+                Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+                removerClient.removeWatchers();
+                return null;
+            }
+        };
+        TestCleanState.test(client, proc);
     }
 
     @Test
@@ -188,7 +314,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -203,7 +329,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -222,7 +348,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -241,7 +367,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -252,6 +378,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         try
         {
             client.start();
+            client.create().forPath("/test");
 
             WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
 
@@ -264,14 +391,15 @@ public class TestWatcherRemovalManager extends BaseClassForTests
                 }
             };
 
-            removerClient.getData().usingWatcher(watcher).forPath("/");
+            removerClient.getData().usingWatcher(watcher).forPath("/test");
             Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
-            removerClient.getData().usingWatcher(watcher).forPath("/");
+            removerClient.getData().usingWatcher(watcher).forPath("/test");
             Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            removerClient.removeWatchers();
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -308,7 +436,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 
@@ -364,7 +492,7 @@ public class TestWatcherRemovalManager extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+            TestCleanState.closeAndTestClean(client);
         }
     }
 

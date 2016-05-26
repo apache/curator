@@ -19,11 +19,9 @@
 
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
-import java.util.concurrent.Callable;
 
 class Watching
 {
@@ -77,14 +75,6 @@ class Watching
             namespaceWatcher = new NamespaceWatcher(client, curatorWatcher, unfixedPath);
         }
 
-        if ( namespaceWatcher != null )
-        {
-            if ( client.getWatcherRemovalManager() != null )
-            {
-                client.getWatcherRemovalManager().add(namespaceWatcher);
-            }
-        }
-
         return namespaceWatcher;
     }
 
@@ -98,33 +88,24 @@ class Watching
         return watched;
     }
 
-    <T> T callWithRetry(Callable<T> proc) throws Exception
+    void commitWatcher(int rc, boolean isExists)
     {
-        resetCurrentWatcher();
-        try
+        boolean doCommit = false;
+        if ( isExists )
         {
-            return RetryLoop.callWithRetry(client.getZookeeperClient(), proc);
+            doCommit = ((rc == KeeperException.Code.OK.intValue()) || (rc == KeeperException.Code.NONODE.intValue()));
         }
-        catch ( Exception e )
+        else
         {
-            resetCurrentWatcher();
-            throw e;
+            doCommit = (rc == KeeperException.Code.OK.intValue());
         }
-    }
 
-    void resetCurrentWatcher()
-    {
-        if ( (namespaceWatcher != null) && (client.getWatcherRemovalManager() != null) )
+        if ( doCommit && (namespaceWatcher != null) )
         {
-            client.getWatcherRemovalManager().noteTriggeredWatcher(namespaceWatcher);
-        }
-    }
-
-    void checkBackroundRc(int rc)
-    {
-        if ( rc != KeeperException.Code.OK.intValue() )
-        {
-            resetCurrentWatcher();
+            if ( client.getWatcherRemovalManager() != null )
+            {
+                client.getWatcherRemovalManager().add(namespaceWatcher);
+            }
         }
     }
 }

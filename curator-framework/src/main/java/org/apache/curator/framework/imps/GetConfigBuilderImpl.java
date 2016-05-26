@@ -19,9 +19,11 @@
 
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
@@ -206,7 +208,7 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
                 @Override
                 public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
                 {
-                    watching.checkBackroundRc(rc);
+                    watching.commitWatcher(rc, false);
                     trace.commit();
                     CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.GET_CONFIG, rc, path, null, ctx, stat, data, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
@@ -232,8 +234,9 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
         TimeTrace trace = client.getZookeeperClient().startTracer("GetConfigBuilderImpl-Foreground");
         try
         {
-            return watching.callWithRetry
+            return RetryLoop.callWithRetry
             (
+                client.getZookeeperClient(),
                 new Callable<byte[]>()
                 {
                     @Override
@@ -243,7 +246,9 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
                         {
                             return client.getZooKeeper().getConfig(true, stat);
                         }
-                        return client.getZooKeeper().getConfig(watching.getWatcher(ZooDefs.CONFIG_NODE), stat);
+                        byte[] config = client.getZooKeeper().getConfig(watching.getWatcher(ZooDefs.CONFIG_NODE), stat);
+                        watching.commitWatcher(KeeperException.NoNodeException.Code.OK.intValue(), false);
+                        return config;
                     }
                 }
             );

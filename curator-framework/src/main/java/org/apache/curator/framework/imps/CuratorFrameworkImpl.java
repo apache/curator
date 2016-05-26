@@ -910,7 +910,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     void performBackgroundOperation(OperationAndData<?> operationAndData)
     {
-        operationAndData.resetCurrentWatcher();
         try
         {
             if ( !operationAndData.isConnectionRequired() || client.isConnected() )
@@ -930,7 +929,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
         catch ( Throwable e )
         {
-            operationAndData.resetCurrentWatcher();
             ThreadUtils.checkInterrupted(e);
 
             /**
