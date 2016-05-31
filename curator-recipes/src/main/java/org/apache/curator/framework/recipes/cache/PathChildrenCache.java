@@ -493,6 +493,7 @@ public class PathChildrenCache implements Closeable
             {
                 if (PathChildrenCache.this.state.get().equals(State.CLOSED)) {
                     // This ship is closed, don't handle the callback
+                    PathChildrenCache.this.client.removeWatchers();
                     return;
                 }
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
