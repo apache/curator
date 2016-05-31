@@ -48,17 +48,39 @@ public class TestCleanState
             ZooKeeper zooKeeper = internalClient.getZooKeeper();
             if ( zooKeeper != null )
             {
-                if ( WatchersDebug.getChildWatches(zooKeeper).size() != 0 )
+                final int maxLoops = 3;
+                for ( int i = 0; i < maxLoops; ++i )    // it takes time for the watcher removals to settle due to async/watchers, etc. So, if there are remaining watchers, sleep a bit
                 {
-                    throw new AssertionError("One or more child watchers are still registered: " + WatchersDebug.getChildWatches(zooKeeper));
-                }
-                if ( WatchersDebug.getExistWatches(zooKeeper).size() != 0 )
-                {
-                    throw new AssertionError("One or more exists watchers are still registered: " + WatchersDebug.getExistWatches(zooKeeper));
-                }
-                if ( WatchersDebug.getDataWatches(zooKeeper).size() != 0 )
-                {
-                    throw new AssertionError("One or more data watchers are still registered: " + WatchersDebug.getDataWatches(zooKeeper));
+                    if ( i > 0 )
+                    {
+                        Thread.sleep(500);
+                    }
+                    boolean isLast = (i + 1) == maxLoops;
+                    if ( WatchersDebug.getChildWatches(zooKeeper).size() != 0 )
+                    {
+                        if ( isLast )
+                        {
+                            throw new AssertionError("One or more child watchers are still registered: " + WatchersDebug.getChildWatches(zooKeeper));
+                        }
+                        continue;
+                    }
+                    if ( WatchersDebug.getExistWatches(zooKeeper).size() != 0 )
+                    {
+                        if ( isLast )
+                        {
+                            throw new AssertionError("One or more exists watchers are still registered: " + WatchersDebug.getExistWatches(zooKeeper));
+                        }
+                        continue;
+                    }
+                    if ( WatchersDebug.getDataWatches(zooKeeper).size() != 0 )
+                    {
+                        if ( isLast )
+                        {
+                            throw new AssertionError("One or more data watchers are still registered: " + WatchersDebug.getDataWatches(zooKeeper));
+                        }
+                        continue;
+                    }
+                    break;
                 }
             }
         }
