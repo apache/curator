@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.utils.PathUtils;
 
@@ -327,6 +328,9 @@ public class InterProcessSemaphoreV2
         RETRY_DUE_TO_MISSING_NODE
     }
 
+    static volatile CountDownLatch debugAcquireLatch = null;
+    static volatile CountDownLatch debugFailedGetChildrenLatch = null;
+
     private InternalAcquireResult internalAcquire1Lease(ImmutableList.Builder<Lease> builder, long startMs, boolean hasWait, long waitMs) throws Exception
     {
         if ( client.getState() != CuratorFrameworkState.STARTED )
@@ -356,11 +360,29 @@ public class InterProcessSemaphoreV2
             String nodeName = ZKPaths.getNodeFromPath(path);
             lease = makeLease(path);
 
+            if ( debugAcquireLatch != null )
+            {
+                debugAcquireLatch.await();
+            }
+
             synchronized(this)
             {
                 for(;;)
                 {
-                    List<String> children = client.getChildren().usingWatcher(watcher).forPath(leasesPath);
+                    List<String> children;
+                    try
+                    {
+                        children = client.getChildren().usingWatcher(watcher).forPath(leasesPath);
+                    }
+                    catch ( Exception e )
+                    {
+                        if ( debugFailedGetChildrenLatch != null )
+                        {
+                            debugFailedGetChildrenLatch.countDown();
+                        }
+                        returnLease(lease); // otherwise the just created ZNode will be orphaned causing a dead lock
+                        throw e;
+                    }
                     if ( !children.contains(nodeName) )
                     {
                         log.error("Sequential path not found: " + path);
