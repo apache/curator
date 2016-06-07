@@ -70,6 +70,59 @@ public class TestFramework extends BaseClassForTests
         System.clearProperty("znode.container.checkIntervalMs");
         super.teardown();
     }
+    
+    @Test
+    public void testSessionLossWithLongTimeout() throws Exception
+    {
+
+        final Timing timing = new Timing();
+        //Change this to TRUE and the test will pass.
+        System.setProperty("curator-use-classic-connection-handling", Boolean.FALSE.toString());
+                
+        try(final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.forWaiting().milliseconds(),
+                                                                              timing.connection(), new RetryOneTime(1)))
+        {
+            
+            final CountDownLatch connectedLatch = new CountDownLatch(1);
+            final CountDownLatch lostLatch = new CountDownLatch(1);
+            final CountDownLatch restartedLatch = new CountDownLatch(1);
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.CONNECTED )
+                    {
+                        connectedLatch.countDown();
+                    }
+                    else if ( newState == ConnectionState.LOST )
+                    {
+                        lostLatch.countDown();
+                    }
+                    else if ( newState == ConnectionState.RECONNECTED  )
+                    {
+                        restartedLatch.countDown();
+                    }
+                }
+            });
+            
+            client.start();
+            
+            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            
+            server.stop();
+
+            timing.sleepABit();
+            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            
+            server.restart();
+            Assert.assertTrue(timing.awaitLatch(restartedLatch));
+        }
+        finally
+        {
+            System.clearProperty("curator-use-classic-connection-handling");
+        }
+    }
 
     @Test
     public void testConnectionState() throws Exception
