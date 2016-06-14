@@ -148,10 +148,9 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                     }
                 }
             });
-
-            timing.sleepABit();
+      
             server.stop();
-            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            Assert.assertTrue(timing.multiple(2).awaitLatch(lostLatch));
             InterProcessSemaphoreV2.debugAcquireLatch.countDown();  // the waiting semaphore proceeds to getChildren - which should fail
             Assert.assertTrue(timing.awaitLatch(InterProcessSemaphoreV2.debugFailedGetChildrenLatch));  // wait until getChildren fails
 
