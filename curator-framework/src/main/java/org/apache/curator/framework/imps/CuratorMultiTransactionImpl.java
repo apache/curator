@@ -138,7 +138,7 @@ public class CuratorMultiTransactionImpl implements
             else if ( curatorOp.get().getType() == ZooDefs.OpCode.setData )
             {
                 SetDataRequest setDataRequest = (SetDataRequest)curatorOp.get().toRequestRecord();
-                schema.validateGeneral(setDataRequest.getPath(), setDataRequest.getData(), ZooDefs.Ids.CREATOR_ALL_ACL);
+                schema.validateGeneral(setDataRequest.getPath(), setDataRequest.getData(), null);
             }
         }
 

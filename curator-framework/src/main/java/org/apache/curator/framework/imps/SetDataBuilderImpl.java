@@ -242,7 +242,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
     @Override
     public Stat forPath(String path, byte[] data) throws Exception
     {
-        client.getSchemaSet().getSchema(path).validateGeneral(path, data, ZooDefs.Ids.CREATOR_ALL_ACL);
+        client.getSchemaSet().getSchema(path).validateGeneral(path, data, null);
 
         if ( compress )
         {
