@@ -20,7 +20,7 @@ package org.apache.curator.framework.api;
 
 import org.apache.curator.framework.api.transaction.CuratorMultiTransactionMain;
 
-public interface ErrorListenerMultiTransactionMain<T> extends CuratorMultiTransactionMain
+public interface ErrorListenerMultiTransactionMain extends CuratorMultiTransactionMain
 {
     /**
      * Set an error listener for this background operation. If an exception
