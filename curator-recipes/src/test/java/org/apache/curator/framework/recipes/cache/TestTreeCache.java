@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -22,12 +22,14 @@ package org.apache.curator.framework.recipes.cache;
 import com.google.common.collect.ImmutableSet;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.KillServerSession;
-import org.apache.curator.test.KillSession;
+import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestTreeCache extends BaseTestTreeCache
 {
@@ -566,6 +568,47 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test");
 
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testErrorListener() throws Exception
+    {
+        client.create().forPath("/test");
+
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/test"));
+
+        // Register a listener that throws an exception for the event
+        cache.getListenable().addListener(new TreeCacheListener()
+        {
+            @Override
+            public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
+            {
+                if (event.getType() == Type.NODE_UPDATED) {
+                    throw new RuntimeException("Test Exception");
+                }
+            }
+        });
+
+        cache.getUnhandledErrorListenable().removeListener(errorListener);
+        final AtomicBoolean isProcessed = new AtomicBoolean(false);
+        cache.getUnhandledErrorListenable().addListener(new UnhandledErrorListener()
+        {
+            @Override
+            public void unhandledError(String message, Throwable e)
+            {
+                Assert.assertFalse(isProcessed.compareAndSet(false, true));
+            }
+        });
+
+        cache.start();
+
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+
+        client.setData().forPath("/test", "hey there".getBytes());
+        assertEvent(TreeCacheEvent.Type.NODE_UPDATED, "/test");
+
         assertNoMoreEvents();
     }
 }

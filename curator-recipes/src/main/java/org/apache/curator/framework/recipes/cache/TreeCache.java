@@ -641,7 +641,7 @@ public class TreeCache implements Closeable
      * TODO: consider making public.
      */
     @VisibleForTesting
-    Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
+    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
     {
         return errorListeners;
     }
