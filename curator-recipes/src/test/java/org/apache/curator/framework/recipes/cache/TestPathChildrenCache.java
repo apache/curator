@@ -24,6 +24,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.TestCleanState;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
@@ -79,7 +81,8 @@ public class TestPathChildrenCache extends BaseClassForTests
                 @Override
                 public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
                 {
-                    if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
+                    if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED  &&
+                         event.getData().getPath().equals("/baz"))
                     {
                         addedLatch.countDown();
                     }
@@ -88,8 +91,24 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.getListenable().addListener(listener);
             cache.start();
             Assert.assertTrue(timing.awaitLatch(ensurePathLatch));
+            
+            final CountDownLatch connectedLatch = new CountDownLatch(1);
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+            {
+                
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if(newState == ConnectionState.CONNECTED)
+                    {
+                        connectedLatch.countDown();
+                    }
+                }
+            });
 
             server = new TestingServer(serverPort, true);
+            
+            Assert.assertTrue(timing.awaitLatch(connectedLatch));
 
             client.create().creatingParentContainersIfNeeded().forPath("/baz", new byte[]{1, 2, 3});
 
