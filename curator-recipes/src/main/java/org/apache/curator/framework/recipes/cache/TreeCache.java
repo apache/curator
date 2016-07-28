@@ -504,7 +504,7 @@ public class TreeCache implements Closeable
     private final AtomicBoolean isInitialized = new AtomicBoolean(false);
 
     private final TreeNode root;
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final ExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
