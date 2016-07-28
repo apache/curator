@@ -33,7 +33,6 @@ import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -81,7 +80,7 @@ public class TreeCache implements Closeable
         private final String path;
         private boolean cacheData = true;
         private boolean dataIsCompressed = false;
-        private CloseableExecutorService executorService = null;
+        private ExecutorService executorService = null;
         private int maxDepth = Integer.MAX_VALUE;
         private boolean createParentNodes = false;
         private TreeCacheSelector selector = new DefaultTreeCacheSelector();
@@ -97,10 +96,10 @@ public class TreeCache implements Closeable
          */
         public TreeCache build()
         {
-            CloseableExecutorService executor = executorService;
+            ExecutorService executor = executorService;
             if ( executor == null )
             {
-                executor = new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory));
+                executor = Executors.newSingleThreadExecutor(defaultThreadFactory);
             }
             return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, selector);
         }
@@ -128,28 +127,13 @@ public class TreeCache implements Closeable
          */
         public Builder setExecutor(ThreadFactory threadFactory)
         {
-            return setExecutor(new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory)));
+            return setExecutor(Executors.newSingleThreadExecutor(threadFactory));
         }
 
         /**
          * Sets the executor to publish events; a default executor will be created if not specified.
          */
         public Builder setExecutor(ExecutorService executorService)
-        {
-            if ( executorService instanceof CloseableExecutorService )
-            {
-                return setExecutor((CloseableExecutorService)executorService);
-            }
-            else
-            {
-                return setExecutor(new CloseableExecutorService(executorService));
-            }
-        }
-
-        /**
-         * Sets the executor to publish events; a default executor will be created if not specified.
-         */
-        public Builder setExecutor(CloseableExecutorService executorService)
         {
             this.executorService = checkNotNull(executorService);
             return this;
@@ -520,8 +504,8 @@ public class TreeCache implements Closeable
     private final AtomicBoolean isInitialized = new AtomicBoolean(false);
 
     private final TreeNode root;
-    private final WatcherRemoveCuratorFramework client;
-    private final CloseableExecutorService executorService;
+    private final CuratorFramework client;
+    private final ExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
     private final int maxDepth;
@@ -555,7 +539,7 @@ public class TreeCache implements Closeable
      */
     public TreeCache(CuratorFramework client, String path)
     {
-        this(client, path, true, false, Integer.MAX_VALUE, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true), false, new DefaultTreeCacheSelector());
+        this(client, path, true, false, Integer.MAX_VALUE, Executors.newSingleThreadExecutor(defaultThreadFactory), false, new DefaultTreeCacheSelector());
     }
 
     /**
@@ -567,7 +551,7 @@ public class TreeCache implements Closeable
      * @param createParentNodes true to create parent nodes as containers
      * @param selector         the selector to use
      */
-    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final CloseableExecutorService executorService, boolean createParentNodes, TreeCacheSelector selector)
+    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final ExecutorService executorService, boolean createParentNodes, TreeCacheSelector selector)
     {
         this.createParentNodes = createParentNodes;
         this.selector = Preconditions.checkNotNull(selector, "selector cannot be null");
@@ -612,7 +596,7 @@ public class TreeCache implements Closeable
             client.removeWatchers();
             client.getConnectionStateListenable().removeListener(connectionStateListener);
             listeners.clear();
-            executorService.close();
+            executorService.shutdown();
             try
             {
                 root.wasDeleted();

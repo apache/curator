@@ -419,16 +419,19 @@ public class LeaderSelector implements Closeable
         }
         finally
         {
-            hasLeadership = false;
-            try
+            if ( hasLeadership )
             {
-                mutex.release();
-            }
-            catch ( Exception e )
-            {
-                ThreadUtils.checkInterrupted(e);
-                log.error("The leader threw an exception", e);
-                // ignore errors - this is just a safety
+                hasLeadership = false;
+                try
+                {
+                    mutex.release();
+                }
+                catch ( Exception e )
+                {
+                    ThreadUtils.checkInterrupted(e);
+                    log.error("The leader threw an exception", e);
+                    // ignore errors - this is just a safety
+                }
             }
         }
     }
