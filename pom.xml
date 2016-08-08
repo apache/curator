@@ -61,7 +61,7 @@
         <surefire-forkcount>1</surefire-forkcount>
 
         <!-- versions -->
-        <zookeeper-version>3.4.6</zookeeper-version>
+        <zookeeper-version>3.4.8</zookeeper-version>
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
         <maven-bundle-plugin-version>2.3.7</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
