@@ -749,7 +749,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 {
                     // ignore
                 }
-                client.queueOperation(mainOperationAndData);
             }
         };
         client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));

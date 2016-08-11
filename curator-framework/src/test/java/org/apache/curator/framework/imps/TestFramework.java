@@ -191,6 +191,10 @@ public class TestFramework extends BaseClassForTests
             Assert.assertEquals(event.getType(), CuratorEventType.CREATE);
             Assert.assertEquals(event.getPath(), "/a/b/c");
             Assert.assertEquals(event.getName(), "/a/b/c");
+
+            // callback should only be called once
+            CuratorEvent unexpectedEvent = queue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNull(unexpectedEvent);
         }
         finally
         {
