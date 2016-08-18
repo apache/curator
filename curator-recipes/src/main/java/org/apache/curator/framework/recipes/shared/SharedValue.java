@@ -22,6 +22,8 @@ package org.apache.curator.framework.recipes.shared;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
@@ -30,6 +32,7 @@ import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,10 +62,10 @@ public class SharedValue implements Closeable, SharedValueReader
         @Override
         public void process(WatchedEvent event) throws Exception
         {
-            if ( state.get() == State.STARTED )
+            if ( state.get() == State.STARTED && event.getType() != Watcher.Event.EventType.None )
             {
-                readValue();
-                notifyListeners();
+                // don't block event thread in possible retry
+                readValueAndNotifyListenersInBackground();
             }
         }
     };
@@ -246,6 +249,21 @@ public class SharedValue implements Closeable, SharedValueReader
         Stat localStat = new Stat();
         byte[] bytes = client.getData().storingStatIn(localStat).usingWatcher(watcher).forPath(path);
         updateValue(localStat.getVersion(), bytes);
+    }
+
+    private final BackgroundCallback upadateAndNotifyListenerCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+            if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+                updateValue(event.getStat().getVersion(), event.getData());
+                notifyListeners();
+            }
+        }
+    };
+
+    private void readValueAndNotifyListenersInBackground() throws Exception
+    {
+        client.getData().usingWatcher(watcher).inBackground(upadateAndNotifyListenerCallback).forPath(path);
     }
 
     private void notifyListeners()

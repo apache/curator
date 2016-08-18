@@ -23,7 +23,11 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
@@ -40,6 +44,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestSharedCount extends BaseClassForTests
 {
@@ -281,6 +286,107 @@ public class TestSharedCount extends BaseClassForTests
             CloseableUtils.closeQuietly(count1);
             CloseableUtils.closeQuietly(client2);
             CloseableUtils.closeQuietly(client1);
+        }
+    }
+
+
+    @Test
+    public void testDisconnectEventOnWatcherDoesNotRetry() throws Exception
+    {
+        final CountDownLatch gotSuspendEvent = new CountDownLatch(1);
+
+        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(10, 1000));
+        curatorFramework.start();
+        curatorFramework.blockUntilConnected();
+
+        SharedCount sharedCount = new SharedCount(curatorFramework, "/count", 10);
+        sharedCount.start();
+
+        curatorFramework.getConnectionStateListenable().addListener(new ConnectionStateListener() {
+            @Override
+            public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                if (newState == ConnectionState.SUSPENDED) {
+                    gotSuspendEvent.countDown();
+                }
+            }
+        });
+
+        try
+        {
+            server.stop();
+            // if watcher goes into 10second retry loop we won't get timely notification
+            Assert.assertTrue(gotSuspendEvent.await(5, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(sharedCount);
+            CloseableUtils.closeQuietly(curatorFramework);
+        }
+    }
+
+    @Test
+    public void testDisconnectReconnectEventDoesNotFireValueWatcher() throws Exception
+    {
+        final CountDownLatch gotSuspendEvent = new CountDownLatch(1);
+        final CountDownLatch gotChangeEvent = new CountDownLatch(1);
+        final CountDownLatch getReconnectEvent = new CountDownLatch(1);
+
+        final AtomicInteger numChangeEvents = new AtomicInteger(0);
+
+
+        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(10, 500));
+        curatorFramework.start();
+        curatorFramework.blockUntilConnected();
+
+        SharedCount sharedCount = new SharedCount(curatorFramework, "/count", 10);
+
+        sharedCount.addListener(new SharedCountListener() {
+            @Override
+            public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception {
+                numChangeEvents.incrementAndGet();
+                gotChangeEvent.countDown();
+            }
+
+            @Override
+            public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                if (newState == ConnectionState.SUSPENDED) {
+                    gotSuspendEvent.countDown();
+                } else if (newState == ConnectionState.RECONNECTED) {
+                    getReconnectEvent.countDown();
+                }
+            }
+        });
+        sharedCount.start();
+
+        try
+        {
+            sharedCount.setCount(11);
+            Assert.assertTrue(gotChangeEvent.await(2, TimeUnit.SECONDS));
+
+            server.stop();
+            Assert.assertTrue(gotSuspendEvent.await(2, TimeUnit.SECONDS));
+
+            server.restart();
+            Assert.assertTrue(getReconnectEvent.await(2, TimeUnit.SECONDS));
+
+            sharedCount.trySetCount(sharedCount.getVersionedValue(), 12);
+
+            // flush background task queue
+            final CountDownLatch flushDone = new CountDownLatch(1);
+            curatorFramework.getData().inBackground(new BackgroundCallback() {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                    flushDone.countDown();
+                }
+            }).forPath("/count");
+            flushDone.await(5, TimeUnit.SECONDS);
+
+            Assert.assertEquals(2, numChangeEvents.get());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(sharedCount);
+            CloseableUtils.closeQuietly(curatorFramework);
         }
     }
 }
