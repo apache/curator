@@ -34,7 +34,7 @@ public class Schema
 {
     private final String name;
     private final Pattern pathRegex;
-    private final String path;
+    private final String fixedPath;
     private final String documentation;
     private final SchemaValidator schemaValidator;
     private final Allowance ephemeral;
@@ -107,7 +107,7 @@ public class Schema
     {
         Preconditions.checkNotNull((pathRegex != null) || (path != null), "pathRegex and path cannot both be null");
         this.pathRegex = pathRegex;
-        this.path = fixPath(path);
+        this.fixedPath = fixPath(path);
         this.metadata = ImmutableMap.copyOf(Preconditions.checkNotNull(metadata, "metadata cannot be null"));
         this.name = Preconditions.checkNotNull(name, "name cannot be null");
         this.documentation = Preconditions.checkNotNull(documentation, "documentation cannot be null");
@@ -167,11 +167,12 @@ public class Schema
      * Validate that this schema's create mode setting matches and that the data is valid
      *
      * @param mode CreateMode being used
+     * @param path the znode full path
      * @param data data being set
      * @param acl the creation acls
      * @throws SchemaViolation if schema's create mode setting does not match or data is invalid
      */
-    public void validateCreate(CreateMode mode, byte[] data, List<ACL> acl)
+    public void validateCreate(CreateMode mode, String path, byte[] data, List<ACL> acl)
     {
         if ( mode.isEphemeral() && (ephemeral == Allowance.CANNOT) )
         {
@@ -226,7 +227,7 @@ public class Schema
      */
     public String getRawPath()
     {
-        return (path != null) ? path : pathRegex.pattern();
+        return (fixedPath != null) ? fixedPath : pathRegex.pattern();
     }
 
     public Map<String, String> getMetadata()
@@ -241,7 +242,7 @@ public class Schema
 
     public String getPath()
     {
-        return path;
+        return fixedPath;
     }
 
     public String getDocumentation()
@@ -294,7 +295,7 @@ public class Schema
         {
             return false;
         }
-        return path.equals(schema.path);
+        return fixedPath.equals(schema.fixedPath);
 
     }
 
@@ -303,7 +304,7 @@ public class Schema
     public int hashCode()
     {
         int result = pathRegex.hashCode();
-        result = 31 * result + path.hashCode();
+        result = 31 * result + fixedPath.hashCode();
         return result;
     }
 
@@ -313,7 +314,7 @@ public class Schema
         return "Schema{" +
             "name='" + name + '\'' +
             ", pathRegex=" + pathRegex +
-            ", path='" + path + '\'' +
+            ", path='" + fixedPath + '\'' +
             ", documentation='" + documentation + '\'' +
             ", dataValidator=" + schemaValidator +
             ", ephemeral=" + ephemeral +

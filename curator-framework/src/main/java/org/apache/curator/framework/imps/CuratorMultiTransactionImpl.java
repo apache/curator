@@ -129,7 +129,7 @@ public class CuratorMultiTransactionImpl implements
             {
                 CreateRequest createRequest = (CreateRequest)curatorOp.get().toRequestRecord();
                 CreateMode createMode = CreateMode.fromFlag(createRequest.getFlags(), CreateMode.PERSISTENT);
-                schema.validateCreate(createMode, createRequest.getData(), createRequest.getAcl());
+                schema.validateCreate(createMode, createRequest.getPath(), createRequest.getData(), createRequest.getAcl());
             }
             else if ( (curatorOp.get().getType() == ZooDefs.OpCode.delete) || (curatorOp.get().getType() == ZooDefs.OpCode.deleteContainer) )
             {

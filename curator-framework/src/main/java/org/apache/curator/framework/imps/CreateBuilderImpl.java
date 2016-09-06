@@ -487,7 +487,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
         final String adjustedPath = adjustPath(client.fixForNamespace(givenPath, createMode.isSequential()));
         List<ACL> aclList = acling.getAclList(adjustedPath);
-        client.getSchemaSet().getSchema(givenPath).validateCreate(createMode, data, aclList);
+        client.getSchemaSet().getSchema(givenPath).validateCreate(createMode, givenPath, data, aclList);
 
         String returnPath = null;
         if ( backgrounding.inBackground() )
