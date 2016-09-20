@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.AsyncCallback;
@@ -233,13 +233,13 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
     {
         try
         {
-            final TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");
+            final OperationTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");
             AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback()
             {
                 @Override
                 public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
                 {
-                    trace.commit();
+                    trace.setResponseBytesLength(data.length).commit();
                     if ( decompress && (data != null) )
                     {
                         try
@@ -291,7 +291,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
 
     private byte[] pathInForeground(final String path) throws Exception
     {
-        TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Foreground");
+        OperationTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Foreground");
         byte[]      responseData = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
@@ -313,7 +313,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
                 }
             }
         );
-        trace.commit();
+        trace.setResponseBytesLength(responseData.length).commit();
 
         return decompress ? client.getCompressionProvider().decompress(path, responseData) : responseData;
     }

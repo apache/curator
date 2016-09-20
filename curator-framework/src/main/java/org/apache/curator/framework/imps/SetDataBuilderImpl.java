@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
@@ -208,7 +208,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
     {
         try
         {
-            final TimeTrace   trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Background");
+            final OperationTrace   trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Background");
             client.getZooKeeper().setData
             (
                 operationAndData.getData().getPath(),
@@ -220,7 +220,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
                     @Override
                     public void processResult(int rc, String path, Object ctx, Stat stat)
                     {
-                        trace.commit();
+                        trace.setRequestBytesLength(operationAndData.getData().getData().length).commit();
                         CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null);
                         client.processBackgroundOperation(operationAndData, event);
                     }
@@ -269,7 +269,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
 
     private Stat pathInForeground(final String path, final byte[] data) throws Exception
     {
-        TimeTrace   trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Foreground");
+        OperationTrace   trace = client.getZookeeperClient().startTracer("SetDataBuilderImpl-Foreground");
         Stat        resultStat = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
@@ -282,7 +282,7 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
                 }
             }
         );
-        trace.commit();
+        trace.setRequestBytesLength(data.length).commit();
         return resultStat;
     }
 }

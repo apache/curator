@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
@@ -145,7 +145,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
     {
         try
         {
-            final TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Background");
+            final OperationTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Background");
             client.getZooKeeper().delete
                 (
                     operationAndData.getData(),
@@ -234,7 +234,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
 
     private void pathInForeground(final String path, String unfixedPath) throws Exception
     {
-        TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
+        OperationTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
         try
         {
             RetryLoop.callWithRetry

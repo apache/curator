@@ -18,6 +18,7 @@
  */
 package org.apache.curator.utils;
 
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.drivers.TracerDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +32,11 @@ public class DefaultTracerDriver implements TracerDriver
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Override
-    public void addTrace(String name, long time, TimeUnit unit)
+    public void addTrace(OperationTrace metric)
     {
         if ( log.isTraceEnabled() )
         {
-            log.trace("Trace: " + name + " - " + TimeUnit.MILLISECONDS.convert(time, unit) + " ms");
+            log.trace("Trace: " + metric.getName() + " - " + metric.getLatencyMs() + " ms");
         }
     }
 

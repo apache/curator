@@ -28,11 +28,9 @@ public interface TracerDriver
     /**
      * Record the given trace event
      *
-     * @param name of the event
-     * @param time time event took
-     * @param unit time unit
+     * @param trace the metrics of the operation
      */
-    public void     addTrace(String name, long time, TimeUnit unit);
+    public void     addTrace(OperationTrace trace);
 
     /**
      * Add to a named counter

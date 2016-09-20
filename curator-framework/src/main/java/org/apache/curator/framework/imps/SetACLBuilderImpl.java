@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEventType;
@@ -133,7 +133,7 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
     {
         try
         {
-            final TimeTrace     trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Background");
+            final OperationTrace     trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Background");
             String              path = operationAndData.getData();
             client.getZooKeeper().setACL
             (
@@ -162,7 +162,7 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
 
     private Stat pathInForeground(final String path) throws Exception
     {
-        TimeTrace   trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Foreground");
+        OperationTrace   trace = client.getZookeeperClient().startTracer("SetACLBuilderImpl-Foreground");
         Stat        resultStat = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),

@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.ErrorListenerPathable;
@@ -108,7 +108,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, E
     {
         try
         {
-            final TimeTrace             trace = client.getZookeeperClient().startTracer("GetACLBuilderImpl-Background");
+            final OperationTrace             trace = client.getZookeeperClient().startTracer("GetACLBuilderImpl-Background");
             AsyncCallback.ACLCallback   callback = new AsyncCallback.ACLCallback()
             {
                 @Override
@@ -146,7 +146,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, E
 
     private List<ACL> pathInForeground(final String path) throws Exception
     {
-        TimeTrace    trace = client.getZookeeperClient().startTracer("GetACLBuilderImpl-Foreground");
+        OperationTrace    trace = client.getZookeeperClient().startTracer("GetACLBuilderImpl-Foreground");
         List<ACL>    result = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),

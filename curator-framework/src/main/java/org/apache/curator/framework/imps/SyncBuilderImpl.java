@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
@@ -94,7 +94,7 @@ public class SyncBuilderImpl implements SyncBuilder, BackgroundOperation<String>
     {
         try
         {
-            final TimeTrace trace = client.getZookeeperClient().startTracer("SyncBuilderImpl-Background");
+            final OperationTrace trace = client.getZookeeperClient().startTracer("SyncBuilderImpl-Background");
             final String path = operationAndData.getData();
             String adjustedPath = client.fixForNamespace(path);
 

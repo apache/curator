@@ -23,7 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.api.transaction.OperationType;
@@ -510,7 +510,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     {
         try
         {
-            final TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Background");
+            final OperationTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Background");
             client.getZooKeeper().create
                 (
                     operationAndData.getData().getPath(),
@@ -522,7 +522,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                         @Override
                         public void processResult(int rc, String path, Object ctx, String name)
                         {
-                            trace.commit();
+                            trace.setRequestBytesLength(operationAndData.getData().getData().length).commit();
 
                             if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
                             {
@@ -708,7 +708,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
 
     private String pathInForeground(final String path, final byte[] data) throws Exception
     {
-        TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
+        OperationTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-Foreground");
 
         final AtomicBoolean firstTime = new AtomicBoolean(true);
         String returnPath = RetryLoop.callWithRetry
@@ -758,13 +758,13 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 }
             );
 
-        trace.commit();
+        trace.setRequestBytesLength(data.length).commit();
         return returnPath;
     }
 
     private String findProtectedNodeInForeground(final String path) throws Exception
     {
-        TimeTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-findProtectedNodeInForeground");
+        OperationTrace trace = client.getZookeeperClient().startTracer("CreateBuilderImpl-findProtectedNodeInForeground");
 
         String returnPath = RetryLoop.callWithRetry
             (

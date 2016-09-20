@@ -19,6 +19,7 @@
 package org.apache.curator;
 
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.utils.DebugUtils;
@@ -160,9 +161,10 @@ class ConnectionState implements Watcher, Closeable
 
         for ( Watcher parentWatcher : parentWatchers )
         {
-            TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.get());
+
+            OperationTrace trace = new OperationTrace("connection-state-parent-process", tracer.get());
             parentWatcher.process(event);
-            timeTrace.commit();
+            trace.commit();
         }
     }
 

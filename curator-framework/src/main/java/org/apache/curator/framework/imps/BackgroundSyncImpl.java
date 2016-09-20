@@ -18,9 +18,11 @@
  */
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.zookeeper.AsyncCallback;
+
+import java.io.UnsupportedEncodingException;
 
 class BackgroundSyncImpl implements BackgroundOperation<String>
 {
@@ -36,7 +38,7 @@ class BackgroundSyncImpl implements BackgroundOperation<String>
     @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
-        final TimeTrace trace = client.getZookeeperClient().startTracer("BackgroundSyncImpl");
+        final OperationTrace trace = client.getZookeeperClient().startTracer("BackgroundSyncImpl");
         client.getZooKeeper().sync
         (
             operationAndData.getData(),
@@ -45,7 +47,11 @@ class BackgroundSyncImpl implements BackgroundOperation<String>
                 @Override
                 public void processResult(int rc, String path, Object ctx)
                 {
-                    trace.commit();
+                    try {
+                        trace.setRequestBytesLength(operationAndData.getData().getBytes("UTF-8").length).commit();
+                    } catch(UnsupportedEncodingException e) {
+                        // Ignore the exception.
+                    }
                     CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.SYNC, rc, path, null, ctx, null, null, null, null, null);
                     client.processBackgroundOperation(operationAndData, event);
                 }

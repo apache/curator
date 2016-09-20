@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
@@ -126,7 +126,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
     {
         try
         {
-            final TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Background");
+            final OperationTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Background");
             AsyncCallback.StatCallback callback = new AsyncCallback.StatCallback()
             {
                 @Override
@@ -185,7 +185,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
             final String parent = ZKPaths.getPathAndNode(path).getPath();
             if ( !parent.equals(ZKPaths.PATH_SEPARATOR) )
             {
-                TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground-CreateParents");
+                OperationTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground-CreateParents");
                 RetryLoop.callWithRetry
                 (
                     client.getZookeeperClient(),
@@ -218,7 +218,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
 
     private Stat pathInForegroundStandard(final String path) throws Exception
     {
-        TimeTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground");
+        OperationTrace   trace = client.getZookeeperClient().startTracer("ExistsBuilderImpl-Foreground");
         Stat        returnStat = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
