@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.StatPathable;
 import org.apache.curator.framework.api.TempGetDataBuilder;
@@ -58,7 +58,7 @@ class TempGetDataBuilderImpl implements TempGetDataBuilder
     {
         final String    localPath = client.fixForNamespace(path);
 
-        TimeTrace       trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Foreground");
+        OperationTrace       trace = client.getZookeeperClient().startAdvancedTracer("GetDataBuilderImpl-Foreground");
         byte[]          responseData = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
@@ -71,7 +71,7 @@ class TempGetDataBuilderImpl implements TempGetDataBuilder
                 }
             }
         );
-        trace.commit();
+        trace.setResponseBytesLength(responseData).setPath(path).setStat(responseStat).commit();
 
         return decompress ? client.getCompressionProvider().decompress(path, responseData) : responseData;
     }

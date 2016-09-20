@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionDeleteBuilder;
@@ -153,7 +153,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
     {
         try
         {
-            final TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Background");
+            final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("DeleteBuilderImpl-Background");
             client.getZooKeeper().delete
                 (
                     operationAndData.getData(),
@@ -163,7 +163,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
                         @Override
                         public void processResult(int rc, String path, Object ctx)
                         {
-                            trace.commit();
+                            trace.setReturnCode(rc).setPath(path).commit();
                             if ( (rc == KeeperException.Code.NOTEMPTY.intValue()) && deletingChildrenIfNeeded )
                             {
                                 backgroundDeleteChildrenThenNode(operationAndData);
@@ -248,7 +248,7 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
 
     private void pathInForeground(final String path, String unfixedPath) throws Exception
     {
-        TimeTrace trace = client.getZookeeperClient().startTracer("DeleteBuilderImpl-Foreground");
+        OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("DeleteBuilderImpl-Foreground");
         try
         {
             RetryLoop.callWithRetry
@@ -296,6 +296,6 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
             }
             throw e;
         }
-        trace.commit();
+        trace.setPath(path).commit();
     }
 }
