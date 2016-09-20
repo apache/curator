@@ -19,6 +19,7 @@
 package org.apache.curator;
 
 import com.google.common.base.Preconditions;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
@@ -160,7 +161,7 @@ public class CuratorZookeeperClient implements Closeable
         Preconditions.checkState(started.get(), "Client is not started");
 
         log.debug("blockUntilConnectedOrTimedOut() start");
-        TimeTrace       trace = startTracer("blockUntilConnectedOrTimedOut");
+        OperationTrace       trace = startAdvancedTracer("blockUntilConnectedOrTimedOut");
 
         internalBlockUntilConnectedOrTimedOut();
 
@@ -242,6 +243,16 @@ public class CuratorZookeeperClient implements Closeable
     }
 
     /**
+     * Start a new advanced tracer with more metrics being recorded
+     * @param name name of the event
+     * @return the new tracer ({@link OperationTrace#commit()} must be called)
+     */
+    public OperationTrace          startAdvancedTracer(String name)
+    {
+        return new OperationTrace(name, tracer.get(), state.getSessionId());
+    }
+
+    /**
      * Return the current tracing driver
      *
      * @return tracing driver
@@ -317,7 +328,7 @@ public class CuratorZookeeperClient implements Closeable
                     latch.countDown();
                 }
             };
-            
+
             state.addParentWatcher(tempWatcher);
             long        startTimeMs = System.currentTimeMillis();
             try

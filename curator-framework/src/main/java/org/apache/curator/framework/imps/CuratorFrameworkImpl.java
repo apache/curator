@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -884,7 +884,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
             {
                 try
                 {
-                    TimeTrace trace = client.startTracer("EventListener");
+                    OperationTrace trace = client.startAdvancedTracer("EventListener");
                     listener.eventReceived(CuratorFrameworkImpl.this, curatorEvent);
                     trace.commit();
                 }
