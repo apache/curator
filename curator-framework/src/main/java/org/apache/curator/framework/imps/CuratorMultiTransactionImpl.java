@@ -38,6 +38,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.proto.CreateRequest;
+import org.apache.zookeeper.proto.DeleteRequest;
 import org.apache.zookeeper.proto.SetDataRequest;
 import java.util.Arrays;
 import java.util.List;
@@ -133,7 +134,8 @@ public class CuratorMultiTransactionImpl implements
             }
             else if ( (curatorOp.get().getType() == ZooDefs.OpCode.delete) || (curatorOp.get().getType() == ZooDefs.OpCode.deleteContainer) )
             {
-                schema.validateDelete();
+                DeleteRequest deleteRequest = (DeleteRequest)curatorOp.get().toRequestRecord();
+                schema.validateDelete(deleteRequest.getPath());
             }
             else if ( curatorOp.get().getType() == ZooDefs.OpCode.setData )
             {

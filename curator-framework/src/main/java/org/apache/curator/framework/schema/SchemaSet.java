@@ -171,7 +171,7 @@ public class SchemaSet
         {
             return defaultSchema;
         }
-        throw new SchemaViolation("No schema found for: " + path);
+        throw new SchemaViolation(null, new SchemaViolation.ViolatorData(path, null, null), "No schema found for: " + path);
     }
 
     /**
