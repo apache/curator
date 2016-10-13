@@ -31,8 +31,12 @@ public class GzipCompressionProvider implements CompressionProvider
     {
         ByteArrayOutputStream       bytes = new ByteArrayOutputStream();
         GZIPOutputStream            out = new GZIPOutputStream(bytes);
-        out.write(data);
-        out.finish();
+        try {
+            out.write(data);
+            out.finish();
+        } finally {
+            out.close();
+        }
         return bytes.toByteArray();
     }
 
@@ -41,15 +45,19 @@ public class GzipCompressionProvider implements CompressionProvider
     {
         ByteArrayOutputStream       bytes = new ByteArrayOutputStream(compressedData.length);
         GZIPInputStream             in = new GZIPInputStream(new ByteArrayInputStream(compressedData));
-        byte[]                      buffer = new byte[compressedData.length];
-        for(;;)
-        {
-            int     bytesRead = in.read(buffer, 0, buffer.length);
-            if ( bytesRead < 0 )
+        try {
+            byte[] buffer = new byte[compressedData.length];
+            for(;;)
             {
-                break;
+                int bytesRead = in.read(buffer, 0, buffer.length);
+                if ( bytesRead < 0 )
+                {
+                    break;
+                }
+                bytes.write(buffer, 0, bytesRead);
             }
-            bytes.write(buffer, 0, bytesRead);
+        } finally {
+            in.close();
         }
         return bytes.toByteArray();
     }
