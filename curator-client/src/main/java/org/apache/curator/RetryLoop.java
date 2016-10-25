@@ -18,6 +18,7 @@
  */
 package org.apache.curator;
 
+import org.apache.curator.drivers.EventTrace;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.ThreadUtils;
@@ -104,7 +105,7 @@ public class RetryLoop
             try
             {
                 client.internalBlockUntilConnectedOrTimedOut();
-                
+
                 result = proc.call();
                 retryLoop.markComplete();
             }
@@ -189,7 +190,7 @@ public class RetryLoop
 
             if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs, sleeper) )
             {
-                tracer.get().addCount("retries-allowed", 1);
+                new EventTrace("retries-allowed", tracer.get()).commit();
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
                     log.debug("Retrying operation");
@@ -198,7 +199,7 @@ public class RetryLoop
             }
             else
             {
-                tracer.get().addCount("retries-disallowed", 1);
+                new EventTrace("retries-disallowed", tracer.get()).commit();
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
                     log.debug("Retry policy not allowing retry");

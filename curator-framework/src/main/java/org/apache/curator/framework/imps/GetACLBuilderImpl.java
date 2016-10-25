@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.ErrorListenerPathable;
@@ -108,13 +108,13 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, E
     {
         try
         {
-            final TimeTrace             trace = client.getZookeeperClient().startTracer("GetACLBuilderImpl-Background");
+            final OperationTrace             trace = client.getZookeeperClient().startAdvancedTracer("GetACLBuilderImpl-Background");
             AsyncCallback.ACLCallback   callback = new AsyncCallback.ACLCallback()
             {
                 @Override
                 public void processResult(int rc, String path, Object ctx, List<ACL> acl, Stat stat)
                 {
-                    trace.commit();
+                    trace.setReturnCode(rc).setPath(path).setStat(stat).commit();
                     CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.GET_ACL, rc, path, null, ctx, stat, null, null, null, acl);
                     client.processBackgroundOperation(operationAndData, event);
                 }
@@ -146,7 +146,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, E
 
     private List<ACL> pathInForeground(final String path) throws Exception
     {
-        TimeTrace    trace = client.getZookeeperClient().startTracer("GetACLBuilderImpl-Foreground");
+        OperationTrace    trace = client.getZookeeperClient().startAdvancedTracer("GetACLBuilderImpl-Foreground");
         List<ACL>    result = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
@@ -159,7 +159,7 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, E
                 }
             }
         );
-        trace.commit();
+        trace.setPath(path).setStat(responseStat).commit();
         return result;
     }
 }

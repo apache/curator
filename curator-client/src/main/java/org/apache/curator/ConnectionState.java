@@ -19,6 +19,8 @@
 package org.apache.curator;
 
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.drivers.EventTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.utils.DebugUtils;
@@ -78,7 +80,7 @@ class ConnectionState implements Watcher, Closeable
         Exception exception = backgroundExceptions.poll();
         if ( exception != null )
         {
-            tracer.get().addCount("background-exceptions", 1);
+            new EventTrace("background-exceptions", tracer.get()).commit();
             throw exception;
         }
 
@@ -160,9 +162,10 @@ class ConnectionState implements Watcher, Closeable
 
         for ( Watcher parentWatcher : parentWatchers )
         {
-            TimeTrace timeTrace = new TimeTrace("connection-state-parent-process", tracer.get());
+
+            OperationTrace trace = new OperationTrace("connection-state-parent-process", tracer.get());
             parentWatcher.process(event);
-            timeTrace.commit();
+            trace.commit();
         }
     }
 
@@ -199,11 +202,29 @@ class ConnectionState implements Watcher, Closeable
                     {
                         log.error(String.format("Connection timed out for connection string (%s) and timeout (%d) / elapsed (%d)", zooKeeper.getConnectionString(), connectionTimeoutMs, elapsed), connectionLossException);
                     }
-                    tracer.get().addCount("connections-timed-out", 1);
+                    new EventTrace("connections-timed-out", tracer.get(), getSessionId()).commit();
                     throw connectionLossException;
                 }
             }
         }
+    }
+
+    /**
+     * Return the current session id
+     */
+    public long getSessionId() {
+        long sessionId = -1;
+        if (isConnected()) {
+            try {
+                ZooKeeper zk = zooKeeper.getZooKeeper();
+                if (zk != null) {
+                    sessionId = zk.getSessionId();
+                }
+            } catch (Exception e) {
+                // Ignore the exception
+            }
+        }
+        return sessionId;
     }
 
     private synchronized void reset() throws Exception
@@ -259,6 +280,10 @@ class ConnectionState implements Watcher, Closeable
             break;
         }
         }
+        // the session expired is logged in handleExpiredSession, so not log here
+        if (state != Event.KeeperState.Expired) {
+            new EventTrace(state.toString(), tracer.get(), getSessionId()).commit();
+        }
 
         if ( checkNewConnectionString && zooKeeper.hasNewConnectionString() )
         {
@@ -271,7 +296,7 @@ class ConnectionState implements Watcher, Closeable
     private void handleNewConnectionString()
     {
         log.info("Connection string changed");
-        tracer.get().addCount("connection-string-changed", 1);
+        new EventTrace("connection-string-changed", tracer.get(), getSessionId()).commit();
 
         try
         {
@@ -287,7 +312,7 @@ class ConnectionState implements Watcher, Closeable
     private void handleExpiredSession()
     {
         log.warn("Session expired event received");
-        tracer.get().addCount("session-expired", 1);
+        new EventTrace("session-expired", tracer.get(), getSessionId()).commit();
 
         try
         {

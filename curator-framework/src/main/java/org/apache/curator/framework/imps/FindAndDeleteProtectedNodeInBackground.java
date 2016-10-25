@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -66,13 +66,13 @@ class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void
     @Override
     public void performBackgroundOperation(final OperationAndData<Void> operationAndData) throws Exception
     {
-        final TimeTrace trace = client.getZookeeperClient().startTracer("FindAndDeleteProtectedNodeInBackground");
+        final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("FindAndDeleteProtectedNodeInBackground");
         AsyncCallback.Children2Callback callback = new AsyncCallback.Children2Callback()
         {
             @Override
             public void processResult(int rc, String path, Object o, List<String> strings, Stat stat)
             {
-                trace.commit();
+                trace.setReturnCode(rc).setPath(path).setStat(stat).commit();
 
                 if ( debugInsertError.compareAndSet(true, false) )
                 {

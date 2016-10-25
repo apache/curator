@@ -9,6 +9,6 @@ Curator uses SLF4J ([[http://www.slf4j.org/]]) for logging. SLF4J is a facade ov
 plug in any (or no) logging framework. See the SLF4J website for details.
 
 h2. Tracing
-Connect Curator tracing to your tracing framework via an instance of {{TracerDriver}}.
+Connect Curator tracing to your tracing framework via an instance of {{TracerDriver}} or {{AdvancedTracerDriver}}.
 Curator calls the various methods (e.g. addTrace() or addCount() ) and your instance proxies the calls to your tracing
 framework. Inform Curator of your tracing driver instance by calling {{CuratorZookeeperClient.setTracerDriver()}}.

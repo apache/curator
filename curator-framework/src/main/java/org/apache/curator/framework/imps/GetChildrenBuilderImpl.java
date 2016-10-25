@@ -20,7 +20,7 @@ package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.BackgroundPathable;
 import org.apache.curator.framework.api.CuratorEventType;
@@ -162,13 +162,13 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
     {
         try
         {
-            final TimeTrace       trace = client.getZookeeperClient().startTracer("GetChildrenBuilderImpl-Background");
+            final OperationTrace       trace = client.getZookeeperClient().startAdvancedTracer("GetChildrenBuilderImpl-Background");
             AsyncCallback.Children2Callback callback = new AsyncCallback.Children2Callback()
             {
                 @Override
                 public void processResult(int rc, String path, Object o, List<String> strings, Stat stat)
                 {
-                    trace.commit();
+                    trace.setReturnCode(rc).setPath(path).setWithWatcher(watching.getWatcher() != null).setStat(stat).commit();
                     if ( strings == null )
                     {
                         strings = Lists.newArrayList();
@@ -211,7 +211,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
 
     private List<String> pathInForeground(final String path) throws Exception
     {
-        TimeTrace       trace = client.getZookeeperClient().startTracer("GetChildrenBuilderImpl-Foreground");
+        OperationTrace       trace = client.getZookeeperClient().startAdvancedTracer("GetChildrenBuilderImpl-Foreground");
         List<String>    children = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
@@ -233,7 +233,7 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
                 }
             }
         );
-        trace.commit();
+        trace.setPath(path).setWithWatcher(watching.getWatcher() != null).setStat(responseStat).commit();
         return children;
     }
 }
