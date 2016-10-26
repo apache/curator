@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -69,6 +71,7 @@ public class InstanceSpec
     private final int serverId;
     private final int tickTime;
     private final int maxClientCnxns;
+    private final Map<String,Object> customProperties;
 
     public static void reset() {
         nextServerId.set(1);
@@ -117,7 +120,7 @@ public class InstanceSpec
      */
     public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId)
     {
-        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, -1, -1);
+        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, -1, -1, null);
     }
 
     /**
@@ -130,7 +133,22 @@ public class InstanceSpec
      * @param tickTime                   tickTime. Set -1 to used fault server configuration
      * @param maxClientCnxns             max number of client connections from the same IP. Set -1 to use default server configuration
      */
-    public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns)
+    public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns) {
+        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, tickTime, maxClientCnxns, null);
+    }
+
+    /**
+     * @param dataDirectory              where to store data/logs/etc.
+     * @param port                       the port to listen on - each server in the ensemble must use a unique port
+     * @param electionPort               the electionPort to listen on - each server in the ensemble must use a unique electionPort
+     * @param quorumPort                 the quorumPort to listen on - each server in the ensemble must use a unique quorumPort
+     * @param deleteDataDirectoryOnClose if true, the data directory will be deleted when {@link TestingCluster#close()} is called
+     * @param serverId                   the server ID for the instance
+     * @param tickTime                   tickTime. Set -1 to used fault server configuration
+     * @param maxClientCnxns             max number of client connections from the same IP. Set -1 to use default server configuration
+     * @param customProperties           other properties to be passed to the server
+     */
+    public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns, Map<String,Object> customProperties)
     {
         this.dataDirectory = (dataDirectory != null) ? dataDirectory : Files.createTempDir();
         this.port = (port >= 0) ? port : getRandomPort();
@@ -140,6 +158,7 @@ public class InstanceSpec
         this.serverId = (serverId >= 0) ? serverId : nextServerId.getAndIncrement();
         this.tickTime = (tickTime > 0 ? tickTime : -1); // -1 to set default value
         this.maxClientCnxns = (maxClientCnxns >= 0 ? maxClientCnxns : -1); // -1 to set default value
+        this.customProperties = customProperties != null ? Collections.<String,Object>unmodifiableMap(customProperties) : Collections.<String,Object>emptyMap();
     }
 
     public int getServerId()
@@ -187,6 +206,10 @@ public class InstanceSpec
         return deleteDataDirectoryOnClose;
     }
 
+    public Map<String, Object> getCustomProperties() {
+        return customProperties;
+    }
+
     @Override
     public String toString()
     {
@@ -199,6 +222,7 @@ public class InstanceSpec
             ", serverId=" + serverId +
             ", tickTime=" + tickTime +
             ", maxClientCnxns=" + maxClientCnxns +
+            ", customProperties=" + customProperties +
             "} " + super.toString();
     }
 

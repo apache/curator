@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 @SuppressWarnings("UnusedDeclaration")
@@ -124,6 +125,12 @@ public class QuorumConfigBuilder implements Closeable
             for ( InstanceSpec thisSpec : instanceSpecs )
             {
                 properties.setProperty("server." + thisSpec.getServerId(), String.format("localhost:%d:%d;localhost:%d", thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getPort()));
+            }
+        }
+        Map<String,Object> customProperties = spec.getCustomProperties();
+        if (customProperties != null) {
+            for (Map.Entry<String,Object> property : customProperties.entrySet()) {
+                properties.put(property.getKey(), property.getValue());
             }
         }
 
