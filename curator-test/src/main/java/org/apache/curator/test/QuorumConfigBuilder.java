@@ -25,6 +25,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 @SuppressWarnings("UnusedDeclaration")
@@ -100,6 +101,12 @@ public class QuorumConfigBuilder
             for ( InstanceSpec thisSpec : instanceSpecs )
             {
                 properties.setProperty("server." + thisSpec.getServerId(), String.format("localhost:%d:%d", thisSpec.getQuorumPort(), thisSpec.getElectionPort()));
+            }
+        }
+        Map<String,Object> customProperties = spec.getCustomProperties();
+        if (customProperties != null) {
+            for (Map.Entry<String,Object> property : customProperties.entrySet()) {
+                properties.put(property.getKey(), property.getValue());
             }
         }
 
