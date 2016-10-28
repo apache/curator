@@ -134,32 +134,34 @@ public class Schema
     /**
      * Validate that this schema allows znode deletion
      *
+     * @param path the znode full path
      * @throws SchemaViolation if schema does not allow znode deletion
      */
-    public void validateDelete()
+    public void validateDelete(String path)
     {
         if ( !canBeDeleted )
         {
-            throw new SchemaViolation(this, "Cannot be deleted");
+            throw new SchemaViolation(this, new SchemaViolation.ViolatorData(path, null, null), "Cannot be deleted");
         }
     }
 
     /**
      * Validate that this schema's watching setting matches
      *
+     * @param path the znode full path
      * @param isWatching true if attempt is being made to watch node
      * @throws SchemaViolation if schema's watching setting does not match
      */
-    public void validateWatch(boolean isWatching)
+    public void validateWatch(String path, boolean isWatching)
     {
         if ( isWatching && (watched == Allowance.CANNOT) )
         {
-            throw new SchemaViolation(this, "Cannot be watched");
+            throw new SchemaViolation(this, new SchemaViolation.ViolatorData(path, null, null), "Cannot be watched");
         }
 
         if ( !isWatching && (watched == Allowance.MUST) )
         {
-            throw new SchemaViolation(this, "Must be watched");
+            throw new SchemaViolation(this, new SchemaViolation.ViolatorData(path, null, null), "Must be watched");
         }
     }
 
@@ -176,22 +178,22 @@ public class Schema
     {
         if ( mode.isEphemeral() && (ephemeral == Allowance.CANNOT) )
         {
-            throw new SchemaViolation(this, "Cannot be ephemeral");
+            throw new SchemaViolation(this, new SchemaViolation.ViolatorData(path, data, acl), "Cannot be ephemeral");
         }
 
         if ( !mode.isEphemeral() && (ephemeral == Allowance.MUST) )
         {
-            throw new SchemaViolation(this, "Must be ephemeral");
+            throw new SchemaViolation(this, new SchemaViolation.ViolatorData(path, data, acl), "Must be ephemeral");
         }
 
         if ( mode.isSequential() && (sequential == Allowance.CANNOT) )
         {
-            throw new SchemaViolation(this, "Cannot be sequential");
+            throw new SchemaViolation(this, new SchemaViolation.ViolatorData(path, data, acl), "Cannot be sequential");
         }
 
         if ( !mode.isSequential() && (sequential == Allowance.MUST) )
         {
-            throw new SchemaViolation(this, "Must be sequential");
+            throw new SchemaViolation(this, new SchemaViolation.ViolatorData(path, data, acl), "Must be sequential");
         }
 
         validateGeneral(path, data, acl);
@@ -210,7 +212,7 @@ public class Schema
     {
         if ( !schemaValidator.isValid(this, path, data, acl) )
         {
-            throw new SchemaViolation(this, "Data is not valid");
+            throw new SchemaViolation(this, new SchemaViolation.ViolatorData(path, data, acl), "Data is not valid");
         }
     }
 

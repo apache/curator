@@ -19,7 +19,7 @@
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.AsyncCallback;
@@ -233,14 +233,14 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
     {
         try
         {
-            final TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");
+            final OperationTrace   trace = client.getZookeeperClient().startAdvancedTracer("GetDataBuilderImpl-Background");
             AsyncCallback.DataCallback callback = new AsyncCallback.DataCallback()
             {
                 @Override
                 public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
                 {
                     watching.commitWatcher(rc, false);
-                    trace.commit();
+                    trace.setReturnCode(rc).setResponseBytesLength(data).setPath(path).setWithWatcher(watching.hasWatcher()).setStat(stat).commit();
                     if ( decompress && (data != null) )
                     {
                         try
@@ -276,7 +276,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
     @Override
     public byte[] forPath(String path) throws Exception
     {
-        client.getSchemaSet().getSchema(path).validateWatch(watching.isWatched() || watching.hasWatcher());
+        client.getSchemaSet().getSchema(path).validateWatch(path, watching.isWatched() || watching.hasWatcher());
 
         path = client.fixForNamespace(path);
 
@@ -294,7 +294,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
 
     private byte[] pathInForeground(final String path) throws Exception
     {
-        TimeTrace   trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Foreground");
+        OperationTrace   trace = client.getZookeeperClient().startAdvancedTracer("GetDataBuilderImpl-Foreground");
         byte[]      responseData = RetryLoop.callWithRetry
         (
             client.getZookeeperClient(),
@@ -317,7 +317,7 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
                 }
             }
         );
-        trace.commit();
+        trace.setResponseBytesLength(responseData).setPath(path).setWithWatcher(watching.hasWatcher()).setStat(responseStat).commit();
 
         return decompress ? client.getCompressionProvider().decompress(path, responseData) : responseData;
     }

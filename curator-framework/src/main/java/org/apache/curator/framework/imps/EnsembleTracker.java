@@ -20,6 +20,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -41,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -168,7 +170,8 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             {
                 sb.append(",");
             }
-            sb.append(server.clientAddr.getAddress().getHostAddress()).append(":").append(server.clientAddr.getPort());
+            InetSocketAddress address = Objects.firstNonNull(server.clientAddr, server.addr);
+            sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
         }
 
         return sb.toString();
