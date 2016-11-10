@@ -178,7 +178,7 @@ class ConnectionState implements Watcher, Closeable
 
         for ( Watcher parentWatcher : parentWatchers )
         {
-            OperationTrace trace = new OperationTrace("connection-state-parent-process", tracer.get());
+            OperationTrace trace = new OperationTrace("connection-state-parent-process", tracer.get(), getSessionId());
             parentWatcher.process(event);
             trace.commit();
         }
@@ -266,16 +266,14 @@ class ConnectionState implements Watcher, Closeable
      * Return the current session id
      */
     public long getSessionId() {
-        long sessionId = -1;
-        if (isConnected()) {
-            try {
-                ZooKeeper zk = zooKeeper.getZooKeeper();
-                if (zk != null) {
-                    sessionId = zk.getSessionId();
-                }
-            } catch (Exception e) {
-                // Ignore the exception
+        long sessionId = 0;
+        try {
+            ZooKeeper zk = zooKeeper.getZooKeeper();
+            if (zk != null) {
+                sessionId = zk.getSessionId();
             }
+        } catch (Exception e) {
+            // Ignore the exception
         }
         return sessionId;
     }
