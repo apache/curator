@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
@@ -341,11 +342,41 @@ public class LeaderSelector implements Closeable
 
     static Participant getLeader(CuratorFramework client, Collection<String> participantNodes) throws Exception
     {
+        Participant result = null;
+        
         if ( participantNodes.size() > 0 )
         {
-            return participantForPath(client, participantNodes.iterator().next(), true);
+            Iterator<String> iter = participantNodes.iterator();
+            while ( iter.hasNext() )
+            {
+                
+                try
+                {
+                    result = participantForPath(client, iter.next(), true);
+                }
+                catch( KeeperException.NoNodeException e )
+                {
+                    //See CURATOR-358
+                    //There's a race condition between querying the list of
+                    //leader nodes and then determining the content of the
+                    //actual leader node. If the query fails due to the
+                    //node not existing, then just move to the next
+                    //participant node and try again
+                }
+                
+                if ( result != null )
+                {
+                    break;
+                }
+            }
         }
-        return new Participant();
+        
+        if( result == null )
+        {
+            result = new Participant();
+        }
+        
+        return result;
     }
 
     /**
