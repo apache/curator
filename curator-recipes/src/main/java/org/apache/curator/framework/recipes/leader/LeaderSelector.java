@@ -303,17 +303,14 @@ public class LeaderSelector implements Closeable
         boolean isLeader = true;
         for ( String path : participantNodes )
         {
-            try
+            Participant participant = participantForPath(client, path, isLeader);
+            
+            if( participant != null )
             {
-                Participant participant = participantForPath(client, path, isLeader);
                 builder.add(participant);
-            }
-            catch ( KeeperException.NoNodeException ignore )
-            {
-                // ignore
-            }
 
-            isLeader = false;   // by definition the first node is the leader
+                isLeader = false;   // by definition the first node is the leader
+            }
         }
 
         return builder.build();
@@ -349,20 +346,7 @@ public class LeaderSelector implements Closeable
             Iterator<String> iter = participantNodes.iterator();
             while ( iter.hasNext() )
             {
-                
-                try
-                {
-                    result = participantForPath(client, iter.next(), true);
-                }
-                catch( KeeperException.NoNodeException e )
-                {
-                    //See CURATOR-358
-                    //There's a race condition between querying the list of
-                    //leader nodes and then determining the content of the
-                    //actual leader node. If the query fails due to the
-                    //node not existing, then just move to the next
-                    //participant node and try again
-                }
+                result = participantForPath(client, iter.next(), true);
                 
                 if ( result != null )
                 {
@@ -403,9 +387,16 @@ public class LeaderSelector implements Closeable
 
     private static Participant participantForPath(CuratorFramework client, String path, boolean markAsLeader) throws Exception
     {
-        byte[] bytes = client.getData().forPath(path);
-        String thisId = new String(bytes, "UTF-8");
-        return new Participant(thisId, markAsLeader);
+        try
+        {
+            byte[] bytes = client.getData().forPath(path);
+            String thisId = new String(bytes, "UTF-8");
+            return new Participant(thisId, markAsLeader);
+        }
+        catch ( KeeperException.NoNodeException e )
+        {
+            return null;
+        }
     }
 
     @VisibleForTesting
