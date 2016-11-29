@@ -72,6 +72,7 @@ public class InstanceSpec
     private final int tickTime;
     private final int maxClientCnxns;
     private final Map<String,Object> customProperties;
+    private final String hostname;
 
     public static InstanceSpec newInstanceSpec()
     {
@@ -116,7 +117,7 @@ public class InstanceSpec
      */
     public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId)
     {
-        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, -1, -1, null);
+        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, -1, -1, null, null);
     }
 
     /**
@@ -130,7 +131,7 @@ public class InstanceSpec
      * @param maxClientCnxns             max number of client connections from the same IP. Set -1 to use default server configuration
      */
     public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns) {
-        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, tickTime, maxClientCnxns, null);
+        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, tickTime, maxClientCnxns, null, null);
     }
 
     /**
@@ -146,6 +147,23 @@ public class InstanceSpec
      */
     public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns, Map<String,Object> customProperties)
     {
+        this(dataDirectory, port, electionPort, quorumPort, deleteDataDirectoryOnClose, serverId, tickTime, maxClientCnxns, customProperties, null);
+    }
+
+    /**
+     * @param dataDirectory              where to store data/logs/etc.
+     * @param port                       the port to listen on - each server in the ensemble must use a unique port
+     * @param electionPort               the electionPort to listen on - each server in the ensemble must use a unique electionPort
+     * @param quorumPort                 the quorumPort to listen on - each server in the ensemble must use a unique quorumPort
+     * @param deleteDataDirectoryOnClose if true, the data directory will be deleted when {@link TestingCluster#close()} is called
+     * @param serverId                   the server ID for the instance
+     * @param tickTime                   tickTime. Set -1 to used fault server configuration
+     * @param maxClientCnxns             max number of client connections from the same IP. Set -1 to use default server configuration
+     * @param customProperties           other properties to be passed to the server
+     * @param hostname                   Hostname or IP if the cluster is intending to be bounded into external interfaces
+     */
+    public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns, Map<String,Object> customProperties,String hostname)
+    {
         this.dataDirectory = (dataDirectory != null) ? dataDirectory : Files.createTempDir();
         this.port = (port >= 0) ? port : getRandomPort();
         this.electionPort = (electionPort >= 0) ? electionPort : getRandomPort();
@@ -155,6 +173,7 @@ public class InstanceSpec
         this.tickTime = (tickTime > 0 ? tickTime : -1); // -1 to set default value
         this.maxClientCnxns = (maxClientCnxns >= 0 ? maxClientCnxns : -1); // -1 to set default value
         this.customProperties = customProperties != null ? Collections.<String,Object>unmodifiableMap(customProperties) : Collections.<String,Object>emptyMap();
+        this.hostname = hostname == null ? localhost : hostname;
     }
 
     public int getServerId()
@@ -184,7 +203,7 @@ public class InstanceSpec
 
     public String getConnectString()
     {
-        return localhost + ":" + port;
+        return hostname + ":" + port;
     }
 
     public int getTickTime()
@@ -206,6 +225,10 @@ public class InstanceSpec
         return customProperties;
     }
 
+    public String getHostname() {
+        return hostname;
+    }
+
     @Override
     public String toString()
     {
@@ -219,6 +242,7 @@ public class InstanceSpec
             ", tickTime=" + tickTime +
             ", maxClientCnxns=" + maxClientCnxns +
             ", customProperties=" + customProperties +
+            ", hostname=" + hostname +
             "} " + super.toString();
     }
 
@@ -236,13 +260,13 @@ public class InstanceSpec
 
         InstanceSpec that = (InstanceSpec)o;
 
-        return port == that.port;
+        return hostname.equals(that.getHostname()) && port == that.port;
 
     }
 
     @Override
     public int hashCode()
     {
-        return port;
+        return hostname.hashCode() + port;
     }
 }
