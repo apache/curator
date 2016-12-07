@@ -26,6 +26,7 @@ import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CreateBuilderMain;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -164,6 +165,19 @@ public class PersistentNode implements Closeable
      */
     public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData)
     {
+        this(givenClient, mode, useProtection, basePath, initData, -1);
+    }
+
+    /**
+     * @param givenClient        client instance
+     * @param mode          creation mode
+     * @param useProtection if true, call {@link CreateBuilder#withProtection()}
+     * @param basePath the base path for the node
+     * @param initData data for the node
+     * @param ttl for ttl modes, the ttl to use
+     */
+    public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData, long ttl)
+    {
         this.useProtection = useProtection;
         this.client = Preconditions.checkNotNull(givenClient, "client cannot be null").newWatcherRemoveCuratorFramework();
         this.basePath = PathUtils.validatePath(basePath);
@@ -186,7 +200,8 @@ public class PersistentNode implements Closeable
             }
         };
 
-        createMethod = useProtection ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
+        CreateBuilderMain createBuilder = mode.isTTL() ? client.create().withTtl(ttl) : client.create();
+        createMethod = useProtection ? createBuilder.creatingParentContainersIfNeeded().withProtection() : createBuilder.creatingParentContainersIfNeeded();
         this.data.set(Arrays.copyOf(data, data.length));
     }
 
@@ -426,20 +441,25 @@ public class PersistentNode implements Closeable
         {
             switch ( mode )
             {
-            default:
-            {
-                break;
-            }
+                default:
+                {
+                    break;
+                }
 
-            case EPHEMERAL_SEQUENTIAL:
-            {
-                return CreateMode.EPHEMERAL;    // protection case - node already set
-            }
+                case EPHEMERAL_SEQUENTIAL:
+                {
+                    return CreateMode.EPHEMERAL;    // protection case - node already set
+                }
 
-            case PERSISTENT_SEQUENTIAL:
-            {
-                return CreateMode.PERSISTENT;    // protection case - node already set
-            }
+                case PERSISTENT_SEQUENTIAL:
+                {
+                    return CreateMode.PERSISTENT;    // protection case - node already set
+                }
+
+                case PERSISTENT_SEQUENTIAL_WITH_TTL:
+                {
+                    return CreateMode.PERSISTENT_WITH_TTL;    // protection case - node already set
+                }
             }
         }
         return mode;
