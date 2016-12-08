@@ -41,7 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
+class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
     private final CuratorFrameworkImpl client;
     private CreateMode createMode;
@@ -79,7 +79,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     }
 
     @Override
-    public CreateBuilderMain orSetData()
+    public CreateBuilder2 orSetData()
     {
         setDataIfExists = true;
         return this;

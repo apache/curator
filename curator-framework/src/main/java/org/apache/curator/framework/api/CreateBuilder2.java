@@ -18,9 +18,7 @@
  */
 package org.apache.curator.framework.api;
 
-public interface CreateBuilder extends CreateBuilderMain
+public interface CreateBuilder2 extends CreateBuilderMain
 {
     CreateBuilderMain withTtl(long ttl);
-
-    CreateBuilder2 orSetData();
 }
