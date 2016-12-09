@@ -79,12 +79,9 @@ public class TestPersistentTtlNode extends BaseClassForTests
                         @Override
                         public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
                         {
-                            if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_UPDATED )
+                            if ( (event.getData() != null) && "/test".equals(event.getData().getPath()) )
                             {
-                                if ( event.getData().getPath().equals("/test") )
-                                {
-                                    changes.release();
-                                }
+                                changes.release();
                             }
                         }
                     };
