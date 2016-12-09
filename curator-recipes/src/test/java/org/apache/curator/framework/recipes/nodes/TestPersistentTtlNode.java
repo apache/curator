@@ -8,6 +8,7 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.utils.ZKPaths;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -44,6 +45,31 @@ public class TestPersistentTtlNode extends BaseClassForTests
         {
             client.start();
 
+            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", 100, new byte[0]))
+            {
+                node.start();
+                node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS);
+
+                for ( int i = 0; i < 10; ++i )
+                {
+                    Thread.sleep(110);  // sleep a bit more than the TTL
+                    Assert.assertNotNull(client.checkExists().forPath("/test"));
+                }
+            }
+            Assert.assertNotNull(client.checkExists().forPath("/test"));
+
+            timing.sleepABit();
+            Assert.assertNull(client.checkExists().forPath("/test"));
+        }
+    }
+
+    @Test
+    public void testForcedDeleteOfTouchNode() throws Exception
+    {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
+        {
+            client.start();
+
             try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", 10, new byte[0]))
             {
                 node.start();
@@ -52,13 +78,12 @@ public class TestPersistentTtlNode extends BaseClassForTests
                 for ( int i = 0; i < 10; ++i )
                 {
                     Thread.sleep(10);
-                    Assert.assertNotNull(client.checkExists().forPath("/test"));
+                    client.delete().quietly().forPath(ZKPaths.makePath("test", PersistentTtlNode.DEFAULT_CHILD_NODE_NAME));
                 }
+
+                timing.sleepABit();
+                Assert.assertNotNull(client.checkExists().forPath("/test"));
             }
-
-            timing.sleepABit();
-
-            Assert.assertNull(client.checkExists().forPath("/test"));
         }
     }
 
@@ -79,7 +104,7 @@ public class TestPersistentTtlNode extends BaseClassForTests
                         @Override
                         public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
                         {
-                            if ( (event.getData() != null) && "/test".equals(event.getData().getPath()) )
+                            if ( (event.getType() == PathChildrenCacheEvent.Type.CHILD_UPDATED) && "/test".equals(event.getData().getPath()) )
                             {
                                 changes.release();
                             }
