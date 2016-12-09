@@ -3,6 +3,8 @@ h1. Persistent TTL Node
 h2. Description
 PersistentTtlNode is useful when you need to create a TTL node but don't want to keep it alive manually by periodically setting data \-
 PersistentTtlNode does that for you. Further the keep\-alive is done in a way that does not generate watch triggers on the parent node.
+It also provides similar guarantees that a [[Persistent Node|persistent-node.html]] does: the node attempts to stay present in ZooKeeper,
+even through connection and session interruptions.
 
 h2. Participating Classes
 * PersistentNode
