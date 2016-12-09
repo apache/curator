@@ -386,7 +386,7 @@ public class PersistentNode implements Closeable
         return this.data.get();
     }
 
-    private void deleteNode() throws Exception
+    protected void deleteNode() throws Exception
     {
         String localNodePath = nodePath.getAndSet(null);
         if ( localNodePath != null )
