@@ -124,7 +124,7 @@ public class QuorumConfigBuilder implements Closeable
         {
             for ( InstanceSpec thisSpec : instanceSpecs )
             {
-                properties.setProperty("server." + thisSpec.getServerId(), String.format("localhost:%d:%d;localhost:%d", thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getPort()));
+                properties.setProperty("server." + thisSpec.getServerId(), String.format("%s:%d:%d;%s:%d", thisSpec.getHostname(), thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getHostname(), thisSpec.getPort()));
             }
         }
         Map<String,Object> customProperties = spec.getCustomProperties();

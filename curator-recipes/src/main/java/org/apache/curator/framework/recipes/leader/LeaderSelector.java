@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
@@ -302,17 +303,14 @@ public class LeaderSelector implements Closeable
         boolean isLeader = true;
         for ( String path : participantNodes )
         {
-            try
+            Participant participant = participantForPath(client, path, isLeader);
+            
+            if( participant != null )
             {
-                Participant participant = participantForPath(client, path, isLeader);
                 builder.add(participant);
-            }
-            catch ( KeeperException.NoNodeException ignore )
-            {
-                // ignore
-            }
 
-            isLeader = false;   // by definition the first node is the leader
+                isLeader = false;   // by definition the first node is the leader
+            }
         }
 
         return builder.build();
@@ -341,11 +339,28 @@ public class LeaderSelector implements Closeable
 
     static Participant getLeader(CuratorFramework client, Collection<String> participantNodes) throws Exception
     {
+        Participant result = null;
+        
         if ( participantNodes.size() > 0 )
         {
-            return participantForPath(client, participantNodes.iterator().next(), true);
+            Iterator<String> iter = participantNodes.iterator();
+            while ( iter.hasNext() )
+            {
+                result = participantForPath(client, iter.next(), true);
+                
+                if ( result != null )
+                {
+                    break;
+                }
+            }
         }
-        return new Participant();
+        
+        if( result == null )
+        {
+            result = new Participant();
+        }
+        
+        return result;
     }
 
     /**
@@ -372,9 +387,16 @@ public class LeaderSelector implements Closeable
 
     private static Participant participantForPath(CuratorFramework client, String path, boolean markAsLeader) throws Exception
     {
-        byte[] bytes = client.getData().forPath(path);
-        String thisId = new String(bytes, "UTF-8");
-        return new Participant(thisId, markAsLeader);
+        try
+        {
+            byte[] bytes = client.getData().forPath(path);
+            String thisId = new String(bytes, "UTF-8");
+            return new Participant(thisId, markAsLeader);
+        }
+        catch ( KeeperException.NoNodeException e )
+        {
+            return null;
+        }
     }
 
     @VisibleForTesting

@@ -64,7 +64,7 @@ class NamespaceImpl
         if ( (namespace != null) && (path != null) )
         {
             String      namespacePath = ZKPaths.makePath(namespace, null);
-            if ( path.startsWith(namespacePath) )
+            if ( !namespacePath.equals("/") && path.startsWith(namespacePath) )
             {
                 path = (path.length() > namespacePath.length()) ? path.substring(namespacePath.length()) : "/";
             }
