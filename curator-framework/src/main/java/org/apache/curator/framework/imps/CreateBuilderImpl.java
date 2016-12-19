@@ -711,7 +711,11 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
                 }
                 catch ( KeeperException e )
                 {
-                    // ignore
+                    if ( !RetryLoop.isRetryException(e) )
+                    {
+                        throw e;
+                    }
+                    // otherwise safe to ignore as it will get retried
                 }
                 client.queueOperation(mainOperationAndData);
             }
