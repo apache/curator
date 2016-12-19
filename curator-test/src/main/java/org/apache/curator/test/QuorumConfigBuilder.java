@@ -100,7 +100,7 @@ public class QuorumConfigBuilder
         {
             for ( InstanceSpec thisSpec : instanceSpecs )
             {
-                properties.setProperty("server." + thisSpec.getServerId(), String.format("localhost:%d:%d", thisSpec.getQuorumPort(), thisSpec.getElectionPort()));
+                properties.setProperty("server." + thisSpec.getServerId(), String.format("%s:%d:%d", thisSpec.getHostname(), thisSpec.getQuorumPort(), thisSpec.getElectionPort()));
             }
         }
         Map<String,Object> customProperties = spec.getCustomProperties();
