@@ -179,12 +179,15 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
 
     private void processConfigData(byte[] data) throws Exception
     {
-        log.info("New config event received: " + Arrays.toString(data));
-
         Properties properties = new Properties();
         properties.load(new ByteArrayInputStream(data));
         QuorumMaj newConfig = new QuorumMaj(properties);
         currentConfig.set(newConfig);
+
+        if ( log.isInfoEnabled() )
+        {
+            log.info("New config event received: " + properties.toString());
+        }
 
         String connectionString = configToConnectionString(newConfig);
         if ( connectionString.trim().length() > 0 )
