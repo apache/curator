@@ -181,13 +181,10 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
     {
         Properties properties = new Properties();
         properties.load(new ByteArrayInputStream(data));
+        log.info("New config event received: {}", properties);
+
         QuorumMaj newConfig = new QuorumMaj(properties);
         currentConfig.set(newConfig);
-
-        if ( log.isInfoEnabled() )
-        {
-            log.info("New config event received: " + properties.toString());
-        }
 
         String connectionString = configToConnectionString(newConfig);
         if ( connectionString.trim().length() > 0 )
