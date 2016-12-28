@@ -560,6 +560,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return schemaSet;
     }
 
+    @Override
+    public AddPersistentWatchBuilder addPersistentWatch()
+    {
+        return null;    // TODO
+    }
+
     ACLProvider getAclProvider()
     {
         return aclProvider;
