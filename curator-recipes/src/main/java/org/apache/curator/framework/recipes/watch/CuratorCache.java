@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 
 /**
  * General interface for client-cached nodes. Create instances
@@ -47,7 +48,15 @@ public interface CuratorCache extends Closeable
     Listenable<CacheListener> getListenable();
 
     /**
-     * Refresh all cached nodes and send {@link CacheEventType#REFRESHED} when completed
+     * force-fill the cache by getting all applicable nodes. The returned future
+     * can be used to check/block for completion.
+     *
+     * @return a future that signals when the priming is complete
+     */
+    Future<Boolean> primeCache();
+
+    /**
+     * Refresh all cached nodes
      */
     void refreshAll();
 
@@ -88,12 +97,20 @@ public interface CuratorCache extends Closeable
     Set<String> paths();
 
     /**
+     * Return the node data stored for the path in the cache or null
+     *
+     * @param path node full path
+     * @return node data or null
+     */
+    CachedNode get(String path);
+
+    /**
      * Returns the collection of node values in the cache. The returned set behaves in the same manner
      * as {@link ConcurrentHashMap#values()}
      *
      * @return node values
      */
-    Collection<CachedNode> nodes();
+    Collection<CachedNode> getAll();
 
     /**
      * Returns the collection of node entries in the cache. The returned set behaves in the same manner

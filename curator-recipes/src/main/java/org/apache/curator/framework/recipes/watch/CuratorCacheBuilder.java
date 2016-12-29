@@ -25,41 +25,54 @@ import java.util.concurrent.TimeUnit;
 
 public class CuratorCacheBuilder
 {
+    private final CuratorFramework client;
+    private final String path;
+    private CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
+    private boolean singleNode;
+    private PrimingFilter primingFilter;
     private CacheFilter cacheFilter = new CacheFilter()
     {
         @Override
         public CacheAction actionForPath(String path)
         {
-            return CacheAction.DO_NOT_GET_DATA;
+            return CacheAction.GET_DATA;
         }
     };
-    private CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
-    private String path;
-    private boolean singleNode;
 
-    public static CuratorCacheBuilder forPath(String path)
+    public static CuratorCacheBuilder builder(CuratorFramework client, String path)
     {
-        CuratorCacheBuilder builder = new CuratorCacheBuilder();
-        builder.path = Objects.requireNonNull(path, "path cannot be null");
-        builder.singleNode = false;
-        return builder;
+        CuratorCacheBuilder builder = new CuratorCacheBuilder(client, path);
+        return builder.forTree();
     }
 
-    public static CuratorCacheBuilder forNode(String path)
-    {
-        CuratorCacheBuilder builder = new CuratorCacheBuilder();
-        builder.path = Objects.requireNonNull(path, "path cannot be null");
-        builder.singleNode = true;
-        return builder;
-    }
-
-    public CuratorCache build(CuratorFramework client)
+    public CuratorCache build()
     {
         if ( singleNode )
         {
             return new InternalNodeCache(client, path, cacheFilter, cacheBuilder.<String, CachedNode>build());
         }
-        return new InternalCuratorCache(client, path, cacheFilter, cacheBuilder.<String, CachedNode>build());
+        return new InternalCuratorCache(client, path, cacheFilter, primingFilter, cacheBuilder.<String, CachedNode>build());
+    }
+
+    public CuratorCacheBuilder forSingleNode()
+    {
+        singleNode = true;
+        primingFilter = null;
+        return this;
+    }
+
+    public CuratorCacheBuilder forSingleLevel()
+    {
+        singleNode = false;
+        primingFilter = new SingleLevelPrimingFilter(path);
+        return this;
+    }
+
+    public CuratorCacheBuilder forTree()
+    {
+        singleNode = false;
+        primingFilter = new TreePrimingFilter();
+        return this;
     }
 
     public CuratorCacheBuilder usingWeakValues()
@@ -92,7 +105,15 @@ public class CuratorCacheBuilder
         return this;
     }
 
-    private CuratorCacheBuilder()
+    public CuratorCacheBuilder withPrimingFilter(PrimingFilter primingFilter)
     {
+        this.primingFilter = Objects.requireNonNull(primingFilter, "primingFilter cannot be null");
+        return this;
+    }
+
+    private CuratorCacheBuilder(CuratorFramework client, String path)
+    {
+        this.client = Objects.requireNonNull(client, "client cannot be null");
+        this.path = Objects.requireNonNull(path, "path cannot be null");
     }
 }

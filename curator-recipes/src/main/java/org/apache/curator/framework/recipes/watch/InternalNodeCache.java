@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,7 +53,6 @@ class InternalNodeCache extends CuratorCacheBase
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
-    private final AtomicBoolean resetEventNeeded = new AtomicBoolean(true);
     private static final CachedNode nullNode = new CachedNode();
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
@@ -119,11 +119,6 @@ class InternalNodeCache extends CuratorCacheBase
                 ThreadUtils.checkInterrupted(e);
                 // TODO
             }
-
-            if ( resetEventNeeded.compareAndSet(true, false) )
-            {
-                notifyListeners(CacheEventType.REFRESHED);
-            }
         }
     };
 
@@ -162,11 +157,18 @@ class InternalNodeCache extends CuratorCacheBase
     }
 
     @Override
+    public Future<Boolean> primeCache()
+    {
+        Preconditions.checkState(state.get() == State.STARTED, "not started");
+        Primer primer = new Primer();
+        return primer.getTask();    // TODO
+    }
+
+    @Override
     public void refreshAll()
     {
         try
         {
-            resetEventNeeded.set(true);
             reset();
         }
         catch ( Exception e )

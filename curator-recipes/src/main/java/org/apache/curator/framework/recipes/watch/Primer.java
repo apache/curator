@@ -18,9 +18,29 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-public enum CacheEventType
+import com.google.common.util.concurrent.SettableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+
+class Primer
 {
-    NODE_CREATED,
-    NODE_DELETED,
-    NODE_CHANGED
+    private final SettableFuture<Boolean> task = SettableFuture.create();
+    private final AtomicInteger count = new AtomicInteger(0);
+
+    SettableFuture<Boolean> getTask()
+    {
+        return task;
+    }
+
+    void increment()
+    {
+        count.incrementAndGet();
+    }
+
+    void decrement()
+    {
+        if ( count.decrementAndGet() <= 0 )
+        {
+            task.set(true);
+        }
+    }
 }

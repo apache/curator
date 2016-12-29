@@ -58,7 +58,13 @@ abstract class CuratorCacheBase implements CuratorCache
     }
 
     @Override
-    public final Collection<CachedNode> nodes()
+    public CachedNode get(String path)
+    {
+        return cache.asMap().get(path);
+    }
+
+    @Override
+    public final Collection<CachedNode> getAll()
     {
         return cache.asMap().values();
     }

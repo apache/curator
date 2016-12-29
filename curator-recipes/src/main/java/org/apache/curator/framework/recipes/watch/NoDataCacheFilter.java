@@ -18,9 +18,11 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-public enum CacheEventType
+public class NoDataCacheFilter implements CacheFilter
 {
-    NODE_CREATED,
-    NODE_DELETED,
-    NODE_CHANGED
+    @Override
+    public CacheAction actionForPath(String path)
+    {
+        return CacheAction.DO_NOT_GET_DATA;
+    }
 }

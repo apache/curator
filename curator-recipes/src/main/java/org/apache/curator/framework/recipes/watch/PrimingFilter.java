@@ -18,9 +18,7 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-public enum CacheEventType
+public interface PrimingFilter
 {
-    NODE_CREATED,
-    NODE_DELETED,
-    NODE_CHANGED
+    boolean descend(String path);
 }

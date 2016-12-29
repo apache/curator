@@ -18,9 +18,20 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-public enum CacheEventType
+import java.util.Objects;
+
+public class SingleLevelPrimingFilter implements PrimingFilter
 {
-    NODE_CREATED,
-    NODE_DELETED,
-    NODE_CHANGED
+    private final String basePath;
+
+    public SingleLevelPrimingFilter(String basePath)
+    {
+        this.basePath = Objects.requireNonNull(basePath, "basePath cannot be null");
+    }
+
+    @Override
+    public boolean descend(String path)
+    {
+        return basePath.equals(path);
+    }
 }
