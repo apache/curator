@@ -563,7 +563,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public AddPersistentWatchBuilder addPersistentWatch()
     {
-        return null;    // TODO
+        return new AddPersistentWatchBuilderImpl(this);
     }
 
     ACLProvider getAclProvider()
