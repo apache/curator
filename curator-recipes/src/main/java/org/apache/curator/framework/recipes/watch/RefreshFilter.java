@@ -20,5 +20,5 @@ package org.apache.curator.framework.recipes.watch;
 
 public interface RefreshFilter
 {
-    boolean descend(String path);
+    boolean descend(String mainPath, String checkPath);
 }

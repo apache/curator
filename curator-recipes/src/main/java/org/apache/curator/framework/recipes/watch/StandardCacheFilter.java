@@ -20,40 +20,27 @@ package org.apache.curator.framework.recipes.watch;
 
 import org.apache.curator.utils.ZKPaths;
 
-public class SingleLevelCacheFilter implements CacheFilter
+class StandardCacheFilter implements CacheFilter
 {
-    private final String levelPath;
-    private final CacheAction defaultAction;
-    private final boolean isRoot;
+    private final CacheAction cacheAction;
 
-    public SingleLevelCacheFilter(String levelPath)
+    StandardCacheFilter(CacheAction cacheAction)
     {
-        this(levelPath, CacheAction.PATH_AND_DATA);
-    }
-
-    public SingleLevelCacheFilter(String levelPath, CacheAction defaultAction)
-    {
-        this.levelPath = levelPath;
-        this.defaultAction = defaultAction;
-        isRoot = levelPath.equals(ZKPaths.PATH_SEPARATOR);
+        this.cacheAction = cacheAction;
     }
 
     @Override
-    public CacheAction actionForPath(String path)
+    public CacheAction actionForPath(String mainPath, String checkPath)
     {
-        if ( isRoot && path.equals(ZKPaths.PATH_SEPARATOR) )    // special case. The parent of "/" is "/"
+        boolean mainPathIsRoot = mainPath.endsWith(ZKPaths.PATH_SEPARATOR);
+        if ( mainPathIsRoot && checkPath.equals(ZKPaths.PATH_SEPARATOR) )    // special case. The parent of "/" is "/"
         {
             return CacheAction.NOT_STORED;
         }
-        else if ( ZKPaths.getPathAndNode(path).getPath().equals(levelPath) )
+        else if ( ZKPaths.getPathAndNode(checkPath).getPath().equals(mainPath) )
         {
-            return actionForMatchedPath();
+            return cacheAction;
         }
         return CacheAction.NOT_STORED;
-    }
-
-    protected CacheAction actionForMatchedPath()
-    {
-        return defaultAction;
     }
 }

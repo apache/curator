@@ -20,5 +20,5 @@ package org.apache.curator.framework.recipes.watch;
 
 public interface CacheFilter
 {
-    CacheAction actionForPath(String path);
+    CacheAction actionForPath(String mainPath, String checkPath);
 }

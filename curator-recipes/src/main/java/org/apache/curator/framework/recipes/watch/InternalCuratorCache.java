@@ -46,7 +46,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     private static final RefreshFilter nopRefreshFilter = new RefreshFilter()
     {
         @Override
-        public boolean descend(String path)
+        public boolean descend(String mainPath, String checkPath)
         {
             return false;
         }
@@ -157,7 +157,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                     {
                         CacheAction cacheAction = (CacheAction)event.getContext();
                         CachedNode newNode = new CachedNode(event.getStat(), event.getData());
-                        CachedNode oldNode = cache.asMap().put(path, (cacheAction == CacheAction.PATH_ONLY) ? new CachedNode(event.getStat()) : newNode);
+                        CachedNode oldNode = putNewNode(path, cacheAction, newNode);
                         if ( oldNode == null )
                         {
                             notifyListeners(CacheEvent.NODE_CREATED, path, newNode);
@@ -187,7 +187,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
         };
 
-        CacheAction cacheAction = cacheFilter.actionForPath(path);
+        CacheAction cacheAction = cacheFilter.actionForPath(basePath, path);
         switch ( cacheAction )
         {
             case NOT_STORED:
@@ -196,8 +196,8 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 break;
             }
 
-            case PATH_ONLY:
-            case PATH_AND_DATA:
+            case STAT_ONLY:
+            case STAT_AND_DATA:
             {
                 try
                 {
@@ -212,7 +212,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 break;
             }
 
-            case PATH_AND_COMPRESSED_DATA:
+            case STAT_AND_COMPRESSED_DATA:
             {
                 try
                 {
@@ -228,7 +228,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
         }
 
-        if ( refreshFilter.descend(path) )
+        if ( refreshFilter.descend(basePath, path) )
         {
             refresher.increment();
             try
@@ -241,6 +241,39 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 // TODO
             }
         }
+    }
+
+    private CachedNode putNewNode(String path, CacheAction cacheAction, CachedNode newNode)
+    {
+        CachedNode putNode;
+        switch ( cacheAction )
+        {
+            default:
+            case NOT_STORED:
+            {
+                throw new IllegalStateException(String.format("Should not be here with action %s for path %s", cacheAction, path));
+            }
+
+            case PATH_ONLY:
+            {
+                putNode = nullNode;
+                break;
+            }
+
+            case STAT_ONLY:
+            {
+                putNode = new CachedNode(newNode.getStat());
+                break;
+            }
+
+            case STAT_AND_DATA:
+            case STAT_AND_COMPRESSED_DATA:
+            {
+                putNode = newNode;
+                break;
+            }
+        }
+        return cache.asMap().put(path, putNode);
     }
 
     private void decrementOutstanding(SettableFuture<Boolean> task, AtomicInteger outstandingCount)

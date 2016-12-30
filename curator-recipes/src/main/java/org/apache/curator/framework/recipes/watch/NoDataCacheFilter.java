@@ -21,8 +21,8 @@ package org.apache.curator.framework.recipes.watch;
 public class NoDataCacheFilter implements CacheFilter
 {
     @Override
-    public CacheAction actionForPath(String path)
+    public CacheAction actionForPath(String mainPath, String checkPath)
     {
-        return CacheAction.PATH_ONLY;
+        return CacheAction.STAT_ONLY;
     }
 }

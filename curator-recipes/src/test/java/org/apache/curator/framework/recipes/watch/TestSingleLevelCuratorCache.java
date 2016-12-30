@@ -284,8 +284,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             final CountDownLatch updatedLatch = new CountDownLatch(1);
             final CountDownLatch addedLatch = new CountDownLatch(1);
             client.create().creatingParentsIfNeeded().forPath("/test");
-            SingleLevelCacheFilter cacheFilter = new SingleLevelCacheFilter("/test", CacheAction.PATH_ONLY);
-            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().withCacheFilter(cacheFilter).build();
+            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().withCacheFilter(CacheFilters.statOnly()).build();
             cache.getListenable().addListener(new CacheListener()
             {
                 @Override
@@ -724,7 +723,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
 
     private void internalTestMode(CuratorFramework client, boolean cacheData) throws Exception
     {
-        CacheFilter cacheFilter = new SingleLevelCacheFilter("/test", cacheData ? CacheAction.PATH_AND_DATA : CacheAction.PATH_ONLY);
+        CacheFilter cacheFilter = cacheData ? CacheFilters.statAndData() : CacheFilters.statOnly();
         try (CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().withCacheFilter(cacheFilter).build() )
         {
             final CountDownLatch latch = new CountDownLatch(2);

@@ -179,7 +179,7 @@ class InternalNodeCache extends CuratorCacheBase
                 }
                 else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    switch ( cacheFilter.actionForPath(path) )
+                    switch ( cacheFilter.actionForPath(path, path) )
                     {
                         default:
                         case NOT_STORED:
@@ -187,20 +187,20 @@ class InternalNodeCache extends CuratorCacheBase
                             throw new UnsupportedOperationException("Single node cache does not support action: IGNORE");
                         }
 
-                        case PATH_ONLY:
+                        case STAT_ONLY:
                         {
                             setNewData(nullNode);
                             break;
                         }
 
-                        case PATH_AND_DATA:
+                        case STAT_AND_DATA:
                         {
                             refresher.increment();
                             client.getData().usingWatcher(watcher).inBackground(backgroundCallback, refresher).forPath(path);
                             break;
                         }
 
-                        case PATH_AND_COMPRESSED_DATA:
+                        case STAT_AND_COMPRESSED_DATA:
                         {
                             refresher.increment();
                             client.getData().decompressed().usingWatcher(watcher).inBackground(backgroundCallback, refresher).forPath(path);

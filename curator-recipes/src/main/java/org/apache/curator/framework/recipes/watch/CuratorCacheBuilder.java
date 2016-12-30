@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import java.util.Objects;
@@ -28,18 +29,11 @@ public class CuratorCacheBuilder
     private final CuratorFramework client;
     private final String path;
     private CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
-    private boolean singleNode;
-    private RefreshFilter refreshFilter;
+    private boolean singleNode = false;
+    private RefreshFilter refreshFilter = null;
     private boolean sendRefreshEvents = true;
     private boolean refreshOnStart = true;
-    private CacheFilter cacheFilter = new CacheFilter()
-    {
-        @Override
-        public CacheAction actionForPath(String path)
-        {
-            return CacheAction.PATH_AND_DATA;
-        }
-    };
+    private CacheFilter cacheFilter = CacheFilters.statAndData();
 
     public static CuratorCacheBuilder builder(CuratorFramework client, String path)
     {
@@ -51,6 +45,7 @@ public class CuratorCacheBuilder
     {
         if ( singleNode )
         {
+            Preconditions.checkState(refreshFilter == null, "Single node caches do not use RefreshFilters");
             return new InternalNodeCache(client, path, cacheFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
         }
         return new InternalCuratorCache(client, path, cacheFilter, refreshFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
@@ -60,21 +55,23 @@ public class CuratorCacheBuilder
     {
         singleNode = true;
         refreshFilter = null;
+        cacheFilter = CacheFilters.statAndData();
         return this;
     }
 
     public CuratorCacheBuilder forSingleLevel()
     {
         singleNode = false;
-        refreshFilter = new SingleLevelRefreshFilter(path);
-        cacheFilter = new SingleLevelCacheFilter(path);
+        refreshFilter = RefreshFilters.singleLevel();
+        cacheFilter = CacheFilters.statAndData();
         return this;
     }
 
     public CuratorCacheBuilder forTree()
     {
         singleNode = false;
-        refreshFilter = new TreeRefreshFilter();
+        refreshFilter = RefreshFilters.tree();
+        cacheFilter = CacheFilters.statAndData();
         return this;
     }
 

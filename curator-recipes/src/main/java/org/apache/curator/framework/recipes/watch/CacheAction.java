@@ -22,6 +22,7 @@ public enum CacheAction
 {
     NOT_STORED,
     PATH_ONLY,
-    PATH_AND_DATA,
-    PATH_AND_COMPRESSED_DATA
+    STAT_ONLY,
+    STAT_AND_DATA,
+    STAT_AND_COMPRESSED_DATA
 }
