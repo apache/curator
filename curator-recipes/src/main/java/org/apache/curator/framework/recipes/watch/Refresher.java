@@ -18,14 +18,14 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-import com.google.common.util.concurrent.SettableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class Refresher
 {
     private final CuratorCacheBase cacheBase;
     private final String refreshPath;
-    private final SettableFuture<Boolean> task;
+    private final CountDownLatch latch;
     private final AtomicInteger count = new AtomicInteger(0);
 
     public Refresher(CuratorCacheBase cacheBase, String refreshPath)
@@ -33,12 +33,12 @@ class Refresher
         this(cacheBase, refreshPath, null);
     }
 
-    Refresher(CuratorCacheBase cacheBase, String refreshPath, SettableFuture<Boolean> task)
+    Refresher(CuratorCacheBase cacheBase, String refreshPath, CountDownLatch latch)
     {
 
         this.cacheBase = cacheBase;
         this.refreshPath = refreshPath;
-        this.task = task;
+        this.latch = latch;
     }
 
     void increment()
@@ -51,15 +51,11 @@ class Refresher
         if ( count.decrementAndGet() <= 0 )
         {
             cacheBase.notifyListeners(CacheEvent.CACHE_REFRESHED, refreshPath);
-            if ( task != null )
+            if ( latch != null )
             {
-                task.set(true);
+                latch.countDown();
             }
+            cacheBase.incrementRefreshCount();
         }
-    }
-
-    boolean isCancelled()
-    {
-        return (task != null) && task.isCancelled();
     }
 }

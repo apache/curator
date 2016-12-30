@@ -18,22 +18,21 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.util.Objects;
-import java.util.concurrent.Future;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class InternalCuratorCache extends CuratorCacheBase implements Watcher
@@ -43,7 +42,6 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     private final String basePath;
     private final CacheFilter cacheFilter;
     private final RefreshFilter refreshFilter;
-    private final boolean refreshOnStart;
     private static final CachedNode nullNode = new CachedNode();
     private static final RefreshFilter nopRefreshFilter = new RefreshFilter()
     {
@@ -53,52 +51,38 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             return false;
         }
     };
-    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
-    {
-        @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
-            if ( newState.isConnected() )
-            {
-                internalRefresh(basePath, new Refresher(InternalCuratorCache.this, basePath), refreshFilter);
-            }
-        }
-    };
 
-    InternalCuratorCache(CuratorFramework client, String path, CacheFilter cacheFilter, RefreshFilter refreshFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
+    InternalCuratorCache(CuratorFramework client, String path, CacheFilter cacheFilter, final RefreshFilter refreshFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart)
     {
         super(cache, sendRefreshEvents);
         this.client = Objects.requireNonNull(client, "client cannot be null");
         basePath = Objects.requireNonNull(path, "path cannot be null");
         this.cacheFilter = Objects.requireNonNull(cacheFilter, "cacheFilter cannot be null");
         this.refreshFilter = Objects.requireNonNull(refreshFilter, "primingFilter cannot be null");
-        this.refreshOnStart = refreshOnStart;
-        watcher = new PersistentWatcher(client, path);
+        watcher = new PersistentWatcher(client, path)
+        {
+            @Override
+            protected void noteWatcherReset()
+            {
+                if ( refreshOnStart || (refreshCount() > 0) )
+                {
+                    internalRefresh(basePath, new Refresher(InternalCuratorCache.this, basePath), refreshFilter);
+                }
+            }
+        };
         watcher.getListenable().addListener(this);
     }
 
     @Override
-    public void start()
+    protected void internalStart()
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
         watcher.start();
-        client.getConnectionStateListenable().addListener(connectionStateListener);
-        if ( refreshOnStart )
-        {
-            internalRefresh(basePath, new Refresher(InternalCuratorCache.this, basePath), refreshFilter);
-        }
     }
 
     @Override
-    public void close()
+    protected void internalClose()
     {
-        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
-        {
-            client.getConnectionStateListenable().removeListener(connectionStateListener);
-            watcher.getListenable().removeListener(this);
-            listeners.clear();
-            watcher.close();
-        }
+        watcher.close();
     }
 
     @Override
@@ -131,29 +115,32 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     }
 
     @Override
-    public Future<Boolean> refreshAll()
+    public CountDownLatch refreshAll()
     {
         return refresh(basePath);
     }
 
     @Override
-    public Future<Boolean> refresh(String path)
+    public CountDownLatch refresh(String path)
     {
         Preconditions.checkArgument(path.startsWith(basePath), "Path is not this cache's tree: " + path);
 
-        if ( state.get() == State.STARTED )
+        if ( isStarted() )
         {
-            SettableFuture<Boolean> task = SettableFuture.create();
-            Refresher refresher = new Refresher(this, path, task);
+            CountDownLatch latch = new CountDownLatch(1);
+            Refresher refresher = new Refresher(this, path, latch);
             internalRefresh(path, refresher, refreshFilter);
-            return task;
+            return latch;
         }
-        return Futures.immediateFuture(true);
+        return new CountDownLatch(0);
     }
+
+    @VisibleForTesting
+    volatile Exchanger<Object> rebuildTestExchanger;
 
     private void internalRefresh(final String path, final Refresher refresher, final RefreshFilter refreshFilter)
     {
-        if ( state.get() != State.STARTED )
+        if ( !isStarted() )
         {
             return;
         }
@@ -191,6 +178,10 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                     // TODO
                 }
                 refresher.decrement();
+                if ( rebuildTestExchanger != null )
+                {
+                    rebuildTestExchanger.exchange(new Object());
+                }
             }
         };
 
@@ -207,6 +198,10 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 if ( cache.asMap().put(path, nullNode) == null )
                 {
                     notifyListeners(CacheEvent.NODE_CREATED, path);
+                }
+                else
+                {
+                    notifyListeners(CacheEvent.NODE_CHANGED, path);
                 }
                 break;
             }

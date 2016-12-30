@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -26,16 +27,25 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 abstract class CuratorCacheBase implements CuratorCache
 {
     protected final Cache<String, CachedNode> cache;
-    protected final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
-    protected final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
+    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final AtomicReference<CountDownLatch> initialRefreshLatch = new AtomicReference<>(new CountDownLatch(1));
     private final boolean sendRefreshEvents;
+    private final AtomicInteger refreshCount = new AtomicInteger(0);
 
-    protected enum State
+    protected boolean isStarted()
+    {
+        return state.get() == State.STARTED;
+    }
+
+    private enum State
     {
         LATENT,
         STARTED,
@@ -140,6 +150,47 @@ abstract class CuratorCacheBase implements CuratorCache
             }
         }
         return false;
+    }
+
+    @Override
+    public long refreshCount()
+    {
+        return refreshCount.get();
+    }
+
+    @Override
+    public final CountDownLatch start()
+    {
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
+
+        internalStart();
+        return initialRefreshLatch.get();
+    }
+
+    @Override
+    public final void close()
+    {
+        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
+        {
+            internalClose();
+            listeners.clear();
+            cache.invalidateAll();
+            cache.cleanUp();
+        }
+    }
+
+    protected abstract void internalClose();
+
+    protected abstract void internalStart();
+
+    void incrementRefreshCount()
+    {
+        refreshCount.incrementAndGet();
+        CountDownLatch latch = initialRefreshLatch.getAndSet(null);
+        if ( latch != null )
+        {
+            latch.countDown();
+        }
     }
 
     void notifyListeners(final CacheEvent eventType, final String path)

@@ -19,7 +19,6 @@
 package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import org.apache.curator.framework.CuratorFramework;
@@ -36,8 +35,8 @@ import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -104,33 +103,27 @@ class InternalNodeCache extends CuratorCacheBase
     }
 
     @Override
-    public void start()
+    protected void internalStart()
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
-
         client.getConnectionStateListenable().addListener(connectionStateListener);
         refreshAll();
     }
 
     @Override
-    public void close()
+    protected void internalClose()
     {
-        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
-        {
-            client.removeWatchers();
-            listeners.clear();
-            client.getConnectionStateListenable().removeListener(connectionStateListener);
-        }
+        client.removeWatchers();
+        client.getConnectionStateListenable().removeListener(connectionStateListener);
     }
 
     @Override
-    public Future<Boolean> refreshAll()
+    public CountDownLatch refreshAll()
     {
         return null;    // TODO
     }
 
     @Override
-    public Future<Boolean> refresh(String path)
+    public CountDownLatch refresh(String path)
     {
         return null;    // TODO
     }
@@ -156,7 +149,7 @@ class InternalNodeCache extends CuratorCacheBase
 
     private void reset(Refresher refresher) throws Exception
     {
-        if ( (state.get() == State.STARTED) && isConnected.get() )
+        if ( isStarted() && isConnected.get() )
         {
             refresher.increment();
             client.checkExists().usingWatcher(watcher).inBackground(backgroundCallback, refresher).forPath(path);
@@ -229,15 +222,15 @@ class InternalNodeCache extends CuratorCacheBase
         CachedNode previousData = data.getAndSet(newData);
         if ( newData == null )
         {
-            notifyListeners(CacheEvent.NODE_DELETED);
+            notifyListeners(CacheEvent.NODE_DELETED, path);
         }
         else if ( previousData == null )
         {
-            notifyListeners(CacheEvent.NODE_CREATED);
+            notifyListeners(CacheEvent.NODE_CREATED, path);
         }
         else if ( !previousData.equals(newData) )
         {
-            notifyListeners(CacheEvent.NODE_CHANGED);
+            notifyListeners(CacheEvent.NODE_CHANGED, path);
         }
 
         if ( rebuildTestExchanger != null )
@@ -251,29 +244,5 @@ class InternalNodeCache extends CuratorCacheBase
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    private void notifyListeners(final CacheEvent event)
-    {
-        listeners.forEach
-        (
-            new Function<CacheListener, Void>()
-            {
-                @Override
-                public Void apply(CacheListener listener)
-                {
-                    try
-                    {
-                        listener.process(event, path);
-                    }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        log.error("Calling listener", e);
-                    }
-                    return null;
-                }
-            }
-        );
     }
 }

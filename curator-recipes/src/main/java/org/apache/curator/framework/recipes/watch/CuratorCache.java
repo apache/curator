@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * General interface for client-cached nodes. Create instances
@@ -34,8 +34,10 @@ public interface CuratorCache extends Closeable
 {
     /**
      * Start the cache
+     *
+     * @return a latch that can be used to block until the initial refresh has completed
      */
-    void start();
+    CountDownLatch start();
 
     @Override
     void close();
@@ -48,20 +50,21 @@ public interface CuratorCache extends Closeable
     Listenable<CacheListener> getListenable();
 
     /**
-     * force-fill the cache by getting all applicable nodes. The returned future
+     * force-fill the cache by getting all applicable nodes. The returned latch
      * can be used to check/block for completion.
      *
-     * @return a future that signals when the refresh is complete
+     * @return a latch that signals when the refresh is complete
      */
-    Future<Boolean> refreshAll();
+    CountDownLatch refreshAll();
 
     /**
-     * Refresh the given cached node
+     * Refresh the given cached node The returned latch
+     * can be used to check/block for completion.
      *
      * @param path node full path
-     * @return a future that signals when the refresh is complete
+     * @return a latch that signals when the refresh is complete
      */
-    Future<Boolean> refresh(String path);
+    CountDownLatch refresh(String path);
 
     /**
      * Remove the given path from the cache.
@@ -149,4 +152,12 @@ public interface CuratorCache extends Closeable
      * @return true if the data was cleared
      */
     boolean clearDataBytes(String path, int ifVersion);
+
+    /**
+     * Returns the number of times this cache has been refreshed (manually via one of the refresh()
+     * methods, from starting, from connection problems, etc.).
+     *
+     * @return number of refreshes
+     */
+    long refreshCount();
 }

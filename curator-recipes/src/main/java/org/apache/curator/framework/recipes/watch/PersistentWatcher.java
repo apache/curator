@@ -21,10 +21,14 @@ package org.apache.curator.framework.recipes.watch;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
@@ -65,6 +69,17 @@ public class PersistentWatcher implements Closeable
     };
     private final CuratorFramework client;
     private final String basePath;
+    private final BackgroundCallback backgroundCallback = new BackgroundCallback()
+    {
+        @Override
+        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+        {
+            if ( (event.getType() == CuratorEventType.ADD_PERSISTENT_WATCH) && (event.getResultCode() == KeeperException.Code.OK.intValue()) )
+            {
+                noteWatcherReset();
+            }
+        }
+    };
 
     private enum State
     {
@@ -100,6 +115,7 @@ public class PersistentWatcher implements Closeable
             {
                 // TODO
             }
+            listeners.clear();
         }
     }
 
@@ -108,11 +124,16 @@ public class PersistentWatcher implements Closeable
         return listeners;
     }
 
+    protected void noteWatcherReset()
+    {
+        // provided for sub-classes to override
+    }
+
     private void reset()
     {
         try
         {
-            client.addPersistentWatch().inBackground().usingWatcher(watcher).forPath(basePath);
+            client.addPersistentWatch().inBackground(backgroundCallback).usingWatcher(watcher).forPath(basePath);
         }
         catch ( Exception e )
         {
