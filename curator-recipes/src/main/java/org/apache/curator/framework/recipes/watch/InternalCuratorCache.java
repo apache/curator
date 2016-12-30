@@ -18,60 +18,62 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 class InternalCuratorCache extends CuratorCacheBase implements Watcher
 {
-    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final PersistentWatcher watcher;
     private final CuratorFramework client;
     private final String basePath;
     private final CacheFilter cacheFilter;
-    private final PrimingFilter primingFilter;
-    private final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
+    private final RefreshFilter refreshFilter;
+    private final boolean refreshOnStart;
     private static final CachedNode nullNode = new CachedNode();
-
-    private enum State
+    private static final RefreshFilter nopRefreshFilter = new RefreshFilter()
     {
-        LATENT,
-        STARTED,
-        CLOSED
-    }
-
-    InternalCuratorCache(CuratorFramework client, String path, CacheFilter cacheFilter, PrimingFilter primingFilter, Cache<String, CachedNode> cache)
+        @Override
+        public boolean descend(String path)
+        {
+            return false;
+        }
+    };
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
-        super(cache);
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            if ( newState.isConnected() )
+            {
+                internalRefresh(basePath, new Refresher(InternalCuratorCache.this, basePath), refreshFilter);
+            }
+        }
+    };
+
+    InternalCuratorCache(CuratorFramework client, String path, CacheFilter cacheFilter, RefreshFilter refreshFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
+    {
+        super(cache, sendRefreshEvents);
         this.client = Objects.requireNonNull(client, "client cannot be null");
         basePath = Objects.requireNonNull(path, "path cannot be null");
         this.cacheFilter = Objects.requireNonNull(cacheFilter, "cacheFilter cannot be null");
-        this.primingFilter = Objects.requireNonNull(primingFilter, "primingFilter cannot be null");
-        watcher = new PersistentWatcher(client, path)
-        {
-            @Override
-            protected void watcherSet()
-            {
-                refreshAll();
-            }
-        };
+        this.refreshFilter = Objects.requireNonNull(refreshFilter, "primingFilter cannot be null");
+        this.refreshOnStart = refreshOnStart;
+        watcher = new PersistentWatcher(client, path);
         watcher.getListenable().addListener(this);
     }
 
@@ -80,6 +82,11 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "already started");
         watcher.start();
+        client.getConnectionStateListenable().addListener(connectionStateListener);
+        if ( refreshOnStart )
+        {
+            internalRefresh(basePath, new Refresher(InternalCuratorCache.this, basePath), refreshFilter);
+        }
     }
 
     @Override
@@ -87,25 +94,11 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     {
         if ( state.compareAndSet(State.STARTED, State.CLOSED) )
         {
+            client.getConnectionStateListenable().removeListener(connectionStateListener);
             watcher.getListenable().removeListener(this);
             listeners.clear();
             watcher.close();
         }
-    }
-
-    @Override
-    public Listenable<CacheListener> getListenable()
-    {
-        return listeners;
-    }
-
-    @Override
-    public Future<Boolean> primeCache()
-    {
-        Preconditions.checkState(state.get() == State.STARTED, "not started");
-        Primer primer = new Primer();
-        internalPrimeCache(basePath, primer);
-        return primer.getTask();
     }
 
     @Override
@@ -123,7 +116,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             {
                 if ( cache.asMap().remove(event.getPath()) != null )
                 {
-                    notifyListeners(CacheEventType.NODE_DELETED, event.getPath());
+                    notifyListeners(CacheEvent.NODE_DELETED, event.getPath());
                 }
                 break;
             }
@@ -131,29 +124,34 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             case NodeCreated:
             case NodeDataChanged:
             {
-                refresh(event.getPath());
+                internalRefresh(event.getPath(), new Refresher(InternalCuratorCache.this, basePath), nopRefreshFilter);
                 break;
             }
         }
     }
 
     @Override
-    public void refreshAll()
+    public Future<Boolean> refreshAll()
     {
-        Set<String> keySet = new HashSet<>(cache.asMap().keySet());
-        for ( String path : keySet )
-        {
-            refresh(path);
-        }
+        return refresh(basePath);
     }
 
     @Override
-    public void refresh(final String path)
+    public Future<Boolean> refresh(String path)
     {
-        internalRefresh(path, null);
+        Preconditions.checkArgument(path.startsWith(basePath), "Path is not this cache's tree: " + path);
+
+        if ( state.get() == State.STARTED )
+        {
+            SettableFuture<Boolean> task = SettableFuture.create();
+            Refresher refresher = new Refresher(this, path, task);
+            internalRefresh(path, refresher, refreshFilter);
+            return task;
+        }
+        return Futures.immediateFuture(true);
     }
 
-    private void internalRefresh(final String path, final Primer primer)
+    private void internalRefresh(final String path, final Refresher refresher, final RefreshFilter refreshFilter)
     {
         if ( state.get() != State.STARTED )
         {
@@ -165,51 +163,59 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if ( event.getType() == CuratorEventType.GET_DATA )
+                if ( event.getResultCode() == 0 )
                 {
-                    CachedNode newNode = new CachedNode(event.getStat(), event.getData());
-                    CachedNode oldNode = cache.asMap().put(path, newNode);
-                    if ( oldNode == null )
+                    if ( event.getType() == CuratorEventType.GET_DATA )
                     {
-                        notifyListeners(CacheEventType.NODE_CREATED, path);
+                        CachedNode newNode = new CachedNode(event.getStat(), event.getData());
+                        CachedNode oldNode = cache.asMap().put(path, newNode);
+                        if ( oldNode == null )
+                        {
+                            notifyListeners(CacheEvent.NODE_CREATED, path);
+                        }
+                        else if ( !newNode.equals(oldNode) )
+                        {
+                            notifyListeners(CacheEvent.NODE_CHANGED, path);
+                        }
                     }
-                    else if ( !newNode.equals(oldNode) )
+                    else if ( event.getType() == CuratorEventType.CHILDREN )
                     {
-                        notifyListeners(CacheEventType.NODE_CHANGED, path);
+                        for ( String child : event.getChildren() )
+                        {
+                            internalRefresh(ZKPaths.makePath(path, child), refresher, refreshFilter);
+                        }
                     }
                 }
-                if ( primer != null )
+                else
                 {
-                    primer.decrement();
+                    // TODO
                 }
+                refresher.decrement();
             }
         };
 
         switch ( cacheFilter.actionForPath(path) )
         {
-            case IGNORE:
+            case NOT_STORED:
             {
                 // NOP
                 break;
             }
 
-            case DO_NOT_GET_DATA:
+            case PATH_ONLY:
             {
                 if ( cache.asMap().put(path, nullNode) == null )
                 {
-                    notifyListeners(CacheEventType.NODE_CREATED, path);
+                    notifyListeners(CacheEvent.NODE_CREATED, path);
                 }
                 break;
             }
 
-            case GET_DATA:
+            case PATH_AND_DATA:
             {
                 try
                 {
-                    if ( primer != null )
-                    {
-                        primer.increment();
-                    }
+                    refresher.increment();
                     client.getData().inBackground(callback).forPath(path);
                 }
                 catch ( Exception e )
@@ -220,15 +226,12 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 break;
             }
 
-            case GET_COMPRESSED:
+            case PATH_AND_COMPRESSED_DATA:
             {
                 try
                 {
-                    if ( primer != null )
-                    {
-                        primer.increment();
-                    }
-                    client.getData().decompressed().inBackground().forPath(path);
+                    refresher.increment();
+                    client.getData().decompressed().inBackground(callback).forPath(path);
                 }
                 catch ( Exception e )
                 {
@@ -238,63 +241,19 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 break;
             }
         }
-    }
 
-    private void notifyListeners(final CacheEventType eventType, final String path)
-    {
-        if ( state.get() != State.STARTED )
+        if ( refreshFilter.descend(path) )
         {
-            return;
-        }
-
-        Function<CacheListener, Void> proc = new Function<CacheListener, Void>()
-        {
-            @Override
-            public Void apply(CacheListener listener)
+            refresher.increment();
+            try
             {
-                listener.process(eventType, path);
-                return null;
+                client.getChildren().inBackground(callback).forPath(path);
             }
-        };
-        listeners.forEach(proc);
-    }
-
-    private void internalPrimeCache(final String path, final Primer primer)
-    {
-        if ( (state.get() != State.STARTED) || primer.getTask().isCancelled() )
-        {
-            return;
-        }
-
-        BackgroundCallback callback = new BackgroundCallback()
-        {
-            @Override
-            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            catch ( Exception e )
             {
-                if ( event.getType() == CuratorEventType.CHILDREN )
-                {
-                    for ( String child : event.getChildren() )
-                    {
-                        String refreshPath = ZKPaths.makePath(path, child);
-                        refresh(refreshPath);
-                        if ( primingFilter.descend(refreshPath) )
-                        {
-                            internalPrimeCache(refreshPath, primer);
-                        }
-                    }
-                }
-                primer.decrement();
+                ThreadUtils.checkInterrupted(e);
+                // TODO
             }
-        };
-        try
-        {
-            primer.increment();
-            client.getChildren().inBackground(callback).forPath(path);
-        }
-        catch ( Exception e )
-        {
-            ThreadUtils.checkInterrupted(e);
-            // TODO
         }
     }
 

@@ -18,19 +18,52 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import com.google.common.base.Function;
 import com.google.common.cache.Cache;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.ListenerContainer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 abstract class CuratorCacheBase implements CuratorCache
 {
     protected final Cache<String, CachedNode> cache;
+    protected final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
+    protected final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final boolean sendRefreshEvents;
 
-    protected CuratorCacheBase(Cache<String, CachedNode> cache)
+    protected enum State
+    {
+        LATENT,
+        STARTED,
+        CLOSED
+    }
+
+    protected CuratorCacheBase(Cache<String, CachedNode> cache, boolean sendRefreshEvents)
     {
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
+        this.sendRefreshEvents = sendRefreshEvents;
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return cache.asMap().isEmpty();
+    }
+
+    @Override
+    public int size()
+    {
+        return cache.asMap().size();
+    }
+
+    @Override
+    public Listenable<CacheListener> getListenable()
+    {
+        return listeners;
     }
 
     @Override
@@ -107,5 +140,29 @@ abstract class CuratorCacheBase implements CuratorCache
             }
         }
         return false;
+    }
+
+    void notifyListeners(final CacheEvent eventType, final String path)
+    {
+        if ( state.get() != State.STARTED )
+        {
+            return;
+        }
+
+        if ( (eventType == CacheEvent.CACHE_REFRESHED) && !sendRefreshEvents )
+        {
+            return;
+        }
+
+        Function<CacheListener, Void> proc = new Function<CacheListener, Void>()
+        {
+            @Override
+            public Void apply(CacheListener listener)
+            {
+                listener.process(eventType, path);
+                return null;
+            }
+        };
+        listeners.forEach(proc);
     }
 }

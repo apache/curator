@@ -29,13 +29,15 @@ public class CuratorCacheBuilder
     private final String path;
     private CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
     private boolean singleNode;
-    private PrimingFilter primingFilter;
+    private RefreshFilter refreshFilter;
+    private boolean sendRefreshEvents = true;
+    private boolean refreshOnStart = true;
     private CacheFilter cacheFilter = new CacheFilter()
     {
         @Override
         public CacheAction actionForPath(String path)
         {
-            return CacheAction.GET_DATA;
+            return CacheAction.PATH_AND_DATA;
         }
     };
 
@@ -49,29 +51,30 @@ public class CuratorCacheBuilder
     {
         if ( singleNode )
         {
-            return new InternalNodeCache(client, path, cacheFilter, cacheBuilder.<String, CachedNode>build());
+            return new InternalNodeCache(client, path, cacheFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
         }
-        return new InternalCuratorCache(client, path, cacheFilter, primingFilter, cacheBuilder.<String, CachedNode>build());
+        return new InternalCuratorCache(client, path, cacheFilter, refreshFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
     }
 
     public CuratorCacheBuilder forSingleNode()
     {
         singleNode = true;
-        primingFilter = null;
+        refreshFilter = null;
         return this;
     }
 
     public CuratorCacheBuilder forSingleLevel()
     {
         singleNode = false;
-        primingFilter = new SingleLevelPrimingFilter(path);
+        refreshFilter = new SingleLevelRefreshFilter(path);
+        cacheFilter = new SingleLevelCacheFilter(path);
         return this;
     }
 
     public CuratorCacheBuilder forTree()
     {
         singleNode = false;
-        primingFilter = new TreePrimingFilter();
+        refreshFilter = new TreeRefreshFilter();
         return this;
     }
 
@@ -105,9 +108,21 @@ public class CuratorCacheBuilder
         return this;
     }
 
-    public CuratorCacheBuilder withPrimingFilter(PrimingFilter primingFilter)
+    public CuratorCacheBuilder withPrimingFilter(RefreshFilter refreshFilter)
     {
-        this.primingFilter = Objects.requireNonNull(primingFilter, "primingFilter cannot be null");
+        this.refreshFilter = Objects.requireNonNull(refreshFilter, "primingFilter cannot be null");
+        return this;
+    }
+
+    public CuratorCacheBuilder sendingRefreshEvents(boolean sendRefreshEvents)
+    {
+        this.sendRefreshEvents = sendRefreshEvents;
+        return this;
+    }
+
+    public CuratorCacheBuilder refreshingWhenStarted(boolean refreshOnStart)
+    {
+        this.refreshOnStart = refreshOnStart;
         return this;
     }
 

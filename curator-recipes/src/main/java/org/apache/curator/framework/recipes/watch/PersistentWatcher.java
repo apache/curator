@@ -21,8 +21,6 @@ package org.apache.curator.framework.recipes.watch;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
@@ -114,27 +112,11 @@ public class PersistentWatcher implements Closeable
     {
         try
         {
-            BackgroundCallback callback = new BackgroundCallback()
-            {
-                @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
-                    if ( event.getResultCode() == 0 )
-                    {
-                        watcherSet();
-                    }
-                }
-            };
             client.addPersistentWatch().inBackground().usingWatcher(watcher).forPath(basePath);
         }
         catch ( Exception e )
         {
             // TODO
         }
-    }
-
-    protected void watcherSet()
-    {
-        // default is NOP
     }
 }

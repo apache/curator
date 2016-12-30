@@ -18,30 +18,38 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import org.apache.curator.utils.ZKPaths;
+
 public class SingleLevelCacheFilter implements CacheFilter
 {
     private final String levelPath;
     private final CacheAction defaultAction;
+    private final boolean isRoot;
 
     public SingleLevelCacheFilter(String levelPath)
     {
-        this(levelPath, CacheAction.GET_DATA);
+        this(levelPath, CacheAction.PATH_AND_DATA);
     }
 
     public SingleLevelCacheFilter(String levelPath, CacheAction defaultAction)
     {
         this.levelPath = levelPath;
         this.defaultAction = defaultAction;
+        isRoot = levelPath.equals(ZKPaths.PATH_SEPARATOR);
     }
 
     @Override
     public CacheAction actionForPath(String path)
     {
-        if ( levelPath.equals(path) )
+        if ( isRoot && path.equals(ZKPaths.PATH_SEPARATOR) )    // special case. The parent of "/" is "/"
+        {
+            return CacheAction.NOT_STORED;
+        }
+        else if ( ZKPaths.getPathAndNode(path).getPath().equals(levelPath) )
         {
             return actionForMatchedPath();
         }
-        return CacheAction.IGNORE;
+        return CacheAction.NOT_STORED;
     }
 
     protected CacheAction actionForMatchedPath()

@@ -26,8 +26,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -50,8 +48,6 @@ class InternalNodeCache extends CuratorCacheBase
     private final String path;
     private final CacheFilter cacheFilter;
     private final AtomicReference<CachedNode> data = new AtomicReference<>(null);
-    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
-    private final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
     private static final CachedNode nullNode = new CachedNode();
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -63,15 +59,7 @@ class InternalNodeCache extends CuratorCacheBase
             {
                 if ( isConnected.compareAndSet(false, true) )
                 {
-                    try
-                    {
-                        reset();
-                    }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        log.error("Trying to reset after reconnection", e);
-                    }
+                    refreshAll();
                 }
             }
             else
@@ -86,24 +74,9 @@ class InternalNodeCache extends CuratorCacheBase
         @Override
         public void process(WatchedEvent event)
         {
-            try
-            {
-                reset();
-            }
-            catch ( Exception e )
-            {
-                ThreadUtils.checkInterrupted(e);
-                // TODO
-            }
+            refreshAll();
         }
     };
-
-    private enum State
-    {
-        LATENT,
-        STARTED,
-        CLOSED
-    }
 
     private final BackgroundCallback backgroundCallback = new BackgroundCallback()
     {
@@ -122,9 +95,9 @@ class InternalNodeCache extends CuratorCacheBase
         }
     };
 
-    InternalNodeCache(CuratorFramework client, String path, CacheFilter cacheFilter, Cache<String, CachedNode> cache)
+    InternalNodeCache(CuratorFramework client, String path, CacheFilter cacheFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
     {
-        super(cache);
+        super(cache, sendRefreshEvents);
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.cacheFilter = Objects.requireNonNull(cacheFilter, "cacheFilter cannot be null");
@@ -151,25 +124,22 @@ class InternalNodeCache extends CuratorCacheBase
     }
 
     @Override
-    public Listenable<CacheListener> getListenable()
+    public Future<Boolean> refreshAll()
     {
-        return listeners;
+        return null;    // TODO
     }
 
     @Override
-    public Future<Boolean> primeCache()
+    public Future<Boolean> refresh(String path)
     {
-        Preconditions.checkState(state.get() == State.STARTED, "not started");
-        Primer primer = new Primer();
-        return primer.getTask();    // TODO
+        return null;    // TODO
     }
 
-    @Override
-    public void refreshAll()
+    public void refreXshAll()
     {
         try
         {
-            reset();
+            reset(null);
         }
         catch ( Exception e )
         {
@@ -178,23 +148,24 @@ class InternalNodeCache extends CuratorCacheBase
         }
     }
 
-    @Override
-    public void refresh(String path)
+    public void reXfresh(String path)
     {
         Preconditions.checkArgument(this.path.equals(path), "Bad path: " + path);
         refreshAll();
     }
 
-    private void reset() throws Exception
+    private void reset(Refresher refresher) throws Exception
     {
         if ( (state.get() == State.STARTED) && isConnected.get() )
         {
-            client.checkExists().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+            refresher.increment();
+            client.checkExists().usingWatcher(watcher).inBackground(backgroundCallback, refresher).forPath(path);
         }
     }
 
     private void processBackgroundResult(CuratorEvent event) throws Exception
     {
+        Refresher refresher = (Refresher)event.getContext();
         switch ( event.getType() )
         {
             case GET_DATA:
@@ -218,26 +189,28 @@ class InternalNodeCache extends CuratorCacheBase
                     switch ( cacheFilter.actionForPath(path) )
                     {
                         default:
-                        case IGNORE:
+                        case NOT_STORED:
                         {
                             throw new UnsupportedOperationException("Single node cache does not support action: IGNORE");
                         }
 
-                        case DO_NOT_GET_DATA:
+                        case PATH_ONLY:
                         {
                             setNewData(nullNode);
                             break;
                         }
 
-                        case GET_DATA:
+                        case PATH_AND_DATA:
                         {
-                            client.getData().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+                            refresher.increment();
+                            client.getData().usingWatcher(watcher).inBackground(backgroundCallback, refresher).forPath(path);
                             break;
                         }
 
-                        case GET_COMPRESSED:
+                        case PATH_AND_COMPRESSED_DATA:
                         {
-                            client.getData().decompressed().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+                            refresher.increment();
+                            client.getData().decompressed().usingWatcher(watcher).inBackground(backgroundCallback, refresher).forPath(path);
                             break;
                         }
                     }
@@ -245,6 +218,8 @@ class InternalNodeCache extends CuratorCacheBase
                 break;
             }
         }
+
+        refresher.decrement();
     }
 
     @VisibleForTesting
@@ -254,15 +229,15 @@ class InternalNodeCache extends CuratorCacheBase
         CachedNode previousData = data.getAndSet(newData);
         if ( newData == null )
         {
-            notifyListeners(CacheEventType.NODE_DELETED);
+            notifyListeners(CacheEvent.NODE_DELETED);
         }
         else if ( previousData == null )
         {
-            notifyListeners(CacheEventType.NODE_CREATED);
+            notifyListeners(CacheEvent.NODE_CREATED);
         }
         else if ( !previousData.equals(newData) )
         {
-            notifyListeners(CacheEventType.NODE_CHANGED);
+            notifyListeners(CacheEvent.NODE_CHANGED);
         }
 
         if ( rebuildTestExchanger != null )
@@ -278,7 +253,7 @@ class InternalNodeCache extends CuratorCacheBase
         }
     }
 
-    private void notifyListeners(final CacheEventType event)
+    private void notifyListeners(final CacheEvent event)
     {
         listeners.forEach
         (

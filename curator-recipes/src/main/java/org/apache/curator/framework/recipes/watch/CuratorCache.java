@@ -51,21 +51,17 @@ public interface CuratorCache extends Closeable
      * force-fill the cache by getting all applicable nodes. The returned future
      * can be used to check/block for completion.
      *
-     * @return a future that signals when the priming is complete
+     * @return a future that signals when the refresh is complete
      */
-    Future<Boolean> primeCache();
-
-    /**
-     * Refresh all cached nodes
-     */
-    void refreshAll();
+    Future<Boolean> refreshAll();
 
     /**
      * Refresh the given cached node
      *
      * @param path node full path
+     * @return a future that signals when the refresh is complete
      */
-    void refresh(String path);
+    Future<Boolean> refresh(String path);
 
     /**
      * Remove the given path from the cache.
@@ -119,6 +115,22 @@ public interface CuratorCache extends Closeable
      * @return node entries
      */
     Set<Map.Entry<String, CachedNode>> entries();
+
+    /**
+     * Returns true if the cache is currently empty. Use the result only as a reference. Concurrent
+     * changes may not be immediately reflected.
+     *
+     * @return true/false
+     */
+    boolean isEmpty();
+
+    /**
+     * Returns the number of nodes int the cache. Use the result only as a reference. Concurrent
+     * changes may not be immediately reflected.
+     *
+     * @return true/false
+     */
+    int size();
 
     /**
      * As a memory optimization, you can clear the cached data bytes for a node. Subsequent

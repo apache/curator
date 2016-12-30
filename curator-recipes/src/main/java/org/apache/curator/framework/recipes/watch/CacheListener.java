@@ -20,5 +20,5 @@ package org.apache.curator.framework.recipes.watch;
 
 public interface CacheListener
 {
-    void process(CacheEventType eventType, String path);
+    void process(CacheEvent event, String path);
 }

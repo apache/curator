@@ -20,8 +20,8 @@ package org.apache.curator.framework.recipes.watch;
 
 public enum CacheAction
 {
-    IGNORE,
-    DO_NOT_GET_DATA,
-    GET_DATA,
-    GET_COMPRESSED
+    NOT_STORED,
+    PATH_ONLY,
+    PATH_AND_DATA,
+    PATH_AND_COMPRESSED_DATA
 }

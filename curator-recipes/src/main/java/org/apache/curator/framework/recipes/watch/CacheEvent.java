@@ -18,11 +18,10 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-public class TreePrimingFilter implements PrimingFilter
+public enum CacheEvent
 {
-    @Override
-    public boolean descend(String path)
-    {
-        return true;
-    }
+    NODE_CREATED,
+    NODE_DELETED,
+    NODE_CHANGED,
+    CACHE_REFRESHED
 }

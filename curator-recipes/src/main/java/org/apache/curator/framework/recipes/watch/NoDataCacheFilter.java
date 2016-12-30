@@ -23,6 +23,6 @@ public class NoDataCacheFilter implements CacheFilter
     @Override
     public CacheAction actionForPath(String path)
     {
-        return CacheAction.DO_NOT_GET_DATA;
+        return CacheAction.PATH_ONLY;
     }
 }

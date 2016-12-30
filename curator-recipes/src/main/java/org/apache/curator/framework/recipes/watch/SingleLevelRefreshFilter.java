@@ -20,11 +20,11 @@ package org.apache.curator.framework.recipes.watch;
 
 import java.util.Objects;
 
-public class SingleLevelPrimingFilter implements PrimingFilter
+public class SingleLevelRefreshFilter implements RefreshFilter
 {
     private final String basePath;
 
-    public SingleLevelPrimingFilter(String basePath)
+    public SingleLevelRefreshFilter(String basePath)
     {
         this.basePath = Objects.requireNonNull(basePath, "basePath cannot be null");
     }
