@@ -18,37 +18,36 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-public class RefreshFilters
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+
+public class CompositeCuratorCacheProxy extends CompositeCuratorCache
 {
-    private static final RefreshFilter singleLevel = new RefreshFilter()
+    public CompositeCuratorCacheProxy(CuratorCache... caches)
     {
-        @Override
-        public boolean descend(String mainPath, String checkPath)
-        {
-            return mainPath.equals(checkPath);
-        }
-    };
-
-    private static final RefreshFilter tree = new RefreshFilter()
-    {
-        @Override
-        public boolean descend(String mainPath, String checkPath)
-        {
-            return true;
-        }
-    };
-
-    public static RefreshFilter singleLevel()
-    {
-        return singleLevel;
+        super(caches);
     }
 
-    public static RefreshFilter tree()
+    public CompositeCuratorCacheProxy(Collection<CuratorCache> caches)
     {
-        return tree;
+        super(caches);
     }
 
-    private RefreshFilters()
+    public CompositeCuratorCacheProxy(Map<String, CuratorCache> caches)
     {
+        super(caches);
+    }
+
+    @Override
+    public CountDownLatch start()
+    {
+        return new CountDownLatch(0);
+    }
+
+    @Override
+    public void close()
+    {
+        // NOP
     }
 }

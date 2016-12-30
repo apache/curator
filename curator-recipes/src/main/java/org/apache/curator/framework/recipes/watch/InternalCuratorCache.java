@@ -124,9 +124,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     @Override
     public CountDownLatch refresh(String path)
     {
-        Preconditions.checkArgument(path.startsWith(basePath), "Path is not this cache's tree: " + path);
-
-        if ( isStarted() )
+        if ( isStarted() && path.startsWith(basePath) )
         {
             CountDownLatch latch = new CountDownLatch(1);
             Refresher refresher = new Refresher(this, path, latch);

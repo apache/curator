@@ -75,6 +75,14 @@ public class CuratorCacheBuilder
         return this;
     }
 
+    public CuratorCacheBuilder forFull(CacheAction cacheAction)
+    {
+        singleNode = false;
+        refreshFilter = RefreshFilters.tree();
+        cacheFilter = CacheFilters.full(cacheAction);
+        return this;
+    }
+
     public CuratorCacheBuilder usingWeakValues()
     {
         cacheBuilder = cacheBuilder.weakValues();

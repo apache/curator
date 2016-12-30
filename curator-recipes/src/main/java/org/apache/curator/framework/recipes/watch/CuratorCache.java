@@ -20,7 +20,6 @@ package org.apache.curator.framework.recipes.watch;
 
 import org.apache.curator.framework.listen.Listenable;
 import java.io.Closeable;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -104,20 +103,18 @@ public interface CuratorCache extends Closeable
     CachedNode get(String path);
 
     /**
-     * Returns the collection of node values in the cache. The returned set behaves in the same manner
-     * as {@link ConcurrentHashMap#values()}
+     * Returns the collection of node values in the cache.
      *
      * @return node values
      */
-    Collection<CachedNode> getAll();
+    Iterable<CachedNode> getAll();
 
     /**
-     * Returns the collection of node entries in the cache. The returned set behaves in the same manner
-     * as {@link ConcurrentHashMap#entrySet()}
+     * Returns the collection of node entries in the cache.
      *
      * @return node entries
      */
-    Set<Map.Entry<String, CachedNode>> entries();
+    Iterable<Map.Entry<String, CachedNode>> entries();
 
     /**
      * Returns true if the cache is currently empty. Use the result only as a reference. Concurrent

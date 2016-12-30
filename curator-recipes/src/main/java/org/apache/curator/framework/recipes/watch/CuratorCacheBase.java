@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -107,13 +106,13 @@ abstract class CuratorCacheBase implements CuratorCache
     }
 
     @Override
-    public final Collection<CachedNode> getAll()
+    public final Iterable<CachedNode> getAll()
     {
         return cache.asMap().values();
     }
 
     @Override
-    public final Set<Map.Entry<String, CachedNode>> entries()
+    public final Iterable<Map.Entry<String, CachedNode>> entries()
     {
         return cache.asMap().entrySet();
     }
