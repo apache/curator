@@ -108,7 +108,7 @@ public class CuratorCacheBuilder
         return this;
     }
 
-    public CuratorCacheBuilder withPrimingFilter(RefreshFilter refreshFilter)
+    public CuratorCacheBuilder withRefreshFilter(RefreshFilter refreshFilter)
     {
         this.refreshFilter = Objects.requireNonNull(refreshFilter, "primingFilter cannot be null");
         return this;

@@ -193,7 +193,7 @@ abstract class CuratorCacheBase implements CuratorCache
         }
     }
 
-    void notifyListeners(final CacheEvent eventType, final String path)
+    void notifyListeners(final CacheEvent eventType, final String path, final CachedNode affectedNode)
     {
         if ( state.get() != State.STARTED )
         {
@@ -210,7 +210,7 @@ abstract class CuratorCacheBase implements CuratorCache
             @Override
             public Void apply(CacheListener listener)
             {
-                listener.process(eventType, path);
+                listener.process(eventType, path, affectedNode);
                 return null;
             }
         };

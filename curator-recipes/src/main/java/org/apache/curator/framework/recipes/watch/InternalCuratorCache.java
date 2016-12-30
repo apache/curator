@@ -98,9 +98,10 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
 
             case NodeDeleted:
             {
-                if ( cache.asMap().remove(event.getPath()) != null )
+                CachedNode removed = cache.asMap().remove(event.getPath());
+                if ( removed != null )
                 {
-                    notifyListeners(CacheEvent.NODE_DELETED, event.getPath());
+                    notifyListeners(CacheEvent.NODE_DELETED, event.getPath(), removed);
                 }
                 break;
             }
@@ -154,15 +155,16 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 {
                     if ( event.getType() == CuratorEventType.GET_DATA )
                     {
+                        CacheAction cacheAction = (CacheAction)event.getContext();
                         CachedNode newNode = new CachedNode(event.getStat(), event.getData());
-                        CachedNode oldNode = cache.asMap().put(path, newNode);
+                        CachedNode oldNode = cache.asMap().put(path, (cacheAction == CacheAction.PATH_ONLY) ? new CachedNode(event.getStat()) : newNode);
                         if ( oldNode == null )
                         {
-                            notifyListeners(CacheEvent.NODE_CREATED, path);
+                            notifyListeners(CacheEvent.NODE_CREATED, path, newNode);
                         }
                         else if ( !newNode.equals(oldNode) )
                         {
-                            notifyListeners(CacheEvent.NODE_CHANGED, path);
+                            notifyListeners(CacheEvent.NODE_CHANGED, path, newNode);
                         }
                     }
                     else if ( event.getType() == CuratorEventType.CHILDREN )
@@ -185,7 +187,8 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
         };
 
-        switch ( cacheFilter.actionForPath(path) )
+        CacheAction cacheAction = cacheFilter.actionForPath(path);
+        switch ( cacheAction )
         {
             case NOT_STORED:
             {
@@ -194,24 +197,12 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
 
             case PATH_ONLY:
-            {
-                if ( cache.asMap().put(path, nullNode) == null )
-                {
-                    notifyListeners(CacheEvent.NODE_CREATED, path);
-                }
-                else
-                {
-                    notifyListeners(CacheEvent.NODE_CHANGED, path);
-                }
-                break;
-            }
-
             case PATH_AND_DATA:
             {
                 try
                 {
                     refresher.increment();
-                    client.getData().inBackground(callback).forPath(path);
+                    client.getData().inBackground(callback, cacheAction).forPath(path);
                 }
                 catch ( Exception e )
                 {
@@ -226,7 +217,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 try
                 {
                     refresher.increment();
-                    client.getData().decompressed().inBackground(callback).forPath(path);
+                    client.getData().decompressed().inBackground(callback, cacheAction).forPath(path);
                 }
                 catch ( Exception e )
                 {
@@ -242,7 +233,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             refresher.increment();
             try
             {
-                client.getChildren().inBackground(callback).forPath(path);
+                client.getChildren().inBackground(callback, cacheAction).forPath(path);
             }
             catch ( Exception e )
             {

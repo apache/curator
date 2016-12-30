@@ -50,7 +50,7 @@ class Refresher
     {
         if ( count.decrementAndGet() <= 0 )
         {
-            cacheBase.notifyListeners(CacheEvent.CACHE_REFRESHED, refreshPath);
+            cacheBase.notifyListeners(CacheEvent.CACHE_REFRESHED, refreshPath, cacheBase.get(refreshPath));
             if ( latch != null )
             {
                 latch.countDown();

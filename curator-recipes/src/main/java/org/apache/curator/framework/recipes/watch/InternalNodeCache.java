@@ -222,15 +222,15 @@ class InternalNodeCache extends CuratorCacheBase
         CachedNode previousData = data.getAndSet(newData);
         if ( newData == null )
         {
-            notifyListeners(CacheEvent.NODE_DELETED, path);
+            notifyListeners(CacheEvent.NODE_DELETED, path, newData);
         }
         else if ( previousData == null )
         {
-            notifyListeners(CacheEvent.NODE_CREATED, path);
+            notifyListeners(CacheEvent.NODE_CREATED, path, newData);
         }
         else if ( !previousData.equals(newData) )
         {
-            notifyListeners(CacheEvent.NODE_CHANGED, path);
+            notifyListeners(CacheEvent.NODE_CHANGED, path, newData);
         }
 
         if ( rebuildTestExchanger != null )
