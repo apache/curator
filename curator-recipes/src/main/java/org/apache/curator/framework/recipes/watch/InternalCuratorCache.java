@@ -19,7 +19,6 @@
 package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.curator.framework.CuratorFramework;
@@ -135,7 +134,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     }
 
     @VisibleForTesting
-    volatile Exchanger<Object> rebuildTestExchanger;
+    volatile Exchanger<Object> debugRebuildTestExchanger;
 
     private void internalRefresh(final String path, final Refresher refresher, final RefreshFilter refreshFilter)
     {
@@ -178,9 +177,9 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                     // TODO
                 }
                 refresher.decrement();
-                if ( rebuildTestExchanger != null )
+                if ( debugRebuildTestExchanger != null )
                 {
-                    rebuildTestExchanger.exchange(new Object());
+                    debugRebuildTestExchanger.exchange(new Object());
                 }
             }
         };
