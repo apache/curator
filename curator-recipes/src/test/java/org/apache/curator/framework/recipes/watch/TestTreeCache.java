@@ -18,8 +18,8 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import org.apache.curator.test.KillServerSession;
+import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -89,9 +89,9 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(CacheEvent.CACHE_REFRESHED);
         assertNoMoreEvents();
 
-        Assert.assertEquals(Sets.newHashSet(cache.childNamesAtPath("/test")), Sets.newHashSet("1", "2", "3"));
-        Assert.assertEquals(Sets.newHashSet(cache.childNamesAtPath("/test/1")), Sets.newHashSet());
-        Assert.assertEquals(Sets.newHashSet(cache.childNamesAtPath("/test/2")), Sets.newHashSet("sub"));
+        assertChildNodeNames("/test", "1", "2", "3");
+        assertChildNodeNames("/test/1");
+        assertChildNodeNames("/test/2", "sub");
         Assert.assertNull(cache.get("/test/non_exist"));
     }
 
@@ -136,9 +136,9 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(CacheEvent.CACHE_REFRESHED);
         assertNoMoreEvents();
 
-        Assert.assertEquals(cache.childNamesAtPath("/test"), ImmutableSet.of());
+        assertChildNodeNames("/test");
         Assert.assertNull(cache.get("/test/1"));
-        Assert.assertEquals(cache.childNamesAtPath("/test/1").size(), 0);
+        assertChildNodeNames("/test/1");
         Assert.assertNull(cache.get("/test/non_exist"));
     }
 
@@ -160,12 +160,12 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(CacheEvent.CACHE_REFRESHED);
         assertNoMoreEvents();
 
-        Assert.assertEquals(Sets.newHashSet(cache.childNamesAtPath("/test")), Sets.newHashSet("1", "2", "3"));
-        Assert.assertEquals(Sets.newHashSet(cache.childNamesAtPath("/test/1")), Sets.newHashSet());
-        Assert.assertEquals(Sets.newHashSet(cache.childNamesAtPath("/test/2")), Sets.newHashSet());
+        assertChildNodeNames("/test", "1", "2", "3");
+        assertChildNodeNames("/test/1");
+        assertChildNodeNames("/test/2");
         Assert.assertNull(cache.get("/test/2/sub"));
-        Assert.assertEquals(cache.childNamesAtPath("/test/2/sub").size(), 0);
-        Assert.assertEquals(cache.childNamesAtPath("/test/non_exist").size(), 0);
+        assertChildNodeNames("/test/2/sub");
+        assertChildNodeNames("/test/non_exist");
     }
 
     @Test
@@ -218,8 +218,8 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
 
         Assert.assertTrue(cache.childNamesAtPath("/").contains("test"));
-        Assert.assertEquals(cache.childNamesAtPath("/test"), ImmutableSet.of("one"));
-        Assert.assertEquals(cache.childNamesAtPath("/test/one"), ImmutableSet.of());
+        assertChildNodeNames("/test", "one");
+        assertChildNodeNames("/test/one");
         Assert.assertEquals(new String(cache.get("/test/one").getData()), "hey there");
     }
 
@@ -237,8 +237,176 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
 
         Assert.assertTrue(cache.childNamesAtPath("/").contains("test"));
-        Assert.assertEquals(cache.childNamesAtPath("/test"), ImmutableSet.of());
+        assertChildNodeNames("/test");
         Assert.assertNull(cache.get("/test/one"));
-        Assert.assertEquals(cache.childNamesAtPath("/test/one").size(), 0);
+        assertChildNodeNames("/test/one");
+    }
+
+    @Test
+    public void testWithNamespace() throws Exception
+    {
+        client.create().forPath("/outer");
+        client.create().forPath("/outer/foo");
+        client.create().forPath("/outer/test");
+        client.create().forPath("/outer/test/one", "hey there".getBytes());
+
+        cache = newTreeCacheWithListeners(client.usingNamespace("outer"), "/test");
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.NODE_CREATED, "/test/one");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+        assertNoMoreEvents();
+
+        assertChildNodeNames("/test", "one");
+        assertChildNodeNames("/test/one");
+        Assert.assertEquals(new String(cache.get("/test/one").getData()), "hey there");
+    }
+
+    @Test
+    public void testWithNamespaceAtRoot() throws Exception
+    {
+        client.create().forPath("/outer");
+        client.create().forPath("/outer/foo");
+        client.create().forPath("/outer/test");
+        client.create().forPath("/outer/test/one", "hey there".getBytes());
+
+        cache = newTreeCacheWithListeners(client.usingNamespace("outer"), "/");
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/");
+        assertEvent(CacheEvent.NODE_CREATED, "/foo");
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.NODE_CREATED, "/test/one");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+        assertNoMoreEvents();
+        assertChildNodeNames("/", "foo", "test");
+        assertChildNodeNames("/foo");
+        assertChildNodeNames("/test", "one");
+        assertChildNodeNames("/test/one");
+        Assert.assertEquals(new String(cache.get("/test/one").getData()), "hey there");
+    }
+
+    @Test
+    public void testSyncInitialPopulation() throws Exception
+    {
+        cache = newTreeCacheWithListeners(client, "/test");
+        cache.start();
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+
+        client.create().forPath("/test");
+        client.create().forPath("/test/one", "hey there".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.NODE_CREATED, "/test/one");
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testChildrenInitialized() throws Exception
+    {
+        client.create().forPath("/test", "".getBytes());
+        client.create().forPath("/test/1", "1".getBytes());
+        client.create().forPath("/test/2", "2".getBytes());
+        client.create().forPath("/test/3", "3".getBytes());
+
+        cache = newTreeCacheWithListeners(client, "/test");
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.NODE_CREATED, "/test/1");
+        assertEvent(CacheEvent.NODE_CREATED, "/test/2");
+        assertEvent(CacheEvent.NODE_CREATED, "/test/3");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testUpdateWhenNotCachingData() throws Exception
+    {
+        client.create().forPath("/test");
+
+        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test").forTree().withCacheFilter(CacheFilters.fullStatOnly()));
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+
+        client.create().forPath("/test/foo", "first".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/foo");
+
+        client.setData().forPath("/test/foo", "something new".getBytes());
+        assertEvent(CacheEvent.NODE_CHANGED, "/test/foo");
+        assertNoMoreEvents();
+
+        Assert.assertNotNull(cache.get("/test/foo"));
+        // No byte data querying the tree because we're not caching data.
+        Assert.assertEquals(cache.get("/test/foo").getData().length, 0);
+    }
+
+    @Test
+    public void testDeleteThenCreate() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/foo", "one".getBytes());
+
+        cache = newTreeCacheWithListeners(client, "/test");
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.NODE_CREATED, "/test/foo");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+
+        client.delete().forPath("/test/foo");
+        assertEvent(CacheEvent.NODE_DELETED, "/test/foo", "one".getBytes());
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/foo");
+
+        client.delete().forPath("/test/foo");
+        assertEvent(CacheEvent.NODE_DELETED, "/test/foo", "two".getBytes());
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/foo");
+
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testDeleteThenCreateRoot() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/foo", "one".getBytes());
+
+        cache = newTreeCacheWithListeners(client, "/test/foo");
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/test/foo");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+
+        client.delete().forPath("/test/foo");
+        assertEvent(CacheEvent.NODE_DELETED, "/test/foo");
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/foo");
+
+        client.delete().forPath("/test/foo");
+        assertEvent(CacheEvent.NODE_DELETED, "/test/foo");
+        client.create().forPath("/test/foo", "two".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/foo");
+
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testKilledSession() throws Exception
+    {
+        client.create().forPath("/test");
+
+        cache = newTreeCacheWithListeners(client, "/test");
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+
+        client.create().forPath("/test/foo", "foo".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/foo");
+        client.create().withMode(CreateMode.EPHEMERAL).forPath("/test/me", "data".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/me");
+
+        KillServerSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+        assertEvent(CacheEvent.NODE_DELETED, "/test/me", "data".getBytes());
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+
+        assertNoMoreEvents();
     }
 }

@@ -42,7 +42,6 @@ abstract class CuratorCacheBase implements CuratorCache
     private final AtomicReference<CountDownLatch> initialRefreshLatch = new AtomicReference<>(new CountDownLatch(1));
     private final boolean sendRefreshEvents;
     private final AtomicInteger refreshCount = new AtomicInteger(0);
-    private Function<String, String> function;
 
     protected boolean isStarted()
     {
@@ -107,13 +106,13 @@ abstract class CuratorCacheBase implements CuratorCache
     @Override
     public Collection<String> childNamesAtPath(final String basePath)
     {
-        function = new Function<String, String>()
+        Function<String, String> function = new Function<String, String>()
         {
             @Override
             public String apply(String path)
             {
                 ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-                return pathAndNode.getPath().equals(basePath) ? pathAndNode.getNode() : null;
+                return (pathAndNode.getPath().equals(basePath) && !path.equals(basePath)) ? pathAndNode.getNode() : null;   // must special case "root" as parent of root is root
             }
         };
         return Collections2.filter(Collections2.transform(paths(), function), Predicates.notNull());

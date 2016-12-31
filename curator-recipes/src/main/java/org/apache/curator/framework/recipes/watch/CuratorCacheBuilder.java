@@ -35,6 +35,7 @@ public class CuratorCacheBuilder
     private boolean refreshOnStart = true;
     private CacheFilter cacheFilter = CacheFilters.statAndData();
     private boolean sortChildren = true;
+    private CachedNodeComparator nodeComparator = CachedNodeComparators.dataAndType();
 
     public static CuratorCacheBuilder builder(CuratorFramework client, String path)
     {
@@ -47,9 +48,9 @@ public class CuratorCacheBuilder
         if ( singleNode )
         {
             Preconditions.checkState(refreshFilter == null, "Single node caches do not use RefreshFilters");
-            return new InternalNodeCache(client, path, cacheFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
+            return new InternalNodeCache(client, path, nodeComparator, cacheFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
         }
-        return new InternalCuratorCache(client, path, cacheFilter, refreshFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart, sortChildren);
+        return new InternalCuratorCache(client, path, nodeComparator, cacheFilter, refreshFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart, sortChildren);
     }
 
     public CuratorCacheBuilder forSingleNode()
@@ -72,7 +73,7 @@ public class CuratorCacheBuilder
     {
         singleNode = false;
         refreshFilter = RefreshFilters.tree();
-        cacheFilter = CacheFilters.full();
+        cacheFilter = CacheFilters.fullStatAndData();
         return this;
     }
 
@@ -127,6 +128,12 @@ public class CuratorCacheBuilder
     public CuratorCacheBuilder sortingChildren(boolean sortChildren)
     {
         this.sortChildren = sortChildren;
+        return this;
+    }
+
+    public CuratorCacheBuilder nodeComparator(CachedNodeComparator nodeComparator)
+    {
+        this.nodeComparator = Objects.requireNonNull(nodeComparator, "nodeComparator cannot be null");
         return this;
     }
 

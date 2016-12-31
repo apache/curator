@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -27,8 +28,10 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -41,6 +44,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     private final PersistentWatcher watcher;
     private final CuratorFramework client;
     private final String basePath;
+    private final CachedNodeComparator nodeComparator;
     private final CacheFilter cacheFilter;
     private final RefreshFilter refreshFilter;
     private final boolean sortChildren;
@@ -54,11 +58,12 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         }
     };
 
-    InternalCuratorCache(CuratorFramework client, String path, CacheFilter cacheFilter, final RefreshFilter refreshFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
+    InternalCuratorCache(CuratorFramework client, String path, CachedNodeComparator nodeComparator, CacheFilter cacheFilter, final RefreshFilter refreshFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
     {
         super(cache, sendRefreshEvents);
         this.client = Objects.requireNonNull(client, "client cannot be null");
-        basePath = Objects.requireNonNull(path, "path cannot be null");
+        this.basePath = Objects.requireNonNull(path, "path cannot be null");
+        this.nodeComparator = Objects.requireNonNull(nodeComparator, "nodeComparator cannot be null");
         this.cacheFilter = Objects.requireNonNull(cacheFilter, "cacheFilter cannot be null");
         this.refreshFilter = Objects.requireNonNull(refreshFilter, "primingFilter cannot be null");
         this.sortChildren = sortChildren;
@@ -102,11 +107,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
 
             case NodeDeleted:
             {
-                CachedNode removed = cache.asMap().remove(event.getPath());
-                if ( removed != null )
-                {
-                    notifyListeners(CacheEvent.NODE_DELETED, event.getPath(), removed);
-                }
+                remove(event.getPath());
                 break;
             }
 
@@ -164,7 +165,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                         {
                             notifyListeners(CacheEvent.NODE_CREATED, path, newNode);
                         }
-                        else if ( !newNode.equals(oldNode) )
+                        else if ( !nodeComparator.isSame(newNode, oldNode) )
                         {
                             notifyListeners(CacheEvent.NODE_CHANGED, path, newNode);
                         }
@@ -172,6 +173,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                     else if ( event.getType() == CuratorEventType.CHILDREN )
                     {
                         List<String> children = event.getChildren();
+                        checkDeletedChildren(path, children);
                         if ( sortChildren )
                         {
                             Collections.sort(children);
@@ -181,6 +183,10 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                             internalRefresh(ZKPaths.makePath(path, child), refresher, refreshFilter);
                         }
                     }
+                }
+                else if ( (event.getType() == CuratorEventType.CHILDREN) && (event.getResultCode() == KeeperException.Code.NONODE.intValue()) )
+                {
+                    checkDeletedChildren(path, Collections.<String>emptyList());
                 }
                 else
                 {
@@ -250,6 +256,16 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         }
     }
 
+    private void checkDeletedChildren(String path, List<String> children)
+    {
+        Collection<String> namesAtPath = childNamesAtPath(path);
+        Sets.SetView<String> deleted = Sets.difference(Sets.newHashSet(namesAtPath), Sets.newHashSet(children));
+        for ( String deletedName : deleted )
+        {
+            remove(ZKPaths.makePath(path, deletedName));
+        }
+    }
+
     private CachedNode putNewNode(String path, CacheAction cacheAction, CachedNode newNode)
     {
         CachedNode putNode;
@@ -288,6 +304,15 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         if ( outstandingCount.decrementAndGet() <= 0 )
         {
             task.set(true);
+        }
+    }
+
+    private void remove(String path)
+    {
+        CachedNode removed = cache.asMap().remove(path);
+        if ( removed != null )
+        {
+            notifyListeners(CacheEvent.NODE_DELETED, path, removed);
         }
     }
 }

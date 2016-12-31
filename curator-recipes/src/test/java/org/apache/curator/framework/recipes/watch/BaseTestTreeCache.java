@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
@@ -163,5 +164,14 @@ public class BaseTestTreeCache extends BaseClassForTests
             Assert.assertEquals(event.node.getData(), expectedData, message);
         }
         return event;
+    }
+
+    void assertChildNodeNames(String path, String... names)
+    {
+        if ( names == null )
+        {
+            names = new String[0];
+        }
+        Assert.assertEquals(Sets.newHashSet(cache.childNamesAtPath(path)), Sets.newHashSet(names));
     }
 }

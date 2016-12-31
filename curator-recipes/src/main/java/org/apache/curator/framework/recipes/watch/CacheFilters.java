@@ -24,12 +24,36 @@ public class CacheFilters
     private static final CacheFilter compressedStatAndData = new StandardCacheFilter(CacheAction.STAT_AND_COMPRESSED_DATA);
     private static final CacheFilter statOnly = new StandardCacheFilter(CacheAction.STAT_ONLY);
     private static final CacheFilter pathOnly = new StandardCacheFilter(CacheAction.PATH_ONLY);
-    private static final CacheFilter full = new CacheFilter()
+    private static final CacheFilter fullStatAndData = new CacheFilter()
     {
         @Override
         public CacheAction actionForPath(String mainPath, String checkPath)
         {
             return CacheAction.STAT_AND_DATA;
+        }
+    };
+    private static final CacheFilter fullCompressedStatAndData = new CacheFilter()
+    {
+        @Override
+        public CacheAction actionForPath(String mainPath, String checkPath)
+        {
+            return CacheAction.STAT_AND_COMPRESSED_DATA;
+        }
+    };
+    private static final CacheFilter fullStatOnly = new CacheFilter()
+    {
+        @Override
+        public CacheAction actionForPath(String mainPath, String checkPath)
+        {
+            return CacheAction.STAT_ONLY;
+        }
+    };
+    private static final CacheFilter fullPathOnly = new CacheFilter()
+    {
+        @Override
+        public CacheAction actionForPath(String mainPath, String checkPath)
+        {
+            return CacheAction.PATH_ONLY;
         }
     };
 
@@ -53,9 +77,24 @@ public class CacheFilters
         return pathOnly;
     }
 
-    public static CacheFilter full()
+    public static CacheFilter fullStatAndData()
     {
-        return full;
+        return fullStatAndData;
+    }
+
+    public static CacheFilter fullCompressedStatAndData()
+    {
+        return fullCompressedStatAndData;
+    }
+
+    public static CacheFilter fullStatOnly()
+    {
+        return fullStatOnly;
+    }
+
+    public static CacheFilter fullPathOnly()
+    {
+        return fullPathOnly;
     }
 
     private CacheFilters()

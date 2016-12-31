@@ -94,7 +94,7 @@ class InternalNodeCache extends CuratorCacheBase
         }
     };
 
-    InternalNodeCache(CuratorFramework client, String path, CacheFilter cacheFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
+    InternalNodeCache(CuratorFramework client, String path, CachedNodeComparator nodeComparator, CacheFilter cacheFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
     {
         super(cache, sendRefreshEvents);
         this.client = client.newWatcherRemoveCuratorFramework();
