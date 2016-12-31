@@ -20,9 +20,8 @@ package org.apache.curator.framework.recipes.watch;
 
 import org.apache.curator.framework.listen.Listenable;
 import java.io.Closeable;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -87,12 +86,19 @@ public interface CuratorCache extends Closeable
     boolean exists(String path);
 
     /**
-     * Returns the set of paths in the cache. The returned set behaves in the same manner
-     * as {@link ConcurrentHashMap#keySet()}
+     * Returns an immutable view of paths in the cache.
      *
      * @return set of paths
      */
-    Set<String> paths();
+    Collection<String> paths();
+
+    /**
+     * Returns the set of child node names of the given node
+     *
+     * @param path node full path
+     * @return child names
+     */
+    Collection<String> childNamesAtPath(String path);
 
     /**
      * Return the node data stored for the path in the cache or null

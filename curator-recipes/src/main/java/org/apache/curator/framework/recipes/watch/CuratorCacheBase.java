@@ -20,12 +20,16 @@ package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
 import com.google.common.cache.Cache;
+import com.google.common.collect.Collections2;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.utils.ZKPaths;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,6 +42,7 @@ abstract class CuratorCacheBase implements CuratorCache
     private final AtomicReference<CountDownLatch> initialRefreshLatch = new AtomicReference<>(new CountDownLatch(1));
     private final boolean sendRefreshEvents;
     private final AtomicInteger refreshCount = new AtomicInteger(0);
+    private Function<String, String> function;
 
     protected boolean isStarted()
     {
@@ -94,9 +99,24 @@ abstract class CuratorCacheBase implements CuratorCache
     }
 
     @Override
-    public final Set<String> paths()
+    public final Collection<String> paths()
     {
-        return cache.asMap().keySet();
+        return Collections.unmodifiableCollection(cache.asMap().keySet());
+    }
+
+    @Override
+    public Collection<String> childNamesAtPath(final String basePath)
+    {
+        function = new Function<String, String>()
+        {
+            @Override
+            public String apply(String path)
+            {
+                ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+                return pathAndNode.getPath().equals(basePath) ? pathAndNode.getNode() : null;
+            }
+        };
+        return Collections2.filter(Collections2.transform(paths(), function), Predicates.notNull());
     }
 
     @Override

@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import org.apache.zookeeper.server.PathIterator;
+
 public class RefreshFilters
 {
     private static final RefreshFilter singleLevel = new RefreshFilter()
@@ -46,6 +48,29 @@ public class RefreshFilters
     public static RefreshFilter tree()
     {
         return tree;
+    }
+
+    public static RefreshFilter maxDepth(final int maxDepth)
+    {
+        return new RefreshFilter()
+        {
+            @Override
+            public boolean descend(String mainPath, String checkPath)
+            {
+                PathIterator pathIterator = new PathIterator(checkPath);
+                int thisDepth = 1;
+                while ( pathIterator.hasNext() )
+                {
+                    String thisParent = pathIterator.next();
+                    if ( thisParent.equals(mainPath) )
+                    {
+                        break;
+                    }
+                    ++thisDepth;
+                }
+                return (thisDepth <= maxDepth);
+            }
+        };
     }
 
     private RefreshFilters()

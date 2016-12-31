@@ -24,6 +24,14 @@ public class CacheFilters
     private static final CacheFilter compressedStatAndData = new StandardCacheFilter(CacheAction.STAT_AND_COMPRESSED_DATA);
     private static final CacheFilter statOnly = new StandardCacheFilter(CacheAction.STAT_ONLY);
     private static final CacheFilter pathOnly = new StandardCacheFilter(CacheAction.PATH_ONLY);
+    private static final CacheFilter full = new CacheFilter()
+    {
+        @Override
+        public CacheAction actionForPath(String mainPath, String checkPath)
+        {
+            return CacheAction.STAT_AND_DATA;
+        }
+    };
 
     public static CacheFilter statAndData()
     {
@@ -45,16 +53,9 @@ public class CacheFilters
         return pathOnly;
     }
 
-    public static CacheFilter full(final CacheAction cacheAction)
+    public static CacheFilter full()
     {
-        return new CacheFilter()
-        {
-            @Override
-            public CacheAction actionForPath(String mainPath, String checkPath)
-            {
-                return cacheAction;
-            }
-        };
+        return full;
     }
 
     private CacheFilters()

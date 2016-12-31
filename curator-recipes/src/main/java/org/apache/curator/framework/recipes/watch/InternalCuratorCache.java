@@ -29,6 +29,8 @@ import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -41,6 +43,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     private final String basePath;
     private final CacheFilter cacheFilter;
     private final RefreshFilter refreshFilter;
+    private final boolean sortChildren;
     private static final CachedNode nullNode = new CachedNode();
     private static final RefreshFilter nopRefreshFilter = new RefreshFilter()
     {
@@ -51,21 +54,23 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         }
     };
 
-    InternalCuratorCache(CuratorFramework client, String path, CacheFilter cacheFilter, final RefreshFilter refreshFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart)
+    InternalCuratorCache(CuratorFramework client, String path, CacheFilter cacheFilter, final RefreshFilter refreshFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
     {
         super(cache, sendRefreshEvents);
         this.client = Objects.requireNonNull(client, "client cannot be null");
         basePath = Objects.requireNonNull(path, "path cannot be null");
         this.cacheFilter = Objects.requireNonNull(cacheFilter, "cacheFilter cannot be null");
         this.refreshFilter = Objects.requireNonNull(refreshFilter, "primingFilter cannot be null");
+        this.sortChildren = sortChildren;
         watcher = new PersistentWatcher(client, path)
         {
             @Override
             protected void noteWatcherReset()
             {
-                if ( refreshOnStart || (refreshCount() > 0) )
+                long count = refreshCount();
+                if ( (refreshOnStart && (count == 0)) || (count > 0) )
                 {
-                    internalRefresh(basePath, new Refresher(InternalCuratorCache.this, basePath), refreshFilter);
+                    internalRefresh(basePath, new NotifyingRefresher(InternalCuratorCache.this, basePath), refreshFilter);
                 }
             }
         };
@@ -108,7 +113,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             case NodeCreated:
             case NodeDataChanged:
             {
-                internalRefresh(event.getPath(), new Refresher(InternalCuratorCache.this, basePath), nopRefreshFilter);
+                internalRefresh(event.getPath(), new Refresher(InternalCuratorCache.this), nopRefreshFilter);
                 break;
             }
         }
@@ -126,7 +131,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         if ( isStarted() && path.startsWith(basePath) )
         {
             CountDownLatch latch = new CountDownLatch(1);
-            Refresher refresher = new Refresher(this, path, latch);
+            Refresher refresher = new NotifyingRefresher(this, path, latch);
             internalRefresh(path, refresher, refreshFilter);
             return latch;
         }
@@ -166,7 +171,12 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                     }
                     else if ( event.getType() == CuratorEventType.CHILDREN )
                     {
-                        for ( String child : event.getChildren() )
+                        List<String> children = event.getChildren();
+                        if ( sortChildren )
+                        {
+                            Collections.sort(children);
+                        }
+                        for ( String child : children )
                         {
                             internalRefresh(ZKPaths.makePath(path, child), refresher, refreshFilter);
                         }

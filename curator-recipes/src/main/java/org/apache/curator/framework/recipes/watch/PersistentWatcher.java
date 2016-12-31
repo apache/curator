@@ -33,12 +33,14 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PersistentWatcher implements Closeable
 {
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final ListenerContainer<Watcher> listeners = new ListenerContainer<>();
+    private final AtomicBoolean isSet = new AtomicBoolean(false);
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -47,6 +49,10 @@ public class PersistentWatcher implements Closeable
             if ( newState.isConnected() )
             {
                 reset();
+            }
+            else if ( (newState == ConnectionState.SUSPENDED) || (newState == ConnectionState.LOST) )
+            {
+                isSet.set(false);
             }
         }
     };
@@ -74,9 +80,19 @@ public class PersistentWatcher implements Closeable
         @Override
         public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
         {
-            if ( (event.getType() == CuratorEventType.ADD_PERSISTENT_WATCH) && (event.getResultCode() == KeeperException.Code.OK.intValue()) )
+            if ( (event.getType() == CuratorEventType.ADD_PERSISTENT_WATCH) )
             {
-                noteWatcherReset();
+                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
+                {
+                    if ( isSet.compareAndSet(false, true) )
+                    {
+                        noteWatcherReset();
+                    }
+                }
+                else
+                {
+                    isSet.set(false);
+                }
             }
         }
     };

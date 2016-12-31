@@ -19,44 +19,25 @@
 package org.apache.curator.framework.recipes.watch;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
-class Refresher
+class NotifyingRefresher extends Refresher
 {
-    protected final CuratorCacheBase cacheBase;
-    private final CountDownLatch latch;
-    private final AtomicInteger count = new AtomicInteger(0);
+    private final String refreshPath;
 
-    Refresher(CuratorCacheBase cacheBase)
+    NotifyingRefresher(CuratorCacheBase cacheBase, String refreshPath)
     {
-        this(cacheBase, null);
+        this(cacheBase, refreshPath, null);
     }
 
-    Refresher(CuratorCacheBase cacheBase, CountDownLatch latch)
+    NotifyingRefresher(CuratorCacheBase cacheBase, String refreshPath, CountDownLatch latch)
     {
-        this.cacheBase = cacheBase;
-        this.latch = latch;
-    }
-
-    void increment()
-    {
-        count.incrementAndGet();
-    }
-
-    void decrement()
-    {
-        if ( count.decrementAndGet() <= 0 )
-        {
-            completed();
-        }
+        super(cacheBase, latch);
+        this.refreshPath = refreshPath;
     }
 
     protected void completed()
     {
-        if ( latch != null )
-        {
-            latch.countDown();
-        }
-        cacheBase.incrementRefreshCount();
+        cacheBase.notifyListeners(CacheEvent.CACHE_REFRESHED, refreshPath, cacheBase.get(refreshPath));
+        super.completed();
     }
 }

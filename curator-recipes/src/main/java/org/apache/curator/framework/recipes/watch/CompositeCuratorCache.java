@@ -176,12 +176,23 @@ public class CompositeCuratorCache implements CuratorCache
     }
 
     @Override
-    public Set<String> paths()
+    public Collection<String> paths()
     {
         Set<String> paths = new HashSet<>();
         for ( CuratorCache cache : caches.values() )
         {
-            cache.clearAll();
+            paths.addAll(cache.paths());
+        }
+        return paths;
+    }
+
+    @Override
+    public Collection<String> childNamesAtPath(String path)
+    {
+        Set<String> paths = new HashSet<>();
+        for ( CuratorCache cache : caches.values() )
+        {
+            paths.addAll(cache.childNamesAtPath(path));
         }
         return paths;
     }
