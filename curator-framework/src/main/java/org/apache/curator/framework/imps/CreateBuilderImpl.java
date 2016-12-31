@@ -108,7 +108,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
             {
                 if ( compress )
                 {
-                    data = client.getCompressionProvider().compress(path, data);
+                    data = client.getCompressionProvider().compress(data);
                 }
 
                 String fixedPath = client.fixForNamespace(path);
@@ -459,7 +459,7 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
     {
         if ( compress )
         {
-            data = client.getCompressionProvider().compress(givenPath, data);
+            data = client.getCompressionProvider().compress(data);
         }
 
         final String adjustedPath = adjustPath(client.fixForNamespace(givenPath, createMode.isSequential()));

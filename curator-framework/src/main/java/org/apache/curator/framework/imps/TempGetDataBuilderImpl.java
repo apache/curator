@@ -73,6 +73,6 @@ class TempGetDataBuilderImpl implements TempGetDataBuilder
         );
         trace.setResponseBytesLength(responseData).setPath(path).setStat(responseStat).commit();
 
-        return decompress ? client.getCompressionProvider().decompress(path, responseData) : responseData;
+        return decompress ? client.getCompressionProvider().decompress(responseData) : responseData;
     }
 }
