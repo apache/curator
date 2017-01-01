@@ -37,16 +37,15 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 class InternalNodeCache extends CuratorCacheBase
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final WatcherRemoveCuratorFramework client;
     private final String path;
-    private final AtomicReference<CachedNode> data = new AtomicReference<>(null);
+    private final CacheAction cacheAction;
+    private final CachedNodeComparator nodeComparator;
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
-    private final CacheSelector cacheSelector = CacheSelectors.statAndData();
     private static final CachedNode nullNode = new CachedNode();
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
@@ -93,11 +92,13 @@ class InternalNodeCache extends CuratorCacheBase
         }
     };
 
-    InternalNodeCache(CuratorFramework client, String path, CachedNodeComparator nodeComparator, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
+    InternalNodeCache(CuratorFramework client, String path, CacheAction cacheAction, CachedNodeComparator nodeComparator, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
     {
-        super(cache, sendRefreshEvents);
+        super(path, cache, sendRefreshEvents);
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
+        this.cacheAction = cacheAction;
+        this.nodeComparator = nodeComparator;
     }
 
     @Override
@@ -117,32 +118,26 @@ class InternalNodeCache extends CuratorCacheBase
     @Override
     public CountDownLatch refreshAll()
     {
-        return null;    // TODO
+        return refresh(path);
     }
 
     @Override
     public CountDownLatch refresh(String path)
     {
-        return null;    // TODO
-    }
+        Preconditions.checkArgument(this.path.equals(path), "Bad path: " + path);
 
-    public void refreXshAll()
-    {
+        CountDownLatch latch = new CountDownLatch(1);
+        NotifyingRefresher refresher = new NotifyingRefresher(this, path, latch);
         try
         {
-            reset(null);
+            reset(refresher);
         }
         catch ( Exception e )
         {
             ThreadUtils.checkInterrupted(e);
             // TODO
         }
-    }
-
-    public void reXfresh(String path)
-    {
-        Preconditions.checkArgument(this.path.equals(path), "Bad path: " + path);
-        refreshAll();
+        return latch;
     }
 
     private void reset(Refresher refresher) throws Exception
@@ -177,7 +172,7 @@ class InternalNodeCache extends CuratorCacheBase
                 }
                 else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    switch ( cacheSelector.actionForPath(path, path) )
+                    switch ( cacheAction )
                     {
                         default:
                         case NOT_STORED:
@@ -217,16 +212,19 @@ class InternalNodeCache extends CuratorCacheBase
     volatile Exchanger<Object> rebuildTestExchanger;
     private void setNewData(CachedNode newData) throws InterruptedException
     {
-        CachedNode previousData = data.getAndSet(newData);
+        CachedNode previousData = (newData != null) ? cache.asMap().put(path, newData) : cache.asMap().remove(path);
         if ( newData == null )
         {
-            notifyListeners(CacheEvent.NODE_DELETED, path, newData);
+            if ( previousData != null )
+            {
+                notifyListeners(CacheEvent.NODE_DELETED, path, newData);
+            }
         }
         else if ( previousData == null )
         {
             notifyListeners(CacheEvent.NODE_CREATED, path, newData);
         }
-        else if ( !previousData.equals(newData) )
+        else if ( !nodeComparator.isSame(previousData, newData) )
         {
             notifyListeners(CacheEvent.NODE_CHANGED, path, newData);
         }

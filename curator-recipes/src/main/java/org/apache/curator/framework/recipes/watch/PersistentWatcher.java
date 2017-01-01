@@ -28,6 +28,7 @@ import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -129,6 +130,7 @@ public class PersistentWatcher implements Closeable
             }
             catch ( Exception e )
             {
+                ThreadUtils.checkInterrupted(e);
                 // TODO
             }
             listeners.clear();

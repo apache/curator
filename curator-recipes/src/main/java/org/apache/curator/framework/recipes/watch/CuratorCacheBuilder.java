@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import java.util.Objects;
@@ -28,7 +29,7 @@ public class CuratorCacheBuilder
     private final CuratorFramework client;
     private final String path;
     private CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
-    private boolean singleNode = false;
+    private CacheAction singleNodeCacheAction = null;
     private boolean sendRefreshEvents = true;
     private boolean refreshOnStart = true;
     private boolean sortChildren = true;
@@ -42,9 +43,10 @@ public class CuratorCacheBuilder
 
     public CuratorCache build()
     {
-        if ( singleNode )
+        if ( singleNodeCacheAction != null )
         {
-            return buildSingleNode();
+            Preconditions.checkState(cacheSelector == null, "Single node mode does not support CacheSelectors");
+            return new InternalNodeCache(client, path, singleNodeCacheAction, nodeComparator, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
         }
 
         return new InternalCuratorCache(client, path, cacheSelector, nodeComparator, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart, sortChildren);
@@ -52,7 +54,13 @@ public class CuratorCacheBuilder
 
     public CuratorCacheBuilder forSingleNode()
     {
-        singleNode = true;
+        return forSingleNode(CacheAction.STAT_AND_DATA);
+    }
+
+    public CuratorCacheBuilder forSingleNode(CacheAction cacheAction)
+    {
+        cacheSelector = null;
+        singleNodeCacheAction = Objects.requireNonNull(cacheAction, "cacheAction cannot be null");
         return this;
     }
 
@@ -108,11 +116,6 @@ public class CuratorCacheBuilder
     {
         this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");
         return this;
-    }
-
-    private InternalNodeCache buildSingleNode()
-    {
-        return null;// TODO new InternalNodeCache(client, path, cacheSelector, nodeComparator, cacheFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
     }
 
     private CuratorCacheBuilder(CuratorFramework client, String path)

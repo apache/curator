@@ -210,6 +210,20 @@ public class CompositeCuratorCache implements CuratorCache
     }
 
     @Override
+    public CachedNode getMain()
+    {
+        for ( CuratorCache cache : caches.values() )
+        {
+            CachedNode node = cache.getMain();
+            if ( node != null )
+            {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public CachedNode get(String path)
     {
         for ( CuratorCache cache : caches.values() )

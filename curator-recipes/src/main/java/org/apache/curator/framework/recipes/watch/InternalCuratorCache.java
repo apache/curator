@@ -65,7 +65,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
 
     InternalCuratorCache(CuratorFramework client, String path, final CacheSelector cacheSelector, CachedNodeComparator nodeComparator, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
     {
-        super(cache, sendRefreshEvents);
+        super(path, cache, sendRefreshEvents);
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.basePath = Objects.requireNonNull(path, "path cannot be null");
         this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");

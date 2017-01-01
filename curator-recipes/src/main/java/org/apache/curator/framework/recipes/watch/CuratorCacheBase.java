@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 abstract class CuratorCacheBase implements CuratorCache
 {
     protected final Cache<String, CachedNode> cache;
+    private final String mainPath;
     private final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final AtomicReference<CountDownLatch> initialRefreshLatch = new AtomicReference<>(new CountDownLatch(1));
@@ -56,8 +57,9 @@ abstract class CuratorCacheBase implements CuratorCache
         CLOSED
     }
 
-    protected CuratorCacheBase(Cache<String, CachedNode> cache, boolean sendRefreshEvents)
+    protected CuratorCacheBase(String mainPath, Cache<String, CachedNode> cache, boolean sendRefreshEvents)
     {
+        this.mainPath = Objects.requireNonNull(mainPath, "mainPath cannot be null");
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
         this.sendRefreshEvents = sendRefreshEvents;
     }
@@ -138,6 +140,12 @@ abstract class CuratorCacheBase implements CuratorCache
             }
         }
         return builder.build();
+    }
+
+    @Override
+    public CachedNode getMain()
+    {
+        return cache.asMap().get(mainPath);
     }
 
     @Override

@@ -109,6 +109,13 @@ public interface CuratorCache extends Closeable
     Map<String, CachedNode> childrenAtPath(String path);
 
     /**
+     * Return the node data stored for the main path (the path passed to the builder) in the cache or null
+     *
+     * @return node data or null
+     */
+    CachedNode getMain();
+
+    /**
      * Return the node data stored for the path in the cache or null
      *
      * @param path node full path
