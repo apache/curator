@@ -37,6 +37,9 @@ public interface CuratorCache extends Closeable
      */
     CountDownLatch start();
 
+    /**
+     * Close the cache, release resources, etc.
+     */
     @Override
     void close();
 
