@@ -19,9 +19,11 @@
 package org.apache.curator.framework.recipes.watch;
 
 import org.apache.curator.test.KillServerSession;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.concurrent.Semaphore;
 
 public class TestTreeCache extends BaseTestTreeCache
 {
@@ -407,6 +409,144 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(CacheEvent.NODE_DELETED, "/test/me", "data".getBytes());
         assertEvent(CacheEvent.CACHE_REFRESHED);
 
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testBasics() throws Exception
+    {
+        client.create().forPath("/test");
+
+        cache = newTreeCacheWithListeners(client, "/test");
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+        assertChildNodeNames("/test");
+        Assert.assertNull(cache.get("/t"));
+        Assert.assertNull(cache.get("/testing"));
+
+        client.create().forPath("/test/one", "hey there".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/one");
+        assertChildNodeNames("/test", "one");
+        Assert.assertEquals(new String(cache.get("/test/one").getData()), "hey there");
+        assertChildNodeNames("/test/one");
+        Assert.assertNull(cache.get("/test/o"));
+        Assert.assertNull(cache.get("/test/onely"));
+
+        client.setData().forPath("/test/one", "sup!".getBytes());
+        assertEvent(CacheEvent.NODE_CHANGED, "/test/one");
+        assertChildNodeNames("/test", "one");
+        Assert.assertEquals(new String(cache.get("/test/one").getData()), "sup!");
+
+        client.delete().forPath("/test/one");
+        assertEvent(CacheEvent.NODE_DELETED, "/test/one", "sup!".getBytes());
+        assertChildNodeNames("/test");
+
+        assertNoMoreEvents();
+    }
+
+    @Test
+    public void testBasicsOnTwoCaches() throws Exception
+    {
+        CuratorCache cache2 = newTreeCacheWithListeners(client, "/test");
+        cache2.getListenable().removeListener(eventListener);  // Don't listen on the second cache.
+
+        // Just ensures the same event count; enables test flow control on cache2.
+        final Semaphore semaphore = new Semaphore(0);
+        cache2.getListenable().addListener(new CacheListener()
+        {
+            @Override
+            public void process(CacheEvent event, String path, CachedNode affectedNode)
+            {
+                semaphore.release();
+            }
+        });
+
+        try
+        {
+            client.create().forPath("/test");
+
+            cache = newTreeCacheWithListeners(client, "/test");
+            cache.start();
+            cache2.start();
+
+            assertEvent(CacheEvent.NODE_CREATED, "/test");
+            assertEvent(CacheEvent.CACHE_REFRESHED);
+            semaphore.acquire(2);
+
+            client.create().forPath("/test/one", "hey there".getBytes());
+            assertEvent(CacheEvent.NODE_CREATED, "/test/one");
+            Assert.assertEquals(new String(cache.get("/test/one").getData()), "hey there");
+            semaphore.acquire();
+            Assert.assertEquals(new String(cache2.get("/test/one").getData()), "hey there");
+
+            client.setData().forPath("/test/one", "sup!".getBytes());
+            assertEvent(CacheEvent.NODE_CHANGED, "/test/one");
+            Assert.assertEquals(new String(cache.get("/test/one").getData()), "sup!");
+            semaphore.acquire();
+            Assert.assertEquals(new String(cache2.get("/test/one").getData()), "sup!");
+
+            client.delete().forPath("/test/one");
+            assertEvent(CacheEvent.NODE_DELETED, "/test/one", "sup!".getBytes());
+            Assert.assertNull(cache.get("/test/one"));
+            semaphore.acquire();
+            Assert.assertNull(cache2.get("/test/one"));
+
+            assertNoMoreEvents();
+            Assert.assertEquals(semaphore.availablePermits(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(cache2);
+        }
+    }
+
+    @Test
+    public void testDeleteNodeAfterCloseDoesntCallExecutor() throws Exception
+    {
+        client.create().forPath("/test");
+
+        cache = newTreeCacheWithListeners(client, "/test");
+        cache.start();
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+
+        client.create().forPath("/test/one", "hey there".getBytes());
+        assertEvent(CacheEvent.NODE_CREATED, "/test/one");
+        Assert.assertEquals(new String(cache.get("/test/one").getData()), "hey there");
+
+        cache.close();
+        assertNoMoreEvents();
+
+        client.delete().forPath("/test/one");
+        assertNoMoreEvents();
+    }
+
+    /**
+     * Make sure TreeCache gets to a sane state when we can't initially connect to server.
+     */
+    @Test
+    public void testServerNotStartedYet() throws Exception
+    {
+        // Stop the existing server.
+        server.stop();
+
+        // Shutdown the existing client and re-create it started.
+        client.close();
+        initCuratorFramework();
+
+        // Start the client disconnected.
+        cache = newTreeCacheWithListeners(client, "/test");
+        cache.start();
+        assertNoMoreEvents();
+
+        // Now restart the server.
+        server.restart();
+        assertEvent(CacheEvent.CACHE_REFRESHED);
+
+        client.create().forPath("/test");
+
+        assertEvent(CacheEvent.NODE_CREATED, "/test");
         assertNoMoreEvents();
     }
 }
