@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import java.util.Objects;
@@ -30,20 +29,15 @@ public class CuratorCacheBuilder
     private final String path;
     private CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
     private boolean singleNode = false;
-    private RefreshFilter refreshFilter = null;
     private boolean sendRefreshEvents = true;
     private boolean refreshOnStart = true;
-    private CacheFilter cacheFilter = CacheFilters.statAndData();
     private boolean sortChildren = true;
     private CachedNodeComparator nodeComparator = CachedNodeComparators.dataAndType();
-    private int maxDepth = -1;
+    private CacheSelector cacheSelector = CacheSelectors.statAndData();
 
     public static CuratorCacheBuilder builder(CuratorFramework client, String path)
     {
-        CuratorCacheBuilder builder = new CuratorCacheBuilder(client, path);
-        builder.singleNode = false;
-        builder.cacheFilter = CacheFilters.fullStatAndData();
-        return builder;
+        return new CuratorCacheBuilder(client, path);
     }
 
     public CuratorCache build()
@@ -53,35 +47,12 @@ public class CuratorCacheBuilder
             return buildSingleNode();
         }
 
-        CacheFilter localCacheFilter = this.cacheFilter;
-        RefreshFilter localRefreshFilter = this.refreshFilter;
-        if ( maxDepth >= 0 )
-        {
-            Preconditions.checkState(refreshFilter == null, "You cannot set both maxDepth and a refreshFilter");
-            localRefreshFilter = RefreshFilters.maxDepth(maxDepth);
-            localCacheFilter = CacheFilters.maxDepth(maxDepth, cacheFilter);
-        }
-        else if ( localRefreshFilter == null )
-        {
-            localRefreshFilter = RefreshFilters.tree();
-        }
-
-        return new InternalCuratorCache(client, path, nodeComparator, localCacheFilter, localRefreshFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart, sortChildren);
+        return new InternalCuratorCache(client, path, cacheSelector, nodeComparator, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart, sortChildren);
     }
 
     public CuratorCacheBuilder forSingleNode()
     {
         singleNode = true;
-        refreshFilter = null;
-        cacheFilter = CacheFilters.statAndData();
-        return this;
-    }
-
-    public CuratorCacheBuilder forSingleLevel()
-    {
-        singleNode = false;
-        refreshFilter = RefreshFilters.singleLevel();
-        cacheFilter = CacheFilters.statAndData();
         return this;
     }
 
@@ -109,18 +80,6 @@ public class CuratorCacheBuilder
         return this;
     }
 
-    public CuratorCacheBuilder withCacheFilter(CacheFilter cacheFilter)
-    {
-        this.cacheFilter = Objects.requireNonNull(cacheFilter, "cacheFilter cannot be null");
-        return this;
-    }
-
-    public CuratorCacheBuilder withRefreshFilter(RefreshFilter refreshFilter)
-    {
-        this.refreshFilter = Objects.requireNonNull(refreshFilter, "primingFilter cannot be null");
-        return this;
-    }
-
     public CuratorCacheBuilder sendingRefreshEvents(boolean sendRefreshEvents)
     {
         this.sendRefreshEvents = sendRefreshEvents;
@@ -145,18 +104,15 @@ public class CuratorCacheBuilder
         return this;
     }
 
-    public CuratorCacheBuilder withMaxDepth(int maxDepth)
+    public CuratorCacheBuilder withCacheSelector(CacheSelector cacheSelector)
     {
-        Preconditions.checkArgument(maxDepth >= 0, "maxDepth must be >= 0");
-        this.maxDepth = maxDepth;
+        this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");
         return this;
     }
 
-    private CuratorCache buildSingleNode()
+    private InternalNodeCache buildSingleNode()
     {
-        Preconditions.checkState(refreshFilter == null, "Single node caches do not use RefreshFilters");
-        Preconditions.checkState(maxDepth < 0, "Single node caches do not support maxDepth");
-        return new InternalNodeCache(client, path, nodeComparator, cacheFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
+        return null;// TODO new InternalNodeCache(client, path, cacheSelector, nodeComparator, cacheFilter, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
     }
 
     private CuratorCacheBuilder(CuratorFramework client, String path)

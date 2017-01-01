@@ -34,7 +34,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,9 +44,9 @@ class InternalNodeCache extends CuratorCacheBase
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final WatcherRemoveCuratorFramework client;
     private final String path;
-    private final CacheFilter cacheFilter;
     private final AtomicReference<CachedNode> data = new AtomicReference<>(null);
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
+    private final CacheSelector cacheSelector = CacheSelectors.statAndData();
     private static final CachedNode nullNode = new CachedNode();
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
@@ -94,12 +93,11 @@ class InternalNodeCache extends CuratorCacheBase
         }
     };
 
-    InternalNodeCache(CuratorFramework client, String path, CachedNodeComparator nodeComparator, CacheFilter cacheFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
+    InternalNodeCache(CuratorFramework client, String path, CachedNodeComparator nodeComparator, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
     {
         super(cache, sendRefreshEvents);
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
-        this.cacheFilter = Objects.requireNonNull(cacheFilter, "cacheFilter cannot be null");
     }
 
     @Override
@@ -179,7 +177,7 @@ class InternalNodeCache extends CuratorCacheBase
                 }
                 else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    switch ( cacheFilter.actionForPath(path, path) )
+                    switch ( cacheSelector.actionForPath(path, path) )
                     {
                         default:
                         case NOT_STORED:

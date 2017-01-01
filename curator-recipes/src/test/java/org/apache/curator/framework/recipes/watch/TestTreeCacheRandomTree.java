@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.collect.Iterables;
@@ -47,60 +65,6 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
         doTestGiantRandomDeepTree();
     }
 
-    @Test
-    public void temp() throws Exception
-    {
-        String[] strs = {"C/",
-            "D/8050ee1037ad1124",
-            "C/",
-            "U/58add61a4aec0f95",
-            "U/58add61a4aec0f95",
-            "D/58add61a4aec0f95",
-            "C/",
-            "D/57d822ba79849e8b",
-            "U/",
-            "C/",
-            "C/86db5aeba8b33121",
-            "C/86db5aeba8b33121/fa45819eff99bf8f",
-            "C/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581",
-            "U/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581/695419ff443d5e50",
-            "C/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581/695419ff443d5e50",
-            "U/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581/695419ff443d5e50/be79114eaa5c78a0",
-            "U/",
-            "C/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581/695419ff443d5e50/be79114eaa5c78a0",
-            "U/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581/695419ff443d5e50/be79114eaa5c78a0/f1672fc970f3d64e",
-            "U/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581/695419ff443d5e50/be79114eaa5c78a0/f1672fc970f3d64e",
-            "D/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581/695419ff443d5e50/be79114eaa5c78a0/f1672fc970f3d64e",
-            "U/86db5aeba8b33121/fa45819eff99bf8f/1a6025e155810581/695419ff443d5e50/be79114eaa5c78a0"
-        };
-
-        client.create().forPath("/tree", null);
-        CuratorFramework cl = client.usingNamespace("tree");
-        for ( String s : strs )
-        {
-            String opcode = s.substring(0, 1);
-            String path = s.substring(1);
-            if ( opcode.equals("C") )
-            {
-                cl.create().forPath(path);
-            }
-            else if ( opcode.equals("U") )
-            {
-                byte[] newData = new byte[10];
-                random.nextBytes(newData);
-                cl.setData().forPath(path, newData);
-            }
-            else if ( opcode.equals("D") )
-            {
-                cl.delete().forPath(path);
-            }
-            else
-            {
-                throw new RuntimeException("bad");
-            }
-        }
-    }
-
     /**
      * Randomly construct a large tree of test data in memory, mirror it into ZK, and then use
      * a TreeCache to follow the changes.  At each step, assert that TreeCache matches our
@@ -112,7 +76,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
         CuratorFramework cl = client.usingNamespace("tree");
         if ( withDepth )
         {
-            cache = buildWithListeners(CuratorCacheBuilder.builder(cl, "/").withMaxDepth(TEST_DEPTH));
+            cache = buildWithListeners(CuratorCacheBuilder.builder(cl, "/").withCacheSelector(CacheSelectors.maxDepth(TEST_DEPTH)));
         }
         else
         {

@@ -56,7 +56,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
         {
             client.start();
 
-            final CuratorCache cache = CuratorCacheBuilder.builder(client, "/").forSingleLevel().build();
+            final CuratorCache cache = CuratorCacheBuilder.builder(client, "/").withCacheSelector(CacheSelectors.singleLevel()).build();
             final CountDownLatch addedLatch = new CountDownLatch(1);
             CacheListener listener = new CacheListener()
             {
@@ -114,7 +114,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             client.start();
 
             final CountDownLatch latch = new CountDownLatch(1);
-            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().build();
+            cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).build();
             cache.getListenable().addListener(new CacheListener()
             {
                 @Override
@@ -149,7 +149,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             client.create().forPath("/test/one", "hey there".getBytes());
 
             final BlockingQueue<CacheEvent> events = new LinkedBlockingQueue<>();
-            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().sendingRefreshEvents(false).build();
+            cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).sendingRefreshEvents(false).build();
             cache.getListenable().addListener(new CacheListener()
             {
                 @Override
@@ -183,7 +183,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             client.start();
             client.create().forPath("/test");
 
-            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().build();
+            cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).build();
 
             final CountDownLatch addedLatch = new CountDownLatch(3);
             final CountDownLatch initLatch = new CountDownLatch(1);
@@ -233,7 +233,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             client.start();
             client.create().forPath("/test");
 
-            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().sendingRefreshEvents(false).build();
+            cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).sendingRefreshEvents(false).build();
 
             final CountDownLatch addedLatch = new CountDownLatch(3);
             cache.getListenable().addListener(new CacheListener()
@@ -279,7 +279,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             final CountDownLatch updatedLatch = new CountDownLatch(1);
             final CountDownLatch addedLatch = new CountDownLatch(1);
             client.create().creatingParentsIfNeeded().forPath("/test");
-            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().withCacheFilter(CacheFilters.statOnly()).build();
+            cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel(CacheAction.STAT_ONLY)).build();
             cache.getListenable().addListener(new CacheListener()
             {
                 @Override
@@ -337,7 +337,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             final CountDownLatch removedLatch = new CountDownLatch(1);
             final CountDownLatch postRemovedLatch = new CountDownLatch(1);
             final CountDownLatch dataLatch = new CountDownLatch(1);
-            try ( CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().build() )
+            try ( CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).build() )
             {
                 cache.getListenable().addListener(new CacheListener()
                 {
@@ -405,7 +405,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             client.create().forPath("/test/snafu", "original".getBytes());
 
             final CountDownLatch addedLatch = new CountDownLatch(2);
-            try ( final CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().build() )
+            try ( final CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).build() )
             {
                 cache.getListenable().addListener(new CacheListener()
                 {
@@ -499,7 +499,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
 
             final List<CacheEvent> events = Lists.newArrayList();
             final Semaphore semaphore = new Semaphore(0);
-            cache = CuratorCacheBuilder.builder(client, "/base").forSingleLevel().sendingRefreshEvents(false).build();
+            cache = CuratorCacheBuilder.builder(client, "/base").withCacheSelector(CacheSelectors.singleLevel()).sendingRefreshEvents(false).build();
             cache.getListenable().addListener(new CacheListener()
             {
                 @Override
@@ -553,7 +553,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
 
             final List<CacheEvent> events = Lists.newArrayList();
             final Semaphore semaphore = new Semaphore(0);
-            try ( final CuratorCache cache = CuratorCacheBuilder.builder(client, "/base").forSingleLevel().sendingRefreshEvents(false).build() )
+            try ( final CuratorCache cache = CuratorCacheBuilder.builder(client, "/base").withCacheSelector(CacheSelectors.singleLevel()).sendingRefreshEvents(false).build() )
             {
                 cache.getListenable().addListener(new CacheListener()
                 {
@@ -596,7 +596,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             client.start();
             client.create().forPath("/test");
 
-            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().build();
+            cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).build();
             cache.start();
 
             final CountDownLatch childAddedLatch = new CountDownLatch(1);
@@ -674,8 +674,8 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
 
     private void internalTestMode(CuratorFramework client, boolean cacheData) throws Exception
     {
-        CacheFilter cacheFilter = cacheData ? CacheFilters.statAndData() : CacheFilters.statOnly();
-        try (CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().withCacheFilter(cacheFilter).build() )
+        CacheSelector cacheSelector = CacheSelectors.singleLevel(cacheData ? CacheAction.STAT_AND_DATA : CacheAction.STAT_ONLY);
+        try (CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(cacheSelector).build() )
         {
             final CountDownLatch latch = new CountDownLatch(2);
             cache.getListenable().addListener(new CacheListener()
@@ -721,7 +721,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             client.create().forPath("/test");
 
             final BlockingQueue<CacheEvent> events = new LinkedBlockingQueue<>();
-            try ( CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().build() )
+            try ( CuratorCache cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).build() )
             {
                 cache.getListenable().addListener
                 (

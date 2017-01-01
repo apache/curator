@@ -50,7 +50,7 @@ public class TestSingleLevelCuratorCacheInCluster
             client.start();
             client.create().creatingParentsIfNeeded().forPath("/test");
 
-            cache = CuratorCacheBuilder.builder(client, "/test").forSingleLevel().build();
+            cache = CuratorCacheBuilder.builder(client, "/test").withCacheSelector(CacheSelectors.singleLevel()).build();
 
             final CountDownLatch resetLatch = new CountDownLatch(1);
             final CountDownLatch reconnectLatch = new CountDownLatch(1);

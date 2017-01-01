@@ -41,31 +41,35 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class InternalCuratorCache extends CuratorCacheBase implements Watcher
 {
+    private static final CachedNode nullNode = new CachedNode();
     private final PersistentWatcher watcher;
     private final CuratorFramework client;
     private final String basePath;
+    private final CacheSelector cacheSelector;
     private final CachedNodeComparator nodeComparator;
-    private final CacheFilter cacheFilter;
-    private final RefreshFilter refreshFilter;
     private final boolean sortChildren;
-    private static final CachedNode nullNode = new CachedNode();
-    private static final RefreshFilter nopRefreshFilter = new RefreshFilter()
+    private final CacheSelector singleNodeCacheSelector = new CacheSelector()
     {
         @Override
-        public boolean descend(String mainPath, String checkPath)
+        public boolean traverseChildren(String basePath, String fullPath)
         {
             return false;
         }
+
+        @Override
+        public CacheAction actionForPath(String basePath, String fullPath)
+        {
+            return cacheSelector.actionForPath(basePath, fullPath);
+        }
     };
 
-    InternalCuratorCache(CuratorFramework client, String path, CachedNodeComparator nodeComparator, CacheFilter cacheFilter, final RefreshFilter refreshFilter, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
+    InternalCuratorCache(CuratorFramework client, String path, final CacheSelector cacheSelector, CachedNodeComparator nodeComparator, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
     {
         super(cache, sendRefreshEvents);
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.basePath = Objects.requireNonNull(path, "path cannot be null");
+        this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");
         this.nodeComparator = Objects.requireNonNull(nodeComparator, "nodeComparator cannot be null");
-        this.cacheFilter = Objects.requireNonNull(cacheFilter, "cacheFilter cannot be null");
-        this.refreshFilter = Objects.requireNonNull(refreshFilter, "primingFilter cannot be null");
         this.sortChildren = sortChildren;
         watcher = new PersistentWatcher(client, path)
         {
@@ -75,7 +79,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 long count = refreshCount();
                 if ( (refreshOnStart && (count == 0)) || (count > 0) )
                 {
-                    internalRefresh(basePath, new NotifyingRefresher(InternalCuratorCache.this, basePath), refreshFilter);
+                    internalRefresh(basePath, new NotifyingRefresher(InternalCuratorCache.this, basePath), cacheSelector);
                 }
             }
         };
@@ -114,7 +118,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             case NodeCreated:
             case NodeDataChanged:
             {
-                internalRefresh(event.getPath(), new Refresher(InternalCuratorCache.this), nopRefreshFilter);
+                internalRefresh(event.getPath(), new Refresher(InternalCuratorCache.this), singleNodeCacheSelector);
                 break;
             }
         }
@@ -133,7 +137,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         {
             CountDownLatch latch = new CountDownLatch(1);
             Refresher refresher = new NotifyingRefresher(this, path, latch);
-            internalRefresh(path, refresher, refreshFilter);
+            internalRefresh(path, refresher, cacheSelector);
             return latch;
         }
         return new CountDownLatch(0);
@@ -142,7 +146,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     @VisibleForTesting
     volatile Exchanger<Object> debugRebuildTestExchanger;
 
-    private void internalRefresh(final String path, final Refresher refresher, final RefreshFilter refreshFilter)
+    private void internalRefresh(final String path, final Refresher refresher, final CacheSelector cacheSelector)
     {
         if ( !isStarted() )
         {
@@ -180,7 +184,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                         }
                         for ( String child : children )
                         {
-                            internalRefresh(ZKPaths.makePath(path, child), refresher, refreshFilter);
+                            internalRefresh(ZKPaths.makePath(path, child), refresher, cacheSelector);
                         }
                     }
                 }
@@ -200,7 +204,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
         };
 
-        CacheAction cacheAction = cacheFilter.actionForPath(basePath, path);
+        CacheAction cacheAction = cacheSelector.actionForPath(basePath, path);
         switch ( cacheAction )
         {
             case NOT_STORED:
@@ -241,7 +245,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
         }
 
-        if ( refreshFilter.descend(basePath, path) )
+        if ( cacheSelector.traverseChildren(basePath, path) )
         {
             refresher.increment();
             try
