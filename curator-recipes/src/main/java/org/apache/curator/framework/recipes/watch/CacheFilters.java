@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import java.util.Objects;
+
 public class CacheFilters
 {
     private static final CacheFilter statAndData = new StandardCacheFilter(CacheAction.STAT_AND_DATA);
@@ -95,6 +97,19 @@ public class CacheFilters
     public static CacheFilter fullPathOnly()
     {
         return fullPathOnly;
+    }
+
+    static CacheFilter maxDepth(int maxDepth, final CacheFilter mainFilter)
+    {
+        final RefreshFilter refreshFilter = RefreshFilters.maxDepth(maxDepth);
+        return new CacheFilter()
+        {
+            @Override
+            public CacheAction actionForPath(String mainPath, String checkPath)
+            {
+                return refreshFilter.descend(mainPath, checkPath) ? mainFilter.actionForPath(mainPath, checkPath) : CacheAction.NOT_STORED;
+            }
+        };
     }
 
     private CacheFilters()

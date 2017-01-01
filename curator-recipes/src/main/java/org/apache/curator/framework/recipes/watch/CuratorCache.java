@@ -101,6 +101,14 @@ public interface CuratorCache extends Closeable
     Collection<String> childNamesAtPath(String path);
 
     /**
+     * Returns an immutable map of child node names of the given node and the data at that node
+     *
+     * @param path node full path
+     * @return child nodes
+     */
+    Map<String, CachedNode> childrenAtPath(String path);
+
+    /**
      * Return the node data stored for the path in the cache or null
      *
      * @param path node full path
@@ -109,18 +117,18 @@ public interface CuratorCache extends Closeable
     CachedNode get(String path);
 
     /**
-     * Returns the collection of node values in the cache.
+     * Returns an unmodifiable collection of node values in the cache.
      *
      * @return node values
      */
-    Iterable<CachedNode> getAll();
+    Collection<CachedNode> getAll();
 
     /**
-     * Returns the collection of node entries in the cache.
+     * Return an unmodifiable map of the node entries in the cache
      *
-     * @return node entries
+     * @return map
      */
-    Iterable<Map.Entry<String, CachedNode>> entries();
+    Map<String, CachedNode> view();
 
     /**
      * Returns true if the cache is currently empty. Use the result only as a reference. Concurrent

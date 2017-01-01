@@ -42,7 +42,7 @@ public class CachedNode
     public CachedNode(Stat stat, byte[] data)
     {
         this.stat = Objects.requireNonNull(stat, "stat cannot be null");
-        this.data = Objects.requireNonNull(data, "data cannot be null");
+        this.data = (data != null) ? data : defaultData;
     }
 
     public Stat getStat()

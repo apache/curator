@@ -132,7 +132,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test/3", "three".getBytes());
         client.create().forPath("/test/2/sub", "two-sub".getBytes());
 
-        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test").forTree().withRefreshFilter(RefreshFilters.maxDepth(0)));
+        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test").withMaxDepth(0));
         cache.start();
         assertEvent(CacheEvent.NODE_CREATED, "/test");
         assertEvent(CacheEvent.CACHE_REFRESHED);
@@ -153,7 +153,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test/3", "three".getBytes());
         client.create().forPath("/test/2/sub", "two-sub".getBytes());
 
-        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test").forTree().withRefreshFilter(RefreshFilters.maxDepth(1)));
+        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test").withMaxDepth(1));
         cache.start();
         assertEvent(CacheEvent.NODE_CREATED, "/test");
         assertEvent(CacheEvent.NODE_CREATED, "/test/1", "one".getBytes());
@@ -181,7 +181,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test/foo/bar/3", "three".getBytes());
         client.create().forPath("/test/foo/bar/2/sub", "two-sub".getBytes());
 
-        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test/foo/bar").forTree().withRefreshFilter(RefreshFilters.maxDepth(1)));
+        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test/foo/bar").withMaxDepth(1));
         cache.start();
         assertEvent(CacheEvent.NODE_CREATED, "/test/foo/bar");
         assertEvent(CacheEvent.NODE_CREATED, "/test/foo/bar/1", "one".getBytes());
@@ -231,7 +231,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test");
         client.create().forPath("/test/one", "hey there".getBytes());
 
-        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/").forTree().withRefreshFilter(RefreshFilters.maxDepth(1)));
+        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/").withMaxDepth(1));
         cache.start();
         assertEvent(CacheEvent.NODE_CREATED, "/");
         assertEvent(CacheEvent.NODE_CREATED, "/test");
@@ -324,7 +324,7 @@ public class TestTreeCache extends BaseTestTreeCache
     {
         client.create().forPath("/test");
 
-        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test").forTree().withCacheFilter(CacheFilters.fullStatOnly()));
+        cache = buildWithListeners(CuratorCacheBuilder.builder(client, "/test").withCacheFilter(CacheFilters.fullStatOnly()));
         cache.start();
         assertEvent(CacheEvent.NODE_CREATED, "/test");
         assertEvent(CacheEvent.CACHE_REFRESHED);

@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.watch;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import java.util.ArrayList;
@@ -198,6 +199,17 @@ public class CompositeCuratorCache implements CuratorCache
     }
 
     @Override
+    public Map<String, CachedNode> childrenAtPath(String path)
+    {
+        ImmutableMap.Builder<String, CachedNode> builder = ImmutableMap.builder();
+        for ( CuratorCache cache : caches.values() )
+        {
+            builder.putAll(cache.childrenAtPath(path));
+        }
+        return builder.build();
+    }
+
+    @Override
     public CachedNode get(String path)
     {
         for ( CuratorCache cache : caches.values() )
@@ -212,25 +224,27 @@ public class CompositeCuratorCache implements CuratorCache
     }
 
     @Override
-    public Iterable<CachedNode> getAll()
+    public Collection<CachedNode> getAll()
     {
+        // TODO - more efficient version
         List<Iterable<CachedNode>> nodes = new ArrayList<>();
         for ( CuratorCache cache : caches.values() )
         {
             nodes.add(cache.getAll());
         }
-        return Iterables.concat(nodes);
+        return Lists.newArrayList(Iterables.concat(nodes));
     }
 
     @Override
-    public Iterable<Map.Entry<String, CachedNode>> entries()
+    public Map<String, CachedNode> view()
     {
-        List<Iterable<Map.Entry<String, CachedNode>>> nodes = new ArrayList<>();
+        // TODO - more efficient version
+        ImmutableMap.Builder<String, CachedNode> builder = ImmutableMap.builder();
         for ( CuratorCache cache : caches.values() )
         {
-            nodes.add(cache.entries());
+            builder.putAll(cache.view());
         }
-        return Iterables.concat(nodes);
+        return builder.build();
     }
 
     @Override

@@ -63,7 +63,7 @@ public class BaseTestTreeCache extends BaseClassForTests
      */
     protected CuratorCache newTreeCacheWithListeners(CuratorFramework client, String path)
     {
-        CuratorCache result = CuratorCacheBuilder.builder(client, path).forTree().build();
+        CuratorCache result = CuratorCacheBuilder.builder(client, path).build();
         result.getListenable().addListener(eventListener);
         return result;
     }
@@ -157,7 +157,7 @@ public class BaseTestTreeCache extends BaseClassForTests
         else
         {
             Assert.assertNotNull(event.node, message);
-            Assert.assertEquals(event.path, expectedPath, message);
+            Assert.assertEquals(event.path, expectedPath, String.format("expected path: %s - actual path %s - message: %s", expectedPath, event.path, message));
         }
         if ( expectedData != null )
         {

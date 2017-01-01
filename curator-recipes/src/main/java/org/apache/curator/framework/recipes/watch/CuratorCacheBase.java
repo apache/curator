@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.cache.Cache;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.utils.ZKPaths;
@@ -104,6 +105,12 @@ abstract class CuratorCacheBase implements CuratorCache
     }
 
     @Override
+    public Map<String, CachedNode> view()
+    {
+        return Collections.unmodifiableMap(cache.asMap());
+    }
+
+    @Override
     public Collection<String> childNamesAtPath(final String basePath)
     {
         Function<String, String> function = new Function<String, String>()
@@ -119,21 +126,30 @@ abstract class CuratorCacheBase implements CuratorCache
     }
 
     @Override
+    public Map<String, CachedNode> childrenAtPath(String path)
+    {
+        ImmutableMap.Builder<String, CachedNode> builder = ImmutableMap.builder();
+        for ( String name : childNamesAtPath(path) )
+        {
+            CachedNode node = cache.asMap().get(ZKPaths.makePath(path, name));
+            if ( node != null )
+            {
+                builder.put(name, node);
+            }
+        }
+        return builder.build();
+    }
+
+    @Override
     public CachedNode get(String path)
     {
         return cache.asMap().get(path);
     }
 
     @Override
-    public final Iterable<CachedNode> getAll()
+    public final Collection<CachedNode> getAll()
     {
-        return cache.asMap().values();
-    }
-
-    @Override
-    public final Iterable<Map.Entry<String, CachedNode>> entries()
-    {
-        return cache.asMap().entrySet();
+        return Collections.unmodifiableCollection(cache.asMap().values());
     }
 
     /**
