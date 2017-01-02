@@ -229,7 +229,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 break;
             }
 
-            case STAT_AND_COMPRESSED_DATA:
+            case STAT_AND_UNCOMPRESSED_DATA:
             {
                 try
                 {
@@ -262,7 +262,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
 
     private void checkDeletedChildren(String path, List<String> children)
     {
-        Collection<String> namesAtPath = childNamesAtPath(path);
+        Collection<String> namesAtPath = childrenAtPath(path).keySet();
         Sets.SetView<String> deleted = Sets.difference(Sets.newHashSet(namesAtPath), Sets.newHashSet(children));
         for ( String deletedName : deleted )
         {
@@ -294,7 +294,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
 
             case STAT_AND_DATA:
-            case STAT_AND_COMPRESSED_DATA:
+            case STAT_AND_UNCOMPRESSED_DATA:
             {
                 putNode = newNode;
                 break;

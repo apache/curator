@@ -18,7 +18,17 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+/**
+ * Provides for alternate methods of node comparison
+ */
 public interface CachedNodeComparator
 {
+    /**
+     * Return true if the two nodes should be considered the same
+     *
+     * @param n1 node 1
+     * @param n2 node 2
+     * @return true/false
+     */
     boolean isSame(CachedNode n1, CachedNode n2);
 }

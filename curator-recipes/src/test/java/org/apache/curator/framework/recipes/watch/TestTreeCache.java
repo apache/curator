@@ -213,7 +213,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(CacheEvent.CACHE_REFRESHED);
         assertNoMoreEvents();
 
-        Assert.assertTrue(cache.childNamesAtPath("/").contains("test"));
+        Assert.assertTrue(cache.childrenAtPath("/").keySet().contains("test"));
         assertChildNodeNames("/test", "one");
         assertChildNodeNames("/test/one");
         Assert.assertEquals(new String(cache.get("/test/one").getData()), "hey there");
@@ -232,7 +232,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(CacheEvent.CACHE_REFRESHED);
         assertNoMoreEvents();
 
-        Assert.assertTrue(cache.childNamesAtPath("/").contains("test"));
+        Assert.assertTrue(cache.childrenAtPath("/").keySet().contains("test"));
         assertChildNodeNames("/test");
         Assert.assertNull(cache.get("/test/one"));
         assertChildNodeNames("/test/one");

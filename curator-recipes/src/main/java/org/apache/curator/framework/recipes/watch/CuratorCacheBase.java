@@ -20,9 +20,7 @@ package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
 import com.google.common.cache.Cache;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -113,30 +111,17 @@ abstract class CuratorCacheBase implements CuratorCache
     }
 
     @Override
-    public Collection<String> childNamesAtPath(final String basePath)
-    {
-        Function<String, String> function = new Function<String, String>()
-        {
-            @Override
-            public String apply(String path)
-            {
-                ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-                return (pathAndNode.getPath().equals(basePath) && !path.equals(basePath)) ? pathAndNode.getNode() : null;   // must special case "root" as parent of root is root
-            }
-        };
-        return Collections2.filter(Collections2.transform(paths(), function), Predicates.notNull());
-    }
-
-    @Override
-    public Map<String, CachedNode> childrenAtPath(String path)
+    public Map<String, CachedNode> childrenAtPath(String basePath)
     {
         ImmutableMap.Builder<String, CachedNode> builder = ImmutableMap.builder();
-        for ( String name : childNamesAtPath(path) )
+        for ( Map.Entry<String, CachedNode> entry : cache.asMap().entrySet() )
         {
-            CachedNode node = cache.asMap().get(ZKPaths.makePath(path, name));
-            if ( node != null )
+            String path = entry.getKey();
+            CachedNode node = entry.getValue();
+            ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+            if ( (pathAndNode.getPath().equals(basePath) && !path.equals(basePath)) )
             {
-                builder.put(name, node);
+                builder.put(pathAndNode.getNode(), node);
             }
         }
         return builder.build();
@@ -152,12 +137,6 @@ abstract class CuratorCacheBase implements CuratorCache
     public CachedNode get(String path)
     {
         return cache.asMap().get(path);
-    }
-
-    @Override
-    public final Collection<CachedNode> getAll()
-    {
-        return Collections.unmodifiableCollection(cache.asMap().values());
     }
 
     /**

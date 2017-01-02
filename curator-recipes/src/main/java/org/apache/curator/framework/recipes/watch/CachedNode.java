@@ -22,6 +22,9 @@ import org.apache.zookeeper.data.Stat;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Represents the data for a cached node
+ */
 public class CachedNode
 {
     private final Stat stat;
@@ -29,16 +32,28 @@ public class CachedNode
 
     private static final byte[] defaultData = new byte[0];
 
+    /**
+     * Creates an empty node
+     */
     public CachedNode()
     {
         this(new Stat(), defaultData);
     }
 
+    /**
+     * A node with a stat but empty data
+     *
+     * @param stat the stat
+     */
     public CachedNode(Stat stat)
     {
         this(stat, defaultData);
     }
 
+    /**
+     * @param stat the stat
+     * @param data uncompressed data. If <code>null</code> an empty array is substituted.
+     */
     public CachedNode(Stat stat, byte[] data)
     {
         this.stat = Objects.requireNonNull(stat, "stat cannot be null");

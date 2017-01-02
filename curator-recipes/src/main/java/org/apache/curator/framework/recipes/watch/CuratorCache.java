@@ -52,15 +52,17 @@ public interface CuratorCache extends Closeable
 
     /**
      * force-fill the cache by getting all applicable nodes. The returned latch
-     * can be used to check/block for completion.
+     * can be used to check/block for completion. If the cache is set to send refresh
+     * events, one will be posted when this refresh has completed.
      *
      * @return a latch that signals when the refresh is complete
      */
     CountDownLatch refreshAll();
 
     /**
-     * Refresh the given cached node The returned latch
-     * can be used to check/block for completion.
+     * Refresh the given cached node. The returned latch
+     * can be used to check/block for completion. If the cache is set to send refresh
+     * events, one will be posted when this refresh has completed.
      *
      * @param path node full path
      * @return a latch that signals when the refresh is complete
@@ -81,7 +83,8 @@ public interface CuratorCache extends Closeable
     void clearAll();
 
     /**
-     * Return true if there is a cached node at the given path
+     * Return true if there is a cached node at the given path.
+     * Concurrent changes may not be immediately reflected.
      *
      * @param path node full path
      * @return true/false
@@ -96,15 +99,8 @@ public interface CuratorCache extends Closeable
     Collection<String> paths();
 
     /**
-     * Returns the set of child node names of the given node
-     *
-     * @param path node full path
-     * @return child names
-     */
-    Collection<String> childNamesAtPath(String path);
-
-    /**
-     * Returns an immutable map of child node names of the given node and the data at that node
+     * Returns an immutable map of child node names of the given node and the data at that node.
+     * Concurrent changes may not be immediately reflected.
      *
      * @param path node full path
      * @return child nodes
@@ -112,14 +108,16 @@ public interface CuratorCache extends Closeable
     Map<String, CachedNode> childrenAtPath(String path);
 
     /**
-     * Return the node data stored for the main path (the path passed to the builder) in the cache or null
+     * Return the node data stored for the main path (the path passed to the builder) in the cache or null.
+     * Concurrent changes may not be immediately reflected.
      *
      * @return node data or null
      */
     CachedNode getMain();
 
     /**
-     * Return the node data stored for the path in the cache or null
+     * Return the node data stored for the path in the cache or null.
+     * Concurrent changes may not be immediately reflected.
      *
      * @param path node full path
      * @return node data or null
@@ -127,21 +125,15 @@ public interface CuratorCache extends Closeable
     CachedNode get(String path);
 
     /**
-     * Returns an unmodifiable collection of node values in the cache.
-     *
-     * @return node values
-     */
-    Collection<CachedNode> getAll();
-
-    /**
-     * Return an unmodifiable map of the node entries in the cache
+     * Return an unmodifiable map of the node entries in the cache.
+     * Concurrent changes may not be immediately reflected.
      *
      * @return map
      */
     Map<String, CachedNode> view();
 
     /**
-     * Returns true if the cache is currently empty. Use the result only as a reference. Concurrent
+     * Returns true if the cache is currently empty. Concurrent
      * changes may not be immediately reflected.
      *
      * @return true/false
@@ -149,7 +141,7 @@ public interface CuratorCache extends Closeable
     boolean isEmpty();
 
     /**
-     * Returns the number of nodes int the cache. Use the result only as a reference. Concurrent
+     * Returns the number of nodes in the cache. Use the result only as a reference. Concurrent
      * changes may not be immediately reflected.
      *
      * @return true/false

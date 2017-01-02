@@ -59,11 +59,11 @@ public interface CacheSelector
     boolean traverseChildren(String basePath, String fullPath);
 
     /**
-     * Return true if this node should be returned from the cache
+     * Return how/if this node should stored in the cache
      *
      * @param basePath the main path of the cache
      * @param fullPath full path of the ZNode
-     * @return true/false
+     * @return caching action
      */
     CacheAction actionForPath(String basePath, String fullPath);
 }

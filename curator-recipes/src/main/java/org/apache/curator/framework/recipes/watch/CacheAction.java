@@ -18,11 +18,37 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+import org.apache.zookeeper.data.Stat;
+
+/**
+ * storage options for cached nodes
+ *
+ * @see CacheSelector#actionForPath(String, String)
+ */
 public enum CacheAction
 {
+    /**
+     * The node will not be stored - i.e. the node is not cached at all
+     */
     NOT_STORED,
+
+    /**
+     * Only the node's path is stored
+     */
     PATH_ONLY,
+
+    /**
+     * The node and its {@link Stat} are stored
+     */
     STAT_ONLY,
+
+    /**
+     * The node, its {@link Stat} and data are stored
+     */
     STAT_AND_DATA,
-    STAT_AND_COMPRESSED_DATA
+
+    /**
+     * The node, its {@link Stat} and data (uncompressed) are stored
+     */
+    STAT_AND_UNCOMPRESSED_DATA
 }

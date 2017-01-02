@@ -18,7 +18,32 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+/**
+ * Functor for listening for events on a cache
+ */
 public interface CacheListener
 {
+    /**
+     * <p>
+     *     A event was posted for the cache. The meaning of the other arguments depends on the event
+     *     type
+     * </p>
+     *
+     * <p>
+     *     <code>path</code> is generally the affected path. For {@link CacheEvent#CACHE_REFRESHED}
+     *     it will be the path will be the path passed to the refresh() method used or the main path
+     *     used to construct the cache.
+     * </p>
+     *
+     * <p>
+     *     For {@link CacheEvent#NODE_CREATED} and {@link CacheEvent#NODE_CHANGED}
+     *     <code>affectedNode</code> is the new value of the node. For {@link CacheEvent#NODE_DELETED}
+     *     <code>affectedNode</code> is the value of the node being deleted.
+     * </p>
+     *
+     * @param event the event
+     * @param path the path of the event
+     * @param affectedNode the affected node value
+     */
     void process(CacheEvent event, String path, CachedNode affectedNode);
 }

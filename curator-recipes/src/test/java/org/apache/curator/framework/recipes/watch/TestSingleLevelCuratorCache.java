@@ -695,7 +695,7 @@ public class TestSingleLevelCuratorCache extends BaseClassForTests
             client.create().forPath("/test/two", "two".getBytes());
             Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-            for ( CachedNode data : cache.getAll() )
+            for ( CachedNode data : cache.view().values() )
             {
                 if ( cacheData )
                 {

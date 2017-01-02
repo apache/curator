@@ -18,10 +18,31 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
+/**
+ * Cache change event types
+ */
 public enum CacheEvent
 {
+    /**
+     * A node was added to the cache that wasn't previously in the cache
+     */
     NODE_CREATED,
+
+    /**
+     * A node was removed from the cache
+     */
     NODE_DELETED,
+
+    /**
+     * A node in the cache was changed due to the {@link CachedNodeComparator} signifying
+     * a difference
+     */
     NODE_CHANGED,
+
+    /**
+     * The cache was refreshed to a call to one of the refresh() methods, server reconnection,
+     * etc. NOTE: this event is only sent if {@link CuratorCacheBuilder#sendingRefreshEvents(boolean)}
+     * is true (default is <code>true</code>).
+     */
     CACHE_REFRESHED
 }

@@ -172,6 +172,6 @@ public class BaseTestTreeCache extends BaseClassForTests
         {
             names = new String[0];
         }
-        Assert.assertEquals(Sets.newHashSet(cache.childNamesAtPath(path)), Sets.newHashSet(names));
+        Assert.assertEquals(Sets.newHashSet(cache.childrenAtPath(path).keySet()), Sets.newHashSet(names));
     }
 }

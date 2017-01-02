@@ -20,6 +20,9 @@ package org.apache.curator.framework.recipes.watch;
 
 import java.util.Arrays;
 
+/**
+ * Pre-built node comparators for common uses
+ */
 public class CachedNodeComparators
 {
     private static final CachedNodeComparator dataOnly = new CachedNodeComparator()
@@ -51,9 +54,9 @@ public class CachedNodeComparators
 
     private static boolean sameType(long e1, long e2)
     {
-        boolean e1Is = (e1 > 0);
-        boolean e2Is = (e2 > 0);
-        return e1Is == e2Is;
+        boolean e1IsEphemeral = (e1 > 0);
+        boolean e2IsEphemeral = (e2 > 0);
+        return e1IsEphemeral == e2IsEphemeral;
     }
 
     private static boolean firstCheck(CachedNode n1, CachedNode n2)
@@ -70,19 +73,35 @@ public class CachedNodeComparators
         return true;
     }
 
+    /**
+     * Returns a comparator that only compares the byte array of the node, ignoring the Stat
+     *
+     * @return data only comparator
+     */
     public static CachedNodeComparator dataOnly()
     {
         return dataOnly;
     }
 
-    public static CachedNodeComparator deep()
-    {
-        return deep;
-    }
-
+    /**
+     * Returns a comparator that compares the byte array of the node, and the ephemeralOwner
+     * of the Stat. i.e. the data must match and the ephemeral type must be the same
+     *
+     * @return data and type comparator
+     */
     public static CachedNodeComparator dataAndType()
     {
         return dataAndType;
+    }
+
+    /**
+     * Returns a comparator that compares the byte array of the node and the stat
+     *
+     * @return deep comparator
+     */
+    public static CachedNodeComparator deep()
+    {
+        return deep;
     }
 
     private CachedNodeComparators()

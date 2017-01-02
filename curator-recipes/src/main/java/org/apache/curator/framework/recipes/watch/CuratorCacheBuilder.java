@@ -24,6 +24,9 @@ import org.apache.curator.framework.CuratorFramework;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Factory for building cache instances
+ */
 public class CuratorCacheBuilder
 {
     private final CuratorFramework client;
@@ -36,11 +39,24 @@ public class CuratorCacheBuilder
     private CachedNodeComparator nodeComparator = CachedNodeComparators.dataAndType();
     private CacheSelector cacheSelector = CacheSelectors.statAndData();
 
+    /**
+     * Start a new builder for the given client and main path
+     *
+     * @param client the client
+     * @param path the base path for the cache
+     * @return builder
+     */
     public static CuratorCacheBuilder builder(CuratorFramework client, String path)
     {
         return new CuratorCacheBuilder(client, path);
     }
 
+    /**
+     * Return a new cache based on the current values of the builder. Note: the cache must
+     * be started before use and closed when done.
+     *
+     * @return cache instance
+     */
     public CuratorCache build()
     {
         if ( singleNodeCacheAction != null )
@@ -52,11 +68,22 @@ public class CuratorCacheBuilder
         return new InternalCuratorCache(client, path, cacheSelector, nodeComparator, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart, sortChildren);
     }
 
+    /**
+     * Single node caches can be optimized. Call this method to only watch/cache a single node
+     *
+     * @return this
+     */
     public CuratorCacheBuilder forSingleNode()
     {
         return forSingleNode(CacheAction.STAT_AND_DATA);
     }
 
+    /**
+     * Single node caches can be optimized. Call this method to only watch/cache a single node
+     *
+     * @param cacheAction caching action to use
+     * @return this
+     */
     public CuratorCacheBuilder forSingleNode(CacheAction cacheAction)
     {
         cacheSelector = null;
@@ -64,54 +91,119 @@ public class CuratorCacheBuilder
         return this;
     }
 
+    /**
+     * By default, values in the cache use hard references. Calling this method changes to weak
+     * references.
+     *
+     * @return this
+     */
     public CuratorCacheBuilder usingWeakValues()
     {
         cacheBuilder = cacheBuilder.weakValues();
         return this;
     }
 
+    /**
+     * By default, values in the cache use hard references. Calling this method changes to soft
+     * references.
+     *
+     * @return this
+     */
     public CuratorCacheBuilder usingSoftValues()
     {
         cacheBuilder = cacheBuilder.softValues();
         return this;
     }
 
+    /**
+     * By default, values in the cache never expire. Calling this method specifies that each entry
+     * should be automatically removed from the cache once a fixed duration has elapsed after
+     * the entry's creation, or the most recent replacement of its value.
+     *
+     * @param duration the length of time after an entry is created that it should be automatically
+     *     removed
+     * @param unit the unit that {@code duration} is expressed in
+     * @return this
+     */
     public CuratorCacheBuilder thatExpiresAfterWrite(long duration, TimeUnit unit)
     {
         cacheBuilder = cacheBuilder.expireAfterWrite(duration, unit);
         return this;
     }
 
+    /**
+     * By default, values in the cache never expire. Calling this method specifies that each entry
+     * should be automatically removed from the cache once a fixed duration has elapsed after the
+     * entry's creation, the most recent replacement of its value, or its last access.
+     *
+     * @param duration the length of time after an entry is last accessed that it should be
+     *     automatically removed
+     * @param unit the unit that {@code duration} is expressed in
+     * @return this
+     */
     public CuratorCacheBuilder thatExpiresAfterAccess(long duration, TimeUnit unit)
     {
         cacheBuilder = cacheBuilder.expireAfterAccess(duration, unit);
         return this;
     }
 
+    /**
+     * Changes whether or not {@link CacheEvent#CACHE_REFRESHED} events are sent to
+     * {@link CacheListener}s. The default is <code>true</code>
+     *
+     * @param sendRefreshEvents true/false
+     * @return this
+     */
     public CuratorCacheBuilder sendingRefreshEvents(boolean sendRefreshEvents)
     {
         this.sendRefreshEvents = sendRefreshEvents;
         return this;
     }
 
+    /**
+     * Changes whether or not a refresh is done when the cache is started.  The default is <code>true</code>
+     *
+     * @param refreshOnStart true/false
+     * @return this
+     */
     public CuratorCacheBuilder refreshingWhenStarted(boolean refreshOnStart)
     {
         this.refreshOnStart = refreshOnStart;
         return this;
     }
 
+    /**
+     * Changes whether or not children are sorted when notifying. i.e. notifications of added nodes
+     * come in sorted order. The default is <code>true</code>
+     *
+     * @param sortChildren true/false
+     * @return this
+     */
     public CuratorCacheBuilder sortingChildren(boolean sortChildren)
     {
         this.sortChildren = sortChildren;
         return this;
     }
 
+    /**
+     * Changes which comparator is used to determine whether a node has changed or not.
+     * The default is {@link CachedNodeComparators#dataAndType}
+     *
+     * @param nodeComparator new comparator
+     * @return this
+     */
     public CuratorCacheBuilder withNodeComparator(CachedNodeComparator nodeComparator)
     {
         this.nodeComparator = Objects.requireNonNull(nodeComparator, "nodeComparator cannot be null");
         return this;
     }
 
+    /**
+     * Changes which cache selector is used. The default is {@link CacheSelectors#statAndData}
+     *
+     * @param cacheSelector new selector
+     * @return this
+     */
     public CuratorCacheBuilder withCacheSelector(CacheSelector cacheSelector)
     {
         this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");

@@ -193,7 +193,7 @@ class InternalNodeCache extends CuratorCacheBase
                             break;
                         }
 
-                        case STAT_AND_COMPRESSED_DATA:
+                        case STAT_AND_UNCOMPRESSED_DATA:
                         {
                             refresher.increment();
                             client.getData().decompressed().usingWatcher(watcher).inBackground(backgroundCallback, refresher).forPath(path);

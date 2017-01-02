@@ -56,24 +56,25 @@ public class TestNodeCache extends BaseClassForTests
                 }
             });
 
-            final Semaphore semaphore = new Semaphore(0);
+            final BlockingQueue<CacheEvent> events = new LinkedBlockingQueue<>();
             cache = CuratorCacheBuilder.builder(client, "/test/foo").forSingleNode().sendingRefreshEvents(false).build();
             cache.getListenable().addListener(new CacheListener()
             {
                 @Override
                 public void process(CacheEvent event, String path, CachedNode affectedNode)
                 {
-                    semaphore.release();
+                    events.add(event);
                 }
             });
             Assert.assertTrue(timing.awaitLatch(cache.start()));
 
             Assert.assertEquals(cache.getMain().getData(), "one".getBytes());
 
+            Assert.assertEquals(events.poll(5, TimeUnit.SECONDS), CacheEvent.NODE_CREATED);
             client.delete().forPath("/test/foo");
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertEquals(events.poll(5, TimeUnit.SECONDS), CacheEvent.NODE_DELETED);
             client.create().forPath("/test/foo", "two".getBytes());
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            Assert.assertEquals(events.poll(5, TimeUnit.SECONDS), CacheEvent.NODE_CREATED);
 
             Throwable t = error.get();
             if ( t != null )
@@ -86,7 +87,7 @@ public class TestNodeCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -143,7 +144,7 @@ public class TestNodeCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -159,7 +160,6 @@ public class TestNodeCache extends BaseClassForTests
             client.create().creatingParentsIfNeeded().forPath("/test/node", "start".getBytes());
 
             cache = CuratorCacheBuilder.builder(client, "/test/node").forSingleNode().sendingRefreshEvents(false).build();
-            Assert.assertTrue(timing.awaitLatch(cache.start()));
 
             final CountDownLatch latch = new CountDownLatch(1);
             cache.getListenable().addListener(new CacheListener()
@@ -170,6 +170,7 @@ public class TestNodeCache extends BaseClassForTests
                     latch.countDown();
                 }
             });
+            Assert.assertTrue(timing.awaitLatch(cache.start()));
 
             KillSession.kill(client.getZookeeperClient().getZooKeeper());
             Thread.sleep(timing.multiple(1.5).session());
@@ -182,7 +183,7 @@ public class TestNodeCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -197,7 +198,6 @@ public class TestNodeCache extends BaseClassForTests
             client.create().forPath("/test");
 
             cache = CuratorCacheBuilder.builder(client, "/test/node").forSingleNode().sendingRefreshEvents(false).build();
-            Assert.assertTrue(timing.awaitLatch(cache.start()));
 
             final Semaphore semaphore = new Semaphore(0);
             cache.getListenable().addListener(new CacheListener()
@@ -208,6 +208,7 @@ public class TestNodeCache extends BaseClassForTests
                     semaphore.release();
                 }
             });
+            Assert.assertTrue(timing.awaitLatch(cache.start()));
 
             Assert.assertNull(cache.getMain());
 
@@ -226,7 +227,7 @@ public class TestNodeCache extends BaseClassForTests
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -241,7 +242,6 @@ public class TestNodeCache extends BaseClassForTests
             client.create().forPath("/test");
 
             cache = CuratorCacheBuilder.builder(client, "/test/node").forSingleNode().build();
-            cache.start();
 
             final BlockingQueue<CacheEvent> events = new LinkedBlockingQueue<>();
             cache.getListenable().addListener(new CacheListener()
@@ -252,12 +252,13 @@ public class TestNodeCache extends BaseClassForTests
                     events.add(event);
                 }
             });
+            cache.start();
             Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), CacheEvent.CACHE_REFRESHED);
         }
         finally
         {
             CloseableUtils.closeQuietly(cache);
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 }

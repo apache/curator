@@ -32,13 +32,20 @@ import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * A managed persisten watcher. The watch will be managed such that it stays set through
+ * connection lapses, etc.
+ */
 public class PersistentWatcher implements Closeable
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final ListenerContainer<Watcher> listeners = new ListenerContainer<>();
     private final AtomicBoolean isSet = new AtomicBoolean(false);
@@ -105,12 +112,19 @@ public class PersistentWatcher implements Closeable
         CLOSED
     }
 
+    /**
+     * @param client client
+     * @param basePath path to set the watch on
+     */
     public PersistentWatcher(CuratorFramework client, String basePath)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.basePath = Objects.requireNonNull(basePath, "basePath cannot be null");
     }
 
+    /**
+     * Start watching
+     */
     public void start()
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
@@ -118,6 +132,9 @@ public class PersistentWatcher implements Closeable
         reset();
     }
 
+    /**
+     * Remove the watcher
+     */
     @Override
     public void close()
     {
@@ -137,11 +154,19 @@ public class PersistentWatcher implements Closeable
         }
     }
 
+    /**
+     * Container for setting listeners
+     *
+     * @return listener container
+     */
     public Listenable<Watcher> getListenable()
     {
         return listeners;
     }
 
+    /**
+     * Called whenever the watch has been successfully set/reset
+     */
     protected void noteWatcherReset()
     {
         // provided for sub-classes to override
@@ -155,7 +180,7 @@ public class PersistentWatcher implements Closeable
         }
         catch ( Exception e )
         {
-            // TODO
+            log.error("Could not reset persistent watch at path: " + basePath, e);
         }
     }
 }
