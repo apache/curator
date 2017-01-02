@@ -69,6 +69,7 @@ public class PersistentNode implements Closeable
     private final AtomicBoolean authFailure = new AtomicBoolean(false);
     private final BackgroundCallback backgroundCallback;
     private final boolean useProtection;
+    private final AtomicBoolean overwriteExisting;
     private final CuratorWatcher watcher = new CuratorWatcher()
     {
         @Override
@@ -140,15 +141,25 @@ public class PersistentNode implements Closeable
     }
 
     /**
+     * @see #PersistentNode(CuratorFramework, CreateMode, boolean, boolean, String, byte[])
+     */
+    public PersistentNode(CuratorFramework client, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData)
+    {
+        this(client, mode, useProtection, true, basePath, initData);
+    }
+
+    /**
      * @param client        client instance
      * @param mode          creation mode
      * @param useProtection if true, call {@link CreateBuilder#withProtection()}
      * @param basePath the base path for the node
      * @param initData data for the node
+     * @param overwriteExisting if true, an already existing node will be overwritten with our data and it will be deleted on close
      */
-    public PersistentNode(CuratorFramework client, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData)
+    public PersistentNode(CuratorFramework client, final CreateMode mode, boolean useProtection, final boolean overwriteExisting, final String basePath, byte[] initData)
     {
         this.useProtection = useProtection;
+        this.overwriteExisting =  new AtomicBoolean(overwriteExisting);
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
         this.basePath = PathUtils.validatePath(basePath);
         this.mode = Preconditions.checkNotNull(mode, "mode cannot be null");
@@ -186,7 +197,7 @@ public class PersistentNode implements Closeable
             path = event.getName();
         }
 
-        if ( path != null )
+        if ( path != null && overwriteExisting.get() )
         {
             try
             {
@@ -226,7 +237,10 @@ public class PersistentNode implements Closeable
 
             if ( nodeExists )
             {
-                client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
+                if ( overwriteExisting.get() )
+                {
+                    client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
+                }
             }
             else
             {
@@ -246,6 +260,7 @@ public class PersistentNode implements Closeable
         {
             localLatch.countDown();
         }
+        overwriteExisting.set(true);
     }
 
     /**
@@ -287,14 +302,17 @@ public class PersistentNode implements Closeable
 
         client.getConnectionStateListenable().removeListener(connectionStateListener);
 
-        try
+        if ( overwriteExisting.get() )
         {
-            deleteNode();
-        }
-        catch ( Exception e )
-        {
-            ThreadUtils.checkInterrupted(e);
-            throw new IOException(e);
+            try
+            {
+                deleteNode();
+            }
+            catch (Exception e)
+            {
+                ThreadUtils.checkInterrupted(e);
+                throw new IOException(e);
+            }
         }
     }
 
