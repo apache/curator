@@ -23,6 +23,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 public class TestTreeCache extends BaseTestTreeCache
@@ -542,5 +544,53 @@ public class TestTreeCache extends BaseTestTreeCache
 
         assertEvent(CacheEvent.NODE_CREATED, "/test");
         assertNoMoreEvents();
+    }
+
+    @Test
+    public void testCompositeSelector() throws Exception
+    {
+        client.create().creatingParentsIfNeeded().forPath("/root/a1/b1/c1");
+        client.create().creatingParentsIfNeeded().forPath("/root/a1/b1/c2");
+        client.create().creatingParentsIfNeeded().forPath("/root/a1/b2/c1");
+
+        client.create().creatingParentsIfNeeded().forPath("/root/a2/b1/c1");
+        client.create().creatingParentsIfNeeded().forPath("/root/a2/b1/c2");
+        client.create().creatingParentsIfNeeded().forPath("/root/a2/b2/c1");
+
+        client.create().creatingParentsIfNeeded().forPath("/root/a3/b1/c1");
+        client.create().creatingParentsIfNeeded().forPath("/root/a3/b1/c2");
+        client.create().creatingParentsIfNeeded().forPath("/root/a3/b2/c1");
+
+        CacheSelector depth0 = CacheSelectors.maxDepth(0);
+        CacheSelector depth1 = CacheSelectors.maxDepth(1);
+        CacheSelector standard = CacheSelectors.statAndData();
+        Map<String, CacheSelector> map = new HashMap<>();
+        map.put("/root/a1", depth0);
+        map.put("/root/a2", depth1);
+        map.put("/root/a3", standard);
+        map.put("/root/a3/b2", depth0);
+        CacheSelector composite = CacheSelectors.composite(map);
+        cache = CuratorCacheBuilder.builder(client, "/root").withCacheSelector(composite).build();
+        Assert.assertTrue(timing.awaitLatch(cache.start()));
+
+        Assert.assertTrue(cache.exists("/root"));
+
+        Assert.assertFalse(cache.exists("/root/a1"));
+        Assert.assertFalse(cache.exists("/root/a1/b1"));
+        Assert.assertFalse(cache.exists("/root/a1/b2"));
+
+        Assert.assertTrue(cache.exists("/root/a2"));
+        Assert.assertFalse(cache.exists("/root/a2/b1"));
+        Assert.assertFalse(cache.exists("/root/a2/b2"));
+        Assert.assertFalse(cache.exists("/root/a2/b1/c1"));
+        Assert.assertFalse(cache.exists("/root/a2/b1/c2"));
+        Assert.assertFalse(cache.exists("/root/a2/b2/c1"));
+
+        Assert.assertTrue(cache.exists("/root/a3"));
+        Assert.assertTrue(cache.exists("/root/a3/b1"));
+        Assert.assertFalse(cache.exists("/root/a3/b2"));
+        Assert.assertTrue(cache.exists("/root/a3/b1/c1"));
+        Assert.assertTrue(cache.exists("/root/a3/b1/c2"));
+        Assert.assertFalse(cache.exists("/root/a3/b2/c1"));
     }
 }

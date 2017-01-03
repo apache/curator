@@ -20,6 +20,13 @@ package org.apache.curator.framework.recipes.watch;
 
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.common.PathUtils;
+import org.apache.zookeeper.server.PathIterator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Pre-built caching selectors
@@ -30,6 +37,20 @@ public class CacheSelectors
     private static final CacheSelector uncompressedStatAndData = new StandardCacheSelector(CacheAction.STAT_AND_UNCOMPRESSED_DATA);
     private static final CacheSelector statOnly = new StandardCacheSelector(CacheAction.STAT_ONLY);
     private static final CacheSelector pathOnly = new StandardCacheSelector(CacheAction.PATH_ONLY);
+
+    private static class CompositeEntry
+    {
+        final String path;
+        final CacheSelector selector;
+        final int length;
+
+        private CompositeEntry(String path, CacheSelector selector, int length)
+        {
+            this.path = path;
+            this.selector = selector;
+            this.length = length;
+        }
+    }
 
     private static class StandardCacheSelector implements CacheSelector
     {
@@ -209,6 +230,92 @@ public class CacheSelectors
     public static CacheSelector maxDepth(int maxDepth, CacheAction cacheAction)
     {
         return new MaxDepthCacheSelector(maxDepth, cacheAction);
+    }
+
+    /**
+     * <p>
+     *     Creates a composite cache selector that applies different selectors for different parent
+     *     paths. The given selectorMap maps a parent path to a cache selector.
+     * </p>
+     *
+     * <p>
+     *     e.g. a map such as: <code>/a/b -> selectorA, /a/c -> selectorB</code> will apply "selectorA"
+     *     to paths that are children of "/a/b", "a/b/x", "a/b/x/y", etc. and "selectorB" to paths that are children of
+     *     "a/c", etc.
+     * </p>
+     *
+     * <p>
+     *     If no matches are found in the map, {@link #statAndData()} is used. NOTE: the longest
+     *     paths (counted by segments) take precedence. i.e. the mapping of "/a/b/c" will match
+     *     before "/a/b".
+     * </p>
+     *
+     * @param selectorMap the selector map
+     * @return the composite
+     */
+    public static CacheSelector composite(Map<String, CacheSelector> selectorMap)
+    {
+        return composite(selectorMap, statAndData);
+    }
+
+    /**
+     * Same as {@link #composite(Map)} but uses the given default selector instead of {@link #statAndData()}.
+     *
+     * @param selectorMap the selector map
+     * @param defaultSelector default selector if no match is found in the map
+     * @return the composite
+     */
+    public static CacheSelector composite(Map<String, CacheSelector> selectorMap, final CacheSelector defaultSelector)
+    {
+        final List<CompositeEntry> entries = new ArrayList<>();
+        for ( Map.Entry<String, CacheSelector> entry : selectorMap.entrySet() )
+        {
+            String path = entry.getKey();
+            PathUtils.validatePath(path);
+            CacheSelector selector = entry.getValue();
+            int length = path.split("/").length;
+            entries.add(new CompositeEntry(path, selector, length));
+        }
+        Collections.sort(entries, new Comparator<CompositeEntry>()
+        {
+            @Override
+            public int compare(CompositeEntry e1, CompositeEntry e2)
+            {
+                return e2.length - e1.length;   // reverse length order
+            }
+        });
+
+        return new CacheSelector()
+        {
+            @Override
+            public boolean traverseChildren(String basePath, String fullPath)
+            {
+                return getSelector(fullPath).traverseChildren(basePath, fullPath);
+            }
+
+            @Override
+            public CacheAction actionForPath(String basePath, String fullPath)
+            {
+                return getSelector(fullPath).actionForPath(basePath, fullPath);
+            }
+
+            private CacheSelector getSelector(String fullPath)
+            {
+                String parent = ZKPaths.getPathAndNode(fullPath).getPath();
+                for ( CompositeEntry entry : entries )
+                {
+                    PathIterator pathIterator = new PathIterator(fullPath);
+                    while ( pathIterator.hasNext() )
+                    {
+                        if ( pathIterator.next().equals(entry.path) )
+                        {
+                            return entry.selector;
+                        }
+                    }
+                }
+                return defaultSelector;
+            }
+        };
     }
 
     private CacheSelectors()

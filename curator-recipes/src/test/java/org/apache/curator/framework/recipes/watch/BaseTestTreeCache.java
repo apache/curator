@@ -38,9 +38,9 @@ public class BaseTestTreeCache extends BaseClassForTests
 {
     protected CuratorFramework client;
     protected CuratorCache cache;
+    protected final Timing timing = new Timing();
     private final AtomicBoolean hadBackgroundException = new AtomicBoolean(false);
     private final BlockingQueue<EventAndNode> events = new LinkedBlockingQueue<>();
-    private final Timing timing = new Timing();
 
     /**
      * Automatically records all events into an easily testable event stream.
