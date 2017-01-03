@@ -148,7 +148,7 @@ public class PersistentWatcher implements Closeable
             catch ( Exception e )
             {
                 ThreadUtils.checkInterrupted(e);
-                // TODO
+                log.debug(String.format("Could not remove watcher for path: %s", basePath), e);
             }
             listeners.clear();
         }

@@ -31,6 +31,8 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 class InternalCuratorCache extends CuratorCacheBase implements Watcher
 {
     private static final CachedNode nullNode = new CachedNode();
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final PersistentWatcher watcher;
     private final CuratorFramework client;
     private final String basePath;
@@ -194,7 +197,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 }
                 else
                 {
-                    // TODO
+                    log.debug("Unexpected event {} refreshing path {}", event, path);
                 }
                 refresher.decrement();
                 if ( debugRebuildTestExchanger != null )
@@ -224,7 +227,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 catch ( Exception e )
                 {
                     ThreadUtils.checkInterrupted(e);
-                    // TODO
+                    log.debug(String.format("Could not getData(%s). Should refresh when reconnected", path), e);
                 }
                 break;
             }
@@ -239,7 +242,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 catch ( Exception e )
                 {
                     ThreadUtils.checkInterrupted(e);
-                    // TODO
+                    log.debug(String.format("Could not getDataDecompressed(%s). Should refresh when reconnected", path), e);
                 }
                 break;
             }
@@ -255,7 +258,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             catch ( Exception e )
             {
                 ThreadUtils.checkInterrupted(e);
-                // TODO
+                log.debug(String.format("Could not getChildren(%s). Should refresh when reconnected", path), e);
             }
         }
     }

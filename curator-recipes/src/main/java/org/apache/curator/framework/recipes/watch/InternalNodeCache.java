@@ -87,7 +87,7 @@ class InternalNodeCache extends CuratorCacheBase
             catch ( Exception e )
             {
                 ThreadUtils.checkInterrupted(e);
-                // TODO
+                log.debug(String.format("Could not processBackgroundResult(%s). Should refresh when reconnected", event), e);
             }
         }
     };
@@ -135,7 +135,7 @@ class InternalNodeCache extends CuratorCacheBase
         catch ( Exception e )
         {
             ThreadUtils.checkInterrupted(e);
-            // TODO
+            log.debug(String.format("Could not refresh for path: %s - should refresh next reconnect", path), e);
         }
         return latch;
     }
