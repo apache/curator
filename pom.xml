@@ -286,6 +286,7 @@
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
         <module>curator-x-rpc</module>
+        <module>curator-x-crimps</module>
     </modules>
 
     <dependencyManagement>
