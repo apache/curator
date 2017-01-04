@@ -1,5 +1,6 @@
 package org.apache.curator.x.crimps;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.framework.api.BackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundPathable;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -9,7 +10,6 @@ import org.apache.zookeeper.data.Stat;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 
 public class Crimps
@@ -86,7 +86,7 @@ public class Crimps
 
     public static Crimps newCrimps()
     {
-        return new Crimps(ForkJoinPool.commonPool());
+        return new Crimps(MoreExecutors.sameThreadExecutor());
     }
 
     public static Crimps newCrimps(Executor executor)
