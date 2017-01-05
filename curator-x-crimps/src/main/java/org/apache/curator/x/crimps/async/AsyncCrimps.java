@@ -103,6 +103,23 @@ public class AsyncCrimps
         return build(builder, statSupplier);
     }
 
+    public CrimpedEnsembleable ensemble(Backgroundable<ErrorListenerEnsembleable<byte[]>> builder)
+    {
+        CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataSupplier);
+
+        Ensembleable<byte[]> main;
+        if ( unhandledErrorListener != null )
+        {
+            main = builder.inBackground(callback).withUnhandledErrorListener(unhandledErrorListener);
+        }
+        else
+        {
+            main = builder.inBackground(callback);
+        }
+
+        return new CrimpedEnsembleableImpl(main, callback);
+    }
+
     public CrimpedEnsembleable ensemble(Backgroundable<ErrorListenerReconfigBuilderMain> builder, List<String> newMembers)
     {
         CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataSupplier);
@@ -117,7 +134,7 @@ public class AsyncCrimps
             main = builder.inBackground(callback);
         }
 
-        return new CrimpedEnsembleableImpl(main.withNewMembers(newMembers), callback);
+        return new CrimpedEnsembleableImpl((Statable<ConfigureEnsembleable>)main.withNewMembers(newMembers), callback);
     }
 
     public CrimpedEnsembleable ensemble(Backgroundable<ErrorListenerReconfigBuilderMain> builder, List<String> joining, List<String> leaving)

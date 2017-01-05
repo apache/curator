@@ -107,6 +107,21 @@ public class TestCrimps extends BaseClassForTests
         }
     }
 
+    @Test
+    public void testGetConfig() throws Exception
+    {
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
+        {
+            client.start();
+
+            CompletionStage<byte[]> f = async.ensemble(client.getConfig()).forEnsemble();
+            complete(f.handle((data, e) -> {
+                Assert.assertNotNull(data);
+                return null;
+            }));
+        }
+    }
+
     public void assertException(CompletionStage<?> f, KeeperException.Code code) throws Exception
     {
         complete(f.handle((value, e) -> {

@@ -28,6 +28,7 @@ class CrimpedEnsembleableImpl implements CrimpedEnsembleable
 {
     private final CrimpedBackgroundCallback<byte[]> callback;
     private final Statable<ConfigureEnsembleable> configBuilder;
+    private Ensembleable<byte[]> ensembleable;
     private ConfigureEnsembleable configureEnsembleable;
 
     CrimpedEnsembleableImpl(Statable<ConfigureEnsembleable> configBuilder, CrimpedBackgroundCallback<byte[]> callback)
@@ -35,26 +36,35 @@ class CrimpedEnsembleableImpl implements CrimpedEnsembleable
         this.configBuilder = configBuilder;
         this.callback = callback;
         configureEnsembleable = configBuilder.storingStatIn(new Stat());
+        ensembleable = configureEnsembleable;
+    }
+
+    CrimpedEnsembleableImpl(Ensembleable<byte[]> ensembleable, CrimpedBackgroundCallback<byte[]> callback)
+    {
+        this.ensembleable = ensembleable;
+        this.configBuilder = null;
+        this.callback = callback;
+        configureEnsembleable = null;
     }
 
     @Override
     public CompletionStage<byte[]> forEnsemble() throws Exception
     {
-        configureEnsembleable.forEnsemble();
+        ensembleable.forEnsemble();
         return callback;
     }
 
     @Override
     public CrimpedConfigEnsembleable storingStatIn(Stat stat)
     {
-        configureEnsembleable = configBuilder.storingStatIn(stat);
+        ensembleable = configureEnsembleable = configBuilder.storingStatIn(stat);
         return this;
     }
 
     @Override
     public Ensembleable<CompletionStage<byte[]>> fromConfig(long config) throws Exception
     {
-        configureEnsembleable.fromConfig(config);
+        ensembleable = configureEnsembleable.fromConfig(config);
         return this;
     }
 }
