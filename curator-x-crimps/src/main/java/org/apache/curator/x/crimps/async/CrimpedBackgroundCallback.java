@@ -21,15 +21,23 @@ package org.apache.curator.x.crimps.async;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.zookeeper.WatchedEvent;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
-class CrimpedBackgroundCallback<T> extends CompletableFuture<T> implements BackgroundCallback
+class CrimpedBackgroundCallback<T> extends CompletableFuture<T> implements BackgroundCallback, Crimped<T>
 {
     private final BackgroundProc<T> resultFunction;
 
     CrimpedBackgroundCallback(BackgroundProc<T> resultFunction)
     {
         this.resultFunction = resultFunction;
+    }
+
+    @Override
+    public CompletionStage<WatchedEvent> event()
+    {
+        return null;
     }
 
     @Override

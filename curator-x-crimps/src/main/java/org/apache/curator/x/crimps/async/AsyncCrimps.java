@@ -78,57 +78,57 @@ public class AsyncCrimps
         return new AsyncCrimps(unhandledErrorListener);
     }
 
-    public PathAndBytesable<CompletionStage<String>> name(BackgroundPathAndBytesable<String> builder)
+    public CrimpledPathAndBytesable<CompletionStage<String>> name(BackgroundPathAndBytesable<String> builder)
     {
         return build(builder, nameProc);
     }
 
-    public PathAndBytesable<CompletionStage<String>> path(BackgroundPathAndBytesable<String> builder)
+    public CrimpledPathAndBytesable<CompletionStage<String>> path(BackgroundPathAndBytesable<String> builder)
     {
         return build(builder, pathProc);
     }
 
-    public Pathable<CompletionStage<Void>> ignored(BackgroundPathable<Void> builder)
+    public CrimpedPathable<CompletionStage<Void>> ignored(BackgroundPathable<Void> builder)
     {
         return build(builder, ignoredProc);
     }
 
-    public Pathable<CompletionStage<byte[]>> data(BackgroundPathable<byte[]> builder)
+    public CrimpedPathable<CompletionStage<byte[]>> data(BackgroundPathable<byte[]> builder)
     {
         return build(builder, dataProc);
     }
 
-    public Pathable<CompletionStage<List<String>>> children(BackgroundPathable<List<String>> builder)
+    public CrimpedPathable<CompletionStage<List<String>>> children(BackgroundPathable<List<String>> builder)
     {
         return build(builder, childrenProc);
     }
 
-    public Pathable<CompletionStage<Stat>> stat(BackgroundPathable<Stat> builder)
+    public CrimpedPathable<CompletionStage<Stat>> stat(BackgroundPathable<Stat> builder)
     {
         return build(builder, statProc);
     }
 
-    public Pathable<CompletionStage<Stat>> safeStat(BackgroundPathable<Stat> builder)
+    public CrimpedPathable<CompletionStage<Stat>> safeStat(BackgroundPathable<Stat> builder)
     {
         return build(builder, safeStatProc);
     }
 
-    public Pathable<Crimped<Stat>> statWatched(Watchable<BackgroundPathable<Stat>> builder)
+    public CrimpedPathable<Crimped<Stat>> statWatched(Watchable<BackgroundPathable<Stat>> builder)
     {
         return build(builder, statProc);
     }
 
-    public Pathable<Crimped<Stat>> safeStatWatched(Watchable<BackgroundPathable<Stat>> builder)
+    public CrimpedPathable<Crimped<Stat>> safeStatWatched(Watchable<BackgroundPathable<Stat>> builder)
     {
         return build(builder, safeStatProc);
     }
 
-    public Pathable<CompletionStage<List<ACL>>> acls(BackgroundPathable<List<ACL>> builder)
+    public CrimpedPathable<CompletionStage<List<ACL>>> acls(BackgroundPathable<List<ACL>> builder)
     {
         return build(builder, aclProc);
     }
 
-    public PathAndBytesable<CompletionStage<Stat>> statBytes(BackgroundPathAndBytesable<Stat> builder)
+    public CrimpledPathAndBytesable<CompletionStage<Stat>> statBytes(BackgroundPathAndBytesable<Stat> builder)
     {
         return build(builder, statProc);
     }
@@ -208,66 +208,46 @@ public class AsyncCrimps
         ErrorListenerMultiTransactionMain main = builder.inBackground(callback);
         CuratorMultiTransactionMain finalBuilder = (unhandledErrorListener != null) ? main.withUnhandledErrorListener(unhandledErrorListener) : main;
         return ops -> {
-            finalBuilder.forOperations(ops);
+            try
+            {
+                finalBuilder.forOperations(ops);
+            }
+            catch ( Exception e )
+            {
+                callback.completeExceptionally(e);
+            }
             return callback;
         };
     }
 
-    public <T> PathAndBytesable<CompletionStage<T>> build(BackgroundPathAndBytesable<T> builder, BackgroundProc<T> backgroundProc)
+    public <T> CrimpledPathAndBytesable<CompletionStage<T>> build(BackgroundPathAndBytesable<T> builder, BackgroundProc<T> backgroundProc)
     {
         CrimpedBackgroundCallback<T> callback = new CrimpedBackgroundCallback<T>(backgroundProc);
         ErrorListenerPathAndBytesable<T> localBuilder = builder.inBackground(callback);
         PathAndBytesable<T> finalLocalBuilder = (unhandledErrorListener != null) ? localBuilder.withUnhandledErrorListener(unhandledErrorListener) : localBuilder;
-        return new PathAndBytesable<CompletionStage<T>>()
-        {
-            @Override
-            public CompletionStage<T> forPath(String path) throws Exception
-            {
-                finalLocalBuilder.forPath(path);
-                return callback;
-            }
-
-            @Override
-            public CompletionStage<T> forPath(String path, byte[] data) throws Exception
-            {
-                finalLocalBuilder.forPath(path, data);
-                return callback;
-            }
-        };
+        return new CrimpledPathAndBytesableImpl<>(finalLocalBuilder, callback, null);
     }
 
-    public <T> Pathable<Crimped<T>> build(Watchable<BackgroundPathable<T>> builder, BackgroundProc<T> backgroundProc)
+    public <T> CrimpedPathable<Crimped<T>> build(Watchable<BackgroundPathable<T>> builder, BackgroundProc<T> backgroundProc)
     {
         CrimpedWatcher crimpedWatcher = new CrimpedWatcher();
-        CrimpedBackgroundCallback<T> callback = new CrimpedBackgroundCallback<T>(backgroundProc);
-        Pathable<T> finalLocalBuilder = toFinalBuilder(callback, builder.usingWatcher(crimpedWatcher));
-        return path -> {
-            finalLocalBuilder.forPath(path);
-            return new Crimped<T>()
+        CrimpedBackgroundCallback<T> callback = new CrimpedBackgroundCallback<T>(backgroundProc)
+        {
+            @Override
+            public CompletionStage<WatchedEvent> event()
             {
-                @Override
-                public CompletionStage<WatchedEvent> event()
-                {
-                    return crimpedWatcher;
-                }
-
-                @Override
-                public CompletionStage<T> value()
-                {
-                    return callback;
-                }
-            };
+                return crimpedWatcher;
+            }
         };
+        Pathable<T> finalLocalBuilder = toFinalBuilder(callback, builder.usingWatcher(crimpedWatcher));
+        return new CrimpledPathAndBytesableImpl<T, Crimped<T>>(finalLocalBuilder, callback, crimpedWatcher);
     }
 
-    public <T> Pathable<CompletionStage<T>> build(BackgroundPathable<T> builder, BackgroundProc<T> backgroundProc)
+    public <T> CrimpedPathable<CompletionStage<T>> build(BackgroundPathable<T> builder, BackgroundProc<T> backgroundProc)
     {
         CrimpedBackgroundCallback<T> callback = new CrimpedBackgroundCallback<T>(backgroundProc);
         Pathable<T> finalLocalBuilder = toFinalBuilder(callback, builder);
-        return path -> {
-            finalLocalBuilder.forPath(path);
-            return callback;
-        };
+        return new CrimpledPathAndBytesableImpl<>(finalLocalBuilder, callback, null);
     }
 
     private <T> Pathable<T> toFinalBuilder(CrimpedBackgroundCallback<T> callback, BackgroundPathable<T> backgroundPathable)

@@ -48,9 +48,16 @@ class CrimpedEnsembleableImpl implements CrimpedEnsembleable
     }
 
     @Override
-    public CompletionStage<byte[]> forEnsemble() throws Exception
+    public CompletionStage<byte[]> forEnsemble()
     {
-        ensembleable.forEnsemble();
+        try
+        {
+            ensembleable.forEnsemble();
+        }
+        catch ( Exception e )
+        {
+            callback.completeExceptionally(e);
+        }
         return callback;
     }
 
@@ -62,9 +69,16 @@ class CrimpedEnsembleableImpl implements CrimpedEnsembleable
     }
 
     @Override
-    public Ensembleable<CompletionStage<byte[]>> fromConfig(long config) throws Exception
+    public CrimpledEnsembleable<CompletionStage<byte[]>> fromConfig(long config)
     {
-        ensembleable = configureEnsembleable.fromConfig(config);
+        try
+        {
+            ensembleable = configureEnsembleable.fromConfig(config);
+        }
+        catch ( Exception e )
+        {
+            callback.completeExceptionally(e);
+        }
         return this;
     }
 }

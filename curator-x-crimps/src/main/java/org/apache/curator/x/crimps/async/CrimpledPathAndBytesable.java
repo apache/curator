@@ -16,18 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.crimps.async;
 
-import org.apache.curator.framework.api.Ensembleable;
-import java.util.concurrent.CompletionStage;
-
-public interface CrimpedConfigEnsembleable extends
-    CrimpledEnsembleable<CompletionStage<byte[]>>
+public interface CrimpledPathAndBytesable<T> extends CrimpedPathable<T>
 {
     /**
-     * Sets the configuration version to use.
-     * @param config The version of the configuration.
-     * @return this
+     * Commit the currently building operation using the given path and data
+     *
+     * @param path the path
+     * @param data the data
+     * @return result
      */
-    CrimpledEnsembleable<CompletionStage<byte[]>> fromConfig(long config);
+    T forPath(String path, byte[] data);
 }

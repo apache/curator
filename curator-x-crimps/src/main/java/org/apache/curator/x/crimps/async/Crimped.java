@@ -21,9 +21,7 @@ package org.apache.curator.x.crimps.async;
 import org.apache.zookeeper.WatchedEvent;
 import java.util.concurrent.CompletionStage;
 
-public interface Crimped<T>
+public interface Crimped<T> extends CompletionStage<T>
 {
     CompletionStage<WatchedEvent> event();
-
-    CompletionStage<T> value();
 }

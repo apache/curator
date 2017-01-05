@@ -32,7 +32,6 @@ public interface CrimpedMultiTransaction
      *
      * @param operations operations that make up the transaction.
      * @return result details for foreground operations or <code>null</code> for background operations
-     * @throws Exception errors
      */
-    CompletionStage<List<CuratorTransactionResult>> forOperations(List<CuratorOp> operations) throws Exception;
+    CompletionStage<List<CuratorTransactionResult>> forOperations(List<CuratorOp> operations);
 }
