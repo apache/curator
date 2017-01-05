@@ -1,16 +1,15 @@
-package org.apache.curator.x.crimps;
+package org.apache.curator.x.crimps.async;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
 
-class AsyncPathAndBytesable<T> extends CompletableFuture<T> implements BackgroundCallback
+class CrimpedBackgroundCallback<T> extends CompletableFuture<T> implements BackgroundCallback
 {
     private final BackgroundProc<T> resultFunction;
 
-    AsyncPathAndBytesable(BackgroundProc<T> resultFunction)
+    CrimpedBackgroundCallback(BackgroundProc<T> resultFunction)
     {
         this.resultFunction = resultFunction;
     }

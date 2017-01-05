@@ -1,4 +1,4 @@
-package org.apache.curator.x.crimps;
+package org.apache.curator.x.crimps.async;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
