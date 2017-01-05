@@ -293,8 +293,10 @@ public class PersistentNode implements Closeable
         }
         catch ( Exception e )
         {
-            ThreadUtils.checkInterrupted(e);
-            throw new IOException(e);
+            if ( !ThreadUtils.checkInterrupted(e) )
+            {
+                throw new IOException(e);
+            }
         }
     }
 
@@ -369,7 +371,6 @@ public class PersistentNode implements Closeable
         }
         catch ( Exception e )
         {
-            ThreadUtils.checkInterrupted(e);
             throw new RuntimeException("Creating node. BasePath: " + basePath, e);  // should never happen unless there's a programming error - so throw RuntimeException
         }
     }

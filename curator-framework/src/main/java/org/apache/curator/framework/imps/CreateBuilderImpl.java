@@ -485,7 +485,6 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         }
         catch ( Exception e)
         {
-            ThreadUtils.checkInterrupted(e);
             if ( ( e instanceof KeeperException.ConnectionLossException ||
                 !( e instanceof KeeperException )) && protectedId != null )
             {
