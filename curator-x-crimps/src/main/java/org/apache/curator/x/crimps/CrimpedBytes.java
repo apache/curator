@@ -2,10 +2,10 @@ package org.apache.curator.x.crimps;
 
 import org.apache.curator.framework.api.ErrorListenerPathAndBytesable;
 import org.apache.curator.framework.api.PathAndBytesable;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface CrimpedBytes<T> extends
-    ErrorListenerPathAndBytesable<CompletableFuture<T>>,
-    PathAndBytesable<CompletableFuture<T>>
+    ErrorListenerPathAndBytesable<CompletionStage<T>>,
+    PathAndBytesable<CompletionStage<T>>
 {
 }

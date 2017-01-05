@@ -9,29 +9,31 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
 public class TestCrimps extends BaseClassForTests
 {
-    private final Crimps crimps = Crimps.newCrimps();
-
     @Test
     public void testCreateAndSet() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
         {
             client.start();
-            CompletableFuture<String> f = crimps.nameInBackground(client.create().creatingParentContainersIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL)).forPath("/a/b/c");
-            String path = f.get();
-            Assert.assertEquals(path, "/a/b/c0000000000");
+            CompletionStage<String> f = Crimps.nameInBackground(client.create().creatingParentContainersIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL)).forPath("/a/b/c");
+            complete(f.handle((path, e) -> {
+                Assert.assertEquals(path, "/a/b/c0000000000");
+                return null;
+            }));
 
-            f = crimps.nameInBackground(client.create()).forPath("/foo/bar");
+            f = Crimps.nameInBackground(client.create()).forPath("/foo/bar");
             assertException(f, KeeperException.Code.NONODE);
 
-            CompletableFuture<Stat> statFuture = crimps.statBytesInBackground(client.setData()).forPath(path, "hey".getBytes());
-            Stat stat = statFuture.get();
-            Assert.assertNotNull(stat);
+            CompletionStage<Stat> statFuture = Crimps.statBytesInBackground(client.setData()).forPath("/a/b/c0000000000", "hey".getBytes());
+            complete(statFuture.handle((stat, e) -> {
+                Assert.assertNotNull(stat);
+                return null;
+            }));
         }
     }
 
@@ -43,11 +45,14 @@ public class TestCrimps extends BaseClassForTests
             client.start();
             client.create().forPath("/test");
 
-            CompletableFuture<Void> f = crimps.voidInBackground(client.delete()).forPath("/test");
-            Void result = f.get();
-            Assert.assertEquals(result, null);
+            CompletionStage<Void> f = Crimps.voidInBackground(client.delete()).forPath("/test");
+            complete(f.handle((v, e) -> {
+                Assert.assertEquals(v, null);
+                Assert.assertEquals(e, null);
+                return null;
+            }));
 
-            f = crimps.voidInBackground(client.delete()).forPath("/test");
+            f = Crimps.voidInBackground(client.delete()).forPath("/test");
             assertException(f, KeeperException.Code.NONODE);
         }
     }
@@ -60,24 +65,45 @@ public class TestCrimps extends BaseClassForTests
             client.start();
             client.create().forPath("/test", "foo".getBytes());
 
-            CompletableFuture<byte[]> f = crimps.dataInBackground(client.getData()).forPath("/test");
-            byte[] data = f.get();
-            Assert.assertEquals(data, "foo".getBytes());
+            CompletionStage<byte[]> f = Crimps.dataInBackground(client.getData()).forPath("/test");
+            complete(f.handle((data, e) -> {
+                Assert.assertEquals(data, "foo".getBytes());
+                return null;
+            }));
         }
     }
 
-    public void assertException(CompletableFuture<?> f, KeeperException.Code code) throws InterruptedException
+    public void assertException(CompletionStage<?> f, KeeperException.Code code) throws Exception
     {
-        try
-        {
-            f.get();
-            Assert.fail();
-        }
-        catch ( ExecutionException e )
-        {
+        complete(f.handle((value, e) -> {
+            if ( e == null )
+            {
+                Assert.fail(code + " expected");
+            }
             KeeperException keeperException = CrimpException.unwrap(e);
             Assert.assertNotNull(keeperException);
             Assert.assertEquals(keeperException.code(), code);
+            return null;
+        }));
+    }
+
+    private void complete(CompletionStage<?> f) throws Exception
+    {
+        try
+        {
+            f.toCompletableFuture().get();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException e )
+        {
+            if ( e.getCause() instanceof AssertionError )
+            {
+                throw ((AssertionError)e.getCause());
+            }
+            throw e;
         }
     }
 }

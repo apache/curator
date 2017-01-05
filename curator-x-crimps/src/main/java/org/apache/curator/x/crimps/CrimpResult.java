@@ -13,7 +13,7 @@ class CrimpResult<T>
         this.exception = null;
     }
 
-    public CrimpResult(KeeperException exception)
+    CrimpResult(KeeperException exception)
     {
         this.value = null;
         this.exception = exception;

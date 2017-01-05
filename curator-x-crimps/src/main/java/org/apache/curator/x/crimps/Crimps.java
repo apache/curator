@@ -1,6 +1,5 @@
 package org.apache.curator.x.crimps;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.framework.api.BackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundPathable;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -8,14 +7,10 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 public class Crimps
 {
-    private final Executor executor;
-
     private static final Function<CuratorEvent, CrimpResult<String>> nameSupplier = makeSupplier(CuratorEvent::getName);
     private static final Function<CuratorEvent, CrimpResult<String>> pathSupplier = makeSupplier(CuratorEvent::getPath);
     private static final Function<CuratorEvent, CrimpResult<Void>> voidSupplier = makeSupplier(e -> null);
@@ -34,68 +29,57 @@ public class Crimps
         return new CrimpResult<>(KeeperException.create(KeeperException.Code.get(event.getResultCode())));
     }
 
-    public CrimpedBytes<String> nameInBackground(BackgroundPathAndBytesable<String> builder)
+    public static CrimpedBytes<String> nameInBackground(BackgroundPathAndBytesable<String> builder)
     {
-        return build(builder, executor, nameSupplier);
+        return build(builder, nameSupplier);
     }
 
-    public CrimpedBytes<String> pathInBackground(BackgroundPathAndBytesable<String> builder)
+    public static CrimpedBytes<String> pathInBackground(BackgroundPathAndBytesable<String> builder)
     {
-        return build(builder, executor, pathSupplier);
+        return build(builder, pathSupplier);
     }
 
-    public Crimped<Void> voidInBackground(BackgroundPathable<Void> builder)
+    public static Crimped<Void> voidInBackground(BackgroundPathable<Void> builder)
     {
-        return build(builder, executor, voidSupplier);
+        return build(builder, voidSupplier);
     }
 
-    public Crimped<byte[]> dataInBackground(BackgroundPathable<byte[]> builder)
+    public static Crimped<byte[]> dataInBackground(BackgroundPathable<byte[]> builder)
     {
-        return build(builder, executor, dataSupplier);
+        return build(builder, dataSupplier);
     }
 
-    public Crimped<List<String>> childrenInBackground(BackgroundPathable<List<String>> builder)
+    public static Crimped<List<String>> childrenInBackground(BackgroundPathable<List<String>> builder)
     {
-        return build(builder, executor, childrenSupplier);
+        return build(builder, childrenSupplier);
     }
 
-    public Crimped<Stat> statInBackground(BackgroundPathable<Stat> builder)
+    public static Crimped<Stat> statInBackground(BackgroundPathable<Stat> builder)
     {
-        return build(builder, executor, statSupplier);
+        return build(builder, statSupplier);
     }
 
-    public Crimped<List<ACL>> aclsInBackground(BackgroundPathable<List<ACL>> builder)
+    public static Crimped<List<ACL>> aclsInBackground(BackgroundPathable<List<ACL>> builder)
     {
-        return build(builder, executor, aclSupplier);
+        return build(builder, aclSupplier);
     }
 
-    public CrimpedBytes<Stat> statBytesInBackground(BackgroundPathAndBytesable<Stat> builder)
+    public static CrimpedBytes<Stat> statBytesInBackground(BackgroundPathAndBytesable<Stat> builder)
     {
-        return build(builder, executor, statSupplier);
+        return build(builder, statSupplier);
     }
 
-    public static <T> CrimpedBytes<T> build(BackgroundPathAndBytesable<T> builder, Executor executor, Function<CuratorEvent, CrimpResult<T>> supplier)
+    public static <T> CrimpedBytes<T> build(BackgroundPathAndBytesable<T> builder, Function<CuratorEvent, CrimpResult<T>> supplier)
     {
-        return new CrimpedBytesImpl<>(builder, executor, supplier);
+        return new CrimpedBytesImpl<>(builder, supplier);
     }
 
-    public static <T> Crimped<T> build(BackgroundPathable<T> builder, Executor executor, Function<CuratorEvent, CrimpResult<T>> supplier)
+    public static <T> Crimped<T> build(BackgroundPathable<T> builder, Function<CuratorEvent, CrimpResult<T>> supplier)
     {
-        return new CrimpedImpl<>(builder, executor, supplier);
+        return new CrimpedImpl<>(builder, supplier);
     }
 
-    public static Crimps newCrimps()
+    private Crimps()
     {
-        return new Crimps(MoreExecutors.sameThreadExecutor());
-    }
-
-    public static Crimps newCrimps(Executor executor)
-    {
-        return new Crimps(executor);
-    }
-
-    private Crimps(Executor executor)    // TODO
-    {
-        this.executor = Objects.requireNonNull(executor, "executor cannot be null");
     }
 }
