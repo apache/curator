@@ -18,14 +18,16 @@
  */
 package org.apache.curator.x.crimps.async;
 
-public class Crimps
-{
-    public static AsyncCrimps async()
-    {
-        return new AsyncCrimps(null);
-    }
+import org.apache.curator.framework.api.Ensembleable;
+import java.util.concurrent.CompletionStage;
 
-    private Crimps()
-    {
-    }
+public interface CrimpedConfigureEnsembleable extends
+    Ensembleable<CompletionStage<byte[]>>
+{
+    /**
+     * Sets the configuration version to use.
+     * @param config The version of the configuration.
+     * @throws Exception errors
+     */
+    Ensembleable<CompletionStage<byte[]>> fromConfig(long config) throws Exception;
 }
