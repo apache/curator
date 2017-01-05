@@ -20,6 +20,9 @@ package org.apache.curator.x.crimps.async;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.x.crimps.Crimps;
@@ -29,6 +32,7 @@ import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
@@ -117,6 +121,28 @@ public class TestCrimps extends BaseClassForTests
             CompletionStage<byte[]> f = async.ensemble(client.getConfig()).forEnsemble();
             complete(f.handle((data, e) -> {
                 Assert.assertNotNull(data);
+                return null;
+            }));
+        }
+    }
+
+    @Test
+    public void testMulti() throws Exception
+    {
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
+        {
+            client.start();
+
+            CuratorOp createA = client.transactionOp().create().forPath("/a");
+            CuratorOp createB = client.transactionOp().create().forPath("/b");
+
+            CompletionStage<List<CuratorTransactionResult>> f = async.opResults(client.transaction()).forOperations(Arrays.asList(createA, createB));
+            complete(f.handle((ops, e) -> {
+                Assert.assertNotNull(ops);
+                Assert.assertEquals(ops.get(0).getType(), OperationType.CREATE);
+                Assert.assertEquals(ops.get(0).getForPath(), "/a");
+                Assert.assertEquals(ops.get(1).getType(), OperationType.CREATE);
+                Assert.assertEquals(ops.get(1).getForPath(), "/b");
                 return null;
             }));
         }

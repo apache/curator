@@ -19,6 +19,8 @@
 package org.apache.curator.x.crimps.async;
 
 import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.transaction.CuratorMultiTransactionMain;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -28,17 +30,18 @@ import java.util.function.Function;
 
 public class AsyncCrimps
 {
-    public static final BackgroundProc<String> nameSupplier = makeSupplier(CuratorEvent::getName);
-    public static final BackgroundProc<String> pathSupplier = makeSupplier(CuratorEvent::getPath);
-    public static final BackgroundProc<Void> voidSupplier = makeSupplier(e -> null);
-    public static final BackgroundProc<byte[]> dataSupplier = makeSupplier(CuratorEvent::getData);
-    public static final BackgroundProc<Stat> statSupplier = makeSupplier(CuratorEvent::getStat);
-    public static final BackgroundProc<List<String>> childrenSupplier = makeSupplier(CuratorEvent::getChildren);
-    public static final BackgroundProc<List<ACL>> aclSupplier = makeSupplier(CuratorEvent::getACLList);
+    public static final BackgroundProc<String> nameProc = makeProc(CuratorEvent::getName);
+    public static final BackgroundProc<String> pathProc = makeProc(CuratorEvent::getPath);
+    public static final BackgroundProc<Void> ignoredProc = makeProc(e -> null);
+    public static final BackgroundProc<byte[]> dataProc = makeProc(CuratorEvent::getData);
+    public static final BackgroundProc<Stat> statProc = makeProc(CuratorEvent::getStat);
+    public static final BackgroundProc<List<String>> childrenProc = makeProc(CuratorEvent::getChildren);
+    public static final BackgroundProc<List<ACL>> aclProc = makeProc(CuratorEvent::getACLList);
+    public static final BackgroundProc<List<CuratorTransactionResult>> opResultsProc = makeProc(CuratorEvent::getOpResults);
 
     private final UnhandledErrorListener unhandledErrorListener;
 
-    public static <T> BackgroundProc<T> makeSupplier(Function<CuratorEvent, T> proc)
+    public static <T> BackgroundProc<T> makeProc(Function<CuratorEvent, T> proc)
     {
         return (event, future) -> {
             if ( event.getResultCode() == 0 )
@@ -65,47 +68,47 @@ public class AsyncCrimps
 
     public CrimpedPathAndBytesable<String> name(BackgroundPathAndBytesable<String> builder)
     {
-        return build(builder, nameSupplier);
+        return build(builder, nameProc);
     }
 
     public CrimpedPathAndBytesable<String> path(BackgroundPathAndBytesable<String> builder)
     {
-        return build(builder, pathSupplier);
+        return build(builder, pathProc);
     }
 
     public CrimpedPathable<Void> ignored(BackgroundPathable<Void> builder)
     {
-        return build(builder, voidSupplier);
+        return build(builder, ignoredProc);
     }
 
     public CrimpedPathable<byte[]> data(BackgroundPathable<byte[]> builder)
     {
-        return build(builder, dataSupplier);
+        return build(builder, dataProc);
     }
 
     public CrimpedPathable<List<String>> children(BackgroundPathable<List<String>> builder)
     {
-        return build(builder, childrenSupplier);
+        return build(builder, childrenProc);
     }
 
     public CrimpedPathable<Stat> stat(BackgroundPathable<Stat> builder)
     {
-        return build(builder, statSupplier);
+        return build(builder, statProc);
     }
 
     public CrimpedPathable<List<ACL>> acls(BackgroundPathable<List<ACL>> builder)
     {
-        return build(builder, aclSupplier);
+        return build(builder, aclProc);
     }
 
     public CrimpedPathAndBytesable<Stat> statBytes(BackgroundPathAndBytesable<Stat> builder)
     {
-        return build(builder, statSupplier);
+        return build(builder, statProc);
     }
 
     public CrimpedEnsembleable ensemble(Backgroundable<ErrorListenerEnsembleable<byte[]>> builder)
     {
-        CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataSupplier);
+        CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataProc);
 
         Ensembleable<byte[]> main;
         if ( unhandledErrorListener != null )
@@ -122,7 +125,7 @@ public class AsyncCrimps
 
     public CrimpedEnsembleable ensemble(Backgroundable<ErrorListenerReconfigBuilderMain> builder, List<String> newMembers)
     {
-        CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataSupplier);
+        CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataProc);
 
         ReconfigBuilderMain main;
         if ( unhandledErrorListener != null )
@@ -139,7 +142,7 @@ public class AsyncCrimps
 
     public CrimpedEnsembleable ensemble(Backgroundable<ErrorListenerReconfigBuilderMain> builder, List<String> joining, List<String> leaving)
     {
-        CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataSupplier);
+        CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataProc);
 
         ReconfigBuilderMain main;
         if ( unhandledErrorListener != null )
@@ -170,6 +173,17 @@ public class AsyncCrimps
         }
 
         return new CrimpedEnsembleableImpl(configBuilder, callback);
+    }
+
+    public CrimpedMultiTransaction opResults(Backgroundable<ErrorListenerMultiTransactionMain> builder)
+    {
+        CrimpedBackgroundCallback<List<CuratorTransactionResult>> callback = new CrimpedBackgroundCallback<>(opResultsProc);
+        ErrorListenerMultiTransactionMain main = builder.inBackground(callback);
+        CuratorMultiTransactionMain finalBuilder = (unhandledErrorListener != null) ? main.withUnhandledErrorListener(unhandledErrorListener) : main;
+        return ops -> {
+            finalBuilder.forOperations(ops);
+            return callback;
+        };
     }
 
     public <T> CrimpedPathAndBytesable<T> build(BackgroundPathAndBytesable<T> builder, BackgroundProc<T> backgroundProc)
