@@ -25,6 +25,7 @@ import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.Timing;
 import org.apache.curator.x.crimps.Crimps;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -34,6 +35,7 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
 public class TestCrimps extends BaseClassForTests
@@ -96,6 +98,58 @@ public class TestCrimps extends BaseClassForTests
                 Assert.assertEquals(data, "foo".getBytes());
                 return null;
             }));
+        }
+    }
+
+    @Test
+    public void testExists() throws Exception
+    {
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
+        {
+            client.start();
+
+            CompletionStage<Stat> f = async.safeStat(client.checkExists()).forPath("/test");
+            complete(f.handle((stat, e) -> {
+                Assert.assertNull(e);
+                Assert.assertNull(stat);
+                return null;
+            }));
+
+            f = async.stat(client.checkExists()).forPath("/test");
+            complete(f.handle((stat, e) -> {
+                Assert.assertNotNull(e);
+                Assert.assertNull(stat);
+                return null;
+            }));
+
+            async.path(client.create()).forPath("/test").toCompletableFuture().get();
+            f = async.stat(client.checkExists()).forPath("/test");
+            complete(f.handle((stat, e) -> {
+                Assert.assertNull(e);
+                Assert.assertNotNull(stat);
+                return null;
+            }));
+        }
+    }
+
+    @Test
+    public void testExistsWatched() throws Exception
+    {
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
+        {
+            client.start();
+
+            Crimped<Stat> crimped = async.statWatched(client.checkExists().creatingParentContainersIfNeeded()).forPath("/one/two");
+            CountDownLatch latch = new CountDownLatch(1);
+            crimped.event().handle((event, e) -> {
+                Assert.assertNotNull(event);
+                latch.countDown();
+                return null;
+            });
+
+            async.path(client.create()).forPath("/one/two");
+
+            Assert.assertTrue(new Timing().awaitLatch(latch));
         }
     }
 

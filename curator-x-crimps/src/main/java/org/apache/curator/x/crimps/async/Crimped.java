@@ -18,9 +18,12 @@
  */
 package org.apache.curator.x.crimps.async;
 
-import org.apache.curator.framework.api.Pathable;
+import org.apache.zookeeper.WatchedEvent;
 import java.util.concurrent.CompletionStage;
 
-public interface CrimpedPathable<T> extends Pathable<CompletionStage<T>>
+public interface Crimped<T>
 {
+    CompletionStage<WatchedEvent> event();
+
+    CompletionStage<T> value();
 }

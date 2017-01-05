@@ -22,6 +22,7 @@ import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorMultiTransactionMain;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
@@ -35,6 +36,17 @@ public class AsyncCrimps
     public static final BackgroundProc<Void> ignoredProc = makeProc(e -> null);
     public static final BackgroundProc<byte[]> dataProc = makeProc(CuratorEvent::getData);
     public static final BackgroundProc<Stat> statProc = makeProc(CuratorEvent::getStat);
+    public static final BackgroundProc<Stat> safeStatProc = (event, future) -> {
+        if ( (event.getResultCode() == 0) || (event.getResultCode() == KeeperException.Code.NONODE.intValue()) )
+        {
+            future.complete(event.getStat());
+        }
+        else
+        {
+            future.completeExceptionally(KeeperException.create(KeeperException.Code.get(event.getResultCode()), event.getPath()));
+        }
+        return null;
+    };
     public static final BackgroundProc<List<String>> childrenProc = makeProc(CuratorEvent::getChildren);
     public static final BackgroundProc<List<ACL>> aclProc = makeProc(CuratorEvent::getACLList);
     public static final BackgroundProc<List<CuratorTransactionResult>> opResultsProc = makeProc(CuratorEvent::getOpResults);
@@ -50,7 +62,7 @@ public class AsyncCrimps
             }
             else
             {
-                future.completeExceptionally(KeeperException.create(KeeperException.Code.get(event.getResultCode())));
+                future.completeExceptionally(KeeperException.create(KeeperException.Code.get(event.getResultCode()), event.getPath()));
             }
             return null;
         };
@@ -66,42 +78,57 @@ public class AsyncCrimps
         return new AsyncCrimps(unhandledErrorListener);
     }
 
-    public CrimpedPathAndBytesable<String> name(BackgroundPathAndBytesable<String> builder)
+    public PathAndBytesable<CompletionStage<String>> name(BackgroundPathAndBytesable<String> builder)
     {
         return build(builder, nameProc);
     }
 
-    public CrimpedPathAndBytesable<String> path(BackgroundPathAndBytesable<String> builder)
+    public PathAndBytesable<CompletionStage<String>> path(BackgroundPathAndBytesable<String> builder)
     {
         return build(builder, pathProc);
     }
 
-    public CrimpedPathable<Void> ignored(BackgroundPathable<Void> builder)
+    public Pathable<CompletionStage<Void>> ignored(BackgroundPathable<Void> builder)
     {
         return build(builder, ignoredProc);
     }
 
-    public CrimpedPathable<byte[]> data(BackgroundPathable<byte[]> builder)
+    public Pathable<CompletionStage<byte[]>> data(BackgroundPathable<byte[]> builder)
     {
         return build(builder, dataProc);
     }
 
-    public CrimpedPathable<List<String>> children(BackgroundPathable<List<String>> builder)
+    public Pathable<CompletionStage<List<String>>> children(BackgroundPathable<List<String>> builder)
     {
         return build(builder, childrenProc);
     }
 
-    public CrimpedPathable<Stat> stat(BackgroundPathable<Stat> builder)
+    public Pathable<CompletionStage<Stat>> stat(BackgroundPathable<Stat> builder)
     {
         return build(builder, statProc);
     }
 
-    public CrimpedPathable<List<ACL>> acls(BackgroundPathable<List<ACL>> builder)
+    public Pathable<CompletionStage<Stat>> safeStat(BackgroundPathable<Stat> builder)
+    {
+        return build(builder, safeStatProc);
+    }
+
+    public Pathable<Crimped<Stat>> statWatched(Watchable<BackgroundPathable<Stat>> builder)
+    {
+        return build(builder, statProc);
+    }
+
+    public Pathable<Crimped<Stat>> safeStatWatched(Watchable<BackgroundPathable<Stat>> builder)
+    {
+        return build(builder, safeStatProc);
+    }
+
+    public Pathable<CompletionStage<List<ACL>>> acls(BackgroundPathable<List<ACL>> builder)
     {
         return build(builder, aclProc);
     }
 
-    public CrimpedPathAndBytesable<Stat> statBytes(BackgroundPathAndBytesable<Stat> builder)
+    public PathAndBytesable<CompletionStage<Stat>> statBytes(BackgroundPathAndBytesable<Stat> builder)
     {
         return build(builder, statProc);
     }
@@ -186,12 +213,12 @@ public class AsyncCrimps
         };
     }
 
-    public <T> CrimpedPathAndBytesable<T> build(BackgroundPathAndBytesable<T> builder, BackgroundProc<T> backgroundProc)
+    public <T> PathAndBytesable<CompletionStage<T>> build(BackgroundPathAndBytesable<T> builder, BackgroundProc<T> backgroundProc)
     {
         CrimpedBackgroundCallback<T> callback = new CrimpedBackgroundCallback<T>(backgroundProc);
         ErrorListenerPathAndBytesable<T> localBuilder = builder.inBackground(callback);
         PathAndBytesable<T> finalLocalBuilder = (unhandledErrorListener != null) ? localBuilder.withUnhandledErrorListener(unhandledErrorListener) : localBuilder;
-        return new CrimpedPathAndBytesable<T>()
+        return new PathAndBytesable<CompletionStage<T>>()
         {
             @Override
             public CompletionStage<T> forPath(String path) throws Exception
@@ -209,20 +236,48 @@ public class AsyncCrimps
         };
     }
 
-    public <T> CrimpedPathable<T> build(BackgroundPathable<T> builder, BackgroundProc<T> backgroundProc)
+    public <T> Pathable<Crimped<T>> build(Watchable<BackgroundPathable<T>> builder, BackgroundProc<T> backgroundProc)
+    {
+        CrimpedWatcher crimpedWatcher = new CrimpedWatcher();
+        CrimpedBackgroundCallback<T> callback = new CrimpedBackgroundCallback<T>(backgroundProc);
+        Pathable<T> finalLocalBuilder = toFinalBuilder(callback, builder.usingWatcher(crimpedWatcher));
+        return path -> {
+            finalLocalBuilder.forPath(path);
+            return new Crimped<T>()
+            {
+                @Override
+                public CompletionStage<WatchedEvent> event()
+                {
+                    return crimpedWatcher;
+                }
+
+                @Override
+                public CompletionStage<T> value()
+                {
+                    return callback;
+                }
+            };
+        };
+    }
+
+    public <T> Pathable<CompletionStage<T>> build(BackgroundPathable<T> builder, BackgroundProc<T> backgroundProc)
     {
         CrimpedBackgroundCallback<T> callback = new CrimpedBackgroundCallback<T>(backgroundProc);
-        ErrorListenerPathable<T> localBuilder = builder.inBackground(callback);
-        Pathable<T> finalLocalBuilder = (unhandledErrorListener != null) ? localBuilder.withUnhandledErrorListener(unhandledErrorListener) : localBuilder;
+        Pathable<T> finalLocalBuilder = toFinalBuilder(callback, builder);
         return path -> {
             finalLocalBuilder.forPath(path);
             return callback;
         };
     }
 
+    private <T> Pathable<T> toFinalBuilder(CrimpedBackgroundCallback<T> callback, BackgroundPathable<T> backgroundPathable)
+    {
+        ErrorListenerPathable<T> localBuilder = backgroundPathable.inBackground(callback);
+        return (unhandledErrorListener != null) ? localBuilder.withUnhandledErrorListener(unhandledErrorListener) : localBuilder;
+    }
+
     private static boolean nonEmpty(List<String> list)
     {
         return (list != null) && !list.isEmpty();
     }
-
 }
