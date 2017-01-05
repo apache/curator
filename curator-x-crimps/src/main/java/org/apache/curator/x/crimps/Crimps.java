@@ -11,22 +11,27 @@ import java.util.function.Function;
 
 public class Crimps
 {
-    private static final Function<CuratorEvent, CrimpResult<String>> nameSupplier = makeSupplier(CuratorEvent::getName);
-    private static final Function<CuratorEvent, CrimpResult<String>> pathSupplier = makeSupplier(CuratorEvent::getPath);
-    private static final Function<CuratorEvent, CrimpResult<Void>> voidSupplier = makeSupplier(e -> null);
-    private static final Function<CuratorEvent, CrimpResult<byte[]>> dataSupplier = makeSupplier(CuratorEvent::getData);
-    private static final Function<CuratorEvent, CrimpResult<Stat>> statSupplier = makeSupplier(CuratorEvent::getStat);
-    private static final Function<CuratorEvent, CrimpResult<List<String>>> childrenSupplier = makeSupplier(CuratorEvent::getChildren);
-    private static final Function<CuratorEvent, CrimpResult<List<ACL>>> aclSupplier = makeSupplier(CuratorEvent::getACLList);
+    private static final BackgroundProc<String> nameSupplier = makeSupplier(CuratorEvent::getName);
+    private static final BackgroundProc<String> pathSupplier = makeSupplier(CuratorEvent::getPath);
+    private static final BackgroundProc<Void> voidSupplier = makeSupplier(e -> null);
+    private static final BackgroundProc<byte[]> dataSupplier = makeSupplier(CuratorEvent::getData);
+    private static final BackgroundProc<Stat> statSupplier = makeSupplier(CuratorEvent::getStat);
+    private static final BackgroundProc<List<String>> childrenSupplier = makeSupplier(CuratorEvent::getChildren);
+    private static final BackgroundProc<List<ACL>> aclSupplier = makeSupplier(CuratorEvent::getACLList);
 
-    private static <T> Function<CuratorEvent, CrimpResult<T>> makeSupplier(Function<CuratorEvent, T> proc)
+    private static <T> BackgroundProc<T> makeSupplier(Function<CuratorEvent, T> proc)
     {
-        return event -> (event.getResultCode() == 0) ? new CrimpResult<>(proc.apply(event)) : asException(event);
-    }
-
-    private static <T> CrimpResult<T> asException(CuratorEvent event)
-    {
-        return new CrimpResult<>(KeeperException.create(KeeperException.Code.get(event.getResultCode())));
+        return (event, future) -> {
+            if ( event.getResultCode() == 0 )
+            {
+                future.complete(proc.apply(event));
+            }
+            else
+            {
+                future.completeExceptionally(KeeperException.create(KeeperException.Code.get(event.getResultCode())));
+            }
+            return null;
+        };
     }
 
     public static CrimpedBytes<String> nameInBackground(BackgroundPathAndBytesable<String> builder)
@@ -69,12 +74,12 @@ public class Crimps
         return build(builder, statSupplier);
     }
 
-    public static <T> CrimpedBytes<T> build(BackgroundPathAndBytesable<T> builder, Function<CuratorEvent, CrimpResult<T>> supplier)
+    public static <T> CrimpedBytes<T> build(BackgroundPathAndBytesable<T> builder, BackgroundProc<T> supplier)
     {
         return new CrimpedBytesImpl<>(builder, supplier);
     }
 
-    public static <T> Crimped<T> build(BackgroundPathable<T> builder, Function<CuratorEvent, CrimpResult<T>> supplier)
+    public static <T> Crimped<T> build(BackgroundPathable<T> builder, BackgroundProc<T> supplier)
     {
         return new CrimpedImpl<>(builder, supplier);
     }

@@ -1,23 +1,21 @@
 package org.apache.curator.x.crimps;
 
 import org.apache.curator.framework.api.BackgroundPathAndBytesable;
-import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.ErrorListenerPathAndBytesable;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 class CrimpedBytesImpl<T> implements CrimpedBytes<T>
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final BackgroundPathAndBytesable<T> builder;
-    private final Function<CuratorEvent, CrimpResult<T>> resultFunction;
+    private final BackgroundProc<T> resultFunction;
     private UnhandledErrorListener unhandledErrorListener;
 
-    CrimpedBytesImpl(BackgroundPathAndBytesable<T> builder, Function<CuratorEvent, CrimpResult<T>> resultFunction)
+    CrimpedBytesImpl(BackgroundPathAndBytesable<T> builder, BackgroundProc<T> resultFunction)
     {
         this.builder = builder;
         this.resultFunction = resultFunction;

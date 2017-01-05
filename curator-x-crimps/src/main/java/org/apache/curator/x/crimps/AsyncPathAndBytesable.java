@@ -4,13 +4,13 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 class AsyncPathAndBytesable<T> extends CompletableFuture<T> implements BackgroundCallback
 {
-    private final Function<CuratorEvent, CrimpResult<T>> resultFunction;
+    private final BackgroundProc<T> resultFunction;
 
-    AsyncPathAndBytesable(Function<CuratorEvent, CrimpResult<T>> resultFunction)
+    AsyncPathAndBytesable(BackgroundProc<T> resultFunction)
     {
         this.resultFunction = resultFunction;
     }
@@ -18,14 +18,6 @@ class AsyncPathAndBytesable<T> extends CompletableFuture<T> implements Backgroun
     @Override
     public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
     {
-        CrimpResult<T> result = resultFunction.apply(event);
-        if ( result.exception != null )
-        {
-            completeExceptionally(result.exception);
-        }
-        else
-        {
-            complete(result.value);
-        }
+        resultFunction.apply(event, this);
     }
 }
