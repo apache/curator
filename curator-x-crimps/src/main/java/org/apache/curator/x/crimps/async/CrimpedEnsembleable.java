@@ -18,14 +18,13 @@
  */
 package org.apache.curator.x.crimps.async;
 
-public class Crimps
-{
-    public static AsyncCrimps async()
-    {
-        return new AsyncCrimps(null);
-    }
+import org.apache.curator.framework.api.Ensembleable;
+import org.apache.curator.framework.api.Statable;
+import java.util.concurrent.CompletionStage;
 
-    private Crimps()
-    {
-    }
+public interface CrimpedEnsembleable extends
+    CrimpedConfigEnsembleable,
+    Statable<CrimpedConfigEnsembleable>,
+    Ensembleable<CompletionStage<byte[]>>
+{
 }

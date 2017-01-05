@@ -22,6 +22,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.x.crimps.Crimps;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -101,7 +102,7 @@ public class TestCrimps extends BaseClassForTests
         {
             client.start();
 
-            CompletionStage<byte[]> f = async.joiningLeaving(client.reconfig(), Arrays.asList("1", "2"), Arrays.asList("3", "4")).forEnsemble();
+            CompletionStage<byte[]> f = async.ensemble(client.reconfig(), Arrays.asList("1", "2"), Arrays.asList("3", "4")).forEnsemble();
             assertException(f, KeeperException.Code.UNIMPLEMENTED);
         }
     }

@@ -21,7 +21,7 @@ package org.apache.curator.x.crimps.async;
 import org.apache.curator.framework.api.Ensembleable;
 import java.util.concurrent.CompletionStage;
 
-public interface CrimpedConfigureEnsembleable extends
+public interface CrimpedConfigEnsembleable extends
     Ensembleable<CompletionStage<byte[]>>
 {
     /**

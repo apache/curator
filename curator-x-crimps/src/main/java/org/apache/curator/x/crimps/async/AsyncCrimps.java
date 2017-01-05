@@ -53,6 +53,11 @@ public class AsyncCrimps
         };
     }
 
+    public AsyncCrimps(UnhandledErrorListener unhandledErrorListener)
+    {
+        this.unhandledErrorListener = unhandledErrorListener;
+    }
+
     public AsyncCrimps withUnhandledErrorListener(UnhandledErrorListener unhandledErrorListener)
     {
         return new AsyncCrimps(unhandledErrorListener);
@@ -98,7 +103,7 @@ public class AsyncCrimps
         return build(builder, statSupplier);
     }
 
-    public CrimpedConfigureEnsembleable joiningLeaving(Backgroundable<ErrorListenerReconfigBuilderMain> builder, List<String> joining, List<String> leaving)
+    public CrimpedEnsembleable ensemble(Backgroundable<ErrorListenerReconfigBuilderMain> builder, List<String> newMembers)
     {
         CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataSupplier);
 
@@ -112,7 +117,24 @@ public class AsyncCrimps
             main = builder.inBackground(callback);
         }
 
-        ConfigureEnsembleable configBuilder;
+        return new CrimpedEnsembleableImpl(main.withNewMembers(newMembers), callback);
+    }
+
+    public CrimpedEnsembleable ensemble(Backgroundable<ErrorListenerReconfigBuilderMain> builder, List<String> joining, List<String> leaving)
+    {
+        CrimpedBackgroundCallback<byte[]> callback = new CrimpedBackgroundCallback<>(dataSupplier);
+
+        ReconfigBuilderMain main;
+        if ( unhandledErrorListener != null )
+        {
+            main = builder.inBackground(callback).withUnhandledErrorListener(unhandledErrorListener);
+        }
+        else
+        {
+            main = builder.inBackground(callback);
+        }
+
+        Statable<ConfigureEnsembleable> configBuilder;
         if ( nonEmpty(joining) && nonEmpty(leaving) )
         {
             configBuilder = main.joining(joining).leaving(leaving);
@@ -130,24 +152,7 @@ public class AsyncCrimps
             throw new IllegalArgumentException("leaving and joining cannot both be empty");
         }
 
-        return new CrimpedConfigureEnsembleable()
-        {
-            private Ensembleable<byte[]> localEnsembleable = configBuilder;
-
-            @Override
-            public Ensembleable<CompletionStage<byte[]>> fromConfig(long config) throws Exception
-            {
-                localEnsembleable = configBuilder.fromConfig(config);
-                return this;
-            }
-
-            @Override
-            public CompletionStage<byte[]> forEnsemble() throws Exception
-            {
-                localEnsembleable.forEnsemble();
-                return callback;
-            }
-        };
+        return new CrimpedEnsembleableImpl(configBuilder, callback);
     }
 
     public <T> CrimpedPathAndBytesable<T> build(BackgroundPathAndBytesable<T> builder, BackgroundProc<T> backgroundProc)
@@ -189,8 +194,4 @@ public class AsyncCrimps
         return (list != null) && !list.isEmpty();
     }
 
-    AsyncCrimps(UnhandledErrorListener unhandledErrorListener)
-    {
-        this.unhandledErrorListener = unhandledErrorListener;
-    }
 }
