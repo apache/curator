@@ -80,7 +80,7 @@ public class TestCrimps extends BaseClassForTests
             {
                 Assert.fail(code + " expected");
             }
-            KeeperException keeperException = CrimpException.unwrap(e);
+            KeeperException keeperException = unwrap(e);
             Assert.assertNotNull(keeperException);
             Assert.assertEquals(keeperException.code(), code);
             return null;
@@ -105,5 +105,18 @@ public class TestCrimps extends BaseClassForTests
             }
             throw e;
         }
+    }
+
+    private static KeeperException unwrap(Throwable e)
+    {
+        while ( e != null )
+        {
+            if ( e instanceof KeeperException )
+            {
+                return (KeeperException)e;
+            }
+            e = e.getCause();
+        }
+        return null;
     }
 }
