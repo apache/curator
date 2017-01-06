@@ -1,13 +1,11 @@
 package org.apache.curator.x.async;
 
-import org.apache.curator.framework.api.CreateBuilder;
-import org.apache.curator.framework.api.DeleteBuilder;
 import org.apache.curator.framework.api.GetACLBuilder;
 import org.apache.curator.framework.api.ReconfigBuilder;
 import org.apache.curator.framework.api.RemoveWatchesBuilder;
 import org.apache.curator.framework.api.SetACLBuilder;
-import org.apache.curator.framework.api.SetDataBuilder;
 import org.apache.curator.framework.api.SyncBuilder;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 
 /**
  * Zookeeper framework-style client
@@ -19,7 +17,7 @@ public interface AsyncCuratorFrameworkDsl extends WatchedAsyncCuratorFramework
      *
      * @return builder object
      */
-    CreateBuilder create();
+    AsyncCreateBuilder create();
 
     /**
      * Start a delete builder
@@ -54,7 +52,7 @@ public interface AsyncCuratorFrameworkDsl extends WatchedAsyncCuratorFramework
      *
      * @return builder object
      */
-    ReconfigBuilder reconfig();
+    AsyncReconfigBuilder reconfig();
 
     /**
      * Start a transaction builder
@@ -64,16 +62,25 @@ public interface AsyncCuratorFrameworkDsl extends WatchedAsyncCuratorFramework
     AsyncMultiTransaction transaction();
 
     /**
+     * Allocate an operation that can be used with {@link #transaction()}.
+     * NOTE: {@link CuratorOp} instances created by this builder are
+     * reusable.
+     *
+     * @return operation builder
+     */
+    AsyncTransactionOp transactionOp();
+
+    /**
      * Start a sync builder. Note: sync is ALWAYS in the background even
      * if you don't use one of the background() methods
      *
      * @return builder object
      */
-    SyncBuilder sync();
+    AsyncSyncBuilder sync();
 
     /**
      * Start a remove watches builder.
      * @return builder object
      */
-    RemoveWatchesBuilder watches();
+    AsyncRemoveWatchesBuilder watches();
 }

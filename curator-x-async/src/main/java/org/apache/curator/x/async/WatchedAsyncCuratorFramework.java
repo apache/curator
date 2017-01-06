@@ -1,9 +1,5 @@
 package org.apache.curator.x.async;
 
-import org.apache.curator.framework.api.ExistsBuilder;
-import org.apache.curator.framework.api.GetConfigBuilder;
-import org.apache.curator.framework.api.GetDataBuilder;
-
 /**
  * Zookeeper framework-style client
  */
@@ -38,5 +34,5 @@ public interface WatchedAsyncCuratorFramework
      *
      * @return builder object
      */
-    GetConfigBuilder getConfig();
+    AsyncGetConfigBuilder getConfig();
 }

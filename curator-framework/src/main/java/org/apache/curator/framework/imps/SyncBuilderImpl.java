@@ -40,6 +40,12 @@ public class SyncBuilderImpl implements SyncBuilder, BackgroundOperation<String>
         this.client = client;
     }
 
+    public SyncBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding)
+    {
+        this.client = client;
+        this.backgrounding = backgrounding;
+    }
+
     @Override
     public ErrorListenerPathable<Void> inBackground()
     {

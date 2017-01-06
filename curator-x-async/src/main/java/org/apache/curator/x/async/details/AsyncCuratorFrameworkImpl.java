@@ -1,24 +1,19 @@
 package org.apache.curator.x.async.details;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.GetACLBuilder;
+import org.apache.curator.framework.api.ReconfigBuilder;
+import org.apache.curator.framework.api.RemoveWatchesBuilder;
+import org.apache.curator.framework.api.SetACLBuilder;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
-import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorMultiTransactionImpl;
-import org.apache.curator.x.async.AsyncCuratorFramework;
-import org.apache.curator.x.async.AsyncCuratorFrameworkDsl;
-import org.apache.curator.x.async.AsyncDeleteBuilder;
-import org.apache.curator.x.async.AsyncExistsBuilder;
-import org.apache.curator.x.async.AsyncGetChildrenBuilder;
-import org.apache.curator.x.async.AsyncGetDataBuilder;
-import org.apache.curator.x.async.AsyncMultiTransaction;
-import org.apache.curator.x.async.AsyncSetDataBuilder;
-import org.apache.curator.x.async.WatchedAsyncCuratorFramework;
+import org.apache.curator.framework.imps.SyncBuilderImpl;
+import org.apache.curator.x.async.*;
 import java.util.List;
 
-import static org.apache.curator.x.async.details.BackgroundProcs.opResultsProc;
-import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
+import static org.apache.curator.x.async.details.BackgroundProcs.*;
 
 public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
 {
@@ -34,9 +29,9 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public CreateBuilder create()
+    public AsyncCreateBuilder create()
     {
-        return null;
+        return new AsyncCreateBuilderImpl(client, unhandledErrorListener);
     }
 
     @Override
@@ -64,9 +59,9 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public ReconfigBuilder reconfig()
+    public AsyncReconfigBuilder reconfig()
     {
-        return null;
+        return new AsyncReconfigBuilderImpl(client, unhandledErrorListener);
     }
 
     @Override
@@ -80,19 +75,23 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public SyncBuilder sync()
+    public AsyncSyncBuilder sync()
     {
-        return null;
+        return path -> {
+            BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, false, ignoredProc);
+            SyncBuilderImpl builder = new SyncBuilderImpl(client, common.backgrounding);
+            return safeCall(common.internalCallback, () -> builder.forPath(path));
+        };
     }
 
     @Override
-    public RemoveWatchesBuilder watches()
+    public AsyncRemoveWatchesBuilder watches()
     {
-        return null;
+        return new AsyncRemoveWatchesBuilderImpl(client, unhandledErrorListener);
     }
 
     @Override
-    public CuratorFramework getCuratorFramework()
+    public CuratorFramework unwrap()
     {
         return client;
     }
@@ -110,9 +109,9 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public TransactionOp transactionOp()
+    public AsyncTransactionOp transactionOp()
     {
-        return client.transactionOp();
+        return new AsyncTransactionOpImpl(client);
     }
 
     @Override
@@ -134,8 +133,8 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public GetConfigBuilder getConfig()
+    public AsyncGetConfigBuilder getConfig()
     {
-        return null;
+        return new AsyncGetConfigBuilderImpl(client, unhandledErrorListener, watched);
     }
 }

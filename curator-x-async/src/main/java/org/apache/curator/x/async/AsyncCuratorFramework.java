@@ -10,18 +10,9 @@ import org.apache.curator.framework.api.transaction.TransactionOp;
  */
 public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
 {
-    CuratorFramework getCuratorFramework();
+    CuratorFramework unwrap();
 
     WatchedAsyncCuratorFramework watched();
 
     AsyncCuratorFrameworkDsl withUnhandledErrorListener(UnhandledErrorListener listener);
-
-    /**
-     * Allocate an operation that can be used with {@link #transaction()}.
-     * NOTE: {@link CuratorOp} instances created by this builder are
-     * reusable.
-     *
-     * @return operation builder
-     */
-    TransactionOp transactionOp();  // TODO - versions that don't throw
 }

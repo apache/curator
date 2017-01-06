@@ -41,7 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
+public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
     private final CuratorFrameworkImpl client;
     private CreateMode createMode;
@@ -74,6 +74,21 @@ class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndByt
         setDataIfExists = false;
         protectedId = null;
         storingStat = null;
+    }
+
+    public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat)
+    {
+        this.client = client;
+        this.createMode = createMode;
+        this.backgrounding = backgrounding;
+        this.createParentsIfNeeded = createParentsIfNeeded;
+        this.createParentsAsContainers = createParentsAsContainers;
+        this.doProtected = doProtected;
+        this.compress = compress;
+        this.setDataIfExists = setDataIfExists;
+        protectedId = null;
+        this.acling = new ACLing(client.getAclProvider(), aclList);
+        this.storingStat = storingStat;
     }
 
     @Override
