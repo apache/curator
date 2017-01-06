@@ -80,6 +80,6 @@ class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder
     {
         BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, false, statProc);
         SetDataBuilderImpl builder = new SetDataBuilderImpl(client, common.backgrounding, version, compressed);
-        return safeCall(common.internalCallback, () -> useData ? builder.forPath(path) : builder.forPath(path, data));
+        return safeCall(common.internalCallback, () -> useData ? builder.forPath(path, data) : builder.forPath(path));
     }
 }

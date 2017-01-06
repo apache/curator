@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.apache.curator.x.async.details.BackgroundProcs.pathProc;
+import static org.apache.curator.x.async.details.BackgroundProcs.nameProc;
 import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 
 class AsyncCreateBuilderImpl implements AsyncCreateBuilder
@@ -128,7 +128,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
 
     private AsyncStage<String> internalForPath(String path, byte[] data, boolean useData)
     {
-        BuilderCommon<String> common = new BuilderCommon<>(unhandledErrorListener, false, pathProc);
+        BuilderCommon<String> common = new BuilderCommon<>(unhandledErrorListener, false, nameProc);
         CreateBuilderImpl builder = new CreateBuilderImpl(client,
             createMode,
             common.backgrounding,
