@@ -23,7 +23,7 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 /**
  * Zookeeper framework-style client
  */
-public interface AsyncCuratorFrameworkDsl extends WatchedAsyncCuratorFramework
+public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework
 {
     /**
      * Start a create builder

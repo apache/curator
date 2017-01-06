@@ -21,7 +21,7 @@ package org.apache.curator.x.async;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.api.AsyncCuratorFrameworkDsl;
-import org.apache.curator.x.async.api.WatchedAsyncCuratorFramework;
+import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.details.AsyncCuratorFrameworkImpl;
 
 /**
@@ -58,7 +58,7 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
      *
      * @return watcher facade
      */
-    WatchedAsyncCuratorFramework watched();
+    WatchableAsyncCuratorFramework watched();
 
     /**
      * Returns a facade that adds the given UnhandledErrorListener to all background operations

@@ -18,15 +18,10 @@
  */
 package org.apache.curator.x.async.api;
 
-import org.apache.curator.x.async.api.AsyncExistsBuilder;
-import org.apache.curator.x.async.api.AsyncGetChildrenBuilder;
-import org.apache.curator.x.async.api.AsyncGetConfigBuilder;
-import org.apache.curator.x.async.api.AsyncGetDataBuilder;
-
 /**
  * operations that support watching
  */
-public interface WatchedAsyncCuratorFramework
+public interface WatchableAsyncCuratorFramework
 {
     /**
      * Start an exists builder. The builder will return a Stat object as if org.apache.zookeeper.ZooKeeper.exists() were called.  Thus, a null

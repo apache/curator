@@ -151,7 +151,7 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public WatchedAsyncCuratorFramework watched()
+    public WatchableAsyncCuratorFramework watched()
     {
         return new AsyncCuratorFrameworkImpl(client, unhandledErrorListener, true);
     }
