@@ -38,7 +38,7 @@ public class ListenerContainer<T> implements Listenable<T>
     @Override
     public void addListener(T listener)
     {
-        addListener(listener, MoreExecutors.sameThreadExecutor());
+        addListener(listener, MoreExecutors.directExecutor());
     }
 
     @Override
