@@ -45,7 +45,7 @@ public interface AsyncDeleteBuilder extends AsyncPathable<AsyncStage<Void>>
     AsyncPathable<AsyncStage<Void>> withOptionsAndVersion(Set<DeleteOption> options, int version);
 
     /**
-     * Changes the version number passed to the delete() method. By default, -1 is ued
+     * Changes the version number passed to the delete() method. By default, -1 is used
      *
      * @param version version to use
      * @return this

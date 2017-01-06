@@ -19,14 +19,12 @@
 package org.apache.curator.x.async;
 
 /**
- * Zookeeper framework-style client
+ * operations that support watching
  */
 public interface WatchedAsyncCuratorFramework
 {
     /**
-     * Start an exists builder
-     * <p>
-     * The builder will return a Stat object as if org.apache.zookeeper.ZooKeeper.exists() were called.  Thus, a null
+     * Start an exists builder. The builder will return a Stat object as if org.apache.zookeeper.ZooKeeper.exists() were called.  Thus, a null
      * means that it does not exist and an actual Stat object means it does exist.
      *
      * @return builder object

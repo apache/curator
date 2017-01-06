@@ -18,9 +18,27 @@
  */
 package org.apache.curator.x.async;
 
+/**
+ * Options to use when deleting ZNodes
+ */
 public enum DeleteOption
 {
+    /**
+     * Prevents the reporting of {@link org.apache.zookeeper.KeeperException.NoNodeException}s.
+     * If the ZNode doesn't exist the delete method will appear to succeed.
+     */
     quietly,
+
+    /**
+     * Will also delete children if they exist
+     */
     deletingChildrenIfNeeded,
+
+    /**
+     * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
+     * response can be successfully returned to the client.
+     *
+     * @see org.apache.curator.framework.api.GuaranteeableDeletable
+     */
     guaranteed
 }

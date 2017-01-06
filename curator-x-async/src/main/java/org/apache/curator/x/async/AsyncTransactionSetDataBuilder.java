@@ -25,9 +25,27 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
  */
 public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<CuratorOp>
 {
+    /**
+     * Changes the version number used. By default, -1 is used
+     *
+     * @param version version to use
+     * @return this
+     */
     AsyncPathAndBytesable<CuratorOp> withVersion(int version);
 
+    /**
+     * Cause the data to be compressed using the configured compression provider
+     *
+     * @return this
+     */
     AsyncPathAndBytesable<CuratorOp> compressed();
 
+    /**
+     * Cause the data to be compressed using the configured compression provider.
+     * Also changes the version number used. By default, -1 is used
+     *
+     * @param version version to use
+     * @return this
+     */
     AsyncPathAndBytesable<CuratorOp> withVersionCompressed(int version);
 }

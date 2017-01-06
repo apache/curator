@@ -28,11 +28,39 @@ import java.util.List;
  */
 public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<CuratorOp>
 {
+    /**
+     * Specify a mode for the create. The default is {@link org.apache.zookeeper.CreateMode#PERSISTENT}
+     *
+     * @param createMode mode
+     * @return this
+     */
     AsyncPathable<CuratorOp> withMode(CreateMode createMode);
 
+    /**
+     * Set an ACL list (default is {@link org.apache.zookeeper.ZooDefs.Ids#OPEN_ACL_UNSAFE})
+     *
+     * @param aclList the ACL list to use
+     * @return this
+     */
     AsyncPathable<CuratorOp> withACL(List<ACL> aclList);
 
+    /**
+     * Cause the data to be compressed using the configured compression provider
+     *
+     * @return this
+     */
     AsyncPathable<CuratorOp> compressed();
 
+    /**
+     * Specify mode, acl list and compression
+     *
+     * @param createMode mode
+     * @param aclList the ACL list to use
+     * @param compressed true to compress
+     * @see #withMode(org.apache.zookeeper.CreateMode)
+     * @see #withACL(java.util.List)
+     * @see #compressed()
+     * @return this
+     */
     AsyncPathable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed);
 }

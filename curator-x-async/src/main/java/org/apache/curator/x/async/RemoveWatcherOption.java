@@ -18,9 +18,28 @@
  */
 package org.apache.curator.x.async;
 
+/**
+ * Options to use when removing watchers
+ */
 public enum RemoveWatcherOption
 {
+    /**
+     * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
+     * response can be successfully returned to the client.
+     *
+     * @see org.apache.curator.framework.api.GuaranteeableDeletable
+     */
     guaranteed,
+
+    /**
+     * Specify if the client should just remove client side watches if a connection to ZK
+     * is not available. Note that the standard Curator retry loop will not be used in t
+     */
     local,
+
+    /**
+     * Prevents the reporting of {@link org.apache.zookeeper.KeeperException.NoNodeException}s.
+     * If the watcher doesn't exist the remove method will appear to succeed.
+     */
     quietly
 }

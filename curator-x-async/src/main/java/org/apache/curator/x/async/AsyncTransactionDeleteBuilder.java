@@ -25,5 +25,11 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
  */
 public interface AsyncTransactionDeleteBuilder extends AsyncPathable<CuratorOp>
 {
+    /**
+     * Changes the version number used. By default, -1 is used
+     *
+     * @param version version to use
+     * @return this
+     */
     AsyncPathable<CuratorOp> withVersion(int version);
 }

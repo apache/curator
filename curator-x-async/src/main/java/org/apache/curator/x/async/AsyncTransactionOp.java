@@ -18,11 +18,9 @@
  */
 package org.apache.curator.x.async;
 
-import org.apache.curator.framework.CuratorFramework;
-
 /**
  * Builds operations that can be committed as a transaction
- * via {@link CuratorFramework#transaction()}
+ * via {@link org.apache.curator.x.async.AsyncCuratorFramework#transaction()}
  */
 public interface AsyncTransactionOp
 {

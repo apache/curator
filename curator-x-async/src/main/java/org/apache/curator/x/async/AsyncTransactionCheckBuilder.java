@@ -21,7 +21,7 @@ package org.apache.curator.x.async;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 
 /**
- * @see org.apache.curator.x.async.AsyncTransactionOp#check() 
+ * @see org.apache.curator.x.async.AsyncTransactionOp#check()
  */
 public interface AsyncTransactionCheckBuilder extends AsyncPathable<CuratorOp>
 {
