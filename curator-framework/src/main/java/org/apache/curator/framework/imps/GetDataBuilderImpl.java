@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>, ErrorListenerPathable<byte[]>
+public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>, ErrorListenerPathable<byte[]>
 {
     private final Logger                log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl  client;
@@ -47,6 +47,15 @@ class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>,
         watching = new Watching(client);
         backgrounding = new Backgrounding();
         decompress = false;
+    }
+
+    public GetDataBuilderImpl(CuratorFrameworkImpl client, Stat responseStat, Watcher watcher, Backgrounding backgrounding, boolean decompress)
+    {
+        this.client = client;
+        this.responseStat = responseStat;
+        this.watching = new Watching(client, watcher);
+        this.backgrounding = backgrounding;
+        this.decompress = decompress;
     }
 
     @Override

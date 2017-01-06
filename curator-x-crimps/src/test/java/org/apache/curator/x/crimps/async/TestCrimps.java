@@ -20,6 +20,13 @@ package org.apache.curator.x.crimps.async;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundPathAndBytesable;
+import org.apache.curator.framework.api.BackgroundPathable;
+import org.apache.curator.framework.api.BackgroundVersionable;
+import org.apache.curator.framework.api.ChildrenDeletable;
+import org.apache.curator.framework.api.DeleteBuilderMain;
+import org.apache.curator.framework.api.SetDataBackgroundVersionable;
+import org.apache.curator.framework.api.SetDataBuilder;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.api.transaction.OperationType;
@@ -27,6 +34,8 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.x.crimps.Crimps;
+import org.apache.curator.x.crimps.async.details.AsyncCrimps;
+import org.apache.curator.x.crimps.async.details.Crimped;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -48,6 +57,11 @@ public class TestCrimps extends BaseClassForTests
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
         {
             client.start();
+
+            SetDataBuilder setDataBuilder = client.setData();
+            BackgroundPathAndBytesable<Stat> withVersion = client.setData().withVersion(0);
+            SetDataBackgroundVersionable compressed = client.setData().compressed();
+
             CompletionStage<String> f = async.name(client.create().creatingParentContainersIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL)).forPath("/a/b/c");
             complete(f.handle((path, e) -> {
                 Assert.assertEquals(path, "/a/b/c0000000000");

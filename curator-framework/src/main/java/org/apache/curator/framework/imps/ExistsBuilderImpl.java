@@ -29,11 +29,12 @@ import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, ErrorListenerPathable<Stat>
+public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, ErrorListenerPathable<Stat>
 {
     private final CuratorFrameworkImpl client;
     private Backgrounding backgrounding;
     private Watching watching;
+    private boolean createParentsIfNeeded;
     private boolean createParentContainersIfNeeded;
 
     ExistsBuilderImpl(CuratorFrameworkImpl client)
@@ -44,10 +45,28 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
         createParentContainersIfNeeded = false;
     }
 
+    public ExistsBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, boolean createParentsIfNeeded, boolean createParentContainersIfNeeded)
+    {
+        this.client = client;
+        this.backgrounding = backgrounding;
+        this.watching = new Watching(client, watcher);
+        this.createParentsIfNeeded = createParentsIfNeeded;
+        this.createParentContainersIfNeeded = createParentContainersIfNeeded;
+    }
+
+    @Override
+    public ExistsBuilderMain creatingParentsIfNeeded()
+    {
+        createParentContainersIfNeeded = false;
+        createParentsIfNeeded = true;
+        return this;
+    }
+
     @Override
     public ExistsBuilderMain creatingParentContainersIfNeeded()
     {
         createParentContainersIfNeeded = true;
+        createParentsIfNeeded = false;
         return this;
     }
 
@@ -164,9 +183,9 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
         if ( backgrounding.inBackground() )
         {
             OperationAndData<String> operationAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext(), watching);
-            if ( createParentContainersIfNeeded )
+            if ( createParentContainersIfNeeded || createParentsIfNeeded )
             {
-                CreateBuilderImpl.backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData(), backgrounding, true);
+                CreateBuilderImpl.backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData(), backgrounding, createParentContainersIfNeeded);
             }
             else
             {
@@ -183,7 +202,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
 
     private Stat pathInForeground(final String path) throws Exception
     {
-        if ( createParentContainersIfNeeded )
+        if ( createParentContainersIfNeeded || createParentsIfNeeded )
         {
             final String parent = ZKPaths.getPathAndNode(path).getPath();
             if ( !parent.equals(ZKPaths.PATH_SEPARATOR) )
@@ -199,7 +218,7 @@ class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, E
                         {
                             try
                             {
-                                ZKPaths.mkdirs(client.getZooKeeper(), parent, true, client.getAclProvider(), true);
+                                ZKPaths.mkdirs(client.getZooKeeper(), parent, true, client.getAclProvider(), createParentContainersIfNeeded);
                             }
                             catch ( KeeperException.NodeExistsException e )
                             {

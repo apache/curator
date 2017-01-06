@@ -16,28 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.curator.x.crimps.async;
 
-package org.apache.curator.framework.api;
+import org.apache.zookeeper.data.Stat;
+import java.util.concurrent.CompletionStage;
 
-import org.apache.zookeeper.CreateMode;
-
-public interface ExistsBuilder extends
-    ExistsBuilderMain
+public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<CompletionStage<Stat>>
 {
     /**
-     * Causes any parent nodes to get created if they haven't already been
+     * Cause the data to be compressed using the configured compression provider
      *
      * @return this
      */
-    ExistsBuilderMain creatingParentsIfNeeded();
+    AsyncPathAndBytesable<CompletionStage<Stat>> compressed();
 
-    /**
-     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
-     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
-     * If the ZooKeeper version you're using does not support containers, the parent nodes
-     * are created as ordinary PERSISTENT nodes.
-     *
-     * @return this
-     */
-    ExistsBuilderMain creatingParentContainersIfNeeded();
+    AsyncPathAndBytesable<CompletionStage<Stat>> compressedWithVersion(int version);
+
+    AsyncPathAndBytesable<CompletionStage<Stat>> withVersion(int version);
 }

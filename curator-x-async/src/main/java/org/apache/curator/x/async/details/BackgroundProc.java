@@ -16,28 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.curator.x.async.details;
 
-package org.apache.curator.framework.api;
+import org.apache.curator.framework.api.CuratorEvent;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 
-import org.apache.zookeeper.CreateMode;
-
-public interface ExistsBuilder extends
-    ExistsBuilderMain
+interface BackgroundProc<T> extends BiFunction<CuratorEvent, CompletableFuture<T>, Void>
 {
-    /**
-     * Causes any parent nodes to get created if they haven't already been
-     *
-     * @return this
-     */
-    ExistsBuilderMain creatingParentsIfNeeded();
-
-    /**
-     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
-     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
-     * If the ZooKeeper version you're using does not support containers, the parent nodes
-     * are created as ordinary PERSISTENT nodes.
-     *
-     * @return this
-     */
-    ExistsBuilderMain creatingParentContainersIfNeeded();
 }

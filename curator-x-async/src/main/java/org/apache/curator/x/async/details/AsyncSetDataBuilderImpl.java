@@ -1,0 +1,67 @@
+package org.apache.curator.x.async.details;
+
+import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.imps.CuratorFrameworkImpl;
+import org.apache.curator.framework.imps.SetDataBuilderImpl;
+import org.apache.curator.x.async.AsyncPathAndBytesable;
+import org.apache.curator.x.async.AsyncSetDataBuilder;
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.data.Stat;
+
+import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
+import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
+
+class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder
+{
+    private final CuratorFrameworkImpl client;
+    private final UnhandledErrorListener unhandledErrorListener;
+    private boolean compressed = false;
+    private int version = -1;
+
+    AsyncSetDataBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
+    {
+        this.client = client;
+        this.unhandledErrorListener = unhandledErrorListener;
+    }
+
+    @Override
+    public AsyncStage<Stat> forPath(String path)
+    {
+        return internalForPath(path, null, false);
+    }
+
+    @Override
+    public AsyncStage<Stat> forPath(String path, byte[] data)
+    {
+        return internalForPath(path, data, true);
+    }
+
+    @Override
+    public AsyncPathAndBytesable<AsyncStage<Stat>> compressed()
+    {
+        compressed = true;
+        return this;
+    }
+
+    @Override
+    public AsyncPathAndBytesable<AsyncStage<Stat>> compressedWithVersion(int version)
+    {
+        compressed = true;
+        this.version = version;
+        return this;
+    }
+
+    @Override
+    public AsyncPathAndBytesable<AsyncStage<Stat>> withVersion(int version)
+    {
+        this.version = version;
+        return this;
+    }
+
+    private AsyncStage<Stat> internalForPath(String path, byte[] data, boolean useData)
+    {
+        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, false, statProc);
+        SetDataBuilderImpl builder = new SetDataBuilderImpl(client, common.backgrounding, version, compressed);
+        return safeCall(common.internalCallback, () -> useData ? builder.forPath(path) : builder.forPath(path, data));
+    }
+}

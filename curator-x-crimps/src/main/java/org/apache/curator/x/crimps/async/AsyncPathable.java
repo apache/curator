@@ -17,27 +17,15 @@
  * under the License.
  */
 
-package org.apache.curator.framework.api;
+package org.apache.curator.x.crimps.async;
 
-import org.apache.zookeeper.CreateMode;
-
-public interface ExistsBuilder extends
-    ExistsBuilderMain
+public interface AsyncPathable<T>
 {
     /**
-     * Causes any parent nodes to get created if they haven't already been
+     * Commit the currently building operation using the given path
      *
-     * @return this
+     * @param path the path
+     * @return operation result if any
      */
-    ExistsBuilderMain creatingParentsIfNeeded();
-
-    /**
-     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
-     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
-     * If the ZooKeeper version you're using does not support containers, the parent nodes
-     * are created as ordinary PERSISTENT nodes.
-     *
-     * @return this
-     */
-    ExistsBuilderMain creatingParentContainersIfNeeded();
+    T forPath(String path);
 }

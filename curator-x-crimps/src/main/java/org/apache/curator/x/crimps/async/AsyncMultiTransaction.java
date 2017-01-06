@@ -16,28 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.curator.x.crimps.async;
 
-package org.apache.curator.framework.api;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 
-import org.apache.zookeeper.CreateMode;
-
-public interface ExistsBuilder extends
-    ExistsBuilderMain
+public interface AsyncMultiTransaction
 {
     /**
-     * Causes any parent nodes to get created if they haven't already been
+     * Commit the given operations as a single transaction. Create the
+     * operation instances via {@link CuratorFramework#transactionOp()}
      *
-     * @return this
+     * @param operations operations that make up the transaction.
+     * @return result details for foreground operations or <code>null</code> for background operations
      */
-    ExistsBuilderMain creatingParentsIfNeeded();
-
-    /**
-     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
-     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
-     * If the ZooKeeper version you're using does not support containers, the parent nodes
-     * are created as ordinary PERSISTENT nodes.
-     *
-     * @return this
-     */
-    ExistsBuilderMain creatingParentContainersIfNeeded();
+    CompletionStage<List<CuratorTransactionResult>> forOperations(List<CuratorOp> operations);
 }

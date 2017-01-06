@@ -16,28 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.curator.x.crimps.async.details;
 
-package org.apache.curator.framework.api;
+import org.apache.zookeeper.WatchedEvent;
+import java.util.concurrent.CompletionStage;
 
-import org.apache.zookeeper.CreateMode;
-
-public interface ExistsBuilder extends
-    ExistsBuilderMain
+public interface Crimped<T> extends CompletionStage<T>
 {
-    /**
-     * Causes any parent nodes to get created if they haven't already been
-     *
-     * @return this
-     */
-    ExistsBuilderMain creatingParentsIfNeeded();
-
-    /**
-     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
-     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
-     * If the ZooKeeper version you're using does not support containers, the parent nodes
-     * are created as ordinary PERSISTENT nodes.
-     *
-     * @return this
-     */
-    ExistsBuilderMain creatingParentContainersIfNeeded();
+    CompletionStage<WatchedEvent> event();
 }

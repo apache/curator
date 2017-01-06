@@ -16,31 +16,35 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.crimps;
+package org.apache.curator.x.crimps.async.details;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.x.crimps.async.AsyncCuratorFramework;
-import org.apache.curator.x.crimps.async.details.AsyncCrimps;
-import org.apache.curator.x.crimps.async.imps.AsyncCuratorFrameworkImpl;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.zookeeper.WatchedEvent;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
-public class Crimps
+class CrimpedBackgroundCallback<T> extends CompletableFuture<T> implements BackgroundCallback, Crimped<T>
 {
-    public static AsyncCrimps async()
+    private final BackgroundProc<T> resultFunction;
+    private final CrimpedWatcher watcher;
+
+    CrimpedBackgroundCallback(BackgroundProc<T> resultFunction, CrimpedWatcher watcher)
     {
-        return new AsyncCrimps(null);
+        this.resultFunction = resultFunction;
+        this.watcher = watcher;
     }
 
-    public static AsyncCuratorFramework async(CuratorFramework client)
+    @Override
+    public CompletionStage<WatchedEvent> event()
     {
-        return async(client, async());
+        return watcher;
     }
 
-    public static AsyncCuratorFramework async(CuratorFramework client, AsyncCrimps async)
+    @Override
+    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
     {
-        return new AsyncCuratorFrameworkImpl(client, async, null);
-    }
-
-    private Crimps()
-    {
+        resultFunction.apply(event, this);
     }
 }

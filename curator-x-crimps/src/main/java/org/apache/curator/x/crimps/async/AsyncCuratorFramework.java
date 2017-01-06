@@ -17,27 +17,30 @@
  * under the License.
  */
 
-package org.apache.curator.framework.api;
+package org.apache.curator.x.crimps.async;
 
-import org.apache.zookeeper.CreateMode;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.TransactionOp;
 
-public interface ExistsBuilder extends
-    ExistsBuilderMain
+/**
+ * Zookeeper framework-style client
+ */
+public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
 {
-    /**
-     * Causes any parent nodes to get created if they haven't already been
-     *
-     * @return this
-     */
-    ExistsBuilderMain creatingParentsIfNeeded();
+    CuratorFramework getCuratorFramework();
+
+    WatchedAsyncCuratorFramework watched();
+
+    AsyncCuratorFrameworkDsl withUnhandledErrorListener(UnhandledErrorListener listener);
 
     /**
-     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
-     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
-     * If the ZooKeeper version you're using does not support containers, the parent nodes
-     * are created as ordinary PERSISTENT nodes.
+     * Allocate an operation that can be used with {@link #transaction()}.
+     * NOTE: {@link CuratorOp} instances created by this builder are
+     * reusable.
      *
-     * @return this
+     * @return operation builder
      */
-    ExistsBuilderMain creatingParentContainersIfNeeded();
+    TransactionOp transactionOp();
 }
