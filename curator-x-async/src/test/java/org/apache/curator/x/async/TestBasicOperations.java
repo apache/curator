@@ -24,7 +24,6 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -33,7 +32,12 @@ import org.testng.annotations.Test;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
+
+import static java.util.EnumSet.of;
+import static org.apache.curator.x.async.CreateOption.compress;
+import static org.apache.curator.x.async.CreateOption.setDataIfExists;
+import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 
 public class TestBasicOperations extends BaseClassForTests
 {
@@ -64,30 +68,22 @@ public class TestBasicOperations extends BaseClassForTests
     public void testCrud()
     {
         AsyncStage<String> createStage = client.create().forPath("/test", "one".getBytes());
-        complete(createStage, (path, e) -> {
-            Assert.assertEquals(path, "/test");
-            return null;
-        });
+        complete(createStage, (path, e) -> Assert.assertEquals(path, "/test"));
 
         AsyncStage<byte[]> getStage = client.getData().forPath("/test");
-        complete(getStage, (data, e) -> {
-            Assert.assertEquals(data, "one".getBytes());
-            return null;
-        });
+        complete(getStage, (data, e) -> Assert.assertEquals(data, "one".getBytes()));
 
         CompletionStage<byte[]> combinedStage = client.setData().forPath("/test", "new".getBytes()).thenCompose(
             __ -> client.getData().forPath("/test"));
-        complete(combinedStage, (data, e) -> {
-            Assert.assertEquals(data, "new".getBytes());
-            return null;
-        });
+        complete(combinedStage, (data, e) -> Assert.assertEquals(data, "new".getBytes()));
 
-        CompletionStage<Void> combinedDelete = client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/deleteme").thenCompose(
+        CompletionStage<Void> combinedDelete = client.create().withMode(EPHEMERAL_SEQUENTIAL).forPath("/deleteme").thenCompose(
             path -> client.delete().forPath(path));
-        complete(combinedDelete, (v, e) -> {
-            Assert.assertNull(e);
-            return null;
-        });
+        complete(combinedDelete, (v, e) -> Assert.assertNull(e));
+
+        CompletionStage<byte[]> setDataIfStage = client.create().withOptions(of(compress, setDataIfExists)).forPath("/test", "last".getBytes())
+            .thenCompose(__ -> client.getData().decompressed().forPath("/test"));
+        complete(setDataIfStage, (data, e) -> Assert.assertEquals(data, "last".getBytes()));
     }
 
     @Test
@@ -105,14 +101,17 @@ public class TestBasicOperations extends BaseClassForTests
 
     private <T, U> void complete(CompletionStage<T> stage)
     {
-        complete(stage, (v, e) -> null);
+        complete(stage, (v, e) -> {});
     }
 
-    private <T, U> void complete(CompletionStage<T> stage, BiFunction<? super T, Throwable, ? extends U> handler)
+    private <T, U> void complete(CompletionStage<T> stage, BiConsumer<? super T, Throwable> handler)
     {
         try
         {
-            stage.handle(handler).toCompletableFuture().get();
+            stage.handle((v, e) -> {
+                handler.accept(v, e);
+                return null;
+            }).toCompletableFuture().get();
         }
         catch ( InterruptedException e )
         {

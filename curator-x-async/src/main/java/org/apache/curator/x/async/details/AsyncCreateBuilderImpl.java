@@ -22,7 +22,7 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CreateBuilderImpl;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.x.async.AsyncCreateBuilder;
-import org.apache.curator.x.async.AsyncPathable;
+import org.apache.curator.x.async.AsyncPathAndBytesable;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.CreateOption;
 import org.apache.zookeeper.CreateMode;
@@ -52,35 +52,35 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     }
 
     @Override
-    public AsyncPathable<AsyncStage<String>> storingStatIn(Stat stat)
+    public AsyncPathAndBytesable<AsyncStage<String>> storingStatIn(Stat stat)
     {
         this.stat = stat;
         return this;
     }
 
     @Override
-    public AsyncPathable<AsyncStage<String>> withMode(CreateMode createMode)
+    public AsyncPathAndBytesable<AsyncStage<String>> withMode(CreateMode createMode)
     {
         this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
         return this;
     }
 
     @Override
-    public AsyncPathable<AsyncStage<String>> withACL(List<ACL> aclList)
+    public AsyncPathAndBytesable<AsyncStage<String>> withACL(List<ACL> aclList)
     {
         this.aclList = aclList;
         return this;
     }
 
     @Override
-    public AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options)
+    public AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options)
     {
         this.options = Objects.requireNonNull(options, "options cannot be null");
         return this;
     }
 
     @Override
-    public AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options, List<ACL> aclList)
+    public AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, List<ACL> aclList)
     {
         this.options = Objects.requireNonNull(options, "options cannot be null");
         this.aclList = aclList;
@@ -88,7 +88,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     }
 
     @Override
-    public AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList)
+    public AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList)
     {
         this.options = Objects.requireNonNull(options, "options cannot be null");
         this.aclList = aclList;
@@ -97,7 +97,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     }
 
     @Override
-    public AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode)
+    public AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode)
     {
         this.options = Objects.requireNonNull(options, "options cannot be null");
         this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
@@ -105,7 +105,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     }
 
     @Override
-    public AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat)
+    public AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat)
     {
         this.options = Objects.requireNonNull(options, "options cannot be null");
         this.aclList = aclList;

@@ -33,19 +33,19 @@ public interface AsyncCreateBuilder extends
      * @param stat the stat to have filled in
      * @return this
      */
-    AsyncPathable<AsyncStage<String>> storingStatIn(Stat stat);
+    AsyncPathAndBytesable<AsyncStage<String>> storingStatIn(Stat stat);
 
-    AsyncPathable<AsyncStage<String>> withMode(CreateMode createMode);
+    AsyncPathAndBytesable<AsyncStage<String>> withMode(CreateMode createMode);
 
-    AsyncPathable<AsyncStage<String>> withACL(List<ACL> aclList);
+    AsyncPathAndBytesable<AsyncStage<String>> withACL(List<ACL> aclList);
 
-    AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options);
+    AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options);
 
-    AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options, List<ACL> aclList);
+    AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, List<ACL> aclList);
 
-    AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList);
+    AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList);
 
-    AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode);
+    AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode);
 
-    AsyncPathable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat);
+    AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat);
 }
