@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
 /**
  * Options when creating ZNodes

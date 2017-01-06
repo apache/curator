@@ -16,20 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import java.util.List;
 
 /**
- * Builder for getConfig()
+ * Builder for setting ACLs
  */
-public interface AsyncGetConfigBuilder extends AsyncEnsemblable<AsyncStage<byte[]>>
+public interface AsyncSetACLBuilder
 {
     /**
-     * Have the operation fill the provided stat object
+     * Set the given ACLs
      *
-     * @param stat the stat to have filled in
+     * @param aclList ACLs to set
      * @return this
      */
-    AsyncEnsemblable<AsyncStage<byte[]>> storingStatIn(Stat stat);
+    AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList);
+
+    /**
+     * Set the given ACLs only if the "a" version matches. By default -1 is used
+     * which matches all versions.
+     *
+     * @param aclList ACLs to set
+     * @param version "a" version
+     * @see org.apache.zookeeper.data.Stat#getAversion()
+     * @return this
+     */
+    AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList, int version);
 }

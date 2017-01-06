@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.zookeeper.CreateMode;
@@ -24,7 +24,7 @@ import org.apache.zookeeper.data.ACL;
 import java.util.List;
 
 /**
- * @see org.apache.curator.x.async.AsyncTransactionOp#create()
+ * @see AsyncTransactionOp#create()
  */
 public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<CuratorOp>
 {

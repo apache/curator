@@ -35,8 +35,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
 import static java.util.EnumSet.of;
-import static org.apache.curator.x.async.CreateOption.compress;
-import static org.apache.curator.x.async.CreateOption.setDataIfExists;
+import static org.apache.curator.x.async.api.CreateOption.compress;
+import static org.apache.curator.x.async.api.CreateOption.setDataIfExists;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 
 public class TestBasicOperations extends BaseClassForTests

@@ -16,12 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
 /**
- * Builder for syncs
+ * Options to use when checking for ZNode existence
  */
-public interface AsyncSyncBuilder extends
-    AsyncPathable<AsyncStage<Void>>
+public enum ExistsOption
 {
+    /**
+     * see {@link CreateOption#createParentsIfNeeded}
+     */
+    createParentsIfNeeded,
+
+    /**
+     * see {@link CreateOption#createParentsAsContainers}
+     */
+    createParentsAsContainers
 }

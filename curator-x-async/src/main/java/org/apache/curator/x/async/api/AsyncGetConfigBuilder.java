@@ -16,21 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
-import java.util.Set;
 
 /**
- * Builder for ZNode exists
+ * Builder for getConfig()
  */
-public interface AsyncExistsBuilder extends AsyncPathable<AsyncStage<Stat>>
+public interface AsyncGetConfigBuilder extends AsyncEnsemblable<AsyncStage<byte[]>>
 {
     /**
-     * Use the given options. The default is to use no options
+     * Have the operation fill the provided stat object
      *
-     * @param options options to use
+     * @param stat the stat to have filled in
      * @return this
      */
-    AsyncPathable<AsyncStage<Stat>> withOptions(Set<ExistsOption> options);
+    AsyncEnsemblable<AsyncStage<byte[]>> storingStatIn(Stat stat);
 }

@@ -16,22 +16,39 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
-
-import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Stat;
-import java.util.List;
+package org.apache.curator.x.async.api;
 
 /**
- * Builder for getAcls
+ * Builds operations that can be committed as a transaction
+ * via {@link org.apache.curator.x.async.AsyncCuratorFramework#transaction()}
  */
-public interface AsyncGetACLBuilder extends AsyncPathable<AsyncStage<List<ACL>>>
+public interface AsyncTransactionOp
 {
     /**
-     * Have the operation fill the provided stat object
+     * Start a create builder in the transaction
      *
-     * @param stat the stat to have filled in
-     * @return this
+     * @return builder object
      */
-    AsyncPathable<AsyncStage<List<ACL>>> storingStatIn(Stat stat);
+    AsyncTransactionCreateBuilder create();
+
+    /**
+     * Start a delete builder in the transaction
+     *
+     * @return builder object
+     */
+    AsyncTransactionDeleteBuilder delete();
+
+    /**
+     * Start a setData builder in the transaction
+     *
+     * @return builder object
+     */
+    AsyncTransactionSetDataBuilder setData();
+
+    /**
+     * Start a check builder in the transaction
+     *
+     * @return builder object
+     */
+    AsyncTransactionCheckBuilder check();
 }

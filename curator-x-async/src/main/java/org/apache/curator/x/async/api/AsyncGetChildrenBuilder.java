@@ -16,20 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
+
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.data.Stat;
+import java.util.List;
 
 /**
- * Options to use when checking for ZNode existence
+ * Builder for getChildren()
  */
-public enum ExistsOption
+public interface AsyncGetChildrenBuilder extends AsyncPathable<AsyncStage<List<String>>>
 {
     /**
-     * see {@link org.apache.curator.x.async.CreateOption#createParentsIfNeeded}
+     * Have the operation fill the provided stat object
+     *
+     * @param stat the stat to have filled in
+     * @return this
      */
-    createParentsIfNeeded,
-
-    /**
-     * see {@link org.apache.curator.x.async.CreateOption#createParentsAsContainers}
-     */
-    createParentsAsContainers
+    AsyncPathable<AsyncStage<List<String>>> storingStatIn(Stat stat);
 }

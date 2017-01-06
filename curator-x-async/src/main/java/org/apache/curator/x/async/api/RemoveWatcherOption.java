@@ -16,20 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
-
-import org.apache.curator.framework.api.transaction.CuratorOp;
+package org.apache.curator.x.async.api;
 
 /**
- * @see org.apache.curator.x.async.AsyncTransactionOp#check()
+ * Options to use when removing watchers
  */
-public interface AsyncTransactionCheckBuilder extends AsyncPathable<CuratorOp>
+public enum RemoveWatcherOption
 {
     /**
-     * Use the given version (the default is -1)
+     * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
+     * response can be successfully returned to the client.
      *
-     * @param version version to use
-     * @return this
+     * @see org.apache.curator.framework.api.GuaranteeableDeletable
      */
-    AsyncPathable<CuratorOp> withVersion(int version);
+    guaranteed,
+
+    /**
+     * Specify if the client should just remove client side watches if a connection to ZK
+     * is not available. Note that the standard Curator retry loop will not be used in t
+     */
+    local,
+
+    /**
+     * Prevents the reporting of {@link org.apache.zookeeper.KeeperException.NoNodeException}s.
+     * If the watcher doesn't exist the remove method will appear to succeed.
+     */
+    quietly
 }

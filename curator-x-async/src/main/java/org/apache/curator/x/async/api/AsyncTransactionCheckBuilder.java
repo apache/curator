@@ -16,29 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
+
+import org.apache.curator.framework.api.transaction.CuratorOp;
 
 /**
- * Options to use when deleting ZNodes
+ * @see AsyncTransactionOp#check()
  */
-public enum DeleteOption
+public interface AsyncTransactionCheckBuilder extends AsyncPathable<CuratorOp>
 {
     /**
-     * Prevents the reporting of {@link org.apache.zookeeper.KeeperException.NoNodeException}s.
-     * If the ZNode doesn't exist the delete method will appear to succeed.
-     */
-    quietly,
-
-    /**
-     * Will also delete children if they exist
-     */
-    deletingChildrenIfNeeded,
-
-    /**
-     * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
-     * response can be successfully returned to the client.
+     * Use the given version (the default is -1)
      *
-     * @see org.apache.curator.framework.api.GuaranteeableDeletable
+     * @param version version to use
+     * @return this
      */
-    guaranteed
+    AsyncPathable<CuratorOp> withVersion(int version);
 }

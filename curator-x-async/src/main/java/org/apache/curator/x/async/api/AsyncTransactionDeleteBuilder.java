@@ -16,21 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
-import org.apache.zookeeper.data.Stat;
-import java.util.List;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 
 /**
- * Builder for getChildren()
+ * @see AsyncTransactionOp#delete()
  */
-public interface AsyncGetChildrenBuilder extends AsyncPathable<AsyncStage<List<String>>>
+public interface AsyncTransactionDeleteBuilder extends AsyncPathable<CuratorOp>
 {
     /**
-     * Have the operation fill the provided stat object
+     * Changes the version number used. By default, -1 is used
      *
-     * @param stat the stat to have filled in
+     * @param version version to use
      * @return this
      */
-    AsyncPathable<AsyncStage<List<String>>> storingStatIn(Stat stat);
+    AsyncPathable<CuratorOp> withVersion(int version);
 }

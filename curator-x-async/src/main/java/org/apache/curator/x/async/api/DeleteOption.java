@@ -16,17 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
 /**
- * Terminal operation for config/reconfig builders
+ * Options to use when deleting ZNodes
  */
-public interface AsyncEnsemblable<T>
+public enum DeleteOption
 {
     /**
-     * Commit the currently building operation and invoke ZooKeeper
-     *
-     * @return async stage
+     * Prevents the reporting of {@link org.apache.zookeeper.KeeperException.NoNodeException}s.
+     * If the ZNode doesn't exist the delete method will appear to succeed.
      */
-    T forEnsemble();
+    quietly,
+
+    /**
+     * Will also delete children if they exist
+     */
+    deletingChildrenIfNeeded,
+
+    /**
+     * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
+     * response can be successfully returned to the client.
+     *
+     * @see org.apache.curator.framework.api.GuaranteeableDeletable
+     */
+    guaranteed
 }

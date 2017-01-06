@@ -16,39 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
 /**
- * Builds operations that can be committed as a transaction
- * via {@link org.apache.curator.x.async.AsyncCuratorFramework#transaction()}
+ * Terminal operation for config/reconfig builders
  */
-public interface AsyncTransactionOp
+public interface AsyncEnsemblable<T>
 {
     /**
-     * Start a create builder in the transaction
+     * Commit the currently building operation and invoke ZooKeeper
      *
-     * @return builder object
+     * @return async stage
      */
-    AsyncTransactionCreateBuilder create();
-
-    /**
-     * Start a delete builder in the transaction
-     *
-     * @return builder object
-     */
-    AsyncTransactionDeleteBuilder delete();
-
-    /**
-     * Start a setData builder in the transaction
-     *
-     * @return builder object
-     */
-    AsyncTransactionSetDataBuilder setData();
-
-    /**
-     * Start a check builder in the transaction
-     *
-     * @return builder object
-     */
-    AsyncTransactionCheckBuilder check();
+    T forEnsemble();
 }

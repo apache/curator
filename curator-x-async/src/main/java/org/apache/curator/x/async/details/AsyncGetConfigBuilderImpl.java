@@ -21,8 +21,8 @@ package org.apache.curator.x.async.details;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.GetConfigBuilderImpl;
-import org.apache.curator.x.async.AsyncEnsemblable;
-import org.apache.curator.x.async.AsyncGetConfigBuilder;
+import org.apache.curator.x.async.api.AsyncEnsemblable;
+import org.apache.curator.x.async.api.AsyncGetConfigBuilder;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 

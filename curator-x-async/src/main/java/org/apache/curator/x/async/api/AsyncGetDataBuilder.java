@@ -16,39 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
-import java.util.Set;
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.data.Stat;
 
 /**
- * Builder for ZNode deletions
+ * Builder to get ZNode data
  */
-public interface AsyncDeleteBuilder extends AsyncPathable<AsyncStage<Void>>
+public interface AsyncGetDataBuilder extends AsyncPathable<AsyncStage<byte[]>>
 {
     /**
-     * Changes the deletion options. By default, no options are used
+     * Cause the data to be de-compressed using the configured compression provider
      *
-     * @param options set of deletion options
      * @return this
      */
-    AsyncPathable<AsyncStage<Void>> withOptions(Set<DeleteOption> options);
+    AsyncPathable<AsyncStage<byte[]>> decompressed();
 
     /**
-     * Set options and version.
+     * Have the operation fill the provided stat object
      *
-     * @param options set of deletion options
-     * @param version version to use
-     * @see #withOptions(java.util.Set)
-     * @see #withVersion(int)
+     * @param stat the stat to have filled in
      * @return this
      */
-    AsyncPathable<AsyncStage<Void>> withOptionsAndVersion(Set<DeleteOption> options, int version);
+    AsyncPathable<AsyncStage<byte[]>> storingStatIn(Stat stat);
 
     /**
-     * Changes the version number passed to the delete() method. By default, -1 is used
+     * Have the operation fill the provided stat object and have the data be de-compressed
      *
-     * @param version version to use
+     * @param stat the stat to have filled in
+     * @see #decompressed()
+     * @see #storingStatIn(org.apache.zookeeper.data.Stat)
      * @return this
      */
-    AsyncPathable<AsyncStage<Void>> withVersion(int version);
+    AsyncPathable<AsyncStage<byte[]>> decompressedStoringStatIn(Stat stat);
 }

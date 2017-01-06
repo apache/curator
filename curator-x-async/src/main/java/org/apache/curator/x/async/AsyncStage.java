@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage;
 public interface AsyncStage<T> extends CompletionStage<T>
 {
     /**
-     * If the {@link org.apache.curator.x.async.WatchedAsyncCuratorFramework} facade is
+     * If the {@link org.apache.curator.x.async.api.WatchedAsyncCuratorFramework} facade is
      * used (via {@link AsyncCuratorFramework#watched()}), this returns the completion
      * stage used when the watcher is triggered
      *

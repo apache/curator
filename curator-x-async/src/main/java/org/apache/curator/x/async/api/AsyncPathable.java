@@ -16,30 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
 /**
- * Options to use when removing watchers
+ * Terminal operation for various builders
  */
-public enum RemoveWatcherOption
+public interface AsyncPathable<T>
 {
     /**
-     * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
-     * response can be successfully returned to the client.
+     * Commit the currently building operation using the given path
+     * and invoke ZooKeeper
      *
-     * @see org.apache.curator.framework.api.GuaranteeableDeletable
+     * @param path the path
+     * @return usually an async stage
      */
-    guaranteed,
-
-    /**
-     * Specify if the client should just remove client side watches if a connection to ZK
-     * is not available. Note that the standard Curator retry loop will not be used in t
-     */
-    local,
-
-    /**
-     * Prevents the reporting of {@link org.apache.zookeeper.KeeperException.NoNodeException}s.
-     * If the watcher doesn't exist the remove method will appear to succeed.
-     */
-    quietly
+    T forPath(String path);
 }

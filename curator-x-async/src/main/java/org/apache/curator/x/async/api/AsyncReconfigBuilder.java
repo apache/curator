@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 

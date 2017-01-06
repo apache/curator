@@ -16,23 +16,36 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
-import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
-import java.util.List;
 
 /**
- * Terminal operation to support multi/transactions
+ * @see AsyncTransactionOp#setData()
  */
-public interface AsyncMultiTransaction
+public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<CuratorOp>
 {
     /**
-     * Invoke ZooKeeper to commit the given operations as a single transaction. Create the
-     * operation instances via {@link org.apache.curator.x.async.AsyncCuratorFramework#transactionOp()}
+     * Changes the version number used. By default, -1 is used
      *
-     * @param operations operations that make up the transaction.
-     * @return AsyncStage instance for managing the completion
+     * @param version version to use
+     * @return this
      */
-    AsyncStage<List<CuratorTransactionResult>> forOperations(List<CuratorOp> operations);
+    AsyncPathAndBytesable<CuratorOp> withVersion(int version);
+
+    /**
+     * Cause the data to be compressed using the configured compression provider
+     *
+     * @return this
+     */
+    AsyncPathAndBytesable<CuratorOp> compressed();
+
+    /**
+     * Cause the data to be compressed using the configured compression provider.
+     * Also changes the version number used. By default, -1 is used
+     *
+     * @param version version to use
+     * @return this
+     */
+    AsyncPathAndBytesable<CuratorOp> withVersionCompressed(int version);
 }

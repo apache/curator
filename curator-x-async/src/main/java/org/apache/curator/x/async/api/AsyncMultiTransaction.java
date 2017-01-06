@@ -16,33 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
-import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Stat;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.x.async.AsyncStage;
 import java.util.List;
 
 /**
- * Builder for setting ACLs
+ * Terminal operation to support multi/transactions
  */
-public interface AsyncSetACLBuilder
+public interface AsyncMultiTransaction
 {
     /**
-     * Set the given ACLs
+     * Invoke ZooKeeper to commit the given operations as a single transaction. Create the
+     * operation instances via {@link org.apache.curator.x.async.AsyncCuratorFramework#transactionOp()}
      *
-     * @param aclList ACLs to set
-     * @return this
+     * @param operations operations that make up the transaction.
+     * @return AsyncStage instance for managing the completion
      */
-    AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList);
-
-    /**
-     * Set the given ACLs only if the "a" version matches. By default -1 is used
-     * which matches all versions.
-     *
-     * @param aclList ACLs to set
-     * @param version "a" version
-     * @see org.apache.zookeeper.data.Stat#getAversion()
-     * @return this
-     */
-    AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList, int version);
+    AsyncStage<List<CuratorTransactionResult>> forOperations(List<CuratorOp> operations);
 }

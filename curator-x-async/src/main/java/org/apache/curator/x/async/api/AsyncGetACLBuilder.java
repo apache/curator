@@ -16,37 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import java.util.List;
 
 /**
- * Builder to get ZNode data
+ * Builder for getAcls
  */
-public interface AsyncGetDataBuilder extends AsyncPathable<AsyncStage<byte[]>>
+public interface AsyncGetACLBuilder extends AsyncPathable<AsyncStage<List<ACL>>>
 {
-    /**
-     * Cause the data to be de-compressed using the configured compression provider
-     *
-     * @return this
-     */
-    AsyncPathable<AsyncStage<byte[]>> decompressed();
-
     /**
      * Have the operation fill the provided stat object
      *
      * @param stat the stat to have filled in
      * @return this
      */
-    AsyncPathable<AsyncStage<byte[]>> storingStatIn(Stat stat);
-
-    /**
-     * Have the operation fill the provided stat object and have the data be de-compressed
-     *
-     * @param stat the stat to have filled in
-     * @see #decompressed()
-     * @see #storingStatIn(org.apache.zookeeper.data.Stat)
-     * @return this
-     */
-    AsyncPathable<AsyncStage<byte[]>> decompressedStoringStatIn(Stat stat);
+    AsyncPathable<AsyncStage<List<ACL>>> storingStatIn(Stat stat);
 }

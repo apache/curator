@@ -20,6 +20,8 @@ package org.apache.curator.x.async;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.x.async.api.AsyncCuratorFrameworkDsl;
+import org.apache.curator.x.async.api.WatchedAsyncCuratorFramework;
 import org.apache.curator.x.async.details.AsyncCuratorFrameworkImpl;
 
 /**

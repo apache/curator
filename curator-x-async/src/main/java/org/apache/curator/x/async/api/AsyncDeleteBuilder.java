@@ -16,36 +16,40 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
 
-import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.x.async.AsyncStage;
+import java.util.Set;
 
 /**
- * @see org.apache.curator.x.async.AsyncTransactionOp#setData()
+ * Builder for ZNode deletions
  */
-public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<CuratorOp>
+public interface AsyncDeleteBuilder extends AsyncPathable<AsyncStage<Void>>
 {
     /**
-     * Changes the version number used. By default, -1 is used
+     * Changes the deletion options. By default, no options are used
+     *
+     * @param options set of deletion options
+     * @return this
+     */
+    AsyncPathable<AsyncStage<Void>> withOptions(Set<DeleteOption> options);
+
+    /**
+     * Set options and version.
+     *
+     * @param options set of deletion options
+     * @param version version to use
+     * @see #withOptions(java.util.Set)
+     * @see #withVersion(int)
+     * @return this
+     */
+    AsyncPathable<AsyncStage<Void>> withOptionsAndVersion(Set<DeleteOption> options, int version);
+
+    /**
+     * Changes the version number passed to the delete() method. By default, -1 is used
      *
      * @param version version to use
      * @return this
      */
-    AsyncPathAndBytesable<CuratorOp> withVersion(int version);
-
-    /**
-     * Cause the data to be compressed using the configured compression provider
-     *
-     * @return this
-     */
-    AsyncPathAndBytesable<CuratorOp> compressed();
-
-    /**
-     * Cause the data to be compressed using the configured compression provider.
-     * Also changes the version number used. By default, -1 is used
-     *
-     * @param version version to use
-     * @return this
-     */
-    AsyncPathAndBytesable<CuratorOp> withVersionCompressed(int version);
+    AsyncPathable<AsyncStage<Void>> withVersion(int version);
 }

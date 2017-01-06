@@ -16,20 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
 
-import org.apache.curator.framework.api.transaction.CuratorOp;
+package org.apache.curator.x.async.api;
 
 /**
- * @see org.apache.curator.x.async.AsyncTransactionOp#delete()
+ * Terminal operation for various builders
  */
-public interface AsyncTransactionDeleteBuilder extends AsyncPathable<CuratorOp>
+public interface AsyncPathAndBytesable<T> extends AsyncPathable<T>
 {
     /**
-     * Changes the version number used. By default, -1 is used
+     * Commit the currently building operation using the given path and data
+     * and invoke ZooKeeper
      *
-     * @param version version to use
-     * @return this
+     * @param path the path
+     * @param data the data
+     * @return usually an async stage
      */
-    AsyncPathable<CuratorOp> withVersion(int version);
+    T forPath(String path, byte[] data);
 }

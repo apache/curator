@@ -16,19 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async;
+package org.apache.curator.x.async.api;
+
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.data.Stat;
+import java.util.Set;
 
 /**
- * Terminal operation for various builders
+ * Builder for ZNode exists
  */
-public interface AsyncPathable<T>
+public interface AsyncExistsBuilder extends AsyncPathable<AsyncStage<Stat>>
 {
     /**
-     * Commit the currently building operation using the given path
-     * and invoke ZooKeeper
+     * Use the given options. The default is to use no options
      *
-     * @param path the path
-     * @return usually an async stage
+     * @param options options to use
+     * @return this
      */
-    T forPath(String path);
+    AsyncPathable<AsyncStage<Stat>> withOptions(Set<ExistsOption> options);
 }
