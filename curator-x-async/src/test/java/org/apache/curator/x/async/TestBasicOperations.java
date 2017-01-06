@@ -25,11 +25,13 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.Watcher;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 
@@ -86,6 +88,24 @@ public class TestBasicOperations extends BaseClassForTests
             Assert.assertNull(e);
             return null;
         });
+    }
+
+    @Test
+    public void testWatching()
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        client.watched().checkExists().forPath("/test").event().whenComplete((event, exception) -> {
+            Assert.assertNull(exception);
+            Assert.assertEquals(event.getType(), Watcher.Event.EventType.NodeCreated);
+            latch.countDown();
+        });
+        client.create().forPath("/test");
+        Assert.assertTrue(timing.awaitLatch(latch));
+    }
+
+    private <T, U> void complete(CompletionStage<T> stage)
+    {
+        complete(stage, (v, e) -> null);
     }
 
     private <T, U> void complete(CompletionStage<T> stage, BiFunction<? super T, Throwable, ? extends U> handler)

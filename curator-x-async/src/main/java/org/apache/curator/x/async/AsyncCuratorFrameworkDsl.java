@@ -95,5 +95,5 @@ public interface AsyncCuratorFrameworkDsl extends WatchedAsyncCuratorFramework
      * Start a remove watches builder.
      * @return builder object
      */
-    AsyncRemoveWatchesBuilder watches();
+    AsyncRemoveWatchesBuilder removeWatches();
 }

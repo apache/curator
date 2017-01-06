@@ -138,7 +138,7 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public AsyncRemoveWatchesBuilder watches()
+    public AsyncRemoveWatchesBuilder removeWatches()
     {
         return new AsyncRemoveWatchesBuilderImpl(client, unhandledErrorListener);
     }
