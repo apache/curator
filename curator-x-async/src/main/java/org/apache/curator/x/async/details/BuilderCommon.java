@@ -20,6 +20,7 @@ package org.apache.curator.x.async.details;
 
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.Backgrounding;
+import org.apache.curator.x.async.WatchMode;
 
 class BuilderCommon<T>
 {
@@ -27,9 +28,14 @@ class BuilderCommon<T>
     final Backgrounding backgrounding;
     final InternalWatcher watcher;
 
-    BuilderCommon(UnhandledErrorListener unhandledErrorListener, boolean watched, BackgroundProc<T> proc)
+    BuilderCommon(UnhandledErrorListener unhandledErrorListener, BackgroundProc<T> proc)
     {
-        watcher = watched ? new InternalWatcher() : null;
+        this(unhandledErrorListener, null, proc);
+    }
+
+    BuilderCommon(UnhandledErrorListener unhandledErrorListener, WatchMode watchMode, BackgroundProc<T> proc)
+    {
+        watcher = (watchMode != null) ? new InternalWatcher(watchMode) : null;
         internalCallback = new InternalCallback<>(proc, watcher);
         backgrounding = new Backgrounding(internalCallback, unhandledErrorListener);
     }

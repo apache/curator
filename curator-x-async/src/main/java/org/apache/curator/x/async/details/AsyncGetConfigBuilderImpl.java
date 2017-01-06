@@ -21,6 +21,7 @@ package org.apache.curator.x.async.details;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.GetConfigBuilderImpl;
+import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncEnsemblable;
 import org.apache.curator.x.async.api.AsyncGetConfigBuilder;
 import org.apache.curator.x.async.AsyncStage;
@@ -33,14 +34,14 @@ class AsyncGetConfigBuilderImpl implements AsyncGetConfigBuilder
 {
     private final CuratorFrameworkImpl client;
     private final UnhandledErrorListener unhandledErrorListener;
-    private final boolean watched;
+    private final WatchMode watchMode;
     private Stat stat = null;
 
-    AsyncGetConfigBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, boolean watched)
+    AsyncGetConfigBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, WatchMode watchMode)
     {
         this.client = client;
         this.unhandledErrorListener = unhandledErrorListener;
-        this.watched = watched;
+        this.watchMode = watchMode;
     }
 
     @Override
@@ -53,7 +54,7 @@ class AsyncGetConfigBuilderImpl implements AsyncGetConfigBuilder
     @Override
     public AsyncStage<byte[]> forEnsemble()
     {
-        BuilderCommon<byte[]> common = new BuilderCommon<>(unhandledErrorListener, watched, dataProc);
+        BuilderCommon<byte[]> common = new BuilderCommon<>(unhandledErrorListener, watchMode, dataProc);
         GetConfigBuilderImpl builder = new GetConfigBuilderImpl(client, common.backgrounding, common.watcher, stat);
         return safeCall(common.internalCallback, builder::forEnsemble);
     }

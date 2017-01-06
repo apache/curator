@@ -21,6 +21,7 @@ package org.apache.curator.x.async.details;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.ExistsBuilderImpl;
+import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncExistsBuilder;
 import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.AsyncStage;
@@ -37,14 +38,14 @@ class AsyncExistsBuilderImpl implements AsyncExistsBuilder
 {
     private final CuratorFrameworkImpl client;
     private final UnhandledErrorListener unhandledErrorListener;
-    private final boolean watched;
+    private final WatchMode watchMode;
     private Set<ExistsOption> options = Collections.emptySet();
 
-    AsyncExistsBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, boolean watched)
+    AsyncExistsBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, WatchMode watchMode)
     {
         this.client = client;
         this.unhandledErrorListener = unhandledErrorListener;
-        this.watched = watched;
+        this.watchMode = watchMode;
     }
 
     @Override
@@ -57,7 +58,7 @@ class AsyncExistsBuilderImpl implements AsyncExistsBuilder
     @Override
     public AsyncStage<Stat> forPath(String path)
     {
-        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, watched, safeStatProc);
+        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, watchMode, safeStatProc);
         ExistsBuilderImpl builder = new ExistsBuilderImpl(client, common.backgrounding, common.watcher, options.contains(ExistsOption.createParentsIfNeeded), options.contains(ExistsOption.createParentsAsContainers));
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }

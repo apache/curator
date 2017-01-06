@@ -53,12 +53,27 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
     CuratorFramework unwrap();
 
     /**
+     * <p>
      * Returns a facade that adds watching to any of the subsequently created builders. i.e. all
-     * operations on the WatchedAsyncCuratorFramework facade will have watchers set.
+     * operations on the WatchableAsyncCuratorFramework facade will have watchers set. Also,
+     * the {@link org.apache.curator.x.async.AsyncStage} returned from these builders will
+     * have a loaded staged watcher that is accessed from {@link org.apache.curator.x.async.AsyncStage#event()}
+     * </p>
+     *
+     * <p>
+     * {@link WatchMode#stateChangeAndSuccess} is used
+     * </p>
      *
      * @return watcher facade
      */
     WatchableAsyncCuratorFramework watched();
+
+    /**
+     * Same as {@link #watched()} but allows specifying the watch mode
+     *
+     * @return watcher facade
+     */
+    WatchableAsyncCuratorFramework watched(WatchMode mode);
 
     /**
      * Returns a facade that adds the given UnhandledErrorListener to all background operations

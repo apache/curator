@@ -18,41 +18,68 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.zookeeper.KeeperException;
+import org.apache.curator.x.async.AsyncEventException;
+import org.apache.curator.x.async.WatchMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
-class InternalWatcher extends CompletableFuture<WatchedEvent> implements Watcher
+class InternalWatcher implements Watcher
 {
+    private final WatchMode watchMode;
+    private volatile CompletableFuture<WatchedEvent> future = new CompletableFuture<>();
+
+    InternalWatcher(WatchMode watchMode)
+    {
+        this.watchMode = watchMode;
+    }
+
+    CompletableFuture<WatchedEvent> getFuture()
+    {
+        return future;
+    }
+
     @Override
     public void process(WatchedEvent event)
     {
         switch ( event.getState() )
         {
-            case ConnectedReadOnly:
-            case SyncConnected:
-            case SaslAuthenticated:
+            default:
             {
-                complete(event);
+                if ( (watchMode != WatchMode.stateChangeOnly) && (event.getType() != Event.EventType.None) )
+                {
+                    if ( !future.complete(event) )
+                    {
+                        future.obtrudeValue(event);
+                    }
+                }
                 break;
             }
 
             case Disconnected:
-            {
-                completeExceptionally(KeeperException.create(KeeperException.Code.CONNECTIONLOSS));
-                break;
-            }
-
             case AuthFailed:
-            {
-                completeExceptionally(KeeperException.create(KeeperException.Code.AUTHFAILED));
-                break;
-            }
-
             case Expired:
             {
-                completeExceptionally(KeeperException.create(KeeperException.Code.SESSIONEXPIRED));
+                if ( watchMode != WatchMode.successOnly )
+                {
+                    AsyncEventException exception = new AsyncEventException()
+                    {
+                        @Override
+                        public Event.KeeperState getKeeperState()
+                        {
+                            return event.getState();
+                        }
+
+                        @Override
+                        public CompletionStage<WatchedEvent> reset()
+                        {
+                            future = new CompletableFuture<>();
+                            return future;
+                        }
+                    };
+                    future.completeExceptionally(exception);
+                }
                 break;
             }
         }

@@ -116,7 +116,7 @@ class AsyncReconfigBuilderImpl implements AsyncReconfigBuilder, AsyncEnsemblable
     @Override
     public AsyncStage<Void> forEnsemble()
     {
-        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, false, ignoredProc);
+        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, ignoredProc);
         ReconfigBuilderImpl builder = new ReconfigBuilderImpl(client, common.backgrounding, stat, fromConfig, newMembers, joining, leaving);
         return safeCall(common.internalCallback, () -> {
             builder.forEnsemble();

@@ -69,7 +69,7 @@ class AsyncDeleteBuilderImpl implements AsyncDeleteBuilder
     @Override
     public AsyncStage<Void> forPath(String path)
     {
-        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, false, ignoredProc);
+        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, ignoredProc);
         DeleteBuilderImpl builder = new DeleteBuilderImpl(client, version, common.backgrounding, options.contains(DeleteOption.deletingChildrenIfNeeded), options.contains(DeleteOption.guaranteed), options.contains(DeleteOption.quietly));
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }

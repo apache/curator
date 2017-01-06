@@ -40,7 +40,7 @@ class InternalCallback<T> extends CompletableFuture<T> implements BackgroundCall
     @Override
     public CompletionStage<WatchedEvent> event()
     {
-        return watcher;
+        return (watcher != null) ? watcher.getFuture() : null;
     }
 
     @Override

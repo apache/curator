@@ -78,7 +78,7 @@ class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder
 
     private AsyncStage<Stat> internalForPath(String path, byte[] data, boolean useData)
     {
-        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, false, statProc);
+        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, statProc);
         SetDataBuilderImpl builder = new SetDataBuilderImpl(client, common.backgrounding, version, compressed);
         return safeCall(common.internalCallback, () -> useData ? builder.forPath(path, data) : builder.forPath(path));
     }

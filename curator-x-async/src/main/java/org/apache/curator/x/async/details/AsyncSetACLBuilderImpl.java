@@ -62,7 +62,7 @@ class AsyncSetACLBuilderImpl implements AsyncSetACLBuilder, AsyncPathable<AsyncS
     @Override
     public AsyncStage<Stat> forPath(String path)
     {
-        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, false, statProc);
+        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, statProc);
         SetACLBuilderImpl builder = new SetACLBuilderImpl(client, common.backgrounding, aclList, version);
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }

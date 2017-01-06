@@ -160,7 +160,7 @@ class AsyncRemoveWatchesBuilderImpl implements AsyncRemoveWatchesBuilder, AsyncP
     @Override
     public AsyncStage<Void> forPath(String path)
     {
-        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, false, ignoredProc);
+        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, ignoredProc);
         RemoveWatchesBuilderImpl builder = new RemoveWatchesBuilderImpl(client,
             watcher,
             curatorWatcher,

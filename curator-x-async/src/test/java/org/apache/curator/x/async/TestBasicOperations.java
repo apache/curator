@@ -25,13 +25,17 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import java.io.IOException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import static java.util.EnumSet.of;
@@ -99,6 +103,33 @@ public class TestBasicOperations extends BaseClassForTests
         Assert.assertTrue(timing.awaitLatch(latch));
     }
 
+    @Test
+    public void testWatchingWithServerLoss() throws Exception
+    {
+        AsyncStage<Stat> stage = client.watched().checkExists().forPath("/test");
+        stage.thenRun(() -> {
+            try
+            {
+                server.stop();
+            }
+            catch ( IOException e )
+            {
+                // ignore
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+        complete(stage.event(), (v, e) -> {
+            Assert.assertTrue(e instanceof AsyncEventException);
+            Assert.assertEquals(((AsyncEventException)e).getKeeperState(), Watcher.Event.KeeperState.Disconnected);
+            ((AsyncEventException)e).reset().thenRun(latch::countDown);
+        });
+
+        server.restart();
+        client.create().forPath("/test");
+        Assert.assertTrue(timing.awaitLatch(latch));
+    }
+
     private <T, U> void complete(CompletionStage<T> stage)
     {
         complete(stage, (v, e) -> {});
@@ -111,7 +142,7 @@ public class TestBasicOperations extends BaseClassForTests
             stage.handle((v, e) -> {
                 handler.accept(v, e);
                 return null;
-            }).toCompletableFuture().get();
+            }).toCompletableFuture().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
         }
         catch ( InterruptedException e )
         {
@@ -124,6 +155,10 @@ public class TestBasicOperations extends BaseClassForTests
                 throw (AssertionError)e.getCause();
             }
             Assert.fail("get() failed", e);
+        }
+        catch ( TimeoutException e )
+        {
+            Assert.fail("get() timed out");
         }
     }
 }
