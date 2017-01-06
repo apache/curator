@@ -20,42 +20,50 @@ package org.apache.curator.x.async.details;
 
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
-import org.apache.curator.framework.imps.GetChildrenBuilderImpl;
-import org.apache.curator.x.async.AsyncGetChildrenBuilder;
+import org.apache.curator.framework.imps.SetACLBuilderImpl;
 import org.apache.curator.x.async.AsyncPathable;
+import org.apache.curator.x.async.AsyncSetACLBuilder;
 import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 
-import static org.apache.curator.x.async.details.BackgroundProcs.childrenProc;
 import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
+import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
 
-class AsyncGetChildrenBuilderImpl implements AsyncGetChildrenBuilder
+class AsyncSetACLBuilderImpl implements AsyncSetACLBuilder, AsyncPathable<AsyncStage<Stat>>
 {
     private final CuratorFrameworkImpl client;
     private final UnhandledErrorListener unhandledErrorListener;
-    private final boolean watched;
-    private Stat stat = null;
+    private int version = -1;
+    private List<ACL> aclList = null;
 
-    AsyncGetChildrenBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, boolean watched)
+    AsyncSetACLBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
     {
         this.client = client;
         this.unhandledErrorListener = unhandledErrorListener;
-        this.watched = watched;
     }
 
     @Override
-    public AsyncStage<List<String>> forPath(String path)
+    public AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList)
     {
-        BuilderCommon<List<String>> common = new BuilderCommon<>(unhandledErrorListener, watched, childrenProc);
-        GetChildrenBuilderImpl builder = new GetChildrenBuilderImpl(client, common.watcher, common.backgrounding, stat);
-        return safeCall(common.internalCallback, () -> builder.forPath(path));
-    }
-
-    @Override
-    public AsyncPathable<AsyncStage<List<String>>> storingStatIn(Stat stat)
-    {
-        this.stat = stat;
+        this.aclList = aclList;
         return this;
+    }
+
+    @Override
+    public AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList, int version)
+    {
+        this.aclList = aclList;
+        this.version = version;
+        return this;
+    }
+
+    @Override
+    public AsyncStage<Stat> forPath(String path)
+    {
+        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, false, statProc);
+        SetACLBuilderImpl builder = new SetACLBuilderImpl(client, common.backgrounding, aclList, version);
+        return safeCall(common.internalCallback, () -> builder.forPath(path));
     }
 }

@@ -16,22 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.crimps.async;
+package org.apache.curator.x.async;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.transaction.CuratorOp;
-import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
-public interface AsyncMultiTransaction
+public interface AsyncGetACLBuilder extends
+    AsyncPathable<AsyncStage<List<ACL>>>
 {
     /**
-     * Commit the given operations as a single transaction. Create the
-     * operation instances via {@link CuratorFramework#transactionOp()}
+     * Have the operation fill the provided stat object
      *
-     * @param operations operations that make up the transaction.
-     * @return result details for foreground operations or <code>null</code> for background operations
+     * @param stat the stat to have filled in
+     * @return this
      */
-    CompletionStage<List<CuratorTransactionResult>> forOperations(List<CuratorOp> operations);
+    AsyncPathable<AsyncStage<List<ACL>>> storingStatIn(Stat stat);
 }

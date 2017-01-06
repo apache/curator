@@ -16,16 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.crimps.async;
+package org.apache.curator.x.async;
 
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
+import java.util.List;
 
-public interface AsyncDeleteBuilder extends AsyncPathable<CompletionStage<Void>>
+public interface AsyncSetACLBuilder
 {
-    AsyncPathable<CompletionStage<Void>> withOptions(Set<DeleteOption> options);
+    AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList);
 
-    AsyncPathable<CompletionStage<Void>> withOptionsAndVersion(Set<DeleteOption> options, int version);
-
-    AsyncPathable<CompletionStage<Void>> withVersion(int version);
+    AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList, int version);
 }
