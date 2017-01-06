@@ -22,16 +22,15 @@ import org.apache.curator.framework.api.ConfigureEnsembleable;
 import org.apache.curator.framework.api.Ensembleable;
 import org.apache.curator.framework.api.Statable;
 import org.apache.zookeeper.data.Stat;
-import java.util.concurrent.CompletionStage;
 
-class CrimpedEnsembleableImpl implements CrimpedEnsembleable
+class CrimpedWatchedEnsembleableImpl implements CrimpedWatchedEnsembleable
 {
     private final CrimpedBackgroundCallback<byte[]> callback;
     private final Statable<ConfigureEnsembleable> configBuilder;
     private Ensembleable<byte[]> ensembleable;
     private ConfigureEnsembleable configureEnsembleable;
 
-    CrimpedEnsembleableImpl(Statable<ConfigureEnsembleable> configBuilder, CrimpedBackgroundCallback<byte[]> callback)
+    CrimpedWatchedEnsembleableImpl(Statable<ConfigureEnsembleable> configBuilder, CrimpedBackgroundCallback<byte[]> callback)
     {
         this.configBuilder = configBuilder;
         this.callback = callback;
@@ -39,7 +38,7 @@ class CrimpedEnsembleableImpl implements CrimpedEnsembleable
         ensembleable = configureEnsembleable;
     }
 
-    CrimpedEnsembleableImpl(Ensembleable<byte[]> ensembleable, CrimpedBackgroundCallback<byte[]> callback)
+    CrimpedWatchedEnsembleableImpl(Ensembleable<byte[]> ensembleable, CrimpedBackgroundCallback<byte[]> callback)
     {
         this.ensembleable = ensembleable;
         this.configBuilder = null;
@@ -48,7 +47,7 @@ class CrimpedEnsembleableImpl implements CrimpedEnsembleable
     }
 
     @Override
-    public CompletionStage<byte[]> forEnsemble()
+    public Crimped<byte[]> forEnsemble()
     {
         try
         {
@@ -62,14 +61,14 @@ class CrimpedEnsembleableImpl implements CrimpedEnsembleable
     }
 
     @Override
-    public CrimpedConfigEnsembleable<CompletionStage<byte[]>> storingStatIn(Stat stat)
+    public CrimpedConfigEnsembleable<Crimped<byte[]>> storingStatIn(Stat stat)
     {
         ensembleable = configureEnsembleable = configBuilder.storingStatIn(stat);
         return this;
     }
 
     @Override
-    public CrimpledEnsembleable<CompletionStage<byte[]>> fromConfig(long config)
+    public CrimpledEnsembleable<Crimped<byte[]>> fromConfig(long config)
     {
         try
         {

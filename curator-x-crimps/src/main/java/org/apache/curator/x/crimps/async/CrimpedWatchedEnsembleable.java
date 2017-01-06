@@ -18,13 +18,12 @@
  */
 package org.apache.curator.x.crimps.async;
 
-public interface CrimpedConfigEnsembleable<T> extends
-    CrimpledEnsembleable<T>
+import org.apache.curator.framework.api.Statable;
+import java.util.concurrent.CompletionStage;
+
+public interface CrimpedWatchedEnsembleable extends
+    CrimpedConfigEnsembleable<Crimped<byte[]>>,
+    Statable<CrimpedConfigEnsembleable<Crimped<byte[]>>>,
+    CrimpledEnsembleable<Crimped<byte[]>>
 {
-    /**
-     * Sets the configuration version to use.
-     * @param config The version of the configuration.
-     * @return this
-     */
-    CrimpledEnsembleable<T> fromConfig(long config);
 }

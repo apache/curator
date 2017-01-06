@@ -22,8 +22,8 @@ import org.apache.curator.framework.api.Statable;
 import java.util.concurrent.CompletionStage;
 
 public interface CrimpedEnsembleable extends
-    CrimpedConfigEnsembleable,
-    Statable<CrimpedConfigEnsembleable>,
+    CrimpedConfigEnsembleable<CompletionStage<byte[]>>,
+    Statable<CrimpedConfigEnsembleable<CompletionStage<byte[]>>>,
     CrimpledEnsembleable<CompletionStage<byte[]>>
 {
 }

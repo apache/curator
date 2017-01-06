@@ -28,16 +28,18 @@ import java.util.concurrent.CompletionStage;
 class CrimpedBackgroundCallback<T> extends CompletableFuture<T> implements BackgroundCallback, Crimped<T>
 {
     private final BackgroundProc<T> resultFunction;
+    private final CrimpedWatcher watcher;
 
-    CrimpedBackgroundCallback(BackgroundProc<T> resultFunction)
+    CrimpedBackgroundCallback(BackgroundProc<T> resultFunction, CrimpedWatcher watcher)
     {
         this.resultFunction = resultFunction;
+        this.watcher = watcher;
     }
 
     @Override
     public CompletionStage<WatchedEvent> event()
     {
-        return null;
+        return watcher;
     }
 
     @Override

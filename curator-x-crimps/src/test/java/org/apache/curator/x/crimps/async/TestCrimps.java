@@ -108,16 +108,9 @@ public class TestCrimps extends BaseClassForTests
         {
             client.start();
 
-            CompletionStage<Stat> f = async.safeStat(client.checkExists()).forPath("/test");
+            CompletionStage<Stat> f = async.stat(client.checkExists()).forPath("/test");
             complete(f.handle((stat, e) -> {
                 Assert.assertNull(e);
-                Assert.assertNull(stat);
-                return null;
-            }));
-
-            f = async.stat(client.checkExists()).forPath("/test");
-            complete(f.handle((stat, e) -> {
-                Assert.assertNotNull(e);
                 Assert.assertNull(stat);
                 return null;
             }));
