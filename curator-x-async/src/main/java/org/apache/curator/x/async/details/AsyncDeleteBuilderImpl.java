@@ -39,7 +39,7 @@ class AsyncDeleteBuilderImpl implements AsyncDeleteBuilder
     private Set<DeleteOption> options = Collections.emptySet();
     private int version = -1;
 
-    public AsyncDeleteBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
+    AsyncDeleteBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
     {
         this.client = client;
         this.unhandledErrorListener = unhandledErrorListener;

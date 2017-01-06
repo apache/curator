@@ -20,7 +20,16 @@ package org.apache.curator.x.async;
 
 import org.apache.zookeeper.data.Stat;
 
+/**
+ * Builder for getConfig()
+ */
 public interface AsyncGetConfigBuilder extends AsyncEnsemblable<AsyncStage<byte[]>>
 {
+    /**
+     * Have the operation fill the provided stat object
+     *
+     * @param stat the stat to have filled in
+     * @return this
+     */
     AsyncEnsemblable<AsyncStage<byte[]>> storingStatIn(Stat stat);
 }

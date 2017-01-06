@@ -34,7 +34,7 @@ import java.util.Set;
 import static org.apache.curator.x.async.details.BackgroundProcs.ignoredProc;
 import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 
-class AsyncRemoveWatchesBuilderImpl implements AsyncRemoveWatchesBuilder
+class AsyncRemoveWatchesBuilderImpl implements AsyncRemoveWatchesBuilder, AsyncPathable<AsyncStage<Void>>
 {
     private final CuratorFrameworkImpl client;
     private final UnhandledErrorListener unhandledErrorListener;

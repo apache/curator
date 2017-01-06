@@ -20,8 +20,10 @@ package org.apache.curator.x.async;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
 
-public interface AsyncTransactionSetDataBuilder extends
-    AsyncPathAndBytesable<CuratorOp>
+/**
+ * @see org.apache.curator.x.async.AsyncTransactionOp#setData()
+ */
+public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<CuratorOp>
 {
     AsyncPathAndBytesable<CuratorOp> withVersion(int version);
 

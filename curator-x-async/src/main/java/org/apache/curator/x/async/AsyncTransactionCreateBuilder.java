@@ -23,6 +23,9 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
 
+/**
+ * @see org.apache.curator.x.async.AsyncTransactionOp#create()
+ */
 public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<CuratorOp>
 {
     AsyncPathable<CuratorOp> withMode(CreateMode createMode);

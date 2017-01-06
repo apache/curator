@@ -21,7 +21,17 @@ package org.apache.curator.x.async;
 import org.apache.zookeeper.WatchedEvent;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * A {@link java.util.concurrent.CompletionStage} that is the result of most operations.
+ */
 public interface AsyncStage<T> extends CompletionStage<T>
 {
+    /**
+     * If the {@link org.apache.curator.x.async.WatchedAsyncCuratorFramework} facade is
+     * used (via {@link AsyncCuratorFramework#watched()}), this returns the completion
+     * stage used when the watcher is triggered
+     *
+     * @return CompletionStage for the set watcher or <code>null</code>
+     */
     CompletionStage<WatchedEvent> event();
 }

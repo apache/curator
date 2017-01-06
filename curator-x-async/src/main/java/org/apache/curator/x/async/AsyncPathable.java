@@ -18,13 +18,17 @@
  */
 package org.apache.curator.x.async;
 
+/**
+ * Terminal operation for various builders
+ */
 public interface AsyncPathable<T>
 {
     /**
      * Commit the currently building operation using the given path
+     * and invoke ZooKeeper
      *
      * @param path the path
-     * @return operation result if any
+     * @return usually an async stage
      */
     T forPath(String path);
 }

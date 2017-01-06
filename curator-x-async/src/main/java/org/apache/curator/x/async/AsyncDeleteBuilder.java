@@ -20,11 +20,35 @@ package org.apache.curator.x.async;
 
 import java.util.Set;
 
+/**
+ * Builder for ZNode deletions
+ */
 public interface AsyncDeleteBuilder extends AsyncPathable<AsyncStage<Void>>
 {
+    /**
+     * Changes the deletion options. By default, no options are used
+     *
+     * @param options set of deletion options
+     * @return this
+     */
     AsyncPathable<AsyncStage<Void>> withOptions(Set<DeleteOption> options);
 
+    /**
+     * Set options and version.
+     *
+     * @param options set of deletion options
+     * @param version version to use
+     * @see #withOptions(java.util.Set)
+     * @see #withVersion(int)
+     * @return this
+     */
     AsyncPathable<AsyncStage<Void>> withOptionsAndVersion(Set<DeleteOption> options, int version);
 
+    /**
+     * Changes the version number passed to the delete() method. By default, -1 is ued
+     *
+     * @param version version to use
+     * @return this
+     */
     AsyncPathable<AsyncStage<Void>> withVersion(int version);
 }

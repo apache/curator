@@ -23,18 +23,46 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.details.AsyncCuratorFrameworkImpl;
 
 /**
- * Zookeeper framework-style client
+ * Zookeeper framework-style client that returns composable async operations
+ * that implement {@link java.util.concurrent.CompletionStage}
  */
 public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
 {
+    /**
+     * Takes an old-style Curator instance and returns a new async instance that
+     * wraps it. Note: the instance must have been created through a chain that
+     * leads back to {@link org.apache.curator.framework.CuratorFrameworkFactory}. i.e.
+     * you can have derived instances such as {@link org.apache.curator.framework.WatcherRemoveCuratorFramework}
+     * etc. but the original client must have been created by the Factory.
+     *
+     * @param client instance to wrap
+     * @return wrapped instance
+     */
     static AsyncCuratorFramework wrap(CuratorFramework client)
     {
         return new AsyncCuratorFrameworkImpl(client);
     }
 
+    /**
+     * Returns the client that was originally passed to {@link #wrap(org.apache.curator.framework.CuratorFramework)}
+     *
+     * @return original client
+     */
     CuratorFramework unwrap();
 
+    /**
+     * Returns a facade that adds watching to any of the subsequently created builders. i.e. all
+     * operations on the WatchedAsyncCuratorFramework facade will have watchers set.
+     *
+     * @return watcher facade
+     */
     WatchedAsyncCuratorFramework watched();
 
+    /**
+     * Returns a facade that adds the given UnhandledErrorListener to all background operations
+     *
+     * @param listener lister to use
+     * @return facade
+     */
     AsyncCuratorFrameworkDsl withUnhandledErrorListener(UnhandledErrorListener listener);
 }

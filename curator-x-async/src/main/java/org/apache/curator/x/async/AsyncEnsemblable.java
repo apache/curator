@@ -18,12 +18,15 @@
  */
 package org.apache.curator.x.async;
 
+/**
+ * Terminal operation for config/reconfig builders
+ */
 public interface AsyncEnsemblable<T>
 {
     /**
-     * Commit the currently building operation
+     * Commit the currently building operation and invoke ZooKeeper
      *
-     * @return operation result if any
+     * @return async stage
      */
     T forEnsemble();
 }

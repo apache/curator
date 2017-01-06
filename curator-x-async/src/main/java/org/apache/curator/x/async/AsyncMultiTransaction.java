@@ -22,11 +22,14 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import java.util.List;
 
+/**
+ * Terminal operation to support multi/transactions
+ */
 public interface AsyncMultiTransaction
 {
     /**
-     * Commit the given operations as a single transaction. Create the
-     * operation instances via {@link AsyncCuratorFramework#transactionOp()}
+     * Invoke ZooKeeper to commit the given operations as a single transaction. Create the
+     * operation instances via {@link org.apache.curator.x.async.AsyncCuratorFramework#transactionOp()}
      *
      * @param operations operations that make up the transaction.
      * @return AsyncStage instance for managing the completion

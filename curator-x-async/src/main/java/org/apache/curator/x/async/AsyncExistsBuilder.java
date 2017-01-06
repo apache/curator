@@ -18,26 +18,19 @@
  */
 package org.apache.curator.x.async;
 
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
+import java.util.Set;
 
-public interface AsyncExistsBuilder
-    extends AsyncPathable<AsyncStage<Stat>>
+/**
+ * Builder for ZNode exists
+ */
+public interface AsyncExistsBuilder extends AsyncPathable<AsyncStage<Stat>>
 {
     /**
-     * Causes any parent nodes to get created if they haven't already been
+     * Use the given options. The default is to use no options
      *
+     * @param options options to use
      * @return this
      */
-    AsyncPathable<AsyncStage<Stat>> creatingParentsIfNeeded();
-
-    /**
-     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
-     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
-     * If the ZooKeeper version you're using does not support containers, the parent nodes
-     * are created as ordinary PERSISTENT nodes.
-     *
-     * @return this
-     */
-    AsyncPathable<AsyncStage<Stat>> creatingParentContainersIfNeeded();
+    AsyncPathable<AsyncStage<Stat>> withOptions(Set<ExistsOption> options);
 }

@@ -22,8 +22,10 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 
-public interface AsyncGetACLBuilder extends
-    AsyncPathable<AsyncStage<List<ACL>>>
+/**
+ * Builder for getAcls
+ */
+public interface AsyncGetACLBuilder extends AsyncPathable<AsyncStage<List<ACL>>>
 {
     /**
      * Have the operation fill the provided stat object

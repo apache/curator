@@ -19,14 +19,18 @@
 
 package org.apache.curator.x.async;
 
+/**
+ * Terminal operation for various builders
+ */
 public interface AsyncPathAndBytesable<T> extends AsyncPathable<T>
 {
     /**
      * Commit the currently building operation using the given path and data
+     * and invoke ZooKeeper
      *
      * @param path the path
      * @param data the data
-     * @return operation result if any
+     * @return usually an async stage
      */
     T forPath(String path, byte[] data);
 }

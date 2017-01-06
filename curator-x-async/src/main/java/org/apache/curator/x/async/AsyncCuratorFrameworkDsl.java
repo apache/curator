@@ -84,15 +84,15 @@ public interface AsyncCuratorFrameworkDsl extends WatchedAsyncCuratorFramework
     AsyncTransactionOp transactionOp();
 
     /**
-     * Start a sync builder. Note: sync is ALWAYS in the background even
-     * if you don't use one of the background() methods
+     * Start a sync builder
      *
      * @return builder object
      */
     AsyncSyncBuilder sync();
 
     /**
-     * Start a remove watches builder.
+     * Start a remove watches builder
+     *
      * @return builder object
      */
     AsyncRemoveWatchesBuilder removeWatches();

@@ -20,8 +20,10 @@ package org.apache.curator.x.async;
 
 import org.apache.zookeeper.data.Stat;
 
-public interface AsyncGetDataBuilder extends
-    AsyncPathable<AsyncStage<byte[]>>
+/**
+ * Builder to get ZNode data
+ */
+public interface AsyncGetDataBuilder extends AsyncPathable<AsyncStage<byte[]>>
 {
     /**
      * Cause the data to be de-compressed using the configured compression provider
@@ -39,9 +41,11 @@ public interface AsyncGetDataBuilder extends
     AsyncPathable<AsyncStage<byte[]>> storingStatIn(Stat stat);
 
     /**
-     * Have the operation fill the provided stat object
+     * Have the operation fill the provided stat object and have the data be de-compressed
      *
      * @param stat the stat to have filled in
+     * @see #decompressed()
+     * @see #storingStatIn(org.apache.zookeeper.data.Stat)
      * @return this
      */
     AsyncPathable<AsyncStage<byte[]>> decompressedStoringStatIn(Stat stat);

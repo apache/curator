@@ -24,8 +24,10 @@ import org.apache.zookeeper.data.Stat;
 import java.util.List;
 import java.util.Set;
 
-public interface AsyncCreateBuilder extends
-    AsyncPathAndBytesable<AsyncStage<String>>
+/**
+ * Builder for ZNode creates
+ */
+public interface AsyncCreateBuilder extends AsyncPathAndBytesable<AsyncStage<String>>
 {
     /**
      * Have the operation fill the provided stat object
@@ -35,17 +37,78 @@ public interface AsyncCreateBuilder extends
      */
     AsyncPathAndBytesable<AsyncStage<String>> storingStatIn(Stat stat);
 
+    /**
+     * Use the given create mode. The default is {@link org.apache.zookeeper.CreateMode#PERSISTENT}
+     *
+     * @param createMode mode to use
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<String>> withMode(CreateMode createMode);
 
+    /**
+     * Set an ACL list (default is {@link org.apache.zookeeper.ZooDefs.Ids#OPEN_ACL_UNSAFE})
+     *
+     * @param aclList the ACL list to use
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<String>> withACL(List<ACL> aclList);
 
+    /**
+     * Options to change how the ZNode is created
+     *
+     * @param options options
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options);
 
+    /**
+     * set options and ACLs
+     *
+     * @param options options
+     * @param aclList the ACL list to use
+     * @see #withOptions(java.util.Set)
+     * @see #withACL(java.util.List)
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, List<ACL> aclList);
 
+    /**
+     * set options, mode and ACLs
+     *
+     * @param options options
+     * @param createMode mode to use
+     * @param aclList the ACL list to use
+     * @see #withACL(java.util.List)
+     * @see #withOptions(java.util.Set)
+     * @see #withMode(org.apache.zookeeper.CreateMode)
+     * @see #withACL(java.util.List)
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList);
 
+    /**
+     * set options and mode
+     *
+     * @param options options
+     * @param createMode mode to use
+     * @see #withOptions(java.util.Set)
+     * @see #withMode(org.apache.zookeeper.CreateMode)
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode);
 
+    /**
+     * set options, mode, ACLs, and stat
+     *
+     * @param options options
+     * @param createMode mode to use
+     * @param aclList the ACL list to use
+     * @param stat the stat to have filled in
+     * @see #withOptions(java.util.Set)
+     * @see #withMode(org.apache.zookeeper.CreateMode)
+     * @see #withACL(java.util.List)
+     * @see #storingStatIn(org.apache.zookeeper.data.Stat)
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat);
 }

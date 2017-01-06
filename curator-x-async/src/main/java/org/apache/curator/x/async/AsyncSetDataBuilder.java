@@ -20,6 +20,9 @@ package org.apache.curator.x.async;
 
 import org.apache.zookeeper.data.Stat;
 
+/**
+ * Builder for setting ZNode data
+ */
 public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<AsyncStage<Stat>>
 {
     /**
@@ -29,7 +32,22 @@ public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<AsyncStage<St
      */
     AsyncPathAndBytesable<AsyncStage<Stat>> compressed();
 
+    /**
+     * Cause the data to be compressed using the configured compression provider.
+     * Only sets if the version matches. By default -1 is used
+     * which matches all versions.
+     *
+     * @param version version
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<Stat>> compressedWithVersion(int version);
 
+    /**
+     * Only sets if the version matches. By default -1 is used
+     * which matches all versions.
+     *
+     * @param version version
+     * @return this
+     */
     AsyncPathAndBytesable<AsyncStage<Stat>> withVersion(int version);
 }

@@ -24,7 +24,11 @@ import org.apache.curator.framework.imps.ExistsBuilderImpl;
 import org.apache.curator.x.async.AsyncExistsBuilder;
 import org.apache.curator.x.async.AsyncPathable;
 import org.apache.curator.x.async.AsyncStage;
+import org.apache.curator.x.async.ExistsOption;
 import org.apache.zookeeper.data.Stat;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
 
 import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 import static org.apache.curator.x.async.details.BackgroundProcs.safeStatProc;
@@ -34,8 +38,7 @@ class AsyncExistsBuilderImpl implements AsyncExistsBuilder
     private final CuratorFrameworkImpl client;
     private final UnhandledErrorListener unhandledErrorListener;
     private final boolean watched;
-    private boolean createParentsIfNeeded = false;
-    private boolean createParentContainersIfNeeded = false;
+    private Set<ExistsOption> options = Collections.emptySet();
 
     AsyncExistsBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, boolean watched)
     {
@@ -45,16 +48,9 @@ class AsyncExistsBuilderImpl implements AsyncExistsBuilder
     }
 
     @Override
-    public AsyncPathable<AsyncStage<Stat>> creatingParentsIfNeeded()
+    public AsyncPathable<AsyncStage<Stat>> withOptions(Set<ExistsOption> options)
     {
-        createParentsIfNeeded = true;
-        return this;
-    }
-
-    @Override
-    public AsyncPathable<AsyncStage<Stat>> creatingParentContainersIfNeeded()
-    {
-        createParentContainersIfNeeded = true;
+        this.options = Objects.requireNonNull(options, "options cannot be null");
         return this;
     }
 
@@ -62,7 +58,7 @@ class AsyncExistsBuilderImpl implements AsyncExistsBuilder
     public AsyncStage<Stat> forPath(String path)
     {
         BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, watched, safeStatProc);
-        ExistsBuilderImpl builder = new ExistsBuilderImpl(client, common.backgrounding, common.watcher, createParentsIfNeeded, createParentContainersIfNeeded);
+        ExistsBuilderImpl builder = new ExistsBuilderImpl(client, common.backgrounding, common.watcher, options.contains(ExistsOption.createParentsIfNeeded), options.contains(ExistsOption.createParentsAsContainers));
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }
 }

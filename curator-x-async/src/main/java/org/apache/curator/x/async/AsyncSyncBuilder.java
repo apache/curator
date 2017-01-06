@@ -18,6 +18,9 @@
  */
 package org.apache.curator.x.async;
 
+/**
+ * Builder for syncs
+ */
 public interface AsyncSyncBuilder extends
     AsyncPathable<AsyncStage<Void>>
 {

@@ -22,9 +22,27 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 
+/**
+ * Builder for setting ACLs
+ */
 public interface AsyncSetACLBuilder
 {
+    /**
+     * Set the given ACLs
+     *
+     * @param aclList ACLs to set
+     * @return this
+     */
     AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList);
 
+    /**
+     * Set the given ACLs only if the "a" version matches. By default -1 is used
+     * which matches all versions.
+     *
+     * @param aclList ACLs to set
+     * @param version "a" version
+     * @see org.apache.zookeeper.data.Stat#getAversion()
+     * @return this
+     */
     AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList, int version);
 }
