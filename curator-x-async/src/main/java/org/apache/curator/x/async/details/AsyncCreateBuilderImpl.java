@@ -18,12 +18,11 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CreateBuilderImpl;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncCreateBuilder;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
-import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
@@ -39,16 +38,16 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 class AsyncCreateBuilderImpl implements AsyncCreateBuilder
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private CreateMode createMode = CreateMode.PERSISTENT;
     private List<ACL> aclList = null;
     private Set<CreateOption> options = Collections.emptySet();
     private Stat stat = null;
 
-    AsyncCreateBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
+    AsyncCreateBuilderImpl(CuratorFrameworkImpl client, Filters filters)
     {
         this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.filters = filters;
     }
 
     @Override
@@ -128,7 +127,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
 
     private AsyncStage<String> internalForPath(String path, byte[] data, boolean useData)
     {
-        BuilderCommon<String> common = new BuilderCommon<>(unhandledErrorListener, nameProc);
+        BuilderCommon<String> common = new BuilderCommon<>(filters, nameProc);
         CreateBuilderImpl builder = new CreateBuilderImpl(client,
             createMode,
             common.backgrounding,

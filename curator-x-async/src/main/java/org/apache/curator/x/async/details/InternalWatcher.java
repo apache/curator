@@ -24,15 +24,18 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.UnaryOperator;
 
 class InternalWatcher implements Watcher
 {
     private final WatchMode watchMode;
+    private final UnaryOperator<WatchedEvent> watcherFilter;
     private volatile CompletableFuture<WatchedEvent> future = new CompletableFuture<>();
 
-    InternalWatcher(WatchMode watchMode)
+    InternalWatcher(WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter)
     {
         this.watchMode = watchMode;
+        this.watcherFilter = watcherFilter;
     }
 
     CompletableFuture<WatchedEvent> getFuture()
@@ -43,15 +46,16 @@ class InternalWatcher implements Watcher
     @Override
     public void process(WatchedEvent event)
     {
-        switch ( event.getState() )
+        final WatchedEvent localEvent = (watcherFilter != null) ? watcherFilter.apply(event) : event;
+        switch ( localEvent.getState() )
         {
             default:
             {
-                if ( (watchMode != WatchMode.stateChangeOnly) && (event.getType() != Event.EventType.None) )
+                if ( (watchMode != WatchMode.stateChangeOnly) && (localEvent.getType() != Event.EventType.None) )
                 {
-                    if ( !future.complete(event) )
+                    if ( !future.complete(localEvent) )
                     {
-                        future.obtrudeValue(event);
+                        future.obtrudeValue(localEvent);
                     }
                 }
                 break;
@@ -68,7 +72,7 @@ class InternalWatcher implements Watcher
                         @Override
                         public Event.KeeperState getKeeperState()
                         {
-                            return event.getState();
+                            return localEvent.getState();
                         }
 
                         @Override

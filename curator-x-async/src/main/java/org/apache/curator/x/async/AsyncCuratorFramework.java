@@ -19,10 +19,12 @@
 package org.apache.curator.x.async;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.api.AsyncCuratorFrameworkDsl;
-import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.details.AsyncCuratorFrameworkImpl;
+import org.apache.zookeeper.WatchedEvent;
+import java.util.function.UnaryOperator;
 
 /**
  * Zookeeper framework-style client that returns composable async operations
@@ -58,5 +60,28 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
      * @param listener lister to use
      * @return facade
      */
-    AsyncCuratorFrameworkDsl withUnhandledErrorListener(UnhandledErrorListener listener);
+    AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener);
+
+    /**
+     * Returns a facade that adds the the given filters to all background operations and watchers.
+     * <code>resultFilter</code> will get called for every background callback. <code>watcherFilter</code>
+     * will get called for every watcher. The filters can return new versions or unchanged versions
+     * of the arguments.
+     *
+     * @param resultFilter filter to use or <code>null</code>
+     * @param watcherFilter filter to use or <code>null</code>
+     * @return facade
+     */
+    AsyncCuratorFrameworkDsl with(UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter);
+
+    /**
+     * Set any combination of listener or filters
+     *
+     * @param resultFilter filter to use or <code>null</code>
+     * @param watcherFilter filter to use or <code>null</code>
+     * @see #with(java.util.function.UnaryOperator, java.util.function.UnaryOperator)
+     * @see #with(org.apache.curator.framework.api.UnhandledErrorListener)
+     * @return facade
+     */
+    AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter);
 }

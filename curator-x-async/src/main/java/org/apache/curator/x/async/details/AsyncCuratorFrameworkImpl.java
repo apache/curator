@@ -19,6 +19,7 @@
 package org.apache.curator.x.async.details;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
@@ -27,22 +28,24 @@ import org.apache.curator.framework.imps.GetACLBuilderImpl;
 import org.apache.curator.framework.imps.SyncBuilderImpl;
 import org.apache.curator.x.async.*;
 import org.apache.curator.x.async.api.*;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 import static org.apache.curator.x.async.details.BackgroundProcs.*;
 
 public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private final WatchMode watchMode;
 
     public AsyncCuratorFrameworkImpl(CuratorFramework client)
     {
-        this(reveal(client), null, null);
+        this(reveal(client), new Filters(null, null, null), null);
     }
 
     private static CuratorFrameworkImpl reveal(CuratorFramework client)
@@ -57,29 +60,29 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
         }
     }
 
-    public AsyncCuratorFrameworkImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, WatchMode watchMode)
+    public AsyncCuratorFrameworkImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode)
     {
-        this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.client = Objects.requireNonNull(client, "client cannot be null");
+        this.filters = Objects.requireNonNull(filters, "filters cannot be null");
         this.watchMode = watchMode;
     }
 
     @Override
     public AsyncCreateBuilder create()
     {
-        return new AsyncCreateBuilderImpl(client, unhandledErrorListener);
+        return new AsyncCreateBuilderImpl(client, filters);
     }
 
     @Override
     public AsyncDeleteBuilder delete()
     {
-        return new AsyncDeleteBuilderImpl(client, unhandledErrorListener);
+        return new AsyncDeleteBuilderImpl(client, filters);
     }
 
     @Override
     public AsyncSetDataBuilder setData()
     {
-        return new AsyncSetDataBuilderImpl(client, unhandledErrorListener);
+        return new AsyncSetDataBuilderImpl(client, filters);
     }
 
     @Override
@@ -99,7 +102,7 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
             @Override
             public AsyncStage<List<ACL>> forPath(String path)
             {
-                BuilderCommon<List<ACL>> common = new BuilderCommon<>(unhandledErrorListener, aclProc);
+                BuilderCommon<List<ACL>> common = new BuilderCommon<>(filters, aclProc);
                 GetACLBuilderImpl builder = new GetACLBuilderImpl(client, common.backgrounding, stat);
                 return safeCall(common.internalCallback, () -> builder.forPath(path));
             }
@@ -109,20 +112,20 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     @Override
     public AsyncSetACLBuilder setACL()
     {
-        return new AsyncSetACLBuilderImpl(client, unhandledErrorListener);
+        return new AsyncSetACLBuilderImpl(client, filters);
     }
 
     @Override
     public AsyncReconfigBuilder reconfig()
     {
-        return new AsyncReconfigBuilderImpl(client, unhandledErrorListener);
+        return new AsyncReconfigBuilderImpl(client, filters);
     }
 
     @Override
     public AsyncMultiTransaction transaction()
     {
         return operations -> {
-            BuilderCommon<List<CuratorTransactionResult>> common = new BuilderCommon<>(unhandledErrorListener, opResultsProc);
+            BuilderCommon<List<CuratorTransactionResult>> common = new BuilderCommon<>(filters, opResultsProc);
             CuratorMultiTransactionImpl builder = new CuratorMultiTransactionImpl(client, common.backgrounding);
             return safeCall(common.internalCallback, () -> builder.forOperations(operations));
         };
@@ -132,7 +135,7 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     public AsyncSyncBuilder sync()
     {
         return path -> {
-            BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, ignoredProc);
+            BuilderCommon<Void> common = new BuilderCommon<>(filters, ignoredProc);
             SyncBuilderImpl builder = new SyncBuilderImpl(client, common.backgrounding);
             return safeCall(common.internalCallback, () -> builder.forPath(path));
         };
@@ -141,7 +144,7 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     @Override
     public AsyncRemoveWatchesBuilder removeWatches()
     {
-        return new AsyncRemoveWatchesBuilderImpl(client, unhandledErrorListener);
+        return new AsyncRemoveWatchesBuilderImpl(client, filters);
     }
 
     @Override
@@ -153,19 +156,31 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     @Override
     public WatchableAsyncCuratorFramework watched()
     {
-        return new AsyncCuratorFrameworkImpl(client, unhandledErrorListener, WatchMode.stateChangeAndSuccess);
+        return new AsyncCuratorFrameworkImpl(client, filters, WatchMode.stateChangeAndSuccess);
     }
 
     @Override
     public WatchableAsyncCuratorFramework watched(WatchMode mode)
     {
-        return new AsyncCuratorFrameworkImpl(client, unhandledErrorListener, mode);
+        return new AsyncCuratorFrameworkImpl(client, filters, mode);
     }
 
     @Override
-    public AsyncCuratorFrameworkDsl withUnhandledErrorListener(UnhandledErrorListener listener)
+    public AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener)
     {
-        return new AsyncCuratorFrameworkImpl(client, listener, watchMode);
+        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, filters.getResultFilter(), filters.getWatcherFilter()), watchMode);
+    }
+
+    @Override
+    public AsyncCuratorFrameworkDsl with(UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
+    {
+        return new AsyncCuratorFrameworkImpl(client, new Filters(filters.getListener(), resultFilter, watcherFilter), watchMode);
+    }
+
+    @Override
+    public AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
+    {
+        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, resultFilter, watcherFilter), watchMode);
     }
 
     @Override
@@ -177,24 +192,24 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     @Override
     public AsyncExistsBuilder checkExists()
     {
-        return new AsyncExistsBuilderImpl(client, unhandledErrorListener, watchMode);
+        return new AsyncExistsBuilderImpl(client, filters, watchMode);
     }
 
     @Override
     public AsyncGetDataBuilder getData()
     {
-        return new AsyncGetDataBuilderImpl(client, unhandledErrorListener, watchMode);
+        return new AsyncGetDataBuilderImpl(client, filters, watchMode);
     }
 
     @Override
     public AsyncGetChildrenBuilder getChildren()
     {
-        return new AsyncGetChildrenBuilderImpl(client, unhandledErrorListener, watchMode);
+        return new AsyncGetChildrenBuilderImpl(client, filters, watchMode);
     }
 
     @Override
     public AsyncGetConfigBuilder getConfig()
     {
-        return new AsyncGetConfigBuilderImpl(client, unhandledErrorListener, watchMode);
+        return new AsyncGetConfigBuilderImpl(client, filters, watchMode);
     }
 }

@@ -19,12 +19,11 @@
 package org.apache.curator.x.async.details;
 
 import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.RemoveWatchesBuilderImpl;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.api.AsyncRemoveWatchesBuilder;
-import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.RemoveWatcherOption;
 import org.apache.zookeeper.Watcher;
 import java.util.Collections;
@@ -37,16 +36,16 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 class AsyncRemoveWatchesBuilderImpl implements AsyncRemoveWatchesBuilder, AsyncPathable<AsyncStage<Void>>
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private Watcher.WatcherType watcherType = Watcher.WatcherType.Any;
     private Set<RemoveWatcherOption> options = Collections.emptySet();
     private Watcher watcher = null;
     private CuratorWatcher curatorWatcher = null;
 
-    AsyncRemoveWatchesBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
+    AsyncRemoveWatchesBuilderImpl(CuratorFrameworkImpl client, Filters filters)
     {
         this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.filters = filters;
     }
 
     @Override
@@ -160,7 +159,7 @@ class AsyncRemoveWatchesBuilderImpl implements AsyncRemoveWatchesBuilder, AsyncP
     @Override
     public AsyncStage<Void> forPath(String path)
     {
-        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, ignoredProc);
+        BuilderCommon<Void> common = new BuilderCommon<>(filters, ignoredProc);
         RemoveWatchesBuilderImpl builder = new RemoveWatchesBuilderImpl(client,
             watcher,
             curatorWatcher,

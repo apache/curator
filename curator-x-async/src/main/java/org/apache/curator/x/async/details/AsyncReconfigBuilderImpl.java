@@ -18,12 +18,11 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.ReconfigBuilderImpl;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncEnsemblable;
 import org.apache.curator.x.async.api.AsyncReconfigBuilder;
-import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 
@@ -33,17 +32,17 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 class AsyncReconfigBuilderImpl implements AsyncReconfigBuilder, AsyncEnsemblable<AsyncStage<Void>>
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private Stat stat = null;
     private long fromConfig = -1;
     private List<String> newMembers = null;
     private List<String> joining = null;
     private List<String> leaving = null;
 
-    AsyncReconfigBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
+    AsyncReconfigBuilderImpl(CuratorFrameworkImpl client, Filters filters)
     {
         this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.filters = filters;
     }
 
     @Override
@@ -116,7 +115,7 @@ class AsyncReconfigBuilderImpl implements AsyncReconfigBuilder, AsyncEnsemblable
     @Override
     public AsyncStage<Void> forEnsemble()
     {
-        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, ignoredProc);
+        BuilderCommon<Void> common = new BuilderCommon<>(filters, ignoredProc);
         ReconfigBuilderImpl builder = new ReconfigBuilderImpl(client, common.backgrounding, stat, fromConfig, newMembers, joining, leaving);
         return safeCall(common.internalCallback, () -> {
             builder.forEnsemble();

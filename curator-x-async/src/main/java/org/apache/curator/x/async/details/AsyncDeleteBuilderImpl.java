@@ -18,12 +18,11 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.DeleteBuilderImpl;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncDeleteBuilder;
 import org.apache.curator.x.async.api.AsyncPathable;
-import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.DeleteOption;
 import java.util.Collections;
 import java.util.Objects;
@@ -35,14 +34,14 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 class AsyncDeleteBuilderImpl implements AsyncDeleteBuilder
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private Set<DeleteOption> options = Collections.emptySet();
     private int version = -1;
 
-    AsyncDeleteBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
+    AsyncDeleteBuilderImpl(CuratorFrameworkImpl client, Filters filters)
     {
         this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.filters = filters;
     }
 
     @Override
@@ -69,7 +68,7 @@ class AsyncDeleteBuilderImpl implements AsyncDeleteBuilder
     @Override
     public AsyncStage<Void> forPath(String path)
     {
-        BuilderCommon<Void> common = new BuilderCommon<>(unhandledErrorListener, ignoredProc);
+        BuilderCommon<Void> common = new BuilderCommon<>(filters, ignoredProc);
         DeleteBuilderImpl builder = new DeleteBuilderImpl(client, version, common.backgrounding, options.contains(DeleteOption.deletingChildrenIfNeeded), options.contains(DeleteOption.guaranteed), options.contains(DeleteOption.quietly));
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }

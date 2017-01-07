@@ -18,13 +18,12 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.GetDataBuilderImpl;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncGetDataBuilder;
 import org.apache.curator.x.async.api.AsyncPathable;
-import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 
 import static org.apache.curator.x.async.details.BackgroundProcs.dataProc;
@@ -33,15 +32,15 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 class AsyncGetDataBuilderImpl implements AsyncGetDataBuilder
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private final WatchMode watchMode;
     private boolean decompressed = false;
     private Stat stat = null;
 
-    AsyncGetDataBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, WatchMode watchMode)
+    AsyncGetDataBuilderImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode)
     {
         this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.filters = filters;
         this.watchMode = watchMode;
     }
 
@@ -70,7 +69,7 @@ class AsyncGetDataBuilderImpl implements AsyncGetDataBuilder
     @Override
     public AsyncStage<byte[]> forPath(String path)
     {
-        BuilderCommon<byte[]> common = new BuilderCommon<>(unhandledErrorListener, watchMode, dataProc);
+        BuilderCommon<byte[]> common = new BuilderCommon<>(filters, watchMode, dataProc);
         GetDataBuilderImpl builder = new GetDataBuilderImpl(client, stat, common.watcher, common.backgrounding, decompressed);
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }

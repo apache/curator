@@ -18,12 +18,11 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.SetDataBuilderImpl;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
 import org.apache.curator.x.async.api.AsyncSetDataBuilder;
-import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 
 import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
@@ -32,14 +31,14 @@ import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
 class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private boolean compressed = false;
     private int version = -1;
 
-    AsyncSetDataBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
+    AsyncSetDataBuilderImpl(CuratorFrameworkImpl client, Filters filters)
     {
         this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.filters = filters;
     }
 
     @Override
@@ -78,7 +77,7 @@ class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder
 
     private AsyncStage<Stat> internalForPath(String path, byte[] data, boolean useData)
     {
-        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, statProc);
+        BuilderCommon<Stat> common = new BuilderCommon<>(filters, statProc);
         SetDataBuilderImpl builder = new SetDataBuilderImpl(client, common.backgrounding, version, compressed);
         return safeCall(common.internalCallback, () -> useData ? builder.forPath(path, data) : builder.forPath(path));
     }

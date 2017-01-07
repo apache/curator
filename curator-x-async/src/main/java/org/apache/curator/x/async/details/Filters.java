@@ -18,38 +18,36 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.x.async.AsyncStage;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.zookeeper.WatchedEvent;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
 
-class InternalCallback<T> extends CompletableFuture<T> implements BackgroundCallback, AsyncStage<T>
+public class Filters
 {
-    private final BackgroundProc<T> resultFunction;
-    private final InternalWatcher watcher;
+    private final UnhandledErrorListener listener;
     private final UnaryOperator<CuratorEvent> resultFilter;
+    private final UnaryOperator<WatchedEvent> watcherFilter;
 
-    InternalCallback(BackgroundProc<T> resultFunction, InternalWatcher watcher, UnaryOperator<CuratorEvent> resultFilter)
+    public Filters(UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
     {
-        this.resultFunction = resultFunction;
-        this.watcher = watcher;
+        this.listener = listener;
         this.resultFilter = resultFilter;
+        this.watcherFilter = watcherFilter;
     }
 
-    @Override
-    public CompletionStage<WatchedEvent> event()
+    public UnhandledErrorListener getListener()
     {
-        return (watcher != null) ? watcher.getFuture() : null;
+        return listener;
     }
 
-    @Override
-    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+    public UnaryOperator<CuratorEvent> getResultFilter()
     {
-        event = (resultFilter != null) ? resultFilter.apply(event) : event;
-        resultFunction.apply(event, this);
+        return resultFilter;
+    }
+
+    public UnaryOperator<WatchedEvent> getWatcherFilter()
+    {
+        return watcherFilter;
     }
 }

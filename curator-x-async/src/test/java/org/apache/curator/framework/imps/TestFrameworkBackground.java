@@ -101,7 +101,7 @@ public class TestFrameworkBackground extends BaseClassForTests
                     errorLatch.countDown();
                 }
             };
-            async.withUnhandledErrorListener(listener).create().forPath("/foo");
+            async.with(listener).create().forPath("/foo");
             Assert.assertTrue(new Timing().awaitLatch(errorLatch));
         }
         finally

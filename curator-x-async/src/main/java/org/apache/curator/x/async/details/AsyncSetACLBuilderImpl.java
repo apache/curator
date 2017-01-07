@@ -18,12 +18,11 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.SetACLBuilderImpl;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.api.AsyncSetACLBuilder;
-import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
@@ -34,14 +33,14 @@ import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
 class AsyncSetACLBuilderImpl implements AsyncSetACLBuilder, AsyncPathable<AsyncStage<Stat>>
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private int version = -1;
     private List<ACL> aclList = null;
 
-    AsyncSetACLBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener)
+    AsyncSetACLBuilderImpl(CuratorFrameworkImpl client, Filters filters)
     {
         this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.filters = filters;
     }
 
     @Override
@@ -62,7 +61,7 @@ class AsyncSetACLBuilderImpl implements AsyncSetACLBuilder, AsyncPathable<AsyncS
     @Override
     public AsyncStage<Stat> forPath(String path)
     {
-        BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, statProc);
+        BuilderCommon<Stat> common = new BuilderCommon<>(filters, statProc);
         SetACLBuilderImpl builder = new SetACLBuilderImpl(client, common.backgrounding, aclList, version);
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }

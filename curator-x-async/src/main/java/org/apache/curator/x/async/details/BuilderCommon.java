@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.Backgrounding;
 import org.apache.curator.x.async.WatchMode;
 
@@ -28,15 +27,15 @@ class BuilderCommon<T>
     final Backgrounding backgrounding;
     final InternalWatcher watcher;
 
-    BuilderCommon(UnhandledErrorListener unhandledErrorListener, BackgroundProc<T> proc)
+    BuilderCommon(Filters filters, BackgroundProc<T> proc)
     {
-        this(unhandledErrorListener, null, proc);
+        this(filters,null, proc);
     }
 
-    BuilderCommon(UnhandledErrorListener unhandledErrorListener, WatchMode watchMode, BackgroundProc<T> proc)
+    BuilderCommon(Filters filters, WatchMode watchMode, BackgroundProc<T> proc)
     {
-        watcher = (watchMode != null) ? new InternalWatcher(watchMode) : null;
-        internalCallback = new InternalCallback<>(proc, watcher);
-        backgrounding = new Backgrounding(internalCallback, unhandledErrorListener);
+        watcher = (watchMode != null) ? new InternalWatcher(watchMode, filters.getWatcherFilter()) : null;
+        internalCallback = new InternalCallback<>(proc, watcher, filters.getResultFilter());
+        backgrounding = new Backgrounding(internalCallback, filters.getListener());
     }
 }

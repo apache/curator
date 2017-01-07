@@ -18,13 +18,12 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.GetChildrenBuilderImpl;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncGetChildrenBuilder;
 import org.apache.curator.x.async.api.AsyncPathable;
-import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 
@@ -34,21 +33,21 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 class AsyncGetChildrenBuilderImpl implements AsyncGetChildrenBuilder
 {
     private final CuratorFrameworkImpl client;
-    private final UnhandledErrorListener unhandledErrorListener;
+    private final Filters filters;
     private final WatchMode watchMode;
     private Stat stat = null;
 
-    AsyncGetChildrenBuilderImpl(CuratorFrameworkImpl client, UnhandledErrorListener unhandledErrorListener, WatchMode watchMode)
+    AsyncGetChildrenBuilderImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode)
     {
         this.client = client;
-        this.unhandledErrorListener = unhandledErrorListener;
+        this.filters = filters;
         this.watchMode = watchMode;
     }
 
     @Override
     public AsyncStage<List<String>> forPath(String path)
     {
-        BuilderCommon<List<String>> common = new BuilderCommon<>(unhandledErrorListener, watchMode, childrenProc);
+        BuilderCommon<List<String>> common = new BuilderCommon<>(filters, watchMode, childrenProc);
         GetChildrenBuilderImpl builder = new GetChildrenBuilderImpl(client, common.watcher, common.backgrounding, stat);
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }
