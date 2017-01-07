@@ -19,12 +19,36 @@
 package org.apache.curator.x.async.api;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.x.async.WatchMode;
 
 /**
  * Zookeeper framework-style client
  */
 public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework
 {
+    /**
+     * <p>
+     * Returns a facade that adds watching to any of the subsequently created builders. i.e. all
+     * operations on the WatchableAsyncCuratorFramework facade will have watchers set. Also,
+     * the {@link org.apache.curator.x.async.AsyncStage} returned from these builders will
+     * have a loaded staged watcher that is accessed from {@link org.apache.curator.x.async.AsyncStage#event()}
+     * </p>
+     *
+     * <p>
+     * {@link org.apache.curator.x.async.WatchMode#stateChangeAndSuccess} is used
+     * </p>
+     *
+     * @return watcher facade
+     */
+    WatchableAsyncCuratorFramework watched();
+
+    /**
+     * Same as {@link #watched()} but allows specifying the watch mode
+     *
+     * @return watcher facade
+     */
+    WatchableAsyncCuratorFramework watched(WatchMode mode);
+
     /**
      * Start a create builder
      *

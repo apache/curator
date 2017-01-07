@@ -157,7 +157,7 @@ stage.thenAccept(data -> processData(data));
 
 ----
 
-CompletionStage provides a block method as well so that you can block to get the result
+CompletionStage provides a blocking method as well so that you can block to get the result
 of an operation. i.e. this makes it possible to use the async APIs in a synchronous way.
 
 {code}
