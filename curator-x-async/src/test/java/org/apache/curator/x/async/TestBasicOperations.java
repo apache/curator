@@ -24,6 +24,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
@@ -88,6 +89,19 @@ public class TestBasicOperations extends BaseClassForTests
         CompletionStage<byte[]> setDataIfStage = client.create().withOptions(of(compress, setDataIfExists)).forPath("/test", "last".getBytes())
             .thenCompose(__ -> client.getData().decompressed().forPath("/test"));
         complete(setDataIfStage, (data, e) -> Assert.assertEquals(data, "last".getBytes()));
+    }
+
+    @Test
+    public void testException()
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        client.getData().forPath("/woop").exceptionally(e -> {
+            Assert.assertTrue(e instanceof KeeperException);
+            Assert.assertEquals(((KeeperException)e).code(), KeeperException.Code.NONODE);
+            latch.countDown();
+            return null;
+        });
+        Assert.assertTrue(timing.awaitLatch(latch));
     }
 
     @Test

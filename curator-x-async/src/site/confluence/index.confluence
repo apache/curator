@@ -1,0 +1,97 @@
+h1. Curator Async
+
+h2. Packaging
+
+Curator Async is in its own package in Maven Central: curator\-x\-async
+
+h2. What Is a Curator Async?
+
+Curator Async is a brand new [DSL|https://en.wikipedia.org/wiki/Domain-specific_language] that wraps existing
+{{CuratorFramework}} instances. This new DSL is entirely asynchronous and uses
+[Java 8's CompletionStage|https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html]
+mechanism for chaining, composing, etc. Additionally, Curator's original DSL has been cleaned up
+and simplified, in particular for operations such as {{create()}}.
+
+With this new async DSL you can do asynchronous tasks in a more natural, functional way using
+[Java 8 lambdas|https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html]. For example:
+
+{code}
+// let "client" be a CuratorFramework instance
+AsyncCuratorFramework async = AsyncCuratorFramework.wrap(client);
+async.checkExists().forPath(somePath).thenRun(() -> mySuccessOperation());
+{code}
+
+h2. Usage
+
+Note: To use Curator Async, you should be familiar with Java 8's lambdas, CompletedFuture and CompletionStage.
+
+Create a CuratorFramework instance in the normal way. You then wrap this instance using
+AsyncCuratorFramework. i.e.
+
+{code}
+// let "client" be a CuratorFramework instance
+AsyncCuratorFramework async = AsyncCuratorFramework.wrap(client);
+{code}
+
+AsyncCuratorFramework has most of the same builder methods that CuratorFramework does with some important
+differences:
+
+* AsyncCuratorFramework builders return {{AsyncStage}} instances
+* AsyncCuratorFramework builders have no checked exceptions
+* Many of the builder methods have been simplified/clarified
+* All builders invoke the asynchronous versions of ZooKeeper APIs
+* Watchers also use CompletionStages \- see below for details
+
+h4. AsyncStage
+
+AsyncStage instances extend Java 8's CompletionStage. CompletionStage objects can be "completed" with a success
+value or an exception. The parameterized type of the AsyncStage will
+be whatever the builder used would naturally return as a success value. E.g. the async getData() builder's AsyncStage is
+parameterized with {{byte[]}}. For the exception, Curator Async always uses AsyncEventException (see below).
+
+h4. Watchers
+
+ZooKeeper watchers also get the CompletionStage treatment in Curator Async. To add a watcher, call
+watched() prior to starting the appropriate builders. E.g.
+
+{code}
+async.watched().getData().forPath(path) ...
+{code}
+
+Thus, a data watcher will be set on the specified path. You access the CompletionStage for the watcher
+by using the event() method of AsyncStage. Here is a complete example:
+
+{code}
+async.watched().getData().forPath(path).event().thenAccept(watchedEvent -> watchWasTriggered(watchedEvent));
+{code}
+
+ZooKeeper calls watchers when there is a connection loss. This can make using the CompletionStage
+somewhat complicated (see AsyncEventException below). If you are not interested in watcher connection
+problems, you can tell Curator Async to not send them by calling:
+
+{code}
+// only complete the CompletionStage when the watcher is successfully triggered
+// i.e. don't complete on connection issues
+async.watched(WatchMode.successOnly)...
+{code}
+
+h4. AsyncEventException
+
+When an async watcher fails the exception set in the CompletionStage will be of type {{AsyncEventException}}.
+This exception allows you to see the KeeperState that caused the trigger and allows you to reset the
+completion stage. Reset is needed because ZooKeeper temporarily triggers watchers when there is a connection
+event. However, the watcher stays set for the original operation. Use {{AsyncEventException#reset()}}
+to start a new completion stage that will wait on the next trigger of the watcher.
+
+E.g.
+
+{code}
+AsyncStage stage = ...
+stage.event().exceptionally(e -> {
+    AsyncEventException asyncEx = (AsyncEventException)e;
+
+    ... noteAConnectionProblem ...
+
+    asyncEx.reset().thenRun(() -> successMethod());
+});
+{code}
