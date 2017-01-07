@@ -18,7 +18,7 @@ With this new async DSL you can do asynchronous tasks in a more natural, functio
 {code}
 // let "client" be a CuratorFramework instance
 AsyncCuratorFramework async = AsyncCuratorFramework.wrap(client);
-async.checkExists().forPath(somePath).thenRun(() -> mySuccessOperation());
+async.checkExists().forPath(somePath).thenAccept(stat -> mySuccessOperation(stat));
 {code}
 
 h2. Usage
@@ -94,4 +94,73 @@ stage.event().exceptionally(e -> {
 
     asyncEx.reset().thenRun(() -> successMethod());
 });
+{code}
+
+h2. Examples
+
+Create a sequential ZNode and, once successfully completed, set a watcher
+on the ZNode. Note: this code does not deal with errors. Should a connection
+problem occur or another exception occur, the completion lambda will never be called.
+
+{code}
+async.create().withMode(PERSISTENT_SEQUENTIAL).forPath(path).thenAccept(actualPath ->
+    async.watched().getData().forPath(actualPath));
+{code}
+
+----
+
+This is the canonical way to deal with AsyncStage. Use the handle() method which provides
+both the success value and the exception. The exception will be non\-null on error.
+
+{code}
+async.create().withOptions(EnumSet.of(doProtected)).forPath(path).handle((actualPath, exception) -> {
+    if ( exception != null )
+    {
+        // handle problem
+    }
+    else
+    {
+        // actualPath is the path created
+    }
+    return null;
+});
+{code}
+
+----
+
+Your completion routines can operate in a separate thread if you provide an executor.
+
+{code}
+async.create().withOptions(EnumSet.of(createParentsIfNeeded)).forPath("/a/b/c")
+    .thenAcceptAsync(path -> handleCreate(path), executor);
+{code}
+
+----
+
+This example shows specifying separate completion handlers for success and exception.
+
+{code}
+AsyncStage<byte[]> stage = async.getData().forPath("/my/path");
+stage.exceptionally(e -> {
+    if ( e instanceof KeeperException.NoNodeException )
+    {
+        // handle no node
+    }
+    else
+    {
+        // handle other
+    }
+    return null;
+});
+stage.thenAccept(data -> processData(data));
+{code}
+
+----
+
+CompletionStage provides a block method as well so that you can block to get the result
+of an operation. i.e. this makes it possible to use the async APIs in a synchronous way.
+
+{code}
+// NOTE: get() specifies a checked exception
+async.create().forPath("/foo").toCompletableFuture().get();
 {code}
