@@ -77,6 +77,7 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
     /**
      * Set any combination of listener or filters
      *
+     * @param listener lister to use or <code>null</code>
      * @param resultFilter filter to use or <code>null</code>
      * @param watcherFilter filter to use or <code>null</code>
      * @see #with(java.util.function.UnaryOperator, java.util.function.UnaryOperator)
