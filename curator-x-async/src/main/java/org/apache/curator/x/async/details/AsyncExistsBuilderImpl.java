@@ -59,7 +59,12 @@ class AsyncExistsBuilderImpl implements AsyncExistsBuilder
     public AsyncStage<Stat> forPath(String path)
     {
         BuilderCommon<Stat> common = new BuilderCommon<>(unhandledErrorListener, watchMode, safeStatProc);
-        ExistsBuilderImpl builder = new ExistsBuilderImpl(client, common.backgrounding, common.watcher, options.contains(ExistsOption.createParentsIfNeeded), options.contains(ExistsOption.createParentsAsContainers));
+        ExistsBuilderImpl builder = new ExistsBuilderImpl(client,
+            common.backgrounding,
+            common.watcher,
+            options.contains(ExistsOption.createParentsIfNeeded),
+            options.contains(ExistsOption.createParentsAsContainers)
+        );
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }
 }

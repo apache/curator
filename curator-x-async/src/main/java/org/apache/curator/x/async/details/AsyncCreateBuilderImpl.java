@@ -132,7 +132,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
         CreateBuilderImpl builder = new CreateBuilderImpl(client,
             createMode,
             common.backgrounding,
-            options.contains(CreateOption.createParentsIfNeeded),
+            options.contains(CreateOption.createParentsIfNeeded) || options.contains(CreateOption.createParentsAsContainers),
             options.contains(CreateOption.createParentsAsContainers),
             options.contains(CreateOption.doProtected),
             options.contains(CreateOption.compress),
