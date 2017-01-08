@@ -42,10 +42,11 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     private final CuratorFrameworkImpl client;
     private final Filters filters;
     private final WatchMode watchMode;
+    private final boolean watched;
 
     public AsyncCuratorFrameworkImpl(CuratorFramework client)
     {
-        this(reveal(client), new Filters(null, null, null), null);
+        this(reveal(client), new Filters(null, null, null), WatchMode.stateChangeAndSuccess, false);
     }
 
     private static CuratorFrameworkImpl reveal(CuratorFramework client)
@@ -60,11 +61,12 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
         }
     }
 
-    public AsyncCuratorFrameworkImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode)
+    public AsyncCuratorFrameworkImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode, boolean watched)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.filters = Objects.requireNonNull(filters, "filters cannot be null");
-        this.watchMode = watchMode;
+        this.watchMode = Objects.requireNonNull(watchMode, "watchMode cannot be null");
+        this.watched = watched;
     }
 
     @Override
@@ -156,31 +158,37 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     @Override
     public WatchableAsyncCuratorFramework watched()
     {
-        return new AsyncCuratorFrameworkImpl(client, filters, WatchMode.stateChangeAndSuccess);
+        return new AsyncCuratorFrameworkImpl(client, filters, watchMode, true);
     }
 
     @Override
-    public WatchableAsyncCuratorFramework watched(WatchMode mode)
+    public AsyncCuratorFrameworkDsl with(WatchMode mode)
     {
-        return new AsyncCuratorFrameworkImpl(client, filters, mode);
+        return new AsyncCuratorFrameworkImpl(client, filters, mode, watched);
+    }
+
+    @Override
+    public AsyncCuratorFrameworkDsl with(WatchMode mode, UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
+    {
+        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, filters.getResultFilter(), filters.getWatcherFilter()), mode, watched);
     }
 
     @Override
     public AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener)
     {
-        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, filters.getResultFilter(), filters.getWatcherFilter()), watchMode);
+        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, filters.getResultFilter(), filters.getWatcherFilter()), watchMode, watched);
     }
 
     @Override
     public AsyncCuratorFrameworkDsl with(UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
     {
-        return new AsyncCuratorFrameworkImpl(client, new Filters(filters.getListener(), resultFilter, watcherFilter), watchMode);
+        return new AsyncCuratorFrameworkImpl(client, new Filters(filters.getListener(), resultFilter, watcherFilter), watchMode, watched);
     }
 
     @Override
     public AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
     {
-        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, resultFilter, watcherFilter), watchMode);
+        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, resultFilter, watcherFilter), watchMode, watched);
     }
 
     @Override
@@ -192,24 +200,29 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     @Override
     public AsyncExistsBuilder checkExists()
     {
-        return new AsyncExistsBuilderImpl(client, filters, watchMode);
+        return new AsyncExistsBuilderImpl(client, filters, getBuilderWatchMode());
     }
 
     @Override
     public AsyncGetDataBuilder getData()
     {
-        return new AsyncGetDataBuilderImpl(client, filters, watchMode);
+        return new AsyncGetDataBuilderImpl(client, filters, getBuilderWatchMode());
     }
 
     @Override
     public AsyncGetChildrenBuilder getChildren()
     {
-        return new AsyncGetChildrenBuilderImpl(client, filters, watchMode);
+        return new AsyncGetChildrenBuilderImpl(client, filters, getBuilderWatchMode());
     }
 
     @Override
     public AsyncGetConfigBuilder getConfig()
     {
-        return new AsyncGetConfigBuilderImpl(client, filters, watchMode);
+        return new AsyncGetConfigBuilderImpl(client, filters, getBuilderWatchMode());
+    }
+
+    private WatchMode getBuilderWatchMode()
+    {
+        return watched ? watchMode : null;
     }
 }

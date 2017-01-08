@@ -43,13 +43,6 @@ public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework
     WatchableAsyncCuratorFramework watched();
 
     /**
-     * Same as {@link #watched()} but allows specifying the watch mode
-     *
-     * @return watcher facade
-     */
-    WatchableAsyncCuratorFramework watched(WatchMode mode);
-
-    /**
      * Start a create builder
      *
      * @return builder object

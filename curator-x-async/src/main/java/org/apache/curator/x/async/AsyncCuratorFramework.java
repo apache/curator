@@ -55,6 +55,14 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
     CuratorFramework unwrap();
 
     /**
+     * Returns a facade that changes how watchers are set when {@link #watched()} is called
+     *
+     * @param mode watch mode to use for subsequent calls to {@link #watched()}
+     * @return facade
+     */
+    AsyncCuratorFrameworkDsl with(WatchMode mode);
+
+    /**
      * Returns a facade that adds the given UnhandledErrorListener to all background operations
      *
      * @param listener lister to use
@@ -85,4 +93,18 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
      * @return facade
      */
     AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter);
+
+    /**
+     * Set any combination of listener, filters or watch mode
+     *
+     * @param mode watch mode to use for subsequent calls to {@link #watched()} (cannot be <code>null</code>)
+     * @param listener lister to use or <code>null</code>
+     * @param resultFilter filter to use or <code>null</code>
+     * @param watcherFilter filter to use or <code>null</code>
+     * @see #with(WatchMode)
+     * @see #with(java.util.function.UnaryOperator, java.util.function.UnaryOperator)
+     * @see #with(org.apache.curator.framework.api.UnhandledErrorListener)
+     * @return facade
+     */
+    AsyncCuratorFrameworkDsl with(WatchMode mode, UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter);
 }

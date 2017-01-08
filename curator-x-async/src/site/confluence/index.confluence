@@ -72,7 +72,7 @@ problems, you can tell Curator Async to not send them by calling:
 {code}
 // only complete the CompletionStage when the watcher is successfully triggered
 // i.e. don't complete on connection issues
-async.watched(WatchMode.successOnly)...
+async.with(WatchMode.successOnly).watched()...
 {code}
 
 h4. AsyncEventException
