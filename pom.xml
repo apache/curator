@@ -79,7 +79,7 @@
         <testng-version>6.8.8</testng-version>
         <swift-version>0.12.0</swift-version>
         <dropwizard-version>0.7.0</dropwizard-version>
-        <maven-shade-plugin-version>2.3</maven-shade-plugin-version>
+        <maven-shade-plugin-version>2.4.3</maven-shade-plugin-version>
         <slf4j-version>1.7.6</slf4j-version>
         <clirr-maven-plugin-version>2.6.1</clirr-maven-plugin-version>
 
@@ -780,6 +780,39 @@
                         <goals>
                             <goal>check</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>apache-curator-guava-shader</id>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.google</pattern>
+                                    <shadedPattern>org.apache.curator.shaded.com.google</shadedPattern>
+                                    <excludes>
+                                        <exclude>com.google.common.base.Function</exclude>
+                                        <exclude>com.google.common.base.Predicate</exclude>
+                                        <exclude>com.google.common.reflect.TypeToken</exclude>
+                                    </excludes>
+                                </relocation>
+                            </relocations>
+                            <artifactSet>
+                                <includes>
+                                    <include>${project.groupId}:${project.artifactId}</include>
+                                </includes>
+                            </artifactSet>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
