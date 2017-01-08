@@ -18,12 +18,14 @@
  */
 package org.apache.curator.x.async.details;
 
+import com.google.common.base.Preconditions;
 import org.apache.curator.x.async.AsyncEventException;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 
 class InternalWatcher implements Watcher
@@ -69,6 +71,8 @@ class InternalWatcher implements Watcher
                 {
                     AsyncEventException exception = new AsyncEventException()
                     {
+                        private final AtomicBoolean isReset = new AtomicBoolean(false);
+
                         @Override
                         public Event.KeeperState getKeeperState()
                         {
@@ -78,6 +82,7 @@ class InternalWatcher implements Watcher
                         @Override
                         public CompletionStage<WatchedEvent> reset()
                         {
+                            Preconditions.checkState(isReset.compareAndSet(false, true), "Already reset");
                             future = new CompletableFuture<>();
                             return future;
                         }
