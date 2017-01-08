@@ -6,13 +6,13 @@ Curator Async is in its own package in Maven Central: curator\-x\-async
 
 h2. What Is a Curator Async?
 
-Curator Async is a brand new [DSL|https://en.wikipedia.org/wiki/Domain-specific_language] that wraps existing
-{{CuratorFramework}} instances. This new DSL is entirely asynchronous and uses
+Curator Async is a [DSL|https://en.wikipedia.org/wiki/Domain-specific_language] that wraps existing
+{{CuratorFramework}} instances. This DSL is entirely asynchronous and uses
 [Java 8's CompletionStage|https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html]
 mechanism for chaining, composing, etc. Additionally, Curator's original DSL has been cleaned up
 and simplified, in particular for operations such as {{create()}}.
 
-With this new async DSL you can do asynchronous tasks in a more natural, functional way using
+With this DSL you can do asynchronous tasks in a more natural, functional way using
 [Java 8 lambdas|https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html]. For example:
 
 {code}
@@ -92,11 +92,13 @@ stage.event().exceptionally(e -> {
 
     ... note a connection problem ...
 
-    asyncEx.reset().thenRun(() -> successMethod());
+    asyncEx.reset().thenAccept(watchedEvent -> watchWasTriggered(watchedEvent));
 });
 {code}
 
 h2. Examples
+
+h4. Create a sequential ZNode
 
 Create a sequential ZNode and, once successfully completed, set a watcher
 on the ZNode. Note: this code does not deal with errors. Should a connection
@@ -108,6 +110,8 @@ async.create().withMode(PERSISTENT_SEQUENTIAL).forPath(path).thenAccept(actualPa
 {code}
 
 ----
+
+h4. AsyncStage canonical usage
 
 This is the canonical way to deal with AsyncStage. Use the handle() method which provides
 both the success value and the exception. The exception will be non\-null on error.
@@ -128,6 +132,8 @@ async.create().withOptions(EnumSet.of(doProtected)).forPath(path).handle((actual
 
 ----
 
+h4. Using executors
+
 Your completion routines can operate in a separate thread if you provide an executor.
 
 {code}
@@ -136,6 +142,8 @@ async.create().withOptions(EnumSet.of(createParentsIfNeeded)).forPath("/a/b/c")
 {code}
 
 ----
+
+h4. Separate handlers
 
 This example shows specifying separate completion handlers for success and exception.
 
@@ -156,6 +164,8 @@ stage.thenAccept(data -> processData(data));
 {code}
 
 ----
+
+h4. Synchronous usage
 
 CompletionStage provides a blocking method as well so that you can block to get the result
 of an operation. i.e. this makes it possible to use the async APIs in a synchronous way.

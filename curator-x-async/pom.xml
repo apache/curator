@@ -9,6 +9,10 @@
 
     <artifactId>curator-x-async</artifactId>
 
+    <name>Curator Async</name>
+    <description>Java 8 Async DSL</description>
+    <inceptionYear>2017</inceptionYear>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.curator</groupId>
