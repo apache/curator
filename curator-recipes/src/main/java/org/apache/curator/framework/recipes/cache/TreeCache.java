@@ -54,6 +54,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.curator.utils.PathUtils.validatePath;
@@ -199,13 +200,23 @@ public class TreeCache implements Closeable
         PENDING, LIVE, DEAD
     }
 
+    private static final AtomicReferenceFieldUpdater<TreeNode, NodeState> nodeStateUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, NodeState.class, "nodeState");
+
+    private static final AtomicReferenceFieldUpdater<TreeNode, ChildData> childDataUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ChildData.class, "childData");
+
+    private static final AtomicReferenceFieldUpdater<TreeNode, ConcurrentMap> childrenUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ConcurrentMap.class, "children");
+
     private final class TreeNode implements Watcher, BackgroundCallback
     {
-        final AtomicReference<NodeState> nodeState = new AtomicReference<NodeState>(NodeState.PENDING);
+
+        volatile NodeState nodeState = NodeState.PENDING;
+        volatile ChildData childData;
         final TreeNode parent;
         final String path;
-        final AtomicReference<ChildData> childData = new AtomicReference<ChildData>();
-        final AtomicReference<ConcurrentMap<String, TreeNode>> children = new AtomicReference<ConcurrentMap<String, TreeNode>>();
+        volatile ConcurrentMap<String, TreeNode> children;
         final int depth;
 
         TreeNode(String path, TreeNode parent)
@@ -262,7 +273,7 @@ public class TreeCache implements Closeable
         void wasReconnected() throws Exception
         {
             refresh();
-            ConcurrentMap<String, TreeNode> childMap = children.get();
+            ConcurrentMap<String, TreeNode> childMap = children;
             if ( childMap != null )
             {
                 for ( TreeNode child : childMap.values() )
@@ -279,9 +290,9 @@ public class TreeCache implements Closeable
 
         void wasDeleted() throws Exception
         {
-            ChildData oldChildData = childData.getAndSet(null);
+            ChildData oldChildData = childDataUpdater.getAndSet(this, null);
             client.clearWatcherReferences(this);
-            ConcurrentMap<String, TreeNode> childMap = children.getAndSet(null);
+            ConcurrentMap<String, TreeNode> childMap = childrenUpdater.getAndSet(this,null);
             if ( childMap != null )
             {
                 ArrayList<TreeNode> childCopy = new ArrayList<TreeNode>(childMap.values());
@@ -297,7 +308,7 @@ public class TreeCache implements Closeable
                 return;
             }
 
-            NodeState oldState = nodeState.getAndSet(NodeState.DEAD);
+            NodeState oldState = nodeStateUpdater.getAndSet(this, NodeState.DEAD);
             if ( oldState == NodeState.LIVE )
             {
                 publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData);
@@ -311,7 +322,7 @@ public class TreeCache implements Closeable
             else
             {
                 // Remove from parent if we're currently a child
-                ConcurrentMap<String, TreeNode> parentChildMap = parent.children.get();
+                ConcurrentMap<String, TreeNode> parentChildMap = parent.children;
                 if ( parentChildMap != null )
                 {
                     parentChildMap.remove(ZKPaths.getNodeFromPath(path), this);
@@ -360,19 +371,19 @@ public class TreeCache implements Closeable
                 Preconditions.checkState(parent == null, "unexpected EXISTS on non-root node");
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    nodeState.compareAndSet(NodeState.DEAD, NodeState.PENDING);
+                    nodeStateUpdater.compareAndSet(this, NodeState.DEAD, NodeState.PENDING);
                     wasCreated();
                 }
                 break;
             case CHILDREN:
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    ChildData oldChildData = childData.get();
+                    ChildData oldChildData = childData;
                     if ( oldChildData != null && oldChildData.getStat().getMzxid() == newStat.getMzxid() )
                     {
                         // Only update stat if mzxid is same, otherwise we might obscure
                         // GET_DATA event updates.
-                        childData.compareAndSet(oldChildData, new ChildData(oldChildData.getPath(), newStat, oldChildData.getData()));
+                        childDataUpdater.compareAndSet(this, oldChildData, new ChildData(oldChildData.getPath(), newStat, oldChildData.getData()));
                     }
 
                     if ( event.getChildren().isEmpty() )
@@ -380,13 +391,13 @@ public class TreeCache implements Closeable
                         break;
                     }
 
-                    ConcurrentMap<String, TreeNode> childMap = children.get();
+                    ConcurrentMap<String, TreeNode> childMap = children;
                     if ( childMap == null )
                     {
                         childMap = Maps.newConcurrentMap();
-                        if ( !children.compareAndSet(null, childMap) )
+                        if ( !childrenUpdater.compareAndSet(this, null, childMap) )
                         {
-                            childMap = children.get();
+                            childMap = children;
                         }
                     }
 
@@ -423,23 +434,23 @@ public class TreeCache implements Closeable
                     ChildData oldChildData;
                     if ( cacheData )
                     {
-                        oldChildData = childData.getAndSet(toPublish);
+                        oldChildData = childDataUpdater.getAndSet(this, toPublish);
                     }
                     else
                     {
-                        oldChildData = childData.getAndSet(new ChildData(event.getPath(), newStat, null));
+                        oldChildData = childDataUpdater.getAndSet(this, new ChildData(event.getPath(), newStat, null));
                     }
 
                     boolean added;
                     if (parent == null) {
                         // We're the singleton root.
-                        added = nodeState.getAndSet(NodeState.LIVE) != NodeState.LIVE;
+                        added = nodeStateUpdater.getAndSet(this, NodeState.LIVE) != NodeState.LIVE;
                     } else {
-                        added = nodeState.compareAndSet(NodeState.PENDING, NodeState.LIVE);
+                        added = nodeStateUpdater.compareAndSet(this, NodeState.PENDING, NodeState.LIVE);
                         if (!added) {
                             // Ordinary nodes are not allowed to transition from dead -> live;
                             // make sure this isn't a delayed response that came in after death.
-                            if (nodeState.get() != NodeState.LIVE) {
+                            if (nodeState != NodeState.LIVE) {
                                 return;
                             }
                         }
@@ -643,7 +654,7 @@ public class TreeCache implements Closeable
         TreeNode current = root;
         while (!findElements.isEmpty()) {
             String nextFind = findElements.removeFirst();
-            ConcurrentMap<String, TreeNode> map = current.children.get();
+            ConcurrentMap<String, TreeNode> map = current.children;
             if ( map == null )
             {
                 return null;
@@ -668,11 +679,11 @@ public class TreeCache implements Closeable
     public Map<String, ChildData> getCurrentChildren(String fullPath)
     {
         TreeNode node = find(fullPath);
-        if ( node == null || node.nodeState.get() != NodeState.LIVE )
+        if ( node == null || node.nodeState != NodeState.LIVE )
         {
             return null;
         }
-        ConcurrentMap<String, TreeNode> map = node.children.get();
+        ConcurrentMap<String, TreeNode> map = node.children;
         Map<String, ChildData> result;
         if ( map == null )
         {
@@ -684,9 +695,9 @@ public class TreeCache implements Closeable
             for ( Map.Entry<String, TreeNode> entry : map.entrySet() )
             {
                 TreeNode childNode = entry.getValue();
-                ChildData childData = childNode.childData.get();
+                ChildData childData = childNode.childData;
                 // Double-check liveness after retreiving data.
-                if ( childData != null && childNode.nodeState.get() == NodeState.LIVE )
+                if ( childData != null && childNode.nodeState == NodeState.LIVE )
                 {
                     builder.put(entry.getKey(), childData);
                 }
@@ -695,7 +706,7 @@ public class TreeCache implements Closeable
         }
 
         // Double-check liveness after retreiving children.
-        return node.nodeState.get() == NodeState.LIVE ? result : null;
+        return node.nodeState == NodeState.LIVE ? result : null;
     }
 
     /**
@@ -709,13 +720,13 @@ public class TreeCache implements Closeable
     public ChildData getCurrentData(String fullPath)
     {
         TreeNode node = find(fullPath);
-        if ( node == null || node.nodeState.get() != NodeState.LIVE )
+        if ( node == null || node.nodeState != NodeState.LIVE )
         {
             return null;
         }
-        ChildData result = node.childData.get();
+        ChildData result = node.childData;
         // Double-check liveness after retreiving data.
-        return node.nodeState.get() == NodeState.LIVE ? result : null;
+        return node.nodeState == NodeState.LIVE ? result : null;
     }
 
     private void callListeners(final TreeCacheEvent event)
