@@ -62,7 +62,6 @@ public class PersistentNode implements Closeable
     private final AtomicReference<CountDownLatch> initialCreateLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final WatcherRemoveCuratorFramework client;
-    private final CreateModable<ACLBackgroundPathAndBytesable<String>> createMethod;
     private final AtomicReference<String> nodePath = new AtomicReference<String>(null);
     private final String basePath;
     private final CreateMode mode;
@@ -186,7 +185,6 @@ public class PersistentNode implements Closeable
             }
         };
 
-        createMethod = useProtection ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
         this.data.set(Arrays.copyOf(data, data.length));
     }
 
@@ -411,6 +409,9 @@ public class PersistentNode implements Closeable
         {
             String existingPath = nodePath.get();
             String createPath = (existingPath != null && !useProtection) ? existingPath : basePath;
+
+            CreateModable<ACLBackgroundPathAndBytesable<String>> createMethod = useProtection ?
+                    client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
             createMethod.withMode(getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data.get());
         }
         catch ( Exception e )
