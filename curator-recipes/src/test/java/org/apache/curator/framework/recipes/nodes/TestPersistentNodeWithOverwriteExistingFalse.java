@@ -27,9 +27,10 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import java.util.concurrent.TimeUnit;
 
-public class TestPersistentNode extends BaseClassForTests
+public class TestPersistentNodeWithOverwriteExistingFalse extends BaseClassForTests
 {
     @Test
     public void testQuickSetData() throws Exception
@@ -39,11 +40,12 @@ public class TestPersistentNode extends BaseClassForTests
 
         Timing timing = new Timing();
         PersistentNode pen = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory
+                .newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
             client.start();
-            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test", TEST_DATA);
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, false, "/test", TEST_DATA);
             pen.start();
             try
             {
@@ -73,7 +75,7 @@ public class TestPersistentNode extends BaseClassForTests
         try
         {
             client.start();
-            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test", TEST_DATA);
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, false, "/test", TEST_DATA);
             pen.start();
             Assert.assertTrue(pen.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
             client.close(); // cause session to end - force checks that node is persistent
@@ -92,7 +94,7 @@ public class TestPersistentNode extends BaseClassForTests
     }
 
     @Test
-    public void testQuickClose() throws Exception
+    public void testClose() throws Exception
     {
         Timing timing = new Timing();
         PersistentNode pen = null;
@@ -100,8 +102,10 @@ public class TestPersistentNode extends BaseClassForTests
         try
         {
             client.start();
-            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test/one/two", new byte[0]);
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, false, "/test/one/two", new byte[0]);
             pen.start();
+            // we are only allowed to delete the node on close, once we know it belongs to us => wait for initial create
+            Assert.assertTrue(pen.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
             pen.close();
             timing.sleepABit();
             Assert.assertNull(client.checkExists().forPath("/test/one/two"));
@@ -114,21 +118,26 @@ public class TestPersistentNode extends BaseClassForTests
     }
 
     @Test
-    public void testQuickCloseNodeExists() throws Exception
+    public void testDontOverwriteOrDeleteExisting() throws Exception
     {
+        final byte[] TEST_DATA = "hey".getBytes();
+        final byte[] ALT_TEST_DATA = "there".getBytes();
+
         Timing timing = new Timing();
         PersistentNode pen = null;
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try
         {
             client.start();
-            client.create().creatingParentsIfNeeded().forPath("/test/one/two");
+            client.create().creatingParentsIfNeeded().forPath("/test/one/two", TEST_DATA);
 
-            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test/one/two", new byte[0]);
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, false, "/test/one/two", ALT_TEST_DATA);
             pen.start();
+            timing.sleepABit();
+            Assert.assertEquals(client.getData().forPath("/test/one/two"), TEST_DATA);
             pen.close();
             timing.sleepABit();
-            Assert.assertNull(client.checkExists().forPath("/test/one/two"));
+            Assert.assertEquals(client.getData().forPath("/test/one/two"), TEST_DATA);
         }
         finally
         {
@@ -136,27 +145,4 @@ public class TestPersistentNode extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
-
-    @Test
-    public void testOverwriteExisting() throws Exception
-    {
-        Timing timing = new Timing();
-        PersistentNode pen = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        client.start();
-        try
-        {
-            client.create().creatingParentsIfNeeded().forPath("/test/one/two", "abc123".getBytes());
-            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test/one/two", "def456".getBytes());
-            pen.start();
-            timing.sleepABit();
-            Assert.assertEquals(client.getData().forPath("/test/one/two"), "def456".getBytes());
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(pen);
-            CloseableUtils.closeQuietly(client);
-        }
-    }
-
 }
