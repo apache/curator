@@ -152,20 +152,33 @@ public class TestPersistentNode extends BaseClassForTests
 
             pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test", new byte[0]);
             pen.start();
+            Assert.assertTrue(pen.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
 
             // interrupt once
             Thread.currentThread().interrupt();
+
+            int interruptCount = 0;
 
             try {
                 pen.close();
             }
             catch (IOException expected) {
-                if (!(expected.getCause() instanceof InterruptedException)) {
+                if (expected.getCause() instanceof InterruptedException) {
+                    interruptCount++;
+                }
+                else {
                     throw expected;
                 }
             }
 
-            timing.sleepABit();
+            try {
+                timing.sleepABit();
+            }
+            catch (InterruptedException expected) {
+                interruptCount++;
+            }
+
+            Assert.assertEquals(interruptCount, 1);
         }
         finally
         {
