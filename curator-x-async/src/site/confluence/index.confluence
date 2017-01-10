@@ -25,7 +25,7 @@ h2. Usage
 
 Note: To use Curator Async, you should be familiar with Java 8's lambdas, CompletedFuture and CompletionStage.
 
-Create a CuratorFramework instance in the normal way. You then wrap this instance using
+Create a [[CuratorFramework|../curator\-framework/index.html]] instance in the normal way. You then wrap this instance using
 AsyncCuratorFramework. i.e.
 
 {code}
@@ -106,7 +106,7 @@ problem occur or another exception occur, the completion lambda will never be ca
 
 {code}
 async.create().withMode(PERSISTENT_SEQUENTIAL).forPath(path).thenAccept(actualPath ->
-    async.watched().getData().forPath(actualPath));
+    async.watched().getData().forPath(actualPath).thenApply(() -> watchTriggered()));
 {code}
 
 ----
