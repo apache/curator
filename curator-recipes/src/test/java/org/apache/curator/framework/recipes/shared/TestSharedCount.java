@@ -42,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -387,6 +388,95 @@ public class TestSharedCount extends BaseClassForTests
         {
             CloseableUtils.closeQuietly(sharedCount);
             CloseableUtils.closeQuietly(curatorFramework);
+        }
+    }
+
+    @Test
+    public void testDisconnectReconnectEventDoesNotFireValueWatcherWithMultipleClients() throws Exception
+    {
+        CuratorFramework curatorFramework1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(10, 500));
+        CuratorFramework curatorFramework2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(10, 500));
+        curatorFramework1.start();
+        curatorFramework1.blockUntilConnected();
+        curatorFramework2.start();
+        curatorFramework2.blockUntilConnected();
+
+        SharedCount sharedCount1 = new SharedCount(curatorFramework1, "/count", 10);
+        SharedCount sharedCount2 = new SharedCount(curatorFramework2, "/count", 10);
+
+        class MySharedCountListener implements SharedCountListener
+        {
+            final public Phaser gotSuspendEvent = new Phaser(1);
+            final public Phaser gotChangeEvent = new Phaser(1);
+            final public Phaser getReconnectEvent = new Phaser(1);
+            final public AtomicInteger numChangeEvents = new AtomicInteger(0);
+
+            @Override
+            public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception
+            {
+                numChangeEvents.incrementAndGet();
+                gotChangeEvent.arrive();
+            }
+
+            @Override
+            public void stateChanged(CuratorFramework client, ConnectionState newState)
+            {
+                if (newState == ConnectionState.SUSPENDED) {
+                    gotSuspendEvent.arrive();
+                } else if (newState == ConnectionState.RECONNECTED) {
+                    getReconnectEvent.arrive();
+                }
+            }
+        }
+
+        MySharedCountListener listener1 = new MySharedCountListener();
+        sharedCount1.addListener(listener1);
+        MySharedCountListener listener2 = new MySharedCountListener();
+        sharedCount2.addListener(listener2);
+        sharedCount1.start();
+        sharedCount2.start();
+
+        try
+        {
+            sharedCount1.setCount(11);
+            Assert.assertEquals(listener1.gotChangeEvent.awaitAdvanceInterruptibly(0, 2, TimeUnit.SECONDS), 1);
+            Assert.assertEquals(listener2.gotChangeEvent.awaitAdvanceInterruptibly(0, 2, TimeUnit.SECONDS), 1);
+            Assert.assertEquals(sharedCount2.getCount(), 11);
+
+            server.stop();
+            Assert.assertEquals(listener1.gotSuspendEvent.awaitAdvanceInterruptibly(0, 2, TimeUnit.SECONDS), 1);
+            Assert.assertEquals(listener2.gotSuspendEvent.awaitAdvanceInterruptibly(0, 2, TimeUnit.SECONDS), 1);
+
+            server.restart();
+            Assert.assertEquals(listener1.getReconnectEvent.awaitAdvanceInterruptibly(0, 2, TimeUnit.SECONDS), 1);
+            Assert.assertEquals(listener2.getReconnectEvent.awaitAdvanceInterruptibly(0, 2, TimeUnit.SECONDS), 1);
+
+            sharedCount1.trySetCount(sharedCount1.getVersionedValue(), 12);
+            Assert.assertEquals(sharedCount1.getVersionedValue().getVersion(), 2);
+
+            Assert.assertEquals(listener2.gotChangeEvent.awaitAdvanceInterruptibly(1, 2, TimeUnit.SECONDS), 2);
+            Assert.assertEquals(sharedCount2.getCount(), 12);
+            Assert.assertEquals(sharedCount2.getVersionedValue().getVersion(), 2);
+
+            // flush background task queue
+            final CountDownLatch flushDone = new CountDownLatch(1);
+            curatorFramework1.getData().inBackground(new BackgroundCallback() {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                    flushDone.countDown();
+                }
+            }).forPath("/count");
+            flushDone.await(5, TimeUnit.SECONDS);
+
+            Assert.assertEquals(2, listener1.numChangeEvents.get());
+            Assert.assertEquals(2, listener2.numChangeEvents.get());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(sharedCount1);
+            CloseableUtils.closeQuietly(curatorFramework1);
+            CloseableUtils.closeQuietly(sharedCount2);
+            CloseableUtils.closeQuietly(curatorFramework2);
         }
     }
 }

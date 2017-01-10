@@ -75,14 +75,41 @@ public class SharedValue implements Closeable, SharedValueReader
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
+            handleStateChange(newState);
             notifyListenerOfStateChanged(newState);
         }
     };
 
+    private void handleStateChange(ConnectionState newState) {
+        // LOST: close should be called from user-defined listener
+        // CONNECTED: nothing to do
+        switch ( newState )
+        {
+            case SUSPENDED:
+                state.compareAndSet(State.STARTED, State.STALE);
+                break;
+
+            case RECONNECTED:
+                // update currentValue
+                try {
+                    state.compareAndSet(State.STALE, State.STARTING);
+                    startInternal();
+                    state.compareAndSet(State.STARTING, State.STARTED);
+                } catch (Exception e) {
+                    ThreadUtils.checkInterrupted(e);
+                    log.error("Could not re-start instances after reconnection", e);
+                }
+
+                break;
+        }
+    }
+
     private enum State
     {
         LATENT,
+        STARTING,
         STARTED,
+        STALE,
         CLOSED
     }
 
@@ -221,9 +248,14 @@ public class SharedValue implements Closeable, SharedValueReader
      */
     public void start() throws Exception
     {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTING), "Cannot be started more than once");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
+        startInternal();
+        state.compareAndSet(State.STARTING, State.STARTED);
+    }
+
+    private void startInternal() throws Exception {
         try
         {
             client.create().creatingParentContainersIfNeeded().forPath(path, seedValue);
