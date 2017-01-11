@@ -20,12 +20,11 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.ZooDefs;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -63,7 +62,7 @@ class NamespaceImpl
     {
         if ( (namespace != null) && (path != null) )
         {
-            String      namespacePath = ZKPaths.makePath(namespace, null);
+            String      namespacePath = ZKPaths.makePath(namespace, null) + "/";
             if ( !namespacePath.equals("/") && path.startsWith(namespacePath) )
             {
                 path = (path.length() > namespacePath.length()) ? path.substring(namespacePath.length()) : "/";

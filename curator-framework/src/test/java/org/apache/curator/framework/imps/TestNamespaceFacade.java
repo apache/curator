@@ -18,20 +18,19 @@
  */
 package org.apache.curator.framework.imps;
 
-import java.util.Collections;
-import java.util.List;
-
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.zookeeper.ZooDefs;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException.NoAuthException;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.Collections;
+import java.util.List;
 
 public class TestNamespaceFacade extends BaseClassForTests
 {
@@ -190,7 +189,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         client.close();
         Assert.assertEquals(client.getState(), namespaced.getState(), "Namespaced state did not match true state after call to close.");
     }
-    
+
     /**
      * Test that ACLs work on a NamespaceFacade. See CURATOR-132
      * @throws Exception
@@ -205,7 +204,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         client.create().creatingParentsIfNeeded().forPath("/parent/child", "A string".getBytes());
         CuratorFramework client2 = client.usingNamespace("parent");
 
-        Assert.assertNotNull(client2.getData().forPath("/child"));  
+        Assert.assertNotNull(client2.getData().forPath("/child"));
         client.setACL().withACL(Collections.singletonList(
             new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.ANYONE_ID_UNSAFE))).
                 forPath("/parent/child");
@@ -236,6 +235,17 @@ public class TestNamespaceFacade extends BaseClassForTests
         CuratorFrameworkImpl clientImpl = (CuratorFrameworkImpl) client;
 
         Assert.assertEquals(clientImpl.unfixForNamespace("/foo/bar"), "/foo/bar");
+
+        CloseableUtils.closeQuietly(client);
+    }
+
+    @Test
+    public void testUnfixForChildPathStartingWithNamespace(){
+        CuratorFramework client = CuratorFrameworkFactory.builder().namespace("foo").retryPolicy(new RetryOneTime(1)).connectString("").build();
+        CuratorFrameworkImpl clientImpl = (CuratorFrameworkImpl) client;
+
+        Assert.assertEquals(clientImpl.unfixForNamespace("/foobar"), "/foobar");
+        Assert.assertEquals(clientImpl.unfixForNamespace("/foobar/baz"), "/foobar/baz");
 
         CloseableUtils.closeQuietly(client);
     }
