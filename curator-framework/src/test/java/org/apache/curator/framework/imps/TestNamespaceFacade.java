@@ -18,19 +18,19 @@
  */
 package org.apache.curator.framework.imps;
 
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
-import org.apache.zookeeper.KeeperException.NoAuthException;
 import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.KeeperException.NoAuthException;
 import org.apache.zookeeper.data.ACL;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.Collections;
-import java.util.List;
 
 public class TestNamespaceFacade extends BaseClassForTests
 {

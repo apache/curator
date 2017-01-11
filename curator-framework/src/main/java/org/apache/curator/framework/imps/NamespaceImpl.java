@@ -24,7 +24,6 @@ import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
