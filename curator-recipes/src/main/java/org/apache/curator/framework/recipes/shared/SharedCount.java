@@ -49,6 +49,11 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
         sharedValue = new SharedValue(client, path, toBytes(seedValue));
     }
 
+    protected SharedCount(CuratorFramework client, String path, SharedValue sv)
+    {
+        sharedValue = sv;
+    }
+
     @Override
     public int getCount()
     {
