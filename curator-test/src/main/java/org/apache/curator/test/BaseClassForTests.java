@@ -203,7 +203,6 @@ public class BaseClassForTests
         {
             if ( method.getTestMethod().isBeforeMethodConfiguration() )
             {
-                TestListenerAdapter x = null;
                 RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
                 if ( retryContext == null )
                 {
@@ -244,12 +243,9 @@ public class BaseClassForTests
                 else
                 {
                     System.clearProperty("curator-use-classic-connection-handling");
-                    if ( testResult.isSuccess() )
+                    if ( testResult.isSuccess() || (testResult.getStatus() == ITestResult.FAILURE) )
                     {
                         retryContext.isRetrying.set(false);
-                    }
-                    if ( testResult.isSuccess() || retryContext.isRetrying.get() )
-                    {
                         if ( retryContext.runVersion.incrementAndGet() > 1 )
                         {
                             context.setAttribute(ATTRIBUTE_NAME, null);

@@ -74,7 +74,7 @@
         <scannotation-version>1.0.2</scannotation-version>
         <resteasy-jaxrs-version>2.3.0.GA</resteasy-jaxrs-version>
         <guava-version>16.0.1</guava-version>
-        <testng-version>6.8.8</testng-version>
+        <testng-version>6.10</testng-version>
         <swift-version>0.12.0</swift-version>
         <dropwizard-version>0.7.0</dropwizard-version>
         <maven-shade-plugin-version>2.3</maven-shade-plugin-version>
