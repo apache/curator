@@ -27,15 +27,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import java.io.IOException;
 import java.net.BindException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BaseClassForTests
 {
     protected TestingServer server;
 
-    private static final int    RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
-    private static final String INTERNAL_RETRY_FAILED_TESTS;
     static
     {
         String logConnectionIssues = null;
@@ -45,14 +42,12 @@ public class BaseClassForTests
             // use reflection to avoid adding a circular dependency in the pom
             Class<?> debugUtilsClazz = Class.forName("org.apache.curator.utils.DebugUtils");
             logConnectionIssues = (String)debugUtilsClazz.getField("PROPERTY_DONT_LOG_CONNECTION_ISSUES").get(null);
-            retryFailedTests = (String)debugUtilsClazz.getField("PROPERTY_RETRY_FAILED_TESTS").get(null);
         }
         catch ( Exception e )
         {
             e.printStackTrace();
         }
         INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES = logConnectionIssues;
-        INTERNAL_RETRY_FAILED_TESTS = retryFailedTests;
     }
 
     @BeforeSuite(alwaysRun = true)
@@ -105,27 +100,20 @@ public class BaseClassForTests
 
     private static class RetryTest implements IRetryAnalyzer
     {
-        private final AtomicBoolean hasBeenRetried = new AtomicBoolean(!Boolean.getBoolean(INTERNAL_RETRY_FAILED_TESTS));
+        private boolean wasRetried = false;
 
         @Override
         public boolean retry(ITestResult result)
         {
-            boolean isRetrying = hasBeenRetried.compareAndSet(false, true);
-            if ( isRetrying )
+            if ( result.isSuccess() || wasRetried )
             {
-                System.err.println(String.format("Waiting " + RETRY_WAIT_MS + " ms and retrying test. Name: %s - TestName: %s ", result.getName(), result.getTestName()));
-                try
-                {
-                    Thread.sleep(RETRY_WAIT_MS);
-                }
-                catch ( InterruptedException e )
-                {
-                    System.err.println(String.format("Retry interrupted. Name: %s - TestName: %s ", result.getName(), result.getTestName()));
-                    Thread.currentThread().interrupt();
-                    isRetrying = false;
-                }
+                wasRetried = false;
+                return false;
             }
-            return isRetrying;
+
+            wasRetried = true;
+            System.err.println(String.format("Retry test 1 time. Name: %s - TestName: %s ", result.getName(), result.getTestName()));
+            return true;
         }
     }
 
