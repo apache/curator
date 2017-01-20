@@ -173,7 +173,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
     @Override
     public void makeRevocable(RevocationListener<InterProcessMutex> listener)
     {
-        makeRevocable(listener, MoreExecutors.sameThreadExecutor());
+        makeRevocable(listener, MoreExecutors.newDirectExecutorService());
     }
 
     @Override
