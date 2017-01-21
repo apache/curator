@@ -55,7 +55,7 @@ public class TestBasicOperations extends BaseClassForTests
     {
         super.setup();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(timing.milliseconds()));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(timing.forSleepingABit().milliseconds()));
         client.start();
         this.client = AsyncCuratorFramework.wrap(client);
     }
@@ -142,6 +142,44 @@ public class TestBasicOperations extends BaseClassForTests
         server.restart();
         client.create().forPath("/test");
         Assert.assertTrue(timing.awaitLatch(latch));
+    }
+
+    @Test
+    public void testResultWrapper() throws Exception
+    {
+        CompletionStage<AsyncResult<String>> resultStage = AsyncResult.of(client.create().forPath("/first"));
+        complete(resultStage, (v, e) -> {
+            Assert.assertNull(e);
+            Assert.assertEquals(v.getRawValue(), "/first");
+            Assert.assertNull(v.getRawException());
+            Assert.assertEquals(v.getCode(), KeeperException.Code.OK);
+        });
+
+        resultStage = AsyncResult.of(client.create().forPath("/foo/bar"));
+        complete(resultStage, (v, e) -> {
+            Assert.assertNull(e);
+            Assert.assertNull(v.getRawValue());
+            Assert.assertNull(v.getRawException());
+            Assert.assertEquals(v.getCode(), KeeperException.Code.NONODE);
+        });
+
+        resultStage = AsyncResult.of(client.create().forPath("illegal path"));
+        complete(resultStage, (v, e) -> {
+            Assert.assertNull(e);
+            Assert.assertNull(v.getRawValue());
+            Assert.assertNotNull(v.getRawException());
+            Assert.assertTrue(v.getRawException() instanceof IllegalArgumentException);
+            Assert.assertEquals(v.getCode(), KeeperException.Code.SYSTEMERROR);
+        });
+
+        server.stop();
+        resultStage = AsyncResult.of(client.create().forPath("/second"));
+        complete(resultStage, (v, e) -> {
+            Assert.assertNull(e);
+            Assert.assertNull(v.getRawValue());
+            Assert.assertNull(v.getRawException());
+            Assert.assertEquals(v.getCode(), KeeperException.Code.CONNECTIONLOSS);
+        });
     }
 
     private <T, U> void complete(CompletionStage<T> stage)
