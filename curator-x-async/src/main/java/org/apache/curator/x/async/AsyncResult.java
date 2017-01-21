@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage;
  * <p>
  *     Utility that combines the value, the ZooKeeper result code and the exception in one object
  *     allowing you to not worry about exceptional completions. i.e. the {@link java.util.concurrent.CompletionStage}
- *     retured by {@link org.apache.curator.x.async.AsyncResult#of(AsyncStage)} always completes successfully with an
+ *     returned by {@link org.apache.curator.x.async.AsyncResult#of(AsyncStage)} always completes successfully with an
  *     {@link org.apache.curator.x.async.AsyncResult} object.
  * </p>
  *

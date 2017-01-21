@@ -96,6 +96,37 @@ stage.event().exceptionally(e -> {
 });
 {code}
 
+h4. AsyncResult
+
+As a convenience, you can use {{AsyncResult}} to combine ZooKeeper method value, the ZooKeeper result
+code and any exception in one object allowing you to not worry about exceptional completions. i.e. the {{CompletionStage}}
+retured by {{AsyncResult.of()}} always completes successfully with an AsyncResult object.
+
+AsyncResult has methods to get either the method result (a path, Stat, etc.), a KeeperException code
+or a general exception:
+
+{code}
+Optional<T> getValue();
+
+KeeperException.Code getCode();
+
+Optional<Throwable> getException();
+{code}
+
+Use AsyncResult by wrapping an {{AsyncStage}} value. i.e.
+
+{code}
+CompletionStage<AsyncResult<Stat>> resultStage = AsyncResult.of(async.checkExists().forPath(path));
+resultStage.thenAccept(result -> {
+    if ( result.getValue().isPresent() ) {
+        // ...
+    } else if ( result.getCode() == KeeperException.Code.NOAUTH ) {
+        // ...
+    }
+    // etc.
+});
+{code}
+
 h2. Examples
 
 h4. Create a sequential ZNode
@@ -127,6 +158,23 @@ async.create().withOptions(EnumSet.of(doProtected)).forPath(path).handle((actual
         // actualPath is the path created
     }
     return null;
+});
+{code}
+
+----
+
+h4. Simplied usage via AsyncResult
+
+{code}
+AsyncResult.of(async.create().withOptions(EnumSet.of(doProtected)).forPath(path)).thenAccept(result -> {
+    if ( result.getRawValue() != null )
+    {
+        // result.getRawValue() is the path created
+    }
+    else
+    {
+        // ...
+    }
 });
 {code}
 
