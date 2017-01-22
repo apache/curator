@@ -100,7 +100,7 @@ h4. AsyncResult
 
 As a convenience, you can use {{AsyncResult}} to combine ZooKeeper method value, the ZooKeeper result
 code and any exception in one object allowing you to not worry about exceptional completions. i.e. the {{CompletionStage}}
-retured by {{AsyncResult.of()}} always completes successfully with an AsyncResult object.
+returned by {{AsyncResult.of()}} always completes successfully with an AsyncResult object.
 
 AsyncResult has methods to get either the method result (a path, Stat, etc.), a KeeperException code
 or a general exception:
@@ -163,7 +163,7 @@ async.create().withOptions(EnumSet.of(doProtected)).forPath(path).handle((actual
 
 ----
 
-h4. Simplied usage via AsyncResult
+h4. Simplified usage via AsyncResult
 
 {code}
 AsyncResult.of(async.create().withOptions(EnumSet.of(doProtected)).forPath(path)).thenAccept(result -> {
