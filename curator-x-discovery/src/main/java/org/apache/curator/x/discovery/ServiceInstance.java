@@ -42,6 +42,7 @@ public class ServiceInstance<T>
     private final long          registrationTimeUTC;
     private final ServiceType   serviceType;
     private final UriSpec       uriSpec;
+    private final boolean       enabled;
 
     /**
      * Return a new builder. The {@link #address} is set to the ip of the first
@@ -77,6 +78,23 @@ public class ServiceInstance<T>
      */
     public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec)
     {
+        this(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType, uriSpec, true);
+    }
+
+    /**
+     * @param name name of the service
+     * @param id id of this instance (must be unique)
+     * @param address address of this instance
+     * @param port the port for this instance or null
+     * @param sslPort the SSL port for this instance or null
+     * @param payload the payload for this instance or null
+     * @param registrationTimeUTC the time (in UTC) of the registration
+     * @param serviceType type of the service
+     * @param uriSpec the uri spec or null
+     * @param enabled true if the instance should be considered enabled
+     */
+    public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec, boolean enabled)
+    {
         name = Preconditions.checkNotNull(name, "name cannot be null");
         id = Preconditions.checkNotNull(id, "id cannot be null");
 
@@ -89,6 +107,7 @@ public class ServiceInstance<T>
         this.sslPort = sslPort;
         this.payload = payload;
         this.registrationTimeUTC = registrationTimeUTC;
+        this.enabled = enabled;
     }
 
     /**
@@ -96,7 +115,7 @@ public class ServiceInstance<T>
      */
     ServiceInstance()
     {
-        this("", "", null, null, null, null, 0, ServiceType.DYNAMIC, null);
+        this("", "", null, null, null, null, 0, ServiceType.DYNAMIC, null, true);
     }
 
     public String getName()
@@ -143,6 +162,11 @@ public class ServiceInstance<T>
     public UriSpec getUriSpec()
     {
         return uriSpec;
+    }
+
+    public boolean isEnabled()
+    {
+        return enabled;
     }
 
     public String buildUriSpec()
@@ -206,6 +230,10 @@ public class ServiceInstance<T>
         {
             return false;
         }
+        if ( enabled != that.enabled )
+        {
+            return false;
+        }
 
         return true;
     }
@@ -222,6 +250,7 @@ public class ServiceInstance<T>
         result = 31 * result + (int)(registrationTimeUTC ^ (registrationTimeUTC >>> 32));
         result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
         result = 31 * result + (uriSpec != null ? uriSpec.hashCode() : 0);
+        result = 31 * result + (enabled ? 1 : 0);
         return result;
     }
 
@@ -238,6 +267,7 @@ public class ServiceInstance<T>
             ", registrationTimeUTC=" + registrationTimeUTC +
             ", serviceType=" + serviceType +
             ", uriSpec=" + uriSpec +
+            ", enabled=" + enabled +
             '}';
     }
 }
