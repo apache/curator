@@ -36,7 +36,8 @@ public enum WatchMode
     /**
      * The {@link java.util.concurrent.CompletionStage}&lt;org.apache.zookeeper.WatchedEvent&gt; will
      * complete for both successful trigger and connection exceptions. Connection exceptions are
-     * of type: {@link org.apache.curator.x.async.AsyncEventException}.
+     * of type: {@link org.apache.curator.x.async.AsyncEventException}. Note: this is the default
+     * watch mode.
      */
     stateChangeAndSuccess
 }
