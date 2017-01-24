@@ -76,6 +76,23 @@ public class ServiceInstance<T>
      * @param serviceType type of the service
      * @param uriSpec the uri spec or null
      */
+    public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec)
+    {
+        this(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType, uriSpec, true);
+    }
+
+    /**
+     * @param name name of the service
+     * @param id id of this instance (must be unique)
+     * @param address address of this instance
+     * @param port the port for this instance or null
+     * @param sslPort the SSL port for this instance or null
+     * @param payload the payload for this instance or null
+     * @param registrationTimeUTC the time (in UTC) of the registration
+     * @param serviceType type of the service
+     * @param uriSpec the uri spec or null
+     * @param enabled true if the instance should be considered enabled
+     */
     public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec, boolean enabled)
     {
         name = Preconditions.checkNotNull(name, "name cannot be null");
@@ -233,7 +250,7 @@ public class ServiceInstance<T>
         result = 31 * result + (int)(registrationTimeUTC ^ (registrationTimeUTC >>> 32));
         result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
         result = 31 * result + (uriSpec != null ? uriSpec.hashCode() : 0);
-        result = 31 * result + (enabled ? 1231 : 1237);
+        result = 31 * result + (enabled ? 1 : 0);
         return result;
     }
 
