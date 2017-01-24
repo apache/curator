@@ -80,7 +80,7 @@ h4. AsyncEventException
 When an async watcher fails the exception set in the CompletionStage will be of type {{AsyncEventException}}.
 This exception allows you to see the KeeperState that caused the trigger and allows you to reset the
 completion stage. Reset is needed because ZooKeeper temporarily triggers watchers when there is a connection
-event. However, the watcher stays set for the original operation. Use {{AsyncEventException#reset}}
+event (unless {{WatchMode.successOnly}} is used). However, the watcher stays set for the original operation. Use {{AsyncEventException#reset}}
 to start a new completion stage that will wait on the next trigger of the watcher.
 
 E.g.
