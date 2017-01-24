@@ -22,16 +22,19 @@ package org.apache.curator.test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.IInvokedMethod;
-import org.testng.IInvokedMethodListener;
+import org.testng.IInvokedMethodListener2;
+import org.testng.IRetryAnalyzer;
 import org.testng.ITestContext;
-import org.testng.ITestNGListener;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
+import org.testng.TestListenerAdapter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import java.io.IOException;
 import java.net.BindException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BaseClassForTests
 {
@@ -84,31 +87,7 @@ public class BaseClassForTests
     @BeforeSuite(alwaysRun = true)
     public void beforeSuite(ITestContext context)
     {
-        if ( !enabledSessionExpiredStateAware() )
-        {
-            ITestNGListener listener = new IInvokedMethodListener()
-            {
-                @Override
-                public void beforeInvocation(IInvokedMethod method, ITestResult testResult)
-                {
-                    int invocationCount = method.getTestMethod().getCurrentInvocationCount();
-                    System.setProperty("curator-use-classic-connection-handling", Boolean.toString(invocationCount == 1));
-                    log.info("curator-use-classic-connection-handling: " + Boolean.toString(invocationCount == 1));
-                }
-
-                @Override
-                public void afterInvocation(IInvokedMethod method, ITestResult testResult)
-                {
-                    System.clearProperty("curator-use-classic-connection-handling");
-                }
-            };
-            context.getSuite().addListener(listener);
-        }
-
-        for ( ITestNGMethod method : context.getAllTestMethods() )
-        {
-            method.setInvocationCount(enabledSessionExpiredStateAware() ? 1 : 2);
-        }
+        context.getSuite().addListener(new MethodListener(log, enabledSessionExpiredStateAware()));
     }
 
     @BeforeMethod
@@ -160,5 +139,120 @@ public class BaseClassForTests
     protected boolean enabledSessionExpiredStateAware()
     {
         return false;
+    }
+
+    private static class RetryContext
+    {
+        final AtomicBoolean isRetrying = new AtomicBoolean(false);
+        final AtomicInteger runVersion = new AtomicInteger(0);
+    }
+
+    private static class RetryAnalyzer implements IRetryAnalyzer
+    {
+        private final Logger log;
+        private final RetryContext retryContext;
+
+        RetryAnalyzer(Logger log, RetryContext retryContext)
+        {
+            this.log = log;
+            this.retryContext = retryContext;
+        }
+
+        @Override
+        public boolean retry(ITestResult result)
+        {
+            if ( result.isSuccess() || retryContext.isRetrying.get() )
+            {
+                retryContext.isRetrying.set(false);
+                return false;
+            }
+
+            log.error("Retrying 1 time");
+            retryContext.isRetrying.set(true);
+            return true;
+        }
+    }
+
+    private static class MethodListener implements IInvokedMethodListener2
+    {
+        private final Logger log;
+        private final boolean sessionExpiredStateAware;
+
+        private static final String ATTRIBUTE_NAME = "__curator";
+
+        MethodListener(Logger log, boolean sessionExpiredStateAware)
+        {
+            this.log = log;
+            this.sessionExpiredStateAware = sessionExpiredStateAware;
+        }
+
+        @Override
+        public void beforeInvocation(IInvokedMethod method, ITestResult testResult)
+        {
+            // NOP
+        }
+
+        @Override
+        public void afterInvocation(IInvokedMethod method, ITestResult testResult)
+        {
+            // NOP
+        }
+
+        @Override
+        public void beforeInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
+        {
+            if ( method.getTestMethod().isBeforeMethodConfiguration() )
+            {
+                RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
+                if ( retryContext == null )
+                {
+                    retryContext = new RetryContext();
+                    context.setAttribute(ATTRIBUTE_NAME, retryContext);
+                }
+
+                if ( !sessionExpiredStateAware )
+                {
+                    System.setProperty("curator-use-classic-connection-handling", Boolean.toString(retryContext.runVersion.get() > 0));
+                    log.info("curator-use-classic-connection-handling: " + Boolean.toString(retryContext.runVersion.get() > 0));
+                }
+            }
+            else if ( method.isTestMethod() )
+            {
+                method.getTestMethod().setRetryAnalyzer(new RetryAnalyzer(log, (RetryContext)context.getAttribute(ATTRIBUTE_NAME)));
+            }
+        }
+
+        @Override
+        public void afterInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
+        {
+            if ( method.getTestMethod().isBeforeSuiteConfiguration() && !sessionExpiredStateAware )
+            {
+                for ( ITestNGMethod testMethod : context.getAllTestMethods() )
+                {
+                    testMethod.setInvocationCount(2);
+                }
+            }
+
+            if ( method.isTestMethod() )
+            {
+                RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
+                if ( retryContext == null )
+                {
+                    log.error("No retryContext!");
+                }
+                else
+                {
+                    System.clearProperty("curator-use-classic-connection-handling");
+                    if ( testResult.isSuccess() || (testResult.getStatus() == ITestResult.FAILURE) )
+                    {
+                        retryContext.isRetrying.set(false);
+                        if ( retryContext.runVersion.incrementAndGet() > 1 )
+                        {
+                            context.setAttribute(ATTRIBUTE_NAME, null);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

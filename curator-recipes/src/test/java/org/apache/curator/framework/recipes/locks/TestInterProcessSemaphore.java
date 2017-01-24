@@ -691,9 +691,16 @@ public class TestInterProcessSemaphore extends BaseClassForTests
 
             timing.forWaiting().sleepABit();
 
-            List<String> children = client.getChildren().forPath("/test");
+            try
+            {
+                List<String> children = client.getChildren().forPath("/test");
 
-            Assert.assertEquals(children.size(), 0, "All children of /test should have been reaped");
+                Assert.assertEquals(children.size(), 0, "All children of /test should have been reaped");
+            }
+            catch ( KeeperException.NoNodeException ok )
+            {
+                // this is OK - if Container Nodes are used the "/test" path will go away - no point in updating the test for deprecated code
+            }
         }
         finally
         {
