@@ -31,7 +31,7 @@ import org.apache.zookeeper.Op;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, ErrorListenerPathable<Void>
+public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, ErrorListenerPathable<Void>
 {
     private final CuratorFrameworkImpl client;
     private int version;
@@ -48,6 +48,16 @@ class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, E
         deletingChildrenIfNeeded = false;
         guaranteed = false;
         quietly = false;
+    }
+
+    public DeleteBuilderImpl(CuratorFrameworkImpl client, int version, Backgrounding backgrounding, boolean deletingChildrenIfNeeded, boolean guaranteed, boolean quietly)
+    {
+        this.client = client;
+        this.version = version;
+        this.backgrounding = backgrounding;
+        this.deletingChildrenIfNeeded = deletingChildrenIfNeeded;
+        this.guaranteed = guaranteed;
+        this.quietly = quietly;
     }
 
     <T> TransactionDeleteBuilder<T> asTransactionDeleteBuilder(final T context, final CuratorMultiTransactionRecord transaction)
