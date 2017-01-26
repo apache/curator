@@ -172,7 +172,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                         {
                             notifyListeners(CacheEvent.NODE_CREATED, path, newNode);
                         }
-                        else if ( !nodeComparator.isSame(newNode, oldNode) )
+                        else if ( !nodeComparator.isSame(newNode, oldNode) )    // NOTE: for PATH_ONLY isSame() is always false. We aren't storing the data so cannot do an actual comparison
                         {
                             notifyListeners(CacheEvent.NODE_CHANGED, path, newNode);
                         }
@@ -216,6 +216,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 break;
             }
 
+            case PATH_ONLY:
             case STAT_ONLY:
             case STAT_AND_DATA:
             {
