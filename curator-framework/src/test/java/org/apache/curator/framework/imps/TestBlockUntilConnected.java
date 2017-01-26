@@ -320,7 +320,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
             //Wait until we get expired event
             Assert.assertTrue(timing.awaitLatch(expiredLatch), "Failed to get Expired event");
 
-            Assert.assertTrue(client.blockUntilConnected(50, TimeUnit.SECONDS), "Not connected");
+            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
         }
         catch ( Exception e )
         {
