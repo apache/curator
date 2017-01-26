@@ -149,7 +149,9 @@ class ConnectionState implements Watcher, Closeable
             log.debug("ConnectState watcher: " + event);
         }
 
-        if ( event.getType() == Watcher.Event.EventType.None )
+        final boolean eventTypeNone = event.getType() == Watcher.Event.EventType.None;
+
+        if ( eventTypeNone )
         {
             boolean wasConnected = isConnected.get();
             boolean newIsConnected = checkState(event.getState(), wasConnected);
@@ -160,13 +162,33 @@ class ConnectionState implements Watcher, Closeable
             }
         }
 
+        // only wait during tests
+        assert waitOnExpiredEvent(event.getState());
+
         for ( Watcher parentWatcher : parentWatchers )
         {
-
             OperationTrace trace = new OperationTrace("connection-state-parent-process", tracer.get(), getSessionId());
             parentWatcher.process(event);
             trace.commit();
         }
+
+        if (eventTypeNone) handleState(event.getState());
+    }
+
+    // only for testing
+    private boolean waitOnExpiredEvent(Event.KeeperState currentState)
+    {
+        if (currentState == Event.KeeperState.Expired)
+        {
+            log.debug("Waiting on Expired event for testing");
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch(InterruptedException e) {}
+            log.debug("Continue processing");
+        }
+        return true;
     }
 
     EnsembleProvider getEnsembleProvider()
@@ -240,11 +262,11 @@ class ConnectionState implements Watcher, Closeable
     private boolean checkState(Event.KeeperState state, boolean wasConnected)
     {
         boolean isConnected = wasConnected;
-        boolean checkNewConnectionString = true;
         switch ( state )
         {
         default:
         case Disconnected:
+        case Expired:
         {
             isConnected = false;
             break;
@@ -264,14 +286,6 @@ class ConnectionState implements Watcher, Closeable
             break;
         }
 
-        case Expired:
-        {
-            isConnected = false;
-            checkNewConnectionString = false;
-            handleExpiredSession();
-            break;
-        }
-
         case SaslAuthenticated:
         {
             // NOP
@@ -283,12 +297,19 @@ class ConnectionState implements Watcher, Closeable
             new EventTrace(state.toString(), tracer.get(), getSessionId()).commit();
         }
 
-        if ( checkNewConnectionString && zooKeeper.hasNewConnectionString() )
+        return isConnected;
+    }
+
+    private void handleState(Event.KeeperState state)
+    {
+        if (state == Event.KeeperState.Expired)
+        {
+            handleExpiredSession();
+        }
+        else if (zooKeeper.hasNewConnectionString())
         {
             handleNewConnectionString();
         }
-
-        return isConnected;
     }
 
     private void handleNewConnectionString()
