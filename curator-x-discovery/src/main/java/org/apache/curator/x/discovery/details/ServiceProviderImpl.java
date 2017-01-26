@@ -53,6 +53,14 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
 
         ArrayList<InstanceFilter<T>> localFilters = Lists.newArrayList(filters);
         localFilters.add(downInstanceManager);
+        localFilters.add(new InstanceFilter<T>()
+        {
+            @Override
+            public boolean apply(ServiceInstance<T> instance)
+            {
+                return instance.isEnabled();
+            }
+        });
         instanceProvider = new FilteredInstanceProvider<T>(cache, localFilters);
     }
 

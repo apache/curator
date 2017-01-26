@@ -62,7 +62,6 @@ public class PersistentNode implements Closeable
     private final AtomicReference<CountDownLatch> initialCreateLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final WatcherRemoveCuratorFramework client;
-    private final CreateModable<ACLBackgroundPathAndBytesable<String>> createMethod;
     private final AtomicReference<String> nodePath = new AtomicReference<String>(null);
     private final String basePath;
     private final CreateMode mode;
@@ -71,6 +70,7 @@ public class PersistentNode implements Closeable
     private final AtomicBoolean authFailure = new AtomicBoolean(false);
     private final BackgroundCallback backgroundCallback;
     private final boolean useProtection;
+    private final AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>> createMethod = new AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>>(null);
     private final CuratorWatcher watcher = new CuratorWatcher()
     {
         @Override
@@ -186,7 +186,6 @@ public class PersistentNode implements Closeable
             }
         };
 
-        createMethod = useProtection ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
         this.data.set(Arrays.copyOf(data, data.length));
     }
 
@@ -411,7 +410,17 @@ public class PersistentNode implements Closeable
         {
             String existingPath = nodePath.get();
             String createPath = (existingPath != null && !useProtection) ? existingPath : basePath;
-            createMethod.withMode(getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data.get());
+
+            CreateModable<ACLBackgroundPathAndBytesable<String>> localCreateMethod = createMethod.get();
+            if ( localCreateMethod == null )
+            {
+                CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod = useProtection ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
+                if ( createMethod.compareAndSet(null, tempCreateMethod) )
+                {
+                    localCreateMethod = tempCreateMethod;
+                }
+            }
+            localCreateMethod.withMode(getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data.get());
         }
         catch ( Exception e )
         {

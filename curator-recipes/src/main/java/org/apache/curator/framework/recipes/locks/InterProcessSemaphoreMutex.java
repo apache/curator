@@ -64,17 +64,12 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
     @Override
     public void release() throws Exception
     {
+        Lease lease = this.lease;
         Preconditions.checkState(lease != null, "Not acquired");
 
-        try
-        {
-            lease.close();
-            watcherRemoveClient.removeWatchers();
-        }
-        finally
-        {
-            lease = null;
-        }
+        this.lease = null;
+        lease.close();
+        watcherRemoveClient.removeWatchers();
     }
 
     @Override

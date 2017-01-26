@@ -41,6 +41,7 @@ public class ServiceInstanceBuilder<T>
     private long registrationTimeUTC;
     private ServiceType serviceType = ServiceType.DYNAMIC;
     private UriSpec uriSpec;
+    private boolean enabled = true;
 
     private static final AtomicReference<LocalIpFilter> localIpFilter = new AtomicReference<LocalIpFilter>
     (
@@ -85,7 +86,7 @@ public class ServiceInstanceBuilder<T>
      */
     public ServiceInstance<T> build()
     {
-        return new ServiceInstance<T>(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType, uriSpec);
+        return new ServiceInstance<T>(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType, uriSpec, enabled);
     }
 
     public ServiceInstanceBuilder<T> name(String name)
@@ -139,6 +140,12 @@ public class ServiceInstanceBuilder<T>
     public ServiceInstanceBuilder<T> uriSpec(UriSpec uriSpec)
     {
         this.uriSpec = uriSpec;
+        return this;
+    }
+
+    public ServiceInstanceBuilder<T> enabled(boolean enabled)
+    {
+        this.enabled = enabled;
         return this;
     }
 
