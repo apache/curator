@@ -18,6 +18,7 @@
  */
 package org.apache.curator;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.drivers.EventTrace;
 import org.apache.curator.drivers.OperationTrace;
@@ -55,6 +56,9 @@ class ConnectionState implements Watcher, Closeable
     private final Queue<Watcher> parentWatchers = new ConcurrentLinkedQueue<Watcher>();
     private final AtomicLong instanceIndex = new AtomicLong();
     private volatile long connectionStartMs = 0;
+
+    @VisibleForTesting
+    volatile boolean debugWaitOnExpiredEvent = false;
 
     ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer, boolean canBeReadOnly)
     {
@@ -163,7 +167,10 @@ class ConnectionState implements Watcher, Closeable
         }
 
         // only wait during tests
-        assert waitOnExpiredEvent(event.getState());
+        if (debugWaitOnExpiredEvent && event.getState() == Event.KeeperState.Expired)
+        {
+            waitOnExpiredEvent();
+        }
 
         for ( Watcher parentWatcher : parentWatchers )
         {
@@ -176,19 +183,15 @@ class ConnectionState implements Watcher, Closeable
     }
 
     // only for testing
-    private boolean waitOnExpiredEvent(Event.KeeperState currentState)
+    private void waitOnExpiredEvent()
     {
-        if (currentState == Event.KeeperState.Expired)
+        log.debug("Waiting on Expired event for testing");
+        try
         {
-            log.debug("Waiting on Expired event for testing");
-            try
-            {
-                Thread.sleep(1000);
-            }
-            catch(InterruptedException e) {}
-            log.debug("Continue processing");
+            Thread.sleep(1000);
         }
-        return true;
+        catch(InterruptedException e) {}
+        log.debug("Continue processing");
     }
 
     EnsembleProvider getEnsembleProvider()

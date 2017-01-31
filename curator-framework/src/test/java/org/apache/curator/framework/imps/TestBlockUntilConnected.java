@@ -19,6 +19,8 @@
 
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.ConnectionStateAccessor;
+import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -32,6 +34,7 @@ import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.Watcher;
+import org.mockito.internal.util.reflection.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Timer;
@@ -298,6 +301,8 @@ public class TestBlockUntilConnected extends BaseClassForTests
             }
         });
 
+        ConnectionStateAccessor.setDebugWaitOnExpiredForClient(client);
+
         try
         {
             client.start();
@@ -320,7 +325,9 @@ public class TestBlockUntilConnected extends BaseClassForTests
             //Wait until we get expired event
             Assert.assertTrue(timing.awaitLatch(expiredLatch), "Failed to get Expired event");
 
-            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
+            final boolean blockUntilConnected5Seconds = client.blockUntilConnected(5, TimeUnit.SECONDS);
+            Assert.assertTrue(client.getZookeeperClient().isConnected(), "ConnectionState.isConnected returned false");
+            Assert.assertTrue(blockUntilConnected5Seconds, "BlockUntilConnected returned false");
         }
         catch ( Exception e )
         {
