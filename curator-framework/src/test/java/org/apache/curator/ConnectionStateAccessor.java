@@ -20,14 +20,26 @@
 package org.apache.curator;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.mockito.internal.util.reflection.Whitebox;
+
+import java.lang.reflect.Field;
 
 public final class ConnectionStateAccessor
 {
-    public static final void setDebugWaitOnExpiredForClient(CuratorFramework client)
+    public static void setDebugWaitOnExpiredForClient(CuratorFramework client)
     {
         CuratorZookeeperClient zookeeperClient = client.getZookeeperClient();
-        ConnectionState state = (ConnectionState)Whitebox.getInternalState(zookeeperClient, "state");
+        ConnectionState state = (ConnectionState)getInternalState(zookeeperClient, "state");
         state.debugWaitOnExpiredEvent = true;
+    }
+
+    private static Object getInternalState(Object target, String field) {
+        Class<?> c = target.getClass();
+        try {
+            Field f = c.getDeclaredField(field);
+            f.setAccessible(true);
+            return f.get(target);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to get internal state on a private field.", e);
+        }
     }
 }
