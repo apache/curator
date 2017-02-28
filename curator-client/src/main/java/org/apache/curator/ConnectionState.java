@@ -18,6 +18,7 @@
  */
 package org.apache.curator;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.drivers.EventTrace;
 import org.apache.curator.drivers.OperationTrace;
@@ -55,6 +56,9 @@ class ConnectionState implements Watcher, Closeable
     private final Queue<Watcher> parentWatchers = new ConcurrentLinkedQueue<Watcher>();
     private final AtomicLong instanceIndex = new AtomicLong();
     private volatile long connectionStartMs = 0;
+
+    @VisibleForTesting
+    volatile boolean debugWaitOnExpiredEvent = false;
 
     ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer, boolean canBeReadOnly)
     {
@@ -149,7 +153,9 @@ class ConnectionState implements Watcher, Closeable
             log.debug("ConnectState watcher: " + event);
         }
 
-        if ( event.getType() == Watcher.Event.EventType.None )
+        final boolean eventTypeNone = event.getType() == Watcher.Event.EventType.None;
+
+        if ( eventTypeNone )
         {
             boolean wasConnected = isConnected.get();
             boolean newIsConnected = checkState(event.getState(), wasConnected);
@@ -160,13 +166,32 @@ class ConnectionState implements Watcher, Closeable
             }
         }
 
+        // only wait during tests
+        if (debugWaitOnExpiredEvent && event.getState() == Event.KeeperState.Expired)
+        {
+            waitOnExpiredEvent();
+        }
+
         for ( Watcher parentWatcher : parentWatchers )
         {
-
             OperationTrace trace = new OperationTrace("connection-state-parent-process", tracer.get(), getSessionId());
             parentWatcher.process(event);
             trace.commit();
         }
+
+        if (eventTypeNone) handleState(event.getState());
+    }
+
+    // only for testing
+    private void waitOnExpiredEvent()
+    {
+        log.debug("Waiting on Expired event for testing");
+        try
+        {
+            Thread.sleep(1000);
+        }
+        catch(InterruptedException e) {}
+        log.debug("Continue processing");
     }
 
     EnsembleProvider getEnsembleProvider()
@@ -240,11 +265,11 @@ class ConnectionState implements Watcher, Closeable
     private boolean checkState(Event.KeeperState state, boolean wasConnected)
     {
         boolean isConnected = wasConnected;
-        boolean checkNewConnectionString = true;
         switch ( state )
         {
         default:
         case Disconnected:
+        case Expired:
         {
             isConnected = false;
             break;
@@ -264,14 +289,6 @@ class ConnectionState implements Watcher, Closeable
             break;
         }
 
-        case Expired:
-        {
-            isConnected = false;
-            checkNewConnectionString = false;
-            handleExpiredSession();
-            break;
-        }
-
         case SaslAuthenticated:
         {
             // NOP
@@ -283,12 +300,19 @@ class ConnectionState implements Watcher, Closeable
             new EventTrace(state.toString(), tracer.get(), getSessionId()).commit();
         }
 
-        if ( checkNewConnectionString && zooKeeper.hasNewConnectionString() )
+        return isConnected;
+    }
+
+    private void handleState(Event.KeeperState state)
+    {
+        if (state == Event.KeeperState.Expired)
+        {
+            handleExpiredSession();
+        }
+        else if (zooKeeper.hasNewConnectionString())
         {
             handleNewConnectionString();
         }
-
-        return isConnected;
     }
 
     private void handleNewConnectionString()

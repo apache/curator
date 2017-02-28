@@ -19,8 +19,13 @@
 
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.ConnectionStateAccessor;
+import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
@@ -28,6 +33,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.zookeeper.Watcher;
+import org.mockito.internal.util.reflection.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.Timer;
@@ -254,6 +261,81 @@ public class TestBlockUntilConnected extends BaseClassForTests
             {
                 client.close();
             }
+        }
+    }
+
+    /**
+     * Test that we got disconnected before calling blockUntilConnected and we reconnect we receive a session expired event.
+     */
+    @Test
+    public void testBlockUntilConnectedSessionExpired() throws Exception
+    {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.builder().
+                connectString(server.getConnectString()).
+                retryPolicy(new RetryOneTime(1)).
+                build();
+
+        final CountDownLatch lostLatch = new CountDownLatch(1);
+        client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+        {
+
+            @Override
+            public void stateChanged(CuratorFramework client, ConnectionState newState)
+            {
+                if ( newState == ConnectionState.LOST )
+                {
+                    lostLatch.countDown();
+                }
+            }
+        });
+
+        final CountDownLatch expiredLatch = new CountDownLatch(1);
+        client.getCuratorListenable().addListener(new CuratorListener() {
+            @Override
+            public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
+                if (event.getType() == CuratorEventType.WATCHED && event.getWatchedEvent().getState() == Watcher.Event.KeeperState.Expired)
+                {
+                    expiredLatch.countDown();
+                }
+            }
+        });
+
+        ConnectionStateAccessor.setDebugWaitOnExpiredForClient(client);
+
+        try
+        {
+            client.start();
+
+            //Block until we're connected
+            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Failed to connect");
+
+            final long sessionTimeoutMs = client.getZookeeperClient().getConnectionTimeoutMs();
+
+            //Kill the server
+            CloseableUtils.closeQuietly(server);
+
+            //Wait until we hit the lost state
+            Assert.assertTrue(timing.awaitLatch(lostLatch), "Failed to reach LOST state");
+
+            Thread.sleep(sessionTimeoutMs);
+
+            server = new TestingServer(server.getPort(), server.getTempDirectory());
+
+            //Wait until we get expired event
+            Assert.assertTrue(timing.awaitLatch(expiredLatch), "Failed to get Expired event");
+
+            final boolean blockUntilConnected5Seconds = client.blockUntilConnected(5, TimeUnit.SECONDS);
+            Assert.assertTrue(client.getZookeeperClient().isConnected(), "ConnectionState.isConnected returned false");
+            Assert.assertTrue(blockUntilConnected5Seconds, "BlockUntilConnected returned false");
+        }
+        catch ( Exception e )
+        {
+            Assert.fail("Unexpected exception " + e);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
         }
     }
 }
