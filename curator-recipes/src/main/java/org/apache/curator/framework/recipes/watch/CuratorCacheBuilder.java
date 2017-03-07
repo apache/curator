@@ -19,7 +19,6 @@
 package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -31,13 +30,17 @@ public class CuratorCacheBuilder
 {
     private final CuratorFramework client;
     private final String path;
-    private CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
     private CacheAction singleNodeCacheAction = null;
     private boolean sendRefreshEvents = true;
     private boolean refreshOnStart = true;
     private boolean sortChildren = true;
     private CachedNodeComparator nodeComparator = CachedNodeComparators.dataAndType();
     private CacheSelector cacheSelector = CacheSelectors.statAndData();
+    private CachedNodeMapFactory cachedNodeMapFactory = GuavaCachedNodeMap.factory;
+    private boolean usingWeakValues = false;
+    private boolean usingSoftValues = false;
+    private Long expiresAfterWriteMs = null;
+    private Long expiresAfterAccessMs = null;
 
     /**
      * Start a new builder for the given client and main path
@@ -59,13 +62,14 @@ public class CuratorCacheBuilder
      */
     public CuratorCache build()
     {
+        CachedNodeMap cachedNodeMap = cachedNodeMapFactory.create(usingWeakValues, usingSoftValues, expiresAfterWriteMs, expiresAfterAccessMs);
         if ( singleNodeCacheAction != null )
         {
             Preconditions.checkState(cacheSelector == null, "Single node mode does not support CacheSelectors");
-            return new InternalNodeCache(client, path, singleNodeCacheAction, nodeComparator, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart);
+            return new InternalNodeCache(client, path, singleNodeCacheAction, nodeComparator, cachedNodeMap, sendRefreshEvents, refreshOnStart);
         }
 
-        return new InternalCuratorCache(client, path, cacheSelector, nodeComparator, cacheBuilder.<String, CachedNode>build(), sendRefreshEvents, refreshOnStart, sortChildren);
+        return new InternalCuratorCache(client, path, cacheSelector, nodeComparator, cachedNodeMap, sendRefreshEvents, refreshOnStart, sortChildren);
     }
 
     /**
@@ -99,7 +103,7 @@ public class CuratorCacheBuilder
      */
     public CuratorCacheBuilder usingWeakValues()
     {
-        cacheBuilder = cacheBuilder.weakValues();
+        usingWeakValues = true;
         return this;
     }
 
@@ -111,7 +115,7 @@ public class CuratorCacheBuilder
      */
     public CuratorCacheBuilder usingSoftValues()
     {
-        cacheBuilder = cacheBuilder.softValues();
+        usingSoftValues = true;
         return this;
     }
 
@@ -127,7 +131,7 @@ public class CuratorCacheBuilder
      */
     public CuratorCacheBuilder thatExpiresAfterWrite(long duration, TimeUnit unit)
     {
-        cacheBuilder = cacheBuilder.expireAfterWrite(duration, unit);
+        expiresAfterWriteMs = unit.toMillis(duration);
         return this;
     }
 
@@ -143,7 +147,21 @@ public class CuratorCacheBuilder
      */
     public CuratorCacheBuilder thatExpiresAfterAccess(long duration, TimeUnit unit)
     {
-        cacheBuilder = cacheBuilder.expireAfterAccess(duration, unit);
+        expiresAfterAccessMs = unit.toMillis(duration);
+        return this;
+    }
+
+    /**
+     * By default, the internal {@link org.apache.curator.framework.recipes.watch.CachedNodeMap} is
+     * an instance of {@link org.apache.curator.framework.recipes.watch.GuavaCachedNodeMap}.
+     * Use this method to change the factory that creates CachedNodeMap instances.
+     *
+     * @param cachedNodeMapFactory new factory
+     * @return this
+     */
+    public CuratorCacheBuilder usingCachedNodeMapFactory(CachedNodeMapFactory cachedNodeMapFactory)
+    {
+        this.cachedNodeMapFactory = Objects.requireNonNull(cachedNodeMapFactory, "cachedNodeMapFactory cannot be null");
         return this;
     }
 

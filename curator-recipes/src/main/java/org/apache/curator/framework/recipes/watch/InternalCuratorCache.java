@@ -19,7 +19,6 @@
 package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.Cache;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.curator.framework.CuratorFramework;
@@ -66,7 +65,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         }
     };
 
-    InternalCuratorCache(CuratorFramework client, String path, final CacheSelector cacheSelector, CachedNodeComparator nodeComparator, Cache<String, CachedNode> cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
+    InternalCuratorCache(CuratorFramework client, String path, final CacheSelector cacheSelector, CachedNodeComparator nodeComparator, CachedNodeMap cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
     {
         super(path, cache, sendRefreshEvents);
         this.client = Objects.requireNonNull(client, "client cannot be null");
@@ -304,7 +303,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                 break;
             }
         }
-        return cache.asMap().put(path, putNode);
+        return cache.put(path, putNode);
     }
 
     private void decrementOutstanding(SettableFuture<Boolean> task, AtomicInteger outstandingCount)
@@ -317,7 +316,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
 
     private void remove(String path)
     {
-        CachedNode removed = cache.asMap().remove(path);
+        CachedNode removed = cache.remove(path);
         if ( removed != null )
         {
             notifyListeners(CacheEvent.NODE_DELETED, path, removed);

@@ -20,7 +20,6 @@ package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.cache.Cache;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -92,7 +91,8 @@ class InternalNodeCache extends CuratorCacheBase
         }
     };
 
-    InternalNodeCache(CuratorFramework client, String path, CacheAction cacheAction, CachedNodeComparator nodeComparator, Cache<String, CachedNode> cache, boolean sendRefreshEvents, boolean refreshOnStart)
+    // TODO refreshOnStart
+    InternalNodeCache(CuratorFramework client, String path, CacheAction cacheAction, CachedNodeComparator nodeComparator, CachedNodeMap cache, boolean sendRefreshEvents, boolean refreshOnStart)
     {
         super(path, cache, sendRefreshEvents);
         this.client = client.newWatcherRemoveCuratorFramework();
@@ -212,7 +212,7 @@ class InternalNodeCache extends CuratorCacheBase
     volatile Exchanger<Object> rebuildTestExchanger;
     private void setNewData(CachedNode newData) throws InterruptedException
     {
-        CachedNode previousData = (newData != null) ? cache.asMap().put(path, newData) : cache.asMap().remove(path);
+        CachedNode previousData = (newData != null) ? cache.put(path, newData) : cache.remove(path);
         if ( newData == null )
         {
             if ( previousData != null )

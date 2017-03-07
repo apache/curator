@@ -20,7 +20,6 @@ package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -35,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 abstract class CuratorCacheBase implements CuratorCache
 {
-    protected final Cache<String, CachedNode> cache;
+    protected final CachedNodeMap cache;
     private final String mainPath;
     private final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
@@ -55,7 +54,7 @@ abstract class CuratorCacheBase implements CuratorCache
         CLOSED
     }
 
-    protected CuratorCacheBase(String mainPath, Cache<String, CachedNode> cache, boolean sendRefreshEvents)
+    protected CuratorCacheBase(String mainPath, CachedNodeMap cache, boolean sendRefreshEvents)
     {
         this.mainPath = Objects.requireNonNull(mainPath, "mainPath cannot be null");
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
@@ -65,13 +64,13 @@ abstract class CuratorCacheBase implements CuratorCache
     @Override
     public boolean isEmpty()
     {
-        return cache.asMap().isEmpty();
+        return cache.isEmpty();
     }
 
     @Override
     public int size()
     {
-        return cache.asMap().size();
+        return cache.size();
     }
 
     @Override
@@ -83,7 +82,7 @@ abstract class CuratorCacheBase implements CuratorCache
     @Override
     public final boolean clear(String path)
     {
-        return cache.asMap().remove(path) != null;
+        return cache.remove(path) != null;
     }
 
     @Override
@@ -95,26 +94,26 @@ abstract class CuratorCacheBase implements CuratorCache
     @Override
     public final boolean exists(String path)
     {
-        return cache.asMap().containsKey(path);
+        return cache.containsKey(path);
     }
 
     @Override
     public final Collection<String> paths()
     {
-        return Collections.unmodifiableCollection(cache.asMap().keySet());
+        return Collections.unmodifiableCollection(cache.pathSet());
     }
 
     @Override
     public Map<String, CachedNode> view()
     {
-        return Collections.unmodifiableMap(cache.asMap());
+        return cache.view();
     }
 
     @Override
     public Map<String, CachedNode> childrenAtPath(String basePath)
     {
         ImmutableMap.Builder<String, CachedNode> builder = ImmutableMap.builder();
-        for ( Map.Entry<String, CachedNode> entry : cache.asMap().entrySet() )
+        for ( Map.Entry<String, CachedNode> entry : cache.entrySet() )
         {
             String path = entry.getKey();
             CachedNode node = entry.getValue();
@@ -130,13 +129,13 @@ abstract class CuratorCacheBase implements CuratorCache
     @Override
     public CachedNode getMain()
     {
-        return cache.asMap().get(mainPath);
+        return cache.get(mainPath);
     }
 
     @Override
     public CachedNode get(String path)
     {
-        return cache.asMap().get(path);
+        return cache.get(path);
     }
 
     /**
@@ -162,12 +161,12 @@ abstract class CuratorCacheBase implements CuratorCache
     @Override
     public final boolean clearDataBytes(String path, int ifVersion)
     {
-        CachedNode data = cache.asMap().get(path);
+        CachedNode data = cache.get(path);
         if ( data != null )
         {
             if ( (ifVersion < 0) || ((data.getStat() != null) && (ifVersion == data.getStat().getVersion())) )
             {
-                return cache.asMap().replace(path, data, new CachedNode(data.getStat()));
+                return cache.replace(path, data, new CachedNode(data.getStat()));
             }
         }
         return false;
