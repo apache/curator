@@ -59,6 +59,12 @@ public class CuratorMultiTransactionImpl implements
         this.client = client;
     }
 
+    public CuratorMultiTransactionImpl(CuratorFrameworkImpl client, Backgrounding backgrounding)
+    {
+        this.client = client;
+        this.backgrounding = backgrounding;
+    }
+
     @Override
     public ErrorListenerMultiTransactionMain inBackground()
     {

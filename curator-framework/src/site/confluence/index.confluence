@@ -19,6 +19,8 @@ ZooKeeper and handles the complexity of managing connections to the ZooKeeper cl
 ** Distributed Priority Queue
 ** ...
 
+_NOTE:_ A Java 8 asynchronous version of CuratorFramework is available: [[Curator Async|../curator\-x\-async/index.html]].
+
 h2. Allocating a Curator Framework Instance
 CuratorFrameworks are allocated using the CuratorFrameworkFactory which provides both factory methods and a builder for
 creating instances. IMPORTANT: CuratorFramework instances are fully thread\-safe. You should share one CuratorFramework per

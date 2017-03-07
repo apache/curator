@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, BackgroundOperation<String>, ErrorListenerPathable<Stat>
+public class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, BackgroundOperation<String>, ErrorListenerPathable<Stat>
 {
     private final CuratorFrameworkImpl client;
 
@@ -46,6 +46,14 @@ class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat>, Back
         backgrounding = new Backgrounding();
         acling = new ACLing(client.getAclProvider());
         version = -1;
+    }
+
+    public SetACLBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, List<ACL> aclList, int version)
+    {
+        this.client = client;
+        this.acling = new ACLing(client.getAclProvider(), aclList);
+        this.version = version;
+        this.backgrounding = backgrounding;
     }
 
     @Override

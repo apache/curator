@@ -47,7 +47,18 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
         this.client = client;
     }
 
-    private byte[] forEnsemble() throws Exception
+    public ReconfigBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Stat responseStat, long fromConfig, List<String> newMembers, List<String> joining, List<String> leaving)
+    {
+        this.client = client;
+        this.backgrounding = backgrounding;
+        this.responseStat = responseStat;
+        this.fromConfig = fromConfig;
+        this.newMembers = newMembers;
+        this.joining = joining;
+        this.leaving = leaving;
+    }
+
+    public byte[] forEnsemble() throws Exception
     {
         if ( backgrounding.inBackground() )
         {

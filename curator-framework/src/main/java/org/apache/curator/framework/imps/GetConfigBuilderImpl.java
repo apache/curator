@@ -45,6 +45,14 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
         watching = new Watching(client);
     }
 
+    public GetConfigBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, Stat stat)
+    {
+        this.client = client;
+        this.backgrounding = backgrounding;
+        this.watching = new Watching(client, watcher);
+        this.stat = stat;
+    }
+
     @Override
     public WatchBackgroundEnsembleable<byte[]> storingStatIn(Stat stat)
     {

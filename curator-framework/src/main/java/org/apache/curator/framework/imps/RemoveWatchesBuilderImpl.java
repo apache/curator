@@ -54,6 +54,18 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         this.backgrounding = new Backgrounding();
     }
 
+    public RemoveWatchesBuilderImpl(CuratorFrameworkImpl client, Watcher watcher, CuratorWatcher curatorWatcher, WatcherType watcherType, boolean guaranteed, boolean local, boolean quietly, Backgrounding backgrounding)
+    {
+        this.client = client;
+        this.watcher = watcher;
+        this.curatorWatcher = curatorWatcher;
+        this.watcherType = watcherType;
+        this.guaranteed = guaranteed;
+        this.local = local;
+        this.quietly = quietly;
+        this.backgrounding = backgrounding;
+    }
+
     void internalRemoval(Watcher watcher, String path) throws Exception
     {
         this.watcher = watcher;

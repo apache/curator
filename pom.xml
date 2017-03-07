@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>3.2.2-SNAPSHOT</version>
+    <version>3.3.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -61,7 +61,7 @@
         <!-- versions -->
         <zookeeper-version>3.6.0-SNAPSHOT</zookeeper-version>
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
-        <maven-bundle-plugin-version>2.3.7</maven-bundle-plugin-version>
+        <maven-bundle-plugin-version>3.2.0</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
         <doxia-module-confluence-version>1.6</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
@@ -286,6 +286,7 @@
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
         <module>curator-x-rpc</module>
+        <module>curator-x-async</module>
     </modules>
 
     <dependencyManagement>
