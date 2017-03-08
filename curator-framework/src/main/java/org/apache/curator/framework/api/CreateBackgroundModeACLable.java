@@ -21,8 +21,6 @@ package org.apache.curator.framework.api;
 import org.apache.zookeeper.CreateMode;
 
 public interface CreateBackgroundModeACLable extends
-    BackgroundPathAndBytesable<String>,
-    CreateModable<ACLBackgroundPathAndBytesable<String>>,
     ACLCreateModeBackgroundPathAndBytesable<String>
 {
     /**

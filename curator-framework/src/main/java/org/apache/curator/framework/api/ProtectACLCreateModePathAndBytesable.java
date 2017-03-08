@@ -50,5 +50,5 @@ public interface ProtectACLCreateModePathAndBytesable<T> extends
      *
      * @return this
      */
-    public ACLCreateModeBackgroundPathAndBytesable<String>    withProtection();
+    public CompressACLCreateModeBackgroundPathAndBytesable<String> withProtection();
 }
