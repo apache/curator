@@ -117,7 +117,9 @@ public class PersistentNode implements Closeable
             {
                 //Update is ok, mark initialisation as complete if required.
                 initialisationComplete();
-            } else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() ) {
+            } 
+            else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() ) 
+            {
                 log.warn("Client does not have authorisation to write node at path {}", event.getPath());
                 authFailure.set(true);
             }
