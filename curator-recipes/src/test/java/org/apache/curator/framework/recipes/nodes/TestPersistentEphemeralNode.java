@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.imps.TestCleanState;
@@ -49,6 +50,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -687,7 +689,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
     
     @Test
-    public void testNoWritePermission() throws Exception
+    public void testNoCreatePermission() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
         CuratorFramework client = builder
@@ -716,6 +718,54 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             node.waitForInitialCreate(timing.seconds(), TimeUnit.SECONDS);
             assertNodeDoesNotExist(client, PATH);
             assertTrue(node.isAuthFailure());
+        } finally {
+            CloseableUtils.closeQuietly(node);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testNoWritePermission() throws Exception
+    {
+        final ACLProvider aclProvider = new ACLProvider() {
+            final ACL acl = new ACL(ZooDefs.Perms.READ | ZooDefs.Perms.CREATE | ZooDefs.Perms.DELETE, ZooDefs.Ids.ANYONE_ID_UNSAFE);
+            final List<ACL> aclList = Collections.singletonList(acl);
+            @Override
+            public List<ACL> getDefaultAcl() {
+                return aclList;
+            }
+
+            @Override
+            public List<ACL> getAclForPath(String path) {
+                return aclList;
+            }
+        };
+
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder
+                .connectString(server.getConnectString())
+                .aclProvider(aclProvider)
+                .retryPolicy(new RetryOneTime(1))
+                .build();
+
+        PersistentEphemeralNode node = null;
+        try {
+            client.start();
+
+            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH,
+                    new byte[0]);
+            node.start();
+
+            assertTrue(node.waitForInitialCreate(timing.seconds(), TimeUnit.SECONDS), "Node not created");
+            assertNodeExists(client, PATH);
+            assertFalse(node.isAuthFailure(), "AuthFailure when creating node.");
+
+            byte[] NEW_DATA = "NEW_DATA".getBytes();
+            node.setData(NEW_DATA);
+            timing.sleepABit();
+            byte[] read_data = client.getData().forPath(PATH);
+            assertNotEquals(read_data, NEW_DATA, "Data matches - write went through.");
+            assertTrue(node.isAuthFailure(), "AuthFailure response not received.");
         } finally {
             CloseableUtils.closeQuietly(node);
             CloseableUtils.closeQuietly(client);

@@ -130,6 +130,11 @@ public class PersistentNode implements Closeable
             {
                 //Update is ok, mark initialisation as complete if required.
                 initialisationComplete();
+            } 
+            else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() ) 
+            {
+                log.warn("Client does not have authorisation to write node at path {}", event.getPath());
+                authFailure.set(true);
             }
         }
     };
@@ -229,7 +234,7 @@ public class PersistentNode implements Closeable
         }
         else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
         {
-            log.warn("Client does not have authorisation to write node at path {}", event.getPath());
+            log.warn("Client does not have authorisation to create node at path {}", event.getPath());
             authFailure.set(true);
             return;
         }
@@ -356,7 +361,7 @@ public class PersistentNode implements Closeable
         this.data.set(Arrays.copyOf(data, data.length));
         if ( isActive() )
         {
-            client.setData().inBackground().forPath(getActualPath(), getData());
+            client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
         }
     }
 
