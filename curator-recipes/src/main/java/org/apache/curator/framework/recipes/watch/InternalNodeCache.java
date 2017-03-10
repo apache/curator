@@ -91,7 +91,6 @@ class InternalNodeCache extends CuratorCacheBase
         }
     };
 
-    // TODO refreshOnStart
     InternalNodeCache(CuratorFramework client, String path, CacheAction cacheAction, CachedNodeComparator nodeComparator, CachedNodeMap cache, boolean sendRefreshEvents, boolean refreshOnStart)
     {
         super(path, cache, sendRefreshEvents);
@@ -99,6 +98,7 @@ class InternalNodeCache extends CuratorCacheBase
         this.path = PathUtils.validatePath(path);
         this.cacheAction = cacheAction;
         this.nodeComparator = nodeComparator;
+        Preconditions.checkArgument(refreshOnStart, "refreshingWhenStarted() must be true when forSingleNode() is used");
     }
 
     @Override
