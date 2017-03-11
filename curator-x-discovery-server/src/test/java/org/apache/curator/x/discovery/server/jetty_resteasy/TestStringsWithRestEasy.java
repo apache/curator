@@ -19,7 +19,7 @@
 package org.apache.curator.x.discovery.server.jetty_resteasy;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
+import com.google.common.io.ByteSource;
 import com.google.common.io.CharStreams;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.x.discovery.ServiceInstance;
@@ -70,7 +70,7 @@ public class TestStringsWithRestEasy
         root.addEventListener(new ResteasyBootstrap());
         server.start();
     }
-    
+
     @AfterMethod
     public void         teardown() throws Exception
     {
@@ -133,7 +133,7 @@ public class TestStringsWithRestEasy
             urlConnection.setDoOutput(true);
 
             OutputStream        out = urlConnection.getOutputStream();
-            ByteStreams.copy(ByteStreams.newInputStreamSupplier(body.getBytes()), out);
+            ByteSource.wrap(body.getBytes()).copyTo(out);
         }
         BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
         try
