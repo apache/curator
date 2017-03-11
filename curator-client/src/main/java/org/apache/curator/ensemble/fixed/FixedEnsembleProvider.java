@@ -19,6 +19,7 @@
 package org.apache.curator.ensemble.fixed;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.apache.curator.ensemble.EnsembleProvider;
 import java.io.IOException;
 
@@ -36,7 +37,9 @@ public class FixedEnsembleProvider implements EnsembleProvider
      */
     public FixedEnsembleProvider(String connectionString)
     {
-        this.connectionString = Preconditions.checkNotNull(connectionString, "connectionString cannot be null");
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(connectionString),
+            "connectionString cannot be null or empty");
+        this.connectionString = connectionString;
     }
 
     @Override
