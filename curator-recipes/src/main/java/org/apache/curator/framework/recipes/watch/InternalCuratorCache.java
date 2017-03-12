@@ -48,7 +48,6 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
     private final CuratorFramework client;
     private final String basePath;
     private final CacheSelector cacheSelector;
-    private final CachedNodeComparator nodeComparator;
     private final boolean sortChildren;
     private final CacheSelector singleNodeCacheSelector = new CacheSelector()
     {
@@ -65,13 +64,12 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         }
     };
 
-    InternalCuratorCache(CuratorFramework client, String path, final CacheSelector cacheSelector, CachedNodeComparator nodeComparator, CachedNodeMap cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
+    InternalCuratorCache(CuratorFramework client, String path, final CacheSelector cacheSelector, CachedNodeMap cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
     {
         super(path, cache, sendRefreshEvents);
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.basePath = Objects.requireNonNull(path, "path cannot be null");
         this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");
-        this.nodeComparator = Objects.requireNonNull(nodeComparator, "nodeComparator cannot be null");
         this.sortChildren = sortChildren;
         watcher = new PersistentWatcher(client, path)
         {
@@ -171,7 +169,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                         {
                             notifyListeners(CacheEvent.NODE_CREATED, path, newNode);
                         }
-                        else if ( !nodeComparator.isSame(newNode, oldNode) )    // NOTE: for PATH_ONLY isSame() is always false. We aren't storing the data so cannot do an actual comparison
+                        else if ( newNode.getStat().getMzxid() != oldNode.getStat().getMzxid() )
                         {
                             notifyListeners(CacheEvent.NODE_CHANGED, path, newNode);
                         }

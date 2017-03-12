@@ -34,7 +34,6 @@ public class CuratorCacheBuilder
     private boolean sendRefreshEvents = true;
     private boolean refreshOnStart = true;
     private boolean sortChildren = true;
-    private CachedNodeComparator nodeComparator = CachedNodeComparators.dataAndType();
     private CacheSelector cacheSelector = CacheSelectors.statAndData();
     private CachedNodeMapFactory cachedNodeMapFactory = GuavaCachedNodeMap.factory;
     private boolean usingWeakValues = false;
@@ -66,10 +65,10 @@ public class CuratorCacheBuilder
         if ( singleNodeCacheAction != null )
         {
             Preconditions.checkState(cacheSelector == null, "Single node mode does not support CacheSelectors");
-            return new InternalNodeCache(client, path, singleNodeCacheAction, nodeComparator, cachedNodeMap, sendRefreshEvents, refreshOnStart);
+            return new InternalNodeCache(client, path, singleNodeCacheAction, cachedNodeMap, sendRefreshEvents, refreshOnStart);
         }
 
-        return new InternalCuratorCache(client, path, cacheSelector, nodeComparator, cachedNodeMap, sendRefreshEvents, refreshOnStart, sortChildren);
+        return new InternalCuratorCache(client, path, cacheSelector, cachedNodeMap, sendRefreshEvents, refreshOnStart, sortChildren);
     }
 
     /**
@@ -200,19 +199,6 @@ public class CuratorCacheBuilder
     public CuratorCacheBuilder sortingChildren(boolean sortChildren)
     {
         this.sortChildren = sortChildren;
-        return this;
-    }
-
-    /**
-     * Changes which comparator is used to determine whether a node has changed or not.
-     * The default is {@link CachedNodeComparators#dataAndType}
-     *
-     * @param nodeComparator new comparator
-     * @return this
-     */
-    public CuratorCacheBuilder withNodeComparator(CachedNodeComparator nodeComparator)
-    {
-        this.nodeComparator = Objects.requireNonNull(nodeComparator, "nodeComparator cannot be null");
         return this;
     }
 

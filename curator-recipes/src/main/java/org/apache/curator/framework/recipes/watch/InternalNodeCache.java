@@ -43,7 +43,6 @@ class InternalNodeCache extends CuratorCacheBase
     private final WatcherRemoveCuratorFramework client;
     private final String path;
     private final CacheAction cacheAction;
-    private final CachedNodeComparator nodeComparator;
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
     private static final CachedNode nullNode = new CachedNode();
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -91,13 +90,12 @@ class InternalNodeCache extends CuratorCacheBase
         }
     };
 
-    InternalNodeCache(CuratorFramework client, String path, CacheAction cacheAction, CachedNodeComparator nodeComparator, CachedNodeMap cache, boolean sendRefreshEvents, boolean refreshOnStart)
+    InternalNodeCache(CuratorFramework client, String path, CacheAction cacheAction, CachedNodeMap cache, boolean sendRefreshEvents, boolean refreshOnStart)
     {
         super(path, cache, sendRefreshEvents);
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.cacheAction = cacheAction;
-        this.nodeComparator = nodeComparator;
         Preconditions.checkArgument(refreshOnStart, "refreshingWhenStarted() must be true when forSingleNode() is used");
     }
 
@@ -224,7 +222,7 @@ class InternalNodeCache extends CuratorCacheBase
         {
             notifyListeners(CacheEvent.NODE_CREATED, path, newData);
         }
-        else if ( !nodeComparator.isSame(previousData, newData) )
+        else if ( previousData.getStat().getMzxid() != newData.getStat().getMzxid() )
         {
             notifyListeners(CacheEvent.NODE_CHANGED, path, newData);
         }

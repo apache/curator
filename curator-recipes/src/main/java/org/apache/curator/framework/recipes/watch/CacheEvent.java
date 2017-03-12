@@ -34,8 +34,7 @@ public enum CacheEvent
     NODE_DELETED,
 
     /**
-     * A node in the cache was changed due to the {@link CachedNodeComparator} signifying
-     * a difference
+     * A node in the cache was changed
      */
     NODE_CHANGED,
 
