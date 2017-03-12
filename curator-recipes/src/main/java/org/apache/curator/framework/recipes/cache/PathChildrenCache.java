@@ -45,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -695,21 +694,12 @@ public class PathChildrenCache implements Closeable
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data)));
             }
-            else if ( hasChanged(stat, previousData, data) )
+            else if ( stat.getMzxid() != previousData.getStat().getMzxid() )
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
             }
             updateInitialSet(ZKPaths.getNodeFromPath(fullPath), data);
         }
-    }
-
-    private boolean hasChanged(Stat stat, ChildData previousData, ChildData newData)
-    {
-        if ( cacheData )
-        {
-            return !Arrays.equals(previousData.getData(), newData.getData());
-        }
-        return previousData.getStat().getVersion() != stat.getVersion();
     }
 
     private void updateInitialSet(String name, ChildData data)
