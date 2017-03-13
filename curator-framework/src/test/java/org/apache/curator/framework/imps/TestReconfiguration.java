@@ -313,6 +313,38 @@ public class TestReconfiguration extends BaseClassForTests
         }
     }
 
+    @Test
+    public void testConfigToConnectionStringNormal() throws Exception
+    {
+        String config = "server.1=10.1.2.3:2888:3888:participant;10.2.3.4:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("10.2.3.4:2181", configString);
+    }
+
+    @Test
+    public void testConfigToConnectionStringNoClientAddr() throws Exception
+    {
+        String config = "server.1=10.1.2.3:2888:3888:participant;2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("10.1.2.3:2181", configString);
+    }
+
+    @Test
+    public void testConfigToConnectionStringWildcardClientAddr() throws Exception
+    {
+        String config = "server.1=10.1.2.3:2888:3888:participant;0.0.0.0:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("10.1.2.3:2181", configString);
+    }
+
+    @Test
+    public void testConfigToConnectionStringNoClientAddrOrPort() throws Exception
+    {
+        String config = "server.1=10.1.2.3:2888:3888:participant";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("", configString);
+    }
+
     private CuratorFramework newClient()
     {
         final AtomicReference<String> connectString = new AtomicReference<>(cluster.getConnectString());
