@@ -210,6 +210,7 @@ public class DistributedDoubleBarrier
                 break;
             }
 
+
             int                 ourIndex = children.indexOf(ourPathName);
             if ( (ourIndex < 0) && ourNodeShouldExist )
             {
@@ -230,25 +231,16 @@ public class DistributedDoubleBarrier
                     throw new IllegalStateException(String.format("Last path (%s) is not ours (%s)", children.get(0), ourPathName));
                 }
                 checkDeleteOurPath(ourNodeShouldExist);
+                ourNodeShouldExist = false;
                 break;
             }
 
             Stat            stat;
-            boolean         IsLowestNode = (ourIndex == 0);
-            if ( IsLowestNode )
-            {
-                String  highestNodePath = ZKPaths.makePath(barrierPath, children.get(children.size() - 1));
-                stat = client.checkExists().usingWatcher(watcher).forPath(highestNodePath);
-            }
-            else
-            {
-                String  lowestNodePath = ZKPaths.makePath(barrierPath, children.get(0));
-                stat = client.checkExists().usingWatcher(watcher).forPath(lowestNodePath);
-
-                checkDeleteOurPath(ourNodeShouldExist);
-                ourNodeShouldExist = false;
-            }
-
+            String  highestNodePath = ZKPaths.makePath(barrierPath, children.get(children.size() - 1));
+            stat = client.checkExists().usingWatcher(watcher).forPath(highestNodePath);
+            checkDeleteOurPath(ourNodeShouldExist);
+            ourNodeShouldExist = false;
+            
             if ( stat != null )
             {
                 if ( hasMaxWait )
@@ -258,6 +250,7 @@ public class DistributedDoubleBarrier
                     if ( thisWaitMs <= 0 )
                     {
                         result = false;
+                        break;
                     }
                     else
                     {
