@@ -692,7 +692,7 @@ public class PathChildrenCache implements Closeable
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data)));
             }
-            else if ( previousData.getStat().getVersion() != stat.getVersion() )
+            else if ( stat.getMzxid() != previousData.getStat().getMzxid() )
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
             }
