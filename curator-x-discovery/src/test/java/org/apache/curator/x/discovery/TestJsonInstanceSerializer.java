@@ -166,7 +166,17 @@ public class TestJsonInstanceSerializer
     	public String getVal() {
     		return val;
     	}
-    	public void setVal(String val) {
+
+        public Payload()
+        {
+        }
+
+        public Payload(String val)
+        {
+            this.val = val;
+        }
+
+        public void setVal(String val) {
     		this.val = val;
     	}
     	@Override

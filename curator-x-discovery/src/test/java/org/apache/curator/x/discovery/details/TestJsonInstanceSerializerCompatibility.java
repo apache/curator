@@ -61,8 +61,15 @@ public class TestJsonInstanceSerializerCompatibility
         TestJsonInstanceSerializer.Payload.class.cast(rawServiceInstance.getPayload()); // just to verify that it's the correct type
         //noinspection unchecked
         OldServiceInstance<TestJsonInstanceSerializer.Payload> check = (OldServiceInstance<TestJsonInstanceSerializer.Payload>)rawServiceInstance;
-        Assert.assertEquals(check.getName(), "name");
-        Assert.assertEquals(check.getPayload(), new TestJsonInstanceSerializer.Payload("test"));
+        Assert.assertEquals(check.getName(), instance.getName());
+        Assert.assertEquals(check.getId(), instance.getId());
+        Assert.assertEquals(check.getAddress(), instance.getAddress());
+        Assert.assertEquals(check.getPort(), instance.getPort());
+        Assert.assertEquals(check.getSslPort(), instance.getSslPort());
+        Assert.assertEquals(check.getPayload(), instance.getPayload());
+        Assert.assertEquals(check.getRegistrationTimeUTC(), instance.getRegistrationTimeUTC());
+        Assert.assertEquals(check.getServiceType(), instance.getServiceType());
+        Assert.assertEquals(check.getUriSpec(), instance.getUriSpec());
     }
 
     @Test
