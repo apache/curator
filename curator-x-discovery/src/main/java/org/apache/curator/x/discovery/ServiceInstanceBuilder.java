@@ -19,6 +19,7 @@
 package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Builder for service instances
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ServiceInstanceBuilder<T>
 {
     private T payload;
