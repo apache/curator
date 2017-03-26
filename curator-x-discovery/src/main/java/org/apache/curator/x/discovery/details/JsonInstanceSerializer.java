@@ -37,11 +37,19 @@ public class JsonInstanceSerializer<T> implements InstanceSerializer<T>
     private final JavaType type;
 
     /**
+     * CURATOR-275 introduced a new field into {@link org.apache.curator.x.discovery.ServiceInstance}. This caused a potential
+     * {@link org.codehaus.jackson.map.exc.UnrecognizedPropertyException} in older clients that
+     * read newly serialized ServiceInstances. Therefore the default behavior of JsonInstanceSerializer
+     * has been changed to <em>NOT</em> serialize the <code>enabled</code> field. If you wish to use that field, use the
+     * alternate constructor {@link #JsonInstanceSerializer(Class, boolean)} and pass true for
+     * <code>compatibleSerializationMode</code>. Note: future versions of Curator <em>may</em> change this
+     * behavior.
+     *
      * @param payloadClass used to validate payloads when deserializing
      */
     public JsonInstanceSerializer(Class<T> payloadClass)
     {
-        this(payloadClass, false, false);
+        this(payloadClass, true, false);
     }
 
     /**
@@ -50,7 +58,8 @@ public class JsonInstanceSerializer<T> implements InstanceSerializer<T>
      * read newly serialized ServiceInstances. If you are susceptible to this you should set the
      * serializer to be an instance of {@link org.apache.curator.x.discovery.details.JsonInstanceSerializer}
      * with <code>compatibleSerializationMode</code> set to true. IMPORTANT: when this is done, the new <code>enabled</code>
-     * field of ServiceInstance is <strong>not</strong> serialized.
+     * field of ServiceInstance is <strong>not</strong> serialized. If however you <em>do</em> want
+     * to use the <code>enabled</code> field, set <code>compatibleSerializationMode</code> to false.
      *
      * @param payloadClass used to validate payloads when deserializing
      * @param compatibleSerializationMode pass true to serialize in a manner that supports clients pre-CURATOR-275

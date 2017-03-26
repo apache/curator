@@ -82,6 +82,12 @@ public class ServiceInstance<T>
     }
 
     /**
+     * IMPORTANT: Due to CURATOR-275 the <code>enabled</code> field is <strong>NOT</strong> supported
+     * by default. If you wish to use the enabled field, you must set a {@link org.apache.curator.x.discovery.details.InstanceSerializer}
+     * that serializes this field. The default serializer, {@link org.apache.curator.x.discovery.details.JsonInstanceSerializer} does not
+     * serialize the field by default. You must use the alternate constructor {@link org.apache.curator.x.discovery.details.JsonInstanceSerializer#JsonInstanceSerializer(Class, boolean)}
+     * passing false for <code>compatibleSerializationMode</code>.
+     *
      * @param name name of the service
      * @param id id of this instance (must be unique)
      * @param address address of this instance
@@ -164,6 +170,15 @@ public class ServiceInstance<T>
         return uriSpec;
     }
 
+    /**
+     * IMPORTANT: Due to CURATOR-275 the <code>enabled</code> field is <strong>NOT</strong> supported
+     * by default. If you wish to use the enabled field, you must set a {@link org.apache.curator.x.discovery.details.InstanceSerializer}
+     * that serializes this field. The default serializer, {@link org.apache.curator.x.discovery.details.JsonInstanceSerializer} does not
+     * serialize the field by default. You must use the alternate constructor {@link org.apache.curator.x.discovery.details.JsonInstanceSerializer#JsonInstanceSerializer(Class, boolean)}
+     * passing false for <code>compatibleSerializationMode</code>.
+     *
+     * @return true/false
+     */
     public boolean isEnabled()
     {
         return enabled;
