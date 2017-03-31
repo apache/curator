@@ -26,10 +26,7 @@ import org.codehaus.jackson.annotate.JsonTypeInfo.Id;
 import java.net.URI;
 import java.util.Date;
 
-/**
- * POJO that represents a service instance
- */
-class NewServiceInstance<T>
+class TestNewServiceInstance<T>
 {
     private final String name;
     private final String id;
@@ -46,7 +43,7 @@ class NewServiceInstance<T>
     private final Date new3;
     private final URI new4;
 
-    public NewServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec, boolean enabled, String new1, Long new2, Date new3, URI new4)
+    public TestNewServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec, boolean enabled, String new1, Long new2, Date new3, URI new4)
     {
         name = Preconditions.checkNotNull(name, "name cannot be null");
         id = Preconditions.checkNotNull(id, "id cannot be null");
@@ -70,7 +67,7 @@ class NewServiceInstance<T>
     /**
      * Inits to default values. Only exists for deserialization
      */
-    NewServiceInstance()
+    TestNewServiceInstance()
     {
         this("", "", null, null, null, null, 0, ServiceType.DYNAMIC, null, true, null, null, null, null);
     }

@@ -75,7 +75,7 @@ public class TestJsonInstanceSerializerCompatibility
     @Test
     public void testFutureChanges() throws Exception
     {
-        NewServiceInstance<String> newInstance = new NewServiceInstance<String>("name", "id", "address", 10, 20, "hey", 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), false, "what", 10101L, new Date(), new URI("http://hey"));
+        TestNewServiceInstance<String> newInstance = new TestNewServiceInstance<String>("name", "id", "address", 10, 20, "hey", 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), false, "what", 10101L, new Date(), new URI("http://hey"));
         byte[] newInstanceBytes = new ObjectMapper().writeValueAsBytes(newInstance);
         JsonInstanceSerializer<String> serializer = new JsonInstanceSerializer<String>(String.class);
         ServiceInstance<String> instance = serializer.deserialize(newInstanceBytes);
