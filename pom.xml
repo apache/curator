@@ -277,6 +277,17 @@
             <timezone>-8</timezone>
             <url>https://people.apache.org/~enis</url>
         </developer>
+
+        <developer>
+            <name>Fangmin Lyu</name>
+            <email>fangmin@apache.org</email>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <timezone>-8</timezone>
+            <url>https://people.apache.org/~fangmin</url>
+        </developer>
     </developers>
 
     <modules>
