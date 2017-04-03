@@ -30,7 +30,7 @@ import org.apache.zookeeper.data.Stat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<Stat>
+public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<Stat>
 {
     private final CuratorFrameworkImpl      client;
     private Backgrounding                   backgrounding;
@@ -43,6 +43,14 @@ class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<PathAndB
         backgrounding = new Backgrounding();
         version = -1;
         compress = false;
+    }
+
+    public SetDataBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, int version, boolean compress)
+    {
+        this.client = client;
+        this.backgrounding = backgrounding;
+        this.version = version;
+        this.compress = compress;
     }
 
     <T> TransactionSetDataBuilder<T> asTransactionSetDataBuilder(final T context, final CuratorMultiTransactionRecord transaction)

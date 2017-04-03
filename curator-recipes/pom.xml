@@ -24,11 +24,11 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>3.2.1-SNAPSHOT</version>
+        <version>3.3.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-recipes</artifactId>
-    <version>3.2.1-SNAPSHOT</version>
+    <version>3.3.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Curator Recipes</name>
@@ -78,6 +78,12 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

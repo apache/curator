@@ -229,4 +229,14 @@ public class TestNamespaceFacade extends BaseClassForTests
             //Expected
         }
     }
+
+    @Test
+    public void testUnfixForEmptyNamespace() {
+        CuratorFramework client = CuratorFrameworkFactory.builder().namespace("").retryPolicy(new RetryOneTime(1)).connectString("").build();
+        CuratorFrameworkImpl clientImpl = (CuratorFrameworkImpl) client;
+
+        Assert.assertEquals(clientImpl.unfixForNamespace("/foo/bar"), "/foo/bar");
+
+        CloseableUtils.closeQuietly(client);
+    }
 }

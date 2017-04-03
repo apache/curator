@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>3.2.1-SNAPSHOT</version>
+    <version>3.3.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -61,7 +61,7 @@
         <!-- versions -->
         <zookeeper-version>3.5.3-beta</zookeeper-version>
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
-        <maven-bundle-plugin-version>2.3.7</maven-bundle-plugin-version>
+        <maven-bundle-plugin-version>3.2.0</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
         <doxia-module-confluence-version>1.6</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
@@ -74,10 +74,10 @@
         <scannotation-version>1.0.2</scannotation-version>
         <resteasy-jaxrs-version>2.3.0.GA</resteasy-jaxrs-version>
         <guava-version>16.0.1</guava-version>
-        <testng-version>6.8.8</testng-version>
+        <testng-version>6.10</testng-version>
         <swift-version>0.12.0</swift-version>
         <dropwizard-version>0.7.0</dropwizard-version>
-        <maven-shade-plugin-version>2.3</maven-shade-plugin-version>
+        <maven-shade-plugin-version>2.4.3</maven-shade-plugin-version>
         <slf4j-version>1.7.6</slf4j-version>
         <clirr-maven-plugin-version>2.6.1</clirr-maven-plugin-version>
 
@@ -275,6 +275,17 @@
             <timezone>-8</timezone>
             <url>https://people.apache.org/~enis</url>
         </developer>
+
+        <developer>
+            <name>Fangmin Lyu</name>
+            <email>fangmin@apache.org</email>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <timezone>-8</timezone>
+            <url>https://people.apache.org/~fangmin</url>
+        </developer>
     </developers>
 
     <modules>
@@ -286,6 +297,7 @@
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
         <module>curator-x-rpc</module>
+        <module>curator-x-async</module>
     </modules>
 
     <dependencyManagement>
@@ -743,7 +755,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
-                    <arguments>-Dmaven.test.skip=true</arguments>
+                    <arguments>-DskipTests</arguments>
                     <mavenExecutorId>forked-path</mavenExecutorId>
                 </configuration>
             </plugin>
@@ -791,6 +803,47 @@
                         <goals>
                             <goal>check</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>apache-curator-guava-shader</id>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.google</pattern>
+                                    <shadedPattern>org.apache.curator.shaded.com.google</shadedPattern>
+                                    <excludes>
+                                        <exclude>com.google.common.base.Function</exclude>
+                                        <exclude>com.google.common.base.Predicate</exclude>
+                                        <exclude>com.google.common.reflect.TypeToken</exclude>
+                                    </excludes>
+                                </relocation>
+                            </relocations>
+                            <artifactSet>
+                                <includes>
+                                    <include>${project.groupId}:${project.artifactId}</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>com.google.guava:guava</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

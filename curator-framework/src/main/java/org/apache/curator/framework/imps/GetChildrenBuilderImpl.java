@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<String>>
+public class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<String>>
 {
     private final CuratorFrameworkImpl client;
     private Watching watching;
@@ -51,6 +51,14 @@ class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOperation<
         watching = new Watching(client);
         backgrounding = new Backgrounding();
         responseStat = null;
+    }
+
+    public GetChildrenBuilderImpl(CuratorFrameworkImpl client, Watcher watcher, Backgrounding backgrounding, Stat responseStat)
+    {
+        this.client = client;
+        this.watching = new Watching(client, watcher);
+        this.backgrounding = backgrounding;
+        this.responseStat = responseStat;
     }
 
     @Override

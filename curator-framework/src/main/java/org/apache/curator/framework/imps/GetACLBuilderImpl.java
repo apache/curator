@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<ACL>>
+public class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<ACL>>
 {
     private final CuratorFrameworkImpl client;
 
@@ -45,6 +45,13 @@ class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, E
         this.client = client;
         backgrounding = new Backgrounding();
         responseStat = new Stat();
+    }
+
+    public GetACLBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Stat responseStat)
+    {
+        this.client = client;
+        this.backgrounding = backgrounding;
+        this.responseStat = responseStat;
     }
 
     @Override

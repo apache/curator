@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -54,11 +56,27 @@ public class TestGroupMember extends BaseClassForTests
 
             Map<String, byte[]> currentMembers1 = groupMember1.getCurrentMembers();
             Map<String, byte[]> currentMembers2 = groupMember2.getCurrentMembers();
-            Assert.assertEquals(currentMembers1.size(), 2);
-            Assert.assertEquals(currentMembers2.size(), 2);
-            Assert.assertEquals(currentMembers1, currentMembers2);
-            Assert.assertTrue(currentMembers1.containsKey("1"));
-            Assert.assertTrue(currentMembers1.containsKey("2"));
+            Map<String, String> convertMembers1 = Maps.transformValues(currentMembers1, new Function<byte[], String>()
+            {
+                @Override
+                public String apply(byte[] input)
+                {
+                    return new String(input);
+                }
+            });
+            Map<String, String> convertMembers2 = Maps.transformValues(currentMembers1, new Function<byte[], String>()
+            {
+                @Override
+                public String apply(byte[] input)
+                {
+                    return new String(input);
+                }
+            });
+            Assert.assertEquals(convertMembers1.size(), 2);
+            Assert.assertEquals(convertMembers2.size(), 2);
+            Assert.assertEquals(convertMembers1, convertMembers2);
+            Assert.assertTrue(convertMembers1.containsKey("1"));
+            Assert.assertTrue(convertMembers1.containsKey("2"));
 
             groupMember2.close();
 

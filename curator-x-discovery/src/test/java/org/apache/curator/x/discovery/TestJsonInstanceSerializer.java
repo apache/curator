@@ -32,8 +32,8 @@ public class TestJsonInstanceSerializer
     @Test
     public void     testBasic() throws Exception
     {
-        JsonInstanceSerializer<String> serializer = new JsonInstanceSerializer<String>(String.class);
-        ServiceInstance<String>         instance = new ServiceInstance<String>("name", "id", "address", 10, 20, "payload", 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
+        JsonInstanceSerializer<String>  serializer = new JsonInstanceSerializer<String>(String.class);
+        ServiceInstance<String>         instance = new ServiceInstance<String>("name", "id", "address", 10, 20, "payload", 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), true);
         byte[]                          bytes = serializer.serialize(instance);
 
         ServiceInstance<String>         rhs = serializer.deserialize(bytes);
@@ -45,6 +45,7 @@ public class TestJsonInstanceSerializer
         Assert.assertEquals(instance.getPort(), rhs.getPort());
         Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
         Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
+        Assert.assertEquals(instance.isEnabled(), rhs.isEnabled());
     }
 
     @Test
@@ -53,7 +54,7 @@ public class TestJsonInstanceSerializer
         JsonInstanceSerializer<String>  stringSerializer = new JsonInstanceSerializer<String>(String.class);
         JsonInstanceSerializer<Double>  doubleSerializer = new JsonInstanceSerializer<Double>(Double.class);
 
-        byte[]                          bytes = stringSerializer.serialize(new ServiceInstance<String>("name", "id", "address", 10, 20, "payload", 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}")));
+        byte[]                          bytes = stringSerializer.serialize(new ServiceInstance<String>("name", "id", "address", 10, 20, "payload", 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), true));
         try
         {
             doubleSerializer.deserialize(bytes);
@@ -69,7 +70,7 @@ public class TestJsonInstanceSerializer
     public void     testNoPayload() throws Exception
     {
         JsonInstanceSerializer<Void>    serializer = new JsonInstanceSerializer<Void>(Void.class);
-        ServiceInstance<Void>           instance = new ServiceInstance<Void>("name", "id", "address", 10, 20, null, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
+        ServiceInstance<Void>           instance = new ServiceInstance<Void>("name", "id", "address", 10, 20, null, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), true);
         byte[]                          bytes = serializer.serialize(instance);
 
         ServiceInstance<Void>           rhs = serializer.deserialize(bytes);
@@ -81,6 +82,17 @@ public class TestJsonInstanceSerializer
         Assert.assertEquals(instance.getPort(), rhs.getPort());
         Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
         Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
+        Assert.assertEquals(instance.isEnabled(), rhs.isEnabled());
+    }
+
+    @Test
+    public void     testNoEnabledState() throws Exception
+    {
+        JsonInstanceSerializer<Void>    serializer = new JsonInstanceSerializer<Void>(Void.class);
+        byte[]                          bytes = "{}".getBytes("utf-8");
+
+        ServiceInstance<Void>           instance = serializer.deserialize(bytes);
+        Assert.assertTrue(instance.isEnabled(), "Instance that has no 'enabled' should be assumed enabled");
     }
 
     @Test
@@ -90,8 +102,8 @@ public class TestJsonInstanceSerializer
         List<String> payload = new ArrayList<String>();
         payload.add("Test value 1");
         payload.add("Test value 2");
-        ServiceInstance<Object>           instance = new ServiceInstance<Object>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
-        byte[]                          bytes = serializer.serialize(instance);
+        ServiceInstance<Object>           instance = new ServiceInstance<Object>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), false);
+        byte[]                            bytes = serializer.serialize(instance);
 
         ServiceInstance<Object>           rhs = serializer.deserialize(bytes);
         Assert.assertEquals(instance, rhs);
@@ -102,6 +114,7 @@ public class TestJsonInstanceSerializer
         Assert.assertEquals(instance.getPort(), rhs.getPort());
         Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
         Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
+        Assert.assertEquals(instance.isEnabled(), rhs.isEnabled());
     }
 
 
@@ -112,8 +125,8 @@ public class TestJsonInstanceSerializer
         Map<String,String> payload = new HashMap<String,String>();
         payload.put("1", "Test value 1");
         payload.put("2", "Test value 2");
-        ServiceInstance<Object>           instance = new ServiceInstance<Object>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
-        byte[]                          bytes = serializer.serialize(instance);
+        ServiceInstance<Object>           instance = new ServiceInstance<Object>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), false);
+        byte[]                            bytes = serializer.serialize(instance);
 
         ServiceInstance<Object>           rhs = serializer.deserialize(bytes);
         Assert.assertEquals(instance, rhs);
@@ -124,6 +137,7 @@ public class TestJsonInstanceSerializer
         Assert.assertEquals(instance.getPort(), rhs.getPort());
         Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
         Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
+        Assert.assertEquals(instance.isEnabled(), rhs.isEnabled());
     }
 
     @Test
@@ -132,8 +146,8 @@ public class TestJsonInstanceSerializer
         JsonInstanceSerializer<Payload>    serializer = new JsonInstanceSerializer<Payload>(Payload.class);
         Payload payload = new Payload();
         payload.setVal("Test value");
-        ServiceInstance<Payload>           instance = new ServiceInstance<Payload>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
-        byte[]                          bytes = serializer.serialize(instance);
+        ServiceInstance<Payload>           instance = new ServiceInstance<Payload>("name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), true);
+        byte[]                             bytes = serializer.serialize(instance);
 
         ServiceInstance<Payload>           rhs = serializer.deserialize(bytes);
         Assert.assertEquals(instance, rhs);
@@ -144,6 +158,7 @@ public class TestJsonInstanceSerializer
         Assert.assertEquals(instance.getPort(), rhs.getPort());
         Assert.assertEquals(instance.getSslPort(), rhs.getSslPort());
         Assert.assertEquals(instance.getUriSpec(), rhs.getUriSpec());
+        Assert.assertEquals(instance.isEnabled(), rhs.isEnabled());
     }
 
     public static class Payload {

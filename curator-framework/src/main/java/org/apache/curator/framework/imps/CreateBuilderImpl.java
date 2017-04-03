@@ -41,7 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
+public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
     private final CuratorFrameworkImpl client;
     private CreateMode createMode;
@@ -76,6 +76,22 @@ class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOper
         protectedId = null;
         storingStat = null;
         ttl = -1;
+    }
+
+    public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat, long ttl)
+    {
+        this.client = client;
+        this.createMode = createMode;
+        this.backgrounding = backgrounding;
+        this.createParentsIfNeeded = createParentsIfNeeded;
+        this.createParentsAsContainers = createParentsAsContainers;
+        this.doProtected = doProtected;
+        this.compress = compress;
+        this.setDataIfExists = setDataIfExists;
+        protectedId = null;
+        this.acling = new ACLing(client.getAclProvider(), aclList);
+        this.storingStat = storingStat;
+        this.ttl = ttl;
     }
 
     @Override
@@ -690,7 +706,11 @@ class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOper
                 }
                 catch ( KeeperException e )
                 {
-                    // ignore
+                    if ( !RetryLoop.isRetryException(e) )
+                    {
+                        throw e;
+                    }
+                    // otherwise safe to ignore as it will get retried
                 }
                 client.queueOperation(mainOperationAndData);
             }
