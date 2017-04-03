@@ -567,7 +567,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             client.getZooKeeper().create
             (
                 operationAndData.getData().getPath(),
-                operationAndData.getData().getData(),
+                data,
                 acling.getAclList(operationAndData.getData().getPath()),
                 createMode,
                 new AsyncCallback.Create2Callback() {
