@@ -59,7 +59,7 @@
         <jdk-version>1.7</jdk-version>
 
         <!-- versions -->
-        <zookeeper-version>3.6.0-SNAPSHOT</zookeeper-version>
+        <zookeeper-version>3.5.3-beta</zookeeper-version>
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
         <maven-bundle-plugin-version>2.3.7</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
