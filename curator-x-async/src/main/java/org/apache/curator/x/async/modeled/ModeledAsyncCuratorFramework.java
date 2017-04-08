@@ -37,7 +37,7 @@ public interface ModeledAsyncCuratorFramework<T>
      * @param client Curator client
      * @param path path to model
      * @param serializer the model's serializer
-     * @return Modeled Curator instance
+     * @return new Modeled Curator instance
      */
     static <T> ModeledAsyncCuratorFramework<T> wrap(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
     {
@@ -61,25 +61,105 @@ public interface ModeledAsyncCuratorFramework<T>
             .withDeleteOptions(defaultDeleteOptions);
     }
 
+    /**
+     * Returns the client that was originally passed to {@link #wrap(org.apache.curator.framework.CuratorFramework, ZPath, ModelSerializer)} or
+     * the builder.
+     *
+     * @return original client
+     */
     CuratorFramework unwrap();
 
+    /**
+     * Return a new Modeled Curator instance with all the same options but applying to the given child node of this Modeled Curator's
+     * path. E.g. if this Modeled Curator instance applies to "/a/b", calling <code>modeled.at("c")</code> returns an instance that applies to
+     * "/a/b/c".
+     *
+     * @param child child node.
+     * @return new Modeled Curator instance
+     */
     ModeledAsyncCuratorFramework<T> at(String child);
 
+    /**
+     * Create (or update depending on build options) a ZNode at this instance's path with a serialized
+     * version of the given model
+     *
+     * @param model model to write
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<String> create(T model);
 
+    /**
+     * Create (or update depending on build options) a ZNode at this instance's path with a serialized
+     * form of the given model
+     *
+     * @param model model to write
+     * @param storingStatIn the stat for the new ZNode is stored here
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<String> create(T model, Stat storingStatIn);
 
+    /**
+     * Read the ZNode at this instance's path and deserialize into a model
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<T> read();
 
+    /**
+     * Read the ZNode at this instance's path and deserialize into a model
+     *
+     * @param storingStatIn the stat for the new ZNode is stored here
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<T> read(Stat storingStatIn);
 
+    /**
+     * Update the ZNode at this instance's path with a serialized
+     * form of the given model passing "-1" for the update version
+     *
+     * @param model model to write
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<Stat> update(T model);
 
+    /**
+     * Update the ZNode at this instance's path with a serialized
+     * form of the given model passing the given update version
+     *
+     * @param model model to write
+     * @param version update version to use
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<Stat> update(T model, int version);
 
+    /**
+     * Check to see if the ZNode at this instance's path exists
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<Stat> checkExists();
 
+    /**
+     * Delete the ZNode at this instance's path passing -1 for the delete version
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<Void> delete();
 
+    /**
+     * Delete the ZNode at this instance's path passing the given delete version
+     *
+     * @param version update version to use
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
     AsyncStage<Void> delete(int version);
 }
