@@ -30,11 +30,30 @@ public interface ModeledAsyncCuratorFramework<T>
     ImmutableSet<CreateOption> defaultCreateOptions = ImmutableSet.of(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists);
     ImmutableSet<DeleteOption> defaultDeleteOptions = ImmutableSet.of(DeleteOption.guaranteed);
 
+    /**
+     * Return a new ModeledAsyncCuratorFramework for the given path and serializer. The returned ModeledAsyncCuratorFramework
+     * is set to not watch ZNodes and uses {@link #defaultCreateOptions} and {@link #defaultDeleteOptions}.
+     *
+     * @param client Curator client
+     * @param path path to model
+     * @param serializer the model's serializer
+     * @return Modeled Curator instance
+     */
     static <T> ModeledAsyncCuratorFramework<T> wrap(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
     {
         return builder(client, path, serializer).build();
     }
 
+    /**
+     * Start a new ModeledAsyncCuratorFrameworkBuilder for the given path and serializer. The returned ModeledAsyncCuratorFrameworkBuilder
+     * is set to not watch ZNodes and uses {@link #defaultCreateOptions} and {@link #defaultDeleteOptions}, but you can change these
+     * with builder methods.
+     *
+     * @param client Curator client
+     * @param path path to model
+     * @param serializer the model's serializer
+     * @return builder
+     */
     static <T> ModeledAsyncCuratorFrameworkBuilder<T> builder(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
     {
         return new ModeledAsyncCuratorFrameworkBuilder<>(client, path, serializer)

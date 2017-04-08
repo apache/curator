@@ -18,9 +18,25 @@
  */
 package org.apache.curator.x.async.modeled;
 
+/**
+ * Serializing interface for models
+ */
 public interface ModelSerializer<T>
 {
+    /**
+     * Given a model return the serialized bytes
+     *
+     * @param model model
+     * @return bytes
+     */
     byte[] serialize(T model);
 
+    /**
+     * Given bytes serialized via {@link #serialize(Object)} return
+     * the model
+     *
+     * @param bytes serialized bytes
+     * @return model
+     */
     T deserialize(byte[] bytes);
 }

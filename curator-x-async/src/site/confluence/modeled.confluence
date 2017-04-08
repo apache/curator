@@ -1,0 +1,103 @@
+h1. Modeled Curator
+
+This is a strongly typed DSL that allows you to map a ZooKeeper path to a serializable class as
+opposed to raw byte arrays. For example:
+
+{code}
+// let "client" be a CuratorFramework instance
+ModeledAsyncCuratorFramework<MyModel> modeled = ModeledAsyncCuratorFramework.wrap(client, path, serializer);
+modeled.create(new MyModel());
+{code}
+
+h2. Background and Usage
+
+Note: To use Modeled Curator, you should be familiar with Java 8's lambdas, CompletedFuture and CompletionStage.
+You should also be familiar with [[Curator Async|async.html]] as Modeled Curator is based on it.
+
+Modeled Curator maps a ZooKeeper path to a DSL that allows for strongly typed CRUD operations on that path
+and any children of the path. Bound into the DSL are all the various Curator options such as whether to
+watch nodes, compress data, use guaranteed delete, etc. You create an instance of this DSL once at startup
+so that it can be used without client code having to remember which serializer to use, which ACLs to
+set, etc.
+
+h4. Serialization
+
+{{ModelSerializer}} is the interface for serializing/deserializing model instances. For convenience
+a [[Jackson|https://github.com/FasterXML/jackson]] serializer is provided, {{JacksonModelSerializer}}.
+However, please note that the dependency on Jackson is marked as {{provided}} so as not to introduce
+a new dependency for using Curator. Therefore, if you wish to use the JacksonModelSerializer you must
+manually add the dependency to your build system.
+
+h4. Path Abstraction
+
+Instead of using raw string paths, Modeled Curator defines the {{ZPath}} interface that abstracts
+ZooKeeper paths.
+
+h4. Building
+
+You build a {{ModeledAsyncCuratorFramework}} instance using either the builder or helper wrapper. All
+options needed to use the ZPath are specified at build time:
+
+* whether and/or how to watch the ZNode
+* the ZNode {{CreateMode}}
+* any {{CreateOption}}s
+* any {{DeleteOption}}s
+* any ACLs
+* etc.
+
+These options are bound into the {{ModeledAsyncCuratorFramework}} instance and applied as needed.
+
+h2. Example
+
+For this example, assume this simple model:
+
+{code}
+public class Person {
+    private final String name;
+    private final int age;
+
+    public Person() {
+        this("", 0);
+    }
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+}
+{code}
+
+We can now build a {{ModeledAsyncCuratorFramework}} that manages {{Person}} instances at a given path:
+
+{code}
+// let "client" be a CuratorFramework instance
+
+ZPath path = ZPath.parse(...);    // whatever path you need
+JacksonModelSerializer<Person> serializer = JacksonModelSerializer.build(Person.class);
+ModeledAsyncCuratorFramework<MyModel> modeled = ModeledAsyncCuratorFramework.wrap(client, path, serializer);
+
+...
+
+public void writePerson(String id, Person p) {
+    modeled.at(id).create(p);   // note this is an async operation
+}
+
+public void readPerson(String id, Consumer<Person> receiver) {
+    modeled.at(id).read().whenComplete((person, exception) -> {
+        if ( exception != null ) {
+            ...
+        } else {
+            receiver.accept(person);
+        }
+    });
+}
+
+{code}
