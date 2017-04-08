@@ -44,9 +44,8 @@ import static org.apache.curator.x.async.api.CreateOption.compress;
 import static org.apache.curator.x.async.api.CreateOption.setDataIfExists;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 
-public class TestBasicOperations extends BaseClassForTests
+public class TestBasicOperations extends CompletableBaseClassForTests
 {
-    private static final Timing timing = new Timing();
     private AsyncCuratorFramework client;
 
     @BeforeMethod
@@ -180,37 +179,5 @@ public class TestBasicOperations extends BaseClassForTests
             Assert.assertNull(v.getRawException());
             Assert.assertEquals(v.getCode(), KeeperException.Code.CONNECTIONLOSS);
         });
-    }
-
-    private <T, U> void complete(CompletionStage<T> stage)
-    {
-        complete(stage, (v, e) -> {});
-    }
-
-    private <T, U> void complete(CompletionStage<T> stage, BiConsumer<? super T, Throwable> handler)
-    {
-        try
-        {
-            stage.handle((v, e) -> {
-                handler.accept(v, e);
-                return null;
-            }).toCompletableFuture().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-        }
-        catch ( ExecutionException e )
-        {
-            if ( e.getCause() instanceof AssertionError )
-            {
-                throw (AssertionError)e.getCause();
-            }
-            Assert.fail("get() failed", e);
-        }
-        catch ( TimeoutException e )
-        {
-            Assert.fail("get() timed out");
-        }
     }
 }
