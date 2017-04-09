@@ -39,7 +39,7 @@ public interface ModeledNodeCache<T> extends Closeable
      * @param serializer for the model
      * @return new wrapped cache
      */
-    static <T> ModeledNodeCache wrap(NodeCache cache, ModelSerializer<T> serializer)
+    static <T> ModeledNodeCache<T> wrap(NodeCache cache, ModelSerializer<T> serializer)
     {
         return new ModeledNodeCacheImpl<>(cache, serializer);
     }
