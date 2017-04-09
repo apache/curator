@@ -27,7 +27,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.CompletableBaseClassForTests;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
-import org.apache.curator.x.async.modeled.ModeledAsyncCuratorFramework;
+import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.apache.zookeeper.data.Stat;
@@ -45,7 +45,7 @@ public class TestModeledCaches extends CompletableBaseClassForTests
     private CuratorFramework client;
     private JacksonModelSerializer<TestModel> serializer;
     private ZPath path;
-    private ModeledAsyncCuratorFramework<TestModel> modeled;
+    private ModeledCuratorFramework<TestModel> modeled;
 
     @BeforeMethod
     @Override
@@ -59,7 +59,7 @@ public class TestModeledCaches extends CompletableBaseClassForTests
         serializer = JacksonModelSerializer.build(TestModel.class);
 
         path = ZPath.parse("/test/path");
-        modeled = ModeledAsyncCuratorFramework.wrap(client, path, serializer);
+        modeled = ModeledCuratorFramework.wrap(client, path, serializer);
     }
 
     @AfterMethod

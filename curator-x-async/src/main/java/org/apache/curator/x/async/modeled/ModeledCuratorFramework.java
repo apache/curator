@@ -26,13 +26,13 @@ import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.zookeeper.data.Stat;
 import java.util.Set;
 
-public interface ModeledAsyncCuratorFramework<T>
+public interface ModeledCuratorFramework<T>
 {
     Set<CreateOption> defaultCreateOptions = ImmutableSet.of(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists);
     Set<DeleteOption> defaultDeleteOptions = ImmutableSet.of(DeleteOption.guaranteed);
 
     /**
-     * Return a new ModeledAsyncCuratorFramework for the given path and serializer. The returned ModeledAsyncCuratorFramework
+     * Return a new ModeledCuratorFramework for the given path and serializer. The returned ModeledCuratorFramework
      * is set to not watch ZNodes and uses {@link #defaultCreateOptions} and {@link #defaultDeleteOptions}.
      *
      * @param client Curator client
@@ -40,13 +40,13 @@ public interface ModeledAsyncCuratorFramework<T>
      * @param serializer the model's serializer
      * @return new Modeled Curator instance
      */
-    static <T> ModeledAsyncCuratorFramework<T> wrap(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
+    static <T> ModeledCuratorFramework<T> wrap(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
     {
         return builder(client, path, serializer).build();
     }
 
     /**
-     * Start a new ModeledAsyncCuratorFrameworkBuilder for the given path and serializer. The returned ModeledAsyncCuratorFrameworkBuilder
+     * Start a new ModeledCuratorFrameworkBuilder for the given path and serializer. The returned ModeledCuratorFrameworkBuilder
      * is set to not watch ZNodes and uses {@link #defaultCreateOptions} and {@link #defaultDeleteOptions}, but you can change these
      * with builder methods.
      *
@@ -55,9 +55,9 @@ public interface ModeledAsyncCuratorFramework<T>
      * @param serializer the model's serializer
      * @return builder
      */
-    static <T> ModeledAsyncCuratorFrameworkBuilder<T> builder(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
+    static <T> ModeledCuratorFrameworkBuilder<T> builder(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
     {
-        return new ModeledAsyncCuratorFrameworkBuilder<>(client, path, serializer)
+        return new ModeledCuratorFrameworkBuilder<>(client, path, serializer)
             .withCreateOptions(defaultCreateOptions)
             .withDeleteOptions(defaultDeleteOptions);
     }
@@ -78,7 +78,7 @@ public interface ModeledAsyncCuratorFramework<T>
      * @param child child node.
      * @return new Modeled Curator instance
      */
-    ModeledAsyncCuratorFramework<T> at(String child);
+    ModeledCuratorFramework<T> at(String child);
 
     /**
      * Create (or update depending on build options) a ZNode at this instance's path with a serialized

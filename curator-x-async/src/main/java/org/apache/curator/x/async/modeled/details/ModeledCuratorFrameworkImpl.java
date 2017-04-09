@@ -33,7 +33,7 @@ import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.ModelSerializer;
-import org.apache.curator.x.async.modeled.ModeledAsyncCuratorFramework;
+import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
 
-public class ModeledAsyncCuratorFrameworkImpl<T> implements ModeledAsyncCuratorFramework<T>
+public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T>
 {
     private final AsyncCuratorFramework client;
     private final WatchableAsyncCuratorFramework watchableClient;
@@ -61,7 +61,7 @@ public class ModeledAsyncCuratorFrameworkImpl<T> implements ModeledAsyncCuratorF
     private final Set<DeleteOption> deleteOptions;
     private final AsyncCuratorFrameworkDsl dslClient;
 
-    public ModeledAsyncCuratorFrameworkImpl(CuratorFramework client, String path, ModelSerializer<T> serializer, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions)
+    public ModeledCuratorFrameworkImpl(CuratorFramework client, String path, ModelSerializer<T> serializer, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions)
     {
         boolean localIsWatched = (watchMode != null);
 
@@ -173,10 +173,10 @@ public class ModeledAsyncCuratorFrameworkImpl<T> implements ModeledAsyncCuratorF
     }
 
     @Override
-    public ModeledAsyncCuratorFramework<T> at(String child)
+    public ModeledCuratorFramework<T> at(String child)
     {
         String childPath = ZKPaths.makePath(path, child);
-        return new ModeledAsyncCuratorFrameworkImpl<>(client.unwrap(), childPath, serializer, watchMode, watcherFilter, unhandledErrorListener, resultFilter, createMode, aclList, createOptions, deleteOptions);
+        return new ModeledCuratorFrameworkImpl<>(client.unwrap(), childPath, serializer, watchMode, watcherFilter, unhandledErrorListener, resultFilter, createMode, aclList, createOptions, deleteOptions);
     }
 
     private boolean isCompressed()

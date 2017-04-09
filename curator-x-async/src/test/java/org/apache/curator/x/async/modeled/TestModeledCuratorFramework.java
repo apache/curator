@@ -33,7 +33,7 @@ import org.testng.annotations.Test;
 import java.math.BigInteger;
 import java.util.concurrent.CountDownLatch;
 
-public class TestModeledAsyncCuratorFramework extends CompletableBaseClassForTests
+public class TestModeledCuratorFramework extends CompletableBaseClassForTests
 {
     private static final ZPath path = ZPath.parse("/test/path");
     private CuratorFramework rawClient;
@@ -66,7 +66,7 @@ public class TestModeledAsyncCuratorFramework extends CompletableBaseClassForTes
     {
         TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
         TestModel rawModel2 = new TestModel("Wayne", "Rooney", "Old Trafford", 10, BigInteger.valueOf(1));
-        ModeledAsyncCuratorFramework<TestModel> client = ModeledAsyncCuratorFramework.wrap(rawClient, path, serializer);
+        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.wrap(rawClient, path, serializer);
         AsyncStage<String> stage = client.create(rawModel);
         Assert.assertNull(stage.event());
         complete(stage, (s, e) -> Assert.assertNotNull(s));
@@ -81,10 +81,10 @@ public class TestModeledAsyncCuratorFramework extends CompletableBaseClassForTes
     public void testBackwardCompatibility()
     {
         TestNewerModel rawNewModel = new TestNewerModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1), 100);
-        ModeledAsyncCuratorFramework<TestNewerModel> clientForNew = ModeledAsyncCuratorFramework.wrap(rawClient, path, newSerializer);
+        ModeledCuratorFramework<TestNewerModel> clientForNew = ModeledCuratorFramework.wrap(rawClient, path, newSerializer);
         complete(clientForNew.create(rawNewModel), (s, e) -> Assert.assertNotNull(s));
 
-        ModeledAsyncCuratorFramework<TestModel> clientForOld = ModeledAsyncCuratorFramework.wrap(rawClient, path, serializer);
+        ModeledCuratorFramework<TestModel> clientForOld = ModeledCuratorFramework.wrap(rawClient, path, serializer);
         complete(clientForOld.read(), (model, e) -> Assert.assertTrue(rawNewModel.equalsOld(model)));
     }
 
@@ -92,7 +92,7 @@ public class TestModeledAsyncCuratorFramework extends CompletableBaseClassForTes
     public void testWatched() throws InterruptedException
     {
         CountDownLatch latch = new CountDownLatch(1);
-        ModeledAsyncCuratorFramework<TestModel> client = ModeledAsyncCuratorFramework.builder(rawClient, path, serializer).watched().build();
+        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, path, serializer).watched().build();
         client.checkExists().event().whenComplete((event, ex) -> latch.countDown());
         timing.sleepABit();
         Assert.assertEquals(latch.getCount(), 1);

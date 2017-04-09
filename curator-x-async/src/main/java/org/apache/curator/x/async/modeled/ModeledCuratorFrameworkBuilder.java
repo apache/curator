@@ -25,7 +25,7 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.DeleteOption;
-import org.apache.curator.x.async.modeled.details.ModeledAsyncCuratorFrameworkImpl;
+import org.apache.curator.x.async.modeled.details.ModeledCuratorFrameworkImpl;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
-public class ModeledAsyncCuratorFrameworkBuilder<T>
+public class ModeledCuratorFrameworkBuilder<T>
 {
     private final CuratorFramework client;
     private final ZPath path;
@@ -49,13 +49,13 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
     private Set<DeleteOption> deleteOptions;
 
     /**
-     * Build a new ModeledAsyncCuratorFramework instance
+     * Build a new ModeledCuratorFramework instance
      *
-     * @return new ModeledAsyncCuratorFramework instance
+     * @return new ModeledCuratorFramework instance
      */
-    public ModeledAsyncCuratorFramework<T> build()
+    public ModeledCuratorFramework<T> build()
     {
-        return new ModeledAsyncCuratorFrameworkImpl<>(
+        return new ModeledCuratorFrameworkImpl<>(
             client,
             path.fullPath(),
             serializer,
@@ -77,7 +77,7 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @return this for chaining
      * @see org.apache.curator.x.async.AsyncStage#event()
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> watched()
+    public ModeledCuratorFrameworkBuilder<T> watched()
     {
         this.watchMode = WatchMode.stateChangeAndSuccess;
         return this;
@@ -90,7 +90,7 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @return this for chaining
      * @see org.apache.curator.x.async.AsyncStage#event()
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> watched(WatchMode watchMode)
+    public ModeledCuratorFrameworkBuilder<T> watched(WatchMode watchMode)
     {
         this.watchMode = watchMode;
         return this;
@@ -104,7 +104,7 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @return this for chaining
      * @see org.apache.curator.x.async.AsyncStage#event()
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> watched(WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter)
+    public ModeledCuratorFrameworkBuilder<T> watched(WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter)
     {
         this.watchMode = watchMode;
         this.watcherFilter = watcherFilter;
@@ -117,7 +117,7 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @param unhandledErrorListener listener
      * @return this for chaining
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> withUnhandledErrorListener(UnhandledErrorListener unhandledErrorListener)
+    public ModeledCuratorFrameworkBuilder<T> withUnhandledErrorListener(UnhandledErrorListener unhandledErrorListener)
     {
         this.unhandledErrorListener = unhandledErrorListener;
         return this;
@@ -129,7 +129,7 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @param resultFilter filter
      * @return this for chaining
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> withResultFilter(UnaryOperator<CuratorEvent> resultFilter)
+    public ModeledCuratorFrameworkBuilder<T> withResultFilter(UnaryOperator<CuratorEvent> resultFilter)
     {
         this.resultFilter = resultFilter;
         return this;
@@ -141,7 +141,7 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @param createMode create mode
      * @return this for chaining
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> withCreateMode(CreateMode createMode)
+    public ModeledCuratorFrameworkBuilder<T> withCreateMode(CreateMode createMode)
     {
         this.createMode = createMode;
         return this;
@@ -153,7 +153,7 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @param aclList ACLs
      * @return this for chaining
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> withAclList(List<ACL> aclList)
+    public ModeledCuratorFrameworkBuilder<T> withAclList(List<ACL> aclList)
     {
         this.aclList = aclList;
         return this;
@@ -165,7 +165,7 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @param createOptions options
      * @return this for chaining
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> withCreateOptions(Set<CreateOption> createOptions)
+    public ModeledCuratorFrameworkBuilder<T> withCreateOptions(Set<CreateOption> createOptions)
     {
         this.createOptions = (createOptions != null) ? ImmutableSet.copyOf(createOptions) : null;
         return this;
@@ -177,13 +177,13 @@ public class ModeledAsyncCuratorFrameworkBuilder<T>
      * @param deleteOptions options
      * @return this for chaining
      */
-    public ModeledAsyncCuratorFrameworkBuilder<T> withDeleteOptions(Set<DeleteOption> deleteOptions)
+    public ModeledCuratorFrameworkBuilder<T> withDeleteOptions(Set<DeleteOption> deleteOptions)
     {
         this.deleteOptions = (deleteOptions != null) ? ImmutableSet.copyOf(deleteOptions) : null;
         return this;
     }
 
-    ModeledAsyncCuratorFrameworkBuilder(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
+    ModeledCuratorFrameworkBuilder(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.path = Objects.requireNonNull(path, "path cannot be null");
