@@ -233,6 +233,16 @@ public class NodeCache implements Closeable
         return data.get();
     }
 
+    /**
+     * Return the path this cache is watching
+     *
+     * @return path
+     */
+    public String getPath()
+    {
+        return path;
+    }
+
     @VisibleForTesting
     volatile Exchanger<Object> rebuildTestExchanger;
 

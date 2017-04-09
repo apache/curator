@@ -34,8 +34,6 @@ import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModeledAsyncCuratorFramework;
-import org.apache.curator.x.async.modeled.ModeledDetails;
-import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
@@ -47,7 +45,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
 
-public class ModeledAsyncCuratorFrameworkImpl<T> implements ModeledAsyncCuratorFramework<T>, ModeledDetails<T>
+public class ModeledAsyncCuratorFrameworkImpl<T> implements ModeledAsyncCuratorFramework<T>
 {
     private final AsyncCuratorFramework client;
     private final WatchableAsyncCuratorFramework watchableClient;
@@ -81,30 +79,6 @@ public class ModeledAsyncCuratorFrameworkImpl<T> implements ModeledAsyncCuratorF
 
         dslClient = this.client.with(this.watchMode, unhandledErrorListener, resultFilter, watcherFilter);
         watchableClient = localIsWatched ? dslClient.watched() : dslClient;
-    }
-
-    @Override
-    public ModeledDetails<T> getDetails()
-    {
-        return this;
-    }
-
-    @Override
-    public Set<CreateOption> getCreateOptions()
-    {
-        return createOptions;
-    }
-
-    @Override
-    public ModelSerializer<T> getSerializer()
-    {
-        return serializer;
-    }
-
-    @Override
-    public ZPath getPath()
-    {
-        return ZPath.parse(path);
     }
 
     @Override

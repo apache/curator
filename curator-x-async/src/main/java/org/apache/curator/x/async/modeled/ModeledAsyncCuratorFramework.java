@@ -70,8 +70,6 @@ public interface ModeledAsyncCuratorFramework<T>
      */
     CuratorFramework unwrap();
 
-    ModeledDetails<T> getDetails();
-
     /**
      * Return a new Modeled Curator instance with all the same options but applying to the given child node of this Modeled Curator's
      * path. E.g. if this Modeled Curator instance applies to "/a/b", calling <code>modeled.at("c")</code> returns an instance that applies to

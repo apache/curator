@@ -20,7 +20,7 @@ package org.apache.curator.x.async.modeled.recipes;
 
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.x.async.modeled.ModeledDetails;
+import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.details.recipes.ModeledPathChildrenCacheImpl;
 import java.io.Closeable;
@@ -36,13 +36,13 @@ public interface ModeledPathChildrenCache<T> extends Closeable
     /**
      * Return a newly wrapped cache
      *
-     * @param modeled modeling options
      * @param cache the cache to wrap
+     * @param serializer model serializer
      * @return new wrapped cache
      */
-    static <T> ModeledPathChildrenCache<T> wrap(ModeledDetails<T> modeled, PathChildrenCache cache)
+    static <T> ModeledPathChildrenCache<T> wrap(PathChildrenCache cache, ModelSerializer<T> serializer)
     {
-        return new ModeledPathChildrenCacheImpl<>(modeled, cache);
+        return new ModeledPathChildrenCacheImpl<>(cache, serializer);
     }
 
     /**
@@ -118,7 +118,7 @@ public interface ModeledPathChildrenCache<T> extends Closeable
     void clear();
 
     /**
-     * Forwards to {@link org.apache.curator.framework.recipes.cache.PathChildrenCache#close()}
+     * Forwards to {@link org.apache.curator.framework.recipes.cache.PathChildrenCache#rebuildNode(String)}
      */
     void close();
 }

@@ -23,7 +23,8 @@ import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.x.async.modeled.ModeledDetails;
+import org.apache.curator.x.async.modeled.ModelSerializer;
+import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.curator.x.async.modeled.recipes.ModeledNodeCache;
 import org.apache.zookeeper.data.Stat;
@@ -33,12 +34,14 @@ import java.util.Optional;
 public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>
 {
     private final NodeCache cache;
-    private final ModeledDetails<T> modeled;
+    private final ModelSerializer<T> serializer;
+    private final ZPath path;
 
-    public ModeledNodeCacheImpl(ModeledDetails<T> modeled, NodeCache cache)
+    public ModeledNodeCacheImpl(NodeCache cache, ModelSerializer<T> serializer)
     {
-        this.modeled = Objects.requireNonNull(modeled, "modeled cannot be null");
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
+        this.serializer = Objects.requireNonNull(serializer, "serializer cannot be null");
+        path = ZPath.parse(cache.getPath());
     }
 
     @Override
@@ -108,9 +111,9 @@ public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>
         }
         if ( (data == null) || (data.length == 0) )
         {
-            return Optional.of(new ModeledCachedNodeImpl<T>(modeled.getPath(), null, stat));
+            return Optional.of(new ModeledCachedNodeImpl<T>(path, null, stat));
         }
-        return Optional.of(new ModeledCachedNodeImpl<>(modeled.getPath(), modeled.getSerializer().deserialize(data), stat));
+        return Optional.of(new ModeledCachedNodeImpl<>(path, serializer.deserialize(data), stat));
     }
 
     @Override

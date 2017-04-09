@@ -21,7 +21,7 @@ package org.apache.curator.x.async.modeled.recipes;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
-import org.apache.curator.x.async.modeled.ModeledDetails;
+import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.details.recipes.ModeledNodeCacheImpl;
 import java.io.Closeable;
 import java.util.Optional;
@@ -35,13 +35,13 @@ public interface ModeledNodeCache<T> extends Closeable
     /**
      * Return a newly wrapped cache
      *
-     * @param modeled modeling options
      * @param cache the cache to wrap
+     * @param serializer for the model
      * @return new wrapped cache
      */
-    static <T> ModeledNodeCache wrap(ModeledDetails<T> modeled, NodeCache cache)
+    static <T> ModeledNodeCache wrap(NodeCache cache, ModelSerializer<T> serializer)
     {
-        return new ModeledNodeCacheImpl<>(modeled, cache);
+        return new ModeledNodeCacheImpl<>(cache, serializer);
     }
 
     /**

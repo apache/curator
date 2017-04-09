@@ -26,13 +26,13 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.x.async.modeled.ModeledDetails;
+import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ZPath;
+import org.apache.curator.x.async.modeled.recipes.ModeledCacheEvent;
 import org.apache.curator.x.async.modeled.recipes.ModeledCacheEventType;
+import org.apache.curator.x.async.modeled.recipes.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.curator.x.async.modeled.recipes.ModeledPathChildrenCache;
-import org.apache.curator.x.async.modeled.recipes.ModeledCacheEvent;
-import org.apache.curator.x.async.modeled.recipes.ModeledCacheListener;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,14 +43,14 @@ import java.util.stream.Collectors;
 
 public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache<T>
 {
-    private final ModeledDetails<T> modeled;
     private final PathChildrenCache cache;
     private final Map<ModeledCacheListener, PathChildrenCacheListener> listenerMap = new ConcurrentHashMap<>();
+    private final ModelSerializer<T> serializer;
 
-    public ModeledPathChildrenCacheImpl(ModeledDetails<T> modeled, PathChildrenCache cache)
+    public ModeledPathChildrenCacheImpl(PathChildrenCache cache, ModelSerializer<T> serializer)
     {
-        this.modeled = Objects.requireNonNull(modeled, "modeled cannot be null");
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
+        this.serializer = Objects.requireNonNull(serializer, "serializer cannot be null");
     }
 
     @Override
@@ -137,7 +137,7 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
                         @Override
                         public Optional<ModeledCachedNode<T>> getNode()
                         {
-                            return Optional.ofNullable(from(modeled, event.getData()));
+                            return Optional.ofNullable(from(serializer, event.getData()));
                         }
                     };
                     listener.event(modeledEvent);
@@ -162,14 +162,14 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
     public List<ModeledCachedNode> getCurrentData()
     {
         return cache.getCurrentData().stream()
-            .map(data -> from(modeled, data))
+            .map(data -> from(serializer, data))
             .collect(Collectors.toList());
     }
 
     @Override
     public Optional<ModeledCachedNode> getCurrentData(String fullPath)
     {
-        return Optional.ofNullable(from(modeled, cache.getCurrentData(fullPath)));
+        return Optional.ofNullable(from(serializer, cache.getCurrentData(fullPath)));
     }
 
     @Override
@@ -209,13 +209,13 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
         CloseableUtils.closeQuietly(cache);
     }
 
-    static <T> ModeledCachedNode<T> from(ModeledDetails<T> modeled, ChildData data)
+    static <T> ModeledCachedNode<T> from(ModelSerializer<T> serializer, ChildData data)
     {
         if ( data == null )
         {
             return null;
         }
-        T model = (data.getData() != null) ? modeled.getSerializer().deserialize(data.getData()) : null;
+        T model = (data.getData() != null) ? serializer.deserialize(data.getData()) : null;
         return new ModeledCachedNodeImpl<>(ZPath.parse(data.getPath()), model, data.getStat());
     }
 

@@ -26,7 +26,7 @@ import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.x.async.modeled.ModeledDetails;
+import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.recipes.ModeledCacheEvent;
 import org.apache.curator.x.async.modeled.recipes.ModeledCacheEventType;
@@ -46,14 +46,14 @@ import static org.apache.curator.x.async.modeled.details.recipes.ModeledPathChil
 
 public class ModeledTreeCacheImpl<T> implements ModeledTreeCache<T>
 {
-    private final ModeledDetails<T> modeled;
     private final TreeCache cache;
     private final Map<ModeledCacheListener, TreeCacheListener> listenerMap = new ConcurrentHashMap<>();
+    private final ModelSerializer<T> serializer;
 
-    public ModeledTreeCacheImpl(ModeledDetails<T> modeled, TreeCache cache)
+    public ModeledTreeCacheImpl(TreeCache cache, ModelSerializer<T> serializer)
     {
-        this.modeled = Objects.requireNonNull(modeled, "modeled cannot be null");
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
+        this.serializer = Objects.requireNonNull(serializer, "serializer cannot be null");
     }
 
     @Override
@@ -107,7 +107,7 @@ public class ModeledTreeCacheImpl<T> implements ModeledTreeCache<T>
                         @Override
                         public Optional<ModeledCachedNode<T>> getNode()
                         {
-                            return Optional.ofNullable(from(modeled, event.getData()));
+                            return Optional.ofNullable(from(serializer, event.getData()));
                         }
                     };
                 };
@@ -136,14 +136,14 @@ public class ModeledTreeCacheImpl<T> implements ModeledTreeCache<T>
             return Collections.emptyMap();
         }
         return currentChildren.entrySet().stream()
-            .map(entry -> new AbstractMap.SimpleEntry<>(ZPath.parse(entry.getKey()), from(modeled, entry.getValue())))
+            .map(entry -> new AbstractMap.SimpleEntry<>(ZPath.parse(entry.getKey()), from(serializer, entry.getValue())))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
     public Optional<ModeledCachedNode<T>> getCurrentData(ZPath fullPath)
     {
-        return Optional.ofNullable(from(modeled, cache.getCurrentData(fullPath.fullPath())));
+        return Optional.ofNullable(from(serializer, cache.getCurrentData(fullPath.fullPath())));
     }
 
     @VisibleForTesting

@@ -20,7 +20,7 @@ package org.apache.curator.x.async.modeled.recipes;
 
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.TreeCache;
-import org.apache.curator.x.async.modeled.ModeledDetails;
+import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.details.recipes.ModeledTreeCacheImpl;
 import java.io.Closeable;
@@ -36,13 +36,13 @@ public interface ModeledTreeCache<T> extends Closeable
     /**
      * Return a newly wrapped cache
      *
-     * @param modeled modeling options
      * @param cache the cache to wrap
+     * @param serializer model serializer
      * @return new wrapped cache
      */
-    static <T> ModeledTreeCache<T> wrap(ModeledDetails<T> modeled, TreeCache cache)
+    static <T> ModeledTreeCache<T> wrap(TreeCache cache, ModelSerializer<T> serializer)
     {
-        return new ModeledTreeCacheImpl<>(modeled, cache);
+        return new ModeledTreeCacheImpl<>(cache, serializer);
     }
 
     /**
