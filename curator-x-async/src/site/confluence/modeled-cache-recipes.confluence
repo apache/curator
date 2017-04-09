@@ -4,7 +4,7 @@ Strongly typed wrappers for Curator's Cache Recipes (NodeCache, PathChildrenCach
 you to use serializable classes as opposed to raw byte arrays. For example:
 
 {code}
-ModeledNodeCache<MyModel> cache = ModeledNodeCache.wrap(nodeCache, serializer)
+ModeledNodeCache<MyModel> cache = ModeledNodeCache.wrap(nodeCache, serializer);
 cache.getCurrentData().ifPresent(data -> {
     MyModel model = data.getData();
     ...
@@ -21,8 +21,9 @@ system.
 Any of the Curator Cache Recipes &#8212; NodeCache, PathChildrenCache or TreeCache &#8212; can be wrapped
 with "modeled" versions: {{ModeledNodeCache}}, {{ModeledPathChildrenCache}} and {{ModeledTreeCache}}.
 Each wrapper has a {{wrap()}} method that takes an instance of the cache and a serializer. All the
-main methods of each cache are duplicated in the wrapper. However, the data object and listeners
+public methods of each cache are duplicated in the wrapper. However, the data object and listeners
 are altered to specify typed models via {{ModeledCachedNode<T>}} and {{ModeledCacheListener<T>}}.
+The wrappers use the same serializer abstraction as described in [[Modeled Curator|modeled.html]].
 
 h2. Example
 

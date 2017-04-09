@@ -50,7 +50,7 @@ Strongly typed wrappers for Curator's Cache Recipes (NodeCache, PathChildrenCach
 you to use serializable classes as opposed to raw byte arrays. For example:
 
 {code}
-ModeledNodeCache<MyModel> cache = ModeledNodeCache.wrap(nodeCache, serializer)
+ModeledNodeCache<MyModel> cache = ModeledNodeCache.wrap(nodeCache, serializer);
 cache.getCurrentData().ifPresent(data -> {
     MyModel model = data.getData();
     ...

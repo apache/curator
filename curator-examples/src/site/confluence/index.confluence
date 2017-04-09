@@ -8,5 +8,5 @@ This module contains example usages of various Curator features. Each directory 
 |/discovery|Example usage of the Curator's ServiceDiscovery|
 |/framework|A few examples of how to use the CuratorFramework class|
 
-See the [examples source repo|https://git-wip-us.apache.org/repos/asf?p=curator.git;a=tree;f=curator-examples/src/main/java] for each example.
+See the [examples source repo|https://github.com/apache/curator/tree/master/curator-examples/src/main/java] for each example.
 
