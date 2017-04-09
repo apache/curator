@@ -22,13 +22,12 @@ import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.zookeeper.data.Stat;
 import java.util.Objects;
-import java.util.Optional;
 
 public class ModeledCachedNodeImpl<T> implements ModeledCachedNode<T>
 {
     private final ZPath path;
     private final Stat stat;
-    private final Optional<T> data;
+    private final T data;
 
     public ModeledCachedNodeImpl(ZPath path)
     {
@@ -43,8 +42,8 @@ public class ModeledCachedNodeImpl<T> implements ModeledCachedNode<T>
     public ModeledCachedNodeImpl(ZPath path, T data, Stat stat)
     {
         this.path = Objects.requireNonNull(path, "path cannot be null");
-        this.data = Optional.ofNullable(data);
         this.stat = Objects.requireNonNull(stat, "stat cannot be null");
+        this.data = data;
     }
 
     @Override
@@ -60,7 +59,7 @@ public class ModeledCachedNodeImpl<T> implements ModeledCachedNode<T>
     }
 
     @Override
-    public Optional<T> getData()
+    public T getModel()
     {
         return data;
     }
@@ -88,7 +87,7 @@ public class ModeledCachedNodeImpl<T> implements ModeledCachedNode<T>
         {
             return false;
         }
-        return data.equals(that.data);
+        return data != null ? data.equals(that.data) : that.data == null;
     }
 
     @Override
@@ -96,7 +95,7 @@ public class ModeledCachedNodeImpl<T> implements ModeledCachedNode<T>
     {
         int result = path.hashCode();
         result = 31 * result + stat.hashCode();
-        result = 31 * result + data.hashCode();
+        result = 31 * result + (data != null ? data.hashCode() : 0);
         return result;
     }
 

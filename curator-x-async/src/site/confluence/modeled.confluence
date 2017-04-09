@@ -18,7 +18,7 @@ Modeled Curator maps a ZooKeeper path to a DSL that allows for strongly typed CR
 and any children of the path. Bound into the DSL are all the various Curator options such as whether to
 watch nodes, compress data, use guaranteed delete, etc. You create an instance of this DSL once at startup
 so that it can be used without client code having to remember which serializer to use, which ACLs to
-set, etc.
+set, etc
 
 h4. Serialization
 

@@ -20,7 +20,6 @@ package org.apache.curator.x.async.modeled.recipes;
 
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.data.Stat;
-import java.util.Optional;
 
 /**
  * Abstracts a cached node
@@ -42,9 +41,9 @@ public interface ModeledCachedNode<T>
     Stat getStat();
 
     /**
-     * The node's current data
+     * The node's current model
      *
-     * @return data
+     * @return model
      */
-    Optional<T> getData();
+    T getModel();
 }

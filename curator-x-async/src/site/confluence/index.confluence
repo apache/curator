@@ -15,8 +15,8 @@ and simplified, in particular for operations such as {{create()}}.
 With this DSL you can do asynchronous tasks in a more natural, functional way using
 [Java 8 lambdas|https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html].
 
-The Curator Async package also contains a strongly typed DSL that allows you to map a ZooKeeper path
-to a serializable class as opposed to raw byte arrays.
+The Curator Async package also contains a strongly typed DSL and strongly typed Cache Recipe wrappers that
+allows you to map a ZooKeeper path to a serializable class as opposed to raw byte arrays.
 
 h2. [[Curator Async|async.html]]
 
@@ -44,3 +44,17 @@ modeled.create(new MyModel());
 
 See [[Modeled Curator|modeled.html]] for details.
 
+h2. [[Modeled Cache Recipes|modeled-cache-recipes.html]]
+
+Strongly typed wrappers for Curator's Cache Recipes (NodeCache, PathChildrenCache and TreeCache) allow
+you to use serializable classes as opposed to raw byte arrays. For example:
+
+{code}
+ModeledNodeCache<MyModel> cache = ModeledNodeCache.wrap(nodeCache, serializer)
+cache.getCurrentData().ifPresent(data -> {
+    MyModel model = data.getData();
+    ...
+);
+{code}
+
+See [[Modeled Cache Recipes|modeled-cache-recipes.html]] for details.
