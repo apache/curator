@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Model serializer that uses Jackson for JSON serialization. <strong>IMPORTANT: </strong>
@@ -75,6 +76,24 @@ public class JacksonModelSerializer<T> implements ModelSerializer<T>
     {
         reader = mapper.readerFor(type);
         writer = mapper.writerFor(type);
+    }
+
+    public JacksonModelSerializer(ObjectMapper mapper, JavaType type)
+    {
+        reader = mapper.readerFor(type);
+        writer = mapper.writerFor(type);
+    }
+
+    public JacksonModelSerializer(ObjectMapper mapper, TypeReference type)
+    {
+        reader = mapper.readerFor(type);
+        writer = mapper.writerFor(type);
+    }
+
+    public JacksonModelSerializer(ObjectReader reader, ObjectWriter writer)
+    {
+        this.reader = Objects.requireNonNull(reader, "reader cannot be null");
+        this.writer = Objects.requireNonNull(writer, "writer cannot be null");
     }
 
     @Override

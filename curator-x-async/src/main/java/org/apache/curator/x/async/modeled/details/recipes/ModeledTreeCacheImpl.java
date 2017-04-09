@@ -96,20 +96,23 @@ public class ModeledTreeCacheImpl<T> implements ModeledTreeCache<T>
             public void addListener(ModeledCacheListener<T> listener, Executor executor)
             {
                 TreeCacheListener treeCacheListener = (client, event) -> {
+                    ModeledCacheEventType eventType = toType(event.getType());
+                    Optional<ModeledCachedNode<T>> node = Optional.ofNullable(from(serializer, event.getData()));
                     ModeledCacheEvent<T> wrappedEvent = new ModeledCacheEvent<T>()
                     {
                         @Override
                         public ModeledCacheEventType getType()
                         {
-                            return toType(event.getType());
+                            return eventType;
                         }
 
                         @Override
                         public Optional<ModeledCachedNode<T>> getNode()
                         {
-                            return Optional.ofNullable(from(serializer, event.getData()));
+                            return node;
                         }
                     };
+                    listener.event(wrappedEvent);
                 };
                 listenerMap.put(listener, treeCacheListener);
                 cache.getListenable().addListener(treeCacheListener, executor);

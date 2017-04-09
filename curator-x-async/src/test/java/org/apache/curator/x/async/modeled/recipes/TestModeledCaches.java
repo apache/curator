@@ -22,6 +22,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.CompletableBaseClassForTests;
@@ -130,6 +131,7 @@ public class TestModeledCaches extends CompletableBaseClassForTests
             Assert.assertNotNull(event1);
             Assert.assertNotNull(event2);
             Assert.assertEquals(event1.getType(), ModeledCacheEventType.NODE_ADDED);
+            Assert.assertEquals(event2.getType(), ModeledCacheEventType.NODE_ADDED);
             Assert.assertEquals(event1.getNode().isPresent() ? event1.getNode().get().getData().orElse(null) : null, model1);
             Assert.assertEquals(event2.getNode().isPresent() ? event2.getNode().get().getData().orElse(null) : null, model2);
             Assert.assertEquals(event1.getNode().get().getPath(), path.at("1"));
@@ -151,6 +153,67 @@ public class TestModeledCaches extends CompletableBaseClassForTests
             cache.getListenable().removeListener(listener);
             modeled.at("2").delete();
             Assert.assertNull(events.poll(timing.forSleepingABit().milliseconds(), TimeUnit.MILLISECONDS));  // listener is removed - shouldn't get an event
+        }
+    }
+
+    @Test
+    public void testModeledPathChildrenCacheWithoutData() throws InterruptedException
+    {
+        try ( ModeledPathChildrenCache<TestModel> cache = ModeledPathChildrenCache.wrap(new PathChildrenCache(client, path.fullPath(), false), serializer) )
+        {
+            cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
+
+            BlockingQueue<ModeledCacheEvent<TestModel>> events = new LinkedBlockingQueue<>();
+            ModeledCacheListener<TestModel> listener = events::add;
+            cache.getListenable().addListener(listener);
+
+            TestModel model1 = new TestModel("a", "b", "c", 1, BigInteger.TEN);
+            TestModel model2 = new TestModel("d", "e", "f", 10, BigInteger.ONE);
+
+            modeled.at("1").create(model1).thenApply(__ -> modeled.at("2").create(model2));
+            ModeledCacheEvent<TestModel> event1 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            ModeledCacheEvent<TestModel> event2 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNotNull(event1);
+            Assert.assertNotNull(event2);
+            Assert.assertEquals(event1.getType(), ModeledCacheEventType.NODE_ADDED);
+            Assert.assertTrue(event1.getNode().isPresent());
+            Assert.assertTrue(event2.getNode().isPresent());
+            Assert.assertFalse(event1.getNode().get().getData().isPresent());
+            Assert.assertFalse(event2.getNode().get().getData().isPresent());
+        }
+    }
+
+    @Test
+    public void testModeledTreeCacheWithData() throws Exception
+    {
+        try (ModeledTreeCache<TestModel> cache = ModeledTreeCache.wrap(TreeCache.newBuilder(client, path.fullPath()).build(),serializer) )
+        {
+            BlockingQueue<ModeledCacheEvent<TestModel>> events = new LinkedBlockingQueue<>();
+            ModeledCacheListener<TestModel> listener = ModeledCacheListener.filtered(events::add, ModeledCacheListener.<TestModel>nodeRemovedFilter().or(ModeledCacheListener.hasModelFilter()));
+            cache.getListenable().addListener(listener);
+
+            cache.start();
+
+            TestModel model1 = new TestModel("a", "b", "c", 1, BigInteger.TEN);
+            TestModel model2 = new TestModel("d", "e", "f", 10, BigInteger.ONE);
+            TestModel model3 = new TestModel("g", "h", "i", 100, BigInteger.ZERO);
+
+            modeled.at("1").create(model1).thenApply(__ -> modeled.at("1").at("2").create(model2).thenApply(___ -> modeled.at("1").at("2").at("3").create(model3)));
+            ModeledCacheEvent<TestModel> event1 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            ModeledCacheEvent<TestModel> event2 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            ModeledCacheEvent<TestModel> event3 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNotNull(event1);
+            Assert.assertNotNull(event2);
+            Assert.assertNotNull(event3);
+            Assert.assertEquals(event1.getType(), ModeledCacheEventType.NODE_ADDED);
+            Assert.assertEquals(event2.getType(), ModeledCacheEventType.NODE_ADDED);
+            Assert.assertEquals(event3.getType(), ModeledCacheEventType.NODE_ADDED);
+            Assert.assertEquals(event1.getNode().isPresent() ? event1.getNode().get().getData().orElse(null) : null, model1);
+            Assert.assertEquals(event2.getNode().isPresent() ? event2.getNode().get().getData().orElse(null) : null, model2);
+            Assert.assertEquals(event3.getNode().isPresent() ? event3.getNode().get().getData().orElse(null) : null, model3);
+            Assert.assertEquals(event1.getNode().get().getPath(), path.at("1"));
+            Assert.assertEquals(event2.getNode().get().getPath(), path.at("1").at("2"));
+            Assert.assertEquals(event3.getNode().get().getPath(), path.at("1").at("2").at("3"));
         }
     }
 }

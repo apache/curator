@@ -126,18 +126,20 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
             public void addListener(ModeledCacheListener<T> listener, Executor executor)
             {
                 PathChildrenCacheListener pathChildrenCacheListener = (client, event) -> {
+                    ModeledCacheEventType eventType = toType(event.getType());
+                    Optional<ModeledCachedNode<T>> node = Optional.ofNullable(from(serializer, event.getData()));
                     ModeledCacheEvent<T> modeledEvent = new ModeledCacheEvent<T>()
                     {
                         @Override
                         public ModeledCacheEventType getType()
                         {
-                            return toType(event.getType());
+                            return eventType;
                         }
 
                         @Override
                         public Optional<ModeledCachedNode<T>> getNode()
                         {
-                            return Optional.ofNullable(from(serializer, event.getData()));
+                            return node;
                         }
                     };
                     listener.event(modeledEvent);
@@ -215,7 +217,7 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
         {
             return null;
         }
-        T model = (data.getData() != null) ? serializer.deserialize(data.getData()) : null;
+        T model = ((data.getData() != null) && (data.getData().length > 0)) ? serializer.deserialize(data.getData()) : null;
         return new ModeledCachedNodeImpl<>(ZPath.parse(data.getPath()), model, data.getStat());
     }
 

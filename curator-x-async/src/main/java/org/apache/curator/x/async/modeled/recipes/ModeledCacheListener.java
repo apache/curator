@@ -18,10 +18,67 @@
  */
 package org.apache.curator.x.async.modeled.recipes;
 
+import java.util.function.Predicate;
+
 /**
  * Event listener
  */
+@FunctionalInterface
 public interface ModeledCacheListener<T>
 {
+    /**
+     * Receive an event
+     *
+     * @param event the event
+     */
     void event(ModeledCacheEvent<T> event);
+
+    /**
+     * Wrap this listener with a filter
+     *
+     * @param filter test for events. Only events that pass the filter are sent to the listener
+     * @return filtered version of this listener
+     */
+    static <T> ModeledCacheListener<T> filtered(ModeledCacheListener<T> listener, Predicate<ModeledCacheEvent<T>> filter)
+    {
+        return event -> {
+            if ( filter.test(event) )
+            {
+                listener.event(event);
+            }
+        };
+    }
+
+    /**
+     * Filters out all but CRUD events
+     *
+     * @return predicate
+     */
+    static <T> Predicate<ModeledCacheEvent<T>> nodeEventFilter()
+    {
+        return event -> (event.getType() == ModeledCacheEventType.NODE_ADDED)
+            || (event.getType() == ModeledCacheEventType.NODE_UPDATED)
+            || (event.getType() == ModeledCacheEventType.NODE_REMOVED)
+            ;
+    }
+
+    /**
+     * Filters out all but {@link ModeledCacheEventType#NODE_REMOVED} events
+     *
+     * @return predicate
+     */
+    static <T> Predicate<ModeledCacheEvent<T>> nodeRemovedFilter()
+    {
+        return event -> event.getType() == ModeledCacheEventType.NODE_REMOVED;
+    }
+
+    /**
+     * Filters out all but events that have valid model instances
+     *
+     * @return predicate
+     */
+    static <T> Predicate<ModeledCacheEvent<T>> hasModelFilter()
+    {
+        return event -> event.getNode().isPresent() && event.getNode().get().getData().isPresent();
+    }
 }
