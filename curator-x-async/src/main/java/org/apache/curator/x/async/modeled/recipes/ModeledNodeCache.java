@@ -20,7 +20,6 @@ package org.apache.curator.x.async.modeled.recipes;
 
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.details.recipes.ModeledNodeCacheImpl;
 import java.io.Closeable;
@@ -67,9 +66,14 @@ public interface ModeledNodeCache<T> extends Closeable
     void rebuild();
 
     /**
-     * Forwards to {@link org.apache.curator.framework.recipes.cache.NodeCache#getListenable()}
+     * Return the listener container so that you can add/remove listeners. Note:
+     * {@link org.apache.curator.x.async.modeled.recipes.ModeledCacheEventType#INITIALIZED}
+     * and {@link org.apache.curator.x.async.modeled.recipes.ModeledCacheEventType#NODE_ADDED} are not
+     * used.
+     *
+     * @return listener container
      */
-    Listenable<NodeCacheListener> getListenable();
+    Listenable<ModeledCacheListener<T>> getListenable();
 
     /**
      * Return the modeled current data. There are no guarantees of accuracy. This is

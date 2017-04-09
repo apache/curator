@@ -47,7 +47,7 @@ import static org.apache.curator.x.async.modeled.details.recipes.ModeledPathChil
 public class ModeledTreeCacheImpl<T> implements ModeledTreeCache<T>
 {
     private final TreeCache cache;
-    private final Map<ModeledCacheListener, TreeCacheListener> listenerMap = new ConcurrentHashMap<>();
+    private final Map<ModeledCacheListener<T>, TreeCacheListener> listenerMap = new ConcurrentHashMap<>();
     private final ModelSerializer<T> serializer;
 
     public ModeledTreeCacheImpl(TreeCache cache, ModelSerializer<T> serializer)

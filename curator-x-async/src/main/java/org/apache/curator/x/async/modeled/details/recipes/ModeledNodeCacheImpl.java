@@ -18,30 +18,93 @@
  */
 package org.apache.curator.x.async.modeled.details.recipes;
 
+import com.google.common.util.concurrent.MoreExecutors;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ZPath;
+import org.apache.curator.x.async.modeled.recipes.ModeledCacheEvent;
+import org.apache.curator.x.async.modeled.recipes.ModeledCacheEventType;
+import org.apache.curator.x.async.modeled.recipes.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.curator.x.async.modeled.recipes.ModeledNodeCache;
 import org.apache.zookeeper.data.Stat;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
-public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>
+public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>, ConnectionStateListener
 {
     private final NodeCache cache;
     private final ModelSerializer<T> serializer;
     private final ZPath path;
+    private final Map<ModeledCacheListener<T>, NodeCacheListener> listenerMap = new ConcurrentHashMap<>();
 
     public ModeledNodeCacheImpl(NodeCache cache, ModelSerializer<T> serializer)
     {
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
         this.serializer = Objects.requireNonNull(serializer, "serializer cannot be null");
         path = ZPath.parse(cache.getPath());
+    }
+
+    @Override
+    public void stateChanged(CuratorFramework client, ConnectionState newState)
+    {
+        ModeledCacheEventType mappedType;
+        switch ( newState )
+        {
+            default:
+            {
+                mappedType = null;
+                break;
+            }
+
+            case RECONNECTED:
+            case CONNECTED:
+            {
+                mappedType = ModeledCacheEventType.CONNECTION_RECONNECTED;
+                break;
+            }
+
+            case SUSPENDED:
+            {
+                mappedType = ModeledCacheEventType.CONNECTION_SUSPENDED;
+                break;
+            }
+
+            case LOST:
+            {
+                mappedType = ModeledCacheEventType.CONNECTION_LOST;
+                break;
+            }
+        }
+
+        if ( mappedType != null )
+        {
+            ModeledCacheEvent<T> event = new ModeledCacheEvent<T>()
+            {
+                @Override
+                public ModeledCacheEventType getType()
+                {
+                    return mappedType;
+                }
+
+                @Override
+                public Optional<ModeledCachedNode<T>> getNode()
+                {
+                    return Optional.empty();
+                }
+            };
+            listenerMap.keySet().forEach(l -> l.event(null));
+        }
     }
 
     @Override
@@ -61,11 +124,13 @@ public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>
         {
             throw new RuntimeException("Could not start", e);
         }
+        cache.getClient().getConnectionStateListenable().addListener(this);
     }
 
     @Override
     public void start(boolean buildInitial)
     {
+        cache.getClient().getConnectionStateListenable().removeListener(this);
         try
         {
             cache.start(buildInitial);
@@ -90,9 +155,52 @@ public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>
     }
 
     @Override
-    public Listenable<NodeCacheListener> getListenable()
+    public Listenable<ModeledCacheListener<T>> getListenable()
     {
-        return cache.getListenable();
+        return new Listenable<ModeledCacheListener<T>>()
+        {
+            @Override
+            public void addListener(ModeledCacheListener<T> listener)
+            {
+                addListener(listener, MoreExecutors.sameThreadExecutor());
+            }
+
+            @Override
+            public void addListener(ModeledCacheListener<T> listener, Executor executor)
+            {
+                NodeCacheListener nodeCacheListener = () ->
+                {
+                    Optional<ModeledCachedNode<T>> currentData = getCurrentData();
+                    ModeledCacheEvent<T> event = new ModeledCacheEvent<T>()
+                    {
+                        @Override
+                        public ModeledCacheEventType getType()
+                        {
+                            return currentData.isPresent() ? ModeledCacheEventType.NODE_UPDATED : ModeledCacheEventType.NODE_REMOVED;
+                        }
+
+                        @Override
+                        public Optional<ModeledCachedNode<T>> getNode()
+                        {
+                            return currentData;
+                        }
+                    };
+                    listener.event(event);
+                };
+                listenerMap.put(listener, nodeCacheListener);
+                cache.getListenable().addListener(nodeCacheListener, executor);
+            }
+
+            @Override
+            public void removeListener(ModeledCacheListener<T> listener)
+            {
+                NodeCacheListener nodeCacheListener = listenerMap.remove(listener);
+                if ( nodeCacheListener != null )
+                {
+                    cache.getListenable().removeListener(nodeCacheListener);
+                }
+            }
+        };
     }
 
     @Override

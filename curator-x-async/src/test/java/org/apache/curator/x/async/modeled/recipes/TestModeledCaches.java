@@ -38,7 +38,6 @@ import org.testng.annotations.Test;
 import java.math.BigInteger;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class TestModeledCaches extends CompletableBaseClassForTests
@@ -79,34 +78,37 @@ public class TestModeledCaches extends CompletableBaseClassForTests
         {
             cache.start(true);
 
-            Semaphore changesAvailable = new Semaphore(0);
-            cache.getListenable().addListener(changesAvailable::release);
+            BlockingQueue<ModeledCacheEvent<TestModel>> events = new LinkedBlockingQueue<>();
+            ModeledCacheListener<TestModel> listener = events::add;
+            cache.getListenable().addListener(listener);
 
             TestModel model1 = new TestModel("a", "b", "c", 1, BigInteger.TEN);
             TestModel model2 = new TestModel("d", "e", "f", 10, BigInteger.ONE);
 
             Stat stat = new Stat();
             modeled.create(model1, stat);
-            Assert.assertTrue(timing.acquireSemaphore(changesAvailable));
-            Assert.assertTrue(cache.getCurrentData().isPresent());
-            Assert.assertTrue(cache.getCurrentData().get().getData().isPresent());
-            Assert.assertEquals(cache.getCurrentData().get().getPath(), path);
-            Assert.assertEquals(cache.getCurrentData().get().getData().get(), model1);
-            Assert.assertEquals(cache.getCurrentData().get().getStat(), stat);
+            ModeledCacheEvent<TestModel> event = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNotNull(event);
+            Assert.assertEquals(event.getType(), ModeledCacheEventType.NODE_UPDATED);
+            Assert.assertTrue(event.getNode().isPresent());
+            Assert.assertTrue(event.getNode().get().getData().isPresent());
+            Assert.assertEquals(event.getNode().get().getPath(), path);
+            Assert.assertEquals(event.getNode().get().getData().get(), model1);
+            Assert.assertEquals(event.getNode().get().getStat(), stat);
 
             timing.sleepABit();
-            Assert.assertEquals(changesAvailable.availablePermits(), 0);
+            Assert.assertEquals(events.size(), 0);
 
             modeled.update(model2);
-            Assert.assertTrue(timing.acquireSemaphore(changesAvailable));
-            Assert.assertTrue(cache.getCurrentData().isPresent());
-            Assert.assertTrue(cache.getCurrentData().get().getData().isPresent());
-            Assert.assertEquals(cache.getCurrentData().get().getPath(), path);
-            Assert.assertEquals(cache.getCurrentData().get().getData().get(), model2);
+            event = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertTrue(event.getNode().isPresent());
+            Assert.assertTrue(event.getNode().get().getData().isPresent());
+            Assert.assertEquals(event.getNode().get().getPath(), path);
+            Assert.assertEquals(event.getNode().get().getData().get(), model2);
 
             modeled.delete();
-            Assert.assertTrue(timing.acquireSemaphore(changesAvailable));
-            Assert.assertFalse(cache.getCurrentData().isPresent());
+            event = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertFalse(event.getNode().isPresent());
         }
     }
 

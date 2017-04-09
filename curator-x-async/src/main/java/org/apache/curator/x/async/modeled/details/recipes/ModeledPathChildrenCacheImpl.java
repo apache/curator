@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache<T>
 {
     private final PathChildrenCache cache;
-    private final Map<ModeledCacheListener, PathChildrenCacheListener> listenerMap = new ConcurrentHashMap<>();
+    private final Map<ModeledCacheListener<T>, PathChildrenCacheListener> listenerMap = new ConcurrentHashMap<>();
     private final ModelSerializer<T> serializer;
 
     public ModeledPathChildrenCacheImpl(PathChildrenCache cache, ModelSerializer<T> serializer)

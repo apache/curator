@@ -145,6 +145,11 @@ public class NodeCache implements Closeable
         this.dataIsCompressed = dataIsCompressed;
     }
 
+    public CuratorFramework getClient()
+    {
+        return client;
+    }
+
     /**
      * Start the cache. The cache is not started automatically. You must call this method.
      *
