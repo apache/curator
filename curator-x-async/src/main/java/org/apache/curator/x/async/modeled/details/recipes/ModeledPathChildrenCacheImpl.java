@@ -127,7 +127,7 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
             {
                 PathChildrenCacheListener pathChildrenCacheListener = (client, event) -> {
                     ModeledCacheEventType eventType = toType(event.getType());
-                    Optional<ModeledCachedNode<T>> node = Optional.ofNullable(from(serializer, event.getData()));
+                    ModeledCachedNode<T> node = from(serializer, event.getData());
                     ModeledCacheEvent<T> modeledEvent = new ModeledCacheEvent<T>()
                     {
                         @Override
@@ -137,7 +137,7 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
                         }
 
                         @Override
-                        public Optional<ModeledCachedNode<T>> getNode()
+                        public ModeledCachedNode<T> getNode()
                         {
                             return node;
                         }

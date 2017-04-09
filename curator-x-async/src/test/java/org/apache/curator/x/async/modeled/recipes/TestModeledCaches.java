@@ -90,23 +90,23 @@ public class TestModeledCaches extends CompletableBaseClassForTests
             ModeledCacheEvent<TestModel> event = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
             Assert.assertNotNull(event);
             Assert.assertEquals(event.getType(), ModeledCacheEventType.NODE_UPDATED);
-            Assert.assertTrue(event.getNode().isPresent());
-            Assert.assertEquals(event.getNode().get().getPath(), path);
-            Assert.assertEquals(event.getNode().get().getModel(), model1);
-            Assert.assertEquals(event.getNode().get().getStat(), stat);
+            Assert.assertNotNull(event.getNode());
+            Assert.assertEquals(event.getNode().getPath(), path);
+            Assert.assertEquals(event.getNode().getModel(), model1);
+            Assert.assertEquals(event.getNode().getStat(), stat);
 
             timing.sleepABit();
             Assert.assertEquals(events.size(), 0);
 
             modeled.update(model2);
             event = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
-            Assert.assertTrue(event.getNode().isPresent());
-            Assert.assertEquals(event.getNode().get().getPath(), path);
-            Assert.assertEquals(event.getNode().get().getModel(), model2);
+            Assert.assertNotNull(event.getNode());
+            Assert.assertEquals(event.getNode().getPath(), path);
+            Assert.assertEquals(event.getNode().getModel(), model2);
 
             modeled.delete();
             event = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
-            Assert.assertFalse(event.getNode().isPresent());
+            Assert.assertNull(event.getNode());
         }
     }
 
@@ -132,23 +132,23 @@ public class TestModeledCaches extends CompletableBaseClassForTests
             Assert.assertNotNull(event2);
             Assert.assertEquals(event1.getType(), ModeledCacheEventType.NODE_ADDED);
             Assert.assertEquals(event2.getType(), ModeledCacheEventType.NODE_ADDED);
-            Assert.assertEquals(event1.getNode().isPresent() ? event1.getNode().get().getModel() : null, model1);
-            Assert.assertEquals(event2.getNode().isPresent() ? event2.getNode().get().getModel() : null, model2);
-            Assert.assertEquals(event1.getNode().get().getPath(), path.at("1"));
-            Assert.assertEquals(event2.getNode().get().getPath(), path.at("2"));
+            Assert.assertEquals((event1.getNode() != null) ? event1.getNode().getModel() : null, model1);
+            Assert.assertEquals((event2.getNode() != null) ? event2.getNode().getModel() : null, model2);
+            Assert.assertEquals(event1.getNode().getPath(), path.at("1"));
+            Assert.assertEquals(event2.getNode().getPath(), path.at("2"));
 
             modeled.at("1").delete();
             event1 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
             Assert.assertNotNull(event1);
             Assert.assertEquals(event1.getType(), ModeledCacheEventType.NODE_REMOVED);
-            Assert.assertEquals(event1.getNode().get().getPath(), path.at("1"));
+            Assert.assertEquals(event1.getNode().getPath(), path.at("1"));
 
             modeled.at("2").update(model3);
             event1 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
             Assert.assertNotNull(event1);
             Assert.assertEquals(event1.getType(), ModeledCacheEventType.NODE_UPDATED);
-            Assert.assertEquals(event1.getNode().get().getPath(), path.at("2"));
-            Assert.assertEquals(event1.getNode().isPresent() ? event1.getNode().get().getModel() : null, model3);
+            Assert.assertEquals(event1.getNode().getPath(), path.at("2"));
+            Assert.assertEquals((event1.getNode() != null) ? event1.getNode().getModel() : null, model3);
 
             cache.getListenable().removeListener(listener);
             modeled.at("2").delete();
@@ -181,12 +181,12 @@ public class TestModeledCaches extends CompletableBaseClassForTests
             Assert.assertEquals(event1.getType(), ModeledCacheEventType.NODE_ADDED);
             Assert.assertEquals(event2.getType(), ModeledCacheEventType.NODE_ADDED);
             Assert.assertEquals(event3.getType(), ModeledCacheEventType.NODE_ADDED);
-            Assert.assertEquals(event1.getNode().isPresent() ? event1.getNode().get().getModel() : null, model1);
-            Assert.assertEquals(event2.getNode().isPresent() ? event2.getNode().get().getModel() : null, model2);
-            Assert.assertEquals(event3.getNode().isPresent() ? event3.getNode().get().getModel() : null, model3);
-            Assert.assertEquals(event1.getNode().get().getPath(), path.at("1"));
-            Assert.assertEquals(event2.getNode().get().getPath(), path.at("1").at("2"));
-            Assert.assertEquals(event3.getNode().get().getPath(), path.at("1").at("2").at("3"));
+            Assert.assertEquals((event1.getNode() != null) ? event1.getNode().getModel() : null, model1);
+            Assert.assertEquals((event2.getNode() != null) ? event2.getNode().getModel() : null, model2);
+            Assert.assertEquals((event3.getNode() != null) ? event3.getNode().getModel() : null, model3);
+            Assert.assertEquals(event1.getNode().getPath(), path.at("1"));
+            Assert.assertEquals(event2.getNode().getPath(), path.at("1").at("2"));
+            Assert.assertEquals(event3.getNode().getPath(), path.at("1").at("2").at("3"));
         }
     }
 }

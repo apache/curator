@@ -98,9 +98,9 @@ public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>, ConnectionS
                 }
 
                 @Override
-                public Optional<ModeledCachedNode<T>> getNode()
+                public ModeledCachedNode<T> getNode()
                 {
-                    return Optional.empty();
+                    return null;
                 }
             };
             listenerMap.keySet().forEach(l -> l.event(null));
@@ -180,9 +180,9 @@ public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>, ConnectionS
                         }
 
                         @Override
-                        public Optional<ModeledCachedNode<T>> getNode()
+                        public ModeledCachedNode<T> getNode()
                         {
-                            return currentData;
+                            return currentData.orElse(null);
                         }
                     };
                     listener.event(event);

@@ -18,8 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.recipes;
 
-import java.util.Optional;
-
 /**
  * Abstracts a cache event
  */
@@ -33,9 +31,9 @@ public interface ModeledCacheEvent<T>
     ModeledCacheEventType getType();
 
     /**
-     * Cached node if appropriate for the event
+     * Cached node if appropriate for the event (i.e. NODE_* events)
      *
      * @return node
      */
-    Optional<ModeledCachedNode<T>> getNode();
+    ModeledCachedNode<T> getNode();
 }

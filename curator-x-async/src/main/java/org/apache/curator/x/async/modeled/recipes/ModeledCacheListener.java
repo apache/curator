@@ -79,6 +79,6 @@ public interface ModeledCacheListener<T>
      */
     static <T> Predicate<ModeledCacheEvent<T>> hasModelFilter()
     {
-        return event -> event.getNode().isPresent() && (event.getNode().get().getModel() != null);
+        return event -> (event.getNode() != null) && (event.getNode().getModel() != null);
     }
 }
