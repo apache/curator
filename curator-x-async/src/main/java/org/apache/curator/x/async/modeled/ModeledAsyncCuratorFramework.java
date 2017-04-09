@@ -24,11 +24,12 @@ import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.zookeeper.data.Stat;
+import java.util.Set;
 
 public interface ModeledAsyncCuratorFramework<T>
 {
-    ImmutableSet<CreateOption> defaultCreateOptions = ImmutableSet.of(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists);
-    ImmutableSet<DeleteOption> defaultDeleteOptions = ImmutableSet.of(DeleteOption.guaranteed);
+    Set<CreateOption> defaultCreateOptions = ImmutableSet.of(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists);
+    Set<DeleteOption> defaultDeleteOptions = ImmutableSet.of(DeleteOption.guaranteed);
 
     /**
      * Return a new ModeledAsyncCuratorFramework for the given path and serializer. The returned ModeledAsyncCuratorFramework
@@ -68,6 +69,8 @@ public interface ModeledAsyncCuratorFramework<T>
      * @return original client
      */
     CuratorFramework unwrap();
+
+    ModeledDetails<T> getDetails();
 
     /**
      * Return a new Modeled Curator instance with all the same options but applying to the given child node of this Modeled Curator's
