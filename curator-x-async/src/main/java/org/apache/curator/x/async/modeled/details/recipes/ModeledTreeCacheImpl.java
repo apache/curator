@@ -21,6 +21,7 @@ package org.apache.curator.x.async.modeled.details.recipes;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
@@ -33,6 +34,7 @@ import org.apache.curator.x.async.modeled.recipes.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.curator.x.async.modeled.recipes.ModeledTreeCache;
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -52,6 +54,12 @@ public class ModeledTreeCacheImpl<T> implements ModeledTreeCache<T>
     {
         this.modeled = Objects.requireNonNull(modeled, "modeled cannot be null");
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
+    }
+
+    @Override
+    public TreeCache unwrap()
+    {
+        return cache;
     }
 
     @Override
@@ -122,7 +130,12 @@ public class ModeledTreeCacheImpl<T> implements ModeledTreeCache<T>
     @Override
     public Map<ZPath, ModeledCachedNode<T>> getCurrentChildren(ZPath fullPath)
     {
-        return cache.getCurrentChildren(fullPath.fullPath()).entrySet().stream()
+        Map<String, ChildData> currentChildren = cache.getCurrentChildren(fullPath.fullPath());
+        if ( currentChildren == null )
+        {
+            return Collections.emptyMap();
+        }
+        return currentChildren.entrySet().stream()
             .map(entry -> new AbstractMap.SimpleEntry<>(ZPath.parse(entry.getKey()), from(modeled, entry.getValue())))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }

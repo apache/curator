@@ -21,6 +21,9 @@ package org.apache.curator.x.async.modeled;
 import org.apache.curator.x.async.api.CreateOption;
 import java.util.Set;
 
+/**
+ * Modeling options
+ */
 public interface ModeledDetails<T>
 {
     /**

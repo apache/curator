@@ -18,6 +18,9 @@
  */
 package org.apache.curator.x.async.modeled.recipes;
 
+/**
+ * Event listener
+ */
 public interface ModeledCacheListener<T>
 {
     void event(ModeledCacheEvent<T> event);

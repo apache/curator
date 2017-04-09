@@ -42,7 +42,7 @@ public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>
     }
 
     @Override
-    public NodeCache upwrap()
+    public NodeCache unwrap()
     {
         return cache;
     }
@@ -108,9 +108,9 @@ public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>
         }
         if ( (data == null) || (data.length == 0) )
         {
-            return Optional.of(new ModeledCachedNode<T>(modeled.getPath(), null, stat));
+            return Optional.of(new ModeledCachedNodeImpl<T>(modeled.getPath(), null, stat));
         }
-        return Optional.of(new ModeledCachedNode<>(modeled.getPath(), modeled.getSerializer().deserialize(data), stat));
+        return Optional.of(new ModeledCachedNodeImpl<>(modeled.getPath(), modeled.getSerializer().deserialize(data), stat));
     }
 
     @Override

@@ -47,7 +47,7 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
     private final PathChildrenCache cache;
     private final Map<ModeledCacheListener, PathChildrenCacheListener> listenerMap = new ConcurrentHashMap<>();
 
-    public ModeledPathChildrenCacheImpl(PathChildrenCache cache, ModeledDetails<T> modeled)
+    public ModeledPathChildrenCacheImpl(ModeledDetails<T> modeled, PathChildrenCache cache)
     {
         this.modeled = Objects.requireNonNull(modeled, "modeled cannot be null");
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
@@ -216,7 +216,7 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
             return null;
         }
         T model = (data.getData() != null) ? modeled.getSerializer().deserialize(data.getData()) : null;
-        return new ModeledCachedNode<>(ZPath.parse(data.getPath()), model, data.getStat());
+        return new ModeledCachedNodeImpl<>(ZPath.parse(data.getPath()), model, data.getStat());
     }
 
     @VisibleForTesting

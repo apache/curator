@@ -27,20 +27,64 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Wraps a {@link org.apache.curator.framework.recipes.cache.TreeCache} so that
+ * node data can be viewed as strongly typed models.
+ */
 public interface ModeledTreeCache<T> extends Closeable
 {
+    /**
+     * Return a newly wrapped cache
+     *
+     * @param modeled modeling options
+     * @param cache the cache to wrap
+     * @return new wrapped cache
+     */
     static <T> ModeledTreeCache<T> wrap(ModeledDetails<T> modeled, TreeCache cache)
     {
         return new ModeledTreeCacheImpl<>(modeled, cache);
     }
 
+    /**
+     * Return the original cache that was wrapped
+     *
+     * @return cache
+     */
+    TreeCache unwrap();
+
+    /**
+     * Forwards to {@link org.apache.curator.framework.recipes.cache.TreeCache#start()}
+     */
     void start();
 
+    /**
+     * Forwards to {@link org.apache.curator.framework.recipes.cache.TreeCache#close()}
+     */
     void close();
 
+    /**
+     * Return the listener container so that you can add/remove listeners
+     *
+     * @return listener container
+     */
     Listenable<ModeledCacheListener<T>> getListenable();
 
+    /**
+     * Return the modeled current set of children at the given path, mapped by child name. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @param fullPath full path to the node to check
+     * @return a possibly-empty list of children if the node is alive, or null
+     */
     Map<ZPath, ModeledCachedNode<T>> getCurrentChildren(ZPath fullPath);
 
+    /**
+     * Return the modeled current data for the given path. There are no guarantees of accuracy. This is
+     * merely the most recent view of the data. If there is no node at the given path,
+     * {@link java.util.Optional#empty()} is returned.
+     *
+     * @param fullPath full path to the node to check
+     * @return data if the node is alive, or null
+     */
     Optional<ModeledCachedNode<T>> getCurrentData(ZPath fullPath);
 }
