@@ -19,31 +19,28 @@
 package org.apache.curator.x.async.modeled.recipes;
 
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
+import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.x.async.modeled.ModeledDetails;
-import org.apache.curator.x.async.modeled.details.recipes.ModeledNodeCacheImpl;
+import org.apache.curator.x.async.modeled.ZPath;
+import org.apache.curator.x.async.modeled.details.recipes.ModeledTreeCacheImpl;
 import java.io.Closeable;
+import java.util.Map;
 import java.util.Optional;
 
-public interface ModeledNodeCache<T> extends Closeable
+public interface ModeledTreeCache<T> extends Closeable
 {
-    static <T> ModeledNodeCache wrap(ModeledDetails<T> modeled, NodeCache cache)
+    static <T> ModeledTreeCache<T> wrap(ModeledDetails<T> modeled, TreeCache cache)
     {
-        return new ModeledNodeCacheImpl<>(modeled, cache);
+        return new ModeledTreeCacheImpl<>(modeled, cache);
     }
-
-    NodeCache upwrap();
 
     void start();
 
-    void start(boolean buildInitial);
-
-    void rebuild();
-
-    Listenable<NodeCacheListener> getListenable();
-
-    Optional<ModeledCachedNode<T>> getCurrentData();
-
     void close();
+
+    Listenable<ModeledCacheListener<T>> getListenable();
+
+    Map<ZPath, ModeledCachedNode<T>> getCurrentChildren(ZPath fullPath);
+
+    Optional<ModeledCachedNode<T>> getCurrentData(ZPath fullPath);
 }

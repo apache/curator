@@ -18,13 +18,11 @@
  */
 package org.apache.curator.x.async.modeled.details.recipes;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModeledDetails;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.curator.x.async.modeled.recipes.ModeledNodeCache;
@@ -37,10 +35,16 @@ public class ModeledNodeCacheImpl<T> implements ModeledNodeCache<T>
     private final NodeCache cache;
     private final ModeledDetails<T> modeled;
 
-    public ModeledNodeCacheImpl(CuratorFramework client, ModeledDetails<T> modeled)
+    public ModeledNodeCacheImpl(ModeledDetails<T> modeled, NodeCache cache)
     {
         this.modeled = Objects.requireNonNull(modeled, "modeled cannot be null");
-        cache = new NodeCache(client, modeled.getPath().fullPath(), modeled.getCreateOptions().contains(CreateOption.compress));
+        this.cache = Objects.requireNonNull(cache, "cache cannot be null");
+    }
+
+    @Override
+    public NodeCache upwrap()
+    {
+        return cache;
     }
 
     @Override

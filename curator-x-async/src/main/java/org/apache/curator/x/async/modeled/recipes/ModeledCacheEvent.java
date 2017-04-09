@@ -18,7 +18,11 @@
  */
 package org.apache.curator.x.async.modeled.recipes;
 
-public interface ModeledPathChildrenCacheListener
+import java.util.Optional;
+
+public interface ModeledCacheEvent<T>
 {
-    void event(ModeledPathChildrenCacheEvent event);
+    ModeledCacheEventType getType();
+
+    Optional<ModeledCachedNode<T>> getNode();
 }

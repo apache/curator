@@ -18,43 +18,23 @@
  */
 package org.apache.curator.x.async.modeled.recipes;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.x.async.modeled.ModeledDetails;
+import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.details.recipes.ModeledPathChildrenCacheImpl;
 import java.io.Closeable;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
+import java.util.Optional;
 
 public interface ModeledPathChildrenCache<T> extends Closeable
 {
-    static <T> ModeledPathChildrenCache<T> build(CuratorFramework client, ModeledDetails<T> modeled)
+    static <T> ModeledPathChildrenCache<T> wrap(PathChildrenCache cache, ModeledDetails<T> modeled)
     {
-        return new ModeledPathChildrenCacheImpl<>(client, modeled, true, null, null, null);
+        return new ModeledPathChildrenCacheImpl<>(cache, modeled);
     }
 
-    static <T> ModeledPathChildrenCache<T> build(CuratorFramework client, ModeledDetails<T> modeled, boolean cacheData)
-    {
-        return new ModeledPathChildrenCacheImpl<>(client, modeled, cacheData, null, null, null);
-    }
-
-    static <T> ModeledPathChildrenCache<T> build(CuratorFramework client, ModeledDetails<T> modeled, boolean cacheData, ThreadFactory threadFactory)
-    {
-        return new ModeledPathChildrenCacheImpl<>(client, modeled, cacheData, threadFactory, null, null);
-    }
-
-    static <T> ModeledPathChildrenCache<T> build(CuratorFramework client, ModeledDetails<T> modeled, boolean cacheData, ExecutorService executorService)
-    {
-        return new ModeledPathChildrenCacheImpl<>(client, modeled, cacheData, null, executorService, null);
-    }
-
-    static <T> ModeledPathChildrenCache<T> build(CuratorFramework client, ModeledDetails<T> modeled, boolean cacheData, CloseableExecutorService executorService)
-    {
-        return new ModeledPathChildrenCacheImpl<>(client, modeled, cacheData, null, null, executorService);
-    }
+    PathChildrenCache unwrap();
 
     void start();
 
@@ -62,17 +42,17 @@ public interface ModeledPathChildrenCache<T> extends Closeable
 
     void rebuild();
 
-    void rebuildNode(String fullPath);
+    void rebuildNode(ZPath fullPath);
 
-    Listenable<ModeledPathChildrenCacheListener> getListenable();
+    Listenable<ModeledCacheListener<T>> getListenable();
 
     List<ModeledCachedNode> getCurrentData();
 
-    ModeledCachedNode getCurrentData(String fullPath);
+    Optional<ModeledCachedNode> getCurrentData(String fullPath);
 
-    void clearDataBytes(String fullPath);
+    void clearDataBytes(ZPath fullPath);
 
-    boolean clearDataBytes(String fullPath, int ifVersion);
+    boolean clearDataBytes(ZPath fullPath, int ifVersion);
 
     void clearAndRefresh();
 

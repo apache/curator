@@ -18,32 +18,40 @@
  */
 package org.apache.curator.x.async.modeled.recipes;
 
-import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
-import org.apache.curator.x.async.modeled.ModeledDetails;
-import org.apache.curator.x.async.modeled.details.recipes.ModeledNodeCacheImpl;
-import java.io.Closeable;
-import java.util.Optional;
-
-public interface ModeledNodeCache<T> extends Closeable
+public enum ModeledCacheEventType
 {
-    static <T> ModeledNodeCache wrap(ModeledDetails<T> modeled, NodeCache cache)
-    {
-        return new ModeledNodeCacheImpl<>(modeled, cache);
-    }
+    /**
+     * A child was added to the path
+     */
+    NODE_ADDED,
 
-    NodeCache upwrap();
+    /**
+     * A child's data was changed
+     */
+    NODE_UPDATED,
 
-    void start();
+    /**
+     * A child was removed from the path
+     */
+    NODE_REMOVED,
 
-    void start(boolean buildInitial);
+    /**
+     * Called when the connection has changed to {@link org.apache.curator.framework.state.ConnectionState#SUSPENDED}
+     */
+    CONNECTION_SUSPENDED,
 
-    void rebuild();
+    /**
+     * Called when the connection has changed to {@link org.apache.curator.framework.state.ConnectionState#RECONNECTED}
+     */
+    CONNECTION_RECONNECTED,
 
-    Listenable<NodeCacheListener> getListenable();
+    /**
+     * Called when the connection has changed to {@link org.apache.curator.framework.state.ConnectionState#LOST}
+     */
+    CONNECTION_LOST,
 
-    Optional<ModeledCachedNode<T>> getCurrentData();
-
-    void close();
+    /**
+     * Signals that the initial cache has been populated.
+     */
+    INITIALIZED
 }

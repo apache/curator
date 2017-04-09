@@ -18,57 +18,45 @@
  */
 package org.apache.curator.x.async.modeled.details.recipes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModeledDetails;
 import org.apache.curator.x.async.modeled.ZPath;
+import org.apache.curator.x.async.modeled.recipes.ModeledCacheEventType;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.curator.x.async.modeled.recipes.ModeledPathChildrenCache;
-import org.apache.curator.x.async.modeled.recipes.ModeledPathChildrenCacheEvent;
-import org.apache.curator.x.async.modeled.recipes.ModeledPathChildrenCacheListener;
+import org.apache.curator.x.async.modeled.recipes.ModeledCacheEvent;
+import org.apache.curator.x.async.modeled.recipes.ModeledCacheListener;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache<T>
 {
     private final ModeledDetails<T> modeled;
     private final PathChildrenCache cache;
-    private final Map<ModeledPathChildrenCacheListener, PathChildrenCacheListener> listenerMap = new ConcurrentHashMap<>();
+    private final Map<ModeledCacheListener, PathChildrenCacheListener> listenerMap = new ConcurrentHashMap<>();
 
-    public ModeledPathChildrenCacheImpl(CuratorFramework client, ModeledDetails<T> modeled, boolean cacheData, ThreadFactory threadFactory, ExecutorService executorService, CloseableExecutorService closeableExecutorService)
+    public ModeledPathChildrenCacheImpl(PathChildrenCache cache, ModeledDetails<T> modeled)
     {
-        this.modeled = modeled;
-        PathChildrenCache localCache;
-        if ( threadFactory != null )
-        {
-            localCache = new PathChildrenCache(client, modeled.getPath().fullPath(), cacheData, modeled.getCreateOptions().contains(CreateOption.compress), threadFactory);
-        }
-        else if ( executorService != null )
-        {
-            localCache = new PathChildrenCache(client, modeled.getPath().fullPath(), cacheData, modeled.getCreateOptions().contains(CreateOption.compress), executorService);
-        }
-        else if ( closeableExecutorService != null )
-        {
-            localCache = new PathChildrenCache(client, modeled.getPath().fullPath(), cacheData, modeled.getCreateOptions().contains(CreateOption.compress), closeableExecutorService);
-        }
-        else
-        {
-            localCache = new PathChildrenCache(client, modeled.getPath().fullPath(), cacheData, modeled.getCreateOptions().contains(CreateOption.compress), PathChildrenCache.defaultThreadFactory);
-        }
-        cache = localCache;
+        this.modeled = Objects.requireNonNull(modeled, "modeled cannot be null");
+        this.cache = Objects.requireNonNull(cache, "cache cannot be null");
+    }
+
+    @Override
+    public PathChildrenCache unwrap()
+    {
+        return cache;
     }
 
     @Override
@@ -111,11 +99,11 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
     }
 
     @Override
-    public void rebuildNode(String fullPath)
+    public void rebuildNode(ZPath fullPath)
     {
         try
         {
-            cache.rebuildNode(fullPath);
+            cache.rebuildNode(fullPath.fullPath());
         }
         catch ( Exception e )
         {
@@ -124,32 +112,32 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
     }
 
     @Override
-    public Listenable<ModeledPathChildrenCacheListener> getListenable()
+    public Listenable<ModeledCacheListener<T>> getListenable()
     {
-        return new Listenable<ModeledPathChildrenCacheListener>()
+        return new Listenable<ModeledCacheListener<T>>()
         {
             @Override
-            public void addListener(ModeledPathChildrenCacheListener listener)
+            public void addListener(ModeledCacheListener<T> listener)
             {
                 addListener(listener, MoreExecutors.sameThreadExecutor());
             }
 
             @Override
-            public void addListener(ModeledPathChildrenCacheListener listener, Executor executor)
+            public void addListener(ModeledCacheListener<T> listener, Executor executor)
             {
                 PathChildrenCacheListener pathChildrenCacheListener = (client, event) -> {
-                    ModeledPathChildrenCacheEvent modeledEvent = new ModeledPathChildrenCacheEvent()
+                    ModeledCacheEvent<T> modeledEvent = new ModeledCacheEvent<T>()
                     {
                         @Override
-                        public PathChildrenCacheEvent.Type getType()
+                        public ModeledCacheEventType getType()
                         {
-                            return event.getType();
+                            return toType(event.getType());
                         }
 
                         @Override
-                        public ModeledCachedNode getNode()
+                        public Optional<ModeledCachedNode<T>> getNode()
                         {
-                            return from(event.getData());
+                            return Optional.ofNullable(from(modeled, event.getData()));
                         }
                     };
                     listener.event(modeledEvent);
@@ -159,7 +147,7 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
             }
 
             @Override
-            public void removeListener(ModeledPathChildrenCacheListener listener)
+            public void removeListener(ModeledCacheListener listener)
             {
                 PathChildrenCacheListener pathChildrenCacheListener = listenerMap.remove(listener);
                 if ( pathChildrenCacheListener != null )
@@ -174,36 +162,26 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
     public List<ModeledCachedNode> getCurrentData()
     {
         return cache.getCurrentData().stream()
-            .map(this::from)
+            .map(data -> from(modeled, data))
             .collect(Collectors.toList());
     }
 
-    private ModeledCachedNode<T> from(ChildData data)
+    @Override
+    public Optional<ModeledCachedNode> getCurrentData(String fullPath)
     {
-        if ( data == null )
-        {
-            return null;
-        }
-        T model = (data.getData() != null) ? modeled.getSerializer().deserialize(data.getData()) : null;
-        return new ModeledCachedNode<>(ZPath.parse(data.getPath()), model, data.getStat());
+        return Optional.ofNullable(from(modeled, cache.getCurrentData(fullPath)));
     }
 
     @Override
-    public ModeledCachedNode getCurrentData(String fullPath)
+    public void clearDataBytes(ZPath fullPath)
     {
-        return from(cache.getCurrentData(fullPath));
+        cache.clearDataBytes(fullPath.fullPath());
     }
 
     @Override
-    public void clearDataBytes(String fullPath)
+    public boolean clearDataBytes(ZPath fullPath, int ifVersion)
     {
-        cache.clearDataBytes(fullPath);
-    }
-
-    @Override
-    public boolean clearDataBytes(String fullPath, int ifVersion)
-    {
-        return cache.clearDataBytes(fullPath, ifVersion);
+        return cache.clearDataBytes(fullPath.fullPath(), ifVersion);
     }
 
     @Override
@@ -229,5 +207,44 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
     public void close()
     {
         CloseableUtils.closeQuietly(cache);
+    }
+
+    static <T> ModeledCachedNode<T> from(ModeledDetails<T> modeled, ChildData data)
+    {
+        if ( data == null )
+        {
+            return null;
+        }
+        T model = (data.getData() != null) ? modeled.getSerializer().deserialize(data.getData()) : null;
+        return new ModeledCachedNode<>(ZPath.parse(data.getPath()), model, data.getStat());
+    }
+
+    @VisibleForTesting
+    static ModeledCacheEventType toType(PathChildrenCacheEvent.Type type)
+    {
+        switch ( type )
+        {
+            case CHILD_ADDED:
+                return ModeledCacheEventType.NODE_ADDED;
+
+            case CHILD_UPDATED:
+                return ModeledCacheEventType.NODE_UPDATED;
+
+            case CHILD_REMOVED:
+                return ModeledCacheEventType.NODE_REMOVED;
+
+            case CONNECTION_SUSPENDED:
+                return ModeledCacheEventType.CONNECTION_SUSPENDED;
+
+            case CONNECTION_RECONNECTED:
+                return ModeledCacheEventType.CONNECTION_RECONNECTED;
+
+            case CONNECTION_LOST:
+                return ModeledCacheEventType.CONNECTION_LOST;
+
+            case INITIALIZED:
+                return ModeledCacheEventType.INITIALIZED;
+        }
+        throw new UnsupportedOperationException("Unknown type: " + type);
     }
 }
