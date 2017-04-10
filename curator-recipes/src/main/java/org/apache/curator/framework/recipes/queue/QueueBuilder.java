@@ -187,7 +187,7 @@ public class QueueBuilder<T>
     }
 
     /**
-     * Change the executor used. The default is {@link MoreExecutors.directExecutor()}
+     * Change the executor used. The default is {@link MoreExecutors#directExecutor()}
      *
      * @param executor new executor to use
      * @return this
