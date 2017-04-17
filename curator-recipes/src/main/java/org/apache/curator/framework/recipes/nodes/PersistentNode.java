@@ -374,10 +374,8 @@ public class PersistentNode implements Closeable
             if ( localCreateMethod == null )
             {
                 CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod = useProtection ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
-                if ( createMethod.compareAndSet(null, tempCreateMethod) )
-                {
-                    localCreateMethod = tempCreateMethod;
-                }
+                createMethod.compareAndSet(null, tempCreateMethod);
+                localCreateMethod = createMethod.get();
             }
             localCreateMethod.withMode(getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data.get());
         }
