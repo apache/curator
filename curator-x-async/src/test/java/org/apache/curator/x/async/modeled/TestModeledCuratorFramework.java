@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.modeled;
 
+import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -31,6 +32,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.math.BigInteger;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 public class TestModeledCuratorFramework extends CompletableBaseClassForTests
@@ -98,5 +100,18 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
         Assert.assertEquals(latch.getCount(), 1);
         client.create(new TestModel());
         Assert.assertTrue(timing.awaitLatch(latch));
+    }
+
+    @Test
+    public void testGetChildren()
+    {
+        TestModel model = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
+        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, path, serializer).build();
+        complete(client.at("one").create(model));
+        complete(client.at("two").create(model));
+        complete(client.at("three").create(model));
+
+        Set<ZPath> expected = Sets.newHashSet(path.at("one"), path.at("two"), path.at("three"));
+        complete(client.getChildren(), (children, e) -> Assert.assertEquals(Sets.newHashSet(children), expected));
     }
 }

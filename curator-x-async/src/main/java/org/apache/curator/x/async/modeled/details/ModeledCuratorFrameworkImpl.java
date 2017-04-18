@@ -34,6 +34,7 @@ import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
@@ -42,14 +43,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T>
 {
     private final AsyncCuratorFramework client;
     private final WatchableAsyncCuratorFramework watchableClient;
     private final String path;
+    private final ZPath zPath;
     private final ModelSerializer<T> serializer;
     private final WatchMode watchMode;
     private final UnaryOperator<WatchedEvent> watcherFilter;
@@ -79,6 +81,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
 
         dslClient = this.client.with(this.watchMode, unhandledErrorListener, resultFilter, watcherFilter);
         watchableClient = localIsWatched ? dslClient.watched() : dslClient;
+        zPath = ZPath.parse(path);
     }
 
     @Override
@@ -119,14 +122,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             next = (storingStatIn != null) ? watchableClient.getData().storingStatIn(storingStatIn) : watchableClient.getData();
         }
         AsyncStage<byte[]> asyncStage = next.forPath(path);
-        ModelStage<T> modelStage = new ModelStage<T>()
-        {
-            @Override
-            public CompletionStage<WatchedEvent> event()
-            {
-                return asyncStage.event();
-            }
-        };
+        ModelStage<T> modelStage = new ModelStage<>(asyncStage.event());
         asyncStage.whenComplete((value, e) -> {
             if ( e != null )
             {
@@ -170,6 +166,24 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     public AsyncStage<Void> delete(int version)
     {
         return dslClient.delete().withVersion(-1).forPath(path);
+    }
+
+    @Override
+    public AsyncStage<List<ZPath>> getChildren()
+    {
+        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(path);
+        ModelStage<List<ZPath>> modelStage = new ModelStage<>(asyncStage.event());
+        asyncStage.whenComplete((children, e) -> {
+            if ( e != null )
+            {
+                modelStage.completeExceptionally(e);
+            }
+            else
+            {
+                modelStage.complete(children.stream().map(zPath::at).collect(Collectors.toList()));
+            }
+        });
+        return modelStage;
     }
 
     @Override

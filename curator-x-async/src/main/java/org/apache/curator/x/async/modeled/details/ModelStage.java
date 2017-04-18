@@ -19,8 +19,27 @@
 package org.apache.curator.x.async.modeled.details;
 
 import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.WatchedEvent;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
-abstract class ModelStage<T> extends CompletableFuture<T> implements AsyncStage<T>
+class ModelStage<T> extends CompletableFuture<T> implements AsyncStage<T>
 {
+    private final CompletionStage<WatchedEvent> event;
+
+    ModelStage()
+    {
+        this(null);
+    }
+
+    ModelStage(CompletionStage<WatchedEvent> event)
+    {
+        this.event = event;
+    }
+
+    @Override
+    public CompletionStage<WatchedEvent> event()
+    {
+        return event;
+    }
 }

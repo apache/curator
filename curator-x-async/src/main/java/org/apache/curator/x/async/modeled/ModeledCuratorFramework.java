@@ -24,6 +24,7 @@ import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.zookeeper.data.Stat;
+import java.util.List;
 import java.util.Set;
 
 public interface ModeledCuratorFramework<T>
@@ -140,14 +141,6 @@ public interface ModeledCuratorFramework<T>
     AsyncStage<Stat> update(T model, int version);
 
     /**
-     * Check to see if the ZNode at this instance's path exists
-     *
-     * @return AsyncStage
-     * @see org.apache.curator.x.async.AsyncStage
-     */
-    AsyncStage<Stat> checkExists();
-
-    /**
      * Delete the ZNode at this instance's path passing -1 for the delete version
      *
      * @return AsyncStage
@@ -163,4 +156,20 @@ public interface ModeledCuratorFramework<T>
      * @see org.apache.curator.x.async.AsyncStage
      */
     AsyncStage<Void> delete(int version);
+
+    /**
+     * Check to see if the ZNode at this instance's path exists
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<Stat> checkExists();
+
+    /**
+     * Return the child paths of this instance's paths (in no particular order)
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<List<ZPath>> getChildren();
 }
