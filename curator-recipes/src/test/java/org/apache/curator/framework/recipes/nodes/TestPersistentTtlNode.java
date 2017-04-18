@@ -66,7 +66,7 @@ public class TestPersistentTtlNode extends BaseClassForTests
             try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", 100, new byte[0]))
             {
                 node.start();
-                node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS);
+                Assert.assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
 
                 for ( int i = 0; i < 10; ++i )
                 {
@@ -91,7 +91,7 @@ public class TestPersistentTtlNode extends BaseClassForTests
             try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", 10, new byte[0]))
             {
                 node.start();
-                node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS);
+                Assert.assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
 
                 for ( int i = 0; i < 10; ++i )
                 {
@@ -131,7 +131,7 @@ public class TestPersistentTtlNode extends BaseClassForTests
                     cache.getListenable().addListener(listener);
 
                     node.start();
-                    node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS);
+                    Assert.assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
                     cache.start(BUILD_INITIAL_CACHE);
 
                     Assert.assertEquals(changes.availablePermits(), 0);
