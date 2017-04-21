@@ -633,7 +633,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
 
+            Trigger dataChangedTrigger = Trigger.dataChanged();
+            curator.getData().usingWatcher(dataChangedTrigger).forPath(node.getActualPath());
+            
             node.setData(updatedData);
+            assertTrue(dataChangedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), updatedData));
 
             server.restart();

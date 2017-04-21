@@ -40,9 +40,13 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 public class TestFrameworkBackground extends BaseClassForTests
 {
@@ -322,6 +326,44 @@ public class TestFrameworkBackground extends BaseClassForTests
 
             // should not generate an exception
             Assert.assertFalse(hadIllegalStateException.get());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+    
+    /**
+     * CURATOR-106: Background operations must always run in the background to avoid potential stack overflows when doing guaranteed operations
+     */
+    @Test
+    public void testBackgroundOperationsAreExecutedInTheBackground() throws Exception {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.blockUntilConnected(30, TimeUnit.SECONDS);
+            
+            final CountDownLatch latch = new CountDownLatch(1);
+            final AtomicReference<Thread> backgroundThread = new AtomicReference<Thread>();
+            
+            OperationAndData<Void> operation = (OperationAndData<Void>)Mockito.mock(OperationAndData.class);
+            Mockito.doAnswer(new Answer() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    backgroundThread.set(Thread.currentThread());
+                    latch.countDown();
+                    return null;
+                }
+            }).when(operation).callPerformBackgroundOperation();
+            
+            ((CuratorFrameworkImpl)client).processBackgroundOperation(operation, null);
+
+            latch.await();
+
+            Assert.assertNotNull(backgroundThread.get());
+            Assert.assertNotEquals(Thread.currentThread(), backgroundThread.get());
         }
         finally
         {

@@ -504,7 +504,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         boolean isInitialExecution = (event == null);
         if ( isInitialExecution )
         {
-            performBackgroundOperation(operationAndData);
+            queueOperation(operationAndData);
             return;
         }
 
