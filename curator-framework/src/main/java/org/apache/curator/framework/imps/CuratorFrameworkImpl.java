@@ -502,35 +502,22 @@ public class CuratorFrameworkImpl implements CuratorFramework
     <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
     {
         boolean isInitialExecution = (event == null);
-        if ( isInitialExecution )
-        {
+        if (isInitialExecution) {
+            queueOperation(operationAndData);
+            return;
+        }
+        
+        if(RetryLoop.shouldRetry(event.getResultCode()) && checkBackgroundRetry(operationAndData, event)) {
             queueOperation(operationAndData);
             return;
         }
 
-        boolean doQueueOperation = false;
-        do
-        {
-            if ( RetryLoop.shouldRetry(event.getResultCode()) )
-            {
-                doQueueOperation = checkBackgroundRetry(operationAndData, event);
-                break;
-            }
-
-            if ( operationAndData.getCallback() != null )
-            {
-                sendToBackgroundCallback(operationAndData, event);
-                break;
-            }
-
-            processEvent(event);
+        if (operationAndData.getCallback() != null) {
+            sendToBackgroundCallback(operationAndData, event);
+            return;
         }
-        while ( false );
 
-        if ( doQueueOperation )
-        {
-            queueOperation(operationAndData);
-        }
+        processEvent(event);
     }
 
     <DATA_TYPE> void queueOperation(OperationAndData<DATA_TYPE> operationAndData)
