@@ -170,8 +170,10 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             {
                 sb.append(",");
             }
-            InetSocketAddress address = Objects.firstNonNull(server.clientAddr, server.addr);
-            sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
+            InetSocketAddress clientAddress = server.clientAddr;
+            if(clientAddress != null) {
+                sb.append(clientAddress.getAddress().getHostAddress()).append(":").append(clientAddress.getPort());
+            }
         }
 
         return sb.toString();
