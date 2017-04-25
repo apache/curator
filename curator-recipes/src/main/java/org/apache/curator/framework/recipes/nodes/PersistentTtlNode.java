@@ -81,6 +81,7 @@ public class PersistentTtlNode implements Closeable
 
     /**
      * @param client the client
+     * @param executorService  ExecutorService to use for background thread. This service should be single threaded, otherwise you may see inconsistent results.
      * @param path path for the parent ZNode
      * @param ttlMs max ttl for the node in milliseconds
      * @param initData data for the node
