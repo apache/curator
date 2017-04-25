@@ -37,6 +37,7 @@ public interface ModelSerializer<T>
      *
      * @param bytes serialized bytes
      * @return model
+     * @throws RuntimeException if <code>bytes</code> is invalid or there was an error deserializing
      */
     T deserialize(byte[] bytes);
 }

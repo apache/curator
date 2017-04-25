@@ -41,6 +41,8 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     private CuratorFramework rawClient;
     private JacksonModelSerializer<TestModel> serializer;
     private JacksonModelSerializer<TestNewerModel> newSerializer;
+    private CuratorModelSpec<TestModel> modelSpec;
+    private CuratorModelSpec<TestNewerModel> newModelSpec;
 
     @BeforeMethod
     @Override
@@ -53,6 +55,9 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
 
         serializer = new JacksonModelSerializer<>(TestModel.class);
         newSerializer = new JacksonModelSerializer<>(TestNewerModel.class);
+
+        modelSpec = CuratorModelSpec.builder(path, serializer).build();
+        newModelSpec = CuratorModelSpec.builder(path, newSerializer).build();
     }
 
     @AfterMethod
@@ -68,7 +73,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     {
         TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
         TestModel rawModel2 = new TestModel("Wayne", "Rooney", "Old Trafford", 10, BigInteger.valueOf(1));
-        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.wrap(rawClient, path, serializer);
+        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.wrap(rawClient, modelSpec);
         AsyncStage<String> stage = client.create(rawModel);
         Assert.assertNull(stage.event());
         complete(stage, (s, e) -> Assert.assertNotNull(s));
@@ -83,10 +88,10 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     public void testBackwardCompatibility()
     {
         TestNewerModel rawNewModel = new TestNewerModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1), 100);
-        ModeledCuratorFramework<TestNewerModel> clientForNew = ModeledCuratorFramework.wrap(rawClient, path, newSerializer);
+        ModeledCuratorFramework<TestNewerModel> clientForNew = ModeledCuratorFramework.wrap(rawClient, newModelSpec);
         complete(clientForNew.create(rawNewModel), (s, e) -> Assert.assertNotNull(s));
 
-        ModeledCuratorFramework<TestModel> clientForOld = ModeledCuratorFramework.wrap(rawClient, path, serializer);
+        ModeledCuratorFramework<TestModel> clientForOld = ModeledCuratorFramework.wrap(rawClient, modelSpec);
         complete(clientForOld.read(), (model, e) -> Assert.assertTrue(rawNewModel.equalsOld(model)));
     }
 
@@ -94,7 +99,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     public void testWatched() throws InterruptedException
     {
         CountDownLatch latch = new CountDownLatch(1);
-        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, path, serializer).watched().build();
+        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, modelSpec).watched().build();
         client.checkExists().event().whenComplete((event, ex) -> latch.countDown());
         timing.sleepABit();
         Assert.assertEquals(latch.getCount(), 1);
@@ -106,7 +111,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     public void testGetChildren()
     {
         TestModel model = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
-        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, path, serializer).build();
+        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, modelSpec).build();
         complete(client.at("one").create(model));
         complete(client.at("two").create(model));
         complete(client.at("three").create(model));

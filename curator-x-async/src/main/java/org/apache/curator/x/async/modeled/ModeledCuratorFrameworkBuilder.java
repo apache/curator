@@ -18,20 +18,14 @@
  */
 package org.apache.curator.x.async.modeled;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.WatchMode;
-import org.apache.curator.x.async.api.CreateOption;
-import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.modeled.caching.CachingOption;
 import org.apache.curator.x.async.modeled.details.ModeledCuratorFrameworkImpl;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.data.ACL;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -39,16 +33,11 @@ import java.util.function.UnaryOperator;
 public class ModeledCuratorFrameworkBuilder<T>
 {
     private final CuratorFramework client;
-    private final ZPath path;
-    private final ModelSerializer<T> serializer;
+    private final CuratorModelSpec<T> model;
     private WatchMode watchMode;
     private UnaryOperator<WatchedEvent> watcherFilter;
     private UnhandledErrorListener unhandledErrorListener;
     private UnaryOperator<CuratorEvent> resultFilter;
-    private CreateMode createMode = CreateMode.PERSISTENT;
-    private List<ACL> aclList = Collections.emptyList();
-    private Set<CreateOption> createOptions = Collections.emptySet();
-    private Set<DeleteOption> deleteOptions = Collections.emptySet();
     private Set<CachingOption> cachingOptions = Collections.emptySet();
     private boolean cached = false;
 
@@ -59,19 +48,13 @@ public class ModeledCuratorFrameworkBuilder<T>
      */
     public ModeledCuratorFramework<T> build()
     {
-        String fullPath = this.path.fullPath();
         return ModeledCuratorFrameworkImpl.build(
             client,
-            fullPath,
-            serializer,
+            model,
             watchMode,
             watcherFilter,
             unhandledErrorListener,
             resultFilter,
-            createMode,
-            aclList,
-            createOptions,
-            deleteOptions,
             cachingOptions,
             cached
         );
@@ -142,54 +125,6 @@ public class ModeledCuratorFrameworkBuilder<T>
         return this;
     }
 
-    /**
-     * Use the given createMode for create operations on the Modeled Curator's ZNode
-     *
-     * @param createMode create mode
-     * @return this for chaining
-     */
-    public ModeledCuratorFrameworkBuilder<T> withCreateMode(CreateMode createMode)
-    {
-        this.createMode = createMode;
-        return this;
-    }
-
-    /**
-     * Use the given aclList for create operations on the Modeled Curator's ZNode
-     *
-     * @param aclList ACLs
-     * @return this for chaining
-     */
-    public ModeledCuratorFrameworkBuilder<T> withAclList(List<ACL> aclList)
-    {
-        this.aclList = aclList;
-        return this;
-    }
-
-    /**
-     * Use the given create options on the Modeled Curator's ZNode
-     *
-     * @param createOptions options
-     * @return this for chaining
-     */
-    public ModeledCuratorFrameworkBuilder<T> withCreateOptions(Set<CreateOption> createOptions)
-    {
-        this.createOptions = (createOptions != null) ? ImmutableSet.copyOf(createOptions) : null;
-        return this;
-    }
-
-    /**
-     * Use the given delete options on the Modeled Curator's ZNode
-     *
-     * @param deleteOptions options
-     * @return this for chaining
-     */
-    public ModeledCuratorFrameworkBuilder<T> withDeleteOptions(Set<DeleteOption> deleteOptions)
-    {
-        this.deleteOptions = (deleteOptions != null) ? ImmutableSet.copyOf(deleteOptions) : null;
-        return this;
-    }
-
     public ModeledCuratorFrameworkBuilder<T> cached()
     {
         this.cachingOptions = Collections.emptySet();
@@ -204,10 +139,9 @@ public class ModeledCuratorFrameworkBuilder<T>
         return this;
     }
 
-    ModeledCuratorFrameworkBuilder(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
+    ModeledCuratorFrameworkBuilder(CuratorFramework client, CuratorModelSpec<T> model)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
-        this.path = Objects.requireNonNull(path, "path cannot be null");
-        this.serializer = Objects.requireNonNull(serializer, "serializer cannot be null");
+        this.model = Objects.requireNonNull(model, "model cannot be null");
     }
 }

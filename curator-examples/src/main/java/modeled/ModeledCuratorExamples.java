@@ -19,6 +19,7 @@
 package modeled;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.x.async.modeled.CuratorModelSpec;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
@@ -30,10 +31,13 @@ public class ModeledCuratorExamples
     {
         JacksonModelSerializer<PersonModel> serializer = JacksonModelSerializer.build(PersonModel.class);
 
+        // build a model specification - you can pre-build all the model specifications for your app at startup
+        CuratorModelSpec<PersonModel> modelSpec = CuratorModelSpec.builder(ZPath.parse("/example/path"), serializer).build();
+
         // wrap a CuratorFramework instance so that it can be used "modeled".
         // do this once and re-use the returned ModeledCuratorFramework instance.
         // ModeledCuratorFramework instances are tied to a given path
-        return ModeledCuratorFramework.wrap(client, ZPath.parse("/example/path"), serializer);
+        return ModeledCuratorFramework.wrap(client, modelSpec);
     }
 
     public static void createOrUpdate(ModeledCuratorFramework<PersonModel> modeled, PersonModel model)

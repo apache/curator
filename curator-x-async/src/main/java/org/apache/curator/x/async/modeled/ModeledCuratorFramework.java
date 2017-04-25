@@ -18,54 +18,40 @@
  */
 package org.apache.curator.x.async.modeled;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
-import org.apache.curator.x.async.api.CreateOption;
-import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.modeled.caching.Caching;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
-import java.util.Set;
 
 public interface ModeledCuratorFramework<T>
 {
-    Set<CreateOption> defaultCreateOptions = ImmutableSet.of(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists);
-    Set<DeleteOption> defaultDeleteOptions = ImmutableSet.of(DeleteOption.guaranteed);
-
     /**
-     * Return a new ModeledCuratorFramework for the given path and serializer. The returned ModeledCuratorFramework
-     * is set to not watch ZNodes and uses {@link #defaultCreateOptions} and {@link #defaultDeleteOptions}.
+     * Return a new ModeledCuratorFramework for the given model
      *
      * @param client Curator client
-     * @param path path to model
-     * @param serializer the model's serializer
+     * @param model the model
      * @return new Modeled Curator instance
      */
-    static <T> ModeledCuratorFramework<T> wrap(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
+    static <T> ModeledCuratorFramework<T> wrap(CuratorFramework client, CuratorModelSpec<T> model)
     {
-        return builder(client, path, serializer).build();
+        return builder(client, model).build();
     }
 
     /**
-     * Start a new ModeledCuratorFrameworkBuilder for the given path and serializer. The returned ModeledCuratorFrameworkBuilder
-     * is set to not watch ZNodes and uses {@link #defaultCreateOptions} and {@link #defaultDeleteOptions}, but you can change these
-     * with builder methods.
+     * Start a new ModeledCuratorFrameworkBuilder for the given model
      *
      * @param client Curator client
-     * @param path path to model
-     * @param serializer the model's serializer
+     * @param model the model
      * @return builder
      */
-    static <T> ModeledCuratorFrameworkBuilder<T> builder(CuratorFramework client, ZPath path, ModelSerializer<T> serializer)
+    static <T> ModeledCuratorFrameworkBuilder<T> builder(CuratorFramework client, CuratorModelSpec<T> model)
     {
-        return new ModeledCuratorFrameworkBuilder<>(client, path, serializer)
-            .withCreateOptions(defaultCreateOptions)
-            .withDeleteOptions(defaultDeleteOptions);
+        return new ModeledCuratorFrameworkBuilder<>(client, model);
     }
 
     /**
-     * Returns the client that was originally passed to {@link #wrap(org.apache.curator.framework.CuratorFramework, ZPath, ModelSerializer)} or
+     * Returns the client that was originally passed to {@link #wrap(org.apache.curator.framework.CuratorFramework, CuratorModelSpec)} or
      * the builder.
      *
      * @return original client

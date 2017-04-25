@@ -30,15 +30,13 @@ import org.apache.curator.x.async.api.AsyncCuratorFrameworkDsl;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
 import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.api.CreateOption;
-import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
-import org.apache.curator.x.async.modeled.ModelSerializer;
+import org.apache.curator.x.async.modeled.CuratorModelSpec;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.caching.Caching;
 import org.apache.curator.x.async.modeled.caching.CachingOption;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -54,73 +52,52 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
 {
     private final AsyncCuratorFramework client;
     private final WatchableAsyncCuratorFramework watchableClient;
-    private final ZPath path;
-    private final ModelSerializer<T> serializer;
+    private final CuratorModelSpec<T> model;
     private final WatchMode watchMode;
     private final UnaryOperator<WatchedEvent> watcherFilter;
     private final UnhandledErrorListener unhandledErrorListener;
     private final UnaryOperator<CuratorEvent> resultFilter;
-    private final CreateMode createMode;
-    private final List<ACL> aclList;
-    private final Set<CreateOption> createOptions;
-    private final Set<DeleteOption> deleteOptions;
     private final AsyncCuratorFrameworkDsl dslClient;
     private final CachingImpl<T> caching;
 
-    public static <T> ModeledCuratorFrameworkImpl<T> build(CuratorFramework client, String path, ModelSerializer<T> serializer, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions, Set<CachingOption> cachingOptions, boolean cached)
+    public static <T> ModeledCuratorFrameworkImpl<T> build(CuratorFramework client, CuratorModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, Set<CachingOption> cachingOptions, boolean cached)
     {
         boolean localIsWatched = (watchMode != null);
 
         Objects.requireNonNull(client, "client cannot be null");
-        Objects.requireNonNull(path, "path cannot be null");
-        Objects.requireNonNull(serializer, "serializer cannot be null");
-        Objects.requireNonNull(createOptions, "createOptions cannot be null");
-        Objects.requireNonNull(createMode, "createMode cannot be null");
-        Objects.requireNonNull(aclList, "aclList cannot be null");
+        Objects.requireNonNull(model, "model cannot be null");
 
         watchMode = (watchMode != null) ? watchMode : WatchMode.stateChangeAndSuccess;
-
-        ZPath zPath = ZPath.parse(path);
 
         AsyncCuratorFramework asyncClient = AsyncCuratorFramework.wrap(client);
         AsyncCuratorFrameworkDsl dslClient = asyncClient.with(watchMode, unhandledErrorListener, resultFilter, watcherFilter);
         WatchableAsyncCuratorFramework watchableClient = localIsWatched ? dslClient.watched() : dslClient;
 
-        CachingImpl<T> caching = cached ? new CachingImpl<>(client, serializer, zPath, cachingOptions, createOptions) : null;
+        CachingImpl<T> caching = cached ? new CachingImpl<>(client, model.serializer(), model.path(), cachingOptions, model.createOptions()) : null;
 
         return new ModeledCuratorFrameworkImpl<>(
             asyncClient,
             dslClient,
             watchableClient,
-            zPath,
-            serializer,
+            model,
             watchMode,
             watcherFilter,
             unhandledErrorListener,
             resultFilter,
-            createMode,
-            aclList,
-            createOptions,
-            deleteOptions,
             caching
         );
     }
 
-    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, ZPath path, ModelSerializer<T> serializer, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions, CachingImpl<T> caching)
+    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, CuratorModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, CachingImpl<T> caching)
     {
         this.client = client;
         this.dslClient = dslClient;
         this.watchableClient = watchableClient;
-        this.path = path;
-        this.serializer = serializer;
+        this.model = model;
         this.watchMode = watchMode;
         this.watcherFilter = watcherFilter;
         this.unhandledErrorListener = unhandledErrorListener;
         this.resultFilter = resultFilter;
-        this.createMode = createMode;
-        this.aclList = aclList;
-        this.createOptions = createOptions;
-        this.deleteOptions = deleteOptions;
         this.caching = caching;
     }
 
@@ -138,17 +115,17 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public AsyncStage<String> create(T model)
+    public AsyncStage<String> create(T item)
     {
-        return create(model, null);
+        return create(item, null);
     }
 
     @Override
-    public AsyncStage<String> create(T model, Stat storingStatIn)
+    public AsyncStage<String> create(T item, Stat storingStatIn)
     {
         long dirtyZxid = getDirtyZxid();
-        byte[] bytes = serializer.serialize(model);
-        AsyncStage<String> asyncStage = dslClient.create().withOptions(createOptions, createMode, fixAclList(aclList), storingStatIn).forPath(path.fullPath(), bytes);
+        byte[] bytes = model.serializer().serialize(item);
+        AsyncStage<String> asyncStage = dslClient.create().withOptions(model.createOptions(), model.createMode(), fixAclList(model.aclList()), storingStatIn).forPath(model.path().fullPath(), bytes);
         ModelStage<String> modelStage = new ModelStage<>(asyncStage.event());
         markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
         return modelStage;
@@ -197,7 +174,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         {
             next = (storingStatIn != null) ? watchableClient.getData().storingStatIn(storingStatIn) : watchableClient.getData();
         }
-        AsyncStage<byte[]> asyncStage = next.forPath(path.fullPath());
+        AsyncStage<byte[]> asyncStage = next.forPath(model.path().fullPath());
         ModelStage<T> modelStage = new ModelStage<>(asyncStage.event());
         asyncStage.whenComplete((value, e) -> {
             if ( e != null )
@@ -208,7 +185,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             {
                 try
                 {
-                    modelStage.complete(serializer.deserialize(value));
+                    modelStage.complete(model.serializer().deserialize(value));
                 }
                 catch ( Exception deserializeException )
                 {
@@ -220,18 +197,18 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public AsyncStage<Stat> update(T model)
+    public AsyncStage<Stat> update(T item)
     {
-        return update(model, -1);
+        return update(item, -1);
     }
 
     @Override
-    public AsyncStage<Stat> update(T model, int version)
+    public AsyncStage<Stat> update(T item, int version)
     {
         long dirtyZxid = getDirtyZxid();
-        byte[] bytes = serializer.serialize(model);
+        byte[] bytes = model.serializer().serialize(item);
         AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dslClient.setData().compressedWithVersion(version) : dslClient.setData();
-        AsyncStage<Stat> asyncStage = next.forPath(path.fullPath(), bytes);
+        AsyncStage<Stat> asyncStage = next.forPath(model.path().fullPath(), bytes);
         ModelStage<Stat> modelStage = new ModelStage<>(asyncStage.event());
         markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
         return modelStage;
@@ -250,7 +227,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             }
             return result;
         }
-        return watchableClient.checkExists().forPath(path.fullPath());
+        return watchableClient.checkExists().forPath(model.path().fullPath());
     }
 
     @Override
@@ -263,7 +240,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     public AsyncStage<Void> delete(int version)
     {
         long dirtyZxid = getDirtyZxid();
-        AsyncStage<Void> asyncStage = dslClient.delete().withVersion(-1).forPath(path.fullPath());
+        AsyncStage<Void> asyncStage = dslClient.delete().withVersion(-1).forPath(model.path().fullPath());
         ModelStage<Void> modelStage = new ModelStage<>(asyncStage.event());
         markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
         return modelStage;
@@ -272,7 +249,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     @Override
     public AsyncStage<List<ZPath>> getChildren()
     {
-        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(path.fullPath());
+        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(model.path().fullPath());
         ModelStage<List<ZPath>> modelStage = new ModelStage<>(asyncStage.event());
         asyncStage.whenComplete((children, e) -> {
             if ( e != null )
@@ -281,7 +258,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             }
             else
             {
-                modelStage.complete(children.stream().map(path::at).collect(Collectors.toList()));
+                modelStage.complete(children.stream().map(child -> model.path().at(child)).collect(Collectors.toList()));
             }
         });
         return modelStage;
@@ -290,21 +267,17 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     @Override
     public ModeledCuratorFramework<T> at(String child)
     {
-        ZPath childPath = path.at(child);
+        CuratorModelSpec<T> childModel = model.at(child);
         CachingImpl<T> newCaching = (caching != null) ? caching.at(child) : null;
         return new ModeledCuratorFrameworkImpl<>(
             client,
             dslClient,
             watchableClient,
-            childPath, serializer,
+            childModel,
             watchMode,
             watcherFilter,
             unhandledErrorListener,
             resultFilter,
-            createMode,
-            aclList,
-            createOptions,
-            deleteOptions,
             newCaching
         );
     }
@@ -334,7 +307,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
 
     private boolean isCompressed()
     {
-        return createOptions.contains(CreateOption.compress);
+        return model.createOptions().contains(CreateOption.compress);
     }
 
     private ModeledCachedNode<T> getCached()
