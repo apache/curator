@@ -535,6 +535,21 @@ public class LeaderLatch implements Closeable
         else if ( ourIndex == 0 )
         {
             setLeadership(true);
+            String watchPath = sortedChildren.get(0);
+            Watcher watcher = new Watcher()
+            {
+                @Override
+                public void process(WatchedEvent event)
+                {
+                    if ( (state.get() == State.STARTED) && (event.getType() == Event.EventType.NodeDeleted) && (localOurPath != null) )
+                    {
+                        setLeadership(false);
+                    }
+                }
+            };
+
+            // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
+            client.getData().usingWatcher(watcher).forPath(ZKPaths.makePath(latchPath, watchPath));
         }
         else
         {

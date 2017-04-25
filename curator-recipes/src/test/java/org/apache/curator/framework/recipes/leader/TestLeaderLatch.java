@@ -32,8 +32,11 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -746,5 +749,56 @@ public class TestLeaderLatch extends BaseClassForTests
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         LeaderLatch latch = new LeaderLatch(client, "parent");
+    }
+
+    @Test
+    public void testEhpemeralNodeGoesAway() throws Exception {
+        Timing timing = new Timing();
+        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        curatorFramework.start();
+
+        // Reproducing CURATOR-171
+        LeaderLatch latch1 = new LeaderLatch(curatorFramework, "/latch", "test");
+        LeaderLatch latch2 = new LeaderLatch(curatorFramework, "/latch", "test2");
+
+        latch1.addListener(new LeaderLatchListener() {
+            @Override
+            public void isLeader() {
+                System.out.println("Became leader!");
+            }
+
+            @Override
+            public void notLeader() {
+                System.out.println("Lost leadership!");
+            }
+        });
+
+        latch1.start();
+        latch1.await();
+        latch2.start();
+
+        Assert.assertTrue(latch1.hasLeadership(), "Does latch1 have leadership? ");
+        Assert.assertFalse(latch2.hasLeadership(), "Does latch2 have leadership? ");
+        try {
+            for (String child : curatorFramework.getChildren().forPath("/latch")) {
+                if (Arrays.equals(curatorFramework.getData().forPath(ZKPaths.makePath("/latch", child)), "test".getBytes())) {
+                    curatorFramework.delete().deletingChildrenIfNeeded().forPath(ZKPaths.makePath("/latch", child));
+                }
+            }
+            Thread.sleep(1000);
+
+            Assert.assertFalse(latch1.hasLeadership(), "Does latch1 have leadership? ");
+            Assert.assertTrue(latch2.hasLeadership(), "Does latch2 have leadership? ");
+
+        } finally {
+            CloseableUtils.closeQuietly(latch1);
+            CloseableUtils.closeQuietly(latch2);
+            CloseableUtils.closeQuietly(curatorFramework);
+        }
+        Assert.assertFalse(latch1.hasLeadership());
+        Assert.assertFalse(latch2.hasLeadership());
+
+
+
     }
 }
