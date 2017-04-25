@@ -26,9 +26,14 @@ import org.apache.curator.x.async.modeled.details.ZPathImpl;
 public interface ZPath
 {
     /**
-     * The root path: "/"
+     * Return the root path: "/"
+     *
+     * @return root path
      */
-    ZPath root = ZPathImpl.root;
+    static ZPath root()
+    {
+        return ZPathImpl.root;
+    }
 
     /**
      * Take a ZNode string path and return a ZPath
@@ -52,7 +57,7 @@ public interface ZPath
      */
     static ZPath from(String... names)
     {
-        ZPath path = root;
+        ZPath path = root();
         for ( String n : names )
         {
             path = path.at(n);

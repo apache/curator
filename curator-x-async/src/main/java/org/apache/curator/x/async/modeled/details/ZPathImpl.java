@@ -27,13 +27,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ZPathImpl implements ZPath
 {
     public static final ZPath root = new ZPathImpl(Collections.singletonList(ZKPaths.PATH_SEPARATOR));
-    public static final AtomicReference<String> fullPathCache = new AtomicReference<>();
-    public static final AtomicReference<String> parentPathCache = new AtomicReference<>();
+
+    private volatile String fullPathCache = null;
+    private volatile String parentPathCache = null;
 
     private final List<String> nodes;
 
@@ -138,8 +138,7 @@ public class ZPathImpl implements ZPath
 
     private String buildFullPath(boolean parent)
     {
-        AtomicReference<String> cache = parent ? parentPathCache : fullPathCache;
-        String path = cache.get();
+        String path = parent ? parentPathCache : fullPathCache;
         if ( path != null )
         {
             return path;
@@ -158,7 +157,14 @@ public class ZPathImpl implements ZPath
         }
         path = str.toString();
 
-        cache.compareAndSet(null, path);
+        if ( parent )
+        {
+            parentPathCache = path;
+        }
+        else
+        {
+            fullPathCache = path;
+        }
         return path;
     }
 }

@@ -126,7 +126,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         long dirtyZxid = getDirtyZxid();
         byte[] bytes = model.serializer().serialize(item);
         AsyncStage<String> asyncStage = dslClient.create().withOptions(model.createOptions(), model.createMode(), fixAclList(model.aclList()), storingStatIn).forPath(model.path().fullPath(), bytes);
-        ModelStage<String> modelStage = new ModelStage<>(asyncStage.event());
+        ModelStage<String> modelStage = new ModelStage<>();
         markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
         return modelStage;
     }
