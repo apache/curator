@@ -25,10 +25,12 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.DeleteOption;
+import org.apache.curator.x.async.modeled.caching.CachingOption;
 import org.apache.curator.x.async.modeled.details.ModeledCuratorFrameworkImpl;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -43,10 +45,12 @@ public class ModeledCuratorFrameworkBuilder<T>
     private UnaryOperator<WatchedEvent> watcherFilter;
     private UnhandledErrorListener unhandledErrorListener;
     private UnaryOperator<CuratorEvent> resultFilter;
-    private CreateMode createMode;
-    private List<ACL> aclList;
-    private Set<CreateOption> createOptions;
-    private Set<DeleteOption> deleteOptions;
+    private CreateMode createMode = CreateMode.PERSISTENT;
+    private List<ACL> aclList = Collections.emptyList();
+    private Set<CreateOption> createOptions = Collections.emptySet();
+    private Set<DeleteOption> deleteOptions = Collections.emptySet();
+    private Set<CachingOption> cachingOptions = Collections.emptySet();
+    private boolean cached = false;
 
     /**
      * Build a new ModeledCuratorFramework instance
@@ -55,9 +59,10 @@ public class ModeledCuratorFrameworkBuilder<T>
      */
     public ModeledCuratorFramework<T> build()
     {
-        return new ModeledCuratorFrameworkImpl<>(
+        String fullPath = this.path.fullPath();
+        return ModeledCuratorFrameworkImpl.build(
             client,
-            path.fullPath(),
+            fullPath,
             serializer,
             watchMode,
             watcherFilter,
@@ -66,7 +71,9 @@ public class ModeledCuratorFrameworkBuilder<T>
             createMode,
             aclList,
             createOptions,
-            deleteOptions
+            deleteOptions,
+            cachingOptions,
+            cached
         );
     }
 
@@ -180,6 +187,20 @@ public class ModeledCuratorFrameworkBuilder<T>
     public ModeledCuratorFrameworkBuilder<T> withDeleteOptions(Set<DeleteOption> deleteOptions)
     {
         this.deleteOptions = (deleteOptions != null) ? ImmutableSet.copyOf(deleteOptions) : null;
+        return this;
+    }
+
+    public ModeledCuratorFrameworkBuilder<T> cached()
+    {
+        this.cachingOptions = Collections.emptySet();
+        this.cached = true;
+        return this;
+    }
+
+    public ModeledCuratorFrameworkBuilder<T> cached(Set<CachingOption> cachingOptions)
+    {
+        this.cachingOptions = Objects.requireNonNull(cachingOptions, "cachingOptions cannot be null");
+        this.cached = true;
         return this;
     }
 

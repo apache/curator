@@ -27,10 +27,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ZPathImpl implements ZPath
 {
     public static final ZPath root = new ZPathImpl(Collections.singletonList(ZKPaths.PATH_SEPARATOR));
+    public static final AtomicReference<String> fullPathCache = new AtomicReference<>();
+    public static final AtomicReference<String> parentPathCache = new AtomicReference<>();
 
     private final List<String> nodes;
 
@@ -66,14 +69,14 @@ public class ZPathImpl implements ZPath
     @Override
     public String fullPath()
     {
-        return buildFullPath(nodes.size());
+        return buildFullPath(false);
     }
 
     @Override
     public String parentPath()
     {
         checkRootAccess();
-        return buildFullPath(nodes.size() - 1);
+        return buildFullPath(true);
     }
 
     @Override
@@ -133,10 +136,18 @@ public class ZPathImpl implements ZPath
         }
     }
 
-    private String buildFullPath(int size)
+    private String buildFullPath(boolean parent)
     {
+        AtomicReference<String> cache = parent ? parentPathCache : fullPathCache;
+        String path = cache.get();
+        if ( path != null )
+        {
+            return path;
+        }
+
         boolean addSeparator = false;
         StringBuilder str = new StringBuilder();
+        int size = parent ? (nodes.size() - 1) : nodes.size();
         for ( int i = 0; i < size; ++i )
         {
             if ( i > 1 )
@@ -145,6 +156,9 @@ public class ZPathImpl implements ZPath
             }
             str.append(nodes.get(i));
         }
-        return str.toString();
+        path = str.toString();
+
+        cache.compareAndSet(null, path);
+        return path;
     }
 }

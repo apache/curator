@@ -29,12 +29,18 @@ class ModelStage<T> extends CompletableFuture<T> implements AsyncStage<T>
 
     ModelStage()
     {
-        this(null);
+        event = null;
     }
 
     ModelStage(CompletionStage<WatchedEvent> event)
     {
         this.event = event;
+    }
+
+    ModelStage(T value)
+    {
+        event = null;
+        complete(value);
     }
 
     @Override
