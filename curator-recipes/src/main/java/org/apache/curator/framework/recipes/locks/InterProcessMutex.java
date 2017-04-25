@@ -195,7 +195,12 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         internals = new LockInternals(client, driver, path, lockName, maxLeases);
     }
 
-    boolean isOwnedByCurrentThread()
+    /**
+     * Returns true if the mutex is acquired by the calling thread
+     * 
+     * @return true/false
+     */
+    public boolean isOwnedByCurrentThread()
     {
         LockData lockData = threadData.get(Thread.currentThread());
         return (lockData != null) && (lockData.lockCount.get() > 0);
