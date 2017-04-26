@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.curator.framework.schema.Schema;
 import org.apache.curator.framework.schema.SchemaValidator;
 import org.apache.curator.framework.schema.SchemaViolation;
-import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.modeled.CuratorModelSpec;
@@ -34,6 +33,7 @@ import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValidator
 {
@@ -72,6 +72,18 @@ public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValid
     public CuratorModelSpec<T> resolved(Object... parameters)
     {
         return new CuratorModelSpecImpl<>(path.resolved(parameters), serializer, createMode, aclList, createOptions, deleteOptions);
+    }
+
+    @Override
+    public CuratorModelSpec<T> resolved(List<Object> parameters)
+    {
+        return new CuratorModelSpecImpl<>(path.resolved(parameters), serializer, createMode, aclList, createOptions, deleteOptions);
+    }
+
+    @Override
+    public CuratorModelSpec<T> resolving(List<Supplier<Object>> parameterSuppliers)
+    {
+        return new CuratorModelSpecImpl<>(path.resolving(parameterSuppliers), serializer, createMode, aclList, createOptions, deleteOptions);
     }
 
     @Override
