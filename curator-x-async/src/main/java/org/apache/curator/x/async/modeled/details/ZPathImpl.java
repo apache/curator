@@ -18,8 +18,10 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.common.PathUtils;
@@ -27,24 +29,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class ZPathImpl implements ZPath
 {
-    public static final ZPath root = new ZPathImpl(Collections.singletonList(ZKPaths.PATH_SEPARATOR));
+    public static final ZPath root = new ZPathImpl(Collections.singletonList(ZKPaths.PATH_SEPARATOR), null);
 
-    private volatile String fullPathCache = null;
-    private volatile String parentPathCache = null;
+    public static final String parameter = "\u0000";    // PathUtils.validatePath() rejects this so it's useful for this purpose
 
     private final List<String> nodes;
+    private final boolean isResolved;
 
     public static ZPath parse(String fullPath)
     {
-        PathUtils.validatePath(fullPath);
         List<String> nodes = ImmutableList.<String>builder()
             .add(ZKPaths.PATH_SEPARATOR)
             .addAll(Splitter.on(ZKPaths.PATH_SEPARATOR).omitEmptyStrings().splitToList(fullPath))
             .build();
-        return new ZPathImpl(nodes);
+        nodes.forEach(ZPathImpl::validate);
+        return new ZPathImpl(nodes, null);
     }
 
     @Override
@@ -57,7 +60,7 @@ public class ZPathImpl implements ZPath
     public ZPath parent()
     {
         checkRootAccess();
-        return new ZPathImpl(nodes.subList(0, nodes.size() - 1));
+        return new ZPathImpl(nodes.subList(0, nodes.size() - 1), null);
     }
 
     @Override
@@ -67,8 +70,15 @@ public class ZPathImpl implements ZPath
     }
 
     @Override
+    public Pattern toSchemaPathPattern()
+    {
+        return Pattern.compile(fullPath() + ZKPaths.PATH_SEPARATOR + ".*");
+    }
+
+    @Override
     public String fullPath()
     {
+        checkResolved();
         return buildFullPath(false);
     }
 
@@ -76,12 +86,14 @@ public class ZPathImpl implements ZPath
     public String parentPath()
     {
         checkRootAccess();
+        checkResolved();
         return buildFullPath(true);
     }
 
     @Override
     public String nodeName()
     {
+        checkResolved();
         return nodes.get(nodes.size() - 1);
     }
 
@@ -114,18 +126,39 @@ public class ZPathImpl implements ZPath
         return "ZPathImpl{" + "nodes=" + nodes + '}';
     }
 
-    private ZPathImpl(List<String> nodes)
+    @Override
+    public ZPath resolved(Object... parameters)
     {
-        this.nodes = Objects.requireNonNull(nodes, "nodes cannot be null");
+        List<String> nodeNames = Lists.newArrayList();
+        for ( int i = 0; i < nodes.size(); ++i )
+        {
+            String name = nodes.get(i);
+            if ( name.equals(parameter) )
+            {
+                if ( parameters.length >= i )
+                {
+                    throw new IllegalStateException(String.format("Parameter missing at index [%d] for [%s]", i, nodes.toString()));
+                }
+                nodeNames.add(parameters[i].toString());
+            }
+            else
+            {
+                nodeNames.add(name);
+            }
+        }
+        return new ZPathImpl(nodeNames, null);
     }
 
     private ZPathImpl(List<String> nodes, String child)
     {
-        PathUtils.validatePath(ZKPaths.PATH_SEPARATOR + child);
-        this.nodes = ImmutableList.<String>builder()
-            .addAll(nodes)
-            .add(child)
-            .build();
+        ImmutableList.Builder<String> builder = ImmutableList.<String>builder().addAll(nodes);
+        if ( child != null )
+        {
+            validate(child);
+            builder.add(child);
+        }
+        this.nodes = builder.build();
+        isResolved = !this.nodes.contains(parameter);
     }
 
     private void checkRootAccess()
@@ -136,14 +169,13 @@ public class ZPathImpl implements ZPath
         }
     }
 
+    private void checkResolved()
+    {
+        Preconditions.checkState(isResolved, "This ZPath has not been resolved");
+    }
+
     private String buildFullPath(boolean parent)
     {
-        String path = parent ? parentPathCache : fullPathCache;
-        if ( path != null )
-        {
-            return path;
-        }
-
         boolean addSeparator = false;
         StringBuilder str = new StringBuilder();
         int size = parent ? (nodes.size() - 1) : nodes.size();
@@ -153,18 +185,22 @@ public class ZPathImpl implements ZPath
             {
                 str.append(ZKPaths.PATH_SEPARATOR);
             }
-            str.append(nodes.get(i));
+            String value = nodes.get(i);
+            str.append(value.equals(parameter) ? ".*" : value);
         }
-        path = str.toString();
+        return str.toString();
+    }
 
-        if ( parent )
+    private static void validate(String nodeName)
+    {
+        if ( parameter.equals(Objects.requireNonNull(nodeName, "nodeName cannot be null")) )
         {
-            parentPathCache = path;
+            return;
         }
-        else
+        if ( nodeName.equals(ZKPaths.PATH_SEPARATOR) )
         {
-            fullPathCache = path;
+            return;
         }
-        return path;
+        PathUtils.validatePath(ZKPaths.PATH_SEPARATOR + nodeName);
     }
 }

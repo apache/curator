@@ -19,6 +19,7 @@
 package org.apache.curator.x.async.modeled;
 
 import org.apache.curator.x.async.modeled.details.ZPathImpl;
+import java.util.regex.Pattern;
 
 /**
  * Abstracts a ZooKeeper ZNode path
@@ -66,6 +67,27 @@ public interface ZPath
     }
 
     /**
+     * Return the special node name that can be used for replacements at runtime
+     * via {@link #resolved(Object...)}
+     *
+     * @return name
+     */
+    static String parameterNodeName()
+    {
+        return ZPathImpl.parameter;
+    }
+
+    /**
+     * When creating paths, any node in the path can be set to {@link #parameterNodeName()}.
+     * At runtime, the ZPath can be "resolved" by replacing these nodes with values.
+     *
+     * @param parameters list of replacements. Must have be the same length as the number of
+     *                   parameter nodes in the path
+     * @return new resolved ZPath
+     */
+    ZPath resolved(Object... parameters);
+
+    /**
      * Return a ZPath that represents a child ZNode of this ZPath. e.g.
      * <code>ZPath.from("a", "b").at("c")</code> represents the path "/a/b/c"
      *
@@ -110,4 +132,11 @@ public interface ZPath
      * @return name
      */
     String nodeName();
+
+    /**
+     * Return a regex Pattern useful for using in {@link org.apache.curator.framework.schema.Schema}
+     *
+     * @return pattern for this path
+     */
+    Pattern toSchemaPathPattern();
 }

@@ -69,6 +69,12 @@ public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValid
     }
 
     @Override
+    public CuratorModelSpec<T> resolved(Object... parameters)
+    {
+        return new CuratorModelSpecImpl<>(path.resolved(parameters), serializer, createMode, aclList, createOptions, deleteOptions);
+    }
+
+    @Override
     public ZPath path()
     {
         return path;
@@ -192,7 +198,7 @@ public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValid
 
     private Schema makeSchema()
     {
-        return Schema.builder(path.fullPath() + ZKPaths.PATH_SEPARATOR + ".*")
+        return Schema.builder(path.toSchemaPathPattern())
             .dataValidator(this)
             .ephemeral(createMode.isEphemeral() ? Schema.Allowance.MUST : Schema.Allowance.CANNOT)
             .canBeDeleted(true)

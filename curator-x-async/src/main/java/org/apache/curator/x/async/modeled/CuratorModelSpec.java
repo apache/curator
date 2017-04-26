@@ -59,6 +59,16 @@ public interface CuratorModelSpec<T>
     CuratorModelSpec<T> at(String child);
 
     /**
+     * Return a new CuratorModel instance with all the same options but applying to the given parameters of this CuratorModel's
+     * path via {@link org.apache.curator.x.async.modeled.ZPath#resolved(Object...)}
+     *
+     * @param parameters list of replacements. Must have be the same length as the number of
+     *                   parameter nodes in the path
+     * @return new Modeled Curator instance
+     */
+    CuratorModelSpec<T> resolved(Object... parameters);
+
+    /**
      * Return the model's path
      *
      * @return path
