@@ -54,4 +54,18 @@ public class TestZPath
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.root().at("one").at("two").at("three"));
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
     }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testUnresolvedPath()
+    {
+        ZPath path = ZPath.from("one", ZPath.parameterNodeName(), "two");
+        path.fullPath();
+    }
+
+    @Test
+    public void testResolvedPath()
+    {
+        ZPath path = ZPath.from("one", ZPath.parameterNodeName(), "two", ZPath.parameterNodeName());
+        Assert.assertEquals(path.resolved("a", "b"), ZPath.from("one", "a", "two", "b"));
+    }
 }

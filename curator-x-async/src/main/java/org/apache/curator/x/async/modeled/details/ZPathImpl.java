@@ -130,16 +130,17 @@ public class ZPathImpl implements ZPath
     public ZPath resolved(Object... parameters)
     {
         List<String> nodeNames = Lists.newArrayList();
+        int parameterIndex = 0;
         for ( int i = 0; i < nodes.size(); ++i )
         {
             String name = nodes.get(i);
             if ( name.equals(parameter) )
             {
-                if ( parameters.length >= i )
+                if ( parameterIndex >= parameters.length )
                 {
-                    throw new IllegalStateException(String.format("Parameter missing at index [%d] for [%s]", i, nodes.toString()));
+                    throw new IllegalStateException(String.format("Parameter missing at index [%d] for [%s]", parameterIndex, nodes.toString()));
                 }
-                nodeNames.add(parameters[i].toString());
+                nodeNames.add(parameters[parameterIndex++].toString());
             }
             else
             {
