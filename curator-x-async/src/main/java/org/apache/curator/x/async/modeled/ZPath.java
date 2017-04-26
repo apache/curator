@@ -19,6 +19,9 @@
 package org.apache.curator.x.async.modeled;
 
 import org.apache.curator.x.async.modeled.details.ZPathImpl;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 /**
@@ -58,12 +61,19 @@ public interface ZPath
      */
     static ZPath from(String... names)
     {
-        ZPath path = root();
-        for ( String n : names )
-        {
-            path = path.at(n);
-        }
-        return path;
+        return ZPathImpl.from(names);
+    }
+
+    /**
+     * Convert individual path names into a ZPath
+     *
+     * @param names path names
+     * @return ZPath
+     * @throws IllegalArgumentException if any of the names is invalid
+     */
+    static ZPath from(List<String> names)
+    {
+        return ZPathImpl.from(names);
     }
 
     /**
@@ -85,7 +95,33 @@ public interface ZPath
      *                   parameter nodes in the path
      * @return new resolved ZPath
      */
-    ZPath resolved(Object... parameters);
+    default ZPath resolved(Object... parameters)
+    {
+        return resolved(Arrays.asList(parameters));
+    }
+
+    /**
+     * When creating paths, any node in the path can be set to {@link #parameterNodeName()}.
+     * At runtime, the ZPath can be "resolved" by replacing these nodes with values.
+     *
+     * @param parameters list of replacements. Must have be the same length as the number of
+     *                   parameter nodes in the path
+     * @return new resolved ZPath
+     */
+    ZPath resolved(List<Object> parameters);
+
+    /**
+     * An "auto" resolving version of this ZPath. i.e. if any of the path names is
+     * the {@link #parameterNodeName()} the ZPath must be resolved. This method
+     * creates a new ZPath that auto resolves by using the given parameter suppliers
+     * whenever needed.
+     *
+     * @param parameterSuppliers parameter suppliers
+     * @return new auto resolving ZNode
+     * @see #resolved(Object...)
+     * @see #parameterNodeName()
+     */
+    ZPath resolving(List<Supplier<Object>> parameterSuppliers);
 
     /**
      * Return a ZPath that represents a child ZNode of this ZPath. e.g.

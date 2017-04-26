@@ -21,24 +21,28 @@ package org.apache.curator.x.async.modeled.details;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.common.PathUtils;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ZPathImpl implements ZPath
 {
-    public static final ZPath root = new ZPathImpl(Collections.singletonList(ZKPaths.PATH_SEPARATOR), null);
+    public static final ZPath root = new ZPathImpl(Collections.singletonList(ZKPaths.PATH_SEPARATOR), null, null);
 
     public static final String parameter = "\u0000";    // PathUtils.validatePath() rejects this so it's useful for this purpose
 
     private final List<String> nodes;
     private final boolean isResolved;
+    private final List<Supplier<Object>> parameterSuppliers;
 
     public static ZPath parse(String fullPath)
     {
@@ -47,20 +51,36 @@ public class ZPathImpl implements ZPath
             .addAll(Splitter.on(ZKPaths.PATH_SEPARATOR).omitEmptyStrings().splitToList(fullPath))
             .build();
         nodes.forEach(ZPathImpl::validate);
-        return new ZPathImpl(nodes, null);
+        return new ZPathImpl(nodes, null, null);
+    }
+
+    public static ZPath from(String[] names)
+    {
+        return from(Arrays.asList(names));
+    }
+
+    public static ZPath from(List<String> names)
+    {
+        names = Objects.requireNonNull(names, "names cannot be null");
+        names.forEach(ZPathImpl::validate);
+        List<String> nodes = ImmutableList.<String>builder()
+            .add(ZKPaths.PATH_SEPARATOR)
+            .addAll(names)
+            .build();
+        return new ZPathImpl(nodes, null, null);
     }
 
     @Override
     public ZPath at(String child)
     {
-        return new ZPathImpl(nodes, child);
+        return new ZPathImpl(nodes, child, parameterSuppliers);
     }
 
     @Override
     public ZPath parent()
     {
         checkRootAccess();
-        return new ZPathImpl(nodes.subList(0, nodes.size() - 1), null);
+        return new ZPathImpl(nodes.subList(0, nodes.size() - 1), null, parameterSuppliers);
     }
 
     @Override
@@ -93,7 +113,6 @@ public class ZPathImpl implements ZPath
     @Override
     public String nodeName()
     {
-        checkResolved();
         return nodes.get(nodes.size() - 1);
     }
 
@@ -127,31 +146,35 @@ public class ZPathImpl implements ZPath
     }
 
     @Override
-    public ZPath resolved(Object... parameters)
+    public ZPath resolved(List<Object> parameters)
     {
-        List<String> nodeNames = Lists.newArrayList();
-        int parameterIndex = 0;
-        for ( int i = 0; i < nodes.size(); ++i )
-        {
-            String name = nodes.get(i);
-            if ( name.equals(parameter) )
-            {
-                if ( parameterIndex >= parameters.length )
+        Iterator<Object> iterator = parameters.iterator();
+        List<String> nodeNames = nodes.stream()
+            .map(name -> {
+                if ( name.equals(parameter) )
                 {
-                    throw new IllegalStateException(String.format("Parameter missing at index [%d] for [%s]", parameterIndex, nodes.toString()));
+                    if ( !iterator.hasNext() )
+                    {
+                        throw new IllegalStateException(String.format("Parameter missing for [%s]", nodes.toString()));
+                    }
+                    return iterator.next().toString();
                 }
-                nodeNames.add(parameters[parameterIndex++].toString());
-            }
-            else
-            {
-                nodeNames.add(name);
-            }
-        }
-        return new ZPathImpl(nodeNames, null);
+                return name;
+            })
+            .collect(Collectors.toList());
+        return new ZPathImpl(nodeNames, null, parameterSuppliers);
     }
 
-    private ZPathImpl(List<String> nodes, String child)
+    @Override
+    public ZPath resolving(List<Supplier<Object>> parameterSuppliers)
     {
+        parameterSuppliers = Objects.requireNonNull(parameterSuppliers, "parameterSuppliers cannot be null");
+        return new ZPathImpl(nodes, null, parameterSuppliers);
+    }
+
+    private ZPathImpl(List<String> nodes, String child, List<Supplier<Object>> parameterSuppliers)
+    {
+        this.parameterSuppliers = parameterSuppliers;
         ImmutableList.Builder<String> builder = ImmutableList.<String>builder().addAll(nodes);
         if ( child != null )
         {
@@ -159,7 +182,7 @@ public class ZPathImpl implements ZPath
             builder.add(child);
         }
         this.nodes = builder.build();
-        isResolved = !this.nodes.contains(parameter);
+        isResolved = (parameterSuppliers != null) || !this.nodes.contains(parameter);
     }
 
     private void checkRootAccess()
@@ -180,6 +203,7 @@ public class ZPathImpl implements ZPath
         boolean addSeparator = false;
         StringBuilder str = new StringBuilder();
         int size = parent ? (nodes.size() - 1) : nodes.size();
+        int parameterIndex = 0;
         for ( int i = 0; i < size; ++i )
         {
             if ( i > 1 )
@@ -187,7 +211,15 @@ public class ZPathImpl implements ZPath
                 str.append(ZKPaths.PATH_SEPARATOR);
             }
             String value = nodes.get(i);
-            str.append(value.equals(parameter) ? ".*" : value);
+            if ( value.equals(parameter) )
+            {
+                if ( (parameterSuppliers == null) || (parameterSuppliers.size() <= parameterIndex) )
+                {
+                    throw new IllegalStateException(String.format("Parameter supplier missing at index [%d] for [%s]", parameterIndex, nodes.toString()));
+                }
+                value = parameterSuppliers.get(parameterIndex++).get().toString();
+            }
+            str.append(value);
         }
         return str.toString();
     }
