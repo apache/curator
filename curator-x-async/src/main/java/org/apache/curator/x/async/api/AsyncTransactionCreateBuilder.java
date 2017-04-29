@@ -34,7 +34,7 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @param createMode mode
      * @return this
      */
-    AsyncPathable<CuratorOp> withMode(CreateMode createMode);
+    AsyncPathAndBytesable<CuratorOp> withMode(CreateMode createMode);
 
     /**
      * Set an ACL list (default is {@link org.apache.zookeeper.ZooDefs.Ids#OPEN_ACL_UNSAFE})
@@ -42,14 +42,14 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @param aclList the ACL list to use
      * @return this
      */
-    AsyncPathable<CuratorOp> withACL(List<ACL> aclList);
+    AsyncPathAndBytesable<CuratorOp> withACL(List<ACL> aclList);
 
     /**
      * Cause the data to be compressed using the configured compression provider
      *
      * @return this
      */
-    AsyncPathable<CuratorOp> compressed();
+    AsyncPathAndBytesable<CuratorOp> compressed();
 
     /**
      * Specify mode, acl list and compression
@@ -62,5 +62,5 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @see #compressed()
      * @return this
      */
-    AsyncPathable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed);
+    AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed);
 }

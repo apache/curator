@@ -74,7 +74,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
         TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
         TestModel rawModel2 = new TestModel("Wayne", "Rooney", "Old Trafford", 10, BigInteger.valueOf(1));
         ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.wrap(rawClient, modelSpec);
-        AsyncStage<String> stage = client.create(rawModel);
+        AsyncStage<String> stage = client.set(rawModel);
         Assert.assertNull(stage.event());
         complete(stage, (s, e) -> Assert.assertNotNull(s));
         complete(client.read(), (model, e) -> Assert.assertEquals(model, rawModel));
@@ -89,7 +89,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     {
         TestNewerModel rawNewModel = new TestNewerModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1), 100);
         ModeledCuratorFramework<TestNewerModel> clientForNew = ModeledCuratorFramework.wrap(rawClient, newModelSpec);
-        complete(clientForNew.create(rawNewModel), (s, e) -> Assert.assertNotNull(s));
+        complete(clientForNew.set(rawNewModel), (s, e) -> Assert.assertNotNull(s));
 
         ModeledCuratorFramework<TestModel> clientForOld = ModeledCuratorFramework.wrap(rawClient, modelSpec);
         complete(clientForOld.read(), (model, e) -> Assert.assertTrue(rawNewModel.equalsOld(model)));
@@ -103,7 +103,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
         client.checkExists().event().whenComplete((event, ex) -> latch.countDown());
         timing.sleepABit();
         Assert.assertEquals(latch.getCount(), 1);
-        client.create(new TestModel());
+        client.set(new TestModel());
         Assert.assertTrue(timing.awaitLatch(latch));
     }
 
@@ -112,9 +112,9 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     {
         TestModel model = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
         ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, modelSpec).build();
-        complete(client.at("one").create(model));
-        complete(client.at("two").create(model));
-        complete(client.at("three").create(model));
+        complete(client.at("one").set(model));
+        complete(client.at("two").set(model));
+        complete(client.at("three").set(model));
 
         Set<ZPath> expected = Sets.newHashSet(path.at("one"), path.at("two"), path.at("three"));
         complete(client.getChildren(), (children, e) -> Assert.assertEquals(Sets.newHashSet(children), expected));

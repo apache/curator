@@ -18,29 +18,38 @@
  */
 package modeled;
 
+import java.util.Objects;
+
 public class PersonModel
 {
-    private final String id;
+    private final PersonId id;
+    private final ContainerType containerType;
     private final String firstName;
     private final String lastName;
     private final int age;
 
     public PersonModel()
     {
-        this(null, null, null, 0);
+        this(new PersonId(), new ContainerType(), null, null, 0);
     }
 
-    public PersonModel(String id, String firstName, String lastName, int age)
+    public PersonModel(PersonId id, ContainerType containerType, String firstName, String lastName, int age)
     {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.id = Objects.requireNonNull(id, "id cannot be null");
+        this.containerType = Objects.requireNonNull(containerType, "containerType cannot be null");
+        this.firstName = Objects.requireNonNull(firstName, "firstName cannot be null");
+        this.lastName = Objects.requireNonNull(lastName, "lastName cannot be null");
         this.age = age;
     }
 
-    public String getId()
+    public PersonId getId()
     {
         return id;
+    }
+
+    public ContainerType getContainerType()
+    {
+        return containerType;
     }
 
     public String getFirstName()
@@ -76,24 +85,29 @@ public class PersonModel
         {
             return false;
         }
-        if ( id != null ? !id.equals(that.id) : that.id != null )
+        if ( !id.equals(that.id) )
+        {
+            return false;
+        }
+        if ( !containerType.equals(that.containerType) )
         {
             return false;
         }
         //noinspection SimplifiableIfStatement
-        if ( firstName != null ? !firstName.equals(that.firstName) : that.firstName != null )
+        if ( !firstName.equals(that.firstName) )
         {
             return false;
         }
-        return lastName != null ? lastName.equals(that.lastName) : that.lastName == null;
+        return lastName.equals(that.lastName);
     }
 
     @Override
     public int hashCode()
     {
-        int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + (firstName != null ? firstName.hashCode() : 0);
-        result = 31 * result + (lastName != null ? lastName.hashCode() : 0);
+        int result = id.hashCode();
+        result = 31 * result + containerType.hashCode();
+        result = 31 * result + firstName.hashCode();
+        result = 31 * result + lastName.hashCode();
         result = 31 * result + age;
         return result;
     }
@@ -101,6 +115,6 @@ public class PersonModel
     @Override
     public String toString()
     {
-        return "PersonModel{" + "id='" + id + '\'' + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + ", age=" + age + '}';
+        return "PersonModel{" + "id=" + id + ", containerType=" + containerType + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + ", age=" + age + '}';
     }
 }

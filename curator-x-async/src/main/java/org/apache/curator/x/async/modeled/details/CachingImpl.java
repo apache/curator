@@ -89,14 +89,12 @@ class CachingImpl<T> implements Caching<T>, ModeledCacheListener<T>
         {
             case NODE_ADDED:
             case NODE_UPDATED:
-            {
-                updateDirtyZxid(event.getNode().getStat().getMzxid());
-                break;
-            }
-
             case NODE_REMOVED:
             {
-                // TODO
+                ModeledCachedNode<T> node = event.getNode();
+                Stat stat = (node != null) ? node.getStat() : null;
+                long mzxid = (stat != null) ? stat.getMzxid() : -1;
+                updateDirtyZxid(mzxid);
                 break;
             }
 

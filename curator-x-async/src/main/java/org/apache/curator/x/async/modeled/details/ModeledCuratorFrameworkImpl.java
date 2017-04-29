@@ -23,12 +23,15 @@ import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncCuratorFrameworkDsl;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
 import org.apache.curator.x.async.api.AsyncPathable;
+import org.apache.curator.x.async.api.AsyncTransactionSetDataBuilder;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.CuratorModelSpec;
@@ -52,7 +55,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
 {
     private final AsyncCuratorFramework client;
     private final WatchableAsyncCuratorFramework watchableClient;
-    private final CuratorModelSpec<T> model;
+    private final CuratorModelSpec<T> modelSpec;
     private final WatchMode watchMode;
     private final UnaryOperator<WatchedEvent> watcherFilter;
     private final UnhandledErrorListener unhandledErrorListener;
@@ -88,12 +91,12 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         );
     }
 
-    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, CuratorModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, CachingImpl<T> caching)
+    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, CuratorModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, CachingImpl<T> caching)
     {
         this.client = client;
         this.dslClient = dslClient;
         this.watchableClient = watchableClient;
-        this.model = model;
+        this.modelSpec = modelSpec;
         this.watchMode = watchMode;
         this.watcherFilter = watcherFilter;
         this.unhandledErrorListener = unhandledErrorListener;
@@ -115,17 +118,17 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public AsyncStage<String> create(T item)
+    public AsyncStage<String> set(T item)
     {
-        return create(item, null);
+        return set(item, null);
     }
 
     @Override
-    public AsyncStage<String> create(T item, Stat storingStatIn)
+    public AsyncStage<String> set(T item, Stat storingStatIn)
     {
         long dirtyZxid = getDirtyZxid();
-        byte[] bytes = model.serializer().serialize(item);
-        AsyncStage<String> asyncStage = dslClient.create().withOptions(model.createOptions(), model.createMode(), fixAclList(model.aclList()), storingStatIn).forPath(model.path().fullPath(), bytes);
+        byte[] bytes = modelSpec.serializer().serialize(item);
+        AsyncStage<String> asyncStage = dslClient.create().withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn).forPath(modelSpec.path().fullPath(), bytes);
         ModelStage<String> modelStage = new ModelStage<>();
         markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
         return modelStage;
@@ -174,7 +177,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         {
             next = (storingStatIn != null) ? watchableClient.getData().storingStatIn(storingStatIn) : watchableClient.getData();
         }
-        AsyncStage<byte[]> asyncStage = next.forPath(model.path().fullPath());
+        AsyncStage<byte[]> asyncStage = next.forPath(modelSpec.path().fullPath());
         ModelStage<T> modelStage = new ModelStage<>(asyncStage.event());
         asyncStage.whenComplete((value, e) -> {
             if ( e != null )
@@ -185,7 +188,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             {
                 try
                 {
-                    modelStage.complete(model.serializer().deserialize(value));
+                    modelStage.complete(modelSpec.serializer().deserialize(value));
                 }
                 catch ( Exception deserializeException )
                 {
@@ -206,9 +209,9 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     public AsyncStage<Stat> update(T item, int version)
     {
         long dirtyZxid = getDirtyZxid();
-        byte[] bytes = model.serializer().serialize(item);
+        byte[] bytes = modelSpec.serializer().serialize(item);
         AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dslClient.setData().compressedWithVersion(version) : dslClient.setData();
-        AsyncStage<Stat> asyncStage = next.forPath(model.path().fullPath(), bytes);
+        AsyncStage<Stat> asyncStage = next.forPath(modelSpec.path().fullPath(), bytes);
         ModelStage<Stat> modelStage = new ModelStage<>(asyncStage.event());
         markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
         return modelStage;
@@ -227,7 +230,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             }
             return result;
         }
-        return watchableClient.checkExists().forPath(model.path().fullPath());
+        return watchableClient.checkExists().forPath(modelSpec.path().fullPath());
     }
 
     @Override
@@ -240,7 +243,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     public AsyncStage<Void> delete(int version)
     {
         long dirtyZxid = getDirtyZxid();
-        AsyncStage<Void> asyncStage = dslClient.delete().withVersion(-1).forPath(model.path().fullPath());
+        AsyncStage<Void> asyncStage = dslClient.delete().withVersion(-1).forPath(modelSpec.path().fullPath());
         ModelStage<Void> modelStage = new ModelStage<>(asyncStage.event());
         markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
         return modelStage;
@@ -249,7 +252,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     @Override
     public AsyncStage<List<ZPath>> getChildren()
     {
-        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(model.path().fullPath());
+        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(modelSpec.path().fullPath());
         ModelStage<List<ZPath>> modelStage = new ModelStage<>(asyncStage.event());
         asyncStage.whenComplete((children, e) -> {
             if ( e != null )
@@ -258,7 +261,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             }
             else
             {
-                modelStage.complete(children.stream().map(child -> model.path().at(child)).collect(Collectors.toList()));
+                modelStage.complete(children.stream().map(child -> modelSpec.path().at(child)).collect(Collectors.toList()));
             }
         });
         return modelStage;
@@ -267,7 +270,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     @Override
     public ModeledCuratorFramework<T> at(String child)
     {
-        CuratorModelSpec<T> childModel = model.at(child);
+        CuratorModelSpec<T> childModel = modelSpec.at(child);
         CachingImpl<T> newCaching = (caching != null) ? caching.at(child) : null;
         return new ModeledCuratorFrameworkImpl<>(
             client,
@@ -285,6 +288,62 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     public static boolean isCompressed(Set<CreateOption> createOptions)
     {
         return createOptions.contains(CreateOption.compress);
+    }
+
+    @Override
+    public CuratorOp createOp(T model)
+    {
+        return client.transactionOp()
+            .create()
+            .withOptions(modelSpec.createMode(), modelSpec.aclList(), modelSpec.createOptions().contains(CreateOption.compress))
+            .forPath(modelSpec.path().fullPath(), modelSpec.serializer().serialize(model));
+    }
+
+    @Override
+    public CuratorOp updateOp(T model)
+    {
+        return updateOp(model, -1);
+    }
+
+    @Override
+    public CuratorOp updateOp(T model, int version)
+    {
+        AsyncTransactionSetDataBuilder builder = client.transactionOp().setData();
+        if ( isCompressed() )
+        {
+            return builder.withVersionCompressed(version).forPath(modelSpec.path().fullPath(), modelSpec.serializer().serialize(model));
+        }
+        return builder.withVersion(version).forPath(modelSpec.path().fullPath(), modelSpec.serializer().serialize(model));
+    }
+
+    @Override
+    public CuratorOp deleteOp()
+    {
+        return deleteOp(-1);
+    }
+
+    @Override
+    public CuratorOp deleteOp(int version)
+    {
+        return client.transactionOp().delete().withVersion(version).forPath(modelSpec.path().fullPath());
+    }
+
+    @Override
+    public CuratorOp checkExistsOp()
+    {
+        return checkExistsOp(-1);
+    }
+
+    @Override
+    public CuratorOp checkExistsOp(int version)
+    {
+        return client.transactionOp().check().withVersion(version).forPath(modelSpec.path().fullPath());
+    }
+
+    @Override
+    public AsyncStage<List<CuratorTransactionResult>> inTransaction(List<CuratorOp> operations)
+    {
+        return client.transaction().forOperations(operations);
     }
 
     private <U> void markDirtyCompleter(long dirtyZxid, AsyncStage<U> asyncStage, ModelStage<U> modelStage)
@@ -307,7 +366,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
 
     private boolean isCompressed()
     {
-        return model.createOptions().contains(CreateOption.compress);
+        return modelSpec.createOptions().contains(CreateOption.compress);
     }
 
     private ModeledCachedNode<T> getCached()

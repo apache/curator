@@ -87,7 +87,7 @@ public class TestModeledCaches extends CompletableBaseClassForTests
             TestModel model2 = new TestModel("d", "e", "f", 10, BigInteger.ONE);
 
             Stat stat = new Stat();
-            modeled.create(model1, stat);
+            modeled.set(model1, stat);
             ModeledCacheEvent<TestModel> event = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
             Assert.assertNotNull(event);
             Assert.assertEquals(event.getType(), ModeledCacheEventType.NODE_UPDATED);
@@ -126,7 +126,7 @@ public class TestModeledCaches extends CompletableBaseClassForTests
             TestModel model2 = new TestModel("d", "e", "f", 10, BigInteger.ONE);
             TestModel model3 = new TestModel("g", "h", "i", 100, BigInteger.ZERO);
 
-            modeled.at("1").create(model1).thenApply(__ -> modeled.at("2").create(model2));
+            modeled.at("1").set(model1).thenApply(__ -> modeled.at("2").set(model2));
             ModeledCacheEvent<TestModel> event1 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
             ModeledCacheEvent<TestModel> event2 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
             Assert.assertNotNull(event1);
@@ -172,7 +172,7 @@ public class TestModeledCaches extends CompletableBaseClassForTests
             TestModel model2 = new TestModel("d", "e", "f", 10, BigInteger.ONE);
             TestModel model3 = new TestModel("g", "h", "i", 100, BigInteger.ZERO);
 
-            modeled.at("1").create(model1).thenApply(__ -> modeled.at("1").at("2").create(model2).thenApply(___ -> modeled.at("1").at("2").at("3").create(model3)));
+            modeled.at("1").set(model1).thenApply(__ -> modeled.at("1").at("2").set(model2).thenApply(___ -> modeled.at("1").at("2").at("3").set(model3)));
             ModeledCacheEvent<TestModel> event1 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
             ModeledCacheEvent<TestModel> event2 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);
             ModeledCacheEvent<TestModel> event3 = events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS);

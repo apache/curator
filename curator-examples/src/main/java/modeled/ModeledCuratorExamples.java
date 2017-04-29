@@ -43,11 +43,11 @@ public class ModeledCuratorExamples
     public static void createOrUpdate(ModeledCuratorFramework<PersonModel> modeled, PersonModel model)
     {
         // change the affected path to be modeled's base path plus id: i.e. "/example/path/{id}"
-        ModeledCuratorFramework<PersonModel> atId = modeled.at(model.getId());
+        ModeledCuratorFramework<PersonModel> atId = modeled.at(model.getId().getId());
 
         // by default ModeledCuratorFramework instances update the node if it already exists
         // so this will either create or update the node
-        atId.create(model); // note - this is async
+        atId.set(model); // note - this is async
     }
 
     public static void readPerson(ModeledCuratorFramework<PersonModel> modeled, String id, Consumer<PersonModel> receiver)

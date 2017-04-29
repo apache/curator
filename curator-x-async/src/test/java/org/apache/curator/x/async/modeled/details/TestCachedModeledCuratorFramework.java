@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -29,7 +28,6 @@ import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
-import org.apache.curator.x.async.modeled.caching.CachingOption;
 import org.apache.curator.x.async.modeled.models.TestSimpleModel;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -75,7 +73,7 @@ public class TestCachedModeledCuratorFramework extends CompletableBaseClassForTe
         complete(client.read());
         Assert.assertEquals(counter.get(), 0);
 
-        complete(client.create(new TestSimpleModel("test", 10)));
+        complete(client.set(new TestSimpleModel("test", 10)));
         Assert.assertEquals(counter.get(), 0);
 
         timing.sleepABit();
@@ -84,7 +82,7 @@ public class TestCachedModeledCuratorFramework extends CompletableBaseClassForTe
         Assert.assertEquals(counter.get(), 1);
         counter.set(0);
 
-        complete(client.create(new TestSimpleModel("test2", 20)));
+        complete(client.set(new TestSimpleModel("test2", 20)));
         Assert.assertEquals(counter.get(), 0);
 
         timing.sleepABit();

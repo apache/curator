@@ -56,28 +56,28 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
             private boolean compressed = false;
 
             @Override
-            public AsyncPathable<CuratorOp> withMode(CreateMode createMode)
+            public AsyncPathAndBytesable<CuratorOp> withMode(CreateMode createMode)
             {
                 this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
                 return this;
             }
 
             @Override
-            public AsyncPathable<CuratorOp> withACL(List<ACL> aclList)
+            public AsyncPathAndBytesable<CuratorOp> withACL(List<ACL> aclList)
             {
                 this.aclList = aclList;
                 return this;
             }
 
             @Override
-            public AsyncPathable<CuratorOp> compressed()
+            public AsyncPathAndBytesable<CuratorOp> compressed()
             {
                 compressed = true;
                 return this;
             }
 
             @Override
-            public AsyncPathable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed)
+            public AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed)
             {
                 this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
                 this.aclList = aclList;

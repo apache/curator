@@ -19,6 +19,8 @@
 package org.apache.curator.x.async.modeled;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.caching.Caching;
 import org.apache.zookeeper.data.Stat;
@@ -85,7 +87,7 @@ public interface ModeledCuratorFramework<T>
      * @return AsyncStage
      * @see org.apache.curator.x.async.AsyncStage
      */
-    AsyncStage<String> create(T model);
+    AsyncStage<String> set(T model);
 
     /**
      * Create (or update depending on build options) a ZNode at this instance's path with a serialized
@@ -96,7 +98,7 @@ public interface ModeledCuratorFramework<T>
      * @return AsyncStage
      * @see org.apache.curator.x.async.AsyncStage
      */
-    AsyncStage<String> create(T model, Stat storingStatIn);
+    AsyncStage<String> set(T model, Stat storingStatIn);
 
     /**
      * Read the ZNode at this instance's path and deserialize into a model
@@ -168,4 +170,76 @@ public interface ModeledCuratorFramework<T>
      * @see org.apache.curator.x.async.AsyncStage
      */
     AsyncStage<List<ZPath>> getChildren();
+
+    /**
+     * Create operation instance that can be passed among other operations to
+     * {@link #inTransaction(java.util.List)} to be executed as a single transaction. Note:
+     * due to ZooKeeper transaction limits, this is a _not_ a "set or update" operation but only
+     * a create operation and will generate an error if the node already exists.
+     *
+     * @param model the model
+     * @return operation
+     */
+    CuratorOp createOp(T model);
+
+    /**
+     * Update operation instance that can be passed among other operations to
+     * {@link #inTransaction(java.util.List)} to be executed as a single transaction.
+     *
+     * @param model the model
+     * @return operation
+     */
+    CuratorOp updateOp(T model);
+
+    /**
+     * Create operation instance that can be passed among other operations to
+     * {@link #inTransaction(java.util.List)} to be executed as a single transaction.
+     *
+     * @param model the model
+     * @param version update version to use
+     * @return operation
+     */
+    CuratorOp updateOp(T model, int version);
+
+    /**
+     * Delete operation instance that can be passed among other operations to
+     * {@link #inTransaction(java.util.List)} to be executed as a single transaction.
+     *
+     * @return operation
+     */
+    CuratorOp deleteOp();
+
+    /**
+     * Delete operation instance that can be passed among other operations to
+     * {@link #inTransaction(java.util.List)} to be executed as a single transaction.
+     *
+     * @param version delete version to use
+     * @return operation
+     */
+    CuratorOp deleteOp(int version);
+
+    /**
+     * Check exists operation instance that can be passed among other operations to
+     * {@link #inTransaction(java.util.List)} to be executed as a single transaction.
+     *
+     * @return operation
+     */
+    CuratorOp checkExistsOp();
+
+    /**
+     * Check exists operation instance that can be passed among other operations to
+     * {@link #inTransaction(java.util.List)} to be executed as a single transaction.
+     *
+     * @param version version to use
+     * @return operation
+     */
+    CuratorOp checkExistsOp(int version);
+
+    /**
+     * Invoke ZooKeeper to commit the given operations as a single transaction.
+     *
+     * @param operations operations that make up the transaction.
+     * @return AsyncStage instance for managing the completion
+     */
+    AsyncStage<List<CuratorTransactionResult>> inTransaction(List<CuratorOp> operations);
 }
