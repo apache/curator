@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -47,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -167,9 +165,6 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     {
         return read(null);
     }
-
-    @VisibleForTesting
-    volatile AtomicInteger debugCachedReadCount = null;
 
     @Override
     public AsyncStage<T> read(Stat storingStatIn)

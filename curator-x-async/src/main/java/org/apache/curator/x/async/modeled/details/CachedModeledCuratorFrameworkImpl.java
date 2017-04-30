@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,6 +51,9 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
         this.path = Objects.requireNonNull(path, "path cannot be null");
     }
+
+    @VisibleForTesting
+    volatile AtomicInteger debugCachedReadCount = null;
 
     @Override
     public ModeledCache<T> getCache()
@@ -130,6 +135,10 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
                 {
                     DataTree.copyStat(localData.getStat(), storingStatIn);
                 }
+                if ( debugCachedReadCount != null )
+                {
+                    debugCachedReadCount.incrementAndGet();
+                }
                 return new ModelStage<>(model);
             }
         }
@@ -164,7 +173,14 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     public AsyncStage<Stat> checkExists()
     {
         Optional<ModeledCachedNode<T>> data = cache.getCurrentData(path);
-        return data.map(node -> (AsyncStage<Stat>)new ModelStage<>(node.getStat())).orElseGet(client::checkExists);
+        return data.map(node -> {
+            AsyncStage<Stat> stage = new ModelStage<>(node.getStat());
+            if ( debugCachedReadCount != null )
+            {
+                debugCachedReadCount.incrementAndGet();
+            }
+            return stage;
+        }).orElseGet(client::checkExists);
     }
 
     @Override
@@ -184,6 +200,10 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
             }
             else
             {
+                if ( debugCachedReadCount != null )
+                {
+                    debugCachedReadCount.incrementAndGet();
+                }
                 Map<ZPath, AsyncStage<T>> map = children.stream().collect(Collectors.toMap(Function.identity(), path1 -> at(path1.nodeName()).read()));
                 modelStage.complete(map);
             }
