@@ -40,6 +40,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -206,6 +207,27 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             else
             {
                 modelStage.complete(children.stream().map(child -> modelSpec.path().at(child)).collect(Collectors.toList()));
+            }
+        });
+        return modelStage;
+    }
+
+    @Override
+    public AsyncStage<Map<ZPath, AsyncStage<T>>> readChildren()
+    {
+        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(modelSpec.path().fullPath());
+        ModelStage<Map<ZPath, AsyncStage<T>>> modelStage = new ModelStage<>(asyncStage.event());
+        asyncStage.whenComplete((children, e) -> {
+            if ( e != null )
+            {
+                modelStage.completeExceptionally(e);
+            }
+            else
+            {
+                Map<ZPath, AsyncStage<T>> map = children
+                    .stream()
+                    .collect(Collectors.toMap(name -> modelSpec.path().at(name), name -> at(name).read()));
+                modelStage.complete(map);
             }
         });
         return modelStage;

@@ -24,6 +24,7 @@ import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
+import java.util.Map;
 
 public interface ModeledCuratorFramework<T>
 {
@@ -154,12 +155,20 @@ public interface ModeledCuratorFramework<T>
     AsyncStage<Stat> checkExists();
 
     /**
-     * Return the child paths of this instance's paths (in no particular order)
+     * Return the child paths of this instance's path (in no particular order)
      *
      * @return AsyncStage
      * @see org.apache.curator.x.async.AsyncStage
      */
     AsyncStage<List<ZPath>> getChildren();
+
+    /**
+     * Return the children of this instance's path
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<Map<ZPath, AsyncStage<T>>> readChildren();
 
     /**
      * Create operation instance that can be passed among other operations to
