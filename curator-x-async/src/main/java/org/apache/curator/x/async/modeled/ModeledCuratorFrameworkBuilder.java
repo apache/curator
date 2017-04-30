@@ -22,12 +22,9 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.WatchMode;
-import org.apache.curator.x.async.modeled.caching.CachingOption;
 import org.apache.curator.x.async.modeled.details.ModeledCuratorFrameworkImpl;
 import org.apache.zookeeper.WatchedEvent;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.UnaryOperator;
 
 public class ModeledCuratorFrameworkBuilder<T>
@@ -38,8 +35,6 @@ public class ModeledCuratorFrameworkBuilder<T>
     private UnaryOperator<WatchedEvent> watcherFilter;
     private UnhandledErrorListener unhandledErrorListener;
     private UnaryOperator<CuratorEvent> resultFilter;
-    private Set<CachingOption> cachingOptions = Collections.emptySet();
-    private boolean cached = false;
 
     /**
      * Build a new ModeledCuratorFramework instance
@@ -54,9 +49,7 @@ public class ModeledCuratorFrameworkBuilder<T>
             watchMode,
             watcherFilter,
             unhandledErrorListener,
-            resultFilter,
-            cachingOptions,
-            cached
+            resultFilter
         );
     }
 
@@ -122,20 +115,6 @@ public class ModeledCuratorFrameworkBuilder<T>
     public ModeledCuratorFrameworkBuilder<T> withResultFilter(UnaryOperator<CuratorEvent> resultFilter)
     {
         this.resultFilter = resultFilter;
-        return this;
-    }
-
-    public ModeledCuratorFrameworkBuilder<T> cached()
-    {
-        this.cachingOptions = Collections.emptySet();
-        this.cached = true;
-        return this;
-    }
-
-    public ModeledCuratorFrameworkBuilder<T> cached(Set<CachingOption> cachingOptions)
-    {
-        this.cachingOptions = Objects.requireNonNull(cachingOptions, "cachingOptions cannot be null");
-        this.cached = true;
         return this;
     }
 

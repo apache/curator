@@ -22,7 +22,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncStage;
-import org.apache.curator.x.async.modeled.caching.Caching;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 
@@ -59,15 +58,6 @@ public interface ModeledCuratorFramework<T>
      * @return original client
      */
     CuratorFramework unwrap();
-
-    /**
-     * Return the caching APIs. Only valid if {@link ModeledCuratorFrameworkBuilder#cached()} or
-     * {@link ModeledCuratorFrameworkBuilder#cached(java.util.Set)} was called when building the instance.
-     *
-     * @return caching APIs
-     * @throws java.lang.IllegalStateException if caching was not enabled when building the instance
-     */
-    Caching<T> caching();
 
     /**
      * Return a new Modeled Curator instance with all the same options but applying to the given child node of this Modeled Curator's

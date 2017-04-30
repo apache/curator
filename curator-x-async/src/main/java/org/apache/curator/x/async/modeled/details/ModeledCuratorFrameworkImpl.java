@@ -19,7 +19,6 @@
 package org.apache.curator.x.async.modeled.details;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -37,13 +36,9 @@ import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.CuratorModelSpec;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
-import org.apache.curator.x.async.modeled.caching.Caching;
-import org.apache.curator.x.async.modeled.caching.CachingOption;
-import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.DataTree;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -61,9 +56,8 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     private final UnhandledErrorListener unhandledErrorListener;
     private final UnaryOperator<CuratorEvent> resultFilter;
     private final AsyncCuratorFrameworkDsl dslClient;
-    private final CachingImpl<T> caching;
 
-    public static <T> ModeledCuratorFrameworkImpl<T> build(CuratorFramework client, CuratorModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, Set<CachingOption> cachingOptions, boolean cached)
+    public static <T> ModeledCuratorFrameworkImpl<T> build(CuratorFramework client, CuratorModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
     {
         boolean localIsWatched = (watchMode != null);
 
@@ -76,8 +70,6 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         AsyncCuratorFrameworkDsl dslClient = asyncClient.with(watchMode, unhandledErrorListener, resultFilter, watcherFilter);
         WatchableAsyncCuratorFramework watchableClient = localIsWatched ? dslClient.watched() : dslClient;
 
-        CachingImpl<T> caching = cached ? new CachingImpl<>(client, model.serializer(), model.path(), cachingOptions, model.createOptions()) : null;
-
         return new ModeledCuratorFrameworkImpl<>(
             asyncClient,
             dslClient,
@@ -86,12 +78,11 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             watchMode,
             watcherFilter,
             unhandledErrorListener,
-            resultFilter,
-            caching
+            resultFilter
         );
     }
 
-    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, CuratorModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, CachingImpl<T> caching)
+    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, CuratorModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
     {
         this.client = client;
         this.dslClient = dslClient;
@@ -101,20 +92,12 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         this.watcherFilter = watcherFilter;
         this.unhandledErrorListener = unhandledErrorListener;
         this.resultFilter = resultFilter;
-        this.caching = caching;
     }
 
     @Override
     public CuratorFramework unwrap()
     {
         return client.unwrap();
-    }
-
-    @Override
-    public Caching<T> caching()
-    {
-        Preconditions.checkState(caching != null, "Caching is not enabled for this instance");
-        return caching;
     }
 
     @Override
@@ -126,12 +109,8 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     @Override
     public AsyncStage<String> set(T item, Stat storingStatIn)
     {
-        long dirtyZxid = getDirtyZxid();
         byte[] bytes = modelSpec.serializer().serialize(item);
-        AsyncStage<String> asyncStage = dslClient.create().withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn).forPath(modelSpec.path().fullPath(), bytes);
-        ModelStage<String> modelStage = new ModelStage<>();
-        markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
-        return modelStage;
+        return dslClient.create().withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn).forPath(modelSpec.path().fullPath(), bytes);
     }
 
     private List<ACL> fixAclList(List<ACL> aclList)
@@ -151,23 +130,6 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     @Override
     public AsyncStage<T> read(Stat storingStatIn)
     {
-        ModeledCachedNode<T> node = getCached();
-        if ( node != null )
-        {
-            if ( node.getModel() != null )
-            {
-                if ( storingStatIn != null )
-                {
-                    DataTree.copyStat(node.getStat(), storingStatIn);
-                }
-                if ( debugCachedReadCount != null )
-                {
-                    debugCachedReadCount.incrementAndGet();
-                }
-                return new ModelStage<>(node.getModel());
-            }
-        }
-
         AsyncPathable<AsyncStage<byte[]>> next;
         if ( isCompressed() )
         {
@@ -208,28 +170,14 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     @Override
     public AsyncStage<Stat> update(T item, int version)
     {
-        long dirtyZxid = getDirtyZxid();
         byte[] bytes = modelSpec.serializer().serialize(item);
         AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dslClient.setData().compressedWithVersion(version) : dslClient.setData();
-        AsyncStage<Stat> asyncStage = next.forPath(modelSpec.path().fullPath(), bytes);
-        ModelStage<Stat> modelStage = new ModelStage<>(asyncStage.event());
-        markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
-        return modelStage;
+        return next.forPath(modelSpec.path().fullPath(), bytes);
     }
 
     @Override
     public AsyncStage<Stat> checkExists()
     {
-        ModeledCachedNode<T> node = getCached();
-        if ( node != null )
-        {
-            AsyncStage<Stat> result = new ModelStage<>(node.getStat());
-            if ( debugCachedReadCount != null )
-            {
-                debugCachedReadCount.incrementAndGet();
-            }
-            return result;
-        }
         return watchableClient.checkExists().forPath(modelSpec.path().fullPath());
     }
 
@@ -242,11 +190,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     @Override
     public AsyncStage<Void> delete(int version)
     {
-        long dirtyZxid = getDirtyZxid();
-        AsyncStage<Void> asyncStage = dslClient.delete().withVersion(-1).forPath(modelSpec.path().fullPath());
-        ModelStage<Void> modelStage = new ModelStage<>(asyncStage.event());
-        markDirtyCompleter(dirtyZxid, asyncStage, modelStage);
-        return modelStage;
+        return dslClient.delete().withVersion(-1).forPath(modelSpec.path().fullPath());
     }
 
     @Override
@@ -271,7 +215,6 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     public ModeledCuratorFramework<T> at(String child)
     {
         CuratorModelSpec<T> childModel = modelSpec.at(child);
-        CachingImpl<T> newCaching = (caching != null) ? caching.at(child) : null;
         return new ModeledCuratorFrameworkImpl<>(
             client,
             dslClient,
@@ -280,8 +223,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
             watchMode,
             watcherFilter,
             unhandledErrorListener,
-            resultFilter,
-            newCaching
+            resultFilter
         );
     }
 
@@ -346,36 +288,8 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         return client.transaction().forOperations(operations);
     }
 
-    private <U> void markDirtyCompleter(long dirtyZxid, AsyncStage<U> asyncStage, ModelStage<U> modelStage)
-    {
-        asyncStage.whenComplete((value, e) -> {
-            if ( e != null )
-            {
-                modelStage.completeExceptionally(e);
-            }
-            else
-            {
-                if ( caching != null )
-                {
-                    caching.markDirty(dirtyZxid);
-                }
-                modelStage.complete(value);
-            }
-        });
-    }
-
     private boolean isCompressed()
     {
         return modelSpec.createOptions().contains(CreateOption.compress);
-    }
-
-    private ModeledCachedNode<T> getCached()
-    {
-        return (caching != null) ? caching.getCacheIf() : null;
-    }
-
-    private long getDirtyZxid()
-    {
-        return (caching != null) ? caching.getCurrentZxid() : -1L;
     }
 }
