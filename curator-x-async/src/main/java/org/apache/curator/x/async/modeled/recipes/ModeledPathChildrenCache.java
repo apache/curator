@@ -31,7 +31,7 @@ import java.util.Optional;
  * Wraps a {@link org.apache.curator.framework.recipes.cache.PathChildrenCache} so that
  * node data can be viewed as strongly typed models.
  */
-public interface ModeledPathChildrenCache<T> extends Closeable
+public interface ModeledPathChildrenCache<T> extends ModeledCache<T>, Closeable
 {
     /**
      * Return a newly wrapped cache
@@ -85,17 +85,7 @@ public interface ModeledPathChildrenCache<T> extends Closeable
      *
      * @return list of children and data
      */
-    List<ModeledCachedNode> getCurrentData();
-
-    /**
-     * Return the modeled current data for the given path. There are no guarantees of accuracy. This is
-     * merely the most recent view of the data. If there is no child with that path
-     * {@link java.util.Optional#empty()} is returned.
-     *
-     * @param fullPath full path to the node to check
-     * @return data or null
-     */
-    Optional<ModeledCachedNode> getCurrentData(String fullPath);
+    List<ModeledCachedNode<T>> getCurrentData();
 
     /**
      * Forwards to {@link org.apache.curator.framework.recipes.cache.PathChildrenCache#clearDataBytes(String)}

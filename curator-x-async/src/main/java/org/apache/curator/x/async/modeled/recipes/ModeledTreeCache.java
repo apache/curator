@@ -25,13 +25,12 @@ import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.details.recipes.ModeledTreeCacheImpl;
 import java.io.Closeable;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Wraps a {@link org.apache.curator.framework.recipes.cache.TreeCache} so that
  * node data can be viewed as strongly typed models.
  */
-public interface ModeledTreeCache<T> extends Closeable
+public interface ModeledTreeCache<T> extends ModeledCache<T>, Closeable
 {
     /**
      * Return a newly wrapped cache
@@ -77,14 +76,4 @@ public interface ModeledTreeCache<T> extends Closeable
      * @return a possibly-empty list of children if the node is alive, or null
      */
     Map<ZPath, ModeledCachedNode<T>> getCurrentChildren(ZPath fullPath);
-
-    /**
-     * Return the modeled current data for the given path. There are no guarantees of accuracy. This is
-     * merely the most recent view of the data. If there is no node at the given path,
-     * {@link java.util.Optional#empty()} is returned.
-     *
-     * @param fullPath full path to the node to check
-     * @return data if the node is alive, or null
-     */
-    Optional<ModeledCachedNode<T>> getCurrentData(ZPath fullPath);
 }

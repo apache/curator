@@ -24,6 +24,7 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.WatchMode;
@@ -33,9 +34,12 @@ import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.api.AsyncTransactionSetDataBuilder;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
+import org.apache.curator.x.async.modeled.CachedModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.CuratorModelSpec;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
+import org.apache.curator.x.async.modeled.recipes.ModeledCache;
+import org.apache.curator.x.async.modeled.recipes.ModeledTreeCache;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -93,6 +97,45 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         this.watcherFilter = watcherFilter;
         this.unhandledErrorListener = unhandledErrorListener;
         this.resultFilter = resultFilter;
+    }
+
+    @Override
+    public CachedModeledCuratorFramework<T> cached(ModeledCache<T> cache)
+    {
+        return new CachedModeledCuratorFrameworkImpl<>(this, cache, modelSpec.path());
+    }
+
+    @Override
+    public CachedModeledCuratorFramework<T> cached()
+    {
+        TreeCache.Builder builder = TreeCache.newBuilder(client.unwrap(), modelSpec.path().fullPath());
+        builder = builder.setCacheData(true);
+        if ( modelSpec.createOptions().contains(CreateOption.compress) )
+        {
+            builder = builder.setDataIsCompressed(true);
+        }
+        TreeCache cache = builder.build();
+        ModeledTreeCache<T> wrapped = ModeledTreeCache.wrap(cache, modelSpec.serializer());
+        return new CachedModeledCuratorFrameworkImpl<T>(this, wrapped, modelSpec.path())
+        {
+            @Override
+            public void start()
+            {
+                wrapped.start();
+            }
+
+            @Override
+            public void close()
+            {
+                wrapped.close();
+            }
+        };
+    }
+
+    @Override
+    public CuratorModelSpec<T> modelSpec()
+    {
+        return modelSpec;
     }
 
     @Override

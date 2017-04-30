@@ -161,7 +161,7 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
     }
 
     @Override
-    public List<ModeledCachedNode> getCurrentData()
+    public List<ModeledCachedNode<T>> getCurrentData()
     {
         return cache.getCurrentData().stream()
             .map(data -> from(serializer, data))
@@ -169,9 +169,9 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
     }
 
     @Override
-    public Optional<ModeledCachedNode> getCurrentData(String fullPath)
+    public Optional<ModeledCachedNode<T>> getCurrentData(ZPath fullPath)
     {
-        return Optional.ofNullable(from(serializer, cache.getCurrentData(fullPath)));
+        return Optional.ofNullable(from(serializer, cache.getCurrentData(fullPath.fullPath())));
     }
 
     @Override
