@@ -38,7 +38,7 @@ public class ZPathImpl implements ZPath
 {
     public static final ZPath root = new ZPathImpl(Collections.singletonList(ZKPaths.PATH_SEPARATOR), null, null);
 
-    public static final String parameter = "\u0000";    // PathUtils.validatePath() rejects this so it's useful for this purpose
+    public static final String parameter = "";    // empty paths are illegal so it's useful for this purpose
 
     private final List<String> nodes;
     private final boolean isResolved;
@@ -142,7 +142,8 @@ public class ZPathImpl implements ZPath
     @Override
     public String toString()
     {
-        return "ZPathImpl{" + "nodes=" + nodes + '}';
+        String value = nodes.stream().map(name -> name.equals(parameter) ? "{p}" : name).collect(Collectors.joining(ZKPaths.PATH_SEPARATOR, ZKPaths.PATH_SEPARATOR, ""));
+        return "ZPathImpl{" + value + '}';
     }
 
     @Override
