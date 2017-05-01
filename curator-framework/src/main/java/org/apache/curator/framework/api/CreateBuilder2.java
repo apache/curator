@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.api;
 
-public interface CreateBuilder extends CreateBuilderMain
+public interface CreateBuilder2 extends CreateBuilderMain
 {
     /**
      * Specify a TTL when mode is {@link org.apache.zookeeper.CreateMode#PERSISTENT_WITH_TTL} or
@@ -31,6 +31,4 @@ public interface CreateBuilder extends CreateBuilderMain
      * @return this for chaining
      */
     CreateBuilderMain withTtl(long ttl);
-
-    CreateBuilder2 orSetData();
 }

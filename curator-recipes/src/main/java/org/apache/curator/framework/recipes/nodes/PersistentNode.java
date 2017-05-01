@@ -26,6 +26,7 @@ import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CreateBuilderMain;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -65,6 +66,7 @@ public class PersistentNode implements Closeable
     private final AtomicReference<String> nodePath = new AtomicReference<String>(null);
     private final String basePath;
     private final CreateMode mode;
+    private final long ttl;
     private final AtomicReference<byte[]> data = new AtomicReference<byte[]>();
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean authFailure = new AtomicBoolean(false);
@@ -169,10 +171,24 @@ public class PersistentNode implements Closeable
      */
     public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData)
     {
+        this(givenClient, mode, useProtection, basePath, initData, -1);
+    }
+
+    /**
+     * @param givenClient        client instance
+     * @param mode          creation mode
+     * @param useProtection if true, call {@link CreateBuilder#withProtection()}
+     * @param basePath the base path for the node
+     * @param initData data for the node
+     * @param ttl for ttl modes, the ttl to use
+     */
+    public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData, long ttl)
+    {
         this.useProtection = useProtection;
         this.client = Preconditions.checkNotNull(givenClient, "client cannot be null").newWatcherRemoveCuratorFramework();
         this.basePath = PathUtils.validatePath(basePath);
         this.mode = Preconditions.checkNotNull(mode, "mode cannot be null");
+        this.ttl = ttl;
         final byte[] data = Preconditions.checkNotNull(initData, "data cannot be null");
 
         backgroundCallback = new BackgroundCallback()
@@ -375,7 +391,7 @@ public class PersistentNode implements Closeable
         return this.data.get();
     }
 
-    private void deleteNode() throws Exception
+    protected void deleteNode() throws Exception
     {
         String localNodePath = nodePath.getAndSet(null);
         if ( localNodePath != null )
@@ -419,7 +435,8 @@ public class PersistentNode implements Closeable
             CreateModable<ACLBackgroundPathAndBytesable<String>> localCreateMethod = createMethod.get();
             if ( localCreateMethod == null )
             {
-                CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod = useProtection ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
+                CreateBuilderMain createBuilder = mode.isTTL() ? client.create().withTtl(ttl) : client.create();
+                CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod = useProtection ? createBuilder.creatingParentContainersIfNeeded().withProtection() : createBuilder.creatingParentContainersIfNeeded();
                 createMethod.compareAndSet(null, tempCreateMethod);
                 localCreateMethod = createMethod.get();
             }
@@ -438,20 +455,25 @@ public class PersistentNode implements Closeable
         {
             switch ( mode )
             {
-            default:
-            {
-                break;
-            }
+                default:
+                {
+                    break;
+                }
 
-            case EPHEMERAL_SEQUENTIAL:
-            {
-                return CreateMode.EPHEMERAL;    // protection case - node already set
-            }
+                case EPHEMERAL_SEQUENTIAL:
+                {
+                    return CreateMode.EPHEMERAL;    // protection case - node already set
+                }
 
-            case PERSISTENT_SEQUENTIAL:
-            {
-                return CreateMode.PERSISTENT;    // protection case - node already set
-            }
+                case PERSISTENT_SEQUENTIAL:
+                {
+                    return CreateMode.PERSISTENT;    // protection case - node already set
+                }
+
+                case PERSISTENT_SEQUENTIAL_WITH_TTL:
+                {
+                    return CreateMode.PERSISTENT_WITH_TTL;    // protection case - node already set
+                }
             }
         }
         return mode;

@@ -41,7 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
+public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
     private final CuratorFrameworkImpl client;
     private CreateMode createMode;
@@ -54,6 +54,7 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
     private String protectedId;
     private ACLing acling;
     private Stat storingStat;
+    private long ttl;
 
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
@@ -74,9 +75,10 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
         setDataIfExists = false;
         protectedId = null;
         storingStat = null;
+        ttl = -1;
     }
 
-    public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat)
+    public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat, long ttl)
     {
         this.client = client;
         this.createMode = createMode;
@@ -89,12 +91,20 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
         protectedId = null;
         this.acling = new ACLing(client.getAclProvider(), aclList);
         this.storingStat = storingStat;
+        this.ttl = ttl;
     }
 
     @Override
-    public CreateBuilderMain orSetData()
+    public CreateBuilder2 orSetData()
     {
         setDataIfExists = true;
+        return this;
+    }
+
+    @Override
+    public CreateBuilderMain withTtl(long ttl)
+    {
+        this.ttl = ttl;
         return this;
     }
 
@@ -138,7 +148,7 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
                 }
 
                 String fixedPath = client.fixForNamespace(path);
-                transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
+                transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode, ttl), OperationType.CREATE, path);
                 return context;
             }
         };
@@ -151,7 +161,8 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
         return new CreateBackgroundModeStatACLable()
         {
             @Override
-            public CreateBackgroundModeACLable storingStatIn(Stat stat) {
+            public CreateBackgroundModeACLable storingStatIn(Stat stat)
+            {
                 storingStat = stat;
                 return asCreateBackgroundModeACLable();
             }
@@ -553,80 +564,49 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("CreateBuilderImpl-Background");
             final byte[] data = operationAndData.getData().getData();
 
-            if(storingStat == null)
-            {
-                client.getZooKeeper().create
-                (
-                    operationAndData.getData().getPath(),
-                    data,
-                    acling.getAclList(operationAndData.getData().getPath()),
-                    createMode,
-                    new AsyncCallback.StringCallback()
-                    {
-                        @Override
-                        public void processResult(int rc, String path, Object ctx, String name)
+            client.getZooKeeper().create
+            (
+                operationAndData.getData().getPath(),
+                data,
+                acling.getAclList(operationAndData.getData().getPath()),
+                createMode,
+                new AsyncCallback.Create2Callback() {
+                    @Override
+                    public void processResult(int rc, String path, Object ctx, String name, Stat stat) {
+                        trace.setReturnCode(rc).setRequestBytesLength(data).setPath(path).commit();
+
+                        if ( (stat != null) && (storingStat != null) )
                         {
-                            trace.setReturnCode(rc).setRequestBytesLength(data).setPath(path).commit();
-
-                            if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
-                            {
-                                backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
-                            }
-                            else if ( (rc == KeeperException.Code.NODEEXISTS.intValue()) && setDataIfExists )
-                            {
-                                backgroundSetData(client, operationAndData, operationAndData.getData().getPath(), backgrounding);
-                            }
-                            else
-                            {
-                                sendBackgroundResponse(rc, path, ctx, name, null, operationAndData);
-                            }
+                            storingStat.setAversion(stat.getAversion());
+                            storingStat.setCtime(stat.getCtime());
+                            storingStat.setCversion(stat.getCversion());
+                            storingStat.setCzxid(stat.getCzxid());
+                            storingStat.setDataLength(stat.getDataLength());
+                            storingStat.setEphemeralOwner(stat.getEphemeralOwner());
+                            storingStat.setMtime(stat.getMtime());
+                            storingStat.setMzxid(stat.getMzxid());
+                            storingStat.setNumChildren(stat.getNumChildren());
+                            storingStat.setPzxid(stat.getPzxid());
+                            storingStat.setVersion(stat.getVersion());
                         }
-                    },
-                    backgrounding.getContext()
-                );
-            }
-            else
-            {
-                client.getZooKeeper().create
-                (
-                    operationAndData.getData().getPath(),
-                    operationAndData.getData().getData(),
-                    acling.getAclList(operationAndData.getData().getPath()),
-                    createMode,
-                    new AsyncCallback.Create2Callback() {
 
-                        @Override
-                        public void processResult(int rc, String path, Object ctx, String name, Stat stat) {
-                            trace.commit();
-
-                            if ( stat != null )
-                            {
-                                storingStat.setAversion(stat.getAversion());
-                                storingStat.setCtime(stat.getCtime());
-                                storingStat.setCversion(stat.getCversion());
-                                storingStat.setCzxid(stat.getCzxid());
-                                storingStat.setDataLength(stat.getDataLength());
-                                storingStat.setEphemeralOwner(stat.getEphemeralOwner());
-                                storingStat.setMtime(stat.getMtime());
-                                storingStat.setMzxid(stat.getMzxid());
-                                storingStat.setNumChildren(stat.getNumChildren());
-                                storingStat.setPzxid(stat.getPzxid());
-                                storingStat.setVersion(stat.getVersion());
-                            }
-
-                            if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
-                            {
-                                backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
-                            }
-                            else
-                            {
-                                sendBackgroundResponse(rc, path, ctx, name, stat, operationAndData);
-                            }
+                        if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
+                        {
+                            backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
                         }
-                    },
-                    backgrounding.getContext()
-                );
-            }
+                        else if ( (rc == KeeperException.Code.NODEEXISTS.intValue()) && setDataIfExists )
+                        {
+                            backgroundSetData(client, operationAndData, operationAndData.getData().getPath(), backgrounding);
+                        }
+                        else
+                        {
+                            sendBackgroundResponse(rc, path, ctx, name, stat, operationAndData);
+                        }
+                    }
+                },
+                backgrounding.getContext(),
+                ttl
+            );
         }
         catch ( Throwable e )
         {
@@ -1072,14 +1052,14 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
                         {
                             try
                             {
-                                createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat);
+                                createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
                             }
                             catch ( KeeperException.NoNodeException e )
                             {
                                 if ( createParentsIfNeeded )
                                 {
                                     ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
-                                    createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat);
+                                    createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
                                 }
                                 else
                                 {

@@ -43,6 +43,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     private List<ACL> aclList = null;
     private Set<CreateOption> options = Collections.emptySet();
     private Stat stat = null;
+    private long ttl = -1;
 
     AsyncCreateBuilderImpl(CuratorFrameworkImpl client, Filters filters)
     {
@@ -68,6 +69,13 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     public AsyncPathAndBytesable<AsyncStage<String>> withACL(List<ACL> aclList)
     {
         this.aclList = aclList;
+        return this;
+    }
+
+    @Override
+    public AsyncPathAndBytesable<AsyncStage<String>> withTtl(long ttl)
+    {
+        this.ttl = ttl;
         return this;
     }
 
@@ -114,6 +122,17 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     }
 
     @Override
+    public AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat, long ttl)
+    {
+        this.options = Objects.requireNonNull(options, "options cannot be null");
+        this.aclList = aclList;
+        this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
+        this.stat = stat;
+        this.ttl = ttl;
+        return this;
+    }
+
+    @Override
     public AsyncStage<String> forPath(String path)
     {
         return internalForPath(path, null, false);
@@ -137,7 +156,8 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
             options.contains(CreateOption.compress),
             options.contains(CreateOption.setDataIfExists),
             aclList,
-            stat
+            stat,
+            ttl
         );
         return safeCall(common.internalCallback, () -> useData ? builder.forPath(path, data) : builder.forPath(path));
     }
