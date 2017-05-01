@@ -77,6 +77,34 @@ public interface ZPath
     }
 
     /**
+     * Convert individual path names into a ZPath starting at the given base. E.g.
+     * if base is "/home/base" <code>ZPath.from(base, "my", "full", "path")</code>
+     * would be "/home/base/my/full/path"
+     *
+     * @param base base/starting path
+     * @param names path names
+     * @return ZPath
+     * @throws IllegalArgumentException if any of the names is invalid
+     */
+    static ZPath from(ZPath base, String... names)
+    {
+        return ZPathImpl.from(base, names);
+    }
+
+    /**
+     * Convert individual path names into a ZPath starting at the given base
+     *
+     * @param base base/starting path
+     * @param names path names
+     * @return ZPath
+     * @throws IllegalArgumentException if any of the names is invalid
+     */
+    static ZPath from(ZPath base, List<String> names)
+    {
+        return ZPathImpl.from(base, names);
+    }
+
+    /**
      * Return the special node name that can be used for replacements at runtime
      * via {@link #resolved(Object...)}
      *

@@ -34,7 +34,6 @@ import org.apache.curator.x.async.modeled.recipes.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.curator.x.async.modeled.recipes.ModeledTreeCache;
 import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -136,7 +135,7 @@ public class ModeledTreeCacheImpl<T> implements ModeledTreeCache<T>
         Map<String, ChildData> currentChildren = cache.getCurrentChildren(fullPath.fullPath());
         if ( currentChildren == null )
         {
-            return Collections.emptyMap();
+            return noChildrenValue();
         }
         return currentChildren.entrySet().stream()
             .map(entry -> new AbstractMap.SimpleEntry<>(ZPath.parse(entry.getKey()), from(serializer, entry.getValue())))

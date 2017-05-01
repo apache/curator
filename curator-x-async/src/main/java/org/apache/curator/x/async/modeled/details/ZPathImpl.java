@@ -56,17 +56,40 @@ public class ZPathImpl implements ZPath
 
     public static ZPath from(String[] names)
     {
-        return from(Arrays.asList(names));
+        return from(null, Arrays.asList(names));
     }
 
     public static ZPath from(List<String> names)
     {
+        return from(null, names);
+    }
+
+    public static ZPath from(ZPath base, String[] names)
+    {
+        return from(base, Arrays.asList(names));
+    }
+
+    public static ZPath from(ZPath base, List<String> names)
+    {
         names = Objects.requireNonNull(names, "names cannot be null");
         names.forEach(ZPathImpl::validate);
-        List<String> nodes = ImmutableList.<String>builder()
-            .add(ZKPaths.PATH_SEPARATOR)
-            .addAll(names)
-            .build();
+        ImmutableList.Builder<String> builder = ImmutableList.<String>builder();
+        if ( base != null )
+        {
+            if ( base instanceof ZPathImpl )
+            {
+                builder.addAll(((ZPathImpl)base).nodes);
+            }
+            else
+            {
+                builder.addAll(Splitter.on(ZKPaths.PATH_SEPARATOR).omitEmptyStrings().splitToList(base.fullPath()));
+            }
+        }
+        else
+        {
+            builder.add(ZKPaths.PATH_SEPARATOR);
+        }
+        List<String> nodes = builder.addAll(names).build();
         return new ZPathImpl(nodes, null, null);
     }
 

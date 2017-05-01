@@ -19,10 +19,17 @@
 package org.apache.curator.x.async.modeled.recipes;
 
 import org.apache.curator.x.async.modeled.ZPath;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ModeledCache<T>
 {
+    default Map<ZPath, ModeledCachedNode<T>> noChildrenValue()
+    {
+        return Collections.emptyMap();
+    }
+
     /**
      * Return the modeled current data for the given path. There are no guarantees of accuracy. This is
      * merely the most recent view of the data. If there is no node at the given path,
@@ -32,4 +39,13 @@ public interface ModeledCache<T>
      * @return data if the node is alive, or null
      */
     Optional<ModeledCachedNode<T>> getCurrentData(ZPath fullPath);
+
+    /**
+     * Return the modeled current set of children at the given path, mapped by child name. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @param fullPath full path to the node to check
+     * @return a possibly-empty list of children if the node is alive, or null
+     */
+    Map<ZPath, ModeledCachedNode<T>> getCurrentChildren(ZPath fullPath);
 }

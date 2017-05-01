@@ -19,6 +19,7 @@
 package org.apache.curator.x.async.modeled.details.recipes;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -166,6 +167,19 @@ public class ModeledPathChildrenCacheImpl<T> implements ModeledPathChildrenCache
         return cache.getCurrentData().stream()
             .map(data -> from(serializer, data))
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<ZPath, ModeledCachedNode<T>> getCurrentChildren(ZPath fullPath)
+    {
+        ChildData currentData = cache.getCurrentData(fullPath.fullPath());
+        if ( currentData == null )
+        {
+            return noChildrenValue();
+        }
+        Map<ZPath, ModeledCachedNode<T>> map = Maps.newHashMap();
+        map.put(fullPath, from(serializer, currentData));
+        return map;
     }
 
     @Override

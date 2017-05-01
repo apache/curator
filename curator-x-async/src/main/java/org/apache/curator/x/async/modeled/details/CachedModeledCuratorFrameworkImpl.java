@@ -19,6 +19,7 @@
 package org.apache.curator.x.async.modeled.details;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
@@ -31,6 +32,7 @@ import org.apache.curator.x.async.modeled.recipes.ModeledCache;
 import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -186,12 +188,36 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     @Override
     public AsyncStage<List<ZPath>> getChildren()
     {
+        Map<ZPath, ModeledCachedNode<T>> currentChildren = cache.getCurrentChildren(path);
+        if ( currentChildren != cache.noChildrenValue() )
+        {
+            if ( debugCachedReadCount != null )
+            {
+                debugCachedReadCount.incrementAndGet();
+            }
+            return new ModelStage<>(Lists.newArrayList(currentChildren.keySet()));
+        }
         return client.getChildren();
     }
 
     @Override
     public AsyncStage<Map<ZPath, AsyncStage<T>>> readChildren()
     {
+        Map<ZPath, ModeledCachedNode<T>> currentChildren = cache.getCurrentChildren(path);
+        if ( currentChildren != cache.noChildrenValue() )
+        {
+            if ( debugCachedReadCount != null )
+            {
+                debugCachedReadCount.incrementAndGet();
+            }
+            Map<ZPath, AsyncStage<T>> children = currentChildren.entrySet()
+                .stream()
+                .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue().getModel()))
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> new ModelStage<>(e.getValue())));
+            return new ModelStage<>(children);
+        }
+
         ModelStage<Map<ZPath, AsyncStage<T>>> modelStage = new ModelStage<>();
         client.getChildren().whenComplete((children, e) -> {
             if ( e != null )

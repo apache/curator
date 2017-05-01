@@ -55,9 +55,7 @@ public interface ModeledCuratorFramework<T>
 
     /**
      * Use the given cache as a front for this modeled instance. All read APIs check the cache
-     * first and, if available, return the values from the cache. Note: you must call
-     * {@link org.apache.curator.x.async.modeled.CachedModeledCuratorFramework#start()} and
-     * {@link CachedModeledCuratorFramework#close()} to start/stop
+     * first and, if available, return the values from the cache.
      * the cache
      *
      * @param cache cache to use
@@ -66,8 +64,10 @@ public interface ModeledCuratorFramework<T>
     CachedModeledCuratorFramework<T> cached(ModeledCache<T> cache);
 
     /**
-     * Use the an internally created cache as a front for this modeled instance. All read APIs check the cache
-     * first and, if available, return the values from the cache
+     * Use an internally created cache as a front for this modeled instance. All read APIs check the cache
+     * first and, if available, return the values from the cache. Note: you must call
+     * {@link org.apache.curator.x.async.modeled.CachedModeledCuratorFramework#start()} and
+     * {@link CachedModeledCuratorFramework#close()} to start/stop
      *
      * @return wrapped instance
      */
