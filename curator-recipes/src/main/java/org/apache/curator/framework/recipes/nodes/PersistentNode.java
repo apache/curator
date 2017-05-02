@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.base.Function;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
@@ -30,6 +31,7 @@ import org.apache.curator.framework.api.CreateBuilderMain;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -73,6 +75,7 @@ public class PersistentNode implements Closeable
     private final BackgroundCallback backgroundCallback;
     private final boolean useProtection;
     private final AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>> createMethod = new AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>>(null);
+    private final ListenerContainer<PersistentNodeListener> listeners = new ListenerContainer<PersistentNodeListener>();
     private final CuratorWatcher watcher = new CuratorWatcher()
     {
         @Override
@@ -132,8 +135,8 @@ public class PersistentNode implements Closeable
             {
                 //Update is ok, mark initialisation as complete if required.
                 initialisationComplete();
-            } 
-            else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() ) 
+            }
+            else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
             {
                 log.warn("Client does not have authorisation to write node at path {}", event.getPath());
                 authFailure.set(true);
@@ -267,6 +270,7 @@ public class PersistentNode implements Closeable
             else
             {
                 initialisationComplete();
+                notifyListeners();
             }
         }
         else
@@ -349,6 +353,16 @@ public class PersistentNode implements Closeable
         }
 
         client.removeWatchers();
+    }
+
+    /**
+     * Returns the listenable
+     *
+     * @return listenable
+     */
+    public ListenerContainer<PersistentNodeListener> getListenable()
+    {
+        return listeners;
     }
 
     /**
@@ -491,6 +505,30 @@ public class PersistentNode implements Closeable
         {
             client.checkExists().usingWatcher(watcher).inBackground(checkExistsCallback).forPath(localNodePath);
         }
+    }
+
+    private void notifyListeners()
+    {
+        final String path = getActualPath();
+        listeners.forEach(
+             new Function<PersistentNodeListener, Void>()
+             {
+                 @Override
+                 public Void apply(PersistentNodeListener listener)
+                 {
+                     try
+                    {
+                        listener.nodeCreated(path);
+                    }
+                    catch ( Exception e )
+                    {
+                        ThreadUtils.checkInterrupted(e);
+                        log.error("From PersistentNode listener", e);
+                    }
+                    return null;
+                }
+             }
+        );
     }
 
     private boolean isActive()
