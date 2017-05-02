@@ -22,30 +22,30 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.WatchMode;
-import org.apache.curator.x.async.modeled.details.ModeledCuratorFrameworkImpl;
+import org.apache.curator.x.async.modeled.details.ModeledFrameworkImpl;
 import org.apache.zookeeper.WatchedEvent;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
-public class ModeledCuratorFrameworkBuilder<T>
+public class ModeledFrameworkBuilder<T>
 {
-    private final CuratorFramework client;
-    private final ModelSpec<T> model;
+    private CuratorFramework client;
+    private ModelSpec<T> modelSpec;
     private WatchMode watchMode;
     private UnaryOperator<WatchedEvent> watcherFilter;
     private UnhandledErrorListener unhandledErrorListener;
     private UnaryOperator<CuratorEvent> resultFilter;
 
     /**
-     * Build a new ModeledCuratorFramework instance
+     * Build a new ModeledFramework instance
      *
-     * @return new ModeledCuratorFramework instance
+     * @return new ModeledFramework instance
      */
-    public ModeledCuratorFramework<T> build()
+    public ModeledFramework<T> build()
     {
-        return ModeledCuratorFrameworkImpl.build(
+        return ModeledFrameworkImpl.build(
             client,
-            model,
+            modelSpec,
             watchMode,
             watcherFilter,
             unhandledErrorListener,
@@ -60,7 +60,7 @@ public class ModeledCuratorFrameworkBuilder<T>
      * @return this for chaining
      * @see org.apache.curator.x.async.AsyncStage#event()
      */
-    public ModeledCuratorFrameworkBuilder<T> watched()
+    public ModeledFrameworkBuilder<T> watched()
     {
         this.watchMode = WatchMode.stateChangeAndSuccess;
         return this;
@@ -73,7 +73,7 @@ public class ModeledCuratorFrameworkBuilder<T>
      * @return this for chaining
      * @see org.apache.curator.x.async.AsyncStage#event()
      */
-    public ModeledCuratorFrameworkBuilder<T> watched(WatchMode watchMode)
+    public ModeledFrameworkBuilder<T> watched(WatchMode watchMode)
     {
         this.watchMode = watchMode;
         return this;
@@ -87,7 +87,7 @@ public class ModeledCuratorFrameworkBuilder<T>
      * @return this for chaining
      * @see org.apache.curator.x.async.AsyncStage#event()
      */
-    public ModeledCuratorFrameworkBuilder<T> watched(WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter)
+    public ModeledFrameworkBuilder<T> watched(WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter)
     {
         this.watchMode = watchMode;
         this.watcherFilter = watcherFilter;
@@ -100,7 +100,7 @@ public class ModeledCuratorFrameworkBuilder<T>
      * @param unhandledErrorListener listener
      * @return this for chaining
      */
-    public ModeledCuratorFrameworkBuilder<T> withUnhandledErrorListener(UnhandledErrorListener unhandledErrorListener)
+    public ModeledFrameworkBuilder<T> withUnhandledErrorListener(UnhandledErrorListener unhandledErrorListener)
     {
         this.unhandledErrorListener = unhandledErrorListener;
         return this;
@@ -112,15 +112,43 @@ public class ModeledCuratorFrameworkBuilder<T>
      * @param resultFilter filter
      * @return this for chaining
      */
-    public ModeledCuratorFrameworkBuilder<T> withResultFilter(UnaryOperator<CuratorEvent> resultFilter)
+    public ModeledFrameworkBuilder<T> withResultFilter(UnaryOperator<CuratorEvent> resultFilter)
     {
         this.resultFilter = resultFilter;
         return this;
     }
 
-    ModeledCuratorFrameworkBuilder(CuratorFramework client, ModelSpec<T> model)
+    /**
+     * Change the model spec to use
+     *
+     * @param modelSpec model spec
+     * @return this for chaining
+     */
+    public ModeledFrameworkBuilder<T> withModelSpec(ModelSpec<T> modelSpec)
+    {
+        this.modelSpec = Objects.requireNonNull(modelSpec, "modelSpec cannot be null");
+        return this;
+    }
+
+    /**
+     * Change the client to use
+     *
+     * @param client new client
+     * @return this for chaining
+     */
+    public ModeledFrameworkBuilder<T> withClient(CuratorFramework client)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
-        this.model = Objects.requireNonNull(model, "model cannot be null");
+        return this;
+    }
+
+    ModeledFrameworkBuilder()
+    {
+    }
+
+    ModeledFrameworkBuilder(CuratorFramework client, ModelSpec<T> modelSpec)
+    {
+        this.client = Objects.requireNonNull(client, "client cannot be null");
+        this.modelSpec = Objects.requireNonNull(modelSpec, "modelSpec cannot be null");
     }
 }

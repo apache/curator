@@ -5,7 +5,7 @@ opposed to raw byte arrays. For example:
 
 {code}
 // let "client" be a CuratorFramework instance
-ModeledCuratorFramework<MyModel> modeled = ModeledCuratorFramework.wrap(client, path, serializer);
+ModeledFramework<MyModel> modeled = ModeledCuratorFramework.wrap(client, path, serializer);
 modeled.create(new MyModel());
 {code}
 
@@ -35,7 +35,7 @@ ZooKeeper paths.
 
 h4. Building
 
-You build a {{ModeledCuratorFramework}} instance using either the builder or helper wrapper. All
+You build a {{ModeledFramework}} instance using either the builder or helper wrapper. All
 options needed to use the ZPath are specified at build time:
 
 * whether and/or how to watch the ZNode
@@ -45,7 +45,7 @@ options needed to use the ZPath are specified at build time:
 * any ACLs
 * etc.
 
-These options are bound into the {{ModeledCuratorFramework}} instance and applied as needed.
+These options are bound into the {{ModeledFramework}} instance and applied as needed.
 
 h2. Example
 
@@ -75,7 +75,7 @@ public class Person {
 }
 {code}
 
-We can now build a {{ModeledCuratorFramework}} that manages {{Person}} instances at a given path:
+We can now build a {{ModeledFramework}} that manages {{Person}} instances at a given path:
 
 {code}
 // let "client" be a CuratorFramework instance

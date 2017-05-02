@@ -38,7 +38,7 @@ opposed to raw byte arrays. For example:
 
 {code}
 // let "client" be a CuratorFramework instance
-ModeledCuratorFramework<MyModel> modeled = ModeledCuratorFramework.wrap(client, path, serializer);
+ModeledFramework<MyModel> modeled = ModeledCuratorFramework.wrap(client, path, serializer);
 modeled.create(new MyModel());
 {code}
 

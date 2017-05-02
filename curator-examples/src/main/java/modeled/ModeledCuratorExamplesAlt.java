@@ -18,7 +18,7 @@
  */
 package modeled;
 
-import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.ModeledFramework;
 import java.util.function.Consumer;
 
 public class ModeledCuratorExamplesAlt
@@ -26,16 +26,16 @@ public class ModeledCuratorExamplesAlt
     public static void createOrUpdate(PersonModelSpec modelSpec, PersonModel model)
     {
         // change the affected path to be modeled's base path plus id: i.e. "/example/path/{id}"
-        ModeledCuratorFramework<PersonModel> resolved = modelSpec.resolved(model.getContainerType(), model.getId());
+        ModeledFramework<PersonModel> resolved = modelSpec.resolved(model.getContainerType(), model.getId());
 
-        // by default ModeledCuratorFramework instances update the node if it already exists
+        // by default ModeledFramework instances update the node if it already exists
         // so this will either create or update the node
         resolved.set(model); // note - this is async
     }
 
     public static void readPerson(PersonModelSpec modelSpec, ContainerType containerType, PersonId id, Consumer<PersonModel> receiver)
     {
-        ModeledCuratorFramework<PersonModel> resolved = modelSpec.resolved(containerType, id);
+        ModeledFramework<PersonModel> resolved = modelSpec.resolved(containerType, id);
 
         // read the person with the given ID and asynchronously call the receiver after it is read
         resolved.read().whenComplete((person, exception) -> {

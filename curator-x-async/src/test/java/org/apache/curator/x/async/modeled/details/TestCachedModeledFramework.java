@@ -23,11 +23,11 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.CompletableBaseClassForTests;
-import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSerializer;
-import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.models.TestSimpleModel;
 import org.testng.Assert;
@@ -36,11 +36,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TestCachedModeledCuratorFramework extends CompletableBaseClassForTests
+public class TestCachedModeledFramework extends CompletableBaseClassForTests
 {
     private static final ZPath path = ZPath.parse("/test/path");
     private CuratorFramework rawClient;
-    private CachedModeledCuratorFramework<TestSimpleModel> client;
+    private CachedModeledFramework<TestSimpleModel> client;
 
     @BeforeMethod
     @Override
@@ -52,7 +52,7 @@ public class TestCachedModeledCuratorFramework extends CompletableBaseClassForTe
         rawClient.start();
 
         ModelSerializer<TestSimpleModel> serializer = new JacksonModelSerializer<>(TestSimpleModel.class);
-        client = ModeledCuratorFramework.builder(rawClient, ModelSpec.builder(path, serializer).build()).build().cached();
+        client = ModeledFramework.builder(rawClient, ModelSpec.builder(path, serializer).build()).build().cached();
     }
 
     @AfterMethod

@@ -18,11 +18,11 @@
  */
 package org.apache.curator.x.async.modeled.cached;
 
-import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import java.io.Closeable;
 
-public interface CachedModeledCuratorFramework<T> extends ModeledCuratorFramework<T>, Closeable
+public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeable
 {
     /**
      * Return the cache instance
@@ -46,17 +46,17 @@ public interface CachedModeledCuratorFramework<T> extends ModeledCuratorFramewor
      * {@inheritDoc}
      */
     @Override
-    CachedModeledCuratorFramework<T> at(String child);
+    CachedModeledFramework<T> at(String child);
 
     /**
      * {@inheritDoc}
      */
     @Override
-    CachedModeledCuratorFramework<T> at(ZPath path);
+    CachedModeledFramework<T> at(ZPath path);
 
     /**
      * {@inheritDoc}
      */
     @Override
-    CachedModeledCuratorFramework<T> resolved(T model);
+    CachedModeledFramework<T> resolved(T model);
 }

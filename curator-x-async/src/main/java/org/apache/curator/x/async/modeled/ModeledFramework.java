@@ -22,45 +22,57 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncStage;
-import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 
-public interface ModeledCuratorFramework<T>
+public interface ModeledFramework<T>
 {
     /**
-     * Return a new ModeledCuratorFramework for the given model
+     * Return a new ModeledFramework for the given model
      *
      * @param client Curator client
      * @param model the model
      * @return new Modeled Curator instance
      */
-    static <T> ModeledCuratorFramework<T> wrap(CuratorFramework client, ModelSpec<T> model)
+    static <T> ModeledFramework<T> wrap(CuratorFramework client, ModelSpec<T> model)
     {
         return builder(client, model).build();
     }
 
     /**
-     * Start a new ModeledCuratorFrameworkBuilder for the given model
+     * Start a new ModeledFrameworkBuilder for the given model
      *
      * @param client Curator client
      * @param model the model
      * @return builder
      */
-    static <T> ModeledCuratorFrameworkBuilder<T> builder(CuratorFramework client, ModelSpec<T> model)
+    static <T> ModeledFrameworkBuilder<T> builder(CuratorFramework client, ModelSpec<T> model)
     {
-        return new ModeledCuratorFrameworkBuilder<>(client, model);
+        return new ModeledFrameworkBuilder<>(client, model);
+    }
+
+    /**
+     * Start a new ModeledFrameworkBuilder. A client and model must be provided prior to the instance
+     * being built via {@link org.apache.curator.x.async.modeled.ModeledFrameworkBuilder#withClient(org.apache.curator.framework.CuratorFramework)}
+     * and {@link org.apache.curator.x.async.modeled.ModeledFrameworkBuilder#withModelSpec(ModelSpec)}
+     *
+     * @return builder
+     */
+    static <T> ModeledFrameworkBuilder<T> builder()
+    {
+        return new ModeledFrameworkBuilder<>();
     }
 
     /**
      * Use an internally created cache as a front for this modeled instance. All read APIs check the cache
      * first and, if available, return the values from the cache. Note: you must call
-     * {@link org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework#start()} and
-     * {@link CachedModeledCuratorFramework#close()} to start/stop
+     * {@link org.apache.curator.x.async.modeled.cached.CachedModeledFramework#start()} and
+     * {@link org.apache.curator.x.async.modeled.cached.CachedModeledFramework#close()} to start/stop
      *
      * @return wrapped instance
      */
-    CachedModeledCuratorFramework<T> cached();
+    CachedModeledFramework<T> cached();
 
     /**
      * Returns the client that was originally passed to {@link #wrap(org.apache.curator.framework.CuratorFramework, ModelSpec)} or
@@ -85,7 +97,7 @@ public interface ModeledCuratorFramework<T>
      * @param child child node.
      * @return new Modeled Curator instance
      */
-    ModeledCuratorFramework<T> at(String child);
+    ModeledFramework<T> at(String child);
 
     /**
      * Return a Modeled Curator instance with all the same options but using the given path.
@@ -93,7 +105,7 @@ public interface ModeledCuratorFramework<T>
      * @param path new path
      * @return new Modeled Curator instance
      */
-    ModeledCuratorFramework<T> at(ZPath path);
+    ModeledFramework<T> at(ZPath path);
 
     /**
      * Return a new Modeled Curator instance with all the same options but using the
@@ -103,7 +115,7 @@ public interface ModeledCuratorFramework<T>
      * @param model model to use to generate the name
      * @return new Modeled Curator instance
      */
-    ModeledCuratorFramework<T> resolved(T model);
+    ModeledFramework<T> resolved(T model);
 
     /**
      * Create (or update depending on build options) a ZNode at this instance's path with a serialized

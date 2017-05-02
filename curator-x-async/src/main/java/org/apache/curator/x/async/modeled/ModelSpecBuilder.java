@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 
 public class ModelSpecBuilder<T>
 {
@@ -38,7 +37,6 @@ public class ModelSpecBuilder<T>
     private List<ACL> aclList = Collections.emptyList();
     private Set<CreateOption> createOptions = Collections.emptySet();
     private Set<DeleteOption> deleteOptions = Collections.emptySet();
-    private Function<T, String> nodeName = Object::toString;
 
     /**
      * Build a new ModelSpec instance
@@ -47,7 +45,7 @@ public class ModelSpecBuilder<T>
      */
     public ModelSpec<T> build()
     {
-        return new ModelSpecImpl<>(path, serializer, createMode, aclList, createOptions, deleteOptions, nodeName);
+        return new ModelSpecImpl<>(path, serializer, createMode, aclList, createOptions, deleteOptions);
     }
 
     /**
@@ -95,19 +93,6 @@ public class ModelSpecBuilder<T>
     public ModelSpecBuilder<T> withDeleteOptions(Set<DeleteOption> deleteOptions)
     {
         this.deleteOptions = (deleteOptions != null) ? ImmutableSet.copyOf(deleteOptions) : null;
-        return this;
-    }
-
-    /**
-     * Functor that returns the node name to use for a model instance. Default is to call
-     * <code>toString()</code> on the model instance.
-     *
-     * @param nodeName naming functor
-     * @return this for chaining
-     */
-    public ModelSpecBuilder<T> withNodeName(Function<T, String> nodeName)
-    {
-        this.nodeName = Objects.requireNonNull(nodeName, "nodeName cannot be null");
         return this;
     }
 

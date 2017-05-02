@@ -34,9 +34,9 @@ public interface AsyncStage<T> extends CompletionStage<T>
      * </p>
      *
      * <p>
-     *     Also, applies to {@link org.apache.curator.x.async.modeled.ModeledCuratorFramework}
-     *     when {@link org.apache.curator.x.async.modeled.ModeledCuratorFrameworkBuilder#watched(WatchMode)}
-     *     or {@link org.apache.curator.x.async.modeled.ModeledCuratorFrameworkBuilder#watched(WatchMode, java.util.function.UnaryOperator)}
+     *     Also, applies to {@link org.apache.curator.x.async.modeled.ModeledFramework}
+     *     when {@link org.apache.curator.x.async.modeled.ModeledFrameworkBuilder#watched(WatchMode)}
+     *     or {@link org.apache.curator.x.async.modeled.ModeledFrameworkBuilder#watched(WatchMode, java.util.function.UnaryOperator)}
      *     is used.
      * </p>
      *

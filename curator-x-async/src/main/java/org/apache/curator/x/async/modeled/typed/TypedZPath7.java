@@ -18,11 +18,13 @@
  */
 package org.apache.curator.x.async.modeled.typed;
 
+import org.apache.curator.x.async.modeled.NodeName;
 import org.apache.curator.x.async.modeled.ZPath;
 
 /**
  * Same as {@link org.apache.curator.x.async.modeled.typed.TypedZPath}, but with 7 parameters
  */
+@FunctionalInterface
 public interface TypedZPath7<T1, T2, T3, T4, T5, T6, T7>
 {
     ZPath resolved(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7);
@@ -46,6 +48,6 @@ public interface TypedZPath7<T1, T2, T3, T4, T5, T6, T7>
      */
     static <T1, T2, T3, T4, T5, T6, T7> TypedZPath7<T1, T2, T3, T4, T5, T6, T7> from(ZPath path)
     {
-        return path::resolved;
+        return (p1, p2, p3, p4, p5, p6, p7) -> path.resolved(NodeName.nameFrom(p1), NodeName.nameFrom(p2), NodeName.nameFrom(p3), NodeName.nameFrom(p4), NodeName.nameFrom(p5), NodeName.nameFrom(p6), NodeName.nameFrom(p7));
     }
 }

@@ -3,6 +3,7 @@ package org.apache.curator.x.async.modeled.typed;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModelSpecBuilder;
 
+@FunctionalInterface
 public interface TypedModelSpec<M, P1>
 {
     /**

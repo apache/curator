@@ -25,10 +25,10 @@ import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModelSpec;
-import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
-import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -37,17 +37,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramework<T>
+class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
 {
-    private final ModeledCuratorFramework<T> client;
+    private final ModeledFramework<T> client;
     private final ModeledCacheImpl<T> cache;
 
-    CachedModeledCuratorFrameworkImpl(ModeledCuratorFramework<T> client)
+    CachedModeledFrameworkImpl(ModeledFramework<T> client)
     {
         this(client, new ModeledCacheImpl<>(client.unwrap(), client.modelSpec().path(), client.modelSpec().serializer(), client.modelSpec().createOptions().contains(CreateOption.compress)));
     }
 
-    private CachedModeledCuratorFrameworkImpl(ModeledCuratorFramework<T> client, ModeledCacheImpl<T> cache)
+    private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache)
     {
         this.client = client;
         this.cache = cache;
@@ -72,7 +72,7 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     }
 
     @Override
-    public CachedModeledCuratorFramework<T> cached()
+    public CachedModeledFramework<T> cached()
     {
         return this;
     }
@@ -90,21 +90,21 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     }
 
     @Override
-    public CachedModeledCuratorFramework<T> at(String child)
+    public CachedModeledFramework<T> at(String child)
     {
-        return new CachedModeledCuratorFrameworkImpl<>(client.at(child), cache);
+        return new CachedModeledFrameworkImpl<>(client.at(child), cache);
     }
 
     @Override
-    public CachedModeledCuratorFramework<T> at(ZPath path)
+    public CachedModeledFramework<T> at(ZPath path)
     {
-        return new CachedModeledCuratorFrameworkImpl<>(client.at(path), cache);
+        return new CachedModeledFrameworkImpl<>(client.at(path), cache);
     }
 
     @Override
-    public CachedModeledCuratorFramework<T> resolved(T model)
+    public CachedModeledFramework<T> resolved(T model)
     {
-        return new CachedModeledCuratorFrameworkImpl<>(client.resolved(model), cache);
+        return new CachedModeledFrameworkImpl<>(client.resolved(model), cache);
     }
 
     @Override

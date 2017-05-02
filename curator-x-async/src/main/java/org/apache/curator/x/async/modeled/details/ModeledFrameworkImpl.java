@@ -33,9 +33,9 @@ import org.apache.curator.x.async.api.AsyncTransactionSetDataBuilder;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.ModelSpec;
-import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
-import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T>
+public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
 {
     private final AsyncCuratorFramework client;
     private final WatchableAsyncCuratorFramework watchableClient;
@@ -56,7 +56,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     private final UnaryOperator<CuratorEvent> resultFilter;
     private final AsyncCuratorFrameworkDsl dslClient;
 
-    public static <T> ModeledCuratorFrameworkImpl<T> build(CuratorFramework client, ModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
+    public static <T> ModeledFrameworkImpl<T> build(CuratorFramework client, ModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
     {
         boolean localIsWatched = (watchMode != null);
 
@@ -69,7 +69,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         AsyncCuratorFrameworkDsl dslClient = asyncClient.with(watchMode, unhandledErrorListener, resultFilter, watcherFilter);
         WatchableAsyncCuratorFramework watchableClient = localIsWatched ? dslClient.watched() : dslClient;
 
-        return new ModeledCuratorFrameworkImpl<>(
+        return new ModeledFrameworkImpl<>(
             asyncClient,
             dslClient,
             watchableClient,
@@ -81,7 +81,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         );
     }
 
-    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, ModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
+    private ModeledFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, ModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
     {
         this.client = client;
         this.dslClient = dslClient;
@@ -94,9 +94,9 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public CachedModeledCuratorFramework<T> cached()
+    public CachedModeledFramework<T> cached()
     {
-        return new CachedModeledCuratorFrameworkImpl<>(this);
+        return new CachedModeledFrameworkImpl<>(this);
     }
 
     @Override
@@ -220,10 +220,10 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public ModeledCuratorFramework<T> at(String child)
+    public ModeledFramework<T> at(String child)
     {
         ModelSpec<T> newModelSpec = modelSpec.at(child);
-        return new ModeledCuratorFrameworkImpl<>(
+        return new ModeledFrameworkImpl<>(
             client,
             dslClient,
             watchableClient,
@@ -236,10 +236,10 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public ModeledCuratorFramework<T> at(ZPath path)
+    public ModeledFramework<T> at(ZPath path)
     {
         ModelSpec<T> newModelSpec = modelSpec.at(path);
-        return new ModeledCuratorFrameworkImpl<>(
+        return new ModeledFrameworkImpl<>(
             client,
             dslClient,
             watchableClient,
@@ -252,10 +252,10 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public ModeledCuratorFramework<T> resolved(T model)
+    public ModeledFramework<T> resolved(T model)
     {
         ModelSpec<T> newModelSpec = modelSpec.resolved(model);
-        return new ModeledCuratorFrameworkImpl<>(
+        return new ModeledFrameworkImpl<>(
             client,
             dslClient,
             watchableClient,

@@ -25,16 +25,16 @@ import org.apache.curator.framework.schema.SchemaValidator;
 import org.apache.curator.framework.schema.SchemaViolation;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.DeleteOption;
-import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModelSerializer;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ZPath;
+import org.apache.curator.x.async.modeled.NodeName;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
 {
@@ -45,9 +45,8 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     private final Set<CreateOption> createOptions;
     private final Set<DeleteOption> deleteOptions;
     private final AtomicReference<Schema> schema = new AtomicReference<>();
-    private final Function<T, String> nodeName;
 
-    public ModelSpecImpl(ZPath path, ModelSerializer<T> serializer, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions, Function<T, String> nodeName)
+    public ModelSpecImpl(ZPath path, ModelSerializer<T> serializer, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions)
     {
         this.path = Objects.requireNonNull(path, "path cannot be null");
         this.serializer = Objects.requireNonNull(serializer, "serializer cannot be null");
@@ -55,7 +54,6 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
         this.aclList = ImmutableList.copyOf(Objects.requireNonNull(aclList, "aclList cannot be null"));
         this.createOptions = ImmutableSet.copyOf(Objects.requireNonNull(createOptions, "createOptions cannot be null"));
         this.deleteOptions = ImmutableSet.copyOf(Objects.requireNonNull(deleteOptions, "deleteOptions cannot be null"));
-        this.nodeName = Objects.requireNonNull(nodeName, "nodeName cannot be null");
     }
 
     @Override
@@ -67,13 +65,13 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     @Override
     public ModelSpec<T> resolved(T model)
     {
-        return at(path.at(nodeName.apply(model)));
+        return at(path.at(NodeName.nameFrom(model)));
     }
 
     @Override
     public ModelSpec<T> at(ZPath newPath)
     {
-        return new ModelSpecImpl<>(newPath, serializer, createMode, aclList, createOptions, deleteOptions, nodeName);
+        return new ModelSpecImpl<>(newPath, serializer, createMode, aclList, createOptions, deleteOptions);
     }
 
     @Override

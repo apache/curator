@@ -35,7 +35,7 @@ import java.math.BigInteger;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
-public class TestModeledCuratorFramework extends CompletableBaseClassForTests
+public class TestModeledFramework extends CompletableBaseClassForTests
 {
     private static final ZPath path = ZPath.parse("/test/path");
     private CuratorFramework rawClient;
@@ -73,7 +73,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     {
         TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
         TestModel rawModel2 = new TestModel("Wayne", "Rooney", "Old Trafford", 10, BigInteger.valueOf(1));
-        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.wrap(rawClient, modelSpec);
+        ModeledFramework<TestModel> client = ModeledFramework.wrap(rawClient, modelSpec);
         AsyncStage<String> stage = client.set(rawModel);
         Assert.assertNull(stage.event());
         complete(stage, (s, e) -> Assert.assertNotNull(s));
@@ -88,10 +88,10 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     public void testBackwardCompatibility()
     {
         TestNewerModel rawNewModel = new TestNewerModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1), 100);
-        ModeledCuratorFramework<TestNewerModel> clientForNew = ModeledCuratorFramework.wrap(rawClient, newModelSpec);
+        ModeledFramework<TestNewerModel> clientForNew = ModeledFramework.wrap(rawClient, newModelSpec);
         complete(clientForNew.set(rawNewModel), (s, e) -> Assert.assertNotNull(s));
 
-        ModeledCuratorFramework<TestModel> clientForOld = ModeledCuratorFramework.wrap(rawClient, modelSpec);
+        ModeledFramework<TestModel> clientForOld = ModeledFramework.wrap(rawClient, modelSpec);
         complete(clientForOld.read(), (model, e) -> Assert.assertTrue(rawNewModel.equalsOld(model)));
     }
 
@@ -99,7 +99,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     public void testWatched() throws InterruptedException
     {
         CountDownLatch latch = new CountDownLatch(1);
-        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, modelSpec).watched().build();
+        ModeledFramework<TestModel> client = ModeledFramework.builder(rawClient, modelSpec).watched().build();
         client.checkExists().event().whenComplete((event, ex) -> latch.countDown());
         timing.sleepABit();
         Assert.assertEquals(latch.getCount(), 1);
@@ -111,7 +111,7 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     public void testGetChildren()
     {
         TestModel model = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
-        ModeledCuratorFramework<TestModel> client = ModeledCuratorFramework.builder(rawClient, modelSpec).build();
+        ModeledFramework<TestModel> client = ModeledFramework.builder(rawClient, modelSpec).build();
         complete(client.at("one").set(model));
         complete(client.at("two").set(model));
         complete(client.at("three").set(model));

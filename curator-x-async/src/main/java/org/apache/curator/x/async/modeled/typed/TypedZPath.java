@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.modeled.typed;
 
+import org.apache.curator.x.async.modeled.NodeName;
 import org.apache.curator.x.async.modeled.ZPath;
 
 /**
@@ -36,6 +37,7 @@ import org.apache.curator.x.async.modeled.ZPath;
  * </pre></code>
  * </p>
  */
+@FunctionalInterface
 public interface TypedZPath<T>
 {
     /**
@@ -65,6 +67,6 @@ public interface TypedZPath<T>
      */
     static <T> TypedZPath<T> from(ZPath path)
     {
-        return path::resolved;
+        return p1 -> path.resolved(NodeName.nameFrom(p1));
     }
 }
