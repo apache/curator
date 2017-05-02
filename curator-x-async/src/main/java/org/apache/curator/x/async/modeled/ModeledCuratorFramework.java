@@ -178,7 +178,7 @@ public interface ModeledCuratorFramework<T>
      * @return AsyncStage
      * @see org.apache.curator.x.async.AsyncStage
      */
-    AsyncStage<List<ZPath>> getChildren();
+    AsyncStage<List<ZPath>> children();
 
     /**
      * Return the children of this instance's path

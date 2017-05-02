@@ -120,13 +120,13 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     public AsyncStage<T> read(Stat storingStatIn)
     {
         ZPath path = client.modelSpec().path();
-        Optional<ModeledCachedNode<T>> data = cache.getCurrentData(path);
+        Optional<ModeledCachedNode<T>> data = cache.currentData(path);
         return data.map(node -> {
             if ( storingStatIn != null )
             {
-                DataTree.copyStat(node.getStat(), storingStatIn);
+                DataTree.copyStat(node.stat(), storingStatIn);
             }
-            return new ModelStage<>(node.getModel());
+            return new ModelStage<>(node.model());
         }).orElseGet(() -> new ModelStage<>(new KeeperException.NoNodeException(path.fullPath())));
     }
 
@@ -158,23 +158,23 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     public AsyncStage<Stat> checkExists()
     {
         ZPath path = client.modelSpec().path();
-        Optional<ModeledCachedNode<T>> data = cache.getCurrentData(path);
-        return data.map(node -> new ModelStage<>(node.getStat())).orElseGet(() -> new ModelStage<>((Stat)null));
+        Optional<ModeledCachedNode<T>> data = cache.currentData(path);
+        return data.map(node -> new ModelStage<>(node.stat())).orElseGet(() -> new ModelStage<>((Stat)null));
     }
 
     @Override
-    public AsyncStage<List<ZPath>> getChildren()
+    public AsyncStage<List<ZPath>> children()
     {
-        Set<ZPath> paths = cache.getCurrentChildren(client.modelSpec().path()).keySet();
+        Set<ZPath> paths = cache.currentChildren(client.modelSpec().path()).keySet();
         return new ModelStage<>(Lists.newArrayList(paths));
     }
 
     @Override
     public AsyncStage<Map<ZPath, AsyncStage<T>>> readChildren()
     {
-        Map<ZPath, AsyncStage<T>> map = cache.getCurrentChildren(client.modelSpec().path()).entrySet()
+        Map<ZPath, AsyncStage<T>> map = cache.currentChildren(client.modelSpec().path()).entrySet()
             .stream()
-            .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), new ModelStage<>(entry.getValue().getModel())))
+            .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), new ModelStage<>(entry.getValue().model())))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new ModelStage<>(map);
     }

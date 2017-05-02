@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.curator.x.async.modeled.details;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -9,7 +27,6 @@ import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
-import org.apache.curator.x.async.modeled.cached.ModeledCacheEventType;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.cached.ModeledCachedNode;
 import org.apache.zookeeper.data.Stat;
@@ -66,7 +83,7 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
     }
 
     @Override
-    public Optional<ModeledCachedNode<T>> getCurrentData(ZPath path)
+    public Optional<ModeledCachedNode<T>> currentData(ZPath path)
     {
         Entry<T> entry = entries.remove(path);
         if ( entry != null )
@@ -77,7 +94,7 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
     }
 
     @Override
-    public Map<ZPath, ModeledCachedNode<T>> getCurrentChildren(ZPath path)
+    public Map<ZPath, ModeledCachedNode<T>> currentChildren(ZPath path)
     {
         return entries.entrySet()
             .stream()
@@ -87,7 +104,7 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
     }
 
     @Override
-    public Listenable<ModeledCacheListener<T>> getListenable()
+    public Listenable<ModeledCacheListener<T>> listenable()
     {
         return listenerContainer;
     }
@@ -103,7 +120,7 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
             ZPath path = ZPath.from(event.toString());
             T model = serializer.deserialize(event.getData().getData());
             entries.put(path, new Entry<>(event.getData().getStat(), model));
-            ModeledCacheEventType type = (event.getType() == TreeCacheEvent.Type.NODE_ADDED) ? ModeledCacheEventType.NODE_ADDED : ModeledCacheEventType.NODE_UPDATED;
+            ModeledCacheListener.Type type = (event.getType() == TreeCacheEvent.Type.NODE_ADDED) ? ModeledCacheListener.Type.NODE_ADDED : ModeledCacheListener.Type.NODE_UPDATED;
             accept(type, path, event.getData().getStat(), model);
             break;
         }
@@ -114,7 +131,7 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
             Entry<T> entry = entries.remove(path);
             T model = (entry != null) ? entry.model : serializer.deserialize(event.getData().getData());
             Stat stat = (entry != null) ? entry.stat : event.getData().getStat();
-            accept(ModeledCacheEventType.NODE_REMOVED, path, stat, model);
+            accept(ModeledCacheListener.Type.NODE_REMOVED, path, stat, model);
             break;
         }
 
@@ -133,7 +150,7 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         }
     }
 
-    private void accept(ModeledCacheEventType type, ZPath path, Stat stat, T model)
+    private void accept(ModeledCacheListener.Type type, ZPath path, Stat stat, T model)
     {
         listenerContainer.forEach(l -> {
             l.accept(type, path, stat, model);
@@ -153,19 +170,19 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         }
 
         @Override
-        public ZPath getPath()
+        public ZPath path()
         {
             return path;
         }
 
         @Override
-        public Stat getStat()
+        public Stat stat()
         {
             return entry.stat;
         }
 
         @Override
-        public U getModel()
+        public U model()
         {
             return entry.model;
         }

@@ -203,7 +203,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public AsyncStage<List<ZPath>> getChildren()
+    public AsyncStage<List<ZPath>> children()
     {
         AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(modelSpec.path().fullPath());
         ModelStage<List<ZPath>> modelStage = new ModelStage<>(asyncStage.event());

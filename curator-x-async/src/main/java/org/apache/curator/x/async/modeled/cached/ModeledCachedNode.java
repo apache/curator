@@ -31,19 +31,19 @@ public interface ModeledCachedNode<T>
      *
      * @return path
      */
-    ZPath getPath();
+    ZPath path();
 
     /**
      * The node's last known stat if available
      *
      * @return stat
      */
-    Stat getStat();
+    Stat stat();
 
     /**
      * The node's current model
      *
      * @return model
      */
-    T getModel();
+    T model();
 }

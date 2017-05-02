@@ -117,6 +117,6 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
         complete(client.at("three").set(model));
 
         Set<ZPath> expected = Sets.newHashSet(path.at("one"), path.at("two"), path.at("three"));
-        complete(client.getChildren(), (children, e) -> Assert.assertEquals(Sets.newHashSet(children), expected));
+        complete(client.children(), (children, e) -> Assert.assertEquals(Sets.newHashSet(children), expected));
     }
 }
