@@ -24,7 +24,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.CompletableBaseClassForTests;
 import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
-import org.apache.curator.x.async.modeled.CuratorModelSpec;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
@@ -52,7 +52,7 @@ public class TestCachedModeledCuratorFramework extends CompletableBaseClassForTe
         rawClient.start();
 
         ModelSerializer<TestSimpleModel> serializer = new JacksonModelSerializer<>(TestSimpleModel.class);
-        client = ModeledCuratorFramework.builder(rawClient, CuratorModelSpec.builder(path, serializer).build()).build().cached();
+        client = ModeledCuratorFramework.builder(rawClient, ModelSpec.builder(path, serializer).build()).build().cached();
     }
 
     @AfterMethod

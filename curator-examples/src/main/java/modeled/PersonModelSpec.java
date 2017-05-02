@@ -19,7 +19,7 @@
 package modeled;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.x.async.modeled.CuratorModelSpec;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
@@ -27,7 +27,7 @@ import org.apache.curator.x.async.modeled.ZPath;
 public class PersonModelSpec
 {
     private final CuratorFramework client;
-    private final CuratorModelSpec<PersonModel> modelSpec;
+    private final ModelSpec<PersonModel> modelSpec;
 
     public PersonModelSpec(CuratorFramework client)
     {
@@ -35,12 +35,12 @@ public class PersonModelSpec
 
         JacksonModelSerializer<PersonModel> serializer = JacksonModelSerializer.build(PersonModel.class);
         ZPath path = ZPath.from("example", ZPath.parameterNodeName(), "path", ZPath.parameterNodeName());
-        modelSpec = CuratorModelSpec.builder(path, serializer).build();
+        modelSpec = ModelSpec.builder(path, serializer).build();
     }
 
     public ModeledCuratorFramework<PersonModel> resolved(ContainerType containerType, PersonId personId)
     {
-        CuratorModelSpec<PersonModel> resolved = modelSpec.resolved(containerType.getTypeId(), personId.getId());
+        ModelSpec<PersonModel> resolved = null;// TODO modelSpec.resolved(containerType.getTypeId(), personId.getId());
         return ModeledCuratorFramework.wrap(client, resolved);
     }
 }

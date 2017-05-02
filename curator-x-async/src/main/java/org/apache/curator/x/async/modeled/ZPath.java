@@ -31,6 +31,14 @@ import java.util.regex.Pattern;
 public interface ZPath
 {
     /**
+     * The special node name that can be used for replacements at runtime
+     * via {@link #resolved(Object...)} when passed via the various <code>from()</code> methods
+     */
+    String parameterNodeName = System.getProperty("curator-zpath-parameter", "");    // empty paths are illegal so it's useful for this purpose
+
+    String idName = System.getProperty("curator-zpath-id-name", "{id}");    // empty paths are illegal so it's useful for this purpose
+
+    /**
      * Return the root path: "/"
      *
      * @return root path
@@ -54,7 +62,7 @@ public interface ZPath
 
     /**
      * Take a ZNode string path and return a ZPath. Each part of the path
-     * that is <code>{id}</code> is replaced with {@link #parameterNodeName()}.
+     * that is <code>{id}</code> is replaced with {@link #parameterNodeName}.
      * E.g. <code>parseWithIds("/one/two/{id}/three/{id}")</code> is the equivalent
      * of calling <code>ZPath.from("one", "two", parameterNodeName(), "three", parameterNodeName())</code>
      *
@@ -64,7 +72,7 @@ public interface ZPath
      */
     static ZPath parseWithIds(String fullPath)
     {
-        return ZPathImpl.parse(fullPath, s -> s.equals("{id}") ? parameterNodeName() : s);
+        return ZPathImpl.parse(fullPath, s -> s.equals(idName) ? parameterNodeName : s);
     }
 
     /**
@@ -134,18 +142,7 @@ public interface ZPath
     }
 
     /**
-     * Return the special node name that can be used for replacements at runtime
-     * via {@link #resolved(Object...)} when passed via the various <code>from()</code> methods
-     *
-     * @return name
-     */
-    static String parameterNodeName()
-    {
-        return ZPathImpl.parameter;
-    }
-
-    /**
-     * When creating paths, any node in the path can be set to {@link #parameterNodeName()}.
+     * When creating paths, any node in the path can be set to {@link #parameterNodeName}.
      * At runtime, the ZPath can be "resolved" by replacing these nodes with values.
      *
      * @param parameters list of replacements. Must have be the same length as the number of
@@ -158,7 +155,7 @@ public interface ZPath
     }
 
     /**
-     * When creating paths, any node in the path can be set to {@link #parameterNodeName()}.
+     * When creating paths, any node in the path can be set to {@link #parameterNodeName}.
      * At runtime, the ZPath can be "resolved" by replacing these nodes with values.
      *
      * @param parameters list of replacements. Must have be the same length as the number of
@@ -169,14 +166,14 @@ public interface ZPath
 
     /**
      * An "auto" resolving version of this ZPath. i.e. if any of the path names is
-     * the {@link #parameterNodeName()} the ZPath must be resolved. This method
+     * the {@link #parameterNodeName} the ZPath must be resolved. This method
      * creates a new ZPath that auto resolves by using the given parameter suppliers
      * whenever needed.
      *
      * @param parameterSuppliers parameter suppliers
      * @return new auto resolving ZNode
      * @see #resolved(Object...)
-     * @see #parameterNodeName()
+     * @see #parameterNodeName
      */
     ZPath resolving(List<Supplier<Object>> parameterSuppliers);
 

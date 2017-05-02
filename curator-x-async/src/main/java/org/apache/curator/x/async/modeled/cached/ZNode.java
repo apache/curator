@@ -24,7 +24,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Abstracts a cached node
  */
-public interface ModeledCachedNode<T>
+public interface ZNode<T>
 {
     /**
      * The path of the node

@@ -25,7 +25,6 @@ import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
-import java.util.Map;
 
 public interface ModeledCuratorFramework<T>
 {
@@ -36,7 +35,7 @@ public interface ModeledCuratorFramework<T>
      * @param model the model
      * @return new Modeled Curator instance
      */
-    static <T> ModeledCuratorFramework<T> wrap(CuratorFramework client, CuratorModelSpec<T> model)
+    static <T> ModeledCuratorFramework<T> wrap(CuratorFramework client, ModelSpec<T> model)
     {
         return builder(client, model).build();
     }
@@ -48,7 +47,7 @@ public interface ModeledCuratorFramework<T>
      * @param model the model
      * @return builder
      */
-    static <T> ModeledCuratorFrameworkBuilder<T> builder(CuratorFramework client, CuratorModelSpec<T> model)
+    static <T> ModeledCuratorFrameworkBuilder<T> builder(CuratorFramework client, ModelSpec<T> model)
     {
         return new ModeledCuratorFrameworkBuilder<>(client, model);
     }
@@ -64,7 +63,7 @@ public interface ModeledCuratorFramework<T>
     CachedModeledCuratorFramework<T> cached();
 
     /**
-     * Returns the client that was originally passed to {@link #wrap(org.apache.curator.framework.CuratorFramework, CuratorModelSpec)} or
+     * Returns the client that was originally passed to {@link #wrap(org.apache.curator.framework.CuratorFramework, ModelSpec)} or
      * the builder.
      *
      * @return original client
@@ -76,7 +75,7 @@ public interface ModeledCuratorFramework<T>
      *
      * @return model
      */
-    CuratorModelSpec<T> modelSpec();
+    ModelSpec<T> modelSpec();
 
     /**
      * Return a new Modeled Curator instance with all the same options but applying to the given child node of this Modeled Curator's
@@ -87,6 +86,24 @@ public interface ModeledCuratorFramework<T>
      * @return new Modeled Curator instance
      */
     ModeledCuratorFramework<T> at(String child);
+
+    /**
+     * Return a Modeled Curator instance with all the same options but using the given path.
+     *
+     * @param path new path
+     * @return new Modeled Curator instance
+     */
+    ModeledCuratorFramework<T> at(ZPath path);
+
+    /**
+     * Return a new Modeled Curator instance with all the same options but using the
+     * {@link ModelSpecBuilder#nodeName} functor
+     * to generate the child node's name
+     *
+     * @param model model to use to generate the name
+     * @return new Modeled Curator instance
+     */
+    ModeledCuratorFramework<T> resolved(T model);
 
     /**
      * Create (or update depending on build options) a ZNode at this instance's path with a serialized
@@ -179,14 +196,6 @@ public interface ModeledCuratorFramework<T>
      * @see org.apache.curator.x.async.AsyncStage
      */
     AsyncStage<List<ZPath>> children();
-
-    /**
-     * Return the children of this instance's path
-     *
-     * @return AsyncStage
-     * @see org.apache.curator.x.async.AsyncStage
-     */
-    AsyncStage<Map<ZPath, AsyncStage<T>>> readChildren();
 
     /**
      * Create operation instance that can be passed among other operations to

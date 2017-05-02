@@ -41,8 +41,8 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
     private CuratorFramework rawClient;
     private JacksonModelSerializer<TestModel> serializer;
     private JacksonModelSerializer<TestNewerModel> newSerializer;
-    private CuratorModelSpec<TestModel> modelSpec;
-    private CuratorModelSpec<TestNewerModel> newModelSpec;
+    private ModelSpec<TestModel> modelSpec;
+    private ModelSpec<TestNewerModel> newModelSpec;
 
     @BeforeMethod
     @Override
@@ -56,8 +56,8 @@ public class TestModeledCuratorFramework extends CompletableBaseClassForTests
         serializer = new JacksonModelSerializer<>(TestModel.class);
         newSerializer = new JacksonModelSerializer<>(TestNewerModel.class);
 
-        modelSpec = CuratorModelSpec.builder(path, serializer).build();
-        newModelSpec = CuratorModelSpec.builder(path, newSerializer).build();
+        modelSpec = ModelSpec.builder(path, serializer).build();
+        newModelSpec = ModelSpec.builder(path, newSerializer).build();
     }
 
     @AfterMethod

@@ -32,7 +32,7 @@ import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.api.AsyncTransactionSetDataBuilder;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
-import org.apache.curator.x.async.modeled.CuratorModelSpec;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
@@ -40,7 +40,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -50,14 +49,14 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
 {
     private final AsyncCuratorFramework client;
     private final WatchableAsyncCuratorFramework watchableClient;
-    private final CuratorModelSpec<T> modelSpec;
+    private final ModelSpec<T> modelSpec;
     private final WatchMode watchMode;
     private final UnaryOperator<WatchedEvent> watcherFilter;
     private final UnhandledErrorListener unhandledErrorListener;
     private final UnaryOperator<CuratorEvent> resultFilter;
     private final AsyncCuratorFrameworkDsl dslClient;
 
-    public static <T> ModeledCuratorFrameworkImpl<T> build(CuratorFramework client, CuratorModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
+    public static <T> ModeledCuratorFrameworkImpl<T> build(CuratorFramework client, ModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
     {
         boolean localIsWatched = (watchMode != null);
 
@@ -82,7 +81,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
         );
     }
 
-    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, CuratorModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
+    private ModeledCuratorFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, ModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
     {
         this.client = client;
         this.dslClient = dslClient;
@@ -101,7 +100,7 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public CuratorModelSpec<T> modelSpec()
+    public ModelSpec<T> modelSpec()
     {
         return modelSpec;
     }
@@ -221,35 +220,46 @@ public class ModeledCuratorFrameworkImpl<T> implements ModeledCuratorFramework<T
     }
 
     @Override
-    public AsyncStage<Map<ZPath, AsyncStage<T>>> readChildren()
-    {
-        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(modelSpec.path().fullPath());
-        ModelStage<Map<ZPath, AsyncStage<T>>> modelStage = new ModelStage<>(asyncStage.event());
-        asyncStage.whenComplete((children, e) -> {
-            if ( e != null )
-            {
-                modelStage.completeExceptionally(e);
-            }
-            else
-            {
-                Map<ZPath, AsyncStage<T>> map = children
-                    .stream()
-                    .collect(Collectors.toMap(name -> modelSpec.path().at(name), name -> at(name).read()));
-                modelStage.complete(map);
-            }
-        });
-        return modelStage;
-    }
-
-    @Override
     public ModeledCuratorFramework<T> at(String child)
     {
-        CuratorModelSpec<T> childModel = modelSpec.at(child);
+        ModelSpec<T> newModelSpec = modelSpec.at(child);
         return new ModeledCuratorFrameworkImpl<>(
             client,
             dslClient,
             watchableClient,
-            childModel,
+            newModelSpec,
+            watchMode,
+            watcherFilter,
+            unhandledErrorListener,
+            resultFilter
+        );
+    }
+
+    @Override
+    public ModeledCuratorFramework<T> at(ZPath path)
+    {
+        ModelSpec<T> newModelSpec = modelSpec.at(path);
+        return new ModeledCuratorFrameworkImpl<>(
+            client,
+            dslClient,
+            watchableClient,
+            newModelSpec,
+            watchMode,
+            watcherFilter,
+            unhandledErrorListener,
+            resultFilter
+        );
+    }
+
+    @Override
+    public ModeledCuratorFramework<T> resolved(T model)
+    {
+        ModelSpec<T> newModelSpec = modelSpec.resolved(model);
+        return new ModeledCuratorFrameworkImpl<>(
+            client,
+            dslClient,
+            watchableClient,
+            newModelSpec,
             watchMode,
             watcherFilter,
             unhandledErrorListener,

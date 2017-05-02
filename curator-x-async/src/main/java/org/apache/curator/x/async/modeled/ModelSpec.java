@@ -27,13 +27,13 @@ import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Set;
 
-public interface CuratorModelSpec<T>
+public interface ModelSpec<T>
 {
     Set<CreateOption> defaultCreateOptions = ImmutableSet.of(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists);
     Set<DeleteOption> defaultDeleteOptions = ImmutableSet.of(DeleteOption.guaranteed);
 
     /**
-     * Start a new CuratorModelBuilder for the given path and serializer. The returned CuratorModelBuilder
+     * Start a new ModelSpecBuilder for the given path and serializer. The returned ModelSpecBuilder
      * uses {@link #defaultCreateOptions} and {@link #defaultDeleteOptions}, but you can change these
      * with builder methods.
      *
@@ -41,9 +41,24 @@ public interface CuratorModelSpec<T>
      * @param serializer the model's serializer
      * @return builder
      */
-    static <T> CuratorModelSpecBuilder<T> builder(ZPath path, ModelSerializer<T> serializer)
+    static <T> ModelSpecBuilder<T> builder(ZPath path, ModelSerializer<T> serializer)
     {
-        return new CuratorModelSpecBuilder<>(path, serializer)
+        return new ModelSpecBuilder<>(path, serializer)
+            .withCreateOptions(defaultCreateOptions)
+            .withDeleteOptions(defaultDeleteOptions);
+    }
+
+    /**
+     * Start a new ModelSpecBuilder for the given serializer. The returned ModelSpecBuilder
+     * uses {@link #defaultCreateOptions} and {@link #defaultDeleteOptions}, but you can change these
+     * with builder methods. You must set a path before calling {@link ModelSpecBuilder#build()}
+     *
+     * @param serializer the model's serializer
+     * @return builder
+     */
+    static <T> ModelSpecBuilder<T> builder(ModelSerializer<T> serializer)
+    {
+        return new ModelSpecBuilder<>(serializer)
             .withCreateOptions(defaultCreateOptions)
             .withDeleteOptions(defaultDeleteOptions);
     }
@@ -54,17 +69,27 @@ public interface CuratorModelSpec<T>
      * "/a/b/c".
      *
      * @param child child node.
-     * @return new Modeled Curator instance
+     * @return new Modeled Spec instance
      */
-    CuratorModelSpec<T> at(String child);
+    ModelSpec<T> at(String child);
 
     /**
      * Return a new CuratorModel instance with all the same options but using the given path.
      *
      * @param path new path
-     * @return new Modeled Curator instance
+     * @return new Modeled Spec instance
      */
-    CuratorModelSpec<T> at(ZPath path);
+    ModelSpec<T> at(ZPath path);
+
+    /**
+     * Return a new CuratorModel instance with all the same options but using the
+     * {@link ModelSpecBuilder#nodeName} functor
+     * to generate the child node's name
+     *
+     * @param model model to use to generate the name
+     * @return new Modeled Spec instance
+     */
+    ModelSpec<T> resolved(T model);
 
     /**
      * Return the model's path

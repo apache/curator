@@ -33,7 +33,7 @@ public interface ModeledCache<T>
      * @param path path to the node to check
      * @return data if the node is alive, or null
      */
-    Optional<ModeledCachedNode<T>> currentData(ZPath path);
+    Optional<ZNode<T>> currentData(ZPath path);
 
     /**
      * Return the modeled current set of children at the given path, mapped by child name. There are no
@@ -42,7 +42,7 @@ public interface ModeledCache<T>
      * @param path path to the node to check
      * @return a possibly-empty list of children if the node is alive, or null
      */
-    Map<ZPath, ModeledCachedNode<T>> currentChildren(ZPath path);
+    Map<ZPath, ZNode<T>> currentChildren(ZPath path);
 
     /**
      * Return the listener container so that you can add/remove listeners

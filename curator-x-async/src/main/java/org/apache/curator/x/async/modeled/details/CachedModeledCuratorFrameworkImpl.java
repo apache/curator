@@ -24,21 +24,18 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.CreateOption;
-import org.apache.curator.x.async.modeled.CuratorModelSpec;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.cached.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
-import org.apache.curator.x.async.modeled.cached.ModeledCachedNode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
-import java.util.AbstractMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramework<T>
 {
@@ -87,7 +84,7 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     }
 
     @Override
-    public CuratorModelSpec<T> modelSpec()
+    public ModelSpec<T> modelSpec()
     {
         return client.modelSpec();
     }
@@ -99,15 +96,27 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     }
 
     @Override
+    public CachedModeledCuratorFramework<T> at(ZPath path)
+    {
+        return new CachedModeledCuratorFrameworkImpl<>(client.at(path), cache);
+    }
+
+    @Override
+    public CachedModeledCuratorFramework<T> resolved(T model)
+    {
+        return new CachedModeledCuratorFrameworkImpl<>(client.resolved(model), cache);
+    }
+
+    @Override
     public AsyncStage<String> set(T model)
     {
-        return client.set(model);   // TODO - update cache?
+        return client.set(model);
     }
 
     @Override
     public AsyncStage<String> set(T model, Stat storingStatIn)
     {
-        return client.set(model, storingStatIn);   // TODO - update cache?
+        return client.set(model, storingStatIn);
     }
 
     @Override
@@ -120,7 +129,7 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     public AsyncStage<T> read(Stat storingStatIn)
     {
         ZPath path = client.modelSpec().path();
-        Optional<ModeledCachedNode<T>> data = cache.currentData(path);
+        Optional<ZNode<T>> data = cache.currentData(path);
         return data.map(node -> {
             if ( storingStatIn != null )
             {
@@ -158,7 +167,7 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     public AsyncStage<Stat> checkExists()
     {
         ZPath path = client.modelSpec().path();
-        Optional<ModeledCachedNode<T>> data = cache.currentData(path);
+        Optional<ZNode<T>> data = cache.currentData(path);
         return data.map(node -> new ModelStage<>(node.stat())).orElseGet(() -> new ModelStage<>((Stat)null));
     }
 
@@ -167,16 +176,6 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     {
         Set<ZPath> paths = cache.currentChildren(client.modelSpec().path()).keySet();
         return new ModelStage<>(Lists.newArrayList(paths));
-    }
-
-    @Override
-    public AsyncStage<Map<ZPath, AsyncStage<T>>> readChildren()
-    {
-        Map<ZPath, AsyncStage<T>> map = cache.currentChildren(client.modelSpec().path()).entrySet()
-            .stream()
-            .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), new ModelStage<>(entry.getValue().model())))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new ModelStage<>(map);
     }
 
     @Override

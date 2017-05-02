@@ -25,7 +25,7 @@ import org.apache.curator.framework.schema.SchemaValidator;
 import org.apache.curator.framework.schema.SchemaViolation;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.DeleteOption;
-import org.apache.curator.x.async.modeled.CuratorModelSpec;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.CreateMode;
@@ -33,8 +33,10 @@ import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
-public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValidator
+public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
 {
     private final ZPath path;
     private final ModelSerializer<T> serializer;
@@ -42,14 +44,10 @@ public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValid
     private final List<ACL> aclList;
     private final Set<CreateOption> createOptions;
     private final Set<DeleteOption> deleteOptions;
-    private final Schema schema;
+    private final AtomicReference<Schema> schema = new AtomicReference<>();
+    private final Function<T, String> nodeName;
 
-    public CuratorModelSpecImpl(ZPath path, ModelSerializer<T> serializer, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions)
-    {
-        this(path, serializer, createMode, aclList, createOptions, deleteOptions, null);
-    }
-
-    private CuratorModelSpecImpl(ZPath path, ModelSerializer<T> serializer, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions, Schema schema)
+    public ModelSpecImpl(ZPath path, ModelSerializer<T> serializer, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions, Function<T, String> nodeName)
     {
         this.path = Objects.requireNonNull(path, "path cannot be null");
         this.serializer = Objects.requireNonNull(serializer, "serializer cannot be null");
@@ -57,20 +55,25 @@ public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValid
         this.aclList = ImmutableList.copyOf(Objects.requireNonNull(aclList, "aclList cannot be null"));
         this.createOptions = ImmutableSet.copyOf(Objects.requireNonNull(createOptions, "createOptions cannot be null"));
         this.deleteOptions = ImmutableSet.copyOf(Objects.requireNonNull(deleteOptions, "deleteOptions cannot be null"));
-
-        this.schema = (schema != null) ? schema : makeSchema(); // must be last in statement in ctor
+        this.nodeName = Objects.requireNonNull(nodeName, "nodeName cannot be null");
     }
 
     @Override
-    public CuratorModelSpec<T> at(String child)
+    public ModelSpec<T> at(String child)
     {
-        return new CuratorModelSpecImpl<>(path.at(child), serializer, createMode, aclList, createOptions, deleteOptions);
+        return at(path.at(child));
     }
 
     @Override
-    public CuratorModelSpec<T> at(ZPath newPath)
+    public ModelSpec<T> resolved(T model)
     {
-        return new CuratorModelSpecImpl<>(newPath, serializer, createMode, aclList, createOptions, deleteOptions);
+        return at(path.at(nodeName.apply(model)));
+    }
+
+    @Override
+    public ModelSpec<T> at(ZPath newPath)
+    {
+        return new ModelSpecImpl<>(newPath, serializer, createMode, aclList, createOptions, deleteOptions, nodeName);
     }
 
     @Override
@@ -112,7 +115,13 @@ public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValid
     @Override
     public Schema schema()
     {
-        return schema;
+        Schema schemaValue = schema.get();
+        if ( schemaValue == null )
+        {
+            schemaValue = makeSchema();
+            schema.compareAndSet(null, schemaValue);
+        }
+        return schemaValue;
     }
 
     @Override
@@ -127,7 +136,7 @@ public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValid
             return false;
         }
 
-        CuratorModelSpecImpl<?> that = (CuratorModelSpecImpl<?>)o;
+        ModelSpecImpl<?> that = (ModelSpecImpl<?>)o;
 
         if ( !path.equals(that.path) )
         {

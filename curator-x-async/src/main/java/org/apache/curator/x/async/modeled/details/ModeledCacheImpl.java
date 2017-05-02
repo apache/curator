@@ -28,7 +28,7 @@ import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
-import org.apache.curator.x.async.modeled.cached.ModeledCachedNode;
+import org.apache.curator.x.async.modeled.cached.ZNode;
 import org.apache.zookeeper.data.Stat;
 import java.util.AbstractMap;
 import java.util.Map;
@@ -83,23 +83,23 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
     }
 
     @Override
-    public Optional<ModeledCachedNode<T>> currentData(ZPath path)
+    public Optional<ZNode<T>> currentData(ZPath path)
     {
         Entry<T> entry = entries.remove(path);
         if ( entry != null )
         {
-            return Optional.of(new InternalCachedNode<>(path, entry));
+            return Optional.of(new ZNodeImpl<>(path, entry.stat, entry.model));
         }
         return Optional.empty();
     }
 
     @Override
-    public Map<ZPath, ModeledCachedNode<T>> currentChildren(ZPath path)
+    public Map<ZPath, ZNode<T>> currentChildren(ZPath path)
     {
         return entries.entrySet()
             .stream()
             .filter(entry -> entry.getKey().startsWith(path))
-            .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), new InternalCachedNode<>(entry.getKey(), entry.getValue())))
+            .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), new ZNodeImpl<>(entry.getKey(), entry.getValue().stat, entry.getValue().model)))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -156,35 +156,5 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
             l.accept(type, path, stat, model);
             return null;
         });
-    }
-
-    private static class InternalCachedNode<U> implements ModeledCachedNode<U>
-    {
-        private final ZPath path;
-        private final Entry<U> entry;
-
-        private InternalCachedNode(ZPath path, Entry<U> entry)
-        {
-            this.path = path;
-            this.entry = entry;
-        }
-
-        @Override
-        public ZPath path()
-        {
-            return path;
-        }
-
-        @Override
-        public Stat stat()
-        {
-            return entry.stat;
-        }
-
-        @Override
-        public U model()
-        {
-            return entry.model;
-        }
     }
 }

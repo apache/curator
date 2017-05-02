@@ -35,11 +35,13 @@ import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
+import static org.apache.curator.x.async.modeled.ZPath.idName;
+import static org.apache.curator.x.async.modeled.ZPath.parameterNodeName;
+
 public class ZPathImpl implements ZPath
 {
-    public static final ZPath root = new ZPathImpl(Collections.singletonList(ZKPaths.PATH_SEPARATOR), null, null);
-
-    public static final String parameter = "";    // empty paths are illegal so it's useful for this purpose
+    public static final ZPath root = new ZPathImpl(Collections.singletonList(PATH_SEPARATOR), null, null);
 
     private final List<String> nodes;
     private final boolean isResolved;
@@ -53,9 +55,9 @@ public class ZPathImpl implements ZPath
     private static ZPathImpl parseInternal(String fullPath, UnaryOperator<String> nameFilter)
     {
         List<String> nodes = ImmutableList.<String>builder()
-            .add(ZKPaths.PATH_SEPARATOR)
+            .add(PATH_SEPARATOR)
             .addAll(
-                Splitter.on(ZKPaths.PATH_SEPARATOR)
+                Splitter.on(PATH_SEPARATOR)
                     .omitEmptyStrings()
                     .splitToList(fullPath)
                     .stream()
@@ -95,12 +97,12 @@ public class ZPathImpl implements ZPath
             }
             else
             {
-                builder.addAll(Splitter.on(ZKPaths.PATH_SEPARATOR).omitEmptyStrings().splitToList(base.fullPath()));
+                builder.addAll(Splitter.on(PATH_SEPARATOR).omitEmptyStrings().splitToList(base.fullPath()));
             }
         }
         else
         {
-            builder.add(ZKPaths.PATH_SEPARATOR);
+            builder.add(PATH_SEPARATOR);
         }
         List<String> nodes = builder.addAll(names).build();
         return new ZPathImpl(nodes, null, null);
@@ -143,7 +145,7 @@ public class ZPathImpl implements ZPath
     @Override
     public Pattern toSchemaPathPattern()
     {
-        return Pattern.compile(fullPath() + ZKPaths.PATH_SEPARATOR + ".*");
+        return Pattern.compile(fullPath() + PATH_SEPARATOR + ".*");
     }
 
     @Override
@@ -193,7 +195,7 @@ public class ZPathImpl implements ZPath
     @Override
     public String toString()
     {
-        String value = nodes.stream().map(name -> name.equals(parameter) ? "{p}" : name).collect(Collectors.joining(ZKPaths.PATH_SEPARATOR, ZKPaths.PATH_SEPARATOR, ""));
+        String value = nodes.stream().map(name -> name.equals(parameterNodeName) ? idName : name).collect(Collectors.joining(PATH_SEPARATOR, PATH_SEPARATOR, ""));
         return "ZPathImpl{" + value + '}';
     }
 
@@ -203,7 +205,7 @@ public class ZPathImpl implements ZPath
         Iterator<Object> iterator = parameters.iterator();
         List<String> nodeNames = nodes.stream()
             .map(name -> {
-                if ( name.equals(parameter) )
+                if ( name.equals(parameterNodeName) )
                 {
                     if ( !iterator.hasNext() )
                     {
@@ -234,7 +236,7 @@ public class ZPathImpl implements ZPath
             builder.add(child);
         }
         this.nodes = builder.build();
-        isResolved = (parameterSuppliers != null) || !this.nodes.contains(parameter);
+        isResolved = (parameterSuppliers != null) || !this.nodes.contains(parameterNodeName);
     }
 
     private void checkRootAccess()
@@ -260,10 +262,10 @@ public class ZPathImpl implements ZPath
         {
             if ( i > 1 )
             {
-                str.append(ZKPaths.PATH_SEPARATOR);
+                str.append(PATH_SEPARATOR);
             }
             String value = nodes.get(i);
-            if ( value.equals(parameter) )
+            if ( value.equals(parameterNodeName) )
             {
                 if ( (parameterSuppliers == null) || (parameterSuppliers.size() <= parameterIndex) )
                 {
@@ -278,14 +280,14 @@ public class ZPathImpl implements ZPath
 
     private static void validate(String nodeName)
     {
-        if ( parameter.equals(Objects.requireNonNull(nodeName, "nodeName cannot be null")) )
+        if ( parameterNodeName.equals(Objects.requireNonNull(nodeName, "nodeName cannot be null")) )
         {
             return;
         }
-        if ( nodeName.equals(ZKPaths.PATH_SEPARATOR) )
+        if ( nodeName.equals(PATH_SEPARATOR) )
         {
             return;
         }
-        PathUtils.validatePath(ZKPaths.PATH_SEPARATOR + nodeName);
+        PathUtils.validatePath(PATH_SEPARATOR + nodeName);
     }
 }

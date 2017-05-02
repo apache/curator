@@ -60,27 +60,27 @@ public class TestZPath
         Assert.assertEquals(ZPath.parse("/"), ZPath.root());
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.root().at("one").at("two").at("three"));
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
-        Assert.assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameterNodeName(), "two", parameterNodeName()));
+        Assert.assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameterNodeName, "two", parameterNodeName));
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testUnresolvedPath()
     {
-        ZPath path = ZPath.from("one", parameterNodeName(), "two");
+        ZPath path = ZPath.from("one", parameterNodeName, "two");
         path.fullPath();
     }
 
     @Test
     public void testResolvedPath()
     {
-        ZPath path = ZPath.from("one", parameterNodeName(), "two", parameterNodeName());
+        ZPath path = ZPath.from("one", parameterNodeName, "two", parameterNodeName);
         Assert.assertEquals(path.resolved("a", "b"), ZPath.from("one", "a", "two", "b"));
     }
 
     @Test
     public void testResolving()
     {
-        ZPath path = ZPath.from("one", parameterNodeName(), "two", parameterNodeName());
+        ZPath path = ZPath.from("one", parameterNodeName, "two", parameterNodeName);
         AtomicInteger count = new AtomicInteger(0);
         ZPath resolving = path.resolving(Arrays.asList(() -> "x" + count.get(), () -> "y" + count.get()));
         Assert.assertEquals(resolving.fullPath(), "/one/x0/two/y0");

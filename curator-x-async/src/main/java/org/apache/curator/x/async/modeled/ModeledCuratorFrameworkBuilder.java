@@ -30,7 +30,7 @@ import java.util.function.UnaryOperator;
 public class ModeledCuratorFrameworkBuilder<T>
 {
     private final CuratorFramework client;
-    private final CuratorModelSpec<T> model;
+    private final ModelSpec<T> model;
     private WatchMode watchMode;
     private UnaryOperator<WatchedEvent> watcherFilter;
     private UnhandledErrorListener unhandledErrorListener;
@@ -118,7 +118,7 @@ public class ModeledCuratorFrameworkBuilder<T>
         return this;
     }
 
-    ModeledCuratorFrameworkBuilder(CuratorFramework client, CuratorModelSpec<T> model)
+    ModeledCuratorFrameworkBuilder(CuratorFramework client, ModelSpec<T> model)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.model = Objects.requireNonNull(model, "model cannot be null");
