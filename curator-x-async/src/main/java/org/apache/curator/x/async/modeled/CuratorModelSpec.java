@@ -26,7 +26,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public interface CuratorModelSpec<T>
 {
@@ -60,37 +59,12 @@ public interface CuratorModelSpec<T>
     CuratorModelSpec<T> at(String child);
 
     /**
-     * Return a new CuratorModel instance with all the same options but applying to the given parameters of this CuratorModel's
-     * path via {@link org.apache.curator.x.async.modeled.ZPath#resolved(Object...)}
+     * Return a new CuratorModel instance with all the same options but using the given path.
      *
-     * @param parameters list of replacements. Must have be the same length as the number of
-     *                   parameter nodes in the path
+     * @param path new path
      * @return new Modeled Curator instance
      */
-    CuratorModelSpec<T> resolved(Object... parameters);
-
-    /**
-     * Return a new CuratorModel instance with all the same options but applying to the given parameters of this CuratorModel's
-     * path via {@link org.apache.curator.x.async.modeled.ZPath#resolved(Object...)}
-     *
-     * @param parameters list of replacements. Must have be the same length as the number of
-     *                   parameter nodes in the path
-     * @return new Modeled Curator instance
-     */
-    CuratorModelSpec<T> resolved(List<Object> parameters);
-
-    /**
-     * An "auto" resolving version of this CuratorModel. i.e. if any of the path names is
-     * the {@link org.apache.curator.x.async.modeled.ZPath#parameterNodeName()} the ZPath must be resolved. This method
-     * creates a new CuratorModelSpec that auto resolves by using the given parameter suppliers
-     * whenever needed.
-     *
-     * @param parameterSuppliers parameter suppliers
-     * @return new auto resolving ZNode
-     * @see #resolved(Object...)
-     * @see org.apache.curator.x.async.modeled.ZPath#parameterNodeName()
-     */
-    CuratorModelSpec<T> resolving(List<Supplier<Object>> parameterSuppliers);
+    CuratorModelSpec<T> at(ZPath path);
 
     /**
      * Return the model's path

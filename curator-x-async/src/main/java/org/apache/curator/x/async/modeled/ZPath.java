@@ -22,6 +22,7 @@ import org.apache.curator.x.async.modeled.details.ZPathImpl;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 /**
@@ -48,7 +49,35 @@ public interface ZPath
      */
     static ZPath parse(String fullPath)
     {
-        return ZPathImpl.parse(fullPath);
+        return ZPathImpl.parse(fullPath, s -> s);
+    }
+
+    /**
+     * Take a ZNode string path and return a ZPath. Each part of the path
+     * that is <code>{id}</code> is replaced with {@link #parameterNodeName()}.
+     * E.g. <code>parseWithIds("/one/two/{id}/three/{id}")</code> is the equivalent
+     * of calling <code>ZPath.from("one", "two", parameterNodeName(), "three", parameterNodeName())</code>
+     *
+     * @param fullPath the path to parse
+     * @return ZPath
+     * @throws IllegalArgumentException if the path is invalid
+     */
+    static ZPath parseWithIds(String fullPath)
+    {
+        return ZPathImpl.parse(fullPath, s -> s.equals("{id}") ? parameterNodeName() : s);
+    }
+
+    /**
+     * Take a ZNode string path and return a ZPath
+     *
+     * @param fullPath the path to parse
+     * @param nameFilter each part of the path is passed through this filter
+     * @return ZPath
+     * @throws IllegalArgumentException if the path is invalid
+     */
+    static ZPath parse(String fullPath, UnaryOperator<String> nameFilter)
+    {
+        return ZPathImpl.parse(fullPath, nameFilter);
     }
 
     /**
@@ -106,7 +135,7 @@ public interface ZPath
 
     /**
      * Return the special node name that can be used for replacements at runtime
-     * via {@link #resolved(Object...)}
+     * via {@link #resolved(Object...)} when passed via the various <code>from()</code> methods
      *
      * @return name
      */

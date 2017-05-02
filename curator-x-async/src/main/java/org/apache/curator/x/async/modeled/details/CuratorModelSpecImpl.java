@@ -33,7 +33,6 @@ import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValidator
 {
@@ -69,21 +68,9 @@ public class CuratorModelSpecImpl<T> implements CuratorModelSpec<T>, SchemaValid
     }
 
     @Override
-    public CuratorModelSpec<T> resolved(Object... parameters)
+    public CuratorModelSpec<T> at(ZPath newPath)
     {
-        return new CuratorModelSpecImpl<>(path.resolved(parameters), serializer, createMode, aclList, createOptions, deleteOptions);
-    }
-
-    @Override
-    public CuratorModelSpec<T> resolved(List<Object> parameters)
-    {
-        return new CuratorModelSpecImpl<>(path.resolved(parameters), serializer, createMode, aclList, createOptions, deleteOptions);
-    }
-
-    @Override
-    public CuratorModelSpec<T> resolving(List<Supplier<Object>> parameterSuppliers)
-    {
-        return new CuratorModelSpecImpl<>(path.resolving(parameterSuppliers), serializer, createMode, aclList, createOptions, deleteOptions);
+        return new CuratorModelSpecImpl<>(newPath, serializer, createMode, aclList, createOptions, deleteOptions);
     }
 
     @Override

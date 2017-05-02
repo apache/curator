@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -44,11 +45,18 @@ public class ZPathImpl implements ZPath
     private final boolean isResolved;
     private final List<Supplier<Object>> parameterSuppliers;
 
-    public static ZPath parse(String fullPath)
+    public static ZPath parse(String fullPath, UnaryOperator<String> nameFilter)
     {
         List<String> nodes = ImmutableList.<String>builder()
             .add(ZKPaths.PATH_SEPARATOR)
-            .addAll(Splitter.on(ZKPaths.PATH_SEPARATOR).omitEmptyStrings().splitToList(fullPath))
+            .addAll(
+                Splitter.on(ZKPaths.PATH_SEPARATOR)
+                    .omitEmptyStrings()
+                    .splitToList(fullPath)
+                    .stream()
+                    .map(nameFilter)
+                    .collect(Collectors.toList())
+             )
             .build();
         nodes.forEach(ZPathImpl::validate);
         return new ZPathImpl(nodes, null, null);
