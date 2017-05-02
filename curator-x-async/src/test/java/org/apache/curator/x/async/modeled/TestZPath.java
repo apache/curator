@@ -25,6 +25,8 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.curator.x.async.modeled.ZPath.parameterNodeName;
+
 public class TestZPath
 {
     @Test
@@ -47,6 +49,9 @@ public class TestZPath
         Assert.assertEquals(path.nodeName(), "two");
         Assert.assertEquals(path.fullPath(), "/one/two");
         Assert.assertEquals(path.parentPath(), "/one");
+
+        Assert.assertTrue(path.startsWith(ZPath.root().at("one")));
+        Assert.assertFalse(path.startsWith(ZPath.root().at("two")));
     }
 
     @Test
@@ -55,26 +60,27 @@ public class TestZPath
         Assert.assertEquals(ZPath.parse("/"), ZPath.root());
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.root().at("one").at("two").at("three"));
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
+        Assert.assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameterNodeName(), "two", parameterNodeName()));
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testUnresolvedPath()
     {
-        ZPath path = ZPath.from("one", ZPath.parameterNodeName(), "two");
+        ZPath path = ZPath.from("one", parameterNodeName(), "two");
         path.fullPath();
     }
 
     @Test
     public void testResolvedPath()
     {
-        ZPath path = ZPath.from("one", ZPath.parameterNodeName(), "two", ZPath.parameterNodeName());
+        ZPath path = ZPath.from("one", parameterNodeName(), "two", parameterNodeName());
         Assert.assertEquals(path.resolved("a", "b"), ZPath.from("one", "a", "two", "b"));
     }
 
     @Test
     public void testResolving()
     {
-        ZPath path = ZPath.from("one", ZPath.parameterNodeName(), "two", ZPath.parameterNodeName());
+        ZPath path = ZPath.from("one", parameterNodeName(), "two", parameterNodeName());
         AtomicInteger count = new AtomicInteger(0);
         ZPath resolving = path.resolving(Arrays.asList(() -> "x" + count.get(), () -> "y" + count.get()));
         Assert.assertEquals(resolving.fullPath(), "/one/x0/two/y0");

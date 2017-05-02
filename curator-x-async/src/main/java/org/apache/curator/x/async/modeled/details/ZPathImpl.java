@@ -47,6 +47,11 @@ public class ZPathImpl implements ZPath
 
     public static ZPath parse(String fullPath, UnaryOperator<String> nameFilter)
     {
+        return parseInternal(fullPath, nameFilter);
+    }
+
+    private static ZPathImpl parseInternal(String fullPath, UnaryOperator<String> nameFilter)
+    {
         List<String> nodes = ImmutableList.<String>builder()
             .add(ZKPaths.PATH_SEPARATOR)
             .addAll(
@@ -123,12 +128,16 @@ public class ZPathImpl implements ZPath
     @Override
     public boolean startsWith(ZPath path)
     {
+        ZPathImpl rhs;
         if ( path instanceof ZPathImpl )
         {
-            ZPathImpl rhs = (ZPathImpl)path;
-            return (nodes.size() >= rhs.nodes.size()) && nodes.subList(0, rhs.nodes.size()).equals(rhs);
+            rhs = (ZPathImpl)path;
         }
-        return false;
+        else
+        {
+            rhs = parseInternal(path.fullPath(), s -> s);
+        }
+        return (nodes.size() >= rhs.nodes.size()) && nodes.subList(0, rhs.nodes.size()).equals(rhs.nodes);
     }
 
     @Override
