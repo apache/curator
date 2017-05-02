@@ -16,29 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.details.recipes;
+package org.apache.curator.x.async.modeled.cached;
 
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
-import org.testng.annotations.Test;
+import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
+import java.io.Closeable;
 
-public class TestEventTypeMappings
+public interface CachedModeledCuratorFramework<T> extends ModeledCuratorFramework<T>, Closeable
 {
-    @Test
-    public void testPathChildrenCacheTypes()
-    {
-        for ( PathChildrenCacheEvent.Type type : PathChildrenCacheEvent.Type.values() )
-        {
-            ModeledPathChildrenCacheImpl.toType(type);  // throws an exception on unknown types
-        }
-    }
+    /**
+     * Return the cache instance
+     *
+     * @return cache
+     */
+    ModeledCache<T> getCache();
 
-    @Test
-    public void testTreeCacheTypes()
-    {
-        for ( TreeCacheEvent.Type type : TreeCacheEvent.Type.values() )
-        {
-            ModeledTreeCacheImpl.toType(type);  // throws an exception on unknown types
-        }
-    }
+    /**
+     * Start the internally created via {@link #cached()}
+     */
+    void start();
+
+    /**
+     * Close the internally created via {@link #cached()}
+     */
+    @Override
+    void close();
+
+    /**
+     * {@inheritDoc}
+     */
+    CachedModeledCuratorFramework<T> at(String child);
 }

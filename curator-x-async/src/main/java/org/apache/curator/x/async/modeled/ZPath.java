@@ -176,6 +176,15 @@ public interface ZPath
     boolean isRoot();
 
     /**
+     * Return true if this path starts with the given path. i.e.
+     * <code>ZPath.from("/one/two/three").startsWith(ZPath.from("/one/two"))</code> returns true
+     *
+     * @param path base path
+     * @return true/false
+     */
+    boolean startsWith(ZPath path);
+
+    /**
      * The string full path that this ZPath represents
      *
      * @return full path

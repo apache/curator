@@ -22,7 +22,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncStage;
-import org.apache.curator.x.async.modeled.recipes.ModeledCache;
+import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 import java.util.Map;
@@ -54,19 +54,9 @@ public interface ModeledCuratorFramework<T>
     }
 
     /**
-     * Use the given cache as a front for this modeled instance. All read APIs check the cache
-     * first and, if available, return the values from the cache.
-     * the cache
-     *
-     * @param cache cache to use
-     * @return wrapped instance
-     */
-    CachedModeledCuratorFramework<T> cached(ModeledCache<T> cache);
-
-    /**
      * Use an internally created cache as a front for this modeled instance. All read APIs check the cache
      * first and, if available, return the values from the cache. Note: you must call
-     * {@link org.apache.curator.x.async.modeled.CachedModeledCuratorFramework#start()} and
+     * {@link org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework#start()} and
      * {@link CachedModeledCuratorFramework#close()} to start/stop
      *
      * @return wrapped instance

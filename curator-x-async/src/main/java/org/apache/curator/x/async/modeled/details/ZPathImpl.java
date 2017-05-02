@@ -73,7 +73,7 @@ public class ZPathImpl implements ZPath
     {
         names = Objects.requireNonNull(names, "names cannot be null");
         names.forEach(ZPathImpl::validate);
-        ImmutableList.Builder<String> builder = ImmutableList.<String>builder();
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
         if ( base != null )
         {
             if ( base instanceof ZPathImpl )
@@ -110,6 +110,17 @@ public class ZPathImpl implements ZPath
     public boolean isRoot()
     {
         return nodes.size() == 1;
+    }
+
+    @Override
+    public boolean startsWith(ZPath path)
+    {
+        if ( path instanceof ZPathImpl )
+        {
+            ZPathImpl rhs = (ZPathImpl)path;
+            return (nodes.size() >= rhs.nodes.size()) && nodes.subList(0, rhs.nodes.size()).equals(rhs);
+        }
+        return false;
     }
 
     @Override

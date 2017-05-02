@@ -18,44 +18,43 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncStage;
-import org.apache.curator.x.async.modeled.CachedModeledCuratorFramework;
+import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.CuratorModelSpec;
 import org.apache.curator.x.async.modeled.ModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.ZPath;
-import org.apache.curator.x.async.modeled.recipes.ModeledCache;
-import org.apache.curator.x.async.modeled.recipes.ModeledCachedNode;
+import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.cached.ModeledCache;
+import org.apache.curator.x.async.modeled.cached.ModeledCachedNode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramework<T>
 {
     private final ModeledCuratorFramework<T> client;
-    private final ModeledCache<T> cache;
-    private final ZPath path;
+    private final ModeledCacheImpl<T> cache;
 
-    CachedModeledCuratorFrameworkImpl(ModeledCuratorFramework<T> client, ModeledCache<T> cache, ZPath path)
+    CachedModeledCuratorFrameworkImpl(ModeledCuratorFramework<T> client)
     {
-        this.client = Objects.requireNonNull(client, "client cannot be null");
-        this.cache = Objects.requireNonNull(cache, "cache cannot be null");
-        this.path = Objects.requireNonNull(path, "path cannot be null");
+        this(client, new ModeledCacheImpl<>(client.unwrap(), client.modelSpec().path(), client.modelSpec().serializer(), client.modelSpec().createOptions().contains(CreateOption.compress)));
     }
 
-    @VisibleForTesting
-    volatile AtomicInteger debugCachedReadCount = null;
+    private CachedModeledCuratorFrameworkImpl(ModeledCuratorFramework<T> client, ModeledCacheImpl<T> cache)
+    {
+        this.client = client;
+        this.cache = cache;
+    }
 
     @Override
     public ModeledCache<T> getCache()
@@ -66,31 +65,19 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     @Override
     public void start()
     {
-        throw new UnsupportedOperationException();
+        cache.start();
     }
 
     @Override
     public void close()
     {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CuratorModelSpec<T> modelSpec()
-    {
-        return client.modelSpec();
-    }
-
-    @Override
-    public CachedModeledCuratorFramework<T> cached(ModeledCache<T> cache)
-    {
-        throw new UnsupportedOperationException();
+        cache.close();
     }
 
     @Override
     public CachedModeledCuratorFramework<T> cached()
     {
-        throw new UnsupportedOperationException();
+        return this;
     }
 
     @Override
@@ -100,21 +87,27 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     }
 
     @Override
-    public ModeledCuratorFramework<T> at(String child)
+    public CuratorModelSpec<T> modelSpec()
     {
-        return new CachedModeledCuratorFrameworkImpl<>(client.at(child), cache, path.at(child));
+        return client.modelSpec();
+    }
+
+    @Override
+    public CachedModeledCuratorFramework<T> at(String child)
+    {
+        return new CachedModeledCuratorFrameworkImpl<>(client.at(child), cache);
     }
 
     @Override
     public AsyncStage<String> set(T model)
     {
-        return client.set(model);
+        return client.set(model);   // TODO - update cache?
     }
 
     @Override
     public AsyncStage<String> set(T model, Stat storingStatIn)
     {
-        return client.set(model, storingStatIn);
+        return client.set(model, storingStatIn);   // TODO - update cache?
     }
 
     @Override
@@ -126,25 +119,15 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     @Override
     public AsyncStage<T> read(Stat storingStatIn)
     {
+        ZPath path = client.modelSpec().path();
         Optional<ModeledCachedNode<T>> data = cache.getCurrentData(path);
-        if ( data.isPresent() )
-        {
-            ModeledCachedNode<T> localData = data.get();
-            T model = localData.getModel();
-            if ( model != null )
+        return data.map(node -> {
+            if ( storingStatIn != null )
             {
-                if ( (storingStatIn != null) && (localData.getStat() != null) )
-                {
-                    DataTree.copyStat(localData.getStat(), storingStatIn);
-                }
-                if ( debugCachedReadCount != null )
-                {
-                    debugCachedReadCount.incrementAndGet();
-                }
-                return new ModelStage<>(model);
+                DataTree.copyStat(node.getStat(), storingStatIn);
             }
-        }
-        return (storingStatIn != null) ? client.read(storingStatIn) : client.read();
+            return new ModelStage<>(node.getModel());
+        }).orElseGet(() -> new ModelStage<>(new KeeperException.NoNodeException(path.fullPath())));
     }
 
     @Override
@@ -174,67 +157,26 @@ class CachedModeledCuratorFrameworkImpl<T> implements CachedModeledCuratorFramew
     @Override
     public AsyncStage<Stat> checkExists()
     {
+        ZPath path = client.modelSpec().path();
         Optional<ModeledCachedNode<T>> data = cache.getCurrentData(path);
-        return data.map(node -> {
-            AsyncStage<Stat> stage = new ModelStage<>(node.getStat());
-            if ( debugCachedReadCount != null )
-            {
-                debugCachedReadCount.incrementAndGet();
-            }
-            return stage;
-        }).orElseGet(client::checkExists);
+        return data.map(node -> new ModelStage<>(node.getStat())).orElseGet(() -> new ModelStage<>((Stat)null));
     }
 
     @Override
     public AsyncStage<List<ZPath>> getChildren()
     {
-        Map<ZPath, ModeledCachedNode<T>> currentChildren = cache.getCurrentChildren(path);
-        if ( currentChildren != cache.noChildrenValue() )
-        {
-            if ( debugCachedReadCount != null )
-            {
-                debugCachedReadCount.incrementAndGet();
-            }
-            return new ModelStage<>(Lists.newArrayList(currentChildren.keySet()));
-        }
-        return client.getChildren();
+        Set<ZPath> paths = cache.getCurrentChildren(client.modelSpec().path()).keySet();
+        return new ModelStage<>(Lists.newArrayList(paths));
     }
 
     @Override
     public AsyncStage<Map<ZPath, AsyncStage<T>>> readChildren()
     {
-        Map<ZPath, ModeledCachedNode<T>> currentChildren = cache.getCurrentChildren(path);
-        if ( currentChildren != cache.noChildrenValue() )
-        {
-            if ( debugCachedReadCount != null )
-            {
-                debugCachedReadCount.incrementAndGet();
-            }
-            Map<ZPath, AsyncStage<T>> children = currentChildren.entrySet()
-                .stream()
-                .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue().getModel()))
-                .filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> new ModelStage<>(e.getValue())));
-            return new ModelStage<>(children);
-        }
-
-        ModelStage<Map<ZPath, AsyncStage<T>>> modelStage = new ModelStage<>();
-        client.getChildren().whenComplete((children, e) -> {
-            if ( e != null )
-            {
-                modelStage.completeExceptionally(e);
-            }
-            else
-            {
-                if ( debugCachedReadCount != null )
-                {
-                    debugCachedReadCount.incrementAndGet();
-                }
-                Map<ZPath, AsyncStage<T>> map = children.stream().collect(Collectors.toMap(Function.identity(), path1 -> at(path1.nodeName()).read()));
-                modelStage.complete(map);
-            }
-        });
-        return modelStage;
+        Map<ZPath, AsyncStage<T>> map = cache.getCurrentChildren(client.modelSpec().path()).entrySet()
+            .stream()
+            .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), new ModelStage<>(entry.getValue().getModel())))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new ModelStage<>(map);
     }
 
     @Override

@@ -23,7 +23,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.CompletableBaseClassForTests;
-import org.apache.curator.x.async.modeled.CachedModeledCuratorFramework;
+import org.apache.curator.x.async.modeled.cached.CachedModeledCuratorFramework;
 import org.apache.curator.x.async.modeled.CuratorModelSpec;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSerializer;
@@ -69,7 +69,7 @@ public class TestCachedModeledCuratorFramework extends CompletableBaseClassForTe
         client.start();
 
         AtomicInteger counter = new AtomicInteger();
-        ((CachedModeledCuratorFrameworkImpl)client).debugCachedReadCount = counter;
+//        ((CachedModeledCuratorFrameworkImpl)client).debugCachedReadCount = counter;
 
         complete(client.read());
         Assert.assertEquals(counter.get(), 0);

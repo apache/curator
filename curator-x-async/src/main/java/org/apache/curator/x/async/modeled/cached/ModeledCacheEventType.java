@@ -16,34 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.recipes;
+package org.apache.curator.x.async.modeled.cached;
 
-import org.apache.curator.x.async.modeled.ZPath;
-import org.apache.zookeeper.data.Stat;
-
-/**
- * Abstracts a cached node
- */
-public interface ModeledCachedNode<T>
+public enum ModeledCacheEventType
 {
     /**
-     * The path of the node
-     *
-     * @return path
+     * A child was added to the path
      */
-    ZPath getPath();
+    NODE_ADDED,
 
     /**
-     * The node's last known stat if available
-     *
-     * @return stat
+     * A child's data was changed
      */
-    Stat getStat();
+    NODE_UPDATED,
 
     /**
-     * The node's current model
-     *
-     * @return model
+     * A child was removed from the path
      */
-    T getModel();
+    NODE_REMOVED,
+
+    /**
+     * Signals that the initial cache has been populated.
+     */
+    INITIALIZED
 }

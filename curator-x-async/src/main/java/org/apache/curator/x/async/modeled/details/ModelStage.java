@@ -43,6 +43,12 @@ class ModelStage<T> extends CompletableFuture<T> implements AsyncStage<T>
         complete(value);
     }
 
+    ModelStage(Exception e)
+    {
+        event = null;
+        completeExceptionally(e);
+    }
+
     @Override
     public CompletionStage<WatchedEvent> event()
     {
