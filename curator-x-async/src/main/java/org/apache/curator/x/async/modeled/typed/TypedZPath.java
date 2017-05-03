@@ -18,12 +18,11 @@
  */
 package org.apache.curator.x.async.modeled.typed;
 
-import org.apache.curator.x.async.modeled.NodeName;
 import org.apache.curator.x.async.modeled.ZPath;
 
 /**
  * <p>
- *     Abstraction that allows the construction of ZPaths using strongly type parameter replacements.
+ *     Abstraction that allows the construction of ZPaths using strongly typed parameter replacements.
  *     For example, given a path such as "/root/registry/people/{id}" where "id" should be <code>PersonId</code>.
  * </p>
  *
@@ -34,6 +33,27 @@ import org.apache.curator.x.async.modeled.ZPath;
  * ...
  *
  * ZPath path = typedPath.resolved(personId);
+ * </pre></code>
+ * </p>
+ *
+ * <p>
+ *     Additionally, if you have a model/class that implements {@link org.apache.curator.x.async.modeled.NodeName}
+ *     you can pass that when resolving. E.g.
+ * </p>
+ *
+ * <p>
+ * <pre><code>
+ * public class MyModel implements NodeName {
+ *     ...
+ *     public String nodeName() {
+ *         return modelId;
+ *     }
+ * }
+ *
+ * TypedZPath&lt;MyModel&gt; typedPath = TypedZPath.from("/foo/bar/{id}");
+ *
+ * MyModel model = ...
+ * ZPath path = typedPath.resolved(model);
  * </pre></code>
  * </p>
  */

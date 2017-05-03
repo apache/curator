@@ -31,7 +31,7 @@ public interface ModeledCache<T>
      * {@link java.util.Optional#empty()} is returned.
      *
      * @param path path to the node to check
-     * @return data if the node is alive, or null
+     * @return data if the node is alive, or empty
      */
     Optional<ZNode<T>> currentData(ZPath path);
 
@@ -40,7 +40,7 @@ public interface ModeledCache<T>
      * guarantees of accuracy; this is merely the most recent view of the data.
      *
      * @param path path to the node to check
-     * @return a possibly-empty list of children if the node is alive, or null
+     * @return a possibly-empty map of children if the node is alive
      */
     Map<ZPath, ZNode<T>> currentChildren(ZPath path);
 

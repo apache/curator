@@ -53,7 +53,7 @@ public interface ZPath extends Resolvable
     }
 
     /**
-     * Take a ZNode string path and return a ZPath
+     * Take a string path and return a ZPath
      *
      * @param fullPath the path to parse
      * @return ZPath
@@ -65,10 +65,10 @@ public interface ZPath extends Resolvable
     }
 
     /**
-     * Take a ZNode string path and return a ZPath. Each part of the path
+     * Take a string path and return a ZPath. Each part of the path
      * that is <code>{id}</code> is replaced with {@link #parameterNodeName}.
      * E.g. <code>parseWithIds("/one/two/{id}/three/{id}")</code> is the equivalent
-     * of calling <code>ZPath.from("one", "two", parameterNodeName(), "three", parameterNodeName())</code>
+     * of calling <code>ZPath.from("one", "two", parameterNodeName, "three", parameterNodeName)</code>
      *
      * @param fullPath the path to parse
      * @return ZPath
@@ -94,7 +94,9 @@ public interface ZPath extends Resolvable
 
     /**
      * Convert individual path names into a ZPath. E.g.
-     * <code>ZPath.from("my", "full", "path")</code>
+     * <code>ZPath.from("my", "full", "path")</code>. Any/all of the names can be passed as
+     * {@link #parameterNodeName} so that the path can be resolved later using
+     * of the <code>resolved()</code> methods.
      *
      * @param names path names
      * @return ZPath
@@ -106,7 +108,9 @@ public interface ZPath extends Resolvable
     }
 
     /**
-     * Convert individual path names into a ZPath
+     * Convert individual path names into a ZPath. Any/all of the names can be passed as
+     * {@link #parameterNodeName} so that the path can be resolved later using
+     * of the <code>resolved()</code> methods.
      *
      * @param names path names
      * @return ZPath
@@ -120,7 +124,9 @@ public interface ZPath extends Resolvable
     /**
      * Convert individual path names into a ZPath starting at the given base. E.g.
      * if base is "/home/base" <code>ZPath.from(base, "my", "full", "path")</code>
-     * would be "/home/base/my/full/path"
+     * would be "/home/base/my/full/path". Any/all of the names can be passed as
+     * {@link #parameterNodeName} so that the path can be resolved later using
+     * of the <code>resolved()</code> methods.
      *
      * @param base base/starting path
      * @param names path names
@@ -133,7 +139,9 @@ public interface ZPath extends Resolvable
     }
 
     /**
-     * Convert individual path names into a ZPath starting at the given base
+     * Convert individual path names into a ZPath starting at the given base. Any/all of the names can be passed as
+     * {@link #parameterNodeName} so that the path can be resolved later using
+     * of the <code>resolved()</code> methods.
      *
      * @param base base/starting path
      * @param names path names
@@ -146,8 +154,16 @@ public interface ZPath extends Resolvable
     }
 
     /**
-     * When creating paths, any node in the path can be set to {@link #parameterNodeName}.
-     * At runtime, the ZPath can be "resolved" by replacing these nodes with values.
+     * <p>
+     *     When creating paths, any node in the path can be set to {@link #parameterNodeName}.
+     *     At runtime, the ZPath can be "resolved" by replacing these nodes with values.
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of the parameter object or,
+     *     if the object implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
      *
      * @param parameters list of replacements. Must have be the same length as the number of
      *                   parameter nodes in the path
@@ -160,8 +176,16 @@ public interface ZPath extends Resolvable
     }
 
     /**
-     * When creating paths, any node in the path can be set to {@link #parameterNodeName}.
-     * At runtime, the ZPath can be "resolved" by replacing these nodes with values.
+     * <p>
+     *     When creating paths, any node in the path can be set to {@link #parameterNodeName}.
+     *     At runtime, the ZPath can be "resolved" by replacing these nodes with values.
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of the parameter object or,
+     *     if the object implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
      *
      * @param parameters list of replacements. Must have be the same length as the number of
      *                   parameter nodes in the path
@@ -171,10 +195,18 @@ public interface ZPath extends Resolvable
     ZPath resolved(List<Object> parameters);
 
     /**
-     * An "auto" resolving version of this ZPath. i.e. if any of the path names is
-     * the {@link #parameterNodeName} the ZPath must be resolved. This method
-     * creates a new ZPath that auto resolves by using the given parameter suppliers
-     * whenever needed.
+     * <p>
+     *     An "auto" resolving version of this ZPath. i.e. if any of the path names is
+     *     the {@link #parameterNodeName} the ZPath must be resolved. This method
+     *     creates a new ZPath that auto resolves by using the given parameter suppliers
+     *     whenever needed.
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of the parameter object or,
+     *     if the object implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
      *
      * @param parameterSuppliers parameter suppliers
      * @return new auto resolving ZNode
@@ -184,8 +216,16 @@ public interface ZPath extends Resolvable
     ZPath resolving(List<Supplier<Object>> parameterSuppliers);
 
     /**
-     * Return a ZPath that represents a child ZNode of this ZPath. e.g.
-     * <code>ZPath.from("a", "b").at("c")</code> represents the path "/a/b/c"
+     * <p>
+     *     Return a ZPath that represents a child ZNode of this ZPath. e.g.
+     *     <code>ZPath.from("a", "b").at("c")</code> represents the path "/a/b/c"
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of child or,
+     *     if it implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
      *
      * @param child child node name
      * @return ZPath

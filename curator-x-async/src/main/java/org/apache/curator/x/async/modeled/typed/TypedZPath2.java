@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.typed;
 
-import org.apache.curator.x.async.modeled.NodeName;
 import org.apache.curator.x.async.modeled.ZPath;
 
 /**

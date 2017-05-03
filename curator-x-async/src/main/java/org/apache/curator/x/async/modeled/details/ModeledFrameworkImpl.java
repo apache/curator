@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
+import com.google.common.base.Preconditions;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -54,10 +55,11 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     private final UnhandledErrorListener unhandledErrorListener;
     private final UnaryOperator<CuratorEvent> resultFilter;
     private final AsyncCuratorFrameworkDsl dslClient;
+    private final boolean isWatched;
 
     public static <T> ModeledFrameworkImpl<T> build(AsyncCuratorFramework client, ModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
     {
-        boolean localIsWatched = (watchMode != null);
+        boolean isWatched = (watchMode != null);
 
         Objects.requireNonNull(client, "client cannot be null");
         Objects.requireNonNull(model, "model cannot be null");
@@ -65,7 +67,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         watchMode = (watchMode != null) ? watchMode : WatchMode.stateChangeAndSuccess;
 
         AsyncCuratorFrameworkDsl dslClient = client.with(watchMode, unhandledErrorListener, resultFilter, watcherFilter);
-        WatchableAsyncCuratorFramework watchableClient = localIsWatched ? dslClient.watched() : dslClient;
+        WatchableAsyncCuratorFramework watchableClient = isWatched ? dslClient.watched() : dslClient;
 
         return new ModeledFrameworkImpl<>(
             client,
@@ -75,11 +77,12 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             watchMode,
             watcherFilter,
             unhandledErrorListener,
-            resultFilter
+            resultFilter,
+            isWatched
         );
     }
 
-    private ModeledFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, ModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
+    private ModeledFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, ModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, boolean isWatched)
     {
         this.client = client;
         this.dslClient = dslClient;
@@ -89,11 +92,13 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         this.watcherFilter = watcherFilter;
         this.unhandledErrorListener = unhandledErrorListener;
         this.resultFilter = resultFilter;
+        this.isWatched = isWatched;
     }
 
     @Override
     public CachedModeledFramework<T> cached()
     {
+        Preconditions.checkState(!isWatched, "CachedModeledFramework cannot be used with watched instances as the internal cache would bypass the watchers.");
         return new CachedModeledFrameworkImpl<>(this);
     }
 
@@ -229,7 +234,8 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             watchMode,
             watcherFilter,
             unhandledErrorListener,
-            resultFilter
+            resultFilter,
+            isWatched
         );
     }
 
@@ -245,7 +251,8 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             watchMode,
             watcherFilter,
             unhandledErrorListener,
-            resultFilter
+            resultFilter,
+            isWatched
         );
     }
 

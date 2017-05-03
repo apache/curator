@@ -32,12 +32,12 @@ public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeabl
     ModeledCache<T> getCache();
 
     /**
-     * Start the internally created via {@link #cached()}
+     * Start the internally created cache
      */
     void start();
 
     /**
-     * Close the internally created via {@link #cached()}
+     * Close/stop the internally created cache
      */
     @Override
     void close();

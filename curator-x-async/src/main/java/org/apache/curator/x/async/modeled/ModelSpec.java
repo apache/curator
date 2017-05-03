@@ -27,6 +27,18 @@ import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * A full specification for dealing with a portion of the ZooKeeper tree. ModelSpec's contain:
+ *
+ * <ul>
+ *     <li>A node path</li>
+ *     <li>Serializer for the data stored</li>
+ *     <li>Options for how to create the node (mode, compression, etc.)</li>
+ *     <li>Options for how to deleting the node (quietly, guaranteed, etc.)</li>
+ *     <li>ACLs</li>
+ *     <li>Optional schema generation</li>
+ * </ul>
+ */
 public interface ModelSpec<T> extends Resolvable
 {
     Set<CreateOption> defaultCreateOptions = ImmutableSet.of(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists);
@@ -64,9 +76,17 @@ public interface ModelSpec<T> extends Resolvable
     }
 
     /**
-     * Return a new CuratorModel instance with all the same options but applying to the given child node of this CuratorModel's
-     * path. E.g. if this CuratorModel instance applies to "/a/b", calling <code>modeled.at("c")</code> returns an instance that applies to
-     * "/a/b/c".
+     * <p>
+     *     Return a new CuratorModel instance with all the same options but applying to the given child node of this CuratorModel's
+     *     path. E.g. if this CuratorModel instance applies to "/a/b", calling <code>modeled.at("c")</code> returns an instance that applies to
+     *     "/a/b/c".
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of child or,
+     *     if it implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
      *
      * @param child child node.
      * @return new Modeled Spec instance
@@ -82,9 +102,17 @@ public interface ModelSpec<T> extends Resolvable
     ModelSpec<T> withPath(ZPath path);
 
     /**
-     * Return a new CuratorModel instance with all the same options but using a resolved
-     * path by calling {@link org.apache.curator.x.async.modeled.ZPath#resolved(Object...)}
-     * using the given parameters
+     * <p>
+     *     Return a new CuratorModel instance with all the same options but using a resolved
+     *     path by calling {@link org.apache.curator.x.async.modeled.ZPath#resolved(Object...)}
+     *     using the given parameters
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of the parameter object or,
+     *     if the object implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
      *
      * @param parameters list of replacements. Must have be the same length as the number of
      *                   parameter nodes in the path
@@ -94,9 +122,17 @@ public interface ModelSpec<T> extends Resolvable
     ModelSpec<T> resolved(Object... parameters);
 
     /**
-     * Return a new CuratorModel instance with all the same options but using a resolved
-     * path by calling {@link org.apache.curator.x.async.modeled.ZPath#resolved(java.util.List)}
-     * using the given parameters
+     * <p>
+     *     Return a new CuratorModel instance with all the same options but using a resolved
+     *     path by calling {@link org.apache.curator.x.async.modeled.ZPath#resolved(java.util.List)}
+     *     using the given parameters
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of the parameter object or,
+     *     if the object implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
      *
      * @param parameters list of replacements. Must have be the same length as the number of
      *                   parameter nodes in the path

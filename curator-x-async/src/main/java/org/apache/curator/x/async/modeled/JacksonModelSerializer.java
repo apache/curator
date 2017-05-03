@@ -33,7 +33,7 @@ import java.util.Objects;
  * Model serializer that uses Jackson for JSON serialization. <strong>IMPORTANT: </strong>
  * the jackson dependency is specified as <code>provided</code> in the curator-x-async Maven POM
  * file to avoid adding a new dependency to Curator. Therefore, if you wish to use the
- * JacksonModelSerializer you must manually add the dependency to your build syste
+ * JacksonModelSerializer you must manually add the dependency to your build system
  */
 public class JacksonModelSerializer<T> implements ModelSerializer<T>
 {

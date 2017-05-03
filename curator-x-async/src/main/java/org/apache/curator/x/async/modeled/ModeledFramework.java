@@ -65,8 +65,8 @@ public interface ModeledFramework<T>
     }
 
     /**
-     * Use an internally created cache as a front for this modeled instance. All read APIs check the cache
-     * first and, if available, return the values from the cache. Note: you must call
+     * Use an internally created cache as a front for this modeled instance. All read APIs use the internal
+     * cache. i.e. read calls always use the cache instead of making direct queries. Note: you must call
      * {@link org.apache.curator.x.async.modeled.cached.CachedModeledFramework#start()} and
      * {@link org.apache.curator.x.async.modeled.cached.CachedModeledFramework#close()} to start/stop
      *
@@ -90,9 +90,17 @@ public interface ModeledFramework<T>
     ModelSpec<T> modelSpec();
 
     /**
-     * Return a new Modeled Curator instance with all the same options but applying to the given child node of this Modeled Curator's
-     * path. E.g. if this Modeled Curator instance applies to "/a/b", calling <code>modeled.at("c")</code> returns an instance that applies to
-     * "/a/b/c".
+     * <p>
+     *     Return a new Modeled Curator instance with all the same options but applying to the given child node of this Modeled Curator's
+     *     path. E.g. if this Modeled Curator instance applies to "/a/b", calling <code>modeled.at("c")</code> returns an instance that applies to
+     *     "/a/b/c".
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of child or,
+     *     if it implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
      *
      * @param child child node.
      * @return new Modeled Curator instance

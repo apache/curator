@@ -270,7 +270,7 @@ public class ZPathImpl implements ZPath
                 {
                     throw new IllegalStateException(String.format("Parameter supplier missing at index [%d] for [%s]", parameterIndex, nodes.toString()));
                 }
-                value = parameterSuppliers.get(parameterIndex++).get().toString();
+                value = NodeName.nameFrom(parameterSuppliers.get(parameterIndex++).get());
             }
             str.append(value);
         }
