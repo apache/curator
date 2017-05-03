@@ -28,23 +28,33 @@ public class Publisher
         this.client = Objects.requireNonNull(client, "client cannot be null");
     }
 
+    /**
+     * Publish the given instance using the Instance client template
+     *
+     * @param instance instance to publish
+     */
     public void publishInstance(Instance instance)
     {
         ModeledFramework<Instance> resolvedClient = instanceClient
-            .resolved(client, instance.getType())
-            .resolved(instance);
+            .resolved(client, instance.getType())   // this resolves to the parent path
+            .resolved(instance);                    // this resolves to a child node - uses the Instance's id because Instance extends NodeName
         resolvedClient.set(instance).exceptionally(e -> {
             log.error("Could not publish instance: " + instance, e);
             return null;
         });
     }
 
+    /**
+     * Publish the given instances using the Instance client template in a transaction
+     *
+     * @param instances instances to publish
+     */
     public void publishInstances(List<Instance> instances)
     {
         List<CuratorOp> operations = instances.stream()
             .map(instance -> instanceClient
-                .resolved(client, instance.getType())
-                .resolved(instance)
+                .resolved(client, instance.getType())   // this resolves to the parent path
+                .resolved(instance)                     // this resolves to a child node - uses the Instance's id because Instance extends NodeName
                 .createOp(instance)
             )
             .collect(Collectors.toList());
@@ -54,27 +64,51 @@ public class Publisher
         });
     }
 
-    public void publishLocationAvailable(Group group, LocationAvailable message)
+    /**
+     * Publish the given LocationAvailable using the LocationAvailable client template
+     *
+     * @param group group
+     * @param locationAvailable message to publish
+     */
+    public void publishLocationAvailable(Group group, LocationAvailable locationAvailable)
     {
-        publishMessage(locationAvailableClient, group, message);
+        publishMessage(locationAvailableClient, group, locationAvailable);
     }
 
-    public void publishUserCreated(Group group, UserCreated message)
+    /**
+     * Publish the given UserCreated using the UserCreated client template
+     *
+     * @param group group
+     * @param userCreated message to publish
+     */
+    public void publishUserCreated(Group group, UserCreated userCreated)
     {
-        publishMessage(userCreatedClient, group, message);
+        publishMessage(userCreatedClient, group, userCreated);
     }
 
-    public void publishLocationsAvailable(Group group, List<LocationAvailable> messages)
+    /**
+     * Publish the given LocationAvailables using the LocationAvailable client template in a transaction
+     *
+     * @param group group
+     * @param locationsAvailable messages to publish
+     */
+    public void publishLocationsAvailable(Group group, List<LocationAvailable> locationsAvailable)
     {
-        publishMessages(locationAvailableClient, group, messages);
+        publishMessages(locationAvailableClient, group, locationsAvailable);
     }
 
-    public void publishUsersCreated(Group group, List<UserCreated> messages)
+    /**
+     * Publish the given UserCreateds using the UserCreated client template in a transaction
+     *
+     * @param group group
+     * @param usersCreated messages to publish
+     */
+    public void publishUsersCreated(Group group, List<UserCreated> usersCreated)
     {
-        publishMessages(userCreatedClient, group, messages);
+        publishMessages(userCreatedClient, group, usersCreated);
     }
 
-    public <T extends Message> void publishMessage(TypedModeledFramework2<T, Group, Priority> typedClient, Group group, T message)
+    private <T extends Message> void publishMessage(TypedModeledFramework2<T, Group, Priority> typedClient, Group group, T message)
     {
         ModeledFramework<T> resolvedClient = typedClient
             .resolved(client, group, message.getPriority())
@@ -85,12 +119,12 @@ public class Publisher
         });
     }
 
-    public <T extends Message> void publishMessages(TypedModeledFramework2<T, Group, Priority> typedClient, Group group, List<T> messages)
+    private <T extends Message> void publishMessages(TypedModeledFramework2<T, Group, Priority> typedClient, Group group, List<T> messages)
     {
         List<CuratorOp> operations = messages.stream()
             .map(message -> typedClient
-                    .resolved(client, group, message.getPriority())
-                    .resolved(message)
+                    .resolved(client, group, message.getPriority()) // this resolves to the parent path
+                    .resolved(message)                              // this resolves to a child node - uses the Message's id because Message extends NodeName
                     .createOp(message)
                 )
             .collect(Collectors.toList());
