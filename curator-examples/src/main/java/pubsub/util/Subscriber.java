@@ -1,4 +1,4 @@
-package pubsub;
+package pubsub.util;
 
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
