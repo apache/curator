@@ -27,6 +27,7 @@ import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
+import org.apache.curator.framework.api.transaction.TransactionCreateBuilder2;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
@@ -116,6 +117,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             public PathAndBytesable<T> withACL(List<ACL> aclList)
             {
                 CreateBuilderImpl.this.withACL(aclList);
+                return this;
+            }
+
+            @Override
+            public TransactionCreateBuilder2<T> withTtl(long ttl)
+            {
+                CreateBuilderImpl.this.withTtl(ttl);
                 return this;
             }
 

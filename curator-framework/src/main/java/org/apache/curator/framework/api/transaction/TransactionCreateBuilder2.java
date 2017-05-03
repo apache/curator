@@ -18,17 +18,17 @@
  */
 package org.apache.curator.framework.api.transaction;
 
-public interface TransactionCreateBuilder<T> extends TransactionCreateBuilder2<T>
+import org.apache.curator.framework.api.ACLCreateModePathAndBytesable;
+import org.apache.curator.framework.api.ACLPathAndBytesable;
+import org.apache.curator.framework.api.Compressible;
+import org.apache.curator.framework.api.CreateModable;
+import org.apache.curator.framework.api.PathAndBytesable;
+
+public interface TransactionCreateBuilder2<T> extends
+    PathAndBytesable<T>,
+    CreateModable<ACLPathAndBytesable<T>>,
+    ACLPathAndBytesable<T>,
+    ACLCreateModePathAndBytesable<T>,
+    Compressible<ACLCreateModePathAndBytesable<T>>
 {
-    /**
-     * Specify a TTL when mode is {@link org.apache.zookeeper.CreateMode#PERSISTENT_WITH_TTL} or
-     * {@link org.apache.zookeeper.CreateMode#PERSISTENT_SEQUENTIAL_WITH_TTL}. If
-     * the znode has not been modified within the given TTL, it will be deleted once it has no
-     * children. The TTL unit is milliseconds and must be greater than 0 and less than or equal to
-     * EphemeralType.MAX_TTL.
-     *
-     * @param ttl the ttl
-     * @return this for chaining
-     */
-    TransactionCreateBuilder2<T> withTtl(long ttl);
 }

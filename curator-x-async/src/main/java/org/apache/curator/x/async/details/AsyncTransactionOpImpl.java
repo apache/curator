@@ -22,7 +22,7 @@ import org.apache.curator.framework.api.ACLCreateModePathAndBytesable;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.api.VersionPathAndBytesable;
 import org.apache.curator.framework.api.transaction.CuratorOp;
-import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
+import org.apache.curator.framework.api.transaction.TransactionCreateBuilder2;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
@@ -78,6 +78,13 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
             }
 
             @Override
+            public AsyncPathAndBytesable<CuratorOp> withTtl(long ttl)
+            {
+                this.ttl = ttl;
+                return this;
+            }
+
+            @Override
             public AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed)
             {
                 this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
@@ -110,7 +117,7 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
 
             private CuratorOp internalForPath(String path, byte[] data, boolean useData)
             {
-                TransactionCreateBuilder<CuratorOp> builder1 = client.transactionOp().create();  // TODO - handle TTL
+                TransactionCreateBuilder2<CuratorOp> builder1 = (ttl > 0) ? client.transactionOp().create().withTtl(ttl) : client.transactionOp().create();
                 ACLCreateModePathAndBytesable<CuratorOp> builder2 = compressed ? builder1.compressed() : builder1;
                 PathAndBytesable<CuratorOp> builder3 = builder2.withACL(aclList);
                 try
