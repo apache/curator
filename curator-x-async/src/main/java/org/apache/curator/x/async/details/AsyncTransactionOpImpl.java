@@ -54,6 +54,7 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
             private List<ACL> aclList = null;
             private CreateMode createMode = CreateMode.PERSISTENT;
             private boolean compressed = false;
+            private long ttl = -1;
 
             @Override
             public AsyncPathAndBytesable<CuratorOp> withMode(CreateMode createMode)
@@ -86,6 +87,16 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
             }
 
             @Override
+            public AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed, long ttl)
+            {
+                this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
+                this.aclList = aclList;
+                this.compressed = compressed;
+                this.ttl = ttl;
+                return this;
+            }
+
+            @Override
             public CuratorOp forPath(String path, byte[] data)
             {
                 return internalForPath(path, data, true);
@@ -99,7 +110,7 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
 
             private CuratorOp internalForPath(String path, byte[] data, boolean useData)
             {
-                TransactionCreateBuilder<CuratorOp> builder1 = client.transactionOp().create();
+                TransactionCreateBuilder<CuratorOp> builder1 = client.transactionOp().create();  // TODO - handle TTL
                 ACLCreateModePathAndBytesable<CuratorOp> builder2 = compressed ? builder1.compressed() : builder1;
                 PathAndBytesable<CuratorOp> builder3 = builder2.withACL(aclList);
                 try

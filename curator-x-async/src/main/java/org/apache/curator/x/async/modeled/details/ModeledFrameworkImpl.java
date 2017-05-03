@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -56,7 +55,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     private final UnaryOperator<CuratorEvent> resultFilter;
     private final AsyncCuratorFrameworkDsl dslClient;
 
-    public static <T> ModeledFrameworkImpl<T> build(CuratorFramework client, ModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
+    public static <T> ModeledFrameworkImpl<T> build(AsyncCuratorFramework client, ModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
     {
         boolean localIsWatched = (watchMode != null);
 
@@ -65,12 +64,11 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
 
         watchMode = (watchMode != null) ? watchMode : WatchMode.stateChangeAndSuccess;
 
-        AsyncCuratorFramework asyncClient = AsyncCuratorFramework.wrap(client);
-        AsyncCuratorFrameworkDsl dslClient = asyncClient.with(watchMode, unhandledErrorListener, resultFilter, watcherFilter);
+        AsyncCuratorFrameworkDsl dslClient = client.with(watchMode, unhandledErrorListener, resultFilter, watcherFilter);
         WatchableAsyncCuratorFramework watchableClient = localIsWatched ? dslClient.watched() : dslClient;
 
         return new ModeledFrameworkImpl<>(
-            asyncClient,
+            client,
             dslClient,
             watchableClient,
             model,
@@ -106,9 +104,9 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     }
 
     @Override
-    public CuratorFramework unwrap()
+    public AsyncCuratorFramework unwrap()
     {
-        return client.unwrap();
+        return client;
     }
 
     @Override
@@ -121,7 +119,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     public AsyncStage<String> set(T item, Stat storingStatIn)
     {
         byte[] bytes = modelSpec.serializer().serialize(item);
-        return dslClient.create().withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn).forPath(modelSpec.path().fullPath(), bytes);
+        return dslClient.create().withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn, modelSpec.ttl()).forPath(modelSpec.path().fullPath(), bytes);
     }
 
     private List<ACL> fixAclList(List<ACL> aclList)
@@ -277,7 +275,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     {
         return client.transactionOp()
             .create()
-            .withOptions(modelSpec.createMode(), modelSpec.aclList(), modelSpec.createOptions().contains(CreateOption.compress))
+            .withOptions(modelSpec.createMode(), modelSpec.aclList(), modelSpec.createOptions().contains(CreateOption.compress), modelSpec.ttl())
             .forPath(modelSpec.path().fullPath(), modelSpec.serializer().serialize(model));
     }
 

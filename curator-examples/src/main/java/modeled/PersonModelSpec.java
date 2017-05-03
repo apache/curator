@@ -18,18 +18,18 @@
  */
 package modeled;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.x.async.modeled.ModelSpec;
+import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 
 public class PersonModelSpec
 {
-    private final CuratorFramework client;
+    private final AsyncCuratorFramework client;
     private final ModelSpec<PersonModel> modelSpec;
 
-    public PersonModelSpec(CuratorFramework client)
+    public PersonModelSpec(AsyncCuratorFramework client)
     {
         this.client = client;
 

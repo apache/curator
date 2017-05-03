@@ -44,9 +44,10 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     private final List<ACL> aclList;
     private final Set<CreateOption> createOptions;
     private final Set<DeleteOption> deleteOptions;
+    private final long ttl;
     private final AtomicReference<Schema> schema = new AtomicReference<>();
 
-    public ModelSpecImpl(ZPath path, ModelSerializer<T> serializer, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions)
+    public ModelSpecImpl(ZPath path, ModelSerializer<T> serializer, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions, long ttl)
     {
         this.path = Objects.requireNonNull(path, "path cannot be null");
         this.serializer = Objects.requireNonNull(serializer, "serializer cannot be null");
@@ -54,6 +55,7 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
         this.aclList = ImmutableList.copyOf(Objects.requireNonNull(aclList, "aclList cannot be null"));
         this.createOptions = ImmutableSet.copyOf(Objects.requireNonNull(createOptions, "createOptions cannot be null"));
         this.deleteOptions = ImmutableSet.copyOf(Objects.requireNonNull(deleteOptions, "deleteOptions cannot be null"));
+        this.ttl = ttl;
     }
 
     @Override
@@ -71,7 +73,7 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     @Override
     public ModelSpec<T> at(ZPath newPath)
     {
-        return new ModelSpecImpl<>(newPath, serializer, createMode, aclList, createOptions, deleteOptions);
+        return new ModelSpecImpl<>(newPath, serializer, createMode, aclList, createOptions, deleteOptions, ttl);
     }
 
     @Override
@@ -111,6 +113,12 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     }
 
     @Override
+    public long ttl()
+    {
+        return ttl;
+    }
+
+    @Override
     public Schema schema()
     {
         Schema schemaValue = schema.get();
@@ -134,34 +142,38 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
             return false;
         }
 
-        ModelSpecImpl<?> that = (ModelSpecImpl<?>)o;
+        ModelSpecImpl<?> modelSpec = (ModelSpecImpl<?>)o;
 
-        if ( !path.equals(that.path) )
+        if ( ttl != modelSpec.ttl )
         {
             return false;
         }
-        if ( !serializer.equals(that.serializer) )
+        if ( !path.equals(modelSpec.path) )
         {
             return false;
         }
-        if ( createMode != that.createMode )
+        if ( !serializer.equals(modelSpec.serializer) )
         {
             return false;
         }
-        if ( !aclList.equals(that.aclList) )
+        if ( createMode != modelSpec.createMode )
         {
             return false;
         }
-        if ( !createOptions.equals(that.createOptions) )
+        if ( !aclList.equals(modelSpec.aclList) )
+        {
+            return false;
+        }
+        if ( !createOptions.equals(modelSpec.createOptions) )
         {
             return false;
         }
         //noinspection SimplifiableIfStatement
-        if ( !deleteOptions.equals(that.deleteOptions) )
+        if ( !deleteOptions.equals(modelSpec.deleteOptions) )
         {
             return false;
         }
-        return schema.equals(that.schema);
+        return schema.equals(modelSpec.schema);
     }
 
     @Override
@@ -173,6 +185,7 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
         result = 31 * result + aclList.hashCode();
         result = 31 * result + createOptions.hashCode();
         result = 31 * result + deleteOptions.hashCode();
+        result = 31 * result + (int)(ttl ^ (ttl >>> 32));
         result = 31 * result + schema.hashCode();
         return result;
     }
@@ -180,7 +193,7 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     @Override
     public String toString()
     {
-        return "CuratorModelImpl{" + "path=" + path + ", serializer=" + serializer + ", createMode=" + createMode + ", aclList=" + aclList + ", createOptions=" + createOptions + ", deleteOptions=" + deleteOptions + ", schema=" + schema + '}';
+        return "ModelSpecImpl{" + "path=" + path + ", serializer=" + serializer + ", createMode=" + createMode + ", aclList=" + aclList + ", createOptions=" + createOptions + ", deleteOptions=" + deleteOptions + ", ttl=" + ttl + ", schema=" + schema + '}';
     }
 
     @Override

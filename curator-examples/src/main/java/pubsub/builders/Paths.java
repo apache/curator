@@ -10,7 +10,10 @@ public class Paths
 {
     private static final String basePath = "/root/pubsub";
 
-    public static final TypedZPath2<Group, Priority> messagesPath = TypedZPath2.from(basePath + "/messages/{id}/{id}");
+    public static final TypedZPath2<Group, Priority> locationAvailablePath = TypedZPath2.from(basePath + "/messages/locations/{id}/{id}");
+
+    public static final TypedZPath2<Group, Priority> userCreatedPath = TypedZPath2.from(basePath + "/messages/users/{id}/{id}");
+
     public static final TypedZPath<InstanceType> instancesPath = TypedZPath.from(basePath + "/instances/{id}");
 
     private Paths()

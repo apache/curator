@@ -18,16 +18,16 @@
  */
 package modeled;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.x.async.modeled.ModelSpec;
+import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import java.util.function.Consumer;
 
 public class ModeledCuratorExamples
 {
-    public static ModeledFramework<PersonModel> wrap(CuratorFramework client)
+    public static ModeledFramework<PersonModel> wrap(AsyncCuratorFramework client)
     {
         JacksonModelSerializer<PersonModel> serializer = JacksonModelSerializer.build(PersonModel.class);
 

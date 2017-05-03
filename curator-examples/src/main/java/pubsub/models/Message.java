@@ -9,6 +9,11 @@ public abstract class Message implements NodeName
     private final String id;
     private final Priority priority;
 
+    protected Message()
+    {
+        this(UUID.randomUUID().toString(), Priority.low);
+    }
+
     protected Message(Priority priority)
     {
         this(UUID.randomUUID().toString(), priority);
@@ -34,5 +39,11 @@ public abstract class Message implements NodeName
     public String nodeName()
     {
         return id;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Message{" + "id='" + id + '\'' + ", priority=" + priority + '}';
     }
 }

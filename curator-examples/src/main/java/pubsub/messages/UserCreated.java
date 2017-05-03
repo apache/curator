@@ -9,6 +9,11 @@ public class UserCreated extends Message
     private final String name;
     private final String position;
 
+    public UserCreated()
+    {
+        this(Priority.low, "","");
+    }
+
     public UserCreated(Priority priority, String name, String position)
     {
         super(priority);
@@ -31,5 +36,11 @@ public class UserCreated extends Message
     public String getPosition()
     {
         return position;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "UserCreated{" + "name='" + name + '\'' + ", position='" + position + '\'' + "} " + super.toString();
     }
 }

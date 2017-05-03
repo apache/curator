@@ -82,9 +82,9 @@ public interface ModelSpec<T>
     ModelSpec<T> at(ZPath path);
 
     /**
-     * Return a new CuratorModel instance with all the same options but using the
-     * {@link ModelSpecBuilder#nodeName} functor
-     * to generate the child node's name
+     * Return a new CuratorModel instance with all the same options but by calling <code>toString()</code>
+     * on the model or, if it implements {@link org.apache.curator.x.async.modeled.NodeName}, it's
+     * <code>nodeName()</code> method to generate the child node's name.
      *
      * @param model model to use to generate the name
      * @return new Modeled Spec instance
@@ -132,6 +132,13 @@ public interface ModelSpec<T>
      * @return delete options
      */
     Set<DeleteOption> deleteOptions();
+
+    /**
+     * Return the TTL to use or -1
+     *
+     * @return ttl
+     */
+    long ttl();
 
     /**
      * Return a Curator schema that validates ZNodes at this model's

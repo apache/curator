@@ -37,6 +37,7 @@ public class ModelSpecBuilder<T>
     private List<ACL> aclList = Collections.emptyList();
     private Set<CreateOption> createOptions = Collections.emptySet();
     private Set<DeleteOption> deleteOptions = Collections.emptySet();
+    private long ttl = -1;
 
     /**
      * Build a new ModelSpec instance
@@ -45,7 +46,7 @@ public class ModelSpecBuilder<T>
      */
     public ModelSpec<T> build()
     {
-        return new ModelSpecImpl<>(path, serializer, createMode, aclList, createOptions, deleteOptions);
+        return new ModelSpecImpl<>(path, serializer, createMode, aclList, createOptions, deleteOptions, ttl);
     }
 
     /**
@@ -57,6 +58,22 @@ public class ModelSpecBuilder<T>
     public ModelSpecBuilder<T> withCreateMode(CreateMode createMode)
     {
         this.createMode = createMode;
+        return this;
+    }
+
+    /**
+     * Specify a TTL when mode is {@link org.apache.zookeeper.CreateMode#PERSISTENT_WITH_TTL} or
+     * {@link org.apache.zookeeper.CreateMode#PERSISTENT_SEQUENTIAL_WITH_TTL}. If
+     * the znode has not been modified within the given TTL, it will be deleted once it has no
+     * children. The TTL unit is milliseconds and must be greater than 0 and less than or equal to
+     * EphemeralType.MAX_TTL.
+     *
+     * @param ttl the ttl
+     * @return this for chaining
+     */
+    public ModelSpecBuilder<T> withTtl(long ttl)
+    {
+        this.ttl = ttl;
         return this;
     }
 

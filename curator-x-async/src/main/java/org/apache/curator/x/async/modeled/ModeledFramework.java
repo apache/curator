@@ -18,9 +18,9 @@
  */
 package org.apache.curator.x.async.modeled;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.zookeeper.data.Stat;
@@ -35,7 +35,7 @@ public interface ModeledFramework<T>
      * @param model the model
      * @return new Modeled Curator instance
      */
-    static <T> ModeledFramework<T> wrap(CuratorFramework client, ModelSpec<T> model)
+    static <T> ModeledFramework<T> wrap(AsyncCuratorFramework client, ModelSpec<T> model)
     {
         return builder(client, model).build();
     }
@@ -47,14 +47,14 @@ public interface ModeledFramework<T>
      * @param model the model
      * @return builder
      */
-    static <T> ModeledFrameworkBuilder<T> builder(CuratorFramework client, ModelSpec<T> model)
+    static <T> ModeledFrameworkBuilder<T> builder(AsyncCuratorFramework client, ModelSpec<T> model)
     {
         return new ModeledFrameworkBuilder<>(client, model);
     }
 
     /**
      * Start a new ModeledFrameworkBuilder. A client and model must be provided prior to the instance
-     * being built via {@link org.apache.curator.x.async.modeled.ModeledFrameworkBuilder#withClient(org.apache.curator.framework.CuratorFramework)}
+     * being built via {@link org.apache.curator.x.async.modeled.ModeledFrameworkBuilder#withClient(org.apache.curator.x.async.AsyncCuratorFramework)}
      * and {@link org.apache.curator.x.async.modeled.ModeledFrameworkBuilder#withModelSpec(ModelSpec)}
      *
      * @return builder
@@ -75,12 +75,12 @@ public interface ModeledFramework<T>
     CachedModeledFramework<T> cached();
 
     /**
-     * Returns the client that was originally passed to {@link #wrap(org.apache.curator.framework.CuratorFramework, ModelSpec)} or
+     * Returns the client that was originally passed to {@link #wrap(org.apache.curator.x.async.AsyncCuratorFramework, ModelSpec)} or
      * the builder.
      *
      * @return original client
      */
-    CuratorFramework unwrap();
+    AsyncCuratorFramework unwrap();
 
     /**
      * Return the model being used
@@ -108,9 +108,9 @@ public interface ModeledFramework<T>
     ModeledFramework<T> at(ZPath path);
 
     /**
-     * Return a new Modeled Curator instance with all the same options but using the
-     * {@link ModelSpecBuilder#nodeName} functor
-     * to generate the child node's name
+     * Return a new Modeled Curator instance with all the same options but by calling <code>toString()</code>
+     * on the model or, if it implements {@link org.apache.curator.x.async.modeled.NodeName}, it's
+     * <code>nodeName()</code> method to generate the child node's name.
      *
      * @param model model to use to generate the name
      * @return new Modeled Curator instance

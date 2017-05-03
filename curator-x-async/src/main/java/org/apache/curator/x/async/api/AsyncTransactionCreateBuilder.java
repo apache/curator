@@ -63,4 +63,18 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @return this
      */
     AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed);
+
+    /**
+     * Specify mode, acl list and compression
+     *
+     * @param createMode mode
+     * @param aclList the ACL list to use
+     * @param compressed true to compress
+     * @param ttl node TTL or -1
+     * @see #withMode(org.apache.zookeeper.CreateMode)
+     * @see #withACL(java.util.List)
+     * @see #compressed()
+     * @return this
+     */
+    AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed, long ttl);
 }

@@ -49,4 +49,10 @@ public class Instance implements NodeName
     {
         return id;
     }
+
+    @Override
+    public String toString()
+    {
+        return "Instance{" + "id='" + id + '\'' + ", type=" + type + ", hostname='" + hostname + '\'' + ", port=" + port + '}';
+    }
 }

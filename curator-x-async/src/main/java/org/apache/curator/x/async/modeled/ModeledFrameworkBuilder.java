@@ -18,9 +18,9 @@
  */
 package org.apache.curator.x.async.modeled;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.modeled.details.ModeledFrameworkImpl;
 import org.apache.zookeeper.WatchedEvent;
@@ -29,7 +29,7 @@ import java.util.function.UnaryOperator;
 
 public class ModeledFrameworkBuilder<T>
 {
-    private CuratorFramework client;
+    private AsyncCuratorFramework client;
     private ModelSpec<T> modelSpec;
     private WatchMode watchMode;
     private UnaryOperator<WatchedEvent> watcherFilter;
@@ -136,7 +136,7 @@ public class ModeledFrameworkBuilder<T>
      * @param client new client
      * @return this for chaining
      */
-    public ModeledFrameworkBuilder<T> withClient(CuratorFramework client)
+    public ModeledFrameworkBuilder<T> withClient(AsyncCuratorFramework client)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         return this;
@@ -146,7 +146,7 @@ public class ModeledFrameworkBuilder<T>
     {
     }
 
-    ModeledFrameworkBuilder(CuratorFramework client, ModelSpec<T> modelSpec)
+    ModeledFrameworkBuilder(AsyncCuratorFramework client, ModelSpec<T> modelSpec)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.modelSpec = Objects.requireNonNull(modelSpec, "modelSpec cannot be null");

@@ -19,17 +19,17 @@
 package org.apache.curator.x.async.modeled.details;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
-import org.apache.curator.x.async.modeled.cached.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
+import org.apache.curator.x.async.modeled.cached.ZNode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
@@ -44,7 +44,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
 
     CachedModeledFrameworkImpl(ModeledFramework<T> client)
     {
-        this(client, new ModeledCacheImpl<>(client.unwrap(), client.modelSpec().path(), client.modelSpec().serializer(), client.modelSpec().createOptions().contains(CreateOption.compress)));
+        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec().path(), client.modelSpec().serializer(), client.modelSpec().createOptions().contains(CreateOption.compress)));
     }
 
     private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache)
@@ -78,7 +78,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     }
 
     @Override
-    public CuratorFramework unwrap()
+    public AsyncCuratorFramework unwrap()
     {
         return client.unwrap();
     }

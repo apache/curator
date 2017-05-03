@@ -21,7 +21,6 @@ package org.apache.curator.x.async.modeled.details;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.common.PathUtils;
 import java.util.Arrays;
@@ -36,8 +35,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
-import static org.apache.curator.x.async.modeled.ZPath.idName;
-import static org.apache.curator.x.async.modeled.ZPath.parameterNodeName;
 
 public class ZPathImpl implements ZPath
 {
@@ -195,8 +192,9 @@ public class ZPathImpl implements ZPath
     @Override
     public String toString()
     {
-        String value = nodes.stream().map(name -> name.equals(parameterNodeName) ? idName : name).collect(Collectors.joining(PATH_SEPARATOR, PATH_SEPARATOR, ""));
-        return "ZPathImpl{" + value + '}';
+        return nodes.subList(1, nodes.size())
+            .stream().map(name -> name.equals(parameterNodeName) ? idName : name)
+            .collect(Collectors.joining(PATH_SEPARATOR, PATH_SEPARATOR, ""));
     }
 
     @Override
