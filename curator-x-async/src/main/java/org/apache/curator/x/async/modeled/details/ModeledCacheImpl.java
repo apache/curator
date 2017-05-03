@@ -24,7 +24,9 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
+import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModelSerializer;
+import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
@@ -55,12 +57,13 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         }
     }
 
-    ModeledCacheImpl(CuratorFramework client, ZPath path, ModelSerializer<T> serializer, boolean compressed)
+    ModeledCacheImpl(CuratorFramework client, ModelSpec<T> modelSpec)
     {
-        this.serializer = serializer;
-        cache = TreeCache.newBuilder(client, path.fullPath())
+        this.serializer = modelSpec.serializer();
+        cache = TreeCache.newBuilder(client, modelSpec.path().fullPath())
             .setCacheData(false)
-            .setDataIsCompressed(compressed)
+            .setDataIsCompressed(modelSpec.createOptions().contains(CreateOption.compress))
+            .setCreateParentNodes(modelSpec.createOptions().contains(CreateOption.createParentsIfNeeded) || modelSpec.createOptions().contains(CreateOption.createParentsAsContainers))
             .build();
     }
 

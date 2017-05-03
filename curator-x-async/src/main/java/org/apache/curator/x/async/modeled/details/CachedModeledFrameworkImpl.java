@@ -44,7 +44,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
 
     CachedModeledFrameworkImpl(ModeledFramework<T> client)
     {
-        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec().path(), client.modelSpec().serializer(), client.modelSpec().createOptions().contains(CreateOption.compress)));
+        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec()));
     }
 
     private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache)

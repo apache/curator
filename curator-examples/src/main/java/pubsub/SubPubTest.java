@@ -120,7 +120,7 @@ public class SubPubTest implements Closeable
             case 0:
             {
                 Instance instance = new Instance(nextId(), random(InstanceType.values()), random(hostnames), random(ports));
-                System.out.println("Publishing instance");
+                System.out.println("Publishing 1 instance");
                 publisher.publishInstance(instance);
                 break;
             }
@@ -130,7 +130,7 @@ public class SubPubTest implements Closeable
                 List<Instance> instances =  IntStream.range(1, 10)
                     .mapToObj(__ -> new Instance(nextId(), random(InstanceType.values()), random(hostnames), random(ports)))
                     .collect(Collectors.toList());
-                System.out.println("Publishing instances");
+                System.out.println(String.format("Publishing %d instances", instances.size()));
                 publisher.publishInstances(instances);
                 break;
             }
@@ -138,7 +138,7 @@ public class SubPubTest implements Closeable
             case 2:
             {
                 LocationAvailable locationAvailable = new LocationAvailable(nextId(), random(Priority.values()), random(locations), random(durations));
-                System.out.println("Publishing locationAvailable");
+                System.out.println("Publishing 1 locationAvailable");
                 publisher.publishLocationAvailable(random(groups), locationAvailable);
                 break;
             }
@@ -148,7 +148,7 @@ public class SubPubTest implements Closeable
                 List<LocationAvailable> locationsAvailable =  IntStream.range(1, 10)
                     .mapToObj(__ -> new LocationAvailable(nextId(), random(Priority.values()), random(locations), random(durations)))
                     .collect(Collectors.toList());
-                System.out.println("Publishing locationsAvailable");
+                System.out.println(String.format("Publishing %d locationsAvailable", locationsAvailable.size()));
                 publisher.publishLocationsAvailable(random(groups), locationsAvailable);
                 break;
             }
@@ -156,7 +156,7 @@ public class SubPubTest implements Closeable
             case 4:
             {
                 UserCreated userCreated = new UserCreated(nextId(), random(Priority.values()), random(locations), random(positions));
-                System.out.println("Publishing userCreated");
+                System.out.println("Publishing 1 øuserCreated");
                 publisher.publishUserCreated(random(groups), userCreated);
                 break;
             }
@@ -166,7 +166,7 @@ public class SubPubTest implements Closeable
                 List<UserCreated> usersCreated =  IntStream.range(1, 10)
                     .mapToObj(__ -> new UserCreated(nextId(), random(Priority.values()), random(locations), random(positions)))
                     .collect(Collectors.toList());
-                System.out.println("Publishing usersCreated");
+                System.out.println(String.format("Publishing %d usersCreated", usersCreated.size()));
                 publisher.publishUsersCreated(random(groups), usersCreated);
                 break;
             }

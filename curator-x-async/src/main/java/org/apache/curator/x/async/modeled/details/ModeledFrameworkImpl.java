@@ -275,7 +275,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     {
         return client.transactionOp()
             .create()
-            .withOptions(modelSpec.createMode(), modelSpec.aclList(), modelSpec.createOptions().contains(CreateOption.compress), modelSpec.ttl())
+            .withOptions(modelSpec.createMode(), fixAclList(modelSpec.aclList()), modelSpec.createOptions().contains(CreateOption.compress), modelSpec.ttl())
             .forPath(modelSpec.path().fullPath(), modelSpec.serializer().serialize(model));
     }
 
