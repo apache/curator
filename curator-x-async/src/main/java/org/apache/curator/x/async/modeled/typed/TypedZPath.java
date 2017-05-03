@@ -67,6 +67,6 @@ public interface TypedZPath<T>
      */
     static <T> TypedZPath<T> from(ZPath path)
     {
-        return p1 -> path.resolved(NodeName.nameFrom(p1));
+        return path::resolved;
     }
 }

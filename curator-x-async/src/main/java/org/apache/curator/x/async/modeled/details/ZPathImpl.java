@@ -21,6 +21,7 @@ package org.apache.curator.x.async.modeled.details;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import org.apache.curator.x.async.modeled.NodeName;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.common.PathUtils;
 import java.util.Arrays;
@@ -106,9 +107,9 @@ public class ZPathImpl implements ZPath
     }
 
     @Override
-    public ZPath at(String child)
+    public ZPath at(Object child)
     {
-        return new ZPathImpl(nodes, child, parameterSuppliers);
+        return new ZPathImpl(nodes, NodeName.nameFrom(child), parameterSuppliers);
     }
 
     @Override
@@ -209,7 +210,7 @@ public class ZPathImpl implements ZPath
                     {
                         throw new IllegalStateException(String.format("Parameter missing for [%s]", nodes.toString()));
                     }
-                    return iterator.next().toString();
+                    return NodeName.nameFrom(iterator.next());
                 }
                 return name;
             })

@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 /**
  * Abstracts a ZooKeeper ZNode path
  */
-public interface ZPath
+public interface ZPath extends Resolvable
 {
     /**
      * The special node name that can be used for replacements at runtime
@@ -36,7 +36,11 @@ public interface ZPath
      */
     String parameterNodeName = System.getProperty("curator-zpath-parameter", "");    // empty paths are illegal so it's useful for this purpose
 
-    String idName = System.getProperty("curator-zpath-id-name", "{id}");    // empty paths are illegal so it's useful for this purpose
+    /**
+     * Value that represents a parameter name when using {@link #parseWithIds(String)}. By default
+     * this is <code>{id}</code>
+     */
+    String idName = System.getProperty("curator-zpath-id-name", "{id}");
 
     /**
      * Return the root path: "/"
@@ -149,6 +153,7 @@ public interface ZPath
      *                   parameter nodes in the path
      * @return new resolved ZPath
      */
+    @Override
     default ZPath resolved(Object... parameters)
     {
         return resolved(Arrays.asList(parameters));
@@ -162,6 +167,7 @@ public interface ZPath
      *                   parameter nodes in the path
      * @return new resolved ZPath
      */
+    @Override
     ZPath resolved(List<Object> parameters);
 
     /**
@@ -184,7 +190,7 @@ public interface ZPath
      * @param child child node name
      * @return ZPath
      */
-    ZPath at(String child);
+    ZPath at(Object child);
 
     /**
      * Return this ZPath's parent

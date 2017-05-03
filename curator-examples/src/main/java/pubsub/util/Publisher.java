@@ -37,7 +37,7 @@ public class Publisher
     {
         ModeledFramework<Instance> resolvedClient = instanceClient
             .resolved(client, instance.getType())   // this resolves to the parent path
-            .resolved(instance);                    // this resolves to a child node - uses the Instance's id because Instance extends NodeName
+            .at(instance);                          // this resolves to a child node - uses the Instance's id because Instance extends NodeName
         resolvedClient.set(instance).exceptionally(e -> {
             log.error("Could not publish instance: " + instance, e);
             return null;
@@ -54,7 +54,7 @@ public class Publisher
         List<CuratorOp> operations = instances.stream()
             .map(instance -> instanceClient
                 .resolved(client, instance.getType())   // this resolves to the parent path
-                .resolved(instance)                     // this resolves to a child node - uses the Instance's id because Instance extends NodeName
+                .at(instance)                           // this resolves to a child node - uses the Instance's id because Instance extends NodeName
                 .createOp(instance)
             )
             .collect(Collectors.toList());
@@ -112,7 +112,7 @@ public class Publisher
     {
         ModeledFramework<T> resolvedClient = typedClient
             .resolved(client, group, message.getPriority())
-            .resolved(message);
+            .at(message);
         resolvedClient.set(message).exceptionally(e -> {
             log.error("Could not publish message: " + message, e);
             return null;
@@ -124,7 +124,7 @@ public class Publisher
         List<CuratorOp> operations = messages.stream()
             .map(message -> typedClient
                     .resolved(client, group, message.getPriority()) // this resolves to the parent path
-                    .resolved(message)                              // this resolves to a child node - uses the Message's id because Message extends NodeName
+                    .at(message)                                    // this resolves to a child node - uses the Message's id because Message extends NodeName
                     .createOp(message)
                 )
             .collect(Collectors.toList());

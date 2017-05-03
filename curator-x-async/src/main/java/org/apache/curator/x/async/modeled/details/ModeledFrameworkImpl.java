@@ -218,7 +218,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     }
 
     @Override
-    public ModeledFramework<T> at(String child)
+    public ModeledFramework<T> at(Object child)
     {
         ModelSpec<T> newModelSpec = modelSpec.at(child);
         return new ModeledFrameworkImpl<>(
@@ -234,25 +234,9 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     }
 
     @Override
-    public ModeledFramework<T> at(ZPath path)
+    public ModeledFramework<T> withPath(ZPath path)
     {
-        ModelSpec<T> newModelSpec = modelSpec.at(path);
-        return new ModeledFrameworkImpl<>(
-            client,
-            dslClient,
-            watchableClient,
-            newModelSpec,
-            watchMode,
-            watcherFilter,
-            unhandledErrorListener,
-            resultFilter
-        );
-    }
-
-    @Override
-    public ModeledFramework<T> resolved(T model)
-    {
-        ModelSpec<T> newModelSpec = modelSpec.resolved(model);
+        ModelSpec<T> newModelSpec = modelSpec.withPath(path);
         return new ModeledFrameworkImpl<>(
             client,
             dslClient,

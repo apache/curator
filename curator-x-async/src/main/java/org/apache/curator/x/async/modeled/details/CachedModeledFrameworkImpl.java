@@ -23,7 +23,6 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
-import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
@@ -90,21 +89,15 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     }
 
     @Override
-    public CachedModeledFramework<T> at(String child)
+    public CachedModeledFramework<T> at(Object child)
     {
         return new CachedModeledFrameworkImpl<>(client.at(child), cache);
     }
 
     @Override
-    public CachedModeledFramework<T> at(ZPath path)
+    public CachedModeledFramework<T> withPath(ZPath path)
     {
-        return new CachedModeledFrameworkImpl<>(client.at(path), cache);
-    }
-
-    @Override
-    public CachedModeledFramework<T> resolved(T model)
-    {
-        return new CachedModeledFrameworkImpl<>(client.resolved(model), cache);
+        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache);
     }
 
     @Override

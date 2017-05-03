@@ -27,7 +27,7 @@ import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Set;
 
-public interface ModelSpec<T>
+public interface ModelSpec<T> extends Resolvable
 {
     Set<CreateOption> defaultCreateOptions = ImmutableSet.of(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists);
     Set<DeleteOption> defaultDeleteOptions = ImmutableSet.of(DeleteOption.guaranteed);
@@ -71,7 +71,7 @@ public interface ModelSpec<T>
      * @param child child node.
      * @return new Modeled Spec instance
      */
-    ModelSpec<T> at(String child);
+    ModelSpec<T> at(Object child);
 
     /**
      * Return a new CuratorModel instance with all the same options but using the given path.
@@ -79,17 +79,31 @@ public interface ModelSpec<T>
      * @param path new path
      * @return new Modeled Spec instance
      */
-    ModelSpec<T> at(ZPath path);
+    ModelSpec<T> withPath(ZPath path);
 
     /**
-     * Return a new CuratorModel instance with all the same options but by calling <code>toString()</code>
-     * on the model or, if it implements {@link org.apache.curator.x.async.modeled.NodeName}, it's
-     * <code>nodeName()</code> method to generate the child node's name.
+     * Return a new CuratorModel instance with all the same options but using a resolved
+     * path by calling {@link org.apache.curator.x.async.modeled.ZPath#resolved(Object...)}
+     * using the given parameters
      *
-     * @param model model to use to generate the name
-     * @return new Modeled Spec instance
+     * @param parameters list of replacements. Must have be the same length as the number of
+     *                   parameter nodes in the path
+     * @return new resolved ModelSpec
      */
-    ModelSpec<T> resolved(T model);
+    @Override
+    ModelSpec<T> resolved(Object... parameters);
+
+    /**
+     * Return a new CuratorModel instance with all the same options but using a resolved
+     * path by calling {@link org.apache.curator.x.async.modeled.ZPath#resolved(java.util.List)}
+     * using the given parameters
+     *
+     * @param parameters list of replacements. Must have be the same length as the number of
+     *                   parameter nodes in the path
+     * @return new resolved ModelSpec
+     */
+    @Override
+    ModelSpec<T> resolved(List<Object> parameters);
 
     /**
      * Return the model's path

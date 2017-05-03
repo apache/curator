@@ -48,6 +48,6 @@ public interface TypedZPath2<T1, T2>
      */
     static <T1, T2> TypedZPath2<T1, T2> from(ZPath path)
     {
-        return (p1, p2) -> path.resolved(NodeName.nameFrom(p1), NodeName.nameFrom(p2));
+        return (p1, p2) -> path.resolved(p1, p2);
     }
 }

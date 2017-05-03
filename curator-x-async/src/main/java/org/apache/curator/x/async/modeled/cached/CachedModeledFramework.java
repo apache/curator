@@ -46,17 +46,11 @@ public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeabl
      * {@inheritDoc}
      */
     @Override
-    CachedModeledFramework<T> at(String child);
+    CachedModeledFramework<T> at(Object child);
 
     /**
      * {@inheritDoc}
      */
     @Override
-    CachedModeledFramework<T> at(ZPath path);
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    CachedModeledFramework<T> resolved(T model);
+    CachedModeledFramework<T> withPath(ZPath path);
 }

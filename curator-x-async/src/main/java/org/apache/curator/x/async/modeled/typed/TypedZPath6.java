@@ -48,6 +48,6 @@ public interface TypedZPath6<T1, T2, T3, T4, T5, T6>
      */
     static <T1, T2, T3, T4, T5, T6> TypedZPath6<T1, T2, T3, T4, T5, T6> from(ZPath path)
     {
-        return (p1, p2, p3, p4, p5, p6) -> path.resolved(NodeName.nameFrom(p1), NodeName.nameFrom(p2), NodeName.nameFrom(p3), NodeName.nameFrom(p4), NodeName.nameFrom(p5), NodeName.nameFrom(p6));
+        return (p1, p2, p3, p4, p5, p6) -> path.resolved(p1, p2, p3, p4, p5, p6);
     }
 }

@@ -28,7 +28,6 @@ import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ZPath;
-import org.apache.curator.x.async.modeled.NodeName;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
@@ -59,19 +58,25 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     }
 
     @Override
-    public ModelSpec<T> at(String child)
+    public ModelSpec<T> at(Object child)
     {
-        return at(path.at(child));
+        return withPath(path.at(child));
     }
 
     @Override
-    public ModelSpec<T> resolved(T model)
+    public ModelSpec<T> resolved(Object... parameters)
     {
-        return at(path.at(NodeName.nameFrom(model)));
+        return withPath(path.resolved(parameters));
     }
 
     @Override
-    public ModelSpec<T> at(ZPath newPath)
+    public ModelSpec<T> resolved(List<Object> parameters)
+    {
+        return withPath(path.resolved(parameters));
+    }
+
+    @Override
+    public ModelSpec<T> withPath(ZPath newPath)
     {
         return new ModelSpecImpl<>(newPath, serializer, createMode, aclList, createOptions, deleteOptions, ttl);
     }

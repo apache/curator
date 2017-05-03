@@ -48,6 +48,6 @@ public interface TypedZPath4<T1, T2, T3, T4>
      */
     static <T1, T2, T3, T4> TypedZPath4<T1, T2, T3, T4> from(ZPath path)
     {
-        return (p1, p2, p3, p4) -> path.resolved(NodeName.nameFrom(p1), NodeName.nameFrom(p2), NodeName.nameFrom(p3), NodeName.nameFrom(p4));
+        return (p1, p2, p3, p4) -> path.resolved(p1, p2, p3, p4);
     }
 }

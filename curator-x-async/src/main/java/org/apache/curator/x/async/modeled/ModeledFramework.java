@@ -97,7 +97,7 @@ public interface ModeledFramework<T>
      * @param child child node.
      * @return new Modeled Curator instance
      */
-    ModeledFramework<T> at(String child);
+    ModeledFramework<T> at(Object child);
 
     /**
      * Return a Modeled Curator instance with all the same options but using the given path.
@@ -105,17 +105,7 @@ public interface ModeledFramework<T>
      * @param path new path
      * @return new Modeled Curator instance
      */
-    ModeledFramework<T> at(ZPath path);
-
-    /**
-     * Return a new Modeled Curator instance with all the same options but by calling <code>toString()</code>
-     * on the model or, if it implements {@link org.apache.curator.x.async.modeled.NodeName}, it's
-     * <code>nodeName()</code> method to generate the child node's name.
-     *
-     * @param model model to use to generate the name
-     * @return new Modeled Curator instance
-     */
-    ModeledFramework<T> resolved(T model);
+    ModeledFramework<T> withPath(ZPath path);
 
     /**
      * Create (or update depending on build options) a ZNode at this instance's path with a serialized

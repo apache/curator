@@ -34,13 +34,13 @@ public class PersonModelSpec
         this.client = client;
 
         JacksonModelSerializer<PersonModel> serializer = JacksonModelSerializer.build(PersonModel.class);
-        ZPath path = ZPath.from("example", ZPath.parameterNodeName, "path", ZPath.parameterNodeName);
+        ZPath path = ZPath.parseWithIds("/example/{id}/path/{id}");
         modelSpec = ModelSpec.builder(path, serializer).build();
     }
 
     public ModeledFramework<PersonModel> resolved(ContainerType containerType, PersonId personId)
     {
-        ModelSpec<PersonModel> resolved = null;// TODO modelSpec.resolved(containerType.getTypeId(), personId.getId());
+        ModelSpec<PersonModel> resolved = modelSpec.resolved(containerType.getTypeId(), personId.getId());
         return ModeledFramework.wrap(client, resolved);
     }
 }

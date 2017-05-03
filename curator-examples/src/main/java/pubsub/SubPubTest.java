@@ -157,7 +157,7 @@ public class SubPubTest implements Closeable
             case 4:
             {
                 UserCreated userCreated = new UserCreated(nextId(), random(Priority.values()), random(locations), random(positions));
-                System.out.println("Publishing 1 øuserCreated");
+                System.out.println("Publishing 1 userCreated");
                 publisher.publishUserCreated(random(groups), userCreated);
                 break;
             }
