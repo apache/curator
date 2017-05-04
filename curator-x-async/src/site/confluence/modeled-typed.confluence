@@ -1,0 +1,52 @@
+h1. Modeled Curator \- Caching and Typed Parameters
+
+In addition to the [[main features|modeled-components.html]] Modeled Curator also supports
+integrated caching and typed parameters.
+
+h2. Caching
+
+{{ModeledFramework}} instances can be wrapped with a facade that uses a Curator cache internally.
+All read operations use this cache instead of making direct ZooKeeper calls. You can also
+listen for node changes. E.g.
+
+{code}
+ModeledFramework<MyModel> modeledClient = ModeledFramework.wrap(client, myModelSpec);
+CachedModeledFramework<MyModel> cached = modeledClient.cached();
+cached.start();
+
+// reads come from the cache
+cached.read().whenComplete(...) ...
+
+cached.listenable.addListener((type, path, stat, model) -> {
+    // type is NODE_ADDED, NODE_UPDATED, etc.
+});
+{code}
+
+h2. Typed Parameters
+
+The "resolve" methods in ZPath et al consume untyped Objects. Ideally, we should be able to
+specify parameters in a strongly typed manner. Modeled Curator's "type" templates provide this. You
+can specify typed parameters for ZPaths, ModelSpecs and ModeledFramework.
+The [[Pub\-Sub Example|https://github.com/apache/curator/tree/master/curator-examples/src/main/java/pubsub]]
+shows how to use typed parameters with ModeledFramework.
+
+Typed interfaces are provided for up to 10 parameters and are named
+{{TypedZPath}}, {{TypedZPath2}}, {{TypedModelSpec}}, {{TypedModelSpec2}}, {{TypedModeledFramework}},
+{{TypedModeledFramework2}}, etc.
+
+Here's an example of a TypedModeledFramework that models a Person and uses two parameters
+to generate the path, a Group and a Organization:
+
+{code}
+TypedModeledFramework2<Person, Group, Organization> clientTemplate = TypedModeledFramework2.from(
+    ModeledFrameworkBuilder.build(),
+    personModelSpec
+);
+
+...
+
+ModeledFramework<Person> client = clientTemplate.resolve(group, organization);
+client.set(person);
+{code}
+
+TypedZPath and TypedModelSpec work similarly.

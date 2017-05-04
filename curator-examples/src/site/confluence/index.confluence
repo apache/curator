@@ -8,6 +8,6 @@ This module contains example usages of various Curator features. Each directory 
 |/discovery|Example usage of the Curator's ServiceDiscovery|
 |/framework|A few examples of how to use the CuratorFramework class|
 |/async|Example AsyncCuratorFramework code|
-|/modeled|ModeledCuratorFramework and Modeled Cache examples|
+|/modeled|ModeledFramework and Modeled Cache examples|
 
 See the [examples source repo|https://github.com/apache/curator/tree/master/curator-examples/src/main/java] for each example.

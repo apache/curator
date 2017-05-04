@@ -33,28 +33,19 @@ See [[Curator Async|async.html]] for details.
 
 h2. [[Modeled Curator|modeled.html]]
 
-This is a strongly typed DSL that allows you to map a ZooKeeper path to a serializable class as
-opposed to raw byte arrays. For example:
+This is a strongly typed DSL that allows you to map a Curator\-style client to:
+
+* A ZooKeeper path (supporting parameterized substitutions)
+* A serializer for the data stored at the path
+* Options for how nodes should be created (sequential, compressed data, ttl, etc.)
+* ACLs for the nodes at the path
+* Options for how to delete nodes (guaranteed, deleting children, etc.)
+
+For example:
 
 {code}
-// let "client" be a CuratorFramework instance
-ModeledFramework<MyModel> modeled = ModeledCuratorFramework.wrap(client, path, serializer);
-modeled.create(new MyModel());
+ModeledFramework<Foo> modeled = ModeledFramework.wrap(client, fooModelSpec);
+modeled.set(new Foo());
 {code}
 
 See [[Modeled Curator|modeled.html]] for details.
-
-h2. [[Modeled Cache Recipes|modeled-cache-recipes.html]]
-
-Strongly typed wrappers for Curator's Cache Recipes (NodeCache, PathChildrenCache and TreeCache) allow
-you to use serializable classes as opposed to raw byte arrays. For example:
-
-{code}
-ModeledNodeCache<MyModel> cache = ModeledNodeCache.wrap(nodeCache, serializer);
-cache.getCurrentData().ifPresent(data -> {
-    MyModel model = data.getData();
-    ...
-);
-{code}
-
-See [[Modeled Cache Recipes|modeled-cache-recipes.html]] for details.
