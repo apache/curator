@@ -56,3 +56,19 @@ In this example, the TypedModelSpecs are defined in `Clients.java`. E.g.
 public static final TypedModeledFramework<Instance, InstanceType> instanceClient = 
    TypedModeledFramework.from(ModeledFramework.builder(), ModelSpecs.instanceModelSpec)
 ```
+
+## Publisher
+
+`Publisher.java` shows how to use the ModeledFramework to write models. There are methods to write single instances and to write lists of instances in a transaction. Each publish method resolves the appropriate typed client and then calls its `set()` method with the given model.
+
+## Subscriber
+
+`Subscriber.java` uses CachedModeledFrameworks to listen for changes on the parent nodes for all of the models in this example. Each of the methods resolves the appropriate typed client and then starts the cache (via `cached()`).
+
+## SubPubTest
+
+`SubPubTest.java` is a class that exercises this example. 
+
+* `start()` uses `Subscriber` to start a `CachedModeledFramework` for each combination of the Instance + InstanceType, LocationAvailable + Group + Priority, and UserCreated + Group + Priority. It then adds a simple listener to each cache that merely prints the class name and path whenever an update occurs (see `generalListener()`).
+* `start()` also starts a scheduled task that runs every second. This task calls `publishSomething()`
+* `publishSomething()` randomly publishes either a single Instance, LocationAvailable, UserCreated or a list of those.

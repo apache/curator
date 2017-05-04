@@ -50,14 +50,14 @@ public class SubPubTest implements Closeable
 {
     private final TestingServer testingServer;
     private final AsyncCuratorFramework client;
-    private final Publisher publisher;
     private final ScheduledExecutorService executorService;
     private final List<CachedModeledFramework<Instance>> instanceSubscribers = new ArrayList<>();
     private final List<CachedModeledFramework<LocationAvailable>> locationAvailableSubscribers = new ArrayList<>();
     private final List<CachedModeledFramework<UserCreated>> userCreatedSubscribers = new ArrayList<>();
 
-    private static final AtomicLong id = new AtomicLong(1);
+    private static final AtomicLong nextId = new AtomicLong(1);
 
+    // arrays of random values used for this example
     private static final Group[] groups = {new Group("main"), new Group("admin")};
     private static final String[] hostnames = {"host1", "host2", "host3"};
     private static final Integer[] ports = {80, 443, 9999};
@@ -70,7 +70,7 @@ public class SubPubTest implements Closeable
         try ( SubPubTest subPubTest = new SubPubTest() )
         {
             subPubTest.start();
-            TimeUnit.MINUTES.sleep(1);
+            TimeUnit.MINUTES.sleep(1);  // run the test for a minute then exit
         }
     }
 
@@ -78,7 +78,6 @@ public class SubPubTest implements Closeable
     {
         this.testingServer = new TestingServer();
         client = AsyncCuratorFramework.wrap(CuratorFrameworkFactory.newClient(testingServer.getConnectString(), new RetryOneTime(1)));
-        publisher = new Publisher(client);
         executorService = Executors.newSingleThreadScheduledExecutor();
     }
 
@@ -86,30 +85,37 @@ public class SubPubTest implements Closeable
     {
         client.unwrap().start();
 
+        Publisher publisher = new Publisher(client);
         Subscriber subscriber = new Subscriber(client);
+
+        // start a subscriber/cache for Instances of each InstanceType
         instanceSubscribers.addAll(
             Arrays.stream(InstanceType.values())
             .map(subscriber::startInstanceSubscriber)
             .collect(Collectors.toList())
         );
 
+        // start a subscriber/cache for LocationAvailables of each combination of Group and Priority
         locationAvailableSubscribers.addAll(
             Arrays.stream(Priority.values())
                 .flatMap(priority -> Arrays.stream(groups).map(group -> subscriber.startLocationAvailableSubscriber(group, priority)))
                 .collect(Collectors.toList())
         );
 
+        // start a subscriber/cache for UserCreateds of each combination of Group and Priority
         userCreatedSubscribers.addAll(
             Arrays.stream(Priority.values())
                 .flatMap(priority -> Arrays.stream(groups).map(group -> subscriber.startUserCreatedSubscriber(group, priority)))
                 .collect(Collectors.toList())
         );
 
+        // add listeners for each of the caches
         instanceSubscribers.forEach(s -> s.getCache().listenable().addListener(generalListener()));
         locationAvailableSubscribers.forEach(s -> s.getCache().listenable().addListener(generalListener()));
         userCreatedSubscribers.forEach(s -> s.getCache().listenable().addListener(generalListener()));
 
-        executorService.scheduleAtFixedRate(this::publishSomething, 1, 1, TimeUnit.SECONDS);
+        // schedule the publisher task once a second
+        executorService.scheduleAtFixedRate(() -> publishSomething(publisher), 1, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -132,9 +138,10 @@ public class SubPubTest implements Closeable
         testingServer.close();
     }
 
-    private void publishSomething()
+    private void publishSomething(Publisher publisher)
     {
-        switch ( ThreadLocalRandom.current().nextInt(5) )
+        // randomly do some publishing - either single items or lists of items in a transaction
+        switch ( ThreadLocalRandom.current().nextInt(6) )
         {
             case 0:
             {
@@ -206,6 +213,6 @@ public class SubPubTest implements Closeable
 
     private String nextId()
     {
-        return Long.toString(id.getAndIncrement());
+        return Long.toString(nextId.getAndIncrement());
     }
 }
