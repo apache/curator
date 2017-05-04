@@ -42,4 +42,20 @@ public interface TypedModelSpec8<M, P1, P2, P3, P4, P5, P6, P7, P8>
     {
         return (p1, p2, p3, p4, p5, p6, p7, p8) -> builder.withPath(path.resolved(p1, p2, p3, p4, p5, p6, p7, p8)).build();
     }
+
+    /**
+     * Return a new TypedModelSpec using the given model spec builder and path. A TypedZPath
+     * is created from the given full path and When
+     * {@link #resolved(Object, Object, Object, Object, Object, Object, Object, Object)} is called the actual model spec is generated with the
+     * resolved path
+     *
+     * @param builder model spec builder
+     * @param path typed path
+     * @return new TypedModelSpec
+     */
+    static <M, P1, P2, P3, P4, P5, P6, P7, P8> TypedModelSpec8<M, P1, P2, P3, P4, P5, P6, P7, P8> from(ModelSpecBuilder<M> builder, String path)
+    {
+        TypedZPath8<P1, P2, P3, P4, P5, P6, P7, P8> zPath = TypedZPath8.from(path);
+        return (p1, p2, p3, p4, p5, p6, p7, p8) -> builder.withPath(zPath.resolved(p1, p2, p3, p4, p5, p6, p7, p8)).build();
+    }
 }

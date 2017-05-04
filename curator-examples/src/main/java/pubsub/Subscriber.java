@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package pubsub.util;
+package pubsub;
 
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
@@ -28,8 +28,6 @@ import pubsub.models.Instance;
 import pubsub.models.InstanceType;
 import pubsub.models.Message;
 import pubsub.models.Priority;
-
-import static pubsub.builders.Clients.*;
 
 public class Subscriber
 {
@@ -49,7 +47,7 @@ public class Subscriber
      */
     public CachedModeledFramework<LocationAvailable> startLocationAvailableSubscriber(Group group, Priority priority)
     {
-        return startSubscriber(locationAvailableClient, group, priority);
+        return startSubscriber(Clients.locationAvailableClient, group, priority);
     }
 
     /**
@@ -61,7 +59,7 @@ public class Subscriber
      */
     public CachedModeledFramework<UserCreated> startUserCreatedSubscriber(Group group, Priority priority)
     {
-        return startSubscriber(userCreatedClient, group, priority);
+        return startSubscriber(Clients.userCreatedClient, group, priority);
     }
 
     /**
@@ -72,7 +70,7 @@ public class Subscriber
      */
     public CachedModeledFramework<Instance> startInstanceSubscriber(InstanceType instanceType)
     {
-        CachedModeledFramework<Instance> resolved = instanceClient
+        CachedModeledFramework<Instance> resolved = Clients.instanceClient
             .resolved(client, instanceType) // resolves to the parent path - models are children of this path
             .cached();                      // makes a cached modeled instance
         resolved.start();

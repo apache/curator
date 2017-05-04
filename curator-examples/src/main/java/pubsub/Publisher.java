@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package pubsub.util;
+package pubsub;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.x.async.AsyncCuratorFramework;
@@ -33,8 +33,6 @@ import pubsub.models.Priority;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static pubsub.builders.Clients.*;
 
 public class Publisher
 {
@@ -53,7 +51,7 @@ public class Publisher
      */
     public void publishInstance(Instance instance)
     {
-        ModeledFramework<Instance> resolvedClient = instanceClient
+        ModeledFramework<Instance> resolvedClient = Clients.instanceClient
             .resolved(client, instance.getType())   // this resolves to the parent path
             .at(instance);                          // this resolves to a child node - uses the Instance's id because Instance extends NodeName
         resolvedClient.set(instance).exceptionally(e -> {
@@ -70,7 +68,7 @@ public class Publisher
     public void publishInstances(List<Instance> instances)
     {
         List<CuratorOp> operations = instances.stream()
-            .map(instance -> instanceClient
+            .map(instance -> Clients.instanceClient
                 .resolved(client, instance.getType())   // this resolves to the parent path
                 .at(instance)                           // this resolves to a child node - uses the Instance's id because Instance extends NodeName
                 .createOp(instance)
@@ -90,7 +88,7 @@ public class Publisher
      */
     public void publishLocationAvailable(Group group, LocationAvailable locationAvailable)
     {
-        publishMessage(locationAvailableClient, group, locationAvailable);
+        publishMessage(Clients.locationAvailableClient, group, locationAvailable);
     }
 
     /**
@@ -101,7 +99,7 @@ public class Publisher
      */
     public void publishUserCreated(Group group, UserCreated userCreated)
     {
-        publishMessage(userCreatedClient, group, userCreated);
+        publishMessage(Clients.userCreatedClient, group, userCreated);
     }
 
     /**
@@ -112,7 +110,7 @@ public class Publisher
      */
     public void publishLocationsAvailable(Group group, List<LocationAvailable> locationsAvailable)
     {
-        publishMessages(locationAvailableClient, group, locationsAvailable);
+        publishMessages(Clients.locationAvailableClient, group, locationsAvailable);
     }
 
     /**
@@ -123,7 +121,7 @@ public class Publisher
      */
     public void publishUsersCreated(Group group, List<UserCreated> usersCreated)
     {
-        publishMessages(userCreatedClient, group, usersCreated);
+        publishMessages(Clients.userCreatedClient, group, usersCreated);
     }
 
     private <T extends Message> void publishMessage(TypedModeledFramework2<T, Group, Priority> typedClient, Group group, T message)

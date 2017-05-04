@@ -30,8 +30,6 @@ import pubsub.models.Group;
 import pubsub.models.Instance;
 import pubsub.models.InstanceType;
 import pubsub.models.Priority;
-import pubsub.util.Publisher;
-import pubsub.util.Subscriber;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;

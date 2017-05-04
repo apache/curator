@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package pubsub.builders;
+package pubsub;
 
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModelSpecBuilder;
-import org.apache.curator.x.async.modeled.typed.TypedModelSpec;
-import org.apache.curator.x.async.modeled.typed.TypedModelSpec2;
+import org.apache.curator.x.async.modeled.ModeledFramework;
+import org.apache.curator.x.async.modeled.typed.TypedModeledFramework;
+import org.apache.curator.x.async.modeled.typed.TypedModeledFramework2;
 import org.apache.zookeeper.CreateMode;
 import pubsub.messages.LocationAvailable;
 import pubsub.messages.UserCreated;
@@ -32,30 +33,33 @@ import pubsub.models.InstanceType;
 import pubsub.models.Priority;
 import java.util.concurrent.TimeUnit;
 
-public class ModelSpecs
+public class Clients
 {
     /**
-     * A model spec for LocationAvailable instances
+     * A client template for LocationAvailable instances
      */
-    public static final TypedModelSpec2<LocationAvailable, Group, Priority> locationAvailableModelSpec = TypedModelSpec2.from(
-        builder(LocationAvailable.class),   // creates a standard JSON serializer
-        Paths.locationAvailablePath         // use the path for LocationAvailable instances
+    public static final TypedModeledFramework2<LocationAvailable, Group, Priority> locationAvailableClient = TypedModeledFramework2.from(
+        ModeledFramework.builder(),
+        builder(LocationAvailable.class),
+        "/root/pubsub/messages/locations/{id}/{id}"
     );
 
     /**
-     * A model spec for UserCreated instances
+     * A client template for UserCreated instances
      */
-    public static final TypedModelSpec2<UserCreated, Group, Priority> userCreatedModelSpec = TypedModelSpec2.from(
-        builder(UserCreated.class),         // creates a standard JSON serializer
-        Paths.userCreatedPath               // use the path for UserCreated instances
+    public static final TypedModeledFramework2<UserCreated, Group, Priority> userCreatedClient = TypedModeledFramework2.from(
+        ModeledFramework.builder(),
+        builder(UserCreated.class),
+        "/root/pubsub//messages/users/{id}/{id}"
     );
 
     /**
-     * A model spec for Instance instances
+     * A client template for Instance instances
      */
-    public static final TypedModelSpec<Instance, InstanceType> instanceModelSpec = TypedModelSpec.from(
-        builder(Instance.class),            // creates a standard JSON serializer
-        Paths.instancesPath                 // use the path for Instance instances
+    public static final TypedModeledFramework<Instance, InstanceType> instanceClient = TypedModeledFramework.from(
+        ModeledFramework.builder(),
+        builder(Instance.class),
+        "/root/pubsub//instances/{id}"
     );
 
     private static <T> ModelSpecBuilder<T> builder(Class<T> clazz)
@@ -66,7 +70,7 @@ public class ModelSpecs
             ;
     }
 
-    private ModelSpecs()
+    private Clients()
     {
     }
 }

@@ -19,6 +19,7 @@
 package org.apache.curator.x.async.modeled.typed;
 
 import org.apache.curator.x.async.AsyncCuratorFramework;
+import org.apache.curator.x.async.modeled.ModelSpecBuilder;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ModeledFrameworkBuilder;
 
@@ -72,5 +73,21 @@ public interface TypedModeledFramework<M, P1>
     static <M, P1> TypedModeledFramework<M, P1> from(ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec<M, P1> modelSpec)
     {
         return (client, p1) -> frameworkBuilder.withClient(client).withModelSpec(modelSpec.resolved(p1)).build();
+    }
+
+    /**
+     * Return a new TypedModeledFramework using the given modeled framework builder, model spec builder and a path with ids.
+     * When {@link #resolved(AsyncCuratorFramework, Object)} is called the actual ModeledFramework is generated with the
+     * resolved model spec and resolved path
+     *
+     * @param frameworkBuilder ModeledFrameworkBuilder
+     * @param modelSpecBuilder model spec builder
+     * @param path path with {id} parameters
+     * @return new TypedModeledFramework
+     */
+    static <M, P1> TypedModeledFramework<M, P1> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String path)
+    {
+        TypedModelSpec<M, P1> typedModelSpec = TypedModelSpec.from(modelSpecBuilder, path);
+        return (client, p1) -> frameworkBuilder.withClient(client).withModelSpec(typedModelSpec.resolved(p1)).build();
     }
 }
