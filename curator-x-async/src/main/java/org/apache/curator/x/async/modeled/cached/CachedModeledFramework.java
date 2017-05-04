@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.modeled.cached;
 
+import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import java.io.Closeable;
@@ -41,6 +42,13 @@ public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeabl
      */
     @Override
     void close();
+
+    /**
+     * Return the listener container so that you can add/remove listeners
+     *
+     * @return listener container
+     */
+    Listenable<ModeledCacheListener<T>> listenable();
 
     /**
      * {@inheritDoc}

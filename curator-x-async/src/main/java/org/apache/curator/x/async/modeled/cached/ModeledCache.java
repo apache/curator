@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.cached;
 
-import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.x.async.modeled.ZPath;
 import java.util.Map;
 import java.util.Optional;
@@ -43,11 +42,4 @@ public interface ModeledCache<T>
      * @return a possibly-empty map of children if the node is alive
      */
     Map<ZPath, ZNode<T>> currentChildren(ZPath path);
-
-    /**
-     * Return the listener container so that you can add/remove listeners
-     *
-     * @return listener container
-     */
-    Listenable<ModeledCacheListener<T>> listenable();
 }

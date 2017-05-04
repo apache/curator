@@ -21,6 +21,7 @@ package org.apache.curator.x.async.modeled.details;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.ModelSpec;
@@ -28,6 +29,7 @@ import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
+import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.cached.ZNode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -68,6 +70,12 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     public void close()
     {
         cache.close();
+    }
+
+    @Override
+    public Listenable<ModeledCacheListener<T>> listenable()
+    {
+        return cache.listenable();
     }
 
     @Override

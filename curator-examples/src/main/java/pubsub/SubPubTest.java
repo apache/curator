@@ -108,9 +108,9 @@ public class SubPubTest implements Closeable
         );
 
         // add listeners for each of the caches
-        instanceSubscribers.forEach(s -> s.getCache().listenable().addListener(generalListener()));
-        locationAvailableSubscribers.forEach(s -> s.getCache().listenable().addListener(generalListener()));
-        userCreatedSubscribers.forEach(s -> s.getCache().listenable().addListener(generalListener()));
+        instanceSubscribers.forEach(s -> s.listenable().addListener(generalListener()));
+        locationAvailableSubscribers.forEach(s -> s.listenable().addListener(generalListener()));
+        userCreatedSubscribers.forEach(s -> s.listenable().addListener(generalListener()));
 
         // schedule the publisher task once a second
         executorService.scheduleAtFixedRate(() -> publishSomething(publisher), 1, 1, TimeUnit.SECONDS);
