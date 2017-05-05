@@ -28,7 +28,6 @@ import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,12 +136,6 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             startingException.set(e);
             throw e;
         }
-    }
-
-    @Override
-    public QuorumPeer getQuorumPeer()
-    {
-        throw new UnsupportedOperationException();
     }
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
