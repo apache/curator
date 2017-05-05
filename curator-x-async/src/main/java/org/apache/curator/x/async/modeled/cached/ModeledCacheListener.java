@@ -20,6 +20,7 @@ package org.apache.curator.x.async.modeled.cached;
 
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.LoggerFactory;
 
 @FunctionalInterface
 public interface ModeledCacheListener<T>
@@ -63,6 +64,17 @@ public interface ModeledCacheListener<T>
     default void initialized()
     {
         // NOP
+    }
+
+    /**
+     * Called when there is an exception processing a message from the internal cache. This is most
+     * likely due to a de-serialization problem.
+     *
+     * @param e the exception
+     */
+    default void handleException(Exception e)
+    {
+        LoggerFactory.getLogger(getClass()).error("Could not process cache message", e);
     }
 
     /**

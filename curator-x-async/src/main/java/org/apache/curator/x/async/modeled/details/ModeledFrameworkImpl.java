@@ -131,8 +131,19 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     @Override
     public AsyncStage<String> set(T item, Stat storingStatIn)
     {
-        byte[] bytes = modelSpec.serializer().serialize(item);
-        return dslClient.create().withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn, modelSpec.ttl()).forPath(modelSpec.path().fullPath(), bytes);
+        try
+        {
+            byte[] bytes = modelSpec.serializer().serialize(item);
+            return dslClient.create()
+                .withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn, modelSpec.ttl())
+                .forPath(modelSpec.path().fullPath(), bytes);
+        }
+        catch ( Exception e )
+        {
+            ModelStage<String> exceptionStage = new ModelStage<>();
+            exceptionStage.completeExceptionally(e);
+            return exceptionStage;
+        }
     }
 
     private List<ACL> fixAclList(List<ACL> aclList)
@@ -189,9 +200,18 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     @Override
     public AsyncStage<Stat> update(T item, int version)
     {
-        byte[] bytes = modelSpec.serializer().serialize(item);
-        AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dslClient.setData().compressedWithVersion(version) : dslClient.setData();
-        return next.forPath(modelSpec.path().fullPath(), bytes);
+        try
+        {
+            byte[] bytes = modelSpec.serializer().serialize(item);
+            AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dslClient.setData().compressedWithVersion(version) : dslClient.setData();
+            return next.forPath(modelSpec.path().fullPath(), bytes);
+        }
+        catch ( Exception e )
+        {
+            ModelStage<Stat> exceptionStage = new ModelStage<>();
+            exceptionStage.completeExceptionally(e);
+            return exceptionStage;
+        }
     }
 
     @Override

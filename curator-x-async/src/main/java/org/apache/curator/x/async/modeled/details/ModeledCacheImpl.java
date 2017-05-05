@@ -18,13 +18,13 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
@@ -37,9 +37,7 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
@@ -119,7 +117,24 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
     }
 
     @Override
-    public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
+    public void childEvent(CuratorFramework client, TreeCacheEvent event)
+    {
+        try
+        {
+            internalChildEvent(event);
+        }
+        catch ( Exception e )
+        {
+            ThreadUtils.checkInterrupted(e);
+
+            listenerContainer.forEach(l -> {
+                l.handleException(e);
+                return null;
+            });
+        }
+    }
+
+    private void internalChildEvent(TreeCacheEvent event) throws Exception
     {
         switch ( event.getType() )
         {
