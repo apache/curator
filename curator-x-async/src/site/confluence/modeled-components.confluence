@@ -45,7 +45,7 @@ A {{ModelSpec}} contains all the metadata needed to operate on a ZooKeeper path:
 * Options for how to delete nodes (guaranteed, deleting children, etc.)
 
 ModelSpec instances are created via a builder. The builder sets defaults that should be
-desired for most applications but you can alter any of these as needed.
+useful for most applications but you can alter any of these as needed.
 
 {code}
 // a standard model spec for the given path and serializer
@@ -87,7 +87,7 @@ The "set" call in the above example is the equivalent of:
 {code}
 MyModel instance = ...
 String path = "/foo/bar/" + instance.getId();
-byte[] data = serializer.serialize(data);
+byte[] data = serializer.serialize(instance);
 client.create()
     .withOptions(Sets.newHashSet(CreateOption.createParentsAsContainers, CreateOption.setDataIfExists))
     .forPath(path, data);

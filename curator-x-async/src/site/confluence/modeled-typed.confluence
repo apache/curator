@@ -1,6 +1,6 @@
 h1. Modeled Curator \- Caching and Typed Parameters
 
-In addition to the [[main features|modeled-components.html]] Modeled Curator also supports
+In addition to its [[main features|modeled-components.html]] Modeled Curator also supports
 integrated caching and typed parameters.
 
 h2. Caching
@@ -35,7 +35,7 @@ Typed interfaces are provided for up to 10 parameters and are named
 {{TypedModeledFramework2}}, etc.
 
 Here's an example of a TypedModeledFramework that models a Person and uses two parameters
-to generate the path, a Group and a Organization:
+to generate the path, a Group and an Organization:
 
 {code}
 TypedModeledFramework2<Person, Group, Organization> clientTemplate = TypedModeledFramework2.from(

@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -36,6 +37,9 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
@@ -57,12 +61,13 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         }
     }
 
-    ModeledCacheImpl(CuratorFramework client, ModelSpec<T> modelSpec)
+    ModeledCacheImpl(CuratorFramework client, ModelSpec<T> modelSpec, ExecutorService executor)
     {
         this.serializer = modelSpec.serializer();
         cache = TreeCache.newBuilder(client, modelSpec.path().fullPath())
             .setCacheData(false)
             .setDataIsCompressed(modelSpec.createOptions().contains(CreateOption.compress))
+            .setExecutor(executor)
             .setCreateParentNodes(modelSpec.createOptions().contains(CreateOption.createParentsIfNeeded) || modelSpec.createOptions().contains(CreateOption.createParentsAsContainers))
             .build();
     }

@@ -37,21 +37,25 @@ import org.apache.zookeeper.server.DataTree;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
 {
     private final ModeledFramework<T> client;
     private final ModeledCacheImpl<T> cache;
+    private final Executor executor;
 
-    CachedModeledFrameworkImpl(ModeledFramework<T> client)
+    CachedModeledFrameworkImpl(ModeledFramework<T> client, ExecutorService executor)
     {
-        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec()));
+        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec(), executor), executor);
     }
 
-    private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache)
+    private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache, Executor executor)
     {
         this.client = client;
         this.cache = cache;
+        this.executor = executor;
     }
 
     @Override
@@ -81,7 +85,13 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     @Override
     public CachedModeledFramework<T> cached()
     {
-        return this;
+        throw new UnsupportedOperationException("Already a cached instance");
+    }
+
+    @Override
+    public CachedModeledFramework<T> cached(ExecutorService executor)
+    {
+        throw new UnsupportedOperationException("Already a cached instance");
     }
 
     @Override
@@ -99,13 +109,13 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     @Override
     public CachedModeledFramework<T> at(Object child)
     {
-        return new CachedModeledFrameworkImpl<>(client.at(child), cache);
+        return new CachedModeledFrameworkImpl<>(client.at(child), cache, executor);
     }
 
     @Override
     public CachedModeledFramework<T> withPath(ZPath path)
     {
-        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache);
+        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache, executor);
     }
 
     @Override
@@ -136,8 +146,8 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
             {
                 DataTree.copyStat(node.stat(), storingStatIn);
             }
-            return new ModelStage<>(node.model());
-        }).orElseGet(() -> new ModelStage<>(new KeeperException.NoNodeException(path.fullPath())));
+            return completed(new ModelStage<>(), node.model());
+        }).orElseGet(() -> completedExceptionally(new ModelStage<>(), new KeeperException.NoNodeException(path.fullPath())));
     }
 
     @Override
@@ -169,14 +179,14 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     {
         ZPath path = client.modelSpec().path();
         Optional<ZNode<T>> data = cache.currentData(path);
-        return data.map(node -> new ModelStage<>(node.stat())).orElseGet(() -> new ModelStage<>((Stat)null));
+        return data.map(node -> completed(new ModelStage<>(), node.stat())).orElseGet(() -> completed(new ModelStage<>(), null));
     }
 
     @Override
     public AsyncStage<List<ZPath>> children()
     {
         Set<ZPath> paths = cache.currentChildren(client.modelSpec().path()).keySet();
-        return new ModelStage<>(Lists.newArrayList(paths));
+        return completed(new ModelStage<>(), Lists.newArrayList(paths));
     }
 
     @Override
@@ -225,5 +235,17 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     public AsyncStage<List<CuratorTransactionResult>> inTransaction(List<CuratorOp> operations)
     {
         return client.inTransaction(operations);
+    }
+
+    private <U> ModelStage<U> completed(ModelStage<U> stage, U value)
+    {
+        executor.execute(() -> stage.complete(value));
+        return stage;
+    }
+
+    private <U> ModelStage<U> completedExceptionally(ModelStage<U> stage, Exception e)
+    {
+        executor.execute(() -> stage.completeExceptionally(e));
+        return stage;
     }
 }

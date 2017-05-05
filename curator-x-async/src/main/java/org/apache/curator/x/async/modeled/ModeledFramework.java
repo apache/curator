@@ -25,6 +25,7 @@ import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 public interface ModeledFramework<T>
 {
@@ -65,14 +66,29 @@ public interface ModeledFramework<T>
     }
 
     /**
-     * Use an internally created cache as a front for this modeled instance. All read APIs use the internal
-     * cache. i.e. read calls always use the cache instead of making direct queries. Note: you must call
-     * {@link org.apache.curator.x.async.modeled.cached.CachedModeledFramework#start()} and
-     * {@link org.apache.curator.x.async.modeled.cached.CachedModeledFramework#close()} to start/stop
+     * <p>
+     *     Use an internally created cache as a front for this modeled instance. All read APIs use the internal
+     *     cache. i.e. read calls always use the cache instead of making direct queries. Note: you must call
+     *     {@link org.apache.curator.x.async.modeled.cached.CachedModeledFramework#start()} and
+     *     {@link org.apache.curator.x.async.modeled.cached.CachedModeledFramework#close()} to start/stop
+     * </p>
+     *
+     * <p>
+     *     Note: this method internally allocates an Executor for the cache and read methods. Use
+     *     {@link #cached(java.util.concurrent.ExecutorService)} if you'd like to provide your own executor service.
+     * </p>
      *
      * @return wrapped instance
      */
     CachedModeledFramework<T> cached();
+
+    /**
+     * Same as {@link #cached()} but allows for providing an executor service
+     *
+     * @param executor thread pool to use for the cache and for read operations
+     * @return wrapped instance
+     */
+    CachedModeledFramework<T> cached(ExecutorService executor);
 
     /**
      * Returns the client that was originally passed to {@link #wrap(org.apache.curator.x.async.AsyncCuratorFramework, ModelSpec)} or
