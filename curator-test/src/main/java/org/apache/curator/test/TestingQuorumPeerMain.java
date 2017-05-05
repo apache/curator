@@ -52,8 +52,7 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
         }
     }
 
-    @Override
-    public QuorumPeer getQuorumPeer()
+    public QuorumPeer getTestingQuorumPeer()
     {
         return quorumPeer;
     }

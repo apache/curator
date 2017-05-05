@@ -24,7 +24,6 @@ import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
-import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -67,12 +66,12 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
             Field cnxnFactoryField = ZooKeeperServerMain.class.getDeclaredField("cnxnFactory");
             cnxnFactoryField.setAccessible(true);
             ServerCnxnFactory cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
-            cnxnFactory.closeAll();
+                cnxnFactory.closeAll();
 
-            Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
-            ssField.setAccessible(true);
-            ServerSocketChannel ss = (ServerSocketChannel)ssField.get(cnxnFactory);
-            ss.close();
+                Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
+                ssField.setAccessible(true);
+                ServerSocketChannel ss = (ServerSocketChannel)ssField.get(cnxnFactory);
+                ss.close();
 
             close();
         }
@@ -99,12 +98,6 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         }
     }
 
-    @Override
-    public QuorumPeer getQuorumPeer()
-    {
-        throw new UnsupportedOperationException();
-    }
-
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override
     public void blockUntilStarted() throws Exception
@@ -115,16 +108,16 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         if ( cnxnFactory != null )
         {
             final ZooKeeperServer zkServer = getZooKeeperServer(cnxnFactory);
-            if ( zkServer != null )
+        if ( zkServer != null )
+        {
+            synchronized(zkServer)
             {
-                synchronized(zkServer)
-                {
                     if ( !zkServer.isRunning() )
-                    {
-                        zkServer.wait();
-                    }
+                {
+                    zkServer.wait();
                 }
             }
+        }
         }
 
         Thread.sleep(1000);
@@ -154,16 +147,16 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
             if ( cnxnFactory != null )
             {
                 ZooKeeperServer zkServer = getZooKeeperServer(cnxnFactory);
-                if ( zkServer != null )
+            if ( zkServer != null )
+            {
+                ZKDatabase zkDb = zkServer.getZKDatabase();
+                if ( zkDb != null )
                 {
-                    ZKDatabase zkDb = zkServer.getZKDatabase();
-                    if ( zkDb != null )
-                    {
-                        // make ZK server close its log files
-                        zkDb.close();
-                    }
+                    // make ZK server close its log files
+                    zkDb.close();
                 }
             }
+        }
         }
         catch ( Exception e )
         {
@@ -180,16 +173,16 @@ public class TestingZooKeeperMain extends ZooKeeperServerMain implements ZooKeep
         // Wait until the cnxnFactory field is non-null or up to 1s, whichever comes first.
         long startTime = System.currentTimeMillis();
         do
-        {
+            {
             cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(this);
-        }
+            }
         while ( (cnxnFactory == null) && ((System.currentTimeMillis() - startTime) < MAX_WAIT_MS) );
 
         return cnxnFactory;
-    }
+        }
 
     private ZooKeeperServer getZooKeeperServer(ServerCnxnFactory cnxnFactory) throws Exception
-    {
+        {
         Field zkServerField = ServerCnxnFactory.class.getDeclaredField("zkServer");
         zkServerField.setAccessible(true);
         ZooKeeperServer zkServer;
