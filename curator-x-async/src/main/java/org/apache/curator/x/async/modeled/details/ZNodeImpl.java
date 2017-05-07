@@ -18,7 +18,7 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import org.apache.curator.x.async.modeled.cached.ZNode;
+import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.data.Stat;
 import java.util.Objects;

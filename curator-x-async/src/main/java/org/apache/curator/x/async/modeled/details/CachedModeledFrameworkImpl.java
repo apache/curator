@@ -30,7 +30,7 @@ import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
-import org.apache.curator.x.async.modeled.cached.ZNode;
+import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
 class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
 {
@@ -133,21 +134,25 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     @Override
     public AsyncStage<T> read()
     {
-        return read(null);
+        return internalRead(ZNode::model);
     }
 
     @Override
     public AsyncStage<T> read(Stat storingStatIn)
     {
-        ZPath path = client.modelSpec().path();
-        Optional<ZNode<T>> data = cache.currentData(path);
-        return data.map(node -> {
+        return internalRead(n -> {
             if ( storingStatIn != null )
             {
-                DataTree.copyStat(node.stat(), storingStatIn);
+                DataTree.copyStat(n.stat(), storingStatIn);
             }
-            return completed(new ModelStage<>(), node.model());
-        }).orElseGet(() -> completedExceptionally(new ModelStage<>(), new KeeperException.NoNodeException(path.fullPath())));
+            return n.model();
+        });
+    }
+
+    @Override
+    public AsyncStage<ZNode<T>> readAsZNode()
+    {
+        return internalRead(Function.identity());
     }
 
     @Override
@@ -247,5 +252,13 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     {
         executor.execute(() -> stage.completeExceptionally(e));
         return stage;
+    }
+
+    private <U> ModelStage<U> internalRead(Function<ZNode<T>, U> resolver)
+    {
+        ZPath path = client.modelSpec().path();
+        Optional<ZNode<T>> data = cache.currentData(path);
+        return data.map(node -> completed(new ModelStage<>(), resolver.apply(node)))
+            .orElseGet(() -> completedExceptionally(new ModelStage<>(), new KeeperException.NoNodeException(path.fullPath())));
     }
 }

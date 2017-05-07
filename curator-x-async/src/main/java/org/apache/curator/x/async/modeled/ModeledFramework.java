@@ -170,6 +170,14 @@ public interface ModeledFramework<T>
     AsyncStage<T> read(Stat storingStatIn);
 
     /**
+     * Read the ZNode at this instance's path and deserialize into a model
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<ZNode<T>> readAsZNode();
+
+    /**
      * Update the ZNode at this instance's path with a serialized
      * form of the given model passing "-1" for the update version
      *

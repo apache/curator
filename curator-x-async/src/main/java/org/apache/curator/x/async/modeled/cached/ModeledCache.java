@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.modeled.cached;
 
+import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import java.util.Map;
 import java.util.Optional;

@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.cached;
+package org.apache.curator.x.async.modeled;
 
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.data.Stat;
 
 /**
- * Abstracts a cached node
+ * Abstracts a ZooKeeper node
  */
 public interface ZNode<T>
 {
