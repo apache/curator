@@ -104,8 +104,15 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @Override
     public CreateBuilder2 orSetData()
     {
+        return orSetData(-1);
+    }
+
+    @Override
+    public CreateBuilder2 orSetData(int version)
+    {
         setDataIfExists = true;
-        return this;
+        setDataIfExistsVersion = version;
+        return null;
     }
 
     @Override
