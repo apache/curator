@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -39,11 +38,12 @@ import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 
 public class ZPathImpl implements ZPath
 {
-    public static final ZPath root = new ZPathImpl(Collections.singletonList(PATH_SEPARATOR), null, null);
+    public static final ZPath root = new ZPathImpl(Collections.singletonList(PATH_SEPARATOR), null);
 
     private final List<String> nodes;
     private final boolean isResolved;
-    private final List<Supplier<Object>> parameterSuppliers;
+    private volatile String fullPathCache = null;
+    private volatile  String parentPathCache = null;
 
     public static ZPath parse(String fullPath, UnaryOperator<String> nameFilter)
     {
@@ -64,7 +64,7 @@ public class ZPathImpl implements ZPath
              )
             .build();
         nodes.forEach(ZPathImpl::validate);
-        return new ZPathImpl(nodes, null, null);
+        return new ZPathImpl(nodes, null);
     }
 
     public static ZPath from(String[] names)
@@ -103,20 +103,20 @@ public class ZPathImpl implements ZPath
             builder.add(PATH_SEPARATOR);
         }
         List<String> nodes = builder.addAll(names).build();
-        return new ZPathImpl(nodes, null, null);
+        return new ZPathImpl(nodes, null);
     }
 
     @Override
     public ZPath at(Object child)
     {
-        return new ZPathImpl(nodes, NodeName.nameFrom(child), parameterSuppliers);
+        return new ZPathImpl(nodes, NodeName.nameFrom(child));
     }
 
     @Override
     public ZPath parent()
     {
         checkRootAccess();
-        return new ZPathImpl(nodes.subList(0, nodes.size() - 1), null, parameterSuppliers);
+        return new ZPathImpl(nodes.subList(0, nodes.size() - 1), null);
     }
 
     @Override
@@ -215,19 +215,11 @@ public class ZPathImpl implements ZPath
                 return name;
             })
             .collect(Collectors.toList());
-        return new ZPathImpl(nodeNames, null, parameterSuppliers);
+        return new ZPathImpl(nodeNames, null);
     }
 
-    @Override
-    public ZPath resolving(List<Supplier<Object>> parameterSuppliers)
+    private ZPathImpl(List<String> nodes, String child)
     {
-        parameterSuppliers = Objects.requireNonNull(parameterSuppliers, "parameterSuppliers cannot be null");
-        return new ZPathImpl(nodes, null, parameterSuppliers);
-    }
-
-    private ZPathImpl(List<String> nodes, String child, List<Supplier<Object>> parameterSuppliers)
-    {
-        this.parameterSuppliers = parameterSuppliers;
         ImmutableList.Builder<String> builder = ImmutableList.<String>builder().addAll(nodes);
         if ( child != null )
         {
@@ -235,7 +227,7 @@ public class ZPathImpl implements ZPath
             builder.add(child);
         }
         this.nodes = builder.build();
-        isResolved = (parameterSuppliers != null) || !this.nodes.contains(parameterNodeName);
+        isResolved = !this.nodes.contains(parameterNodeName);
     }
 
     private void checkRootAccess()
@@ -253,6 +245,12 @@ public class ZPathImpl implements ZPath
 
     private String buildFullPath(boolean parent)
     {
+        String cachedValue = parent ? parentPathCache : fullPathCache;
+        if ( cachedValue != null )
+        {
+            return cachedValue;
+        }
+
         boolean addSeparator = false;
         StringBuilder str = new StringBuilder();
         int size = parent ? (nodes.size() - 1) : nodes.size();
@@ -263,18 +261,19 @@ public class ZPathImpl implements ZPath
             {
                 str.append(PATH_SEPARATOR);
             }
-            String value = nodes.get(i);
-            if ( value.equals(parameterNodeName) )
-            {
-                if ( (parameterSuppliers == null) || (parameterSuppliers.size() <= parameterIndex) )
-                {
-                    throw new IllegalStateException(String.format("Parameter supplier missing at index [%d] for [%s]", parameterIndex, nodes.toString()));
-                }
-                value = NodeName.nameFrom(parameterSuppliers.get(parameterIndex++).get());
-            }
-            str.append(value);
+            str.append(nodes.get(i));
         }
-        return str.toString();
+
+        String value = str.toString();
+        if ( parent )
+        {
+            parentPathCache = value;
+        }
+        else
+        {
+            fullPathCache = value;
+        }
+        return value;
     }
 
     private static void validate(String nodeName)

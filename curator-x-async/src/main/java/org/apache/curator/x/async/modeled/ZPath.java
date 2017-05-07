@@ -21,7 +21,6 @@ package org.apache.curator.x.async.modeled;
 import org.apache.curator.x.async.modeled.details.ZPathImpl;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
@@ -193,27 +192,6 @@ public interface ZPath extends Resolvable
      */
     @Override
     ZPath resolved(List<Object> parameters);
-
-    /**
-     * <p>
-     *     An "auto" resolving version of this ZPath. i.e. if any of the path names is
-     *     the {@link #parameterNodeName} the ZPath must be resolved. This method
-     *     creates a new ZPath that auto resolves by using the given parameter suppliers
-     *     whenever needed.
-     * </p>
-     *
-     * <p>
-     *     The replacement is the <code>toString()</code> value of the parameter object or,
-     *     if the object implements {@link org.apache.curator.x.async.modeled.NodeName},
-     *     the value of <code>nodeName()</code>.
-     * </p>
-     *
-     * @param parameterSuppliers parameter suppliers
-     * @return new auto resolving ZNode
-     * @see #resolved(Object...)
-     * @see #parameterNodeName
-     */
-    ZPath resolving(List<Supplier<Object>> parameterSuppliers);
 
     /**
      * <p>

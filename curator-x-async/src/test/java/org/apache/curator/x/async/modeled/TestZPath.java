@@ -22,8 +22,6 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.modeled.details.ZPathImpl;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.curator.x.async.modeled.ZPath.parameterNodeName;
 
@@ -75,16 +73,5 @@ public class TestZPath
     {
         ZPath path = ZPath.from("one", parameterNodeName, "two", parameterNodeName);
         Assert.assertEquals(path.resolved("a", "b"), ZPath.from("one", "a", "two", "b"));
-    }
-
-    @Test
-    public void testResolving()
-    {
-        ZPath path = ZPath.from("one", parameterNodeName, "two", parameterNodeName);
-        AtomicInteger count = new AtomicInteger(0);
-        ZPath resolving = path.resolving(Arrays.asList(() -> "x" + count.get(), () -> "y" + count.get()));
-        Assert.assertEquals(resolving.fullPath(), "/one/x0/two/y0");
-        count.incrementAndGet();
-        Assert.assertEquals(resolving.fullPath(), "/one/x1/two/y1");
     }
 }
