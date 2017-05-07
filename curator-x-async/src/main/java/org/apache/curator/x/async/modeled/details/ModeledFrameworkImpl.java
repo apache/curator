@@ -128,17 +128,29 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     @Override
     public AsyncStage<String> set(T item)
     {
-        return set(item, null);
+        return set(item, null, -1);
     }
 
     @Override
     public AsyncStage<String> set(T item, Stat storingStatIn)
     {
+        return set(item, storingStatIn, -1);
+    }
+
+    @Override
+    public AsyncStage<String> set(T item, int version)
+    {
+        return set(item, null, -1);
+    }
+
+    @Override
+    public AsyncStage<String> set(T item, Stat storingStatIn, int version)
+    {
         try
         {
             byte[] bytes = modelSpec.serializer().serialize(item);
             return dslClient.create()
-                .withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn, modelSpec.ttl())
+                .withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn, modelSpec.ttl(), version)
                 .forPath(modelSpec.path().fullPath(), bytes);
         }
         catch ( Exception e )

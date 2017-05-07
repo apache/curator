@@ -132,6 +132,18 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     }
 
     @Override
+    public AsyncStage<String> set(T model, Stat storingStatIn, int version)
+    {
+        return client.set(model, storingStatIn, version);
+    }
+
+    @Override
+    public AsyncStage<String> set(T model, int version)
+    {
+        return client.set(model, version);
+    }
+
+    @Override
     public AsyncStage<T> read()
     {
         return internalRead(ZNode::model);

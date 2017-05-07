@@ -143,6 +143,17 @@ public interface ModeledFramework<T>
 
     /**
      * Create (or update depending on build options) a ZNode at this instance's path with a serialized
+     * version of the given model
+     *
+     * @param model model to write
+     * @param version if data is being set instead of creating the node, the data version to use
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<String> set(T model, int version);
+
+    /**
+     * Create (or update depending on build options) a ZNode at this instance's path with a serialized
      * form of the given model
      *
      * @param model model to write
@@ -151,6 +162,18 @@ public interface ModeledFramework<T>
      * @see org.apache.curator.x.async.AsyncStage
      */
     AsyncStage<String> set(T model, Stat storingStatIn);
+
+    /**
+     * Create (or update depending on build options) a ZNode at this instance's path with a serialized
+     * form of the given model
+     *
+     * @param model model to write
+     * @param version if data is being set instead of creating the node, the data version to use
+     * @param storingStatIn the stat for the new ZNode is stored here
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<String> set(T model, Stat storingStatIn, int version);
 
     /**
      * Read the ZNode at this instance's path and deserialize into a model
