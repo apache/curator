@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.collect.Queues;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -33,7 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TestPathChildrenCacheInCluster
+public class TestPathChildrenCacheInCluster extends BaseClassForTests
 {
     @Test
     public void testMissedDelete() throws Exception
