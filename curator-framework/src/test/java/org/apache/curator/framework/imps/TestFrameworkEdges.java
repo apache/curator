@@ -29,7 +29,6 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -53,6 +52,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.framework.api.CreateBuilder;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
@@ -64,7 +64,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         final int serverPort = server.getPort();
         server.close();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 1000, 1000, new RetryForever(100));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 1000, 1000, new RetryNTimes(10, timing.forSleepingABit().milliseconds()));
         try
         {
             new Thread()
@@ -178,10 +178,17 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             final String TEST_PATH = "/a/b/c/test-";
-            client.create().withMode(mode).inBackground(callback).forPath(TEST_PATH);
+            long ttl = timing.forWaiting().milliseconds()*1000;
+            CreateBuilder firstCreateBuilder = client.create();
+            if(mode.isTTL()) {
+                firstCreateBuilder.withTtl(ttl);
+            }
+            firstCreateBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
 
-            String name1 = paths.take();
-            String path1 = paths.take();
+            String name1 = paths.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+            String path1 = paths.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNotNull(name1);
+            Assert.assertNotNull(path1);
 
             client.close();
 
@@ -190,14 +197,19 @@ public class TestFrameworkEdges extends BaseClassForTests
             
             CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.withProtection();
+            if(mode.isTTL()) {
+                createBuilder.withTtl(ttl);
+            }
 
             client.create().forPath(createBuilder.adjustPath(TEST_PATH));
 
             createBuilder.debugForceFindProtectedNode = true;
             createBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
 
-            String name2 = paths.take();
-            String path2 = paths.take();
+            String name2 = paths.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+            String path2 = paths.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNotNull(name2);
+            Assert.assertNotNull(path2);
 
             Assert.assertEquals(ZKPaths.getPathAndNode(name1).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
             Assert.assertEquals(ZKPaths.getPathAndNode(name2).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
