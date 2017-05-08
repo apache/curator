@@ -29,6 +29,7 @@ import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Objects;
@@ -207,18 +208,25 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     @Override
     public boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl)
     {
-        if ( !acl.equals(aclList) )
+        if ( acl != null )
         {
-            throw new SchemaViolation(schema, new SchemaViolation.ViolatorData(path, data, acl), "ACLs do not match model ACLs");
+            List<ACL> localAclList = (aclList.size() > 0) ? aclList : ZooDefs.Ids.OPEN_ACL_UNSAFE;
+            if ( !acl.equals(localAclList) )
+            {
+                throw new SchemaViolation(schema, new SchemaViolation.ViolatorData(path, data, acl), "ACLs do not match model ACLs");
+            }
         }
 
-        try
+        if ( data != null )
         {
-            serializer.deserialize(data);
-        }
-        catch ( RuntimeException e )
-        {
-            throw new SchemaViolation(schema, new SchemaViolation.ViolatorData(path, data, acl), "Data cannot be deserialized into a model");
+            try
+            {
+                serializer.deserialize(data);
+            }
+            catch ( RuntimeException e )
+            {
+                throw new SchemaViolation(schema, new SchemaViolation.ViolatorData(path, data, acl), "Data cannot be deserialized into a model");
+            }
         }
         return true;
     }

@@ -21,6 +21,9 @@ package org.apache.curator.x.async.modeled;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.schema.Schema;
+import org.apache.curator.framework.schema.SchemaSet;
+import org.apache.curator.framework.schema.SchemaViolation;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.AsyncCuratorFramework;
@@ -33,6 +36,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
@@ -128,5 +132,31 @@ public class TestModeledFramework extends CompletableBaseClassForTests
 
         ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).watched().build();
         complete(client.read().whenComplete((model, e) -> Assert.assertTrue(e instanceof RuntimeException)));
+    }
+
+    @Test
+    public void testSchema() throws Exception
+    {
+        Schema schema = modelSpec.schema();
+        try ( CuratorFramework schemaClient = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .schemaSet(new SchemaSet(Collections.singletonList(schema), false))
+            .build() ) {
+            schemaClient.start();
+
+            try
+            {
+                schemaClient.create().forPath(modelSpec.path().fullPath(), "asflasfas".getBytes());
+                Assert.fail("Should've thrown SchemaViolation");
+            }
+            catch ( SchemaViolation dummy )
+            {
+                // expected
+            }
+
+            ModeledFramework<TestModel> modeledSchemaClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(schemaClient), modelSpec);
+            complete(modeledSchemaClient.set(new TestModel("one", "two", "three", 4, BigInteger.ONE)), (dummy, e) -> Assert.assertNull(e));
+        }
     }
 }
