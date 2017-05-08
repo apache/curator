@@ -193,7 +193,7 @@ public class TestLeaderSelector extends BaseClassForTests
             selector = new LeaderSelector(client, "/leader", listener);
             selector.start();
 
-            Thread leaderThread = queue.take();
+            Thread leaderThread = timing.takeFromQueue(queue);
             server.stop();
             leaderThread.interrupt();
             server.restart();

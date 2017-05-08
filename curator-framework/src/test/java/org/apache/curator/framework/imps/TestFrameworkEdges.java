@@ -180,8 +180,8 @@ public class TestFrameworkEdges extends BaseClassForTests
             final String TEST_PATH = "/a/b/c/test-";
             client.create().withMode(mode).inBackground(callback).forPath(TEST_PATH);
 
-            String name1 = paths.take();
-            String path1 = paths.take();
+            String name1 = timing.takeFromQueue(paths);
+            String path1 = timing.takeFromQueue(paths);
 
             client.close();
 
@@ -196,8 +196,8 @@ public class TestFrameworkEdges extends BaseClassForTests
             createBuilder.debugForceFindProtectedNode = true;
             createBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
 
-            String name2 = paths.take();
-            String path2 = paths.take();
+            String name2 = timing.takeFromQueue(paths);
+            String path2 = timing.takeFromQueue(paths);
 
             Assert.assertEquals(ZKPaths.getPathAndNode(name1).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
             Assert.assertEquals(ZKPaths.getPathAndNode(name2).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
