@@ -37,6 +37,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.testng.Assert;
@@ -61,11 +62,17 @@ public class TestReconfiguration extends BaseClassForTests
     private TestingCluster cluster;
     private EnsembleProvider ensembleProvider;
 
+    private static final String superUserPasswordDigest = "curator-test:zghsj3JfJqK7DbWf0RQ1BgbJH9w=";  // ran from DigestAuthenticationProvider.generateDigest(superUserPassword);
+    private static final String superUserPassword = "curator-test";
+
     @BeforeMethod
     @Override
     public void setup() throws Exception
     {
         super.setup();
+
+        QuorumPeerConfig.setReconfigEnabled(true);
+        System.setProperty("zookeeper.DigestAuthenticationProvider.superDigest", superUserPasswordDigest);
 
         CloseableUtils.closeQuietly(server);
         server = null;
@@ -79,6 +86,7 @@ public class TestReconfiguration extends BaseClassForTests
     {
         CloseableUtils.closeQuietly(cluster);
         ensembleProvider = null;
+        System.clearProperty("zookeeper.DigestAuthenticationProvider.superDigest");
 
         super.teardown();
     }
@@ -350,6 +358,7 @@ public class TestReconfiguration extends BaseClassForTests
             .ensembleProvider(ensembleProvider)
             .sessionTimeoutMs(timing.session())
             .connectionTimeoutMs(timing.connection())
+            .authorization("digest", superUserPassword.getBytes())
             .retryPolicy(new ExponentialBackoffRetry(timing.forSleepingABit().milliseconds(), 3))
             .build();
     }
