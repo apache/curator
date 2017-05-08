@@ -40,10 +40,9 @@ public class TestModeledFramework extends CompletableBaseClassForTests
 {
     private static final ZPath path = ZPath.parse("/test/path");
     private CuratorFramework rawClient;
-    private JacksonModelSerializer<TestModel> serializer;
-    private JacksonModelSerializer<TestNewerModel> newSerializer;
     private ModelSpec<TestModel> modelSpec;
     private ModelSpec<TestNewerModel> newModelSpec;
+    private AsyncCuratorFramework async;
 
     @BeforeMethod
     @Override
@@ -53,9 +52,10 @@ public class TestModeledFramework extends CompletableBaseClassForTests
 
         rawClient = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         rawClient.start();
+        async = AsyncCuratorFramework.wrap(rawClient);
 
-        serializer = new JacksonModelSerializer<>(TestModel.class);
-        newSerializer = new JacksonModelSerializer<>(TestNewerModel.class);
+        JacksonModelSerializer<TestModel> serializer = JacksonModelSerializer.build(TestModel.class);
+        JacksonModelSerializer<TestNewerModel> newSerializer = JacksonModelSerializer.build(TestNewerModel.class);
 
         modelSpec = ModelSpec.builder(path, serializer).build();
         newModelSpec = ModelSpec.builder(path, newSerializer).build();
@@ -74,7 +74,7 @@ public class TestModeledFramework extends CompletableBaseClassForTests
     {
         TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
         TestModel rawModel2 = new TestModel("Wayne", "Rooney", "Old Trafford", 10, BigInteger.valueOf(1));
-        ModeledFramework<TestModel> client = ModeledFramework.wrap(AsyncCuratorFramework.wrap(rawClient), modelSpec);
+        ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
         AsyncStage<String> stage = client.set(rawModel);
         Assert.assertNull(stage.event());
         complete(stage, (s, e) -> Assert.assertNotNull(s));
@@ -89,10 +89,10 @@ public class TestModeledFramework extends CompletableBaseClassForTests
     public void testBackwardCompatibility()
     {
         TestNewerModel rawNewModel = new TestNewerModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1), 100);
-        ModeledFramework<TestNewerModel> clientForNew = ModeledFramework.wrap(AsyncCuratorFramework.wrap(rawClient), newModelSpec);
+        ModeledFramework<TestNewerModel> clientForNew = ModeledFramework.wrap(async, newModelSpec);
         complete(clientForNew.set(rawNewModel), (s, e) -> Assert.assertNotNull(s));
 
-        ModeledFramework<TestModel> clientForOld = ModeledFramework.wrap(AsyncCuratorFramework.wrap(rawClient), modelSpec);
+        ModeledFramework<TestModel> clientForOld = ModeledFramework.wrap(async, modelSpec);
         complete(clientForOld.read(), (model, e) -> Assert.assertTrue(rawNewModel.equalsOld(model)));
     }
 
@@ -100,7 +100,7 @@ public class TestModeledFramework extends CompletableBaseClassForTests
     public void testWatched() throws InterruptedException
     {
         CountDownLatch latch = new CountDownLatch(1);
-        ModeledFramework<TestModel> client = ModeledFramework.builder(AsyncCuratorFramework.wrap(rawClient), modelSpec).watched().build();
+        ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).watched().build();
         client.checkExists().event().whenComplete((event, ex) -> latch.countDown());
         timing.sleepABit();
         Assert.assertEquals(latch.getCount(), 1);
@@ -112,12 +112,21 @@ public class TestModeledFramework extends CompletableBaseClassForTests
     public void testGetChildren()
     {
         TestModel model = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
-        ModeledFramework<TestModel> client = ModeledFramework.builder(AsyncCuratorFramework.wrap(rawClient), modelSpec).build();
+        ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).build();
         complete(client.at("one").set(model));
         complete(client.at("two").set(model));
         complete(client.at("three").set(model));
 
         Set<ZPath> expected = Sets.newHashSet(path.at("one"), path.at("two"), path.at("three"));
         complete(client.children(), (children, e) -> Assert.assertEquals(Sets.newHashSet(children), expected));
+    }
+
+    @Test
+    public void testBadNode()
+    {
+        complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()));
+
+        ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).watched().build();
+        complete(client.read().whenComplete((model, e) -> Assert.assertTrue(e instanceof RuntimeException)));
     }
 }

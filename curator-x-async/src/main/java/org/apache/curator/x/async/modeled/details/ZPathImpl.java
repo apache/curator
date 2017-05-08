@@ -42,8 +42,9 @@ public class ZPathImpl implements ZPath
 
     private final List<String> nodes;
     private final boolean isResolved;
-    private volatile String fullPathCache = null;
-    private volatile  String parentPathCache = null;
+    private volatile String fullPath = null;
+    private volatile ZPath parent = null;
+    private volatile Pattern schema = null;
 
     public static ZPath parse(String fullPath, UnaryOperator<String> nameFilter)
     {
@@ -116,7 +117,11 @@ public class ZPathImpl implements ZPath
     public ZPath parent()
     {
         checkRootAccess();
-        return new ZPathImpl(nodes.subList(0, nodes.size() - 1), null);
+        if ( parent == null )
+        {
+            parent = new ZPathImpl(nodes.subList(0, nodes.size() - 1), null);
+        }
+        return parent;
     }
 
     @Override
@@ -143,22 +148,22 @@ public class ZPathImpl implements ZPath
     @Override
     public Pattern toSchemaPathPattern()
     {
-        return Pattern.compile(fullPath() + PATH_SEPARATOR + ".*");
+        if ( schema == null )
+        {
+            schema = Pattern.compile(buildFullPath(s -> s.equals(parameterNodeName) ? ".*" : s));
+        }
+        return schema;
     }
 
     @Override
     public String fullPath()
     {
         checkResolved();
-        return buildFullPath(false);
-    }
-
-    @Override
-    public String parentPath()
-    {
-        checkRootAccess();
-        checkResolved();
-        return buildFullPath(true);
+        if ( fullPath == null )
+        {
+            fullPath = buildFullPath(s -> s);
+        }
+        return fullPath;
     }
 
     @Override
@@ -243,39 +248,6 @@ public class ZPathImpl implements ZPath
         Preconditions.checkState(isResolved, "This ZPath has not been resolved");
     }
 
-    private String buildFullPath(boolean parent)
-    {
-        String cachedValue = parent ? parentPathCache : fullPathCache;
-        if ( cachedValue != null )
-        {
-            return cachedValue;
-        }
-
-        boolean addSeparator = false;
-        StringBuilder str = new StringBuilder();
-        int size = parent ? (nodes.size() - 1) : nodes.size();
-        int parameterIndex = 0;
-        for ( int i = 0; i < size; ++i )
-        {
-            if ( i > 1 )
-            {
-                str.append(PATH_SEPARATOR);
-            }
-            str.append(nodes.get(i));
-        }
-
-        String value = str.toString();
-        if ( parent )
-        {
-            parentPathCache = value;
-        }
-        else
-        {
-            fullPathCache = value;
-        }
-        return value;
-    }
-
     private static void validate(String nodeName)
     {
         if ( parameterNodeName.equals(Objects.requireNonNull(nodeName, "nodeName cannot be null")) )
@@ -287,5 +259,22 @@ public class ZPathImpl implements ZPath
             return;
         }
         PathUtils.validatePath(PATH_SEPARATOR + nodeName);
+    }
+
+    private String buildFullPath(UnaryOperator<String> filter)
+    {
+        boolean addSeparator = false;
+        StringBuilder str = new StringBuilder();
+        int size = nodes.size();
+        int parameterIndex = 0;
+        for ( int i = 0; i < size; ++i )
+        {
+            if ( i > 1 )
+            {
+                str.append(PATH_SEPARATOR);
+            }
+            str.append(filter.apply(nodes.get(i)));
+        }
+        return str.toString();
     }
 }

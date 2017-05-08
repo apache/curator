@@ -42,14 +42,9 @@ public interface ZPath extends Resolvable
     String idName = System.getProperty("curator-zpath-id-name", "{id}");
 
     /**
-     * Return the root path: "/"
-     *
-     * @return root path
+     * The root path: "/"
      */
-    static ZPath root()
-    {
-        return ZPathImpl.root;
-    }
+    ZPath root = ZPathImpl.root;
 
     /**
      * Take a string path and return a ZPath
@@ -240,14 +235,6 @@ public interface ZPath extends Resolvable
      * @return full path
      */
     String fullPath();
-
-    /**
-     * The string parent path of this ZPath
-     *
-     * @return parent path
-     * @throws java.util.NoSuchElementException if this is the root ZPath
-     */
-    String parentPath();
 
     /**
      * The node name at this ZPath

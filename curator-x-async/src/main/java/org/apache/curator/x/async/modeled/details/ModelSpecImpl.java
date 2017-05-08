@@ -33,7 +33,6 @@ import org.apache.zookeeper.data.ACL;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
 {
@@ -44,7 +43,7 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     private final Set<CreateOption> createOptions;
     private final Set<DeleteOption> deleteOptions;
     private final long ttl;
-    private final AtomicReference<Schema> schema = new AtomicReference<>();
+    private volatile Schema schema = null;
 
     public ModelSpecImpl(ZPath path, ModelSerializer<T> serializer, CreateMode createMode, List<ACL> aclList, Set<CreateOption> createOptions, Set<DeleteOption> deleteOptions, long ttl)
     {
@@ -126,13 +125,17 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     @Override
     public Schema schema()
     {
-        Schema schemaValue = schema.get();
-        if ( schemaValue == null )
+        if ( schema == null )
         {
-            schemaValue = makeSchema();
-            schema.compareAndSet(null, schemaValue);
+            schema = Schema.builder(path.toSchemaPathPattern())
+                .dataValidator(this)
+                .ephemeral(createMode.isEphemeral() ? Schema.Allowance.MUST : Schema.Allowance.CANNOT)
+                .canBeDeleted(true)
+                .sequential(createMode.isSequential() ? Schema.Allowance.MUST : Schema.Allowance.CANNOT)
+                .watched(Schema.Allowance.CAN)
+                .build();
         }
-        return schemaValue;
+        return schema;
     }
 
     @Override
@@ -218,16 +221,5 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
             throw new SchemaViolation(schema, new SchemaViolation.ViolatorData(path, data, acl), "Data cannot be deserialized into a model");
         }
         return true;
-    }
-
-    private Schema makeSchema()
-    {
-        return Schema.builder(path.toSchemaPathPattern())
-            .dataValidator(this)
-            .ephemeral(createMode.isEphemeral() ? Schema.Allowance.MUST : Schema.Allowance.CANNOT)
-            .canBeDeleted(true)
-            .sequential(createMode.isSequential() ? Schema.Allowance.MUST : Schema.Allowance.CANNOT)
-            .watched(Schema.Allowance.CAN)
-            .build();
     }
 }
