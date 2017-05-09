@@ -38,10 +38,10 @@ import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
+import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.DataTree;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -114,6 +114,12 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     }
 
     @Override
+    public VersionedModeledFramework<T> versioned()
+    {
+        return new VersionedModeledFrameworkImpl<>(this);
+    }
+
+    @Override
     public ModelSpec<T> modelSpec()
     {
         return modelSpec;
@@ -169,25 +175,19 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     @Override
     public AsyncStage<T> read()
     {
-        return internalRead(ZNode::model);
+        return internalRead(ZNode::model, null);
     }
 
     @Override
     public AsyncStage<T> read(Stat storingStatIn)
     {
-        return internalRead(n -> {
-            if ( storingStatIn != null )
-            {
-                DataTree.copyStat(n.stat(), storingStatIn);
-            }
-            return n.model();
-        });
+        return internalRead(ZNode::model, storingStatIn);
     }
 
     @Override
     public AsyncStage<ZNode<T>> readAsZNode()
     {
-        return internalRead(Function.identity());
+        return internalRead(Function.identity(), null);
     }
 
     @Override
@@ -349,9 +349,9 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         return modelSpec.createOptions().contains(CreateOption.compress);
     }
 
-    private <U> ModelStage<U> internalRead(Function<ZNode<T>, U> resolver)
+    private <U> ModelStage<U> internalRead(Function<ZNode<T>, U> resolver, Stat storingStatIn)
     {
-        Stat stat = new Stat();
+        Stat stat = (storingStatIn != null) ? storingStatIn : new Stat();
         AsyncPathable<AsyncStage<byte[]>> next = isCompressed() ? watchableClient.getData().decompressedStoringStatIn(stat) : watchableClient.getData().storingStatIn(stat);
         AsyncStage<byte[]> asyncStage = next.forPath(modelSpec.path().fullPath());
         ModelStage<U> modelStage = new ModelStage<>(asyncStage.event());
@@ -375,4 +375,5 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         });
         return modelStage;
     }
+
 }

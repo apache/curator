@@ -23,6 +23,7 @@ import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
+import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
 import org.apache.zookeeper.data.Stat;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -89,6 +90,13 @@ public interface ModeledFramework<T>
      * @return wrapped instance
      */
     CachedModeledFramework<T> cached(ExecutorService executor);
+
+    /**
+     * Return mutator APIs that work with {@link org.apache.curator.x.async.modeled.versioned.Versioned} containers
+     *
+     * @return wrapped instance
+     */
+    VersionedModeledFramework<T> versioned();
 
     /**
      * Returns the client that was originally passed to {@link #wrap(org.apache.curator.x.async.AsyncCuratorFramework, ModelSpec)} or

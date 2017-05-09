@@ -26,11 +26,12 @@ import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
+import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
-import org.apache.curator.x.async.modeled.ZNode;
+import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
@@ -93,6 +94,12 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     public CachedModeledFramework<T> cached(ExecutorService executor)
     {
         throw new UnsupportedOperationException("Already a cached instance");
+    }
+
+    @Override
+    public VersionedModeledFramework<T> versioned()
+    {
+        return new VersionedModeledFrameworkImpl<>(this);
     }
 
     @Override
