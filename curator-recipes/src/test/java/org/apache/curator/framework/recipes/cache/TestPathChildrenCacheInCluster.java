@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestPathChildrenCacheInCluster extends BaseClassForTests
 {
-    @Test
+    @Test(enabled = false)  // this test is very flakey - it needs to be re-written at some point
     public void testMissedDelete() throws Exception
     {
         Timing timing = new Timing();
