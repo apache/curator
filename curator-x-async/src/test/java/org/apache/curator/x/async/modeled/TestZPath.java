@@ -52,6 +52,13 @@ public class TestZPath
 
         Assert.assertTrue(path.startsWith(ZPath.root.at("one")));
         Assert.assertFalse(path.startsWith(ZPath.root.at("two")));
+
+        ZPath checkIdLike = ZPath.parse("/one/{two}/three");
+        Assert.assertTrue(((ZPathImpl)checkIdLike).isResolved());
+        checkIdLike = ZPath.parse("/one/" + ZPath.parameter() + "/three");
+        Assert.assertTrue(((ZPathImpl)checkIdLike).isResolved());
+        checkIdLike = ZPath.parse("/one/" + ZPath.parameter("others") + "/three");
+        Assert.assertTrue(((ZPathImpl)checkIdLike).isResolved());
     }
 
     @Test

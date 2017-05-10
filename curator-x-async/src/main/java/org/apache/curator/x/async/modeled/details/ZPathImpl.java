@@ -223,6 +223,11 @@ public class ZPathImpl implements ZPath
         return new ZPathImpl(nodeNames, null);
     }
 
+    public boolean isResolved()
+    {
+        return isResolved;
+    }
+
     private static boolean isParameter(String name)
     {
         return (name.length() > 1) && name.startsWith(PATH_SEPARATOR);
