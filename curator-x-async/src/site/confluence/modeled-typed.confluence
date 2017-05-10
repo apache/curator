@@ -1,7 +1,7 @@
 h1. Modeled Curator \- Caching, Typed Parameters and Versioning
 
 In addition to its [[main features|modeled-components.html]] Modeled Curator also supports
-integrated caching and typed parameters.
+integrated caching, typed parameters and versioning.
 
 h2. Caching
 
