@@ -27,6 +27,8 @@ import java.nio.channels.ServerSocketChannel;
 
 class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
 {
+    private volatile boolean isClosed = false;
+
     @Override
     public void kill()
     {
@@ -60,16 +62,10 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
     @Override
     public void close() throws IOException
     {
-        if ( quorumPeer != null )
+        if ( (quorumPeer != null) && !isClosed )
         {
-            try
-            {
-                quorumPeer.shutdown();
-            }
-            finally
-            {
-                quorumPeer = null;
-            }
+            isClosed = true;
+            quorumPeer.shutdown();
         }
     }
 
