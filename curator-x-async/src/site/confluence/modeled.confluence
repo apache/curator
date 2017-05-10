@@ -39,3 +39,10 @@ h2. Example
 
 A complete example usage of Modeled Curator along with CachedModeledFramework and Typed Parameter Templates
 can be found here: [[https://github.com/apache/curator/tree/master/curator-examples/src/main/java/pubsub]].
+
+h2. Details
+
+For more details see:
+
+* [[Components|modeled-components.html]]
+* [[Caching, Typed Parameters and Versioning|modeled-typed.html]]

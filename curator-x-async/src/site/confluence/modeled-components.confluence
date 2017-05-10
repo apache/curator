@@ -68,6 +68,22 @@ ModelSpec<MyModel> spec = ModelSpec.builder(path, JacksonModelSerializer.build(M
 ModelSpec<MyModel> resolvedSpec = spec.resolve(param1, param2);
 {code}
 
+h3. JacksonModelSerializer
+
+A Jackson serializer, {{JacksonModelSerializer}}, is included. However, the Jackson dependency for it is
+specified as "provided" in the curator\-x\-async Maven POM file to avoid adding a new dependency to Curator.
+Therefore, if you wish to use the JacksonModelSerializer you must manually add the dependency to your build system.
+
+E.g. for Maven:
+
+{code}
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>XXXX</version>
+</dependency>
+{code}
+
 h2. ModeledFramework
 
 {{ModeledFramework}} ties together all the metadata into a Curator\-style instance that is
