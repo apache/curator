@@ -40,12 +40,7 @@ public interface ModeledCacheListener<T>
         /**
          * A child was removed from the path
          */
-        NODE_REMOVED,
-
-        /**
-         * Signals that the initial cache has been populated.
-         */
-        INITIALIZED
+        NODE_REMOVED
     }
 
     /**

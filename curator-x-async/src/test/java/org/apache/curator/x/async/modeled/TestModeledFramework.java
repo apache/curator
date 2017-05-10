@@ -25,57 +25,22 @@ import org.apache.curator.framework.schema.Schema;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.schema.SchemaViolation;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
-import org.apache.curator.x.async.CompletableBaseClassForTests;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.apache.curator.x.async.modeled.models.TestNewerModel;
 import org.apache.curator.x.async.modeled.versioned.Versioned;
 import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
-public class TestModeledFramework extends CompletableBaseClassForTests
+public class TestModeledFramework extends TestModeledFrameworkBase
 {
-    protected static final ZPath path = ZPath.parse("/test/path");
-    protected CuratorFramework rawClient;
-    protected ModelSpec<TestModel> modelSpec;
-    protected ModelSpec<TestNewerModel> newModelSpec;
-    protected AsyncCuratorFramework async;
-
-    @BeforeMethod
-    @Override
-    public void setup() throws Exception
-    {
-        super.setup();
-
-        rawClient = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        rawClient.start();
-        async = AsyncCuratorFramework.wrap(rawClient);
-
-        JacksonModelSerializer<TestModel> serializer = JacksonModelSerializer.build(TestModel.class);
-        JacksonModelSerializer<TestNewerModel> newSerializer = JacksonModelSerializer.build(TestNewerModel.class);
-
-        modelSpec = ModelSpec.builder(path, serializer).build();
-        newModelSpec = ModelSpec.builder(path, newSerializer).build();
-    }
-
-    @AfterMethod
-    @Override
-    public void teardown() throws Exception
-    {
-        CloseableUtils.closeQuietly(rawClient);
-        super.teardown();
-    }
-
     @Test
     public void testCrud()
     {
