@@ -203,14 +203,14 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     {
         ZPath path = client.modelSpec().path();
         Optional<ZNode<T>> data = cache.currentData(path);
-        return data.map(node -> completed(new ModelStage<>(null), node.stat())).orElseGet(() -> completed(new ModelStage<>(null), null));
+        return data.map(node -> completed(node.stat())).orElseGet(() -> completed(null));
     }
 
     @Override
     public AsyncStage<List<ZPath>> children()
     {
         Set<ZPath> paths = cache.currentChildren(client.modelSpec().path()).keySet();
-        return completed(new ModelStage<>(null), Lists.newArrayList(paths));
+        return completed(Lists.newArrayList(paths));
     }
 
     @Override
@@ -261,23 +261,25 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
         return client.inTransaction(operations);
     }
 
-    private <U> ModelStage<U> completed(ModelStage<U> stage, U value)
+    private <U> CachedStage<U> completed(U value)
     {
-        executor.execute(() -> stage.complete(value));
+        CachedStage<U> stage = new CachedStage<>(executor);
+        stage.complete(value);
         return stage;
     }
 
-    private <U> ModelStage<U> completedExceptionally(ModelStage<U> stage, Exception e)
+    private <U> CachedStage<U> completedExceptionally(Exception e)
     {
-        executor.execute(() -> stage.completeExceptionally(e));
+        CachedStage<U> stage = new CachedStage<>(executor);
+        stage.completeExceptionally(e);
         return stage;
     }
 
-    private <U> ModelStage<U> internalRead(Function<ZNode<T>, U> resolver)
+    private <U> CachedStage<U> internalRead(Function<ZNode<T>, U> resolver)
     {
         ZPath path = client.modelSpec().path();
         Optional<ZNode<T>> data = cache.currentData(path);
-        return data.map(node -> completed(new ModelStage<>(null), resolver.apply(node)))
-            .orElseGet(() -> completedExceptionally(new ModelStage<>(null), new KeeperException.NoNodeException(path.fullPath())));
+        return data.map(node -> completed(resolver.apply(node)))
+            .orElseGet(() -> completedExceptionally(new KeeperException.NoNodeException(path.fullPath())));
     }
 }

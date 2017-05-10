@@ -45,11 +45,11 @@ import java.util.concurrent.CountDownLatch;
 
 public class TestModeledFramework extends CompletableBaseClassForTests
 {
-    private static final ZPath path = ZPath.parse("/test/path");
-    private CuratorFramework rawClient;
-    private ModelSpec<TestModel> modelSpec;
-    private ModelSpec<TestNewerModel> newModelSpec;
-    private AsyncCuratorFramework async;
+    protected static final ZPath path = ZPath.parse("/test/path");
+    protected CuratorFramework rawClient;
+    protected ModelSpec<TestModel> modelSpec;
+    protected ModelSpec<TestNewerModel> newModelSpec;
+    protected AsyncCuratorFramework async;
 
     @BeforeMethod
     @Override
