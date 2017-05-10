@@ -36,7 +36,7 @@ public static final TypedModeledFramework2<LocationAvailable, Group, Priority> l
     TypedModeledFramework2.from(
         ModeledFramework.builder(),
         builder(LocationAvailable.class),
-        "/root/pubsub/messages/locations/{id}/{id}"
+        "/root/pubsub/messages/locations/{group}/{priority}"
     );
 ```
 

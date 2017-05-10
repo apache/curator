@@ -24,27 +24,36 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
+import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
+
 /**
  * Abstracts a ZooKeeper ZNode path
  */
 public interface ZPath extends Resolvable
 {
     /**
-     * The special node name that can be used for replacements at runtime
-     * via {@link #resolved(Object...)} when passed via the various <code>from()</code> methods
-     */
-    String parameterNodeName = System.getProperty("curator-zpath-parameter", "");    // empty paths are illegal so it's useful for this purpose
-
-    /**
-     * Value that represents a parameter name when using {@link #parseWithIds(String)}. By default
-     * this is <code>{id}</code>
-     */
-    String idName = System.getProperty("curator-zpath-id-name", "{id}");
-
-    /**
      * The root path: "/"
      */
     ZPath root = ZPathImpl.root;
+
+    /**
+     * Returns the special node name that can be used for replacements at runtime
+     * via {@link #resolved(Object...)} when passed via the various <code>from()</code> methods
+     */
+    static String parameter()
+    {
+        return parameter("id");
+    }
+
+    /**
+     * Same as {@link #parameter()} but allows you to specify an alternate code/name. This name
+     * has no effect and is only for debugging purposes. When <code>toString()</code> is called
+     * on ZPaths, this code shows.
+     */
+    static String parameter(String name)
+    {
+        return PATH_SEPARATOR + "{" + name + "}";
+    }
 
     /**
      * Take a string path and return a ZPath
@@ -60,9 +69,9 @@ public interface ZPath extends Resolvable
 
     /**
      * Take a string path and return a ZPath. Each part of the path
-     * that is <code>{id}</code> is replaced with {@link #parameterNodeName}.
-     * E.g. <code>parseWithIds("/one/two/{id}/three/{id}")</code> is the equivalent
-     * of calling <code>ZPath.from("one", "two", parameterNodeName, "three", parameterNodeName)</code>
+     * that is <code>{XXXX}</code> is replaced with {@link #parameter()}.
+     * E.g. <code>parseWithIds("/one/two/{first}/three/{second}")</code> is the equivalent
+     * of calling <code>ZPath.from("one", "two", parameter(), "three", parameter())</code>
      *
      * @param fullPath the path to parse
      * @return ZPath
@@ -70,7 +79,18 @@ public interface ZPath extends Resolvable
      */
     static ZPath parseWithIds(String fullPath)
     {
-        return ZPathImpl.parse(fullPath, s -> s.equals(idName) ? parameterNodeName : s);
+        return ZPathImpl.parse(fullPath, s -> isId(s) ? (PATH_SEPARATOR + s) : s); // TODO
+    }
+
+    /**
+     * Return true if the given string conforms to the "{XXXX}" ID pattern
+     *
+     * @param s string to check
+     * @return true/false
+     */
+    static boolean isId(String s)
+    {
+        return s.startsWith("{") && s.endsWith("}");
     }
 
     /**
@@ -89,7 +109,7 @@ public interface ZPath extends Resolvable
     /**
      * Convert individual path names into a ZPath. E.g.
      * <code>ZPath.from("my", "full", "path")</code>. Any/all of the names can be passed as
-     * {@link #parameterNodeName} so that the path can be resolved later using
+     * {@link #parameter()} so that the path can be resolved later using
      * of the <code>resolved()</code> methods.
      *
      * @param names path names
@@ -103,7 +123,7 @@ public interface ZPath extends Resolvable
 
     /**
      * Convert individual path names into a ZPath. Any/all of the names can be passed as
-     * {@link #parameterNodeName} so that the path can be resolved later using
+     * {@link #parameter()} so that the path can be resolved later using
      * of the <code>resolved()</code> methods.
      *
      * @param names path names
@@ -119,7 +139,7 @@ public interface ZPath extends Resolvable
      * Convert individual path names into a ZPath starting at the given base. E.g.
      * if base is "/home/base" <code>ZPath.from(base, "my", "full", "path")</code>
      * would be "/home/base/my/full/path". Any/all of the names can be passed as
-     * {@link #parameterNodeName} so that the path can be resolved later using
+     * {@link #parameter()} so that the path can be resolved later using
      * of the <code>resolved()</code> methods.
      *
      * @param base base/starting path
@@ -134,7 +154,7 @@ public interface ZPath extends Resolvable
 
     /**
      * Convert individual path names into a ZPath starting at the given base. Any/all of the names can be passed as
-     * {@link #parameterNodeName} so that the path can be resolved later using
+     * {@link #parameter()} so that the path can be resolved later using
      * of the <code>resolved()</code> methods.
      *
      * @param base base/starting path
@@ -149,7 +169,7 @@ public interface ZPath extends Resolvable
 
     /**
      * <p>
-     *     When creating paths, any node in the path can be set to {@link #parameterNodeName}.
+     *     When creating paths, any node in the path can be set to {@link #parameter()}.
      *     At runtime, the ZPath can be "resolved" by replacing these nodes with values.
      * </p>
      *
@@ -171,7 +191,7 @@ public interface ZPath extends Resolvable
 
     /**
      * <p>
-     *     When creating paths, any node in the path can be set to {@link #parameterNodeName}.
+     *     When creating paths, any node in the path can be set to {@link #parameter()}.
      *     At runtime, the ZPath can be "resolved" by replacing these nodes with values.
      * </p>
      *

@@ -17,11 +17,12 @@ To build a simple static path, use:
 ZPath path = ZPath.parse("/my/static/path");
 {code}
 
-To build a path with parameters, use. {{ZPath.parseWithIds()}} using the value "\{id\}" to
-denote a parameter. You can then use the {{resolve()}} method to replace the parameters. E.g.
+To build a path with parameters, use. {{ZPath.parseWithIds()}} using the value "\{XXXX\}" to
+denote a parameter. You can then use the {{resolve()}} method to replace the parameters. The value
+between "\{\}" can be any value. E.g.
 
 {code}
-ZPath path = ZPath.parseWithIds("/foo/{id}/bar/{id}");
+ZPath path = ZPath.parseWithIds("/foo/{first param}/bar/{second param}");
 
 ...
 

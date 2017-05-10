@@ -150,7 +150,7 @@ public class ZPathImpl implements ZPath
     {
         if ( schema == null )
         {
-            schema = Pattern.compile(buildFullPath(s -> s.equals(parameterNodeName) ? ".*" : s));
+            schema = Pattern.compile(buildFullPath(s -> isParameter(s) ? ".*" : s));
         }
         return schema;
     }
@@ -199,7 +199,7 @@ public class ZPathImpl implements ZPath
     public String toString()
     {
         return nodes.subList(1, nodes.size())
-            .stream().map(name -> name.equals(parameterNodeName) ? idName : name)
+            .stream().map(name -> isParameter(name) ? name.substring(1) : name)
             .collect(Collectors.joining(PATH_SEPARATOR, PATH_SEPARATOR, ""));
     }
 
@@ -209,11 +209,11 @@ public class ZPathImpl implements ZPath
         Iterator<Object> iterator = parameters.iterator();
         List<String> nodeNames = nodes.stream()
             .map(name -> {
-                if ( name.equals(parameterNodeName) )
+                if ( isParameter(name) )
                 {
                     if ( !iterator.hasNext() )
                     {
-                        throw new IllegalStateException(String.format("Parameter missing for [%s]", nodes.toString()));
+                        throw new IllegalStateException(String.format("Parameter missing for [%s]", toString()));
                     }
                     return NodeName.nameFrom(iterator.next());
                 }
@@ -221,6 +221,11 @@ public class ZPathImpl implements ZPath
             })
             .collect(Collectors.toList());
         return new ZPathImpl(nodeNames, null);
+    }
+
+    private static boolean isParameter(String name)
+    {
+        return (name.length() > 1) && name.startsWith(PATH_SEPARATOR);
     }
 
     private ZPathImpl(List<String> nodes, String child)
@@ -232,7 +237,7 @@ public class ZPathImpl implements ZPath
             builder.add(child);
         }
         this.nodes = builder.build();
-        isResolved = !this.nodes.contains(parameterNodeName);
+        isResolved = this.nodes.stream().noneMatch(ZPathImpl::isParameter);
     }
 
     private void checkRootAccess()
@@ -250,7 +255,7 @@ public class ZPathImpl implements ZPath
 
     private static void validate(String nodeName)
     {
-        if ( parameterNodeName.equals(Objects.requireNonNull(nodeName, "nodeName cannot be null")) )
+        if ( isParameter(Objects.requireNonNull(nodeName, "nodeName cannot be null")) )
         {
             return;
         }

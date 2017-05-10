@@ -24,7 +24,7 @@ import java.util.List;
 public interface Resolvable
 {
     /**
-     * When creating paths, any node in the path can be set to {@link org.apache.curator.x.async.modeled.ZPath#parameterNodeName}.
+     * When creating paths, any node in the path can be set to {@link ZPath#parameter()}.
      * At runtime, the ZPath can be "resolved" by replacing these nodes with values.
      *
      * @param parameters list of replacements. Must have be the same length as the number of
@@ -37,7 +37,7 @@ public interface Resolvable
     }
 
     /**
-     * When creating paths, any node in the path can be set to {@link org.apache.curator.x.async.modeled.ZPath#parameterNodeName}.
+     * When creating paths, any node in the path can be set to {@link ZPath#parameter()}.
      * At runtime, the ZPath can be "resolved" by replacing these nodes with values.
      *
      * @param parameters list of replacements. Must have be the same length as the number of

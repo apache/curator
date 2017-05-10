@@ -52,12 +52,12 @@ public interface TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7>
      *
      * @param frameworkBuilder ModeledFrameworkBuilder
      * @param modelSpecBuilder model spec builder
-     * @param path path with {id} parameters
+     * @param pathWithIds path with {XXXX} parameters
      * @return new TypedModeledFramework
      */
-    static <M, P1, P2, P3, P4, P5, P6, P7> TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String path)
+    static <M, P1, P2, P3, P4, P5, P6, P7> TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds)
     {
-        TypedModelSpec7<M, P1, P2, P3, P4, P5, P6, P7> typedModelSpec = TypedModelSpec7.from(modelSpecBuilder, path);
+        TypedModelSpec7<M, P1, P2, P3, P4, P5, P6, P7> typedModelSpec = TypedModelSpec7.from(modelSpecBuilder, pathWithIds);
         return (client, p1, p2, p3, p4, p5, p6, p7) -> frameworkBuilder.withClient(client).withModelSpec(typedModelSpec.resolved(p1, p2, p3, p4, p5, p6, p7)).build();
     }
 }

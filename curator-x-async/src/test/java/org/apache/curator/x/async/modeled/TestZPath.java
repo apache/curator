@@ -23,7 +23,7 @@ import org.apache.curator.x.async.modeled.details.ZPathImpl;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import static org.apache.curator.x.async.modeled.ZPath.parameterNodeName;
+import static org.apache.curator.x.async.modeled.ZPath.parameter;
 
 public class TestZPath
 {
@@ -60,27 +60,27 @@ public class TestZPath
         Assert.assertEquals(ZPath.parse("/"), ZPath.root);
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.root.at("one").at("two").at("three"));
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
-        Assert.assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameterNodeName, "two", parameterNodeName));
+        Assert.assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameter(), "two", parameter()));
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testUnresolvedPath()
     {
-        ZPath path = ZPath.from("one", parameterNodeName, "two");
+        ZPath path = ZPath.from("one", parameter(), "two");
         path.fullPath();
     }
 
     @Test
     public void testResolvedPath()
     {
-        ZPath path = ZPath.from("one", parameterNodeName, "two", parameterNodeName);
+        ZPath path = ZPath.from("one", parameter(), "two", parameter());
         Assert.assertEquals(path.resolved("a", "b"), ZPath.from("one", "a", "two", "b"));
     }
 
     @Test
     public void testSchema()
     {
-        ZPath path = ZPath.from("one", parameterNodeName, "two", parameterNodeName);
+        ZPath path = ZPath.from("one", parameter(), "two", parameter());
         Assert.assertEquals(path.toSchemaPathPattern().toString(), "/one/.*/two/.*");
         path = ZPath.parse("/one/two/three");
         Assert.assertEquals(path.toSchemaPathPattern().toString(), "/one/two/three");
@@ -88,5 +88,13 @@ public class TestZPath
         Assert.assertEquals(path.toSchemaPathPattern().toString(), "/one/.*/three");
         path = ZPath.parseWithIds("/{id}/{id}/three");
         Assert.assertEquals(path.toSchemaPathPattern().toString(), "/.*/.*/three");
+    }
+
+    @Test
+    public void testCustomIds()
+    {
+        Assert.assertEquals(ZPath.parseWithIds("/a/{a}/bee/{bee}/c/{c}").toString(), "/a/{a}/bee/{bee}/c/{c}");
+        Assert.assertEquals(ZPath.from("a", parameter(), "b", parameter()).toString(), "/a/{id}/b/{id}");
+        Assert.assertEquals(ZPath.from("a", parameter("foo"), "b", parameter("bar")).toString(), "/a/{foo}/b/{bar}");
     }
 }

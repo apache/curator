@@ -31,12 +31,12 @@ public interface TypedZPath6<T1, T2, T3, T4, T5, T6>
     /**
      * Return a TypedZPath using {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
      *
-     * @param fullPath path to pass to {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
+     * @param pathWithIds path to pass to {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
      * @return TypedZPath
      */
-    static <T1, T2, T3, T4, T5, T6> TypedZPath6<T1, T2, T3, T4, T5, T6> from(String fullPath)
+    static <T1, T2, T3, T4, T5, T6> TypedZPath6<T1, T2, T3, T4, T5, T6> from(String pathWithIds)
     {
-        return from(ZPath.parseWithIds(fullPath));
+        return from(ZPath.parseWithIds(pathWithIds));
     }
 
     /**

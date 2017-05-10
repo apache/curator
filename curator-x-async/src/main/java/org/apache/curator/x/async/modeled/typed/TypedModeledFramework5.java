@@ -52,12 +52,12 @@ public interface TypedModeledFramework5<M, P1, P2, P3, P4, P5>
      *
      * @param frameworkBuilder ModeledFrameworkBuilder
      * @param modelSpecBuilder model spec builder
-     * @param path path with {id} parameters
+     * @param pathWithIds path with {XXXX} parameters
      * @return new TypedModeledFramework
      */
-    static <M, P1, P2, P3, P4, P5> TypedModeledFramework5<M, P1, P2, P3, P4, P5> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String path)
+    static <M, P1, P2, P3, P4, P5> TypedModeledFramework5<M, P1, P2, P3, P4, P5> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds)
     {
-        TypedModelSpec5<M, P1, P2, P3, P4, P5> typedModelSpec = TypedModelSpec5.from(modelSpecBuilder, path);
+        TypedModelSpec5<M, P1, P2, P3, P4, P5> typedModelSpec = TypedModelSpec5.from(modelSpecBuilder, pathWithIds);
         return (client, p1, p2, p3, p4, p5) -> frameworkBuilder.withClient(client).withModelSpec(typedModelSpec.resolved(p1, p2, p3, p4, p5)).build();
     }
 }

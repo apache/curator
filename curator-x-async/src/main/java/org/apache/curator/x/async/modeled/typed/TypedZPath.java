@@ -71,12 +71,12 @@ public interface TypedZPath<T>
     /**
      * Return a TypedZPath using {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
      *
-     * @param fullPath path to pass to {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
+     * @param pathWithIds path to pass to {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
      * @return TypedZPath
      */
-    static <T> TypedZPath<T> from(String fullPath)
+    static <T> TypedZPath<T> from(String pathWithIds)
     {
-        return from(ZPath.parseWithIds(fullPath));
+        return from(ZPath.parseWithIds(pathWithIds));
     }
 
     /**

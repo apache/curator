@@ -50,12 +50,12 @@ public interface TypedModelSpec10<M, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10>
      * resolved path
      *
      * @param builder model spec builder
-     * @param path typed path
+     * @param pathWithIds typed path
      * @return new TypedModelSpec
      */
-    static <M, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10> TypedModelSpec10<M, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10> from(ModelSpecBuilder<M> builder, String path)
+    static <M, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10> TypedModelSpec10<M, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10> from(ModelSpecBuilder<M> builder, String pathWithIds)
     {
-        TypedZPath10<P1, P2, P3, P4, P5, P6, P7, P8, P9, P10> zPath = TypedZPath10.from(path);
+        TypedZPath10<P1, P2, P3, P4, P5, P6, P7, P8, P9, P10> zPath = TypedZPath10.from(pathWithIds);
         return (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) -> builder.withPath(zPath.resolved(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)).build();
     }
 }
