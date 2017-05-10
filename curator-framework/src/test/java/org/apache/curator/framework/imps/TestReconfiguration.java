@@ -293,7 +293,7 @@ public class TestReconfiguration extends BaseClassForTests
         cluster = new TestingCluster(5);
         List<TestingZooKeeperServer> servers = cluster.getServers();
         List<InstanceSpec> smallCluster = Lists.newArrayList();
-        for ( int i = 0; i < 3; ++i )   // only start 3 of the 5
+        for ( int i = 0; i < 4; ++i )   // only start 4 of the 5
         {
             TestingZooKeeperServer server = servers.get(i);
             server.start();
@@ -315,7 +315,7 @@ public class TestReconfiguration extends BaseClassForTests
             Assert.assertTrue(timing.awaitLatch(latch));
             byte[] newConfigData = client.getConfig().forEnsemble();
             QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
-            Assert.assertEquals(newConfig.getAllMembers().size(), 3);
+            Assert.assertEquals(newConfig.getAllMembers().size(), 4);
             assertConfig(newConfig, smallCluster);
             Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
         }
