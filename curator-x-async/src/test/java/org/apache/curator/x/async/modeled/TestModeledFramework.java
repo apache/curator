@@ -31,6 +31,9 @@ import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.CompletableBaseClassForTests;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.apache.curator.x.async.modeled.models.TestNewerModel;
+import org.apache.curator.x.async.modeled.versioned.Versioned;
+import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
+import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -158,5 +161,26 @@ public class TestModeledFramework extends CompletableBaseClassForTests
             ModeledFramework<TestModel> modeledSchemaClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(schemaClient), modelSpec);
             complete(modeledSchemaClient.set(new TestModel("one", "two", "three", 4, BigInteger.ONE)), (dummy, e) -> Assert.assertNull(e));
         }
+    }
+
+    @Test
+    public void testVersioned()
+    {
+        ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
+        client.set(new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101)));
+
+        VersionedModeledFramework<TestModel> versioned = client.versioned();
+        complete(versioned.read().whenComplete((v, e) -> {
+            Assert.assertNull(e);
+            Assert.assertTrue(v.version() > 0);
+        }).thenCompose(versioned::set).whenComplete((s, e) -> Assert.assertNull(e))); // version is correct should succeed
+
+        complete(versioned.read().whenComplete((v, e) -> {
+            Assert.assertNull(e);
+            Assert.assertTrue(v.version() > 0);
+        }).thenCompose(value -> {
+            Versioned<TestModel> badVersion = Versioned.from(value.model(), Integer.MAX_VALUE);
+            return versioned.set(badVersion);
+        }).whenComplete((s, e) -> Assert.assertTrue(e instanceof KeeperException.BadVersionException)));
     }
 }

@@ -203,14 +203,14 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     {
         ZPath path = client.modelSpec().path();
         Optional<ZNode<T>> data = cache.currentData(path);
-        return data.map(node -> completed(new ModelStage<>(), node.stat())).orElseGet(() -> completed(new ModelStage<>(), null));
+        return data.map(node -> completed(new ModelStage<>(null), node.stat())).orElseGet(() -> completed(new ModelStage<>(null), null));
     }
 
     @Override
     public AsyncStage<List<ZPath>> children()
     {
         Set<ZPath> paths = cache.currentChildren(client.modelSpec().path()).keySet();
-        return completed(new ModelStage<>(), Lists.newArrayList(paths));
+        return completed(new ModelStage<>(null), Lists.newArrayList(paths));
     }
 
     @Override
@@ -277,7 +277,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     {
         ZPath path = client.modelSpec().path();
         Optional<ZNode<T>> data = cache.currentData(path);
-        return data.map(node -> completed(new ModelStage<>(), resolver.apply(node)))
-            .orElseGet(() -> completedExceptionally(new ModelStage<>(), new KeeperException.NoNodeException(path.fullPath())));
+        return data.map(node -> completed(new ModelStage<>(null), resolver.apply(node)))
+            .orElseGet(() -> completedExceptionally(new ModelStage<>(null), new KeeperException.NoNodeException(path.fullPath())));
     }
 }

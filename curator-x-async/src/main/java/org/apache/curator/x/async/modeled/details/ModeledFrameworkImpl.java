@@ -161,7 +161,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         }
         catch ( Exception e )
         {
-            ModelStage<String> exceptionStage = new ModelStage<>();
+            ModelStage<String> exceptionStage = new ModelStage<>(null);
             exceptionStage.completeExceptionally(e);
             return exceptionStage;
         }
@@ -207,7 +207,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         }
         catch ( Exception e )
         {
-            ModelStage<Stat> exceptionStage = new ModelStage<>();
+            ModelStage<Stat> exceptionStage = new ModelStage<>(null);
             exceptionStage.completeExceptionally(e);
             return exceptionStage;
         }

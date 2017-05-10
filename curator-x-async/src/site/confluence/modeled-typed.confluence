@@ -1,4 +1,4 @@
-h1. Modeled Curator \- Caching and Typed Parameters
+h1. Modeled Curator \- Caching, Typed Parameters and Versioning
 
 In addition to its [[main features|modeled-components.html]] Modeled Curator also supports
 integrated caching and typed parameters.
@@ -50,3 +50,24 @@ client.set(person);
 {code}
 
 TypedZPath and TypedModelSpec work similarly.
+
+h2. Versioning
+
+Modeled Curator supports associating a ZNode version with a model object via
+the {{Versioned}} interface and the {{VersionedModeledFramework}} APIs. To
+read a model along with its ZNode version use:
+
+{code}
+ModeledFramework<Person> client = ...
+
+client.versioned().read().whenComplete((value, e) -> {
+    if ( value != null ) {
+        // value's type is Versioned<Person>
+        Person personModel = value.model();
+        int znodeVersion = value.version();
+    }
+});
+{code}
+
+{{VersionedModeledFramework}} has set/update APIs which automatically use the version
+from the {{Versioned}} instance.

@@ -129,5 +129,7 @@ client.getData().forPath(path).whenComplete((data, e) -> {
 
 h2. Caching and Typed Parameters
 
-In addition to the above features, Modeled Curator supports [[Integrated Caching|modeled-typed.html]]
-and [[Typed Parameters|modeled-typed.html]]. See [[Caching and Typed Parameters|modeled-typed.html]] for details.
+In addition to the above features, Modeled Curator supports [[Integrated Caching|modeled-typed.html]],
+[[Typed Parameters|modeled-typed.html]] and [[Versioning|modeled-typed.html]]. See
+[[Caching and Typed Parameters|modeled-typed.html]] for details.
+
