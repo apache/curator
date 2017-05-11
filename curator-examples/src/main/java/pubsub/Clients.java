@@ -41,7 +41,7 @@ public class Clients
     public static final TypedModeledFramework2<LocationAvailable, Group, Priority> locationAvailableClient = TypedModeledFramework2.from(
         ModeledFramework.builder(),
         builder(LocationAvailable.class),
-        "/root/pubsub/messages/locations/{group}/{priority}"
+        "/root/pubsub/messages/locations/{group}/{priority}/{id}"
     );
 
     /**
@@ -50,7 +50,7 @@ public class Clients
     public static final TypedModeledFramework2<UserCreated, Group, Priority> userCreatedClient = TypedModeledFramework2.from(
         ModeledFramework.builder(),
         builder(UserCreated.class),
-        "/root/pubsub/messages/users/{group}/{priority}"
+        "/root/pubsub/messages/users/{group}/{priority}/{id}"
     );
 
     /**
@@ -59,7 +59,7 @@ public class Clients
     public static final TypedModeledFramework<Instance, InstanceType> instanceClient = TypedModeledFramework.from(
         ModeledFramework.builder(),
         builder(Instance.class),
-        "/root/pubsub/instances/{instance-type}"
+        "/root/pubsub/instances/{instance-type}/{id}"
     );
 
     private static <T> ModelSpecBuilder<T> builder(Class<T> clazz)
