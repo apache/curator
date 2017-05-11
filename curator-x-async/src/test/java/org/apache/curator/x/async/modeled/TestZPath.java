@@ -33,25 +33,25 @@ public class TestZPath
         Assert.assertEquals(ZPath.root.nodeName(), ZKPaths.PATH_SEPARATOR);
         Assert.assertEquals(ZPath.root, ZPathImpl.root);
         Assert.assertTrue(ZPath.root.isRoot());
-        Assert.assertEquals(ZPath.root.at("foo").parent(), ZPath.root);
-        Assert.assertTrue(ZPath.root.at("foo").parent().isRoot());
+        Assert.assertEquals(ZPath.root.child("foo").parent(), ZPath.root);
+        Assert.assertTrue(ZPath.root.child("foo").parent().isRoot());
     }
 
     @Test
     public void testBasic()
     {
-        ZPath path = ZPath.root.at("one").at("two");
+        ZPath path = ZPath.root.child("one").child("two");
         Assert.assertFalse(path.isRoot());
-        Assert.assertEquals(path, ZPath.root.at("one").at("two"));
-        Assert.assertNotEquals(path, ZPath.root.at("onex").at("two"));
+        Assert.assertEquals(path, ZPath.root.child("one").child("two"));
+        Assert.assertNotEquals(path, ZPath.root.child("onex").child("two"));
         Assert.assertEquals(path.nodeName(), "two");
         Assert.assertEquals(path.fullPath(), "/one/two");
         Assert.assertEquals(path.parent().fullPath(), "/one");
         Assert.assertEquals(path.fullPath(), "/one/two");       // call twice to test the internal cache
         Assert.assertEquals(path.parent().fullPath(), "/one");  // call twice to test the internal cache
 
-        Assert.assertTrue(path.startsWith(ZPath.root.at("one")));
-        Assert.assertFalse(path.startsWith(ZPath.root.at("two")));
+        Assert.assertTrue(path.startsWith(ZPath.root.child("one")));
+        Assert.assertFalse(path.startsWith(ZPath.root.child("two")));
 
         ZPath checkIdLike = ZPath.parse("/one/{two}/three");
         Assert.assertTrue(checkIdLike.isResolved());
@@ -65,7 +65,7 @@ public class TestZPath
     public void testParsing()
     {
         Assert.assertEquals(ZPath.parse("/"), ZPath.root);
-        Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.root.at("one").at("two").at("three"));
+        Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.root.child("one").child("two").child("three"));
         Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
         Assert.assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameter(), "two", parameter()));
     }

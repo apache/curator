@@ -245,7 +245,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             }
             else
             {
-                modelStage.complete(children.stream().map(path::at).collect(Collectors.toList()));
+                modelStage.complete(children.stream().map(path::child).collect(Collectors.toList()));
             }
         });
         return modelStage;
@@ -269,9 +269,9 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     }
 
     @Override
-    public ModeledFramework<T> at(Object child)
+    public ModeledFramework<T> child(Object child)
     {
-        ModelSpec<T> newModelSpec = modelSpec.at(child);
+        ModelSpec<T> newModelSpec = modelSpec.child(child);
         return new ModeledFrameworkImpl<>(
             client,
             dslClient,

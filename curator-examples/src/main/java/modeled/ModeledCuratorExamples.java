@@ -43,7 +43,7 @@ public class ModeledCuratorExamples
     public static void createOrUpdate(ModeledFramework<PersonModel> modeled, PersonModel model)
     {
         // change the affected path to be modeled's base path plus id: i.e. "/example/path/{id}"
-        ModeledFramework<PersonModel> atId = modeled.at(model.getId().getId());
+        ModeledFramework<PersonModel> atId = modeled.child(model.getId().getId());
 
         // by default ModeledFramework instances update the node if it already exists
         // so this will either create or update the node
@@ -53,7 +53,7 @@ public class ModeledCuratorExamples
     public static void readPerson(ModeledFramework<PersonModel> modeled, String id, Consumer<PersonModel> receiver)
     {
         // read the person with the given ID and asynchronously call the receiver after it is read
-        modeled.at(id).read().whenComplete((person, exception) -> {
+        modeled.child(id).read().whenComplete((person, exception) -> {
             if ( exception != null )
             {
                 exception.printStackTrace();    // handle the error

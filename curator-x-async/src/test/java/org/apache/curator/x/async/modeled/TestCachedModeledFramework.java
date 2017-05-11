@@ -56,7 +56,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
             Assert.assertNotEquals(Thread.currentThread(), completionThread.get(), "Should be different threads");
             completionThread.set(null);
 
-            complete(client.at("foo").read().whenCompleteAsync((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
+            complete(client.child("foo").read().whenCompleteAsync((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
             Assert.assertNotNull(completionThread.get());
             Assert.assertNotEquals(Thread.currentThread(), completionThread.get(), "Should be different threads");
             completionThread.set(null);
@@ -93,7 +93,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
             Assert.assertEquals(ourThread.get(), completionThread.get(), "Should be our thread");
             completionThread.set(null);
 
-            complete(client.at("foo").read().whenCompleteAsync((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
+            complete(client.child("foo").read().whenCompleteAsync((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
             Assert.assertEquals(ourThread.get(), completionThread.get(), "Should be our thread");
             completionThread.set(null);
         }
@@ -150,13 +150,13 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         ModeledCacheListener<TestModel> listener = (t, p, s, m) -> semaphore.release();
         client.listenable().addListener(listener.postInitializedOnly());
 
-        complete(client.at("1").set(model1));  // set before cache is started
+        complete(client.child("1").set(model1));  // set before cache is started
         client.start();
         try
         {
             Assert.assertFalse(timing.forSleepingABit().acquireSemaphore(semaphore));
 
-            client.at("2").set(model2);  // set before cache is started
+            client.child("2").set(model2);  // set before cache is started
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
         }
         finally

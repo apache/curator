@@ -91,7 +91,7 @@ public interface ModelSpec<T> extends Resolvable
      * @param child child node.
      * @return new Modeled Spec instance
      */
-    ModelSpec<T> at(Object child);
+    ModelSpec<T> child(Object child);
 
     /**
      * <p>

@@ -108,7 +108,7 @@ public class ZPathImpl implements ZPath
     }
 
     @Override
-    public ZPath at(Object child)
+    public ZPath child(Object child)
     {
         return new ZPathImpl(nodes, NodeName.nameFrom(child));
     }

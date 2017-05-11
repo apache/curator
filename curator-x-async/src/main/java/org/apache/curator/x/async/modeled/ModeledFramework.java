@@ -129,7 +129,7 @@ public interface ModeledFramework<T>
      * @param child child node.
      * @return new Modeled Curator instance
      */
-    ModeledFramework<T> at(Object child);
+    ModeledFramework<T> child(Object child);
 
     /**
      * <p>

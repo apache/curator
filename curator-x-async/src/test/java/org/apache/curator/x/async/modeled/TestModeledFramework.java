@@ -85,11 +85,11 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     {
         TestModel model = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
         ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).build();
-        complete(client.at("one").set(model));
-        complete(client.at("two").set(model));
-        complete(client.at("three").set(model));
+        complete(client.child("one").set(model));
+        complete(client.child("two").set(model));
+        complete(client.child("three").set(model));
 
-        Set<ZPath> expected = Sets.newHashSet(path.at("one"), path.at("two"), path.at("three"));
+        Set<ZPath> expected = Sets.newHashSet(path.child("one"), path.child("two"), path.child("three"));
         complete(client.children(), (children, e) -> Assert.assertEquals(Sets.newHashSet(children), expected));
     }
 

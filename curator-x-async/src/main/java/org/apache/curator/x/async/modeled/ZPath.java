@@ -223,7 +223,7 @@ public interface ZPath extends Resolvable
      * @param child child node name
      * @return ZPath
      */
-    ZPath at(Object child);
+    ZPath child(Object child);
 
     /**
      * Return this ZPath's parent

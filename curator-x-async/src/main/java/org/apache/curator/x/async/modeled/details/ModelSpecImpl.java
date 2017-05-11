@@ -58,9 +58,9 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     }
 
     @Override
-    public ModelSpec<T> at(Object child)
+    public ModelSpec<T> child(Object child)
     {
-        return withPath(path.at(child));
+        return withPath(path.child(child));
     }
 
     @Override

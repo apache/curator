@@ -123,9 +123,9 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     }
 
     @Override
-    public CachedModeledFramework<T> at(Object child)
+    public CachedModeledFramework<T> child(Object child)
     {
-        return new CachedModeledFrameworkImpl<>(client.at(child), cache, executor, asyncDefaultMode);
+        return new CachedModeledFrameworkImpl<>(client.child(child), cache, executor, asyncDefaultMode);
     }
 
     @Override
