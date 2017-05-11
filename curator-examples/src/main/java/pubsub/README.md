@@ -63,3 +63,31 @@ and path whenever an update occurs (see `generalListener()`).
 `publishSomething()`
 * `publishSomething()` randomly publishes either a single Instance, LocationAvailable, 
 UserCreated or a list of those.
+
+`SubPubTest.java` has a `main()` method. When you run you should see something similar to this:
+
+```
+Publishing 9 instances
+Subscribed Instance @ /root/pubsub/instances/proxy/1
+Subscribed Instance @ /root/pubsub/instances/web/2
+Subscribed Instance @ /root/pubsub/instances/cache/4
+Subscribed Instance @ /root/pubsub/instances/proxy/9
+Subscribed Instance @ /root/pubsub/instances/database/3
+Subscribed Instance @ /root/pubsub/instances/cache/5
+Subscribed Instance @ /root/pubsub/instances/database/6
+Subscribed Instance @ /root/pubsub/instances/cache/7
+Subscribed Instance @ /root/pubsub/instances/cache/8
+Publishing 1 userCreated
+Subscribed UserCreated @ /root/pubsub/messages/users/main/high/10
+Publishing 9 locationsAvailable
+Subscribed LocationAvailable @ /root/pubsub/messages/locations/admin/low/11
+Subscribed LocationAvailable @ /root/pubsub/messages/locations/admin/medium/12
+Subscribed LocationAvailable @ /root/pubsub/messages/locations/admin/medium/13
+Subscribed LocationAvailable @ /root/pubsub/messages/locations/admin/medium/14
+Subscribed LocationAvailable @ /root/pubsub/messages/locations/admin/medium/16
+Subscribed LocationAvailable @ /root/pubsub/messages/locations/admin/high/15
+Subscribed LocationAvailable @ /root/pubsub/messages/locations/admin/medium/17
+...
+```
+
+It runs for 1 minute and then exits.
