@@ -64,6 +64,12 @@ public class ModelSpecImpl<T> implements ModelSpec<T>, SchemaValidator
     }
 
     @Override
+    public ModelSpec<T> parent()
+    {
+        return withPath(path.parent());
+    }
+
+    @Override
     public ModelSpec<T> resolved(Object... parameters)
     {
         return withPath(path.resolved(parameters));

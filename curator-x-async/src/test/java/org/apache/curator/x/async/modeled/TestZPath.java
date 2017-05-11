@@ -54,11 +54,11 @@ public class TestZPath
         Assert.assertFalse(path.startsWith(ZPath.root.at("two")));
 
         ZPath checkIdLike = ZPath.parse("/one/{two}/three");
-        Assert.assertTrue(((ZPathImpl)checkIdLike).isResolved());
+        Assert.assertTrue(checkIdLike.isResolved());
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter() + "/three");
-        Assert.assertTrue(((ZPathImpl)checkIdLike).isResolved());
+        Assert.assertTrue(checkIdLike.isResolved());
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter("others") + "/three");
-        Assert.assertTrue(((ZPathImpl)checkIdLike).isResolved());
+        Assert.assertTrue(checkIdLike.isResolved());
     }
 
     @Test
@@ -103,5 +103,24 @@ public class TestZPath
         Assert.assertEquals(ZPath.parseWithIds("/a/{a}/bee/{bee}/c/{c}").toString(), "/a/{a}/bee/{bee}/c/{c}");
         Assert.assertEquals(ZPath.from("a", parameter(), "b", parameter()).toString(), "/a/{id}/b/{id}");
         Assert.assertEquals(ZPath.from("a", parameter("foo"), "b", parameter("bar")).toString(), "/a/{foo}/b/{bar}");
+    }
+
+    @Test
+    public void testPartialResolution()
+    {
+        ZPath path = ZPath.parseWithIds("/one/{1}/two/{2}");
+        Assert.assertFalse(path.parent().isResolved());
+        Assert.assertFalse(path.parent().parent().isResolved());
+        Assert.assertTrue(path.parent().parent().parent().isResolved());
+        Assert.assertFalse(path.isResolved());
+
+        path = path.resolved("p1");
+        Assert.assertFalse(path.isResolved());
+        Assert.assertTrue(path.parent().isResolved());
+        Assert.assertEquals(path.toString(), "/one/p1/two/{2}");
+
+        path = path.resolved("p2");
+        Assert.assertTrue(path.isResolved());
+        Assert.assertEquals(path.toString(), "/one/p1/two/p2");
     }
 }

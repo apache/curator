@@ -129,6 +129,12 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     }
 
     @Override
+    public ModeledFramework<T> parent()
+    {
+        throw new UnsupportedOperationException("Not supported for CachedModeledFramework. Instead, call parent() on the ModeledFramework before calling cached()");
+    }
+
+    @Override
     public CachedModeledFramework<T> withPath(ZPath path)
     {
         return new CachedModeledFrameworkImpl<>(client.withPath(path), cache, executor, asyncDefaultMode);
@@ -218,6 +224,13 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     public AsyncStage<List<ZPath>> children()
     {
         Set<ZPath> paths = cache.currentChildren(client.modelSpec().path()).keySet();
+        return completed(Lists.newArrayList(paths));
+    }
+
+    @Override
+    public AsyncStage<List<ZPath>> siblings()
+    {
+        Set<ZPath> paths = cache.currentChildren(client.modelSpec().path().parent()).keySet();
         return completed(Lists.newArrayList(paths));
     }
 

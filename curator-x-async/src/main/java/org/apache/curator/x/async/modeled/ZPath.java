@@ -241,6 +241,13 @@ public interface ZPath extends Resolvable
     boolean isRoot();
 
     /**
+     * Return true if this path is fully resolved (i.e. has no unresoled parameters)
+     *
+     * @return true/false
+     */
+    boolean isResolved();
+
+    /**
      * Return true if this path starts with the given path. i.e.
      * <code>ZPath.from("/one/two/three").startsWith(ZPath.from("/one/two"))</code> returns true
      *

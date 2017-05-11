@@ -132,6 +132,23 @@ public interface ModeledFramework<T>
     ModeledFramework<T> at(Object child);
 
     /**
+     * <p>
+     *     Return a new Modeled Curator instance with all the same options but applying to the parent node of this Modeled Curator's
+     *     path. E.g. if this Modeled Curator instance applies to "/a/b/c", calling <code>modeled.parent()</code> returns an instance that applies to
+     *     "/a/b".
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of child or,
+     *     if it implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
+     *
+     * @return new Modeled Curator instance
+     */
+    ModeledFramework<T> parent();
+
+    /**
      * Return a Modeled Curator instance with all the same options but using the given path.
      *
      * @param path new path
@@ -261,6 +278,14 @@ public interface ModeledFramework<T>
      * @see org.apache.curator.x.async.AsyncStage
      */
     AsyncStage<List<ZPath>> children();
+
+    /**
+     * Return the child paths of this instance's parent path (in no particular order)
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<List<ZPath>> siblings();
 
     /**
      * Create operation instance that can be passed among other operations to

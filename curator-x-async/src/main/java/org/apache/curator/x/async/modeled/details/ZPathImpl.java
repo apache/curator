@@ -209,12 +209,8 @@ public class ZPathImpl implements ZPath
         Iterator<Object> iterator = parameters.iterator();
         List<String> nodeNames = nodes.stream()
             .map(name -> {
-                if ( isParameter(name) )
+                if ( isParameter(name) && iterator.hasNext() )
                 {
-                    if ( !iterator.hasNext() )
-                    {
-                        throw new IllegalStateException(String.format("Parameter missing for [%s]", toString()));
-                    }
                     return NodeName.nameFrom(iterator.next());
                 }
                 return name;
@@ -223,6 +219,7 @@ public class ZPathImpl implements ZPath
         return new ZPathImpl(nodeNames, null);
     }
 
+    @Override
     public boolean isResolved()
     {
         return isResolved;

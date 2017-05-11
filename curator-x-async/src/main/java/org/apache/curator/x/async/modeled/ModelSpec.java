@@ -94,6 +94,23 @@ public interface ModelSpec<T> extends Resolvable
     ModelSpec<T> at(Object child);
 
     /**
+     * <p>
+     *     Return a new CuratorModel instance with all the same options but applying to the parent node of this CuratorModel's
+     *     path. E.g. if this CuratorModel instance applies to "/a/b/c", calling <code>modeled.parent()</code> returns an instance that applies to
+     *     "/a/b".
+     * </p>
+     *
+     * <p>
+     *     The replacement is the <code>toString()</code> value of child or,
+     *     if it implements {@link org.apache.curator.x.async.modeled.NodeName},
+     *     the value of <code>nodeName()</code>.
+     * </p>
+     *
+     * @return new Modeled Spec instance
+     */
+    ModelSpec<T> parent();
+
+    /**
      * Return a new CuratorModel instance with all the same options but using the given path.
      *
      * @param path new path

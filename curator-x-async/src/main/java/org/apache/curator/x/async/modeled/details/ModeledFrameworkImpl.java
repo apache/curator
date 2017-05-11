@@ -157,17 +157,12 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             byte[] bytes = modelSpec.serializer().serialize(item);
             return dslClient.create()
                 .withOptions(modelSpec.createOptions(), modelSpec.createMode(), fixAclList(modelSpec.aclList()), storingStatIn, modelSpec.ttl(), version)
-                .forPath(modelSpec.path().fullPath(), bytes);
+                .forPath(resolveForSet(item), bytes);
         }
         catch ( Exception e )
         {
             return ModelStage.exceptionally(e);
         }
-    }
-
-    private List<ACL> fixAclList(List<ACL> aclList)
-    {
-        return (aclList.size() > 0) ? aclList : null;   // workaround for old, bad design. empty list not accepted
     }
 
     @Override
@@ -201,7 +196,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         {
             byte[] bytes = modelSpec.serializer().serialize(item);
             AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dslClient.setData().compressedWithVersion(version) : dslClient.setData();
-            return next.forPath(modelSpec.path().fullPath(), bytes);
+            return next.forPath(resolveForSet(item), bytes);
         }
         catch ( Exception e )
         {
@@ -230,7 +225,18 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     @Override
     public AsyncStage<List<ZPath>> children()
     {
-        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(modelSpec.path().fullPath());
+        return internalGetChildren(modelSpec.path());
+    }
+
+    @Override
+    public AsyncStage<List<ZPath>> siblings()
+    {
+        return internalGetChildren(modelSpec.path().parent());
+    }
+
+    private AsyncStage<List<ZPath>> internalGetChildren(ZPath path)
+    {
+        AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(path.fullPath());
         ModelStage<List<ZPath>> modelStage = ModelStage.make(asyncStage.event());
         asyncStage.whenComplete((children, e) -> {
             if ( e != null )
@@ -239,10 +245,27 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             }
             else
             {
-                modelStage.complete(children.stream().map(child -> modelSpec.path().at(child)).collect(Collectors.toList()));
+                modelStage.complete(children.stream().map(path::at).collect(Collectors.toList()));
             }
         });
         return modelStage;
+    }
+
+    @Override
+    public ModeledFramework<T> parent()
+    {
+        ModelSpec<T> newModelSpec = modelSpec.parent();
+        return new ModeledFrameworkImpl<>(
+            client,
+            dslClient,
+            watchableClient,
+            newModelSpec,
+            watchMode,
+            watcherFilter,
+            unhandledErrorListener,
+            resultFilter,
+            isWatched
+        );
     }
 
     @Override
@@ -290,7 +313,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         return client.transactionOp()
             .create()
             .withOptions(modelSpec.createMode(), fixAclList(modelSpec.aclList()), modelSpec.createOptions().contains(CreateOption.compress), modelSpec.ttl())
-            .forPath(modelSpec.path().fullPath(), modelSpec.serializer().serialize(model));
+            .forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
     }
 
     @Override
@@ -305,9 +328,9 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         AsyncTransactionSetDataBuilder builder = client.transactionOp().setData();
         if ( isCompressed() )
         {
-            return builder.withVersionCompressed(version).forPath(modelSpec.path().fullPath(), modelSpec.serializer().serialize(model));
+            return builder.withVersionCompressed(version).forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
         }
-        return builder.withVersion(version).forPath(modelSpec.path().fullPath(), modelSpec.serializer().serialize(model));
+        return builder.withVersion(version).forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
     }
 
     @Override
@@ -372,4 +395,17 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         return modelStage;
     }
 
+    private String resolveForSet(T model)
+    {
+        if ( modelSpec.path().isResolved() )
+        {
+            return modelSpec.path().fullPath();
+        }
+        return modelSpec.path().resolved(model).fullPath();
+    }
+
+    private List<ACL> fixAclList(List<ACL> aclList)
+    {
+        return (aclList.size() > 0) ? aclList : null;   // workaround for old, bad design. empty list not accepted
+    }
 }
