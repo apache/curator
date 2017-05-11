@@ -57,7 +57,7 @@ class VersionedModeledFrameworkImpl<T> implements VersionedModeledFramework<T>
     {
         Stat localStat = (storingStatIn != null) ? storingStatIn : new Stat();
         AsyncStage<T> stage = client.read(localStat);
-        ModelStage<Versioned<T>> modelStage = new ModelStage<>(stage.event());
+        ModelStage<Versioned<T>> modelStage = ModelStage.make(stage.event());
         stage.whenComplete((model, e) -> {
            if ( e != null )
            {

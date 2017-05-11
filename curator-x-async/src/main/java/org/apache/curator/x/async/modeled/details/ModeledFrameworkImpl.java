@@ -161,9 +161,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         }
         catch ( Exception e )
         {
-            ModelStage<String> exceptionStage = new ModelStage<>(null);
-            exceptionStage.completeExceptionally(e);
-            return exceptionStage;
+            return ModelStage.exceptionally(e);
         }
     }
 
@@ -207,9 +205,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         }
         catch ( Exception e )
         {
-            ModelStage<Stat> exceptionStage = new ModelStage<>(null);
-            exceptionStage.completeExceptionally(e);
-            return exceptionStage;
+            return ModelStage.exceptionally(e);
         }
     }
 
@@ -235,7 +231,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     public AsyncStage<List<ZPath>> children()
     {
         AsyncStage<List<String>> asyncStage = watchableClient.getChildren().forPath(modelSpec.path().fullPath());
-        ModelStage<List<ZPath>> modelStage = new ModelStage<>(asyncStage.event());
+        ModelStage<List<ZPath>> modelStage = ModelStage.make(asyncStage.event());
         asyncStage.whenComplete((children, e) -> {
             if ( e != null )
             {
@@ -354,7 +350,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         Stat stat = (storingStatIn != null) ? storingStatIn : new Stat();
         AsyncPathable<AsyncStage<byte[]>> next = isCompressed() ? watchableClient.getData().decompressedStoringStatIn(stat) : watchableClient.getData().storingStatIn(stat);
         AsyncStage<byte[]> asyncStage = next.forPath(modelSpec.path().fullPath());
-        ModelStage<U> modelStage = new ModelStage<>(asyncStage.event());
+        ModelStage<U> modelStage = ModelStage.make(asyncStage.event());
         asyncStage.whenComplete((value, e) -> {
             if ( e != null )
             {

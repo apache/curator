@@ -39,7 +39,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
     public void testThreading()
     {
         TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
-        CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached();
+        CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached().asyncDefault();
 
         CountDownLatch latch = new CountDownLatch(1);
         client.listenable().addListener((type, path1, stat, model1) -> latch.countDown());
@@ -51,12 +51,12 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
             Assert.assertTrue(new Timing().awaitLatch(latch));
 
             AtomicReference<Thread> completionThread = new AtomicReference<>();
-            complete(client.read().whenComplete((s, e) -> completionThread.set((e == null) ? Thread.currentThread() : null)));
+            complete(client.read().whenCompleteAsync((s, e) -> completionThread.set((e == null) ? Thread.currentThread() : null)));
             Assert.assertNotNull(completionThread.get());
             Assert.assertNotEquals(Thread.currentThread(), completionThread.get(), "Should be different threads");
             completionThread.set(null);
 
-            complete(client.at("foo").read().whenComplete((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
+            complete(client.at("foo").read().whenCompleteAsync((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
             Assert.assertNotNull(completionThread.get());
             Assert.assertNotEquals(Thread.currentThread(), completionThread.get(), "Should be different threads");
             completionThread.set(null);
@@ -77,7 +77,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
             return thread;
         });
         TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
-        CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached(executor);
+        CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached(executor).asyncDefault();
 
         CountDownLatch latch = new CountDownLatch(1);
         client.listenable().addListener((type, path1, stat, model1) -> latch.countDown());
@@ -89,11 +89,11 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
             Assert.assertTrue(new Timing().awaitLatch(latch));
 
             AtomicReference<Thread> completionThread = new AtomicReference<>();
-            complete(client.read().thenAccept(s -> completionThread.set(Thread.currentThread())));
+            complete(client.read().thenAcceptAsync(s -> completionThread.set(Thread.currentThread())));
             Assert.assertEquals(ourThread.get(), completionThread.get(), "Should be our thread");
             completionThread.set(null);
 
-            complete(client.at("foo").read().whenComplete((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
+            complete(client.at("foo").read().whenCompleteAsync((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
             Assert.assertEquals(ourThread.get(), completionThread.get(), "Should be our thread");
             completionThread.set(null);
         }

@@ -47,23 +47,31 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     private final ModeledFramework<T> client;
     private final ModeledCacheImpl<T> cache;
     private final Executor executor;
+    private final boolean asyncDefaultMode;
 
     CachedModeledFrameworkImpl(ModeledFramework<T> client, ExecutorService executor)
     {
-        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec(), executor), executor);
+        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec(), executor), executor, false);
     }
 
-    private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache, Executor executor)
+    private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache, Executor executor, boolean asyncDefaultMode)
     {
         this.client = client;
         this.cache = cache;
         this.executor = executor;
+        this.asyncDefaultMode = asyncDefaultMode;
     }
 
     @Override
-    public ModeledCache<T> getCache()
+    public ModeledCache<T> cache()
     {
         return cache;
+    }
+
+    @Override
+    public CachedModeledFramework<T> asyncDefault()
+    {
+        return new CachedModeledFrameworkImpl<>(client, cache, executor, true);
     }
 
     @Override
@@ -117,13 +125,13 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     @Override
     public CachedModeledFramework<T> at(Object child)
     {
-        return new CachedModeledFrameworkImpl<>(client.at(child), cache, executor);
+        return new CachedModeledFrameworkImpl<>(client.at(child), cache, executor, asyncDefaultMode);
     }
 
     @Override
     public CachedModeledFramework<T> withPath(ZPath path)
     {
-        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache, executor);
+        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache, executor, asyncDefaultMode);
     }
 
     @Override
@@ -261,25 +269,21 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
         return client.inTransaction(operations);
     }
 
-    private <U> CachedStage<U> completed(U value)
+    private <U> AsyncStage<U> completed(U value)
     {
-        CachedStage<U> stage = new CachedStage<>(executor);
-        stage.complete(value);
-        return stage;
+        return asyncDefaultMode ? ModelStage.asyncCompleted(value, executor) : ModelStage.completed(value);
     }
 
-    private <U> CachedStage<U> completedExceptionally(Exception e)
+    private <U> AsyncStage<U> exceptionally(Exception e)
     {
-        CachedStage<U> stage = new CachedStage<>(executor);
-        stage.completeExceptionally(e);
-        return stage;
+        return asyncDefaultMode ? ModelStage.asyncExceptionally(e, executor) : ModelStage.exceptionally(e);
     }
 
-    private <U> CachedStage<U> internalRead(Function<ZNode<T>, U> resolver)
+    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver)
     {
         ZPath path = client.modelSpec().path();
         Optional<ZNode<T>> data = cache.currentData(path);
         return data.map(node -> completed(resolver.apply(node)))
-            .orElseGet(() -> completedExceptionally(new KeeperException.NoNodeException(path.fullPath())));
+            .orElseGet(() -> exceptionally(new KeeperException.NoNodeException(path.fullPath())));
     }
 }

@@ -22,6 +22,7 @@ import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
 import java.io.Closeable;
+import java.util.concurrent.Executor;
 
 public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeable
 {
@@ -30,7 +31,17 @@ public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeabl
      *
      * @return cache
      */
-    ModeledCache<T> getCache();
+    ModeledCache<T> cache();
+
+    /**
+     * Returns a view of this instance that uses the CachedModeledFramework's executor
+     * for all default async completion operations. i.e. when you use, for example,
+     * {@link java.util.concurrent.CompletionStage#handleAsync(java.util.function.BiFunction)}
+     * this instance's executor is used instead of <code>ForkJoinPool.commonPool()</code>.
+     *
+     * @return view
+     */
+    CachedModeledFramework<T> asyncDefault();
 
     /**
      * Start the internally created cache
