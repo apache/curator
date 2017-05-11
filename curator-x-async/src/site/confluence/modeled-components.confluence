@@ -35,6 +35,21 @@ Parameters are resolved by calling {{toString()}} on the parameter. You can use 
 to change this behavior. If a parameter implements {{NodeName}} the {{nodeName()}} method
 is used as the parameter value.
 
+h3. Partial Resolution
+
+Note: ZPaths can be partially resolved. E.g.
+
+{code}
+ZPath path = ZPath.parseWithIds("/foo/{type}/bar/{id}");
+
+...
+
+ZPath partial = path.resolve("standard");
+// partial is now "/foo/standard/bar/{id}"
+{code}
+
+ModeledFramework takes advantage of this. [[See below|#ModeledFramework]] for details.
+
 h2. ModelSpec
 
 A {{ModelSpec}} contains all the metadata needed to operate on a ZooKeeper path:
@@ -142,6 +157,25 @@ client.getData().forPath(path).whenComplete((data, e) -> {
         // ...
     }
 });
+{code}
+
+h3. Partially Resolved ZPaths and Set/Update
+
+ModeledFramework's various {{set}} and {{update}} methods check for unresolved ZPaths. If the current
+modelSpec has an unresolved ZPath when set/update is called, it is automatically resolved using the model
+instance being set/updated. E.g.
+
+{code}
+ZPath path = ZPath.parseWithIds("/root/{type}/instance/{id}");
+ModelSpec<MyModel> modelSpec = ModelSpec.builder(path, serializer);
+ModeledFramework<MyModel> modeledClient = ModeledFramework.wrap(modelSpec, client, modelSpec);
+
+...
+
+String currentType = ...
+MyModel model = ...
+modeledClient.resolved(currentType).set(model); // internally, ModeledFramework calls ZPath.resolved()
+                                                // using "model" as the argument to get the actual ZPath
 {code}
 
 h2. Caching and Typed Parameters
