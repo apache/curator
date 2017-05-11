@@ -54,7 +54,7 @@ useful for most applications but you can alter any of these as needed.
 // * createParentsAsContainers
 // * setDataIfExists
 // * DeleteOption.guaranteed
-ModelSpec<MyModel> spec = ModelSpec.builder(path, JacksonModelSerializer.build(MyModel.class));
+ModelSpec<MyModel> spec = ModelSpec.builder(path, JacksonModelSerializer.build(MyModel.class)).build();
 {code}
 
 As a convenience, ModelSpec provides {{resolve()}} methods in case the ZPath used has parameters.
@@ -62,7 +62,7 @@ E.g.
 
 {code}
 ZPath path = ZPath.parseWithIds("/foo/{id}/bar/{id}");
-ModelSpec<MyModel> spec = ModelSpec.builder(path, JacksonModelSerializer.build(MyModel.class));
+ModelSpec<MyModel> spec = ModelSpec.builder(path, JacksonModelSerializer.build(MyModel.class)).build();
 
 ...
 

@@ -47,7 +47,7 @@ TypedModeledFramework2<Person, Group, Organization> clientTemplate = TypedModele
 
 Group group = ...
 Organization organization = ...
-ModeledFramework<Person> client = clientTemplate.resolve(group, organization);
+ModeledFramework<Person> modeledClient = clientTemplate.resolve(asyncClient, group, organization);
 client.set(person);
 {code}
 
