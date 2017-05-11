@@ -63,12 +63,16 @@ public class SubPubTest implements Closeable
     private static final Duration[] durations = {Duration.ofSeconds(1), Duration.ofMinutes(1), Duration.ofHours(1)};
     private static final String[] positions = {"worker", "manager", "executive"};
 
-    public static void main(String[] args) throws Exception
+    public static void main(String[] args)
     {
         try ( SubPubTest subPubTest = new SubPubTest() )
         {
             subPubTest.start();
             TimeUnit.MINUTES.sleep(1);  // run the test for a minute then exit
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
         }
     }
 

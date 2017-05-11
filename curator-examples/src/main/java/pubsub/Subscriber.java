@@ -70,20 +70,14 @@ public class Subscriber
      */
     public CachedModeledFramework<Instance> startInstanceSubscriber(InstanceType instanceType)
     {
-        CachedModeledFramework<Instance> resolved = Clients.instanceClient
-            .resolved(client, instanceType)
-            .parent()                       // resolves to the parent path - models are children of this path
-            .cached();                      // makes a cached modeled instance
+        CachedModeledFramework<Instance> resolved = Clients.instanceClient.resolved(client, instanceType).cached();
         resolved.start();
         return resolved;
     }
 
     private <T extends Message> CachedModeledFramework<T> startSubscriber(TypedModeledFramework2<T, Group, Priority> typedClient, Group group, Priority priority)
     {
-        CachedModeledFramework<T> resolved = typedClient
-            .resolved(client, group, priority)
-            .parent()                           // resolves to the parent path - models are children of this path
-            .cached();                          // makes a cached modeled instance
+        CachedModeledFramework<T> resolved = typedClient.resolved(client, group, priority).cached();
         resolved.start();
         return resolved;
     }

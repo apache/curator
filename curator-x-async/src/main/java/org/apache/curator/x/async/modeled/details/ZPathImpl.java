@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.x.async.modeled.NodeName;
@@ -252,7 +251,10 @@ public class ZPathImpl implements ZPath
 
     private void checkResolved()
     {
-        Preconditions.checkState(isResolved, "This ZPath has not been resolved");
+        if ( !isResolved)
+        {
+            throw new IllegalStateException("This ZPath has not been resolved: " + toString());
+        }
     }
 
     private static void validate(String nodeName)

@@ -61,6 +61,11 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
 
     ModeledCacheImpl(CuratorFramework client, ModelSpec<T> modelSpec, ExecutorService executor)
     {
+        if ( !modelSpec.path().isResolved() && !modelSpec.path().isRoot() && modelSpec.path().parent().isResolved() )
+        {
+            modelSpec = modelSpec.parent(); // i.e. the last item is a parameter
+        }
+
         this.serializer = modelSpec.serializer();
         cache = TreeCache.newBuilder(client, modelSpec.path().fullPath())
             .setCacheData(false)

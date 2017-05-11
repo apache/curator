@@ -22,6 +22,20 @@ cached.listenable.addListener((type, path, stat, model) -> {
 });
 {code}
 
+h3. Unresolved Paths and Caching
+
+If the last node in the ModelSpec's path is a parameter, CachedModeledFramework will automatically
+listen to the parent path. E.g.
+
+{code}
+ZPath path = ZPath.parseWithIds("/root/instance/{id}");
+ModelSpec<MyModel> modelSpec = ModelSpec.builder(path, serializer);
+ModeledFramework<MyModel> modeledClient = ModeledFramework.wrap(modelSpec, client, modelSpec);
+
+CachedModeledFramework<MyModel> cached = modeledClient.cached();
+cached.start(); // automatically listens to "/root/instance" and below
+{code}
+
 h2. Typed Parameters
 
 The "resolve" methods in ZPath et al consume untyped Objects. Ideally, we should be able to
