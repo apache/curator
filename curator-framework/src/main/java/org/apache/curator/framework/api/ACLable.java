@@ -30,5 +30,5 @@ public interface ACLable<T>
      * @param aclList the ACL list to use
      * @return this
      */
-    public T withACL(List<ACL> aclList);
+    T withACL(List<ACL> aclList);
 }

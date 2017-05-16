@@ -59,7 +59,7 @@ public class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat
     @Override
     public BackgroundPathable<Stat> withACL(List<ACL> aclList)
     {
-        acling = new ACLing(client.getAclProvider(), aclList);
+        acling = new ACLing(client.getAclProvider(), aclList, false);
         return this;
     }
 

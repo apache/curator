@@ -28,6 +28,7 @@ import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder2;
+import org.apache.curator.utils.InternalACLProvider;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
@@ -129,7 +130,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             @Override
             public PathAndBytesable<T> withACL(List<ACL> aclList)
             {
-                CreateBuilderImpl.this.withACL(aclList);
+                return withACL(aclList, false);
+            }
+
+            @Override
+            public PathAndBytesable<T> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                CreateBuilderImpl.this.withACL(aclList, applyToParents);
                 return this;
             }
 
@@ -215,6 +222,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
+            }
+
+            @Override
             public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context)
             {
                 return CreateBuilderImpl.this.inBackground(callback, context);
@@ -273,13 +286,25 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @Override
     public ACLBackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
     {
-        acling = new ACLing(client.getAclProvider(), aclList);
+        return withACL(aclList, false);
+    }
+
+    @Override
+    public ACLBackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+    {
+        acling = new ACLing(client.getAclProvider(), aclList, applyToParents);
         return new ACLBackgroundPathAndBytesable<String>()
         {
             @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
             {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -362,7 +387,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
             {
-                return CreateBuilderImpl.this.withACL(aclList);
+                return withACL(aclList, false);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -420,7 +451,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
-            public ACLBackgroundPathAndBytesable<String> storingStatIn(Stat stat) {
+            public ACLBackgroundPathAndBytesable<String> storingStatIn(Stat stat)
+            {
                 storingStat = stat;
                 return CreateBuilderImpl.this;
             }
@@ -446,6 +478,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             public PathAndBytesable<String> withACL(List<ACL> aclList)
             {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public PathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -613,7 +651,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
                         if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
                         {
-                            backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
+                            backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, acling.getACLProviderForParents(), createParentsAsContainers);
                         }
                         else if ( (rc == KeeperException.Code.NODEEXISTS.intValue()) && setDataIfExists )
                         {
@@ -642,8 +680,15 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         return new CreateProtectACLCreateModePathAndBytesable<String>() {
 
             @Override
-            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList) {
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
+            {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -714,7 +759,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         return PROTECTED_PREFIX + protectedId + "-";
     }
 
-    static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final boolean createParentsAsContainers)
+    static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final InternalACLProvider aclProvider, final boolean createParentsAsContainers)
     {
         BackgroundOperation<T> operation = new BackgroundOperation<T>()
         {
@@ -723,7 +768,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             {
                 try
                 {
-                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
+                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, aclProvider, createParentsAsContainers);
                 }
                 catch ( KeeperException e )
                 {
@@ -801,6 +846,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
+            public PathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                CreateBuilderImpl.this.withACL(aclList, applyToParents);
+                return this;
+            }
+
+            @Override
             public ACLPathAndBytesable<String> withMode(CreateMode mode)
             {
                 createMode = mode;
@@ -810,6 +862,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     public PathAndBytesable<String> withACL(List<ACL> aclList)
                     {
                         return CreateBuilderImpl.this.withACL(aclList);
+                    }
+
+                    @Override
+                    public PathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+                    {
+                        return CreateBuilderImpl.this.withACL(aclList, applyToParents);
                     }
 
                     @Override
@@ -847,6 +905,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList) {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -920,6 +984,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList) {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                CreateBuilderImpl.this.withACL(aclList, applyToParents);
+                return this;
             }
 
             @Override
@@ -1079,7 +1150,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             {
                                 if ( createParentsIfNeeded )
                                 {
-                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
+                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, acling.getACLProviderForParents(), createParentsAsContainers);
                                     createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
                                 }
                                 else

@@ -19,7 +19,7 @@
 package org.apache.curator.framework.api;
 
 public interface ACLBackgroundPathAndBytesable<T> extends
-    ACLable<BackgroundPathAndBytesable<T>>,
+    ParentACLable<BackgroundPathAndBytesable<T>>,
     BackgroundPathAndBytesable<T>
 {
 }

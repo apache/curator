@@ -16,28 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.curator.framework.api;
 
-import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
 
-public interface ExistsBuilder extends
-    ExistsBuilderMain
-{
-    /**
-     * Causes any parent nodes to get created if they haven't already been
-     *
-     * @return this
-     */
-    ACLableExistBuilderMain creatingParentsIfNeeded();
+import java.util.List;
+
+public interface ParentACLable<T> extends ACLable<T> {
 
     /**
-     * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
-     * IMPORTANT NOTE: container creation is a new feature in recent versions of ZooKeeper.
-     * If the ZooKeeper version you're using does not support containers, the parent nodes
-     * are created as ordinary PERSISTENT nodes.
+     * Set an ACL list (default is {@link ZooDefs.Ids#OPEN_ACL_UNSAFE}).
      *
+     * If applyToParents is true, then the aclList is applied to the created parents.
+     * Existing parent nodes are not affected.
+     *
+     * @param aclList the ACL list to use
+     * @param applyToParents if true, then the aclList is applied to the created parents.
      * @return this
      */
-    ACLableExistBuilderMain creatingParentContainersIfNeeded();
+    T withACL(List<ACL> aclList, boolean applyToParents);
+
 }
