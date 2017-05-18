@@ -73,6 +73,27 @@ public class TestJsonInstanceSerializerCompatibility
     }
 
     @Test
+    public void testForwardCompatibility() throws Exception
+    {
+        OldServiceInstance<TestJsonInstanceSerializer.Payload> oldInstance = new OldServiceInstance<TestJsonInstanceSerializer.Payload>("name", "id", "address", 10, 20, new TestJsonInstanceSerializer.Payload("test"), 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"));
+        ObjectMapper mapper = new ObjectMapper();
+        byte[] oldJson = mapper.writeValueAsBytes(oldInstance);
+
+        JsonInstanceSerializer<TestJsonInstanceSerializer.Payload> serializer = new JsonInstanceSerializer<TestJsonInstanceSerializer.Payload>(TestJsonInstanceSerializer.Payload.class);
+        ServiceInstance<TestJsonInstanceSerializer.Payload> instance = serializer.deserialize(oldJson);
+        Assert.assertEquals(oldInstance.getName(), instance.getName());
+        Assert.assertEquals(oldInstance.getId(), instance.getId());
+        Assert.assertEquals(oldInstance.getAddress(), instance.getAddress());
+        Assert.assertEquals(oldInstance.getPort(), instance.getPort());
+        Assert.assertEquals(oldInstance.getSslPort(), instance.getSslPort());
+        Assert.assertEquals(oldInstance.getPayload(), instance.getPayload());
+        Assert.assertEquals(oldInstance.getRegistrationTimeUTC(), instance.getRegistrationTimeUTC());
+        Assert.assertEquals(oldInstance.getServiceType(), instance.getServiceType());
+        Assert.assertEquals(oldInstance.getUriSpec(), instance.getUriSpec());
+        Assert.assertTrue(instance.isEnabled());
+    }
+
+    @Test
     public void testFutureChanges() throws Exception
     {
         TestNewServiceInstance<String> newInstance = new TestNewServiceInstance<String>("name", "id", "address", 10, 20, "hey", 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), false, "what", 10101L, new Date(), new URI("http://hey"));
