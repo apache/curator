@@ -204,7 +204,20 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final ExecutorService executorService)
     {
-        this(client, path, cacheData, dataIsCompressed, new CloseableExecutorService(executorService));
+        this(client, path, cacheData, dataIsCompressed, executorService, false);
+    }
+
+    /**
+     * @param client           the client
+     * @param path             path to watch
+     * @param cacheData        if true, node contents are cached in addition to the stat
+     * @param dataIsCompressed if true, data in the path is compressed
+     * @param executorService  ExecutorService to use for the PathChildrenCache's background thread. This service should be single threaded, otherwise the cache may see inconsistent results.
+     * @param shutdownOnClose if true, shutdown the executor service when this is closed
+     */
+    public PathChildrenCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, final ExecutorService executorService, boolean shutdownOnClose)
+    {
+        this(client, path, cacheData, dataIsCompressed, new CloseableExecutorService(executorService, shutdownOnClose));
     }
 
     /**
