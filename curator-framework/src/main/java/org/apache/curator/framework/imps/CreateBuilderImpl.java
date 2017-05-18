@@ -544,7 +544,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         }
         catch ( Exception e)
         {
-            ThreadUtils.checkInterrupted(e);
             if ( ( e instanceof KeeperException.ConnectionLossException ||
                 !( e instanceof KeeperException )) && protectedId != null )
             {

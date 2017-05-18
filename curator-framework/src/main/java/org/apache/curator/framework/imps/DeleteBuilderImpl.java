@@ -298,7 +298,6 @@ public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<Str
         }
         catch ( Exception e )
         {
-            ThreadUtils.checkInterrupted(e);
             //Only retry a guaranteed delete if it's a retryable error
             if( (RetryLoop.isRetryException(e) || (e instanceof InterruptedException)) && guaranteed )
             {

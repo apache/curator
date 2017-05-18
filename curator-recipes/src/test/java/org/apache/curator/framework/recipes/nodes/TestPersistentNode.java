@@ -27,6 +27,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class TestPersistentNode extends BaseClassForTests
@@ -130,6 +132,54 @@ public class TestPersistentNode extends BaseClassForTests
             pen.close();
             timing.sleepABit();
             Assert.assertNull(client.checkExists().forPath("/test/one/two"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(pen);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testInterruption() throws Exception
+    {
+        Timing timing = new Timing();
+        PersistentNode pen = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/test");
+
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test", new byte[0]);
+            pen.start();
+            Assert.assertTrue(pen.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
+
+            // interrupt once
+            Thread.currentThread().interrupt();
+
+            int interruptCount = 0;
+
+            try {
+                pen.close();
+            }
+            catch (IOException expected) {
+                if (expected.getCause() instanceof InterruptedException) {
+                    interruptCount++;
+                }
+                else {
+                    throw expected;
+                }
+            }
+
+            try {
+                timing.sleepABit();
+            }
+            catch (InterruptedException expected) {
+                interruptCount++;
+            }
+
+            Assert.assertEquals(interruptCount, 1);
         }
         finally
         {

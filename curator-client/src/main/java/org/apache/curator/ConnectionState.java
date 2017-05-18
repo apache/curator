@@ -123,7 +123,6 @@ class ConnectionState implements Watcher, Closeable
         }
         catch ( Exception e )
         {
-            ThreadUtils.checkInterrupted(e);
             throw new IOException(e);
         }
         finally
