@@ -32,10 +32,16 @@ import org.apache.curator.x.async.modeled.models.TestNewerModel;
 import org.apache.curator.x.async.modeled.versioned.Versioned;
 import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
+import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
@@ -147,5 +153,26 @@ public class TestModeledFramework extends TestModeledFrameworkBase
             Versioned<TestModel> badVersion = Versioned.from(value.model(), Integer.MAX_VALUE);
             return versioned.set(badVersion);
         }).whenComplete((s, e) -> Assert.assertTrue(e instanceof KeeperException.BadVersionException)));
+    }
+
+    @Test
+    public void testAcl() throws NoSuchAlgorithmException
+    {
+        List<ACL> aclList = Collections.singletonList(new ACL(ZooDefs.Perms.WRITE, new Id("digest", DigestAuthenticationProvider.generateDigest("test:test"))));
+        ModelSpec<TestModel> aclModelSpec = ModelSpec.builder(modelSpec.path(), modelSpec.serializer()).withAclList(aclList).build();
+        ModeledFramework<TestModel> client = ModeledFramework.wrap(async, aclModelSpec);
+        complete(client.set(new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101))));
+        complete(client.update(new TestModel("John", "Galt", "Galt's Gulch", 54, BigInteger.valueOf(88))), (__, e) -> Assert.assertNotNull(e, "Should've gotten an auth failure"));
+
+        try ( CuratorFramework authCurator = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .authorization("digest", "test:test".getBytes())
+            .build() )
+        {
+            authCurator.start();
+            ModeledFramework<TestModel> authClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(authCurator), aclModelSpec);
+            complete(authClient.update(new TestModel("John", "Galt", "Galt's Gulch", 42, BigInteger.valueOf(66))), (__, e) -> Assert.assertNull(e, "Should've succeeded"));
+        }
     }
 }
