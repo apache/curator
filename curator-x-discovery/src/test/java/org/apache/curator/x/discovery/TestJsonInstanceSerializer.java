@@ -98,7 +98,7 @@ public class TestJsonInstanceSerializer
     @Test
     public void		testPayloadAsList() throws Exception
     {
-        JsonInstanceSerializer<Object>    serializer = new JsonInstanceSerializer<Object>(Object.class);
+        JsonInstanceSerializer<Object>    serializer = new JsonInstanceSerializer<Object>(Object.class, false);
         List<String> payload = new ArrayList<String>();
         payload.add("Test value 1");
         payload.add("Test value 2");
@@ -121,7 +121,7 @@ public class TestJsonInstanceSerializer
     @Test
     public void		testPayloadAsMap() throws Exception
     {
-        JsonInstanceSerializer<Object>    serializer = new JsonInstanceSerializer<Object>(Object.class);
+        JsonInstanceSerializer<Object>    serializer = new JsonInstanceSerializer<Object>(Object.class, false);
         Map<String,String> payload = new HashMap<String,String>();
         payload.put("1", "Test value 1");
         payload.put("2", "Test value 2");
@@ -166,7 +166,17 @@ public class TestJsonInstanceSerializer
     	public String getVal() {
     		return val;
     	}
-    	public void setVal(String val) {
+
+        public Payload()
+        {
+        }
+
+        public Payload(String val)
+        {
+            this.val = val;
+        }
+
+        public void setVal(String val) {
     		this.val = val;
     	}
     	@Override
