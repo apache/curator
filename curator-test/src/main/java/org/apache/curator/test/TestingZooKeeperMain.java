@@ -233,7 +233,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             }
             catch ( IOException e )
             {
-                log.info("Could not server. Waiting and trying one more time.", e);
+                log.info("Could not start server. Waiting and trying one more time.", e);
                 timing.sleepABit();
                 cnxnFactory = ServerCnxnFactory.createFactory();
                 cnxnFactory.configure(config.getClientPortAddress(),
