@@ -290,34 +290,46 @@ public class TestReconfiguration extends BaseClassForTests
     public void testNewMembers() throws Exception
     {
         cluster.close();
-        cluster = new TestingCluster(5);
-        List<TestingZooKeeperServer> servers = cluster.getServers();
-        List<InstanceSpec> smallCluster = Lists.newArrayList();
-        for ( int i = 0; i < 3; ++i )   // only start 3 of the 5
+        cluster = null;
+
+        TestingCluster smallCluster = null;
+        TestingCluster localCluster = new TestingCluster(5);
+        try
         {
-            TestingZooKeeperServer server = servers.get(i);
-            server.start();
-            smallCluster.add(server.getInstanceSpec());
+            List<TestingZooKeeperServer> servers = localCluster.getServers();
+            List<InstanceSpec> smallClusterInstances = Lists.newArrayList();
+            for ( int i = 0; i < 3; ++i )   // only start 3 of the 5
+            {
+                TestingZooKeeperServer server = servers.get(i);
+                server.start();
+                smallClusterInstances.add(server.getInstanceSpec());
+            }
+
+            smallCluster = new TestingCluster(smallClusterInstances);
+            try ( CuratorFramework client = newClient(smallCluster.getConnectString()))
+            {
+                client.start();
+
+                QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+                Assert.assertEquals(oldConfig.getAllMembers().size(), 5);
+                assertConfig(oldConfig, localCluster.getInstances());
+
+                CountDownLatch latch = setChangeWaiter(client);
+
+                client.reconfig().withNewMembers(toReconfigSpec(smallClusterInstances)).forEnsemble();
+
+                Assert.assertTrue(timing.awaitLatch(latch));
+                byte[] newConfigData = client.getConfig().forEnsemble();
+                QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
+                Assert.assertEquals(newConfig.getAllMembers().size(), 3);
+                assertConfig(newConfig, smallClusterInstances);
+                Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
+            }
         }
-
-        try ( CuratorFramework client = newClient(new TestingCluster(smallCluster).getConnectString()))
+        finally
         {
-            client.start();
-
-            QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
-            Assert.assertEquals(oldConfig.getAllMembers().size(), 5);
-            assertConfig(oldConfig, cluster.getInstances());
-
-            CountDownLatch latch = setChangeWaiter(client);
-
-            client.reconfig().withNewMembers(toReconfigSpec(smallCluster)).forEnsemble();
-
-            Assert.assertTrue(timing.awaitLatch(latch));
-            byte[] newConfigData = client.getConfig().forEnsemble();
-            QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
-            Assert.assertEquals(newConfig.getAllMembers().size(), 3);
-            assertConfig(newConfig, smallCluster);
-            Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
+            CloseableUtils.closeQuietly(smallCluster);
+            CloseableUtils.closeQuietly(localCluster);
         }
     }
 
