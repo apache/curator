@@ -53,7 +53,7 @@ public class TestNamespaceFacade extends BaseClassForTests
     public void     testGetNamespace() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        CuratorFramework    client2 = CuratorFrameworkFactory.builder().namespace("snafu").retryPolicy(new RetryOneTime(1)).connectString("").build();
+        CuratorFramework    client2 = CuratorFrameworkFactory.builder().namespace("snafu").retryPolicy(new RetryOneTime(1)).connectString(server.getConnectString()).build();
         try
         {
             client.start();
@@ -232,7 +232,7 @@ public class TestNamespaceFacade extends BaseClassForTests
 
     @Test
     public void testUnfixForEmptyNamespace() {
-        CuratorFramework client = CuratorFrameworkFactory.builder().namespace("").retryPolicy(new RetryOneTime(1)).connectString("").build();
+        CuratorFramework client = CuratorFrameworkFactory.builder().namespace("").retryPolicy(new RetryOneTime(1)).connectString(server.getConnectString()).build();
         CuratorFrameworkImpl clientImpl = (CuratorFrameworkImpl) client;
 
         Assert.assertEquals(clientImpl.unfixForNamespace("/foo/bar"), "/foo/bar");
