@@ -73,7 +73,7 @@
         <jetty-version>6.1.26</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
         <resteasy-jaxrs-version>2.3.0.GA</resteasy-jaxrs-version>
-        <guava-version>16.0.1</guava-version>
+        <guava-version>20.0</guava-version>
         <testng-version>6.10</testng-version>
         <swift-version>0.12.0</swift-version>
         <dropwizard-version>0.7.0</dropwizard-version>

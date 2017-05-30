@@ -187,7 +187,7 @@ public class QueueBuilder<T>
     }
 
     /**
-     * Change the executor used. The default is {@link MoreExecutors#sameThreadExecutor()}
+     * Change the executor used. The default is {@link MoreExecutors#newDirectExecutorService()}
      *
      * @param executor new executor to use
      * @return this
@@ -269,6 +269,6 @@ public class QueueBuilder<T>
         this.queuePath = PathUtils.validatePath(queuePath);
 
         factory = defaultThreadFactory;
-        executor = MoreExecutors.sameThreadExecutor();
+        executor = MoreExecutors.newDirectExecutorService();
     }
 }
