@@ -272,6 +272,13 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             return firstProcessor;
         }
 
+        @Override
+        protected void setState(State state)
+        {
+            this.state = state;
+            // avoid ZKShutdownHandler is not registered message
+        }
+
         protected void registerJMX()
         {
             // NOP

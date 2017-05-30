@@ -185,10 +185,8 @@ public class TestFrameworkEdges extends BaseClassForTests
             }
             firstCreateBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
 
-            String name1 = paths.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-            String path1 = paths.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-            Assert.assertNotNull(name1);
-            Assert.assertNotNull(path1);
+            String name1 = timing.takeFromQueue(paths);
+            String path1 = timing.takeFromQueue(paths);
 
             client.close();
 
@@ -206,10 +204,8 @@ public class TestFrameworkEdges extends BaseClassForTests
             createBuilder.debugForceFindProtectedNode = true;
             createBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
 
-            String name2 = paths.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-            String path2 = paths.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-            Assert.assertNotNull(name2);
-            Assert.assertNotNull(path2);
+            String name2 = timing.takeFromQueue(paths);
+            String path2 = timing.takeFromQueue(paths);
 
             Assert.assertEquals(ZKPaths.getPathAndNode(name1).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
             Assert.assertEquals(ZKPaths.getPathAndNode(name2).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
