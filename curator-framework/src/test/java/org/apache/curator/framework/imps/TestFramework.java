@@ -129,7 +129,7 @@ public class TestFramework extends BaseClassForTests
             client.getChildren().usingWatcher(watcher).forPath("/base");
             client.create().forPath("/base/child");
 
-            String path = queue.take();
+            String path = new Timing().takeFromQueue(queue);
             Assert.assertEquals(path, "/base");
         }
         finally

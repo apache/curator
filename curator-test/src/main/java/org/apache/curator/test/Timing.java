@@ -19,9 +19,11 @@
 
 package org.apache.curator.test;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Utility to get various testing times
@@ -124,6 +126,32 @@ public class Timing
             Thread.currentThread().interrupt();
         }
         return false;
+    }
+
+    /**
+     * Try to take an item from the given queue
+     *
+     * @param queue queue
+     * @return item
+     * @throws Exception interrupted or timed out
+     */
+    public <T> T takeFromQueue(BlockingQueue<T> queue) throws Exception
+    {
+        Timing m = forWaiting();
+        try
+        {
+            T value = queue.poll(m.value, m.unit);
+            if ( value == null )
+            {
+                throw new TimeoutException("Timed out trying to take from queue");
+            }
+            return value;
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw e;
+        }
     }
 
     /**

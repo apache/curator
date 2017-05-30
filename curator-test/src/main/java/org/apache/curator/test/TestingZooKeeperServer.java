@@ -21,7 +21,6 @@ package org.apache.curator.test;
 
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
-import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
@@ -53,6 +52,8 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
 
     public TestingZooKeeperServer(QuorumConfigBuilder configBuilder, int thisInstanceIndex)
     {
+        System.setProperty("zookeeper.jmx.log4j.disable", "true");  // disable JMX logging
+
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
         main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
