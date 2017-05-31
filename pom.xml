@@ -56,7 +56,7 @@
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <jdk-version>1.6</jdk-version>
+        <jdk-version>1.7</jdk-version>
 
         <surefire-forkcount>1</surefire-forkcount>
 
