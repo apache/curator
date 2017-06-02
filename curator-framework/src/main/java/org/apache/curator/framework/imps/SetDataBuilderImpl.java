@@ -62,7 +62,7 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
             {
                 if ( compress )
                 {
-                    data = client.getCompressionProvider().compress(path, data);
+                    data = client.getCompressionProvider().compress(data);
                 }
 
                 String      fixedPath = client.fixForNamespace(path);
@@ -255,7 +255,7 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
 
         if ( compress )
         {
-            data = client.getCompressionProvider().compress(path, data);
+            data = client.getCompressionProvider().compress(data);
         }
 
         path = client.fixForNamespace(path);

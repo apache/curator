@@ -27,7 +27,7 @@ import java.util.zip.GZIPOutputStream;
 public class GzipCompressionProvider implements CompressionProvider
 {
     @Override
-    public byte[] compress(String path, byte[] data) throws Exception
+    public byte[] compress(byte[] data) throws Exception
     {
         ByteArrayOutputStream       bytes = new ByteArrayOutputStream();
         GZIPOutputStream            out = new GZIPOutputStream(bytes);
@@ -41,7 +41,7 @@ public class GzipCompressionProvider implements CompressionProvider
     }
 
     @Override
-    public byte[] decompress(String path, byte[] compressedData) throws Exception
+    public byte[] decompress(byte[] compressedData) throws Exception
     {
         ByteArrayOutputStream       bytes = new ByteArrayOutputStream(compressedData.length);
         GZIPInputStream             in = new GZIPInputStream(new ByteArrayInputStream(compressedData));

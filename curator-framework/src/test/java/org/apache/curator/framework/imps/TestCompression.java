@@ -40,7 +40,7 @@ public class TestCompression extends BaseClassForTests
         CompressionProvider     compressionProvider = new CompressionProvider()
         {
             @Override
-            public byte[] compress(String path, byte[] data) throws Exception
+            public byte[] compress(byte[] data) throws Exception
             {
                 compressCounter.incrementAndGet();
 
@@ -51,7 +51,7 @@ public class TestCompression extends BaseClassForTests
             }
 
             @Override
-            public byte[] decompress(String path, byte[] compressedData) throws Exception
+            public byte[] decompress(byte[] compressedData) throws Exception
             {
                 decompressCounter.incrementAndGet();
 

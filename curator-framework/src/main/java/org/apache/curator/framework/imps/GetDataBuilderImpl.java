@@ -254,7 +254,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
                     {
                         try
                         {
-                            data = client.getCompressionProvider().decompress(path, data);
+                            data = client.getCompressionProvider().decompress(data);
                         }
                         catch ( Exception e )
                         {
@@ -328,6 +328,6 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
         );
         trace.setResponseBytesLength(responseData).setPath(path).setWithWatcher(watching.hasWatcher()).setStat(responseStat).commit();
 
-        return decompress ? client.getCompressionProvider().decompress(path, responseData) : responseData;
+        return decompress ? client.getCompressionProvider().decompress(responseData) : responseData;
     }
 }
