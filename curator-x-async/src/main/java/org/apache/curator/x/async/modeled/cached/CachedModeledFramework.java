@@ -19,10 +19,12 @@
 package org.apache.curator.x.async.modeled.cached;
 
 import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.ModeledFramework;
+import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
+import org.apache.zookeeper.data.Stat;
 import java.io.Closeable;
-import java.util.concurrent.Executor;
 
 public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeable
 {
@@ -72,4 +74,33 @@ public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeabl
      */
     @Override
     CachedModeledFramework<T> withPath(ZPath path);
+
+    /**
+     * Same as {@link #read()} except that if the cache does not have a value
+     * for this path a direct query is made.
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<T> readThrough();
+
+    /**
+     * Same as {@link #read(org.apache.zookeeper.data.Stat)} except that if the cache does not have a value
+     * for this path a direct query is made.
+     *
+     * @param storingStatIn the stat for the new ZNode is stored here
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<T> readThrough(Stat storingStatIn);
+
+    /**
+     * Same as {@link #readAsZNode()} except that if the cache does not have a value
+     * for this path a direct query is made.
+     *
+     *
+     * @return AsyncStage
+     * @see org.apache.curator.x.async.AsyncStage
+     */
+    AsyncStage<ZNode<T>> readThroughAsZNode();
 }

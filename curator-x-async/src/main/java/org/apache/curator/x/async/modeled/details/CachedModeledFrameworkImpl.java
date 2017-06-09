@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
 {
@@ -167,7 +168,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     @Override
     public AsyncStage<T> read()
     {
-        return internalRead(ZNode::model);
+        return internalRead(ZNode::model, this::exceptionally);
     }
 
     @Override
@@ -179,13 +180,31 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
                 DataTree.copyStat(n.stat(), storingStatIn);
             }
             return n.model();
-        });
+        }, this::exceptionally);
     }
 
     @Override
     public AsyncStage<ZNode<T>> readAsZNode()
     {
-        return internalRead(Function.identity());
+        return internalRead(Function.identity(), this::exceptionally);
+    }
+
+    @Override
+    public AsyncStage<T> readThrough()
+    {
+        return internalRead(ZNode::model, client::read);
+    }
+
+    @Override
+    public AsyncStage<T> readThrough(Stat storingStatIn)
+    {
+        return internalRead(ZNode::model, () -> client.read(storingStatIn));
+    }
+
+    @Override
+    public AsyncStage<ZNode<T>> readThroughAsZNode()
+    {
+        return internalRead(Function.identity(), client::readAsZNode);
     }
 
     @Override
@@ -287,16 +306,17 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
         return asyncDefaultMode ? ModelStage.asyncCompleted(value, executor) : ModelStage.completed(value);
     }
 
-    private <U> AsyncStage<U> exceptionally(Exception e)
+    private <U> AsyncStage<U> exceptionally()
     {
-        return asyncDefaultMode ? ModelStage.asyncExceptionally(e, executor) : ModelStage.exceptionally(e);
+        KeeperException.NoNodeException exception = new KeeperException.NoNodeException(client.modelSpec().path().fullPath());
+        return asyncDefaultMode ? ModelStage.asyncExceptionally(exception, executor) : ModelStage.exceptionally(exception);
     }
 
-    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver)
+    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver, Supplier<AsyncStage<U>> elseProc)
     {
         ZPath path = client.modelSpec().path();
         Optional<ZNode<T>> data = cache.currentData(path);
         return data.map(node -> completed(resolver.apply(node)))
-            .orElseGet(() -> exceptionally(new KeeperException.NoNodeException(path.fullPath())));
+            .orElseGet(elseProc);
     }
 }
