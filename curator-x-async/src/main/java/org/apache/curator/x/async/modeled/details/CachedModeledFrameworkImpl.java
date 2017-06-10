@@ -42,6 +42,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
 {
@@ -205,6 +206,17 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     public AsyncStage<ZNode<T>> readThroughAsZNode()
     {
         return internalRead(Function.identity(), client::readAsZNode);
+    }
+
+    @Override
+    public AsyncStage<List<T>> list()
+    {
+        List<T> children = cache.currentChildren()
+            .values()
+            .stream()
+            .map(ZNode::model)
+            .collect(Collectors.toList());
+        return asyncDefaultMode ? ModelStage.asyncCompleted(children, executor) : ModelStage.completed(children);
     }
 
     @Override

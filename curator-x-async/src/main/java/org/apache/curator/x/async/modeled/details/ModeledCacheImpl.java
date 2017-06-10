@@ -46,6 +46,7 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
     private final Map<ZPath, Entry<T>> entries = new ConcurrentHashMap<>();
     private final ModelSerializer<T> serializer;
     private final ListenerContainer<ModeledCacheListener<T>> listenerContainer = new ListenerContainer<>();
+    private final ZPath basePath;
 
     private static final class Entry<T>
     {
@@ -66,8 +67,9 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
             modelSpec = modelSpec.parent(); // i.e. the last item is a parameter
         }
 
+        basePath = modelSpec.path();
         this.serializer = modelSpec.serializer();
-        cache = TreeCache.newBuilder(client, modelSpec.path().fullPath())
+        cache = TreeCache.newBuilder(client, basePath.fullPath())
             .setCacheData(false)
             .setDataIsCompressed(modelSpec.createOptions().contains(CreateOption.compress))
             .setExecutor(executor)
@@ -104,6 +106,11 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
             return Optional.of(new ZNodeImpl<>(path, entry.stat, entry.model));
         }
         return Optional.empty();
+    }
+
+    Map<ZPath, ZNode<T>> currentChildren()
+    {
+        return currentChildren(basePath);
     }
 
     @Override

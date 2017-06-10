@@ -25,6 +25,7 @@ import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.data.Stat;
 import java.io.Closeable;
+import java.util.List;
 
 public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeable
 {
@@ -103,4 +104,11 @@ public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeabl
      * @see org.apache.curator.x.async.AsyncStage
      */
     AsyncStage<ZNode<T>> readThroughAsZNode();
+
+    /**
+     * Return the instances of the base path of this cached framework
+     *
+     * @return listing of all models in the base path
+     */
+    AsyncStage<List<T>> list();
 }
