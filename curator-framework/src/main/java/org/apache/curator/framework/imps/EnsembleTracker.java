@@ -20,7 +20,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -170,7 +170,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             {
                 sb.append(",");
             }
-            InetSocketAddress address = Objects.firstNonNull(server.clientAddr, server.addr);
+            InetSocketAddress address = MoreObjects.firstNonNull(server.clientAddr, server.addr);
             sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
         }
 

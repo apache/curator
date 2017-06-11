@@ -20,7 +20,7 @@ package org.apache.curator.x.rpc.idl.discovery;
 
 import com.facebook.swift.codec.ThriftField;
 import com.facebook.swift.codec.ThriftStruct;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.UriSpec;
@@ -66,8 +66,8 @@ public class DiscoveryInstance
             this.name = instance.getName();
             this.id = instance.getId();
             this.address = instance.getAddress();
-            this.port = Objects.firstNonNull(instance.getPort(), 0);
-            this.sslPort = Objects.firstNonNull(instance.getSslPort(), 0);
+            this.port = MoreObjects.firstNonNull(instance.getPort(), 0);
+            this.sslPort = MoreObjects.firstNonNull(instance.getSslPort(), 0);
             this.payload = instance.getPayload();
             this.registrationTimeUTC = instance.getRegistrationTimeUTC();
             this.serviceType = DiscoveryInstanceType.valueOf(instance.getServiceType().name());

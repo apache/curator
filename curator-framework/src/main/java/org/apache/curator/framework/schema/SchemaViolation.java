@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.schema;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import org.apache.zookeeper.data.ACL;
 import java.util.Arrays;
@@ -148,6 +148,6 @@ public class SchemaViolation extends RuntimeException
 
     private static String toString(Schema schema, String violation, ViolatorData violatorData)
     {
-        return Objects.firstNonNull(violation, "") + " " + schema + " " + violatorData;
+        return MoreObjects.firstNonNull(violation, "") + " " + schema + " " + violatorData;
     }
 }
