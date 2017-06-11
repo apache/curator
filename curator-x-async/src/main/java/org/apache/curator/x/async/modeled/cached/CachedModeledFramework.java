@@ -65,6 +65,15 @@ public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeabl
     Listenable<ModeledCacheListener<T>> listenable();
 
     /**
+     * Same as {@link org.apache.curator.x.async.modeled.ModeledFramework#childrenAsZNodes()}
+     * but always reads from cache - i.e. no additional queries to ZooKeeper are made
+     *
+     * @return AsyncStage stage
+     */
+    @Override
+    AsyncStage<List<ZNode<T>>> childrenAsZNodes();
+
+    /**
      * {@inheritDoc}
      */
     @Override

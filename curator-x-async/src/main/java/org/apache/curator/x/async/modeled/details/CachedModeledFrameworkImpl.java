@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
@@ -36,8 +35,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -254,15 +253,24 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     @Override
     public AsyncStage<List<ZPath>> children()
     {
-        Set<ZPath> paths = cache.currentChildren(client.modelSpec().path()).keySet();
-        return completed(Lists.newArrayList(paths));
+        List<ZPath> paths = cache.currentChildren(client.modelSpec().path())
+            .keySet()
+            .stream()
+            .filter(path -> path.equals(cache.basePath()))
+            .collect(Collectors.toList());
+        return completed(paths);
     }
 
     @Override
-    public AsyncStage<List<ZPath>> siblings()
+    public AsyncStage<List<ZNode<T>>> childrenAsZNodes()
     {
-        Set<ZPath> paths = cache.currentChildren(client.modelSpec().path().parent()).keySet();
-        return completed(Lists.newArrayList(paths));
+        List<ZNode<T>> nodes = cache.currentChildren(client.modelSpec().path())
+            .entrySet()
+            .stream()
+            .filter(e -> e.getKey().equals(cache.basePath()))
+            .map(Map.Entry::getValue)
+            .collect(Collectors.toList());
+        return completed(nodes);
     }
 
     @Override

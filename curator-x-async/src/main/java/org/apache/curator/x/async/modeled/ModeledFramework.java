@@ -280,12 +280,17 @@ public interface ModeledFramework<T>
     AsyncStage<List<ZPath>> children();
 
     /**
-     * Return the child paths of this instance's parent path (in no particular order)
+     * Return the child paths of this instance's path (in no particular order)
+     * and deserialize into a models. IMPORTANT: this results in a ZooKeeper query
+     * for each child node returned. i.e. if the initial children() call returns
+     * 10 nodes an additional 10 ZooKeeper queries are made to get the data. Note:
+     * cannot be used if any of the {@link ModeledFrameworkBuilder#watched()} modes
+     * are used.
      *
      * @return AsyncStage
      * @see org.apache.curator.x.async.AsyncStage
      */
-    AsyncStage<List<ZPath>> siblings();
+    AsyncStage<List<ZNode<T>>> childrenAsZNodes();
 
     /**
      * Create operation instance that can be passed among other operations to

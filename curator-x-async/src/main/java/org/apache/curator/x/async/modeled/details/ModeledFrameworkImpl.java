@@ -19,6 +19,7 @@
 package org.apache.curator.x.async.modeled.details;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -229,9 +230,42 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     }
 
     @Override
-    public AsyncStage<List<ZPath>> siblings()
+    public AsyncStage<List<ZNode<T>>> childrenAsZNodes()
     {
-        return internalGetChildren(modelSpec.path().parent());
+        ModelStage<List<ZNode<T>>> modelStage = ModelStage.make();
+        Preconditions.checkState(!isWatched, "childrenAsZNodes() cannot be used with watched instances.");
+        children().handle((children, e) -> {
+            if ( e != null )
+            {
+                modelStage.completeExceptionally(e);
+            }
+            else
+            {
+                completeChildrenAsZNodes(modelStage, children);
+            }
+            return null;
+        });
+        return modelStage;
+    }
+
+    private void completeChildrenAsZNodes(ModelStage<List<ZNode<T>>> modelStage, List<ZPath> children)
+    {
+        List<ZNode<T>> nodes = Lists.newArrayList();
+        children.forEach(name -> child(name).readAsZNode().handle((node, e) -> {
+            if ( e != null )
+            {
+                modelStage.completeExceptionally(e);
+            }
+            else
+            {
+                nodes.add(node);
+                if ( nodes.size() == children.size() )
+                {
+                    modelStage.complete(nodes);
+                }
+            }
+            return null;
+        }));
     }
 
     private AsyncStage<List<ZPath>> internalGetChildren(ZPath path)

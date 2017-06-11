@@ -32,6 +32,11 @@ class ModelStage<T> extends CompletableFuture<T> implements AsyncStage<T>
 {
     private final CompletionStage<WatchedEvent> event;
 
+    static <U> ModelStage<U> make()
+    {
+        return new ModelStage<>(null);
+    }
+
     static <U> ModelStage<U> make(CompletionStage<WatchedEvent> event)
     {
         return new ModelStage<>(event);
@@ -49,6 +54,11 @@ class ModelStage<T> extends CompletableFuture<T> implements AsyncStage<T>
         ModelStage<U> stage = new ModelStage<>(null);
         stage.completeExceptionally(e);
         return stage;
+    }
+
+    static <U> ModelStage<U> async(Executor executor)
+    {
+        return new AsyncModelStage<>(executor);
     }
 
     static <U> ModelStage<U> asyncCompleted(U value, Executor executor)
