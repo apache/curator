@@ -34,22 +34,21 @@ import java.util.concurrent.TimeUnit;
  *     Canonical usage:
  * <code><pre>
  *     InterProcessMutex mutex = new InterProcessMutex(...) // or any InterProcessLock
- *     AsyncLocker.lockAsync(mutex).handle((state, e) -> {
- *         if ( e != null )
+ *     AsyncLocker.lockAsync(mutex).thenAccept(dummy -> {
+ *         try
  *         {
- *             // handle the error
+ *             // do work while holding the lock
  *         }
- *         else if ( state.hasTheLock() )
+ *         finally
  *         {
- *             try
- *             {
- *                 // do work while holding the lock
- *             }
- *             finally
- *             {
- *                 state.release();
- *             }
+ *             AsyncLocker.release(mutex);
  *         }
+ *     }).exceptionally(e -> {
+ *         if ( e instanceOf TimeoutException ) {
+ *             // timed out trying to acquire the lock
+ *         }
+ *         // handle the error
+ *         return null;
  *     });
  * </pre></code>
  * </p>
@@ -57,23 +56,11 @@ import java.util.concurrent.TimeUnit;
 public class AsyncLocker
 {
     /**
-     * State of the lock
+     * Set as the completion stage's exception when trying to acquire a lock
+     * times out
      */
-    public interface LockState
+    public static class TimeoutException extends RuntimeException
     {
-        /**
-         * Returns true if you own the lock
-         *
-         * @return true/false
-         */
-        boolean hasTheLock();
-
-        /**
-         * Safe release of the lock. Only tries to release
-         * if you own the lock. The lock ownership is changed
-         * to <code>false</code> by this method.
-         */
-        void release();
     }
 
     /**
@@ -86,13 +73,18 @@ public class AsyncLocker
      * @param executor executor to use to asynchronously acquire
      * @return stage
      */
-    public static CompletionStage<LockState> lockAsync(InterProcessLock lock, long timeout, TimeUnit unit, Executor executor)
+    public static CompletionStage<Void> lockAsync(InterProcessLock lock, long timeout, TimeUnit unit, Executor executor)
     {
+        CompletableFuture<Void> future = new CompletableFuture<>();
         if ( executor == null )
         {
-            return CompletableFuture.supplyAsync(() -> lock(lock, timeout, unit));
+            CompletableFuture.runAsync(() -> lock(future, lock, timeout, unit));
         }
-        return CompletableFuture.supplyAsync(() -> lock(lock, timeout, unit), executor);
+        else
+        {
+            CompletableFuture.runAsync(() -> lock(future, lock, timeout, unit), executor);
+        }
+        return future;
     }
 
     /**
@@ -103,7 +95,7 @@ public class AsyncLocker
      * @param executor executor to use to asynchronously acquire
      * @return stage
      */
-    public static CompletionStage<LockState> lockAsync(InterProcessLock lock, Executor executor)
+    public static CompletionStage<Void> lockAsync(InterProcessLock lock, Executor executor)
     {
         return lockAsync(lock, 0, null, executor);
     }
@@ -117,7 +109,7 @@ public class AsyncLocker
      * @param unit time unit of timeout
      * @return stage
      */
-    public static CompletionStage<LockState> lockAsync(InterProcessLock lock, long timeout, TimeUnit unit)
+    public static CompletionStage<Void> lockAsync(InterProcessLock lock, long timeout, TimeUnit unit)
     {
         return lockAsync(lock, timeout, unit, null);
     }
@@ -129,23 +121,21 @@ public class AsyncLocker
      * {@link org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2}, etc.)
      * @return stage
      */
-    public static CompletionStage<LockState> lockAsync(InterProcessLock lock)
+    public static CompletionStage<Void> lockAsync(InterProcessLock lock)
     {
         return lockAsync(lock, 0, null, null);
     }
 
-    private static LockState lock(InterProcessLock lock, long timeout, TimeUnit unit)
+    /**
+     * Release the lock and wrap any exception in <code>RuntimeException</code>
+     *
+     * @param lock lock to release
+     */
+    public static void release(InterProcessLock lock)
     {
         try
         {
-            if ( unit != null )
-            {
-                boolean hasTheLock = lock.acquire(timeout, unit);
-                return new InternalLockState(lock, hasTheLock);
-            }
-
-            lock.acquire();
-            return new InternalLockState(lock, true);
+            lock.release();
         }
         catch ( Exception e )
         {
@@ -154,43 +144,35 @@ public class AsyncLocker
         }
     }
 
-    private AsyncLocker()
+    private static void lock(CompletableFuture<Void> future, InterProcessLock lock, long timeout, TimeUnit unit)
     {
-    }
-
-    private static class InternalLockState implements LockState
-    {
-        private final InterProcessLock lock;
-        private volatile boolean hasTheLock;
-
-        public InternalLockState(InterProcessLock lock, boolean hasTheLock)
+        try
         {
-            this.lock = lock;
-            this.hasTheLock = hasTheLock;
-        }
-
-        @Override
-        public boolean hasTheLock()
-        {
-            return hasTheLock;
-        }
-
-        @Override
-        public void release()
-        {
-            if ( hasTheLock )
+            if ( unit != null )
             {
-                hasTheLock = false;
-                try
+                if ( lock.acquire(timeout, unit) )
                 {
-                    lock.release();
+                    future.complete(null);
                 }
-                catch ( Exception e )
+                else
                 {
-                    ThreadUtils.checkInterrupted(e);
-                    throw new RuntimeException(e);
+                    future.completeExceptionally(new TimeoutException());
                 }
             }
+            else
+            {
+                lock.acquire();
+                future.complete(null);
+            }
         }
+        catch ( Exception e )
+        {
+            ThreadUtils.checkInterrupted(e);
+            future.completeExceptionally(e);
+        }
+    }
+
+    private AsyncLocker()
+    {
     }
 }
