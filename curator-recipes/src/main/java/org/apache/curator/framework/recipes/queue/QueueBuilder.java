@@ -269,6 +269,6 @@ public class QueueBuilder<T>
         this.queuePath = PathUtils.validatePath(queuePath);
 
         factory = defaultThreadFactory;
-        executor = MoreExecutors.sameThreadExecutor();
+        executor = MoreExecutors.directExecutor();
     }
 }
