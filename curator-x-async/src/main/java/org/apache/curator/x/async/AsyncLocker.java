@@ -64,7 +64,8 @@ public class AsyncLocker
     }
 
     /**
-     * Attempt to acquire the given lock asynchronously using the given timeout and executor.
+     * Attempt to acquire the given lock asynchronously using the given timeout and executor. If the lock
+     * is not acquired within the timeout stage is completedExceptionally with {@link org.apache.curator.x.async.AsyncLocker.TimeoutException}
      *
      * @param lock a lock implementation (e.g. {@link org.apache.curator.framework.recipes.locks.InterProcessMutex},
      * {@link org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2}, etc.)
@@ -88,6 +89,31 @@ public class AsyncLocker
     }
 
     /**
+     * Attempt to acquire the given lock asynchronously using the given timeout and executor. The stage
+     * is completed with a Boolean that indicates whether or not the lock was acquired.
+     *
+     * @param lock a lock implementation (e.g. {@link org.apache.curator.framework.recipes.locks.InterProcessMutex},
+     * {@link org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2}, etc.)
+     * @param timeout max timeout to acquire lock
+     * @param unit time unit of timeout
+     * @param executor executor to use to asynchronously acquire
+     * @return stage
+     */
+    public static CompletionStage<Boolean> lockAsyncIf(InterProcessLock lock, long timeout, TimeUnit unit, Executor executor)
+    {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if ( executor == null )
+        {
+            CompletableFuture.runAsync(() -> lockIf(future, lock, timeout, unit));
+        }
+        else
+        {
+            CompletableFuture.runAsync(() -> lockIf(future, lock, timeout, unit), executor);
+        }
+        return future;
+    }
+
+    /**
      * Attempt to acquire the given lock asynchronously using the given executor and without a timeout.
      *
      * @param lock a lock implementation (e.g. {@link org.apache.curator.framework.recipes.locks.InterProcessMutex},
@@ -102,6 +128,7 @@ public class AsyncLocker
 
     /**
      * Attempt to acquire the given lock asynchronously using the given timeout using the {@link java.util.concurrent.ForkJoinPool#commonPool()}.
+     * If the lock is not acquired within the timeout stage is completedExceptionally with {@link org.apache.curator.x.async.AsyncLocker.TimeoutException}
      *
      * @param lock a lock implementation (e.g. {@link org.apache.curator.framework.recipes.locks.InterProcessMutex},
      * {@link org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2}, etc.)
@@ -112,6 +139,21 @@ public class AsyncLocker
     public static CompletionStage<Void> lockAsync(InterProcessLock lock, long timeout, TimeUnit unit)
     {
         return lockAsync(lock, timeout, unit, null);
+    }
+
+    /**
+     * Attempt to acquire the given lock asynchronously using the given timeout using the {@link java.util.concurrent.ForkJoinPool#commonPool()}.
+     * The stage is completed with a Boolean that indicates whether or not the lock was acquired.
+     *
+     * @param lock a lock implementation (e.g. {@link org.apache.curator.framework.recipes.locks.InterProcessMutex},
+     * {@link org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2}, etc.)
+     * @param timeout max timeout to acquire lock
+     * @param unit time unit of timeout
+     * @return stage
+     */
+    public static CompletionStage<Boolean> lockAsyncIf(InterProcessLock lock, long timeout, TimeUnit unit)
+    {
+        return lockAsyncIf(lock, timeout, unit, null);
     }
 
     /**
@@ -141,6 +183,19 @@ public class AsyncLocker
         {
             ThreadUtils.checkInterrupted(e);
             throw new RuntimeException(e);
+        }
+    }
+
+    private static void lockIf(CompletableFuture<Boolean> future, InterProcessLock lock, long timeout, TimeUnit unit)
+    {
+        try
+        {
+            future.complete(lock.acquire(timeout, unit));
+        }
+        catch ( Exception e )
+        {
+            ThreadUtils.checkInterrupted(e);
+            future.completeExceptionally(e);
         }
     }
 
