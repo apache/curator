@@ -77,9 +77,12 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                     log.debug("Re-registering due to reconnection");
                     reRegisterServices();
                 }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
                 catch ( Exception e )
                 {
-                    ThreadUtils.checkInterrupted(e);
                     log.error("Could not re-register instances after reconnection", e);
                 }
             }
@@ -137,16 +140,42 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         client.getConnectionStateListenable().addListener(connectionStateListener);
     }
 
+    private IOException accumulateExceptions(IOException mainEx, Exception newEx)
+    {
+        if (newEx instanceof InterruptedException)
+        {
+            if (mainEx != null)
+            {
+                newEx.addSuppressed(mainEx);
+            }
+            Thread.currentThread().interrupt();
+        }
+
+        if (mainEx == null)
+        {
+            mainEx = new IOException("Failed to close ServiceDiscovery", newEx);
+        }
+        else
+        {
+            mainEx.addSuppressed(newEx);
+        }
+        return mainEx;
+    }
+
     @Override
     public void close() throws IOException
     {
-        for ( ServiceCache<T> cache : Lists.newArrayList(caches) )
-        {
-            CloseableUtils.closeQuietly(cache);
-        }
+        IOException mainEx = null;
         for ( ServiceProvider<T> provider : Lists.newArrayList(providers) )
         {
-            CloseableUtils.closeQuietly(provider);
+            try
+            {
+                CloseableUtils.closeQuietly(provider);
+            }
+            catch (Exception ex)
+            {
+                mainEx = accumulateExceptions(mainEx, ex);
+            }
         }
 
         for ( Entry<T> entry : services.values() )
@@ -161,12 +190,16 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
             catch ( Exception e )
             {
-                ThreadUtils.checkInterrupted(e);
+                mainEx = accumulateExceptions(mainEx, e);
                 log.error("Could not unregister instance: " + entry.service.getName(), e);
             }
         }
 
         client.getConnectionStateListenable().removeListener(connectionStateListener);
+        if (mainEx != null)
+        {
+            throw mainEx;
+        }
     }
 
     /**
@@ -220,18 +253,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             try
             {
-				CreateMode mode;
-				switch (service.getServiceType()) {
-				case DYNAMIC:
-					mode = CreateMode.EPHEMERAL;
-					break;
-				case DYNAMIC_SEQUENTIAL:
-					mode = CreateMode.EPHEMERAL_SEQUENTIAL;
-					break;
-				default:
-					mode = CreateMode.PERSISTENT;
-					break;
-				}
+                CreateMode mode = (service.getServiceType() == ServiceType.DYNAMIC) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
                 client.create().creatingParentContainersIfNeeded().withMode(mode).forPath(path, bytes);
                 isDone = true;
             }
@@ -469,9 +491,12 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             nodeCache.start(true);
         }
+        catch ( InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
         catch ( Exception e )
         {
-            ThreadUtils.checkInterrupted(e);
             log.error("Could not start node cache for: " + instance, e);
         }
         NodeCacheListener listener = new NodeCacheListener()
