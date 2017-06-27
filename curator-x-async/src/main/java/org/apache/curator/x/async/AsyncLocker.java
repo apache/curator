@@ -175,9 +175,27 @@ public class AsyncLocker
      */
     public static void release(InterProcessLock lock)
     {
+        release(lock, true);
+    }
+
+    /**
+     * Release the lock and wrap any exception in <code>RuntimeException</code>
+     *
+     * @param lock lock to release
+     * @param ignoreNoLockExceptions if true {@link java.lang.IllegalStateException} is ignored
+     */
+    public static void release(InterProcessLock lock, boolean ignoreNoLockExceptions)
+    {
         try
         {
             lock.release();
+        }
+        catch ( IllegalStateException e )
+        {
+            if ( !ignoreNoLockExceptions )
+            {
+                throw new RuntimeException(e);
+            }
         }
         catch ( Exception e )
         {
