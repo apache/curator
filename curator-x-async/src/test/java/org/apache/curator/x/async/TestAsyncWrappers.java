@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class TestAsyncLocker extends CompletableBaseClassForTests
+public class TestAsyncWrappers extends CompletableBaseClassForTests
 {
     @Test
     public void testBasic()
@@ -37,9 +37,9 @@ public class TestAsyncLocker extends CompletableBaseClassForTests
             client.start();
 
             InterProcessMutex lock = new InterProcessMutex(client, "/one/two");
-            complete(AsyncLocker.lockAsync(lock), (__, e) -> {
+            complete(AsyncWrappers.lockAsync(lock), (__, e) -> {
                 Assert.assertNull(e);
-                AsyncLocker.release(lock);
+                AsyncWrappers.release(lock);
             });
         }
     }
@@ -54,14 +54,14 @@ public class TestAsyncLocker extends CompletableBaseClassForTests
             InterProcessMutex lock1 = new InterProcessMutex(client, "/one/two");
             InterProcessMutex lock2 = new InterProcessMutex(client, "/one/two");
             CountDownLatch latch = new CountDownLatch(1);
-            AsyncLocker.lockAsync(lock1).thenAccept(__ -> {
+            AsyncWrappers.lockAsync(lock1).thenAccept(__ -> {
                 latch.countDown();  // don't release the lock
             });
             Assert.assertTrue(timing.awaitLatch(latch));
 
             CountDownLatch latch2 = new CountDownLatch(1);
-            AsyncLocker.lockAsync(lock2, timing.forSleepingABit().milliseconds(), TimeUnit.MILLISECONDS).exceptionally(e -> {
-                if ( e instanceof AsyncLocker.TimeoutException )
+            AsyncWrappers.lockAsync(lock2, timing.forSleepingABit().milliseconds(), TimeUnit.MILLISECONDS).exceptionally(e -> {
+                if ( e instanceof AsyncWrappers.TimeoutException )
                 {
                     latch2.countDown();  // lock should still be held
                 }

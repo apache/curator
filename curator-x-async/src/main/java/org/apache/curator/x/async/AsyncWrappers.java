@@ -18,8 +18,10 @@
  */
 package org.apache.curator.x.async;
 
+import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.x.async.modeled.ZPath;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -27,21 +29,21 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
- *     Utility for acquiring a lock asynchronously
+ *     Utility for adding asynchronous behavior
  * </p>
  *
  * <p>
- *     Canonical usage:
+ *     E.g. locks:
  * <code><pre>
  *     InterProcessMutex mutex = new InterProcessMutex(...) // or any InterProcessLock
- *     AsyncLocker.lockAsync(mutex).thenAccept(dummy -> {
+ *     AsyncWrappers.lockAsync(mutex, executor).thenAccept(dummy -> {
  *         try
  *         {
  *             // do work while holding the lock
  *         }
  *         finally
  *         {
- *             AsyncLocker.release(mutex);
+ *             AsyncWrappers.release(mutex);
  *         }
  *     }).exceptionally(e -> {
  *         if ( e instanceOf TimeoutException ) {
@@ -52,9 +54,52 @@ import java.util.concurrent.TimeUnit;
  *     });
  * </pre></code>
  * </p>
+ *
+ * <p>
+ *     E.g. EnsureContainers
+ * <code><pre>
+ *     AsyncWrappers.(client, path, executor).thenAccept(dummy -> {
+ *         // execute after ensuring containers
+ *     });
+ * </pre></code>
+ * </p>
  */
-public class AsyncLocker
+public class AsyncWrappers
 {
+    /**
+     * Asynchronously call {@link org.apache.curator.framework.EnsureContainers} using the {@link java.util.concurrent.ForkJoinPool#commonPool()}.
+     *
+     * @param client client
+     * @param path path to ensure
+     * @return stage
+     */
+    public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, ZPath path)
+    {
+        return asyncEnsureContainers(client, path, null);
+    }
+
+    /**
+     * Asynchronously call {@link org.apache.curator.framework.EnsureContainers} using the given executor
+     *
+     * @param client client
+     * @param path path to ensure
+     * @return stage
+     */
+    public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, ZPath path, Executor executor)
+    {
+        Runnable proc = () -> {
+            try
+            {
+                new EnsureContainers(client.unwrap(), path.fullPath()).ensure();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException(e);
+            }
+        };
+        return (executor != null) ? CompletableFuture.runAsync(proc, executor) : CompletableFuture.runAsync(proc);
+    }
+
     /**
      * Set as the completion stage's exception when trying to acquire a lock
      * times out
@@ -65,7 +110,7 @@ public class AsyncLocker
 
     /**
      * Attempt to acquire the given lock asynchronously using the given timeout and executor. If the lock
-     * is not acquired within the timeout stage is completedExceptionally with {@link org.apache.curator.x.async.AsyncLocker.TimeoutException}
+     * is not acquired within the timeout stage is completedExceptionally with {@link AsyncWrappers.TimeoutException}
      *
      * @param lock a lock implementation (e.g. {@link org.apache.curator.framework.recipes.locks.InterProcessMutex},
      * {@link org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2}, etc.)
@@ -128,7 +173,7 @@ public class AsyncLocker
 
     /**
      * Attempt to acquire the given lock asynchronously using the given timeout using the {@link java.util.concurrent.ForkJoinPool#commonPool()}.
-     * If the lock is not acquired within the timeout stage is completedExceptionally with {@link org.apache.curator.x.async.AsyncLocker.TimeoutException}
+     * If the lock is not acquired within the timeout stage is completedExceptionally with {@link AsyncWrappers.TimeoutException}
      *
      * @param lock a lock implementation (e.g. {@link org.apache.curator.framework.recipes.locks.InterProcessMutex},
      * {@link org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2}, etc.)
@@ -245,7 +290,7 @@ public class AsyncLocker
         }
     }
 
-    private AsyncLocker()
+    private AsyncWrappers()
     {
     }
 }
