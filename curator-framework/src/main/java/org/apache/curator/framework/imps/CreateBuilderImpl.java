@@ -112,7 +112,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     {
         setDataIfExists = true;
         setDataIfExistsVersion = version;
-        return null;
+        return this;
     }
 
     @Override
