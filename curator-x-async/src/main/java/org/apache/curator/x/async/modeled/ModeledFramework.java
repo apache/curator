@@ -75,6 +75,11 @@ public interface ModeledFramework<T>
      * </p>
      *
      * <p>
+     *     Note: the root node (the main path of the model) is <em>not</em> cached. i.e. only nodes
+     *     below the root are cached.
+     * </p>
+     *
+     * <p>
      *     Note: this method internally allocates an Executor for the cache and read methods. Use
      *     {@link #cached(java.util.concurrent.ExecutorService)} if you'd like to provide your own executor service.
      * </p>

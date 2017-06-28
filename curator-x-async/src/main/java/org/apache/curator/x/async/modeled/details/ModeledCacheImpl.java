@@ -159,13 +159,16 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         case NODE_UPDATED:
         {
             ZPath path = ZPath.parse(event.getData().getPath());
-            byte[] bytes = event.getData().getData();
-            if ( (bytes != null) && (bytes.length > 0) )    // otherwise it's probably just a parent node being created
+            if ( !path.equals(basePath) )
             {
-                T model = serializer.deserialize(bytes);
-                entries.put(path, new Entry<>(event.getData().getStat(), model));
-                ModeledCacheListener.Type type = (event.getType() == TreeCacheEvent.Type.NODE_ADDED) ? ModeledCacheListener.Type.NODE_ADDED : ModeledCacheListener.Type.NODE_UPDATED;
-                accept(type, path, event.getData().getStat(), model);
+                byte[] bytes = event.getData().getData();
+                if ( (bytes != null) && (bytes.length > 0) )    // otherwise it's probably just a parent node being created
+                {
+                    T model = serializer.deserialize(bytes);
+                    entries.put(path, new Entry<>(event.getData().getStat(), model));
+                    ModeledCacheListener.Type type = (event.getType() == TreeCacheEvent.Type.NODE_ADDED) ? ModeledCacheListener.Type.NODE_ADDED : ModeledCacheListener.Type.NODE_UPDATED;
+                    accept(type, path, event.getData().getStat(), model);
+                }
             }
             break;
         }
@@ -173,10 +176,13 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         case NODE_REMOVED:
         {
             ZPath path = ZPath.parse(event.getData().getPath());
-            Entry<T> entry = entries.remove(path);
-            T model = (entry != null) ? entry.model : serializer.deserialize(event.getData().getData());
-            Stat stat = (entry != null) ? entry.stat : event.getData().getStat();
-            accept(ModeledCacheListener.Type.NODE_REMOVED, path, stat, model);
+            if ( !path.equals(basePath) )
+            {
+                Entry<T> entry = entries.remove(path);
+                T model = (entry != null) ? entry.model : serializer.deserialize(event.getData().getData());
+                Stat stat = (entry != null) ? entry.stat : event.getData().getStat();
+                accept(ModeledCacheListener.Type.NODE_REMOVED, path, stat, model);
+            }
             break;
         }
 
