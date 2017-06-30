@@ -318,7 +318,7 @@ public class Schema
             ", pathRegex=" + pathRegex +
             ", path='" + fixedPath + '\'' +
             ", documentation='" + documentation + '\'' +
-            ", dataValidator=" + schemaValidator +
+            ", dataValidator=" + schemaValidator.getClass() +
             ", ephemeral=" + ephemeral +
             ", sequential=" + sequential +
             ", watched=" + watched +

@@ -67,6 +67,15 @@ public interface AsyncCreateBuilder extends AsyncPathAndBytesable<AsyncStage<Str
     AsyncPathAndBytesable<AsyncStage<String>> withTtl(long ttl);
 
     /**
+     * Specify the setData expected matching version when using option
+     * {@link org.apache.curator.x.async.api.CreateOption#setDataIfExists}. By default -1 is used.
+     *
+     * @param version setData expected matching version
+     * @return this for chaining
+     */
+    AsyncPathAndBytesable<AsyncStage<String>> withSetDataVersion(int version);
+
+    /**
      * Options to change how the ZNode is created
      *
      * @param options options
@@ -141,4 +150,23 @@ public interface AsyncCreateBuilder extends AsyncPathAndBytesable<AsyncStage<Str
      * @return this
      */
     AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat, long ttl);
+
+    /**
+     * set options, mode, ACLs, and stat
+     *
+     * @param options options
+     * @param createMode mode to use
+     * @param aclList the ACL list to use
+     * @param stat the stat to have filled in
+     * @param ttl the ttl or 0
+     * @param setDataVersion the setData matching version or -1
+     * @see #withOptions(java.util.Set)
+     * @see #withMode(org.apache.zookeeper.CreateMode)
+     * @see #withACL(java.util.List)
+     * @see #storingStatIn(org.apache.zookeeper.data.Stat)
+     * @see #withTtl(long)
+     * @see #withSetDataVersion(long)
+     * @return this
+     */
+    AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat, long ttl, int setDataVersion);
 }

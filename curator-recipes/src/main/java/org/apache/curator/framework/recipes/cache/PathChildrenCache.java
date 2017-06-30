@@ -133,7 +133,7 @@ public class PathChildrenCache implements Closeable
             handleStateChange(newState);
         }
     };
-    private static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("PathChildrenCache");
+    public static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("PathChildrenCache");
 
     /**
      * @param client the client

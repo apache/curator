@@ -73,6 +73,8 @@
             <item name="Framework" href="curator-framework/index.html"/>
             <item name="Utilities" href="utilities.html"/>
             <item name="Client" href="curator-client/index.html"/>
+            <item name="Java 8/Async" href="curator-x-async/index.html"/>
+            <item name="Strongly Typed Models" href="curator-x-async/modeled.html"/>
             <item name="Schema Support" href="curator-framework/schema.html"/>
         </menu>
 
@@ -94,7 +96,7 @@
             <item name="Service Discovery" href="curator-x-discovery/index.html"/>
             <item name="Service Discovery Server" href="curator-x-discovery-server/index.html"/>
             <item name="Curator RPC Proxy" href="curator-x-rpc/index.html"/>
-            <item name="Curator Async" href="curator-x-async/index.html"/>
+            <item name="Curator Java 8/Async" href="curator-x-async/index.html"/>
         </menu>
 
         <menu name="Community" inherit="top">

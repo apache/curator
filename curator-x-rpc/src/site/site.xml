@@ -25,7 +25,7 @@
             <link rel="stylesheet" href="../css/site.css" />
             <script type="text/javascript">
                 $(function(){
-                $('a[title="Curator Async"]').parent().addClass("active");
+                $('a[title="Curator RPC Proxy"]').parent().addClass("active");
                 });
             </script>
         </head>

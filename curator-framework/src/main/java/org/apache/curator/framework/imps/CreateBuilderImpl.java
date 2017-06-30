@@ -27,6 +27,7 @@ import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
+import org.apache.curator.framework.api.transaction.TransactionCreateBuilder2;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
@@ -51,6 +52,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     private boolean doProtected;
     private boolean compress;
     private boolean setDataIfExists;
+    private int setDataIfExistsVersion = -1;
     private String protectedId;
     private ACLing acling;
     private Stat storingStat;
@@ -94,10 +96,22 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         this.ttl = ttl;
     }
 
+    public void setSetDataIfExistsVersion(int version)
+    {
+        this.setDataIfExistsVersion = version;
+    }
+
     @Override
     public CreateBuilder2 orSetData()
     {
+        return orSetData(-1);
+    }
+
+    @Override
+    public CreateBuilder2 orSetData(int version)
+    {
         setDataIfExists = true;
+        setDataIfExistsVersion = version;
         return this;
     }
 
@@ -116,6 +130,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             public PathAndBytesable<T> withACL(List<ACL> aclList)
             {
                 CreateBuilderImpl.this.withACL(aclList);
+                return this;
+            }
+
+            @Override
+            public TransactionCreateBuilder2<T> withTtl(long ttl)
+            {
+                CreateBuilderImpl.this.withTtl(ttl);
                 return this;
             }
 
@@ -743,7 +764,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             {
                 try
                 {
-                    client.getZooKeeper().setData(path, mainOperationAndData.getData().getData(), -1, statCallback, backgrounding.getContext());
+                    client.getZooKeeper().setData(path, mainOperationAndData.getData().getData(), setDataIfExistsVersion, statCallback, backgrounding.getContext());
                 }
                 catch ( KeeperException e )
                 {
@@ -1070,7 +1091,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             {
                                 if ( setDataIfExists )
                                 {
-                                    client.getZooKeeper().setData(path, data, -1);
+                                    client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
                                     createdPath = path;
                                 }
                                 else
