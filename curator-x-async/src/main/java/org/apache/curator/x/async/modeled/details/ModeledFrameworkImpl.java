@@ -251,6 +251,11 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     private void completeChildrenAsZNodes(ModelStage<List<ZNode<T>>> modelStage, List<ZPath> children)
     {
         List<ZNode<T>> nodes = Lists.newArrayList();
+        if ( children.size() == 0 )
+        {
+            modelStage.complete(nodes);
+            return;
+        }
         children.forEach(path -> withPath(path).readAsZNode().handle((node, e) -> {
             if ( e != null )
             {
