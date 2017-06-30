@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async;
 
-import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.async.modeled.ZPath;
@@ -67,7 +66,8 @@ import java.util.concurrent.TimeUnit;
 public class AsyncWrappers
 {
     /**
-     * Asynchronously call {@link org.apache.curator.framework.EnsureContainers} using the {@link java.util.concurrent.ForkJoinPool#commonPool()}.
+     * Asynchronously call {@link org.apache.curator.framework.CuratorFramework#createContainers(String)} using
+     * the {@link java.util.concurrent.ForkJoinPool#commonPool()}.
      *
      * @param client client
      * @param path path to ensure
@@ -79,7 +79,8 @@ public class AsyncWrappers
     }
 
     /**
-     * Asynchronously call {@link org.apache.curator.framework.EnsureContainers} using the given executor
+     * Asynchronously call {@link org.apache.curator.framework.CuratorFramework#createContainers(String)} using
+     * the given executor
      *
      * @param client client
      * @param path path to ensure
@@ -90,7 +91,7 @@ public class AsyncWrappers
         Runnable proc = () -> {
             try
             {
-                new EnsureContainers(client.unwrap(), path.fullPath()).ensure();
+                client.unwrap().createContainers(path.fullPath());
             }
             catch ( Exception e )
             {
