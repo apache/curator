@@ -32,5 +32,15 @@ public interface CreateBuilder extends CreateBuilderMain
      */
     CreateBuilderMain withTtl(long ttl);
 
+    /**
+     * If the ZNode already exists, Curator will instead call setData()
+     */
     CreateBuilder2 orSetData();
+
+    /**
+     * If the ZNode already exists, Curator will instead call setData()
+     *
+     * @param version the version to use for {@link org.apache.curator.framework.CuratorFramework#setData()}
+     */
+    CreateBuilder2 orSetData(int version);
 }

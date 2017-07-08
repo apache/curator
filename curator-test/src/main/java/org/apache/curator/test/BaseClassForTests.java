@@ -27,12 +27,12 @@ import org.testng.IRetryAnalyzer;
 import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
-import org.testng.TestListenerAdapter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import java.io.IOException;
 import java.net.BindException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -155,7 +155,7 @@ public class BaseClassForTests
         RetryAnalyzer(Logger log, RetryContext retryContext)
         {
             this.log = log;
-            this.retryContext = retryContext;
+            this.retryContext = Objects.requireNonNull(retryContext, "retryContext cannot be null");
         }
 
         @Override
@@ -218,7 +218,11 @@ public class BaseClassForTests
             }
             else if ( method.isTestMethod() )
             {
-                method.getTestMethod().setRetryAnalyzer(new RetryAnalyzer(log, (RetryContext)context.getAttribute(ATTRIBUTE_NAME)));
+                RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
+                if ( retryContext != null )
+                {
+                    method.getTestMethod().setRetryAnalyzer(new RetryAnalyzer(log, retryContext));
+                }
             }
         }
 

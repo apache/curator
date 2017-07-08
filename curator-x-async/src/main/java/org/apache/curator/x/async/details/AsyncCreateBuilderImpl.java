@@ -44,6 +44,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     private Set<CreateOption> options = Collections.emptySet();
     private Stat stat = null;
     private long ttl = -1;
+    private int setDataVersion = -1;
 
     AsyncCreateBuilderImpl(CuratorFrameworkImpl client, Filters filters)
     {
@@ -76,6 +77,13 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     public AsyncPathAndBytesable<AsyncStage<String>> withTtl(long ttl)
     {
         this.ttl = ttl;
+        return this;
+    }
+
+    @Override
+    public AsyncPathAndBytesable<AsyncStage<String>> withSetDataVersion(int version)
+    {
+        this.setDataVersion = version;
         return this;
     }
 
@@ -133,6 +141,18 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
     }
 
     @Override
+    public AsyncPathAndBytesable<AsyncStage<String>> withOptions(Set<CreateOption> options, CreateMode createMode, List<ACL> aclList, Stat stat, long ttl, int setDataVersion)
+    {
+        this.options = Objects.requireNonNull(options, "options cannot be null");
+        this.aclList = aclList;
+        this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
+        this.stat = stat;
+        this.ttl = ttl;
+        this.setDataVersion = setDataVersion;
+        return this;
+    }
+
+    @Override
     public AsyncStage<String> forPath(String path)
     {
         return internalForPath(path, null, false);
@@ -159,6 +179,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder
             stat,
             ttl
         );
+        builder.setSetDataIfExistsVersion(setDataVersion);
         return safeCall(common.internalCallback, () -> useData ? builder.forPath(path, data) : builder.forPath(path));
     }
 }

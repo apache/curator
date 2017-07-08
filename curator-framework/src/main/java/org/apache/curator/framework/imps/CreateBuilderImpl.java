@@ -52,6 +52,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     private boolean doProtected;
     private boolean compress;
     private boolean setDataIfExists;
+    private int setDataIfExistsVersion = -1;
     private String protectedId;
     private ACLing acling;
     private Stat storingStat;
@@ -95,10 +96,22 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         this.ttl = ttl;
     }
 
+    public void setSetDataIfExistsVersion(int version)
+    {
+        this.setDataIfExistsVersion = version;
+    }
+
     @Override
     public CreateBuilder2 orSetData()
     {
+        return orSetData(-1);
+    }
+
+    @Override
+    public CreateBuilder2 orSetData(int version)
+    {
         setDataIfExists = true;
+        setDataIfExistsVersion = version;
         return this;
     }
 
@@ -751,7 +764,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             {
                 try
                 {
-                    client.getZooKeeper().setData(path, mainOperationAndData.getData().getData(), -1, statCallback, backgrounding.getContext());
+                    client.getZooKeeper().setData(path, mainOperationAndData.getData().getData(), setDataIfExistsVersion, statCallback, backgrounding.getContext());
                 }
                 catch ( KeeperException e )
                 {
@@ -1078,7 +1091,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             {
                                 if ( setDataIfExists )
                                 {
-                                    client.getZooKeeper().setData(path, data, -1);
+                                    client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
                                     createdPath = path;
                                 }
                                 else
