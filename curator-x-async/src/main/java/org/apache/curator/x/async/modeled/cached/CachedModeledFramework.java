@@ -37,16 +37,6 @@ public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeabl
     ModeledCache<T> cache();
 
     /**
-     * Returns a view of this instance that uses the CachedModeledFramework's executor
-     * for all default async completion operations. i.e. when you use, for example,
-     * {@link java.util.concurrent.CompletionStage#handleAsync(java.util.function.BiFunction)}
-     * this instance's executor is used instead of <code>ForkJoinPool.commonPool()</code>.
-     *
-     * @return view
-     */
-    CachedModeledFramework<T> asyncDefault();
-
-    /**
      * Start the internally created cache
      */
     void start();

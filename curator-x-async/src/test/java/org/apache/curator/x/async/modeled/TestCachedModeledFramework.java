@@ -28,81 +28,10 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class TestCachedModeledFramework extends TestModeledFrameworkBase
 {
-    @Test
-    public void testThreading()
-    {
-        TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
-        CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached().asyncDefault();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        client.listenable().addListener((type, path1, stat, model1) -> latch.countDown());
-
-        complete(client.set(model));
-        client.start();
-        try
-        {
-            Assert.assertTrue(new Timing().awaitLatch(latch));
-
-            AtomicReference<Thread> completionThread = new AtomicReference<>();
-            complete(client.read().whenCompleteAsync((s, e) -> completionThread.set((e == null) ? Thread.currentThread() : null)));
-            Assert.assertNotNull(completionThread.get());
-            Assert.assertNotEquals(Thread.currentThread(), completionThread.get(), "Should be different threads");
-            completionThread.set(null);
-
-            complete(client.child("foo").read().whenCompleteAsync((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
-            Assert.assertNotNull(completionThread.get());
-            Assert.assertNotEquals(Thread.currentThread(), completionThread.get(), "Should be different threads");
-            completionThread.set(null);
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
-    @Test
-    public void testCustomThreading()
-    {
-        AtomicReference<Thread> ourThread = new AtomicReference<>();
-        ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
-            Thread thread = new Thread(r, "testCustomThreading");
-            ourThread.set(thread);
-            return thread;
-        });
-        TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
-        CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached(executor).asyncDefault();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        client.listenable().addListener((type, path1, stat, model1) -> latch.countDown());
-
-        complete(client.set(model));
-        client.start();
-        try
-        {
-            Assert.assertTrue(new Timing().awaitLatch(latch));
-
-            AtomicReference<Thread> completionThread = new AtomicReference<>();
-            complete(client.read().thenAcceptAsync(s -> completionThread.set(Thread.currentThread())));
-            Assert.assertEquals(ourThread.get(), completionThread.get(), "Should be our thread");
-            completionThread.set(null);
-
-            complete(client.child("foo").read().whenCompleteAsync((v, e) -> completionThread.set((e != null) ? Thread.currentThread() : null)));
-            Assert.assertEquals(ourThread.get(), completionThread.get(), "Should be our thread");
-            completionThread.set(null);
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
     @Test
     public void testDownServer() throws IOException
     {
@@ -116,7 +45,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         client.start();
         try
         {
-            client.set(model);
+            client.child(model).set(model);
             Assert.assertTrue(timing.acquireSemaphore(semaphore));
 
             CountDownLatch latch = new CountDownLatch(1);
@@ -129,7 +58,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
             server.stop();
             Assert.assertTrue(timing.awaitLatch(latch));
 
-            complete(client.read().whenComplete((value, e) -> {
+            complete(client.child(model).read().whenComplete((value, e) -> {
                 Assert.assertNotNull(value);
                 Assert.assertNull(e);
             }));

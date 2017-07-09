@@ -48,31 +48,23 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     private final ModeledFramework<T> client;
     private final ModeledCacheImpl<T> cache;
     private final Executor executor;
-    private final boolean asyncDefaultMode;
 
     CachedModeledFrameworkImpl(ModeledFramework<T> client, ExecutorService executor)
     {
-        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec(), executor), executor, false);
+        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec(), executor), executor);
     }
 
-    private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache, Executor executor, boolean asyncDefaultMode)
+    private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache, Executor executor)
     {
         this.client = client;
         this.cache = cache;
         this.executor = executor;
-        this.asyncDefaultMode = asyncDefaultMode;
     }
 
     @Override
     public ModeledCache<T> cache()
     {
         return cache;
-    }
-
-    @Override
-    public CachedModeledFramework<T> asyncDefault()
-    {
-        return new CachedModeledFrameworkImpl<>(client, cache, executor, true);
     }
 
     @Override
@@ -126,7 +118,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     @Override
     public CachedModeledFramework<T> child(Object child)
     {
-        return new CachedModeledFrameworkImpl<>(client.child(child), cache, executor, asyncDefaultMode);
+        return new CachedModeledFrameworkImpl<>(client.child(child), cache, executor);
     }
 
     @Override
@@ -138,7 +130,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
     @Override
     public CachedModeledFramework<T> withPath(ZPath path)
     {
-        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache, executor, asyncDefaultMode);
+        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache, executor);
     }
 
     @Override
@@ -215,7 +207,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
             .stream()
             .map(ZNode::model)
             .collect(Collectors.toList());
-        return asyncDefaultMode ? ModelStage.asyncCompleted(children, executor) : ModelStage.completed(children);
+        return ModelStage.completed(children);
     }
 
     @Override
@@ -323,13 +315,13 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
 
     private <U> AsyncStage<U> completed(U value)
     {
-        return asyncDefaultMode ? ModelStage.asyncCompleted(value, executor) : ModelStage.completed(value);
+        return ModelStage.completed(value);
     }
 
     private <U> AsyncStage<U> exceptionally()
     {
         KeeperException.NoNodeException exception = new KeeperException.NoNodeException(client.modelSpec().path().fullPath());
-        return asyncDefaultMode ? ModelStage.asyncExceptionally(exception, executor) : ModelStage.exceptionally(exception);
+        return ModelStage.exceptionally(exception);
     }
 
     private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver, Supplier<AsyncStage<U>> elseProc)
