@@ -78,6 +78,7 @@ public class TestSharedCount extends BaseClassForTests
                                 CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
                                 clients.add(client);
                                 client.start();
+                                client.checkExists().forPath("/");  // clear initial connect event
 
                                 SharedCount count = new SharedCount(client, "/count", 10);
                                 counts.add(count);
@@ -121,6 +122,7 @@ public class TestSharedCount extends BaseClassForTests
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             clients.add(client);
             client.start();
+            client.checkExists().forPath("/");  // clear initial connect event
 
             Assert.assertTrue(startLatch.await(10, TimeUnit.SECONDS));
 
@@ -438,13 +440,14 @@ public class TestSharedCount extends BaseClassForTests
     @Test
     public void testDisconnectReconnectWithMultipleClients() throws Exception
     {
+        Timing timing = new Timing();
         CuratorFramework curatorFramework1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(10, 500));
         CuratorFramework curatorFramework2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(10, 500));
 
         curatorFramework1.start();
-        curatorFramework1.blockUntilConnected();
+        curatorFramework1.checkExists().forPath("/");   // clear initial connect events
         curatorFramework2.start();
-        curatorFramework2.blockUntilConnected();
+        curatorFramework2.checkExists().forPath("/");   // clear initial connect events
 
         final String sharedCountPath = "/count";
         final int initialCount = 10;
@@ -485,7 +488,7 @@ public class TestSharedCount extends BaseClassForTests
         try
         {
             sharedCount1.setCount(12);
-            Assert.assertEquals(listener1.gotChangeEvent.awaitAdvanceInterruptibly(0, 2, TimeUnit.SECONDS), 1);
+            Assert.assertEquals(listener1.gotChangeEvent.awaitAdvanceInterruptibly(0, timing.seconds(), TimeUnit.SECONDS), 1);
             Assert.assertEquals(sharedCount1.getCount(), 12);
 
             Assert.assertEquals(sharedCountWithFaultyWatcher.getCount(), 10);
@@ -498,10 +501,10 @@ public class TestSharedCount extends BaseClassForTests
 
                 server.restart();
 
-                Assert.assertEquals(listener2.getReconnectEvent.awaitAdvanceInterruptibly(i, 2, TimeUnit.SECONDS), i + 1);
+                Assert.assertEquals(listener2.getReconnectEvent.awaitAdvanceInterruptibly(i, timing.forWaiting().seconds(), TimeUnit.SECONDS), i + 1);
                 // CURATOR-311 introduces to Curator's client reading server's shared count value
                 // when client's state gets ConnectionState.RECONNECTED. Following tests ensures that.
-                Assert.assertEquals(listener2.gotChangeEvent.awaitAdvanceInterruptibly(i, 2, TimeUnit.SECONDS), i + 1);
+                Assert.assertEquals(listener2.gotChangeEvent.awaitAdvanceInterruptibly(i, timing.forWaiting().seconds(), TimeUnit.SECONDS), i + 1);
                 Assert.assertEquals(sharedCountWithFaultyWatcher.getCount(), 13 + i);
             }
         }
