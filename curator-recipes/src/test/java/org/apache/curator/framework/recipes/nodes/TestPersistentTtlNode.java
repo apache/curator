@@ -39,6 +39,7 @@ import static org.apache.curator.framework.recipes.cache.PathChildrenCache.Start
 public class TestPersistentTtlNode extends BaseClassForTests
 {
     private final Timing timing = new Timing();
+    private final long ttlMs = timing.multiple(.10).milliseconds(); // a small number
 
     @BeforeMethod
     @Override
@@ -63,14 +64,14 @@ public class TestPersistentTtlNode extends BaseClassForTests
         {
             client.start();
 
-            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", 100, new byte[0]))
+            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", ttlMs, new byte[0]))
             {
                 node.start();
                 Assert.assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
 
-                for ( int i = 0; i < 10; ++i )
+                for ( int i = 0; i < 5; ++i )
                 {
-                    Thread.sleep(110);  // sleep a bit more than the TTL
+                    Thread.sleep(ttlMs + (ttlMs / 2));  // sleep a bit more than the TTL
                     Assert.assertNotNull(client.checkExists().forPath("/test"));
                 }
             }
@@ -88,14 +89,14 @@ public class TestPersistentTtlNode extends BaseClassForTests
         {
             client.start();
 
-            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", 10, new byte[0]))
+            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", ttlMs, new byte[0]))
             {
                 node.start();
                 Assert.assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
 
-                for ( int i = 0; i < 10; ++i )
+                for ( int i = 0; i < 5; ++i )
                 {
-                    Thread.sleep(10);
+                    Thread.sleep(ttlMs);
                     client.delete().quietly().forPath(ZKPaths.makePath("test", PersistentTtlNode.DEFAULT_CHILD_NODE_NAME));
                 }
 
@@ -112,7 +113,7 @@ public class TestPersistentTtlNode extends BaseClassForTests
         {
             client.start();
 
-            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", 10, new byte[0]))
+            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", ttlMs, new byte[0]))
             {
                 try(PathChildrenCache cache = new PathChildrenCache(client, "/", true))
                 {
