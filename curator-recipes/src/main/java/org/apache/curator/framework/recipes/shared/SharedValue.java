@@ -79,7 +79,7 @@ public class SharedValue implements Closeable, SharedValueReader
         public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
             notifyListenerOfStateChanged(newState);
-            if ( newState == ConnectionState.RECONNECTED )
+            if ( newState.isConnected() )
             {
                 try
                 {
@@ -87,6 +87,7 @@ public class SharedValue implements Closeable, SharedValueReader
                 }
                 catch ( Exception e )
                 {
+                    ThreadUtils.checkInterrupted(e);
                     log.error("Could not read value after reconnect", e);
                 }
             }
@@ -115,7 +116,7 @@ public class SharedValue implements Closeable, SharedValueReader
     }
 
     @VisibleForTesting
-    protected SharedValue(CuratorFramework client, String path, byte[] seedValue, CuratorWatcher watcher)
+    protected SharedValue(WatcherRemoveCuratorFramework client, String path, byte[] seedValue, CuratorWatcher watcher)
     {
         this.client = client;
         this.path = PathUtils.validatePath(path);

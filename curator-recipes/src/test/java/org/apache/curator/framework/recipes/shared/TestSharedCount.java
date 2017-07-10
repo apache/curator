@@ -516,18 +516,16 @@ public class TestSharedCount extends BaseClassForTests
 
     private SharedCount createSharedCountWithFaultyWatcher(CuratorFramework curatorFramework, String path, int val) {
 
-        class FaultyCuratorWatcher implements CuratorWatcher {
+        final CuratorWatcher faultyWatcher = new CuratorWatcher() {
             @Override
             public void process(WatchedEvent event) throws Exception {
                 // everything will be ignored
             }
-        }
-
-        final FaultyCuratorWatcher fautlyWatcher = new FaultyCuratorWatcher();
+        };
 
         class FaultySharedValue extends SharedValue {
             public FaultySharedValue(CuratorFramework client, String path, byte[] seedValue) {
-                super(client, path, seedValue, fautlyWatcher);
+                super(client.newWatcherRemoveCuratorFramework(), path, seedValue, faultyWatcher);
             }
         };
 
