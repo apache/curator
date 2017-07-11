@@ -31,6 +31,7 @@ import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ExceptionAccumulator;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.discovery.ServiceCache;
@@ -39,7 +40,6 @@ import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
 import org.apache.curator.x.discovery.ServiceProviderBuilder;
-import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -77,9 +77,12 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                     log.debug("Re-registering due to reconnection");
                     reRegisterServices();
                 }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
                 catch ( Exception e )
                 {
-                    ThreadUtils.checkInterrupted(e);
                     log.error("Could not re-register instances after reconnection", e);
                 }
             }
@@ -140,10 +143,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public void close() throws IOException
     {
-        for ( ServiceCache<T> cache : Lists.newArrayList(caches) )
-        {
-            CloseableUtils.closeQuietly(cache);
-        }
+        ExceptionAccumulator accumulator = new ExceptionAccumulator();
         for ( ServiceProvider<T> provider : Lists.newArrayList(providers) )
         {
             CloseableUtils.closeQuietly(provider);
@@ -161,12 +161,13 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             }
             catch ( Exception e )
             {
-                ThreadUtils.checkInterrupted(e);
+                accumulator.add(e);
                 log.error("Could not unregister instance: " + entry.service.getName(), e);
             }
         }
 
         client.getConnectionStateListenable().removeListener(connectionStateListener);
+        accumulator.propagate();
     }
 
     /**
@@ -469,9 +470,13 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         {
             nodeCache.start(true);
         }
+        catch ( InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            return null;
+        }
         catch ( Exception e )
         {
-            ThreadUtils.checkInterrupted(e);
             log.error("Could not start node cache for: " + instance, e);
         }
         NodeCacheListener listener = new NodeCacheListener()
