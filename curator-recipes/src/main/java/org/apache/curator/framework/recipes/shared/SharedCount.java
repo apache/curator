@@ -146,7 +146,10 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
     @Override
     public void     removeListener(SharedCountListener listener)
     {
-        listeners.remove(listener);
+        SharedValueListener valueListener = listeners.remove(listener);
+        if(valueListener != null) {
+            sharedValue.getListenable().removeListener(valueListener);
+        }
     }
 
     /**
