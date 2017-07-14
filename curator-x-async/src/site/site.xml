@@ -23,15 +23,17 @@
     <body>
         <head>
             <link rel="stylesheet" href="../css/site.css" />
-            <script type="text/javascript">
+            <script type="text/javascript"><![CDATA[
                 $(function(){
-                    if ( location &amp;&amp; location.pathname &amp;&amp; (location.pathname.endsWith('/index.html') || location.pathname.endsWith('/migrations.html')) ) {
+                    if ( location && location.pathname && location.pathname.endsWith('/index.html') ) {
                         $('a[title="Java 8/Async"]').parent().addClass("active");
+                    } else if ( location && location.pathname && location.pathname.endsWith('/migrations.html') ) {
+                        $('a[title="Migrations"]').parent().addClass("active");
                     } else {
                         $('a[title="Strongly Typed Models"]').parent().addClass("active");
                     }
                 });
-            </script>
+            ]]></script>
         </head>
     </body>
 </project>
