@@ -20,10 +20,10 @@ package org.apache.curator.x.async;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -32,17 +32,15 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 
 import static java.util.EnumSet.of;
 import static org.apache.curator.x.async.api.CreateOption.compress;
 import static org.apache.curator.x.async.api.CreateOption.setDataIfExists;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
+import static org.apache.zookeeper.CreateMode.PERSISTENT_SEQUENTIAL;
 
 public class TestBasicOperations extends CompletableBaseClassForTests
 {
@@ -66,6 +64,18 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         CloseableUtils.closeQuietly(client.unwrap());
 
         super.teardown();
+    }
+
+    @Test
+    public void testCreateTransactionWithMode() throws Exception
+    {
+        complete(AsyncWrappers.asyncEnsureContainers(client, ZPath.parse("/test")));
+
+        CuratorOp op1 = client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
+        CuratorOp op2 = client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
+        complete(client.transaction().forOperations(Arrays.asList(op1, op2)));
+
+        Assert.assertEquals(client.unwrap().getChildren().forPath("/test").size(), 2);
     }
 
     @Test

@@ -18,7 +18,7 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.ACLCreateModePathAndBytesable;
+import org.apache.curator.framework.api.ACLPathAndBytesable;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.api.VersionPathAndBytesable;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -115,7 +115,7 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
             private CuratorOp internalForPath(String path, byte[] data, boolean useData)
             {
                 TransactionCreateBuilder2<CuratorOp> builder1 = (ttl > 0) ? client.transactionOp().create().withTtl(ttl) : client.transactionOp().create();
-                ACLCreateModePathAndBytesable<CuratorOp> builder2 = compressed ? builder1.compressed() : builder1;
+                ACLPathAndBytesable<CuratorOp> builder2 = compressed ? builder1.compressed().withMode(createMode) : builder1.withMode(createMode);
                 PathAndBytesable<CuratorOp> builder3 = builder2.withACL(aclList);
                 try
                 {
