@@ -33,6 +33,7 @@ import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
+import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -94,7 +95,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testBasic() throws Exception
+    public void testBasic()
     {
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
         Migration m2 = () -> Collections.singletonList(v2op);
@@ -116,7 +117,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testStaged() throws Exception
+    public void testStaged()
     {
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
         MigrationSet migrationSet = MigrationSet.build("1", Collections.singletonList(m1));
@@ -174,7 +175,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testChecksumDataError() throws Exception
+    public void testChecksumDataError()
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/test");
         CuratorOp op2 = client.transactionOp().create().forPath("/test/bar", "first".getBytes());
@@ -197,7 +198,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testChecksumPathError() throws Exception
+    public void testChecksumPathError()
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/test2");
         CuratorOp op2 = client.transactionOp().create().forPath("/test2/bar");
@@ -217,5 +218,46 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         {
             Assert.assertTrue(Throwables.getRootCause(e) instanceof MigrationException);
         }
+    }
+
+    @Test
+    public void testPartialApplyForBadOps() throws Exception
+    {
+        CuratorOp op1 = client.transactionOp().create().forPath("/test", "something".getBytes());
+        CuratorOp op2 = client.transactionOp().create().forPath("/a/b/c");
+        Migration m1 = () -> Collections.singletonList(op1);
+        Migration m2 = () -> Collections.singletonList(op2);
+        MigrationSet migrationSet = MigrationSet.build("1", Arrays.asList(m1, m2));
+        try
+        {
+            complete(manager.migrate(migrationSet));
+            Assert.fail("Should throw");
+        }
+        catch ( Throwable e )
+        {
+            Assert.assertTrue(Throwables.getRootCause(e) instanceof KeeperException.NoNodeException);
+        }
+
+        Assert.assertEquals(client.unwrap().getData().forPath("/test"), "something".getBytes());
+    }
+
+    @Test
+    public void testTransactionForBadOps() throws Exception
+    {
+        CuratorOp op1 = client.transactionOp().create().forPath("/test2", "something".getBytes());
+        CuratorOp op2 = client.transactionOp().create().forPath("/a/b/c/d");
+        Migration migration = () -> Arrays.asList(op1, op2);
+        MigrationSet migrationSet = MigrationSet.build("1", Collections.singletonList(migration));
+        try
+        {
+            complete(manager.migrate(migrationSet));
+            Assert.fail("Should throw");
+        }
+        catch ( Throwable e )
+        {
+            Assert.assertTrue(Throwables.getRootCause(e) instanceof KeeperException.NoNodeException);
+        }
+
+        Assert.assertNull(client.unwrap().checkExists().forPath("/test"));
     }
 }
