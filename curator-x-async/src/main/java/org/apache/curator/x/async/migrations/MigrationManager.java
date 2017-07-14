@@ -50,6 +50,7 @@ public class MigrationManager
 {
     private final AsyncCuratorFramework client;
     private final String lockPath;
+    private final String metaDataPath;
     private final Executor executor;
     private final Duration lockMax;
 
@@ -58,13 +59,15 @@ public class MigrationManager
     /**
      * @param client the curator client
      * @param lockPath base path for locks used by the manager
+     * @param metaDataPath base path to store the meta data
      * @param executor the executor to use
      * @param lockMax max time to wait for locks
      */
-    public MigrationManager(AsyncCuratorFramework client, String lockPath, Executor executor, Duration lockMax)
+    public MigrationManager(AsyncCuratorFramework client, String lockPath, String metaDataPath, Executor executor, Duration lockMax)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.lockPath = Objects.requireNonNull(lockPath, "lockPath cannot be null");
+        this.metaDataPath = Objects.requireNonNull(metaDataPath, "metaDataPath cannot be null");
         this.executor = Objects.requireNonNull(executor, "executor cannot be null");
         this.lockMax = Objects.requireNonNull(lockMax, "lockMax cannot be null");
     }
@@ -139,8 +142,9 @@ public class MigrationManager
 
     private CompletionStage<Void> runMigrationInLock(InterProcessLock lock, MigrationSet set)
     {
-        return childrenWithData(client, set.metaDataPath())
-            .thenCompose(metaData -> applyMetaData(set, metaData))
+        String thisMetaDataPath = ZKPaths.makePath(metaDataPath, set.id());
+        return childrenWithData(client, thisMetaDataPath)
+            .thenCompose(metaData -> applyMetaData(set, metaData, thisMetaDataPath))
             .handle((v, e) -> {
                 release(lock, true);
                 if ( e != null )
@@ -152,7 +156,7 @@ public class MigrationManager
         );
     }
 
-    private CompletionStage<Void> applyMetaData(MigrationSet set, Map<String, byte[]> metaData)
+    private CompletionStage<Void> applyMetaData(MigrationSet set, Map<String, byte[]> metaData, String thisMetaDataPath)
     {
         List<byte[]> sortedMetaData = metaData.keySet()
             .stream()
@@ -177,13 +181,13 @@ public class MigrationManager
             return CompletableFuture.completedFuture(null);
         }
 
-        return asyncEnsureContainers(client, set.metaDataPath())
-            .thenCompose(__ -> applyMetaDataAfterEnsure(set, toBeApplied));
+        return asyncEnsureContainers(client, thisMetaDataPath)
+            .thenCompose(__ -> applyMetaDataAfterEnsure(set, toBeApplied, thisMetaDataPath));
     }
 
-    private CompletionStage<Void> applyMetaDataAfterEnsure(MigrationSet set, List<Migration> toBeApplied)
+    private CompletionStage<Void> applyMetaDataAfterEnsure(MigrationSet set, List<Migration> toBeApplied, String thisMetaDataPath)
     {
-        String metaDataBasePath = ZKPaths.makePath(set.metaDataPath(), META_DATA_NODE_NAME);
+        String metaDataBasePath = ZKPaths.makePath(thisMetaDataPath, META_DATA_NODE_NAME);
         List<CompletableFuture<Object>> stages = toBeApplied.stream().map(migration -> {
             List<CuratorOp> operations = new ArrayList<>();
             operations.addAll(migration.operations());

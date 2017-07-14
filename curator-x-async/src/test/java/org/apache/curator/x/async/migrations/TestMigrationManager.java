@@ -109,7 +109,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         v3op = ModeledFramework.wrap(client, v3Spec).updateOp(new ModelV3("One", "Two", 30));
 
         executor = Executors.newCachedThreadPool();
-        manager = new MigrationManager(client, ZPath.parse("/locks"), executor, Duration.ofMinutes(10));
+        manager = new MigrationManager(client, "/migrations/locks", "/migrations/metadata", executor, Duration.ofMinutes(10));
     }
 
     @AfterMethod
@@ -127,7 +127,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
         Migration m2 = () -> Collections.singletonList(v2op);
         Migration m3 = () -> Collections.singletonList(v3op);
-        MigrationSet migrationSet = MigrationSet.build("1", "/metadata", Arrays.asList(m1, m2, m3));
+        MigrationSet migrationSet = MigrationSet.build("1", Arrays.asList(m1, m2, m3));
 
         complete(manager.migrate(migrationSet));
 
@@ -143,14 +143,14 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     public void testStaged() throws Exception
     {
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
-        MigrationSet migrationSet = MigrationSet.build("1", "/metadata/nodes", Collections.singletonList(m1));
+        MigrationSet migrationSet = MigrationSet.build("1", Collections.singletonList(m1));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV1> v1Client = ModeledFramework.wrap(client, v1Spec);
         complete(v1Client.read(), (m, e) -> Assert.assertEquals(m.getName(), "Test"));
 
         Migration m2 = () -> Collections.singletonList(v2op);
-        migrationSet = MigrationSet.build("1", "/metadata/nodes", Arrays.asList(m1, m2));
+        migrationSet = MigrationSet.build("1", Arrays.asList(m1, m2));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV2> v2Client = ModeledFramework.wrap(client, v2Spec);
@@ -160,7 +160,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         });
 
         Migration m3 = () -> Collections.singletonList(v3op);
-        migrationSet = MigrationSet.build("1", "/metadata/nodes", Arrays.asList(m1, m2, m3));
+        migrationSet = MigrationSet.build("1", Arrays.asList(m1, m2, m3));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV3> v3Client = ModeledFramework.wrap(client, v3Spec);
@@ -169,5 +169,31 @@ public class TestMigrationManager extends CompletableBaseClassForTests
             Assert.assertEquals(m.getFirstName(), "One");
             Assert.assertEquals(m.getLastName(), "Two");
         });
+    }
+
+    @Test
+    public void testDocExample() throws Exception
+    {
+        CuratorOp op1 = client.transactionOp().create().forPath("/parent");
+        CuratorOp op2 = client.transactionOp().create().forPath("/parent/one");
+        CuratorOp op3 = client.transactionOp().create().forPath("/parent/two");
+        CuratorOp op4 = client.transactionOp().create().forPath("/parent/three");
+        CuratorOp op5 = client.transactionOp().create().forPath("/main", "hey".getBytes());
+
+        Migration initialMigration = () -> Arrays.asList(op1, op2, op3, op4, op5);
+        MigrationSet migrationSet = MigrationSet.build("main", Collections.singletonList(initialMigration));
+        complete(manager.migrate(migrationSet));
+
+        Assert.assertNotNull(client.unwrap().checkExists().forPath("/parent/three"));
+        Assert.assertEquals(client.unwrap().getData().forPath("/main"), "hey".getBytes());
+
+        CuratorOp newOp1 = client.transactionOp().create().forPath("/new");
+        CuratorOp newOp2 = client.transactionOp().delete().forPath("/main");    // maybe this is no longer needed
+
+        Migration newMigration = () -> Arrays.asList(newOp1, newOp2);
+        migrationSet = MigrationSet.build("main", Arrays.asList(initialMigration, newMigration));
+        complete(manager.migrate(migrationSet));
+
+        Assert.assertNull(client.unwrap().checkExists().forPath("/main"));
     }
 }

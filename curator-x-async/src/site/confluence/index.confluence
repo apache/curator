@@ -40,7 +40,6 @@ This is a strongly typed DSL that allows you to map a Curator\-style client to:
 * Options for how nodes should be created (sequential, compressed data, ttl, etc.)
 * ACLs for the nodes at the path
 * Options for how to delete nodes (guaranteed, deleting children, etc.)
-* Perform ZooKeeper data migration
 
 For example:
 
@@ -50,3 +49,11 @@ modeled.set(new Foo());
 {code}
 
 See [[Modeled Curator|modeled.html]] for details.
+
+h2. [[Migrations|migrations.html]]
+
+Curator Migrations allow you pre\-apply transactions in a staged manner so that you
+can ensure a consistent state for parts of your ZooKeeper node hierarchy in a manner
+similar to database migration utilities.
+
+See [[Migrations|migrations.html]] for details.
