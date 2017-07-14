@@ -18,13 +18,16 @@
  */
 package org.apache.curator.x.async.modeled;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.modeled.details.ModeledFrameworkImpl;
 import org.apache.zookeeper.WatchedEvent;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 
 public class ModeledFrameworkBuilder<T>
@@ -35,6 +38,7 @@ public class ModeledFrameworkBuilder<T>
     private UnaryOperator<WatchedEvent> watcherFilter;
     private UnhandledErrorListener unhandledErrorListener;
     private UnaryOperator<CuratorEvent> resultFilter;
+    private Set<ModeledOptions> modeledOptions;
 
     /**
      * Build a new ModeledFramework instance
@@ -49,7 +53,8 @@ public class ModeledFrameworkBuilder<T>
             watchMode,
             watcherFilter,
             unhandledErrorListener,
-            resultFilter
+            resultFilter,
+            modeledOptions
         );
     }
 
@@ -142,6 +147,18 @@ public class ModeledFrameworkBuilder<T>
         return this;
     }
 
+    /**
+     * Change the modeled options
+     *
+     * @param modeledOptions new options set
+     * @return this for chaining
+     */
+    public ModeledFrameworkBuilder<T> withOptions(Set<ModeledOptions> modeledOptions)
+    {
+        this.modeledOptions = ImmutableSet.copyOf(Objects.requireNonNull(modeledOptions, "client cannot be null"));
+        return this;
+    }
+
     ModeledFrameworkBuilder()
     {
     }
@@ -150,5 +167,6 @@ public class ModeledFrameworkBuilder<T>
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.modelSpec = Objects.requireNonNull(modelSpec, "modelSpec cannot be null");
+        modeledOptions = Collections.singleton(ModeledOptions.ignoreMissingNodesForChildren);
     }
 }

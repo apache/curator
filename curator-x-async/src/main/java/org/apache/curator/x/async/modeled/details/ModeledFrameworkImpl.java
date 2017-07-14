@@ -19,6 +19,8 @@
 package org.apache.curator.x.async.modeled.details;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -36,13 +38,16 @@ import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
+import org.apache.curator.x.async.modeled.ModeledOptions;
 import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -62,13 +67,15 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     private final UnaryOperator<CuratorEvent> resultFilter;
     private final AsyncCuratorFrameworkDsl dslClient;
     private final boolean isWatched;
+    private final Set<ModeledOptions> modeledOptions;
 
-    public static <T> ModeledFrameworkImpl<T> build(AsyncCuratorFramework client, ModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter)
+    public static <T> ModeledFrameworkImpl<T> build(AsyncCuratorFramework client, ModelSpec<T> model, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, Set<ModeledOptions> modeledOptions)
     {
         boolean isWatched = (watchMode != null);
 
         Objects.requireNonNull(client, "client cannot be null");
         Objects.requireNonNull(model, "model cannot be null");
+        modeledOptions = ImmutableSet.copyOf(Objects.requireNonNull(modeledOptions, "modeledOptions cannot be null"));
 
         watchMode = (watchMode != null) ? watchMode : WatchMode.stateChangeAndSuccess;
 
@@ -84,11 +91,12 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             watcherFilter,
             unhandledErrorListener,
             resultFilter,
-            isWatched
+            isWatched,
+            modeledOptions
         );
     }
 
-    private ModeledFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, ModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, boolean isWatched)
+    private ModeledFrameworkImpl(AsyncCuratorFramework client, AsyncCuratorFrameworkDsl dslClient, WatchableAsyncCuratorFramework watchableClient, ModelSpec<T> modelSpec, WatchMode watchMode, UnaryOperator<WatchedEvent> watcherFilter, UnhandledErrorListener unhandledErrorListener, UnaryOperator<CuratorEvent> resultFilter, boolean isWatched, Set<ModeledOptions> modeledOptions)
     {
         this.client = client;
         this.dslClient = dslClient;
@@ -99,6 +107,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         this.unhandledErrorListener = unhandledErrorListener;
         this.resultFilter = resultFilter;
         this.isWatched = isWatched;
+        this.modeledOptions = modeledOptions;
     }
 
     @Override
@@ -280,7 +289,14 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         asyncStage.whenComplete((children, e) -> {
             if ( e != null )
             {
-                modelStage.completeExceptionally(e);
+                if ( modeledOptions.contains(ModeledOptions.ignoreMissingNodesForChildren) && (Throwables.getRootCause(e) instanceof KeeperException.NoNodeException) )
+                {
+                    modelStage.complete(Collections.emptyList());
+                }
+                else
+                {
+                    modelStage.completeExceptionally(e);
+                }
             }
             else
             {
@@ -303,7 +319,8 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             watcherFilter,
             unhandledErrorListener,
             resultFilter,
-            isWatched
+            isWatched,
+            modeledOptions
         );
     }
 
@@ -320,7 +337,8 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             watcherFilter,
             unhandledErrorListener,
             resultFilter,
-            isWatched
+            isWatched,
+            modeledOptions
         );
     }
 
@@ -337,7 +355,8 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
             watcherFilter,
             unhandledErrorListener,
             resultFilter,
-            isWatched
+            isWatched,
+            modeledOptions
         );
     }
 
