@@ -147,13 +147,13 @@ public class MigrationManager
 
     private CompletionStage<Void> applyMetaDataAfterEnsure(List<Migration> toBeApplied, ModeledFramework<MetaData> metaDataClient)
     {
-        List<CuratorOp> operations = new ArrayList<>();
-        for ( Migration migration : toBeApplied )
-        {
+        List<CompletableFuture<Object>> stages = toBeApplied.stream().map(migration -> {
+            List<CuratorOp> operations = new ArrayList<>();
             operations.addAll(migration.operations());
             MetaData thisMetaData = new MetaData(migration.id(), migration.version());
             operations.add(metaDataClient.child(META_DATA_NODE_NAME).createOp(thisMetaData));
-        }
-        return client.transaction().forOperations(operations).thenApply(__ -> null);
+            return client.transaction().forOperations(operations).thenApply(__ -> null).toCompletableFuture();
+        }).collect(Collectors.toList());
+        return CompletableFuture.allOf(stages.toArray(new CompletableFuture[stages.size()]));
     }
 }

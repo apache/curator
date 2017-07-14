@@ -99,11 +99,12 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         v2Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV2.class)).build();
         v3Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV3.class)).build();
 
-        CuratorOp v1op = ModeledFramework.wrap(client, v1Spec).createOp(new ModelV1("Test"));
+        CuratorOp v1opA = client.unwrap().transactionOp().create().forPath(v1Spec.path().parent().fullPath());
+        CuratorOp v1opB = ModeledFramework.wrap(client, v1Spec).createOp(new ModelV1("Test"));
         CuratorOp v2op = ModeledFramework.wrap(client, v2Spec).updateOp(new ModelV2("Test 2", 10));
         CuratorOp v3op = ModeledFramework.wrap(client, v3Spec).updateOp(new ModelV3("One", "Two", 30));
 
-        Migration m1 = Migration.build("1",1, () -> Collections.singletonList(v1op));
+        Migration m1 = Migration.build("1",1, () -> Arrays.asList(v1opA, v1opB));
         Migration m2 = Migration.build("2",1, () -> Collections.singletonList(v2op));
         Migration m3 = Migration.build("3",1, () -> Collections.singletonList(v3op));
         migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
@@ -123,18 +124,14 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     @Test
     public void testBasic() throws Exception
     {
-        ModeledFramework<ModelV1> v1Client = ModeledFramework.wrap(client, v1Spec);
-        ModelV1 v1 = new ModelV1("John Galt");
-        complete(v1Client.child("1").set(v1));
-
         MigrationManager manager = new MigrationManager(client, ZPath.parse("/locks"), JacksonModelSerializer.build(MetaData.class), executor, Duration.ofMinutes(10));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV3> v3Client = ModeledFramework.wrap(client, v3Spec);
-        complete(v3Client.child("1").read(), (m, e) -> {
-            Assert.assertEquals(m.getAge(), 64);
-            Assert.assertEquals(m.getFirstName(), "John");
-            Assert.assertEquals(m.getLastName(), "Galt");
+        complete(v3Client.read(), (m, e) -> {
+            Assert.assertEquals(m.getAge(), 30);
+            Assert.assertEquals(m.getFirstName(), "One");
+            Assert.assertEquals(m.getLastName(), "Two");
         });
     }
 }
