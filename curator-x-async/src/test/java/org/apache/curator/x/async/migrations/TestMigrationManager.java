@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.migrations;
 
+import com.google.common.base.Throwables;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -41,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestMigrationManager extends CompletableBaseClassForTests
 {
@@ -79,6 +81,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
 
         executor = Executors.newCachedThreadPool();
         manager = new MigrationManager(client, "/migrations/locks", "/migrations/metadata", executor, Duration.ofMinutes(10));
+        manager.debugCount = new AtomicInteger();
     }
 
     @AfterMethod
@@ -106,6 +109,10 @@ public class TestMigrationManager extends CompletableBaseClassForTests
             Assert.assertEquals(m.getFirstName(), "One");
             Assert.assertEquals(m.getLastName(), "Two");
         });
+
+        int count = manager.debugCount.get();
+        complete(manager.migrate(migrationSet));
+        Assert.assertEquals(manager.debugCount.get(), count);   // second call should do nothing
     }
 
     @Test
@@ -164,5 +171,51 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         complete(manager.migrate(migrationSet));
 
         Assert.assertNull(client.unwrap().checkExists().forPath("/main"));
+    }
+
+    @Test
+    public void testChecksumDataError() throws Exception
+    {
+        CuratorOp op1 = client.transactionOp().create().forPath("/test");
+        CuratorOp op2 = client.transactionOp().create().forPath("/test/bar", "first".getBytes());
+        Migration migration = () -> Arrays.asList(op1, op2);
+        MigrationSet migrationSet = MigrationSet.build("1", Collections.singletonList(migration));
+        complete(manager.migrate(migrationSet));
+
+        CuratorOp op2Changed = client.transactionOp().create().forPath("/test/bar", "second".getBytes());
+        migration = () -> Arrays.asList(op1, op2Changed);
+        migrationSet = MigrationSet.build("1", Collections.singletonList(migration));
+        try
+        {
+            complete(manager.migrate(migrationSet));
+            Assert.fail("Should throw");
+        }
+        catch ( Throwable e )
+        {
+            Assert.assertTrue(Throwables.getRootCause(e) instanceof MigrationException);
+        }
+    }
+
+    @Test
+    public void testChecksumPathError() throws Exception
+    {
+        CuratorOp op1 = client.transactionOp().create().forPath("/test2");
+        CuratorOp op2 = client.transactionOp().create().forPath("/test2/bar");
+        Migration migration = () -> Arrays.asList(op1, op2);
+        MigrationSet migrationSet = MigrationSet.build("1", Collections.singletonList(migration));
+        complete(manager.migrate(migrationSet));
+
+        CuratorOp op2Changed = client.transactionOp().create().forPath("/test/bar");
+        migration = () -> Arrays.asList(op1, op2Changed);
+        migrationSet = MigrationSet.build("1", Collections.singletonList(migration));
+        try
+        {
+            complete(manager.migrate(migrationSet));
+            Assert.fail("Should throw");
+        }
+        catch ( Throwable e )
+        {
+            Assert.assertTrue(Throwables.getRootCause(e) instanceof MigrationException);
+        }
     }
 }

@@ -49,7 +49,7 @@ public class ExtractingCuratorOp implements CuratorOp
 
     public void addToDigest(MessageDigest digest)
     {
-
+        record.addToDigest(digest);
     }
 
     private void validate()

@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.migrations;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.imps.ExtractingCuratorOp;
@@ -39,6 +40,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.apache.curator.x.async.AsyncWrappers.*;
@@ -185,8 +187,13 @@ public class MigrationManager
             .thenCompose(__ -> applyMetaDataAfterEnsure(set, toBeApplied, thisMetaDataPath));
     }
 
+    @VisibleForTesting
+    volatile AtomicInteger debugCount = null;
+
     private CompletionStage<Void> applyMetaDataAfterEnsure(MigrationSet set, List<Migration> toBeApplied, String thisMetaDataPath)
     {
+        debugCount.incrementAndGet();
+
         String metaDataBasePath = ZKPaths.makePath(thisMetaDataPath, META_DATA_NODE_NAME);
         List<CompletableFuture<Object>> stages = toBeApplied.stream().map(migration -> {
             List<CuratorOp> operations = new ArrayList<>();
