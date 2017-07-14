@@ -20,57 +20,18 @@ package org.apache.curator.x.async.modeled.migrations;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Supplier;
 
 /**
  * Models a single migration/transition
  */
+@FunctionalInterface
 public interface Migration
 {
     /**
-     * @return the unique ID for this migration
-     */
-    String id();
-
-    /**
-     * @return the version of this migration
-     */
-    int version();
-
-    /**
-     * @return the operations to execute in a transaction
+     * Return the operations to execute in a transaction. IMPORTANT: during a migration
+     * this method may be called multiple times.
+     *
+     * @return operations
      */
     List<CuratorOp> operations();
-
-    static Migration build(String id, Supplier<List<CuratorOp>> operationsProc)
-    {
-        return build(id, 1, operationsProc);
-    }
-
-    static Migration build(String id, int version, Supplier<List<CuratorOp>> operationsProc)
-    {
-        Objects.requireNonNull(id, "id cannot be null");
-        Objects.requireNonNull(operationsProc, "operationsProc cannot be null");
-        return new Migration()
-        {
-            @Override
-            public String id()
-            {
-                return id;
-            }
-
-            @Override
-            public int version()
-            {
-                return version;
-            }
-
-            @Override
-            public List<CuratorOp> operations()
-            {
-                return operationsProc.get();
-            }
-        };
-    }
 }

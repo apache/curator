@@ -20,6 +20,7 @@ package org.apache.curator.x.async.modeled.migrations;
 
 import com.google.common.base.Throwables;
 import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.imps.ExtractingCuratorOp;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.x.async.AsyncCuratorFramework;
@@ -29,8 +30,11 @@ import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.CreateMode;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -49,27 +53,21 @@ public class MigrationManager
 {
     private final AsyncCuratorFramework client;
     private final ZPath lockPath;
-    private final ModelSerializer<MetaData> metaDataSerializer;
     private final Executor executor;
     private final Duration lockMax;
 
     private static final String META_DATA_NODE_NAME = "meta-";
 
     /**
-     * Jackson usage: See the note in {@link org.apache.curator.x.async.modeled.JacksonModelSerializer} regarding how the Jackson library is specified in Curator's Maven file.
-     * Unless you are not using Jackson pass <code>JacksonModelSerializer.build(MetaData.class)</code> for <code>metaDataSerializer</code>
-     *
      * @param client the curator client
      * @param lockPath base path for locks used by the manager
-     * @param metaDataSerializer JacksonModelSerializer.build(MetaData.class)
      * @param executor the executor to use
      * @param lockMax max time to wait for locks
      */
-    public MigrationManager(AsyncCuratorFramework client, ZPath lockPath, ModelSerializer<MetaData> metaDataSerializer, Executor executor, Duration lockMax)
+    public MigrationManager(AsyncCuratorFramework client, ZPath lockPath, Executor executor, Duration lockMax)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.lockPath = Objects.requireNonNull(lockPath, "lockPath cannot be null");
-        this.metaDataSerializer = Objects.requireNonNull(metaDataSerializer, "metaDataSerializer cannot be null");
         this.executor = Objects.requireNonNull(executor, "executor cannot be null");
         this.lockMax = Objects.requireNonNull(lockMax, "lockMax cannot be null");
     }
@@ -90,18 +88,6 @@ public class MigrationManager
     }
 
     /**
-     * Utility to return the meta data from previous migrations
-     *
-     * @param set the set
-     * @return stage
-     */
-    public CompletionStage<List<MetaData>> metaData(MigrationSet set)
-    {
-        ModeledFramework<MetaData> modeled = getMetaDataClient(set.metaDataPath());
-        return ZNode.models(modeled.childrenAsZNodes());
-    }
-
-    /**
      * Can be overridden to change how the comparison to previous migrations is done. The default
      * version ensures that the meta data from previous migrations matches the current migration
      * set exactly (by order and version). If there is a mismatch, <code>MigrationException</code> is thrown.
@@ -115,19 +101,44 @@ public class MigrationManager
     {
         if ( sortedMetaData.size() > set.migrations().size() )
         {
-            throw new MigrationException(set.id(), String.format("More metadata than migrations. Migration ID: %s - MigrationSet: %s - MetaData: %s", set.id(), set.migrations(), sortedMetaData));
+            throw new MigrationException(set.id(), String.format("More metadata than migrations. Migration ID: %s", set.id()));
         }
 
         int compareSize = Math.min(set.migrations().size(), sortedMetaData.size());
-        List<MetaData> compareMigrations = set.migrations().subList(0, compareSize)
-            .stream()
-            .map(m -> new MetaData(m.id(), m.version()))
-            .collect(Collectors.toList());
-        if ( !compareMigrations.equals(sortedMetaData) )
+        List<Migration> subList = set.migrations().subList(0, compareSize);
+        for ( int i = 0; i < compareSize; ++i )
         {
-            throw new MigrationException(set.id(), String.format("Metadata mismatch. Migration ID: %s - MigrationSet: %s - MetaData: %s", set.id(), set.migrations(), sortedMetaData));
+            byte[] setHash = hash(set.migrations().get(i).operations()).operationHash();
+            if ( !Arrays.equals(setHash, sortedMetaData.get(i).operationHash()) )
+            {
+                throw new MigrationException(set.id(), String.format("Metadata mismatch. Migration ID: %s", set.id()));
+            }
         }
         return set.migrations().subList(sortedMetaData.size(), set.migrations().size());
+    }
+
+    private MetaData hash(List<CuratorOp> operations)
+    {
+        MessageDigest digest;
+        try
+        {
+            digest = MessageDigest.getInstance("SHA-256");
+        }
+        catch ( NoSuchAlgorithmException e )
+        {
+            throw new RuntimeException(e);
+        }
+        operations.forEach(op -> {
+            if ( op instanceof ExtractingCuratorOp )
+            {
+                ((ExtractingCuratorOp)op).addToDigest(digest);
+            }
+            else
+            {
+                digest.update(op.toString().getBytes());
+            }
+        });
+        return digest::digest;
     }
 
     private CompletionStage<Void> runMigrationInLock(InterProcessLock lock, MigrationSet set)
@@ -148,7 +159,21 @@ public class MigrationManager
 
     private ModeledFramework<MetaData> getMetaDataClient(ZPath metaDataPath)
     {
-        ModelSpec<MetaData> modelSpec = ModelSpec.builder(metaDataPath, metaDataSerializer).withCreateMode(CreateMode.PERSISTENT_SEQUENTIAL).build();
+        ModelSerializer<MetaData> serializer = new ModelSerializer<MetaData>()
+        {
+            @Override
+            public byte[] serialize(MetaData model)
+            {
+                return model.operationHash();
+            }
+
+            @Override
+            public MetaData deserialize(byte[] bytes)
+            {
+                return () -> bytes;
+            }
+        };
+        ModelSpec<MetaData> modelSpec = ModelSpec.builder(metaDataPath, serializer).withCreateMode(CreateMode.PERSISTENT_SEQUENTIAL).build();
         return ModeledFramework.wrap(client, modelSpec);
     }
 
@@ -186,7 +211,7 @@ public class MigrationManager
         List<CompletableFuture<Object>> stages = toBeApplied.stream().map(migration -> {
             List<CuratorOp> operations = new ArrayList<>();
             operations.addAll(migration.operations());
-            MetaData thisMetaData = new MetaData(migration.id(), migration.version());
+            MetaData thisMetaData = hash(operations);
             operations.add(metaDataClient.child(META_DATA_NODE_NAME).createOp(thisMetaData));
             return client.transaction().forOperations(operations).thenApply(__ -> null).toCompletableFuture();
         }).collect(Collectors.toList());

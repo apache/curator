@@ -22,8 +22,9 @@ import com.google.common.base.Preconditions;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.TypeAndPath;
 import org.apache.zookeeper.Op;
+import java.security.MessageDigest;
 
-class ExtractingCuratorOp implements CuratorOp
+public class ExtractingCuratorOp implements CuratorOp
 {
     private final CuratorMultiTransactionRecord record = new CuratorMultiTransactionRecord();
 
@@ -44,6 +45,11 @@ class ExtractingCuratorOp implements CuratorOp
     {
         validate();
         return record.iterator().next();
+    }
+
+    public void addToDigest(MessageDigest digest)
+    {
+
     }
 
     private void validate()

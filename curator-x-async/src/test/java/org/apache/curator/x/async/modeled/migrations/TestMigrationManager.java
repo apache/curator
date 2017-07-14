@@ -109,7 +109,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         v3op = ModeledFramework.wrap(client, v3Spec).updateOp(new ModelV3("One", "Two", 30));
 
         executor = Executors.newCachedThreadPool();
-        manager = new MigrationManager(client, ZPath.parse("/locks"), JacksonModelSerializer.build(MetaData.class), executor, Duration.ofMinutes(10));
+        manager = new MigrationManager(client, ZPath.parse("/locks"), executor, Duration.ofMinutes(10));
     }
 
     @AfterMethod
@@ -124,9 +124,9 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     @Test
     public void testBasic() throws Exception
     {
-        Migration m1 = Migration.build("1",1, () -> Arrays.asList(v1opA, v1opB));
-        Migration m2 = Migration.build("2",1, () -> Collections.singletonList(v2op));
-        Migration m3 = Migration.build("3",1, () -> Collections.singletonList(v3op));
+        Migration m1 = () -> Arrays.asList(v1opA, v1opB);
+        Migration m2 = () -> Collections.singletonList(v2op);
+        Migration m3 = () -> Collections.singletonList(v3op);
         MigrationSet migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
 
         complete(manager.migrate(migrationSet));
@@ -142,14 +142,14 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     @Test
     public void testStaged() throws Exception
     {
-        Migration m1 = Migration.build("1",1, () -> Arrays.asList(v1opA, v1opB));
+        Migration m1 = () -> Arrays.asList(v1opA, v1opB);
         MigrationSet migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Collections.singletonList(m1));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV1> v1Client = ModeledFramework.wrap(client, v1Spec);
         complete(v1Client.read(), (m, e) -> Assert.assertEquals(m.getName(), "Test"));
 
-        Migration m2 = Migration.build("2",1, () -> Collections.singletonList(v2op));
+        Migration m2 = () -> Collections.singletonList(v2op);
         migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2));
         complete(manager.migrate(migrationSet));
 
@@ -159,7 +159,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
             Assert.assertEquals(m.getAge(), 10);
         });
 
-        Migration m3 = Migration.build("3",1, () -> Collections.singletonList(v3op));
+        Migration m3 = () -> Collections.singletonList(v3op);
         migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
         complete(manager.migrate(migrationSet));
 

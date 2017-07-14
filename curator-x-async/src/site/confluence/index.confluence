@@ -40,6 +40,7 @@ This is a strongly typed DSL that allows you to map a Curator\-style client to:
 * Options for how nodes should be created (sequential, compressed data, ttl, etc.)
 * ACLs for the nodes at the path
 * Options for how to delete nodes (guaranteed, deleting children, etc.)
+* Perform ZooKeeper data migration
 
 For example:
 
