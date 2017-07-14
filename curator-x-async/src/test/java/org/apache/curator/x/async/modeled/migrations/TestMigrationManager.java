@@ -48,11 +48,15 @@ import java.util.function.UnaryOperator;
 public class TestMigrationManager extends CompletableBaseClassForTests
 {
     private AsyncCuratorFramework client;
-    private MigrationSet migrationSet;
     private ModelSpec<ModelV1> v1Spec;
     private ModelSpec<ModelV2> v2Spec;
     private ModelSpec<ModelV3> v3Spec;
     private ExecutorService executor;
+    private CuratorOp v1opA;
+    private CuratorOp v1opB;
+    private CuratorOp v2op;
+    private CuratorOp v3op;
+    private MigrationManager manager;
 
     @BeforeMethod
     @Override
@@ -99,17 +103,13 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         v2Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV2.class)).build();
         v3Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV3.class)).build();
 
-        CuratorOp v1opA = client.unwrap().transactionOp().create().forPath(v1Spec.path().parent().fullPath());
-        CuratorOp v1opB = ModeledFramework.wrap(client, v1Spec).createOp(new ModelV1("Test"));
-        CuratorOp v2op = ModeledFramework.wrap(client, v2Spec).updateOp(new ModelV2("Test 2", 10));
-        CuratorOp v3op = ModeledFramework.wrap(client, v3Spec).updateOp(new ModelV3("One", "Two", 30));
-
-        Migration m1 = Migration.build("1",1, () -> Arrays.asList(v1opA, v1opB));
-        Migration m2 = Migration.build("2",1, () -> Collections.singletonList(v2op));
-        Migration m3 = Migration.build("3",1, () -> Collections.singletonList(v3op));
-        migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
+        v1opA = client.unwrap().transactionOp().create().forPath(v1Spec.path().parent().fullPath());
+        v1opB = ModeledFramework.wrap(client, v1Spec).createOp(new ModelV1("Test"));
+        v2op = ModeledFramework.wrap(client, v2Spec).updateOp(new ModelV2("Test 2", 10));
+        v3op = ModeledFramework.wrap(client, v3Spec).updateOp(new ModelV3("One", "Two", 30));
 
         executor = Executors.newCachedThreadPool();
+        manager = new MigrationManager(client, ZPath.parse("/locks"), JacksonModelSerializer.build(MetaData.class), executor, Duration.ofMinutes(10));
     }
 
     @AfterMethod
@@ -124,7 +124,43 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     @Test
     public void testBasic() throws Exception
     {
-        MigrationManager manager = new MigrationManager(client, ZPath.parse("/locks"), JacksonModelSerializer.build(MetaData.class), executor, Duration.ofMinutes(10));
+        Migration m1 = Migration.build("1",1, () -> Arrays.asList(v1opA, v1opB));
+        Migration m2 = Migration.build("2",1, () -> Collections.singletonList(v2op));
+        Migration m3 = Migration.build("3",1, () -> Collections.singletonList(v3op));
+        MigrationSet migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
+
+        complete(manager.migrate(migrationSet));
+
+        ModeledFramework<ModelV3> v3Client = ModeledFramework.wrap(client, v3Spec);
+        complete(v3Client.read(), (m, e) -> {
+            Assert.assertEquals(m.getAge(), 30);
+            Assert.assertEquals(m.getFirstName(), "One");
+            Assert.assertEquals(m.getLastName(), "Two");
+        });
+    }
+
+    @Test
+    public void testStaged() throws Exception
+    {
+        Migration m1 = Migration.build("1",1, () -> Arrays.asList(v1opA, v1opB));
+        MigrationSet migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Collections.singletonList(m1));
+        complete(manager.migrate(migrationSet));
+
+        ModeledFramework<ModelV1> v1Client = ModeledFramework.wrap(client, v1Spec);
+        complete(v1Client.read(), (m, e) -> Assert.assertEquals(m.getName(), "Test"));
+
+        Migration m2 = Migration.build("2",1, () -> Collections.singletonList(v2op));
+        migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2));
+        complete(manager.migrate(migrationSet));
+
+        ModeledFramework<ModelV2> v2Client = ModeledFramework.wrap(client, v2Spec);
+        complete(v2Client.read(), (m, e) -> {
+            Assert.assertEquals(m.getName(), "Test 2");
+            Assert.assertEquals(m.getAge(), 10);
+        });
+
+        Migration m3 = Migration.build("3",1, () -> Collections.singletonList(v3op));
+        migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV3> v3Client = ModeledFramework.wrap(client, v3Spec);

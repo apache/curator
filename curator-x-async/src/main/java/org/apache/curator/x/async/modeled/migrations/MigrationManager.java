@@ -79,7 +79,7 @@ public class MigrationManager
     {
         if ( sortedMetaData.size() > set.migrations().size() )
         {
-            throw new MigrationException(set.id(), String.format("More metadata than migrations. Migration ID: %s - MetaData: %s", set.id(), sortedMetaData));
+            throw new MigrationException(set.id(), String.format("More metadata than migrations. Migration ID: %s - MigrationSet: %s - MetaData: %s", set.id(), set.migrations(), sortedMetaData));
         }
 
         int compareSize = Math.min(set.migrations().size(), sortedMetaData.size());
@@ -89,7 +89,7 @@ public class MigrationManager
             .collect(Collectors.toList());
         if ( !compareMigrations.equals(sortedMetaData) )
         {
-            throw new MigrationException(set.id(), String.format("Metadata mismatch. Migration ID: %s - MetaData: %s", set.id(), sortedMetaData));
+            throw new MigrationException(set.id(), String.format("Metadata mismatch. Migration ID: %s - MigrationSet: %s - MetaData: %s", set.id(), set.migrations(), sortedMetaData));
         }
         return set.migrations().subList(sortedMetaData.size(), set.migrations().size());
     }
