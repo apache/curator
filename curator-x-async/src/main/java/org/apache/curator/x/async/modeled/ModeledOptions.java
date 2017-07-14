@@ -18,44 +18,12 @@
  */
 package org.apache.curator.x.async.modeled;
 
-/**
- * Serializing interface for models
- */
-public interface ModelSerializer<T>
+public enum ModeledOptions
 {
     /**
-     * Given a model return the serialized bytes
-     *
-     * @param model model
-     * @return bytes
+     * Causes {@link ModeledFramework#children()} and {@link ModeledFramework#childrenAsZNodes()}
+     * to ignore {@link org.apache.zookeeper.KeeperException.NoNodeException} and merely return
+     * an empty list
      */
-    byte[] serialize(T model);
-
-    /**
-     * Given bytes serialized via {@link #serialize(Object)} return
-     * the model
-     *
-     * @param bytes serialized bytes
-     * @return model
-     * @throws RuntimeException if <code>bytes</code> is invalid or there was an error deserializing
-     */
-    T deserialize(byte[] bytes);
-
-    /**
-     * A pass through serializer
-     */
-    ModelSerializer<byte[]> raw = new ModelSerializer<byte[]>()
-    {
-        @Override
-        public byte[] serialize(byte[] model)
-        {
-            return model;
-        }
-
-        @Override
-        public byte[] deserialize(byte[] bytes)
-        {
-            return bytes;
-        }
-    };
+    ignoreMissingNodesForChildren
 }

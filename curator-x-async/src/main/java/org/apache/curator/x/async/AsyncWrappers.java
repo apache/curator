@@ -20,7 +20,10 @@ package org.apache.curator.x.async;
 
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.x.async.api.ExistsOption;
 import org.apache.curator.x.async.modeled.ZPath;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -67,7 +70,7 @@ public class AsyncWrappers
 {
     /**
      * Asynchronously call {@link org.apache.curator.framework.CuratorFramework#createContainers(String)} using
-     * the {@link java.util.concurrent.ForkJoinPool#commonPool()}.
+     * the given executor
      *
      * @param client client
      * @param path path to ensure
@@ -75,30 +78,13 @@ public class AsyncWrappers
      */
     public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, ZPath path)
     {
-        return asyncEnsureContainers(client, path, null);
-    }
-
-    /**
-     * Asynchronously call {@link org.apache.curator.framework.CuratorFramework#createContainers(String)} using
-     * the given executor
-     *
-     * @param client client
-     * @param path path to ensure
-     * @return stage
-     */
-    public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, ZPath path, Executor executor)
-    {
-        Runnable proc = () -> {
-            try
-            {
-                client.unwrap().createContainers(path.fullPath());
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException(e);
-            }
-        };
-        return (executor != null) ? CompletableFuture.runAsync(proc, executor) : CompletableFuture.runAsync(proc);
+        Set<ExistsOption> options = Collections.singleton(ExistsOption.createParentsAsContainers);
+        return client
+            .checkExists()
+            .withOptions(options)
+            .forPath(path.child("foo").fullPath())
+            .thenApply(__ -> null)
+            ;
     }
 
     /**
@@ -284,7 +270,7 @@ public class AsyncWrappers
                 future.complete(null);
             }
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             ThreadUtils.checkInterrupted(e);
             future.completeExceptionally(e);

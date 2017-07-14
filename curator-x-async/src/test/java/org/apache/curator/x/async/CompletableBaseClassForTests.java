@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async;
 
+import com.google.common.base.Throwables;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.testng.Assert;
@@ -33,7 +34,12 @@ public abstract class CompletableBaseClassForTests extends BaseClassForTests
 
     protected <T, U> void complete(CompletionStage<T> stage)
     {
-        complete(stage, (v, e) -> {});
+        complete(stage, (v, e) -> {
+            if ( e != null )
+            {
+                Throwables.propagate(e);
+            }
+        });
     }
 
     protected <T, U> void complete(CompletionStage<T> stage, BiConsumer<? super T, Throwable> handler)
