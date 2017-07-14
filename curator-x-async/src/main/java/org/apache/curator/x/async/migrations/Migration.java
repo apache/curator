@@ -16,31 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.migrations.models;
+package org.apache.curator.x.async.migrations;
 
-public class ModelV2
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import java.util.List;
+
+/**
+ * Models a single migration/transition
+ */
+@FunctionalInterface
+public interface Migration
 {
-    private final String name;
-    private final int age;
-
-    public ModelV2()
-    {
-        this("", 0);
-    }
-
-    public ModelV2(String name, int age)
-    {
-        this.name = name;
-        this.age = age;
-    }
-
-    public String getName()
-    {
-        return name;
-    }
-
-    public int getAge()
-    {
-        return age;
-    }
+    /**
+     * Return the operations to execute in a transaction. IMPORTANT: during a migration
+     * this method may be called multiple times.
+     *
+     * @return operations
+     */
+    List<CuratorOp> operations();
 }

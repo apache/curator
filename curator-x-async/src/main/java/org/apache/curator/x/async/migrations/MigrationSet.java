@@ -16,10 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.migrations;
+package org.apache.curator.x.async.migrations;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.curator.x.async.modeled.ZPath;
 import java.util.List;
 import java.util.Objects;
 
@@ -37,14 +36,14 @@ public interface MigrationSet
     /**
      * @return where to store the meta data for this migration set
      */
-    ZPath metaDataPath();
+    String metaDataPath();
 
     /**
      * @return list of migrations in the order that they should be applied
      */
     List<Migration> migrations();
 
-    static MigrationSet build(String id, ZPath metaDataPath, List<Migration> migrations)
+    static MigrationSet build(String id, String metaDataPath, List<Migration> migrations)
     {
         Objects.requireNonNull(id, "id cannot be null");
         Objects.requireNonNull(metaDataPath, "metaDataPath cannot be null");
@@ -58,7 +57,7 @@ public interface MigrationSet
             }
 
             @Override
-            public ZPath metaDataPath()
+            public String metaDataPath()
             {
                 return metaDataPath;
             }

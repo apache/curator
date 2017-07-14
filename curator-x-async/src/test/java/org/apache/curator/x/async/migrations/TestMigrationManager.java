@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.migrations;
+package org.apache.curator.x.async.migrations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.curator.framework.CuratorFramework;
@@ -30,9 +30,9 @@ import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
-import org.apache.curator.x.async.modeled.migrations.models.ModelV1;
-import org.apache.curator.x.async.modeled.migrations.models.ModelV2;
-import org.apache.curator.x.async.modeled.migrations.models.ModelV3;
+import org.apache.curator.x.async.migrations.models.ModelV1;
+import org.apache.curator.x.async.migrations.models.ModelV2;
+import org.apache.curator.x.async.migrations.models.ModelV3;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -127,7 +127,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
         Migration m2 = () -> Collections.singletonList(v2op);
         Migration m3 = () -> Collections.singletonList(v3op);
-        MigrationSet migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
+        MigrationSet migrationSet = MigrationSet.build("1", "/metadata", Arrays.asList(m1, m2, m3));
 
         complete(manager.migrate(migrationSet));
 
@@ -143,14 +143,14 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     public void testStaged() throws Exception
     {
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
-        MigrationSet migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Collections.singletonList(m1));
+        MigrationSet migrationSet = MigrationSet.build("1", "/metadata/nodes", Collections.singletonList(m1));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV1> v1Client = ModeledFramework.wrap(client, v1Spec);
         complete(v1Client.read(), (m, e) -> Assert.assertEquals(m.getName(), "Test"));
 
         Migration m2 = () -> Collections.singletonList(v2op);
-        migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2));
+        migrationSet = MigrationSet.build("1", "/metadata/nodes", Arrays.asList(m1, m2));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV2> v2Client = ModeledFramework.wrap(client, v2Spec);
@@ -160,7 +160,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         });
 
         Migration m3 = () -> Collections.singletonList(v3op);
-        migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
+        migrationSet = MigrationSet.build("1", "/metadata/nodes", Arrays.asList(m1, m2, m3));
         complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV3> v3Client = ModeledFramework.wrap(client, v3Spec);

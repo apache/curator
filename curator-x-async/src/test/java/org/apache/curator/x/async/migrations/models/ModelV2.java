@@ -16,24 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.migrations.models;
+package org.apache.curator.x.async.migrations.models;
 
-public class ModelV1
+public class ModelV2
 {
     private final String name;
+    private final int age;
 
-    public ModelV1()
+    public ModelV2()
     {
-        this("");
+        this("", 0);
     }
 
-    public ModelV1(String name)
+    public ModelV2(String name, int age)
     {
         this.name = name;
+        this.age = age;
     }
 
     public String getName()
     {
         return name;
+    }
+
+    public int getAge()
+    {
+        return age;
     }
 }

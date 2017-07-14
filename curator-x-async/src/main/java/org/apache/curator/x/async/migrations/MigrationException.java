@@ -16,22 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.migrations;
+package org.apache.curator.x.async.migrations;
 
-import org.apache.curator.framework.api.transaction.CuratorOp;
-import java.util.List;
+import java.util.Objects;
 
-/**
- * Models a single migration/transition
- */
-@FunctionalInterface
-public interface Migration
+public class MigrationException extends RuntimeException
 {
-    /**
-     * Return the operations to execute in a transaction. IMPORTANT: during a migration
-     * this method may be called multiple times.
-     *
-     * @return operations
-     */
-    List<CuratorOp> operations();
+    private final String migrationId;
+
+    public MigrationException(String migrationId, String message)
+    {
+        super(message);
+        this.migrationId = Objects.requireNonNull(migrationId, "migrationId cannot be null");
+    }
+
+    public String getMigrationId()
+    {
+        return migrationId;
+    }
 }

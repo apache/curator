@@ -16,19 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.migrations;
+package org.apache.curator.x.async.migrations;
 
 import com.google.common.base.Throwables;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.imps.ExtractingCuratorOp;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.AsyncCuratorFramework;
-import org.apache.curator.x.async.modeled.ModelSerializer;
-import org.apache.curator.x.async.modeled.ModelSpec;
-import org.apache.curator.x.async.modeled.ModeledFramework;
-import org.apache.curator.x.async.modeled.ZNode;
-import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.CreateMode;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -37,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -52,7 +49,7 @@ import static org.apache.curator.x.async.AsyncWrappers.*;
 public class MigrationManager
 {
     private final AsyncCuratorFramework client;
-    private final ZPath lockPath;
+    private final String lockPath;
     private final Executor executor;
     private final Duration lockMax;
 
@@ -64,7 +61,7 @@ public class MigrationManager
      * @param executor the executor to use
      * @param lockMax max time to wait for locks
      */
-    public MigrationManager(AsyncCuratorFramework client, ZPath lockPath, Executor executor, Duration lockMax)
+    public MigrationManager(AsyncCuratorFramework client, String lockPath, Executor executor, Duration lockMax)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.lockPath = Objects.requireNonNull(lockPath, "lockPath cannot be null");
@@ -77,12 +74,11 @@ public class MigrationManager
      *
      * @param set the set
      * @return completion stage. If there is a migration-specific error, the stage will be completed
-     * exceptionally with {@link org.apache.curator.x.async.modeled.migrations.MigrationException}.
+     * exceptionally with {@link org.apache.curator.x.async.migrations.MigrationException}.
      */
     public CompletionStage<Void> migrate(MigrationSet set)
     {
-        String lockPath = this.lockPath.child(set.id()).fullPath();
-        InterProcessLock lock = new InterProcessSemaphoreMutex(client.unwrap(), lockPath);
+        InterProcessLock lock = new InterProcessSemaphoreMutex(client.unwrap(), ZKPaths.makePath(lockPath, set.id()));
         CompletionStage<Void> lockStage = lockAsync(lock, lockMax.toMillis(), TimeUnit.MILLISECONDS, executor);
         return lockStage.thenCompose(__ -> runMigrationInLock(lock, set));
     }
@@ -93,31 +89,31 @@ public class MigrationManager
      * set exactly (by order and version). If there is a mismatch, <code>MigrationException</code> is thrown.
      *
      * @param set the migration set being applied
-     * @param sortedMetaData previous migration meta data (may be empty)
+     * @param operationHashesInOrder previous operation hashes (may be empty)
      * @return the list of actual migrations to perform. The filter can return any value here or an empty list.
      * @throws MigrationException errors
      */
-    protected List<Migration> filter(MigrationSet set, List<MetaData> sortedMetaData) throws MigrationException
+    protected List<Migration> filter(MigrationSet set, List<byte[]> operationHashesInOrder) throws MigrationException
     {
-        if ( sortedMetaData.size() > set.migrations().size() )
+        if ( operationHashesInOrder.size() > set.migrations().size() )
         {
             throw new MigrationException(set.id(), String.format("More metadata than migrations. Migration ID: %s", set.id()));
         }
 
-        int compareSize = Math.min(set.migrations().size(), sortedMetaData.size());
+        int compareSize = Math.min(set.migrations().size(), operationHashesInOrder.size());
         List<Migration> subList = set.migrations().subList(0, compareSize);
         for ( int i = 0; i < compareSize; ++i )
         {
-            byte[] setHash = hash(set.migrations().get(i).operations()).operationHash();
-            if ( !Arrays.equals(setHash, sortedMetaData.get(i).operationHash()) )
+            byte[] setHash = hash(set.migrations().get(i).operations());
+            if ( !Arrays.equals(setHash, operationHashesInOrder.get(i)) )
             {
                 throw new MigrationException(set.id(), String.format("Metadata mismatch. Migration ID: %s", set.id()));
             }
         }
-        return set.migrations().subList(sortedMetaData.size(), set.migrations().size());
+        return set.migrations().subList(operationHashesInOrder.size(), set.migrations().size());
     }
 
-    private MetaData hash(List<CuratorOp> operations)
+    private byte[] hash(List<CuratorOp> operations)
     {
         MessageDigest digest;
         try
@@ -138,14 +134,13 @@ public class MigrationManager
                 digest.update(op.toString().getBytes());
             }
         });
-        return digest::digest;
+        return digest.digest();
     }
 
     private CompletionStage<Void> runMigrationInLock(InterProcessLock lock, MigrationSet set)
     {
-        ModeledFramework<MetaData> modeled = getMetaDataClient(set.metaDataPath());
-        return modeled.childrenAsZNodes()
-            .thenCompose(metaData -> applyMetaData(set, modeled, metaData))
+        return childrenWithData(client, set.metaDataPath())
+            .thenCompose(metaData -> applyMetaData(set, metaData))
             .handle((v, e) -> {
                 release(lock, true);
                 if ( e != null )
@@ -157,32 +152,12 @@ public class MigrationManager
         );
     }
 
-    private ModeledFramework<MetaData> getMetaDataClient(ZPath metaDataPath)
+    private CompletionStage<Void> applyMetaData(MigrationSet set, Map<String, byte[]> metaData)
     {
-        ModelSerializer<MetaData> serializer = new ModelSerializer<MetaData>()
-        {
-            @Override
-            public byte[] serialize(MetaData model)
-            {
-                return model.operationHash();
-            }
-
-            @Override
-            public MetaData deserialize(byte[] bytes)
-            {
-                return () -> bytes;
-            }
-        };
-        ModelSpec<MetaData> modelSpec = ModelSpec.builder(metaDataPath, serializer).withCreateMode(CreateMode.PERSISTENT_SEQUENTIAL).build();
-        return ModeledFramework.wrap(client, modelSpec);
-    }
-
-    private CompletionStage<Void> applyMetaData(MigrationSet set, ModeledFramework<MetaData> metaDataClient, List<ZNode<MetaData>> metaDataNodes)
-    {
-        List<MetaData> sortedMetaData = metaDataNodes
+        List<byte[]> sortedMetaData = metaData.keySet()
             .stream()
-            .sorted(Comparator.comparing(m -> m.path().fullPath()))
-            .map(ZNode::model)
+            .sorted(Comparator.naturalOrder())
+            .map(metaData::get)
             .collect(Collectors.toList());
 
         List<Migration> toBeApplied;
@@ -202,17 +177,17 @@ public class MigrationManager
             return CompletableFuture.completedFuture(null);
         }
 
-        return asyncEnsureContainers(client, metaDataClient.modelSpec().path())
-            .thenCompose(__ -> applyMetaDataAfterEnsure(toBeApplied, metaDataClient));
+        return asyncEnsureContainers(client, set.metaDataPath())
+            .thenCompose(__ -> applyMetaDataAfterEnsure(set, toBeApplied));
     }
 
-    private CompletionStage<Void> applyMetaDataAfterEnsure(List<Migration> toBeApplied, ModeledFramework<MetaData> metaDataClient)
+    private CompletionStage<Void> applyMetaDataAfterEnsure(MigrationSet set, List<Migration> toBeApplied)
     {
+        String metaDataBasePath = ZKPaths.makePath(set.metaDataPath(), META_DATA_NODE_NAME);
         List<CompletableFuture<Object>> stages = toBeApplied.stream().map(migration -> {
             List<CuratorOp> operations = new ArrayList<>();
             operations.addAll(migration.operations());
-            MetaData thisMetaData = hash(operations);
-            operations.add(metaDataClient.child(META_DATA_NODE_NAME).createOp(thisMetaData));
+            operations.add(client.transactionOp().create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(metaDataBasePath, hash(operations)));
             return client.transaction().forOperations(operations).thenApply(__ -> null).toCompletableFuture();
         }).collect(Collectors.toList());
         return CompletableFuture.allOf(stages.toArray(new CompletableFuture[stages.size()]));

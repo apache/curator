@@ -16,10 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.migrations;
+package org.apache.curator.x.async.migrations.models;
 
-@FunctionalInterface
-public interface MetaData
+public class ModelV3
 {
-    byte[] operationHash();
+    private final String firstName;
+    private final String lastName;
+    private final int age;
+
+    public ModelV3()
+    {
+        this("", "", 0);
+    }
+
+    public ModelV3(String firstName, String lastName, int age)
+    {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+    }
+
+    public String getFirstName()
+    {
+        return firstName;
+    }
+
+    public String getLastName()
+    {
+        return lastName;
+    }
+
+    public int getAge()
+    {
+        return age;
+    }
 }

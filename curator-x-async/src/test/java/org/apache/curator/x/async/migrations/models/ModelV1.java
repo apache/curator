@@ -16,22 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.x.async.modeled.migrations;
+package org.apache.curator.x.async.migrations.models;
 
-import java.util.Objects;
-
-public class MigrationException extends RuntimeException
+public class ModelV1
 {
-    private final String migrationId;
+    private final String name;
 
-    public MigrationException(String migrationId, String message)
+    public ModelV1()
     {
-        super(message);
-        this.migrationId = Objects.requireNonNull(migrationId, "migrationId cannot be null");
+        this("");
     }
 
-    public String getMigrationId()
+    public ModelV1(String name)
     {
-        return migrationId;
+        this.name = name;
+    }
+
+    public String getName()
+    {
+        return name;
     }
 }
