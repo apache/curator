@@ -23,7 +23,6 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -69,7 +68,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
     @Test
     public void testCreateTransactionWithMode() throws Exception
     {
-        complete(AsyncWrappers.asyncEnsureContainers(client, ZPath.parse("/test")));
+        complete(AsyncWrappers.asyncEnsureContainers(client, "/test"));
 
         CuratorOp op1 = client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
         CuratorOp op2 = client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");

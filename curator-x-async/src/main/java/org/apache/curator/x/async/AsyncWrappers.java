@@ -20,6 +20,7 @@ package org.apache.curator.x.async;
 
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.api.ExistsOption;
 import org.apache.curator.x.async.modeled.ZPath;
 import java.util.Collections;
@@ -76,13 +77,14 @@ public class AsyncWrappers
      * @param path path to ensure
      * @return stage
      */
-    public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, ZPath path)
+    public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, String path)
     {
+        String localPath = ZKPaths.makePath(path, "foo");
         Set<ExistsOption> options = Collections.singleton(ExistsOption.createParentsAsContainers);
         return client
             .checkExists()
             .withOptions(options)
-            .forPath(path.child("foo").fullPath())
+            .forPath(localPath)
             .thenApply(__ -> null)
             ;
     }
