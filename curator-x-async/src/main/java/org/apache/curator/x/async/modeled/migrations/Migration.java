@@ -23,13 +23,30 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * Models a single migration/transition
+ */
 public interface Migration
 {
+    /**
+     * @return the unique ID for this migration
+     */
     String id();
 
+    /**
+     * @return the version of this migration
+     */
     int version();
 
+    /**
+     * @return the operations to execute in a transaction
+     */
     List<CuratorOp> operations();
+
+    static Migration build(String id, Supplier<List<CuratorOp>> operationsProc)
+    {
+        return build(id, 1, operationsProc);
+    }
 
     static Migration build(String id, int version, Supplier<List<CuratorOp>> operationsProc)
     {

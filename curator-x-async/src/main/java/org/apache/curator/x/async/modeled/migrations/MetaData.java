@@ -20,6 +20,9 @@ package org.apache.curator.x.async.modeled.migrations;
 
 import java.util.Objects;
 
+/**
+ * The meta data of a single migration
+ */
 public class MetaData
 {
     private final String migrationId;
@@ -36,11 +39,17 @@ public class MetaData
         this.migrationVersion = migrationVersion;
     }
 
+    /**
+     * @return The ID of the migration that was applied
+     */
     public String getMigrationId()
     {
         return migrationId;
     }
 
+    /**
+     * @return the version of the migration that was applied
+     */
     public int getMigrationVersion()
     {
         return migrationVersion;

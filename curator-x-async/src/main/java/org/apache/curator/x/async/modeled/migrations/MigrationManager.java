@@ -42,6 +42,9 @@ import java.util.stream.Collectors;
 
 import static org.apache.curator.x.async.AsyncWrappers.*;
 
+/**
+ * Manages migrations
+ */
 public class MigrationManager
 {
     private final AsyncCuratorFramework client;
@@ -52,6 +55,16 @@ public class MigrationManager
 
     private static final String META_DATA_NODE_NAME = "meta-";
 
+    /**
+     * Jackson usage: See the note in {@link org.apache.curator.x.async.modeled.JacksonModelSerializer} regarding how the Jackson library is specified in Curator's Maven file.
+     * Unless you are not using Jackson pass <code>JacksonModelSerializer.build(MetaData.class)</code> for <code>metaDataSerializer</code>
+     *
+     * @param client the curator client
+     * @param lockPath base path for locks used by the manager
+     * @param metaDataSerializer JacksonModelSerializer.build(MetaData.class)
+     * @param executor the executor to use
+     * @param lockMax max time to wait for locks
+     */
     public MigrationManager(AsyncCuratorFramework client, ZPath lockPath, ModelSerializer<MetaData> metaDataSerializer, Executor executor, Duration lockMax)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
@@ -61,12 +74,13 @@ public class MigrationManager
         this.lockMax = Objects.requireNonNull(lockMax, "lockMax cannot be null");
     }
 
-    public CompletionStage<List<MetaData>> metaData(ZPath metaDataPath)
-    {
-        ModeledFramework<MetaData> modeled = getMetaDataClient(metaDataPath);
-        return ZNode.models(modeled.childrenAsZNodes());
-    }
-
+    /**
+     * Process the given migration set
+     *
+     * @param set the set
+     * @return completion stage. If there is a migration-specific error, the stage will be completed
+     * exceptionally with {@link org.apache.curator.x.async.modeled.migrations.MigrationException}.
+     */
     public CompletionStage<Void> migrate(MigrationSet set)
     {
         String lockPath = this.lockPath.child(set.id()).fullPath();
@@ -75,6 +89,28 @@ public class MigrationManager
         return lockStage.thenCompose(__ -> runMigrationInLock(lock, set));
     }
 
+    /**
+     * Utility to return the meta data from previous migrations
+     *
+     * @param set the set
+     * @return stage
+     */
+    public CompletionStage<List<MetaData>> metaData(MigrationSet set)
+    {
+        ModeledFramework<MetaData> modeled = getMetaDataClient(set.metaDataPath());
+        return ZNode.models(modeled.childrenAsZNodes());
+    }
+
+    /**
+     * Can be overridden to change how the comparison to previous migrations is done. The default
+     * version ensures that the meta data from previous migrations matches the current migration
+     * set exactly (by order and version). If there is a mismatch, <code>MigrationException</code> is thrown.
+     *
+     * @param set the migration set being applied
+     * @param sortedMetaData previous migration meta data (may be empty)
+     * @return the list of actual migrations to perform. The filter can return any value here or an empty list.
+     * @throws MigrationException errors
+     */
     protected List<Migration> filter(MigrationSet set, List<MetaData> sortedMetaData) throws MigrationException
     {
         if ( sortedMetaData.size() > set.migrations().size() )

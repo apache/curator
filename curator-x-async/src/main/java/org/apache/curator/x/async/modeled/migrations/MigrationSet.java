@@ -23,12 +23,25 @@ import org.apache.curator.x.async.modeled.ZPath;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Models a set of migrations. Each individual migration is applied
+ * in a transaction.
+ */
 public interface MigrationSet
 {
+    /**
+     * @return the unique ID for this migration set
+     */
     String id();
 
+    /**
+     * @return where to store the meta data for this migration set
+     */
     ZPath metaDataPath();
 
+    /**
+     * @return list of migrations in the order that they should be applied
+     */
     List<Migration> migrations();
 
     static MigrationSet build(String id, ZPath metaDataPath, List<Migration> migrations)
