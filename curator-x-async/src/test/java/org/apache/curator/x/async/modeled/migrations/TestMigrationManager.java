@@ -21,6 +21,7 @@ package org.apache.curator.x.async.modeled.migrations;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.AsyncCuratorFramework;
@@ -37,7 +38,11 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.UnaryOperator;
 
 public class TestMigrationManager extends CompletableBaseClassForTests
@@ -47,6 +52,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     private ModelSpec<ModelV1> v1Spec;
     private ModelSpec<ModelV2> v2Spec;
     private ModelSpec<ModelV3> v3Spec;
+    private ExecutorService executor;
 
     @BeforeMethod
     @Override
@@ -54,10 +60,10 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     {
         super.setup();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
-        client.start();
+        CuratorFramework rawClient = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
+        rawClient.start();
 
-        this.client = AsyncCuratorFramework.wrap(client);
+        this.client = AsyncCuratorFramework.wrap(rawClient);
 
         ObjectMapper mapper = new ObjectMapper();
         UnaryOperator<byte[]> from1to2 = bytes -> {
@@ -89,13 +95,20 @@ public class TestMigrationManager extends CompletableBaseClassForTests
 
         ZPath modelPath = ZPath.parse("/test/it");
 
-        Migration m1 = Migration.build("1",1, from1to2);
-        Migration m2 = Migration.build("2",1, from2to3);
-        migrationSet = MigrationSet.build("1", modelPath, ZPath.parse("/metadata"), Arrays.asList(m1, m2));
-
         v1Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV1.class)).build();
         v2Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV2.class)).build();
         v3Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV3.class)).build();
+
+        CuratorOp v1op = ModeledFramework.wrap(client, v1Spec).createOp(new ModelV1("Test"));
+        CuratorOp v2op = ModeledFramework.wrap(client, v2Spec).updateOp(new ModelV2("Test 2", 10));
+        CuratorOp v3op = ModeledFramework.wrap(client, v3Spec).updateOp(new ModelV3("One", "Two", 30));
+
+        Migration m1 = Migration.build("1",1, () -> Collections.singletonList(v1op));
+        Migration m2 = Migration.build("2",1, () -> Collections.singletonList(v2op));
+        Migration m3 = Migration.build("3",1, () -> Collections.singletonList(v3op));
+        migrationSet = MigrationSet.build("1", ZPath.parse("/metadata"), Arrays.asList(m1, m2, m3));
+
+        executor = Executors.newCachedThreadPool();
     }
 
     @AfterMethod
@@ -103,6 +116,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     public void teardown() throws Exception
     {
         CloseableUtils.closeQuietly(client.unwrap());
+        executor.shutdownNow();
         super.teardown();
     }
 
@@ -113,11 +127,8 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         ModelV1 v1 = new ModelV1("John Galt");
         complete(v1Client.child("1").set(v1));
 
-        MigrationManager manager = MigrationManager.builder(this.client, ZPath.parse("/locks"), JacksonModelSerializer.build(MetaData.class))
-            .adding(migrationSet)
-            .build();
-
-        complete(manager.run());
+        MigrationManager manager = new MigrationManager(client, ZPath.parse("/locks"), JacksonModelSerializer.build(MetaData.class), executor, Duration.ofMinutes(10));
+        complete(manager.migrate(migrationSet));
 
         ModeledFramework<ModelV3> v3Client = ModeledFramework.wrap(client, v3Spec);
         complete(v3Client.child("1").read(), (m, e) -> {

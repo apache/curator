@@ -18,8 +18,10 @@
  */
 package org.apache.curator.x.async.modeled.migrations;
 
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import java.util.List;
 import java.util.Objects;
-import java.util.function.UnaryOperator;
+import java.util.function.Supplier;
 
 public interface Migration
 {
@@ -27,12 +29,12 @@ public interface Migration
 
     int version();
 
-    byte[] migrate(byte[] previousBytes);
+    List<CuratorOp> operations();
 
-    static Migration build(String id, int version, UnaryOperator<byte[]> migrateProc)
+    static Migration build(String id, int version, Supplier<List<CuratorOp>> operationsProc)
     {
         Objects.requireNonNull(id, "id cannot be null");
-        Objects.requireNonNull(migrateProc, "migrateProc cannot be null");
+        Objects.requireNonNull(operationsProc, "operationsProc cannot be null");
         return new Migration()
         {
             @Override
@@ -48,9 +50,9 @@ public interface Migration
             }
 
             @Override
-            public byte[] migrate(byte[] previousBytes)
+            public List<CuratorOp> operations()
             {
-                return migrateProc.apply(previousBytes);
+                return operationsProc.get();
             }
         };
     }

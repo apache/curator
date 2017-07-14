@@ -27,16 +27,13 @@ public interface MigrationSet
 {
     String id();
 
-    ZPath path();
-
     ZPath metaDataPath();
 
     List<Migration> migrations();
 
-    static MigrationSet build(String id, ZPath path, ZPath metaDataPath, List<Migration> migrations)
+    static MigrationSet build(String id, ZPath metaDataPath, List<Migration> migrations)
     {
         Objects.requireNonNull(id, "id cannot be null");
-        Objects.requireNonNull(path, "path cannot be null");
         Objects.requireNonNull(metaDataPath, "metaDataPath cannot be null");
         final List<Migration> migrationsCopy = ImmutableList.copyOf(migrations);
         return new MigrationSet()
@@ -45,12 +42,6 @@ public interface MigrationSet
             public String id()
             {
                 return id;
-            }
-
-            @Override
-            public ZPath path()
-            {
-                return path;
             }
 
             @Override

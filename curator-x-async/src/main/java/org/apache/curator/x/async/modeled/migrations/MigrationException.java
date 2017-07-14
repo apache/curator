@@ -20,11 +20,11 @@ package org.apache.curator.x.async.modeled.migrations;
 
 import java.util.Objects;
 
-public class InvalidMigrationSetException extends RuntimeException
+public class MigrationException extends RuntimeException
 {
     private final String migrationId;
 
-    public InvalidMigrationSetException(String migrationId, String message)
+    public MigrationException(String migrationId, String message)
     {
         super(message);
         this.migrationId = Objects.requireNonNull(migrationId, "migrationId cannot be null");
