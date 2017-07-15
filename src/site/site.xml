@@ -70,13 +70,16 @@
             <item name="Getting Started" href="getting-started.html"/>
             <item name="Examples" href="curator-examples/index.html"/>
             <item name="Recipes" href="curator-recipes/index.html"/>
-            <item name="Framework" href="curator-framework/index.html"/>
-            <item name="Utilities" href="utilities.html"/>
-            <item name="Client" href="curator-client/index.html"/>
             <item name="Java 8/Async" href="curator-x-async/index.html"/>
             <item name="Strongly Typed Models" href="curator-x-async/modeled.html"/>
             <item name="Migrations" href="curator-x-async/migrations.html"/>
             <item name="Schema Support" href="curator-framework/schema.html"/>
+        </menu>
+
+        <menu name="Low Level" inherit="top">
+            <item name="Framework" href="curator-framework/index.html"/>
+            <item name="Utilities" href="utilities.html"/>
+            <item name="Client" href="curator-client/index.html"/>
         </menu>
 
         <menu name="Details" inherit="top">
