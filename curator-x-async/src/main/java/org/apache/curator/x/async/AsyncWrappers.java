@@ -28,7 +28,6 @@ import org.apache.zookeeper.KeeperException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -134,8 +133,19 @@ public class AsyncWrappers
     }
 
     /**
-     * Asynchronously call {@link org.apache.curator.framework.CuratorFramework#createContainers(String)} using
-     * the given executor
+     * Asynchronously ensure that the parents of the given path are created
+     *
+     * @param client client
+     * @param path path to ensure
+     * @return stage
+     */
+    public static CompletionStage<Void> asyncEnsureParents(AsyncCuratorFramework client, String path)
+    {
+        return ensure(client, path, ExistsOption.createParentsIfNeeded);
+    }
+
+    /**
+     * Asynchronously ensure that the parents of the given path are created as containers
      *
      * @param client client
      * @param path path to ensure
@@ -143,14 +153,7 @@ public class AsyncWrappers
      */
     public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, String path)
     {
-        String localPath = ZKPaths.makePath(path, "foo");
-        Set<ExistsOption> options = Collections.singleton(ExistsOption.createParentsAsContainers);
-        return client
-            .checkExists()
-            .withOptions(options)
-            .forPath(localPath)
-            .thenApply(__ -> null)
-            ;
+        return ensure(client, path, ExistsOption.createParentsAsContainers);
     }
 
     /**
@@ -371,6 +374,17 @@ public class AsyncWrappers
                 return null;
             });
         });
+    }
+
+    private static CompletionStage<Void> ensure(AsyncCuratorFramework client, String path, ExistsOption option)
+    {
+        String localPath = ZKPaths.makePath(path, "foo");
+        return client
+            .checkExists()
+            .withOptions(Collections.singleton(option))
+            .forPath(localPath)
+            .thenApply(__ -> null)
+            ;
     }
 
     private AsyncWrappers()
