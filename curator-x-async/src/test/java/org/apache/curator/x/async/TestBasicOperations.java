@@ -193,10 +193,10 @@ public class TestBasicOperations extends CompletableBaseClassForTests
     @Test
     public void testGetDataWithStat()
     {
-        complete(client.create().forPath("/test"));
+        complete(client.create().forPath("/test", "hey".getBytes()));
 
         Stat stat = new Stat();
         complete(client.getData().storingStatIn(stat).forPath("/test"));
-        Assert.assertEquals(stat.getVersion(), 1);
+        Assert.assertEquals(stat.getDataLength(), "hey".length());
     }
 }
