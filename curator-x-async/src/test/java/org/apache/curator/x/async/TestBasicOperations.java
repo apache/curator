@@ -189,4 +189,14 @@ public class TestBasicOperations extends CompletableBaseClassForTests
             Assert.assertEquals(v.getCode(), KeeperException.Code.CONNECTIONLOSS);
         });
     }
+
+    @Test
+    public void testGetDataWithStat()
+    {
+        complete(client.create().forPath("/test"));
+
+        Stat stat = new Stat();
+        complete(client.getData().storingStatIn(stat).forPath("/test"));
+        Assert.assertEquals(stat.getVersion(), 1);
+    }
 }

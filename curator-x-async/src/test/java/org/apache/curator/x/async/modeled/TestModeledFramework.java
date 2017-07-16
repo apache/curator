@@ -102,10 +102,10 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     @Test
     public void testBadNode()
     {
-        complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()));
+        complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()), (v, e) -> {});    // ignore error
 
         ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).watched().build();
-        complete(client.read().whenComplete((model, e) -> Assert.assertTrue(e instanceof RuntimeException)));
+        complete(client.read(), (model, e) -> Assert.assertTrue(e instanceof KeeperException.NoNodeException));
     }
 
     @Test
@@ -138,13 +138,13 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     public void testVersioned()
     {
         ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
-        client.set(new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101)));
+        complete(client.set(new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101))));
 
         VersionedModeledFramework<TestModel> versioned = client.versioned();
         complete(versioned.read().whenComplete((v, e) -> {
             Assert.assertNull(e);
             Assert.assertTrue(v.version() > 0);
-        }).thenCompose(versioned::set).whenComplete((s, e) -> Assert.assertNull(e))); // version is correct should succeed
+        }).thenCompose(versioned::set), (s, e) -> Assert.assertNull(e)); // version is correct should succeed
 
         complete(versioned.read().whenComplete((v, e) -> {
             Assert.assertNull(e);
