@@ -156,7 +156,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     @Override
     public AsyncStage<String> set(T item, int version)
     {
-        return set(item, null, -1);
+        return set(item, null, version);
     }
 
     @Override

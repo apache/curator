@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled;
 
 import com.google.common.collect.Sets;
@@ -102,7 +103,8 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     @Test
     public void testBadNode()
     {
-        complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()), (v, e) -> {});    // ignore error
+        complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()), (v, e) -> {
+        });    // ignore error
 
         ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).watched().build();
         complete(client.read(), (model, e) -> Assert.assertTrue(e instanceof KeeperException.NoNodeException));
@@ -112,11 +114,8 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     public void testSchema() throws Exception
     {
         Schema schema = modelSpec.schema();
-        try ( CuratorFramework schemaClient = CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .retryPolicy(new RetryOneTime(1))
-            .schemaSet(new SchemaSet(Collections.singletonList(schema), false))
-            .build() ) {
+        try (CuratorFramework schemaClient = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).schemaSet(new SchemaSet(Collections.singletonList(schema), false)).build())
+        {
             schemaClient.start();
 
             try
@@ -138,7 +137,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     public void testVersioned()
     {
         ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
-        complete(client.set(new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101))));
+        TestModel model = new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101));
+        complete(client.set(model));
+        complete(client.set(model));   // so that version goes to 1
 
         VersionedModeledFramework<TestModel> versioned = client.versioned();
         complete(versioned.read().whenComplete((v, e) -> {
@@ -146,13 +147,8 @@ public class TestModeledFramework extends TestModeledFrameworkBase
             Assert.assertTrue(v.version() > 0);
         }).thenCompose(versioned::set), (s, e) -> Assert.assertNull(e)); // version is correct should succeed
 
-        complete(versioned.read().whenComplete((v, e) -> {
-            Assert.assertNull(e);
-            Assert.assertTrue(v.version() > 0);
-        }).thenCompose(value -> {
-            Versioned<TestModel> badVersion = Versioned.from(value.model(), Integer.MAX_VALUE);
-            return versioned.set(badVersion);
-        }).whenComplete((s, e) -> Assert.assertTrue(e instanceof KeeperException.BadVersionException)));
+        Versioned<TestModel> badVersion = Versioned.from(model, 100000);
+        complete(versioned.set(badVersion), (v, e) -> Assert.assertTrue(e instanceof KeeperException.BadVersionException));
     }
 
     @Test
@@ -164,11 +160,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         complete(client.set(new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101))));
         complete(client.update(new TestModel("John", "Galt", "Galt's Gulch", 54, BigInteger.valueOf(88))), (__, e) -> Assert.assertNotNull(e, "Should've gotten an auth failure"));
 
-        try ( CuratorFramework authCurator = CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .retryPolicy(new RetryOneTime(1))
-            .authorization("digest", "test:test".getBytes())
-            .build() )
+        try (CuratorFramework authCurator = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).authorization("digest", "test:test".getBytes()).build())
         {
             authCurator.start();
             ModeledFramework<TestModel> authClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(authCurator), aclModelSpec);
