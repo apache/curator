@@ -334,7 +334,7 @@ public class TestReconfiguration extends BaseClassForTests
     }
 
     @Test
-    public void testConfigToConnectionStringNormal() throws Exception
+    public void testConfigToConnectionStringIPv4Normal() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant;10.2.3.4:2181";
         String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
@@ -342,7 +342,15 @@ public class TestReconfiguration extends BaseClassForTests
     }
 
     @Test
-    public void testConfigToConnectionStringNoClientAddr() throws Exception
+    public void testConfigToConnectionStringIPv6Normal() throws Exception
+    {
+        String config = "server.1=[1010:0001:0002:0003:0004:0005:0006:0007]:2888:3888:participant;[2001:db8:85a3:0:0:8a2e:370:7334]:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("2001:db8:85a3:0:0:8a2e:370:7334:2181", configString);
+    }
+
+    @Test
+    public void testConfigToConnectionStringIPv4NoClientAddr() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant;2181";
         String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
@@ -350,7 +358,7 @@ public class TestReconfiguration extends BaseClassForTests
     }
 
     @Test
-    public void testConfigToConnectionStringWildcardClientAddr() throws Exception
+    public void testConfigToConnectionStringIPv4WildcardClientAddr() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant;0.0.0.0:2181";
         String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
@@ -363,6 +371,38 @@ public class TestReconfiguration extends BaseClassForTests
         String config = "server.1=10.1.2.3:2888:3888:participant";
         String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
         Assert.assertEquals("", configString);
+    }
+
+    @Test
+    public void testIPv6Wildcard1() throws Exception
+    {
+        String config = "server.1=[2001:db8:85a3:0:0:8a2e:370:7334]:2888:3888:participant;[::]:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("2001:db8:85a3:0:0:8a2e:370:7334:2181", configString);
+    }
+
+    @Test
+    public void testIPv6Wildcard2() throws Exception
+    {
+        String config = "server.1=[1010:0001:0002:0003:0004:0005:0006:0007]:2888:3888:participant;[::0]:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("1010:1:2:3:4:5:6:7:2181", configString);
+    }
+
+    @Test
+    public void testMixedIPv1() throws Exception
+    {
+        String config = "server.1=10.1.2.3:2888:3888:participant;[::]:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("10.1.2.3:2181", configString);
+    }
+
+    @Test
+    public void testMixedIPv2() throws Exception
+    {
+        String config = "server.1=[2001:db8:85a3:0:0:8a2e:370:7334]:2888:3888:participant;127.0.0.1:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        Assert.assertEquals("127.0.0.1:2181", configString);
     }
 
     private CuratorFramework newClient()

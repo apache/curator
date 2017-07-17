@@ -42,8 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -175,9 +173,8 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             {
                 sb.append(",");
             }
-            InetAddress wildcardAddress = new InetSocketAddress(0).getAddress();
             String hostAddress;
-            if ( wildcardAddress.equals(server.clientAddr.getAddress()) )
+            if ( server.clientAddr.getAddress().isAnyLocalAddress() )
             {
                 hostAddress = server.addr.getAddress().getHostAddress();
             }
