@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import com.google.common.collect.Queues;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -27,12 +29,71 @@ import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TestPathChildrenCacheInCluster
+public class TestPathChildrenCacheInCluster extends BaseClassForTests
 {
+    @Test(enabled = false)  // this test is very flakey - it needs to be re-written at some point
+    public void testMissedDelete() throws Exception
+    {
+        Timing timing = new Timing();
+        PathChildrenCache cache = null;
+        CuratorFramework client1 = null;
+        CuratorFramework client2 = null;
+        TestingCluster cluster = new TestingCluster(3);
+        try
+        {
+            cluster.start();
+
+            // client 1 only connects to 1 server
+            InstanceSpec client1Instance = cluster.getInstances().iterator().next();
+            client1 = CuratorFrameworkFactory.newClient(client1Instance.getConnectString(), 1000, 1000, new RetryOneTime(1));
+            cache = new PathChildrenCache(client1, "/test", true);
+            final BlockingQueue<PathChildrenCacheEvent.Type> events = Queues.newLinkedBlockingQueue();
+            PathChildrenCacheListener listener = new PathChildrenCacheListener()
+            {
+                @Override
+                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                {
+                    events.add(event.getType());
+                }
+            };
+            cache.getListenable().addListener(listener);
+
+            client2 = CuratorFrameworkFactory.newClient(cluster.getConnectString(), 1000, 1000, new RetryOneTime(1));
+
+            client1.start();
+            client2.start();
+            cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED);
+            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.INITIALIZED);
+
+            client2.create().creatingParentsIfNeeded().forPath("/test/node", "first".getBytes());
+            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+
+            cluster.killServer(client1Instance);
+            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED);
+            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_LOST);
+
+            client2.delete().forPath("/test/node");
+            client2.create().forPath("/test/node", "second".getBytes());
+            cluster.restartServer(client1Instance);
+
+            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED);
+            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);  // "/test/node" is different - should register as updated
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client1);
+            CloseableUtils.closeQuietly(client2);
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(cluster);
+        }
+    }
+
     @Test
     public void     testServerLoss() throws Exception
     {

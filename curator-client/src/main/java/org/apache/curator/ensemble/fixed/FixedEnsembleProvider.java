@@ -19,6 +19,7 @@
 package org.apache.curator.ensemble.fixed;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.zookeeper.ZooKeeper;
 import java.io.IOException;
@@ -51,7 +52,8 @@ public class FixedEnsembleProvider implements EnsembleProvider
     public FixedEnsembleProvider(String connectionString, boolean updateServerListEnabled)
     {
         this.updateServerListEnabled = updateServerListEnabled;
-        this.connectionString.set(Preconditions.checkNotNull(connectionString, "connectionString cannot be null"));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(connectionString), "connectionString cannot be null or empty");
+        this.connectionString.set(connectionString);
     }
 
     @Override

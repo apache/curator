@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.base.Function;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
@@ -26,9 +27,11 @@ import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CreateBuilderMain;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -65,12 +68,14 @@ public class PersistentNode implements Closeable
     private final AtomicReference<String> nodePath = new AtomicReference<String>(null);
     private final String basePath;
     private final CreateMode mode;
+    private final long ttl;
     private final AtomicReference<byte[]> data = new AtomicReference<byte[]>();
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean authFailure = new AtomicBoolean(false);
     private final BackgroundCallback backgroundCallback;
     private final boolean useProtection;
     private final AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>> createMethod = new AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>>(null);
+    private final ListenerContainer<PersistentNodeListener> listeners = new ListenerContainer<PersistentNodeListener>();
     private final CuratorWatcher watcher = new CuratorWatcher()
     {
         @Override
@@ -131,6 +136,11 @@ public class PersistentNode implements Closeable
                 //Update is ok, mark initialisation as complete if required.
                 initialisationComplete();
             }
+            else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
+            {
+                log.warn("Client does not have authorisation to write node at path {}", event.getPath());
+                authFailure.set(true);
+            }
         }
     };
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -164,10 +174,24 @@ public class PersistentNode implements Closeable
      */
     public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData)
     {
+        this(givenClient, mode, useProtection, basePath, initData, -1);
+    }
+
+    /**
+     * @param givenClient        client instance
+     * @param mode          creation mode
+     * @param useProtection if true, call {@link CreateBuilder#withProtection()}
+     * @param basePath the base path for the node
+     * @param initData data for the node
+     * @param ttl for ttl modes, the ttl to use
+     */
+    public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData, long ttl)
+    {
         this.useProtection = useProtection;
         this.client = Preconditions.checkNotNull(givenClient, "client cannot be null").newWatcherRemoveCuratorFramework();
         this.basePath = PathUtils.validatePath(basePath);
         this.mode = Preconditions.checkNotNull(mode, "mode cannot be null");
+        this.ttl = ttl;
         final byte[] data = Preconditions.checkNotNull(initData, "data cannot be null");
 
         backgroundCallback = new BackgroundCallback()
@@ -229,7 +253,7 @@ public class PersistentNode implements Closeable
         }
         else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
         {
-            log.warn("Client does not have authorisation to write node at path {}", event.getPath());
+            log.warn("Client does not have authorisation to create node at path {}", event.getPath());
             authFailure.set(true);
             return;
         }
@@ -246,6 +270,7 @@ public class PersistentNode implements Closeable
             else
             {
                 initialisationComplete();
+                notifyListeners();
             }
         }
         else
@@ -331,6 +356,16 @@ public class PersistentNode implements Closeable
     }
 
     /**
+     * Returns the listenable
+     *
+     * @return listenable
+     */
+    public ListenerContainer<PersistentNodeListener> getListenable()
+    {
+        return listeners;
+    }
+
+    /**
      * Returns the currently set path or null if the node does not exist
      *
      * @return node path or null
@@ -356,7 +391,7 @@ public class PersistentNode implements Closeable
         this.data.set(Arrays.copyOf(data, data.length));
         if ( isActive() )
         {
-            client.setData().inBackground().forPath(getActualPath(), getData());
+            client.setData().inBackground(setDataCallback).forPath(getActualPath(), getData());
         }
     }
 
@@ -370,7 +405,7 @@ public class PersistentNode implements Closeable
         return this.data.get();
     }
 
-    private void deleteNode() throws Exception
+    protected void deleteNode() throws Exception
     {
         String localNodePath = nodePath.getAndSet(null);
         if ( localNodePath != null )
@@ -414,11 +449,10 @@ public class PersistentNode implements Closeable
             CreateModable<ACLBackgroundPathAndBytesable<String>> localCreateMethod = createMethod.get();
             if ( localCreateMethod == null )
             {
-                CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod = useProtection ? client.create().creatingParentContainersIfNeeded().withProtection() : client.create().creatingParentContainersIfNeeded();
-                if ( createMethod.compareAndSet(null, tempCreateMethod) )
-                {
-                    localCreateMethod = tempCreateMethod;
-                }
+                CreateBuilderMain createBuilder = mode.isTTL() ? client.create().withTtl(ttl) : client.create();
+                CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod = useProtection ? createBuilder.creatingParentContainersIfNeeded().withProtection() : createBuilder.creatingParentContainersIfNeeded();
+                createMethod.compareAndSet(null, tempCreateMethod);
+                localCreateMethod = createMethod.get();
             }
             localCreateMethod.withMode(getCreateMode(existingPath != null)).inBackground(backgroundCallback).forPath(createPath, data.get());
         }
@@ -435,20 +469,25 @@ public class PersistentNode implements Closeable
         {
             switch ( mode )
             {
-            default:
-            {
-                break;
-            }
+                default:
+                {
+                    break;
+                }
 
-            case EPHEMERAL_SEQUENTIAL:
-            {
-                return CreateMode.EPHEMERAL;    // protection case - node already set
-            }
+                case EPHEMERAL_SEQUENTIAL:
+                {
+                    return CreateMode.EPHEMERAL;    // protection case - node already set
+                }
 
-            case PERSISTENT_SEQUENTIAL:
-            {
-                return CreateMode.PERSISTENT;    // protection case - node already set
-            }
+                case PERSISTENT_SEQUENTIAL:
+                {
+                    return CreateMode.PERSISTENT;    // protection case - node already set
+                }
+
+                case PERSISTENT_SEQUENTIAL_WITH_TTL:
+                {
+                    return CreateMode.PERSISTENT_WITH_TTL;    // protection case - node already set
+                }
             }
         }
         return mode;
@@ -466,6 +505,30 @@ public class PersistentNode implements Closeable
         {
             client.checkExists().usingWatcher(watcher).inBackground(checkExistsCallback).forPath(localNodePath);
         }
+    }
+
+    private void notifyListeners()
+    {
+        final String path = getActualPath();
+        listeners.forEach(
+             new Function<PersistentNodeListener, Void>()
+             {
+                 @Override
+                 public Void apply(PersistentNodeListener listener)
+                 {
+                     try
+                    {
+                        listener.nodeCreated(path);
+                    }
+                    catch ( Exception e )
+                    {
+                        ThreadUtils.checkInterrupted(e);
+                        log.error("From PersistentNode listener", e);
+                    }
+                    return null;
+                }
+             }
+        );
     }
 
     private boolean isActive()

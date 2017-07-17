@@ -77,7 +77,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
                 client.delete().guaranteed().forPath("/test-me");
                 Assert.fail();
             }
-            catch ( KeeperException.ConnectionLossException e )
+            catch ( KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e )
             {
                 // expected
             }
@@ -203,7 +203,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
                 namespaceClient.delete().guaranteed().forPath("/test-me");
                 Assert.fail();
             }
-            catch ( KeeperException.ConnectionLossException e )
+            catch ( KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e )
             {
                 // expected
             }
@@ -245,7 +245,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
                 client.delete().forPath(PATH);
                 Assert.fail();
             }
-            catch ( KeeperException.ConnectionLossException e )
+            catch ( KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e )
             {
                 // expected
             }
@@ -259,7 +259,7 @@ public class TestFailedDeleteManager extends BaseClassForTests
                 client.delete().guaranteed().forPath(PATH);
                 Assert.fail();
             }
-            catch ( KeeperException.ConnectionLossException e )
+            catch ( KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e )
             {
                 // expected
             }

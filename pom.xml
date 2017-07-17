@@ -59,7 +59,7 @@
         <jdk-version>1.7</jdk-version>
 
         <!-- versions -->
-        <zookeeper-version>3.5.1-alpha</zookeeper-version>
+        <zookeeper-version>3.5.3-beta</zookeeper-version>
         <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
         <maven-bundle-plugin-version>3.2.0</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
@@ -79,7 +79,7 @@
         <dropwizard-version>0.7.0</dropwizard-version>
         <maven-shade-plugin-version>2.4.3</maven-shade-plugin-version>
         <slf4j-version>1.7.6</slf4j-version>
-        <clirr-maven-plugin-version>2.6.1</clirr-maven-plugin-version>
+        <clirr-maven-plugin-version>2.8</clirr-maven-plugin-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -275,6 +275,17 @@
             <timezone>-8</timezone>
             <url>https://people.apache.org/~enis</url>
         </developer>
+
+        <developer>
+            <name>Fangmin Lyu</name>
+            <email>fangmin@apache.org</email>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <timezone>-8</timezone>
+            <url>https://people.apache.org/~fangmin</url>
+        </developer>
     </developers>
 
     <modules>
@@ -349,6 +360,18 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-x-discovery-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-x-async</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-x-rpc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

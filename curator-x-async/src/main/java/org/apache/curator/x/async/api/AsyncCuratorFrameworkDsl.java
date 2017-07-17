@@ -19,7 +19,6 @@
 package org.apache.curator.x.async.api;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
-import org.apache.curator.x.async.WatchMode;
 
 /**
  * Zookeeper framework-style client

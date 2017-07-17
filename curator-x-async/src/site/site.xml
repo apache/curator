@@ -25,7 +25,11 @@
             <link rel="stylesheet" href="../css/site.css" />
             <script type="text/javascript">
                 $(function(){
-                $('a[title="Curator RPC Proxy"]').parent().addClass("active");
+                    if ( location &amp;&amp; location.pathname &amp;&amp; location.pathname.endsWith('/index.html') ) {
+                        $('a[title="Java 8/Async"]').parent().addClass("active");
+                    } else {
+                        $('a[title="Strongly Typed Models"]').parent().addClass("active");
+                    }
                 });
             </script>
         </head>

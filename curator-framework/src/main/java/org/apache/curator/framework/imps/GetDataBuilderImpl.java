@@ -26,6 +26,7 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.server.DataTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
@@ -250,6 +251,10 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
                 {
                     watching.commitWatcher(rc, false);
                     trace.setReturnCode(rc).setResponseBytesLength(data).setPath(path).setWithWatcher(watching.hasWatcher()).setStat(stat).commit();
+                    if ( (responseStat != null) && (stat != null) )
+                    {
+                        DataTree.copyStat(stat, responseStat);
+                    }
                     if ( decompress && (data != null) )
                     {
                         try

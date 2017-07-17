@@ -143,7 +143,7 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
             int eventSuggestedQty = 0;
             while ( events.size() > 0 )
             {
-                Event event = events.take();
+                Event event = timing.takeFromQueue(events);
                 localEvents.add(event);
                 eventSuggestedQty += (event.eventType == EventType.ADDED) ? 1 : -1;
             }

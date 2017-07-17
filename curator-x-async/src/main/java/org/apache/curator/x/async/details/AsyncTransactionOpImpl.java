@@ -18,11 +18,11 @@
  */
 package org.apache.curator.x.async.details;
 
-import org.apache.curator.framework.api.ACLCreateModePathAndBytesable;
+import org.apache.curator.framework.api.ACLPathAndBytesable;
 import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.api.VersionPathAndBytesable;
 import org.apache.curator.framework.api.transaction.CuratorOp;
-import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
+import org.apache.curator.framework.api.transaction.TransactionCreateBuilder2;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
@@ -54,34 +54,49 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
             private List<ACL> aclList = null;
             private CreateMode createMode = CreateMode.PERSISTENT;
             private boolean compressed = false;
+            private long ttl = -1;
 
             @Override
-            public AsyncPathable<CuratorOp> withMode(CreateMode createMode)
+            public AsyncPathAndBytesable<CuratorOp> withMode(CreateMode createMode)
             {
                 this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
                 return this;
             }
 
             @Override
-            public AsyncPathable<CuratorOp> withACL(List<ACL> aclList)
+            public AsyncPathAndBytesable<CuratorOp> withACL(List<ACL> aclList)
             {
                 this.aclList = aclList;
                 return this;
             }
 
             @Override
-            public AsyncPathable<CuratorOp> compressed()
+            public AsyncPathAndBytesable<CuratorOp> compressed()
             {
                 compressed = true;
                 return this;
             }
 
             @Override
-            public AsyncPathable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed)
+            public AsyncPathAndBytesable<CuratorOp> withTtl(long ttl)
+            {
+                this.ttl = ttl;
+                return this;
+            }
+
+            @Override
+            public AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed)
+            {
+                return withOptions(createMode, aclList, compressed, ttl);
+            }
+
+            @Override
+            public AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed, long ttl)
             {
                 this.createMode = Objects.requireNonNull(createMode, "createMode cannot be null");
                 this.aclList = aclList;
                 this.compressed = compressed;
+                this.ttl = ttl;
                 return this;
             }
 
@@ -99,8 +114,8 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp
 
             private CuratorOp internalForPath(String path, byte[] data, boolean useData)
             {
-                TransactionCreateBuilder<CuratorOp> builder1 = client.transactionOp().create();
-                ACLCreateModePathAndBytesable<CuratorOp> builder2 = compressed ? builder1.compressed() : builder1;
+                TransactionCreateBuilder2<CuratorOp> builder1 = (ttl > 0) ? client.transactionOp().create().withTtl(ttl) : client.transactionOp().create();
+                ACLPathAndBytesable<CuratorOp> builder2 = compressed ? builder1.compressed().withMode(createMode) : builder1.withMode(createMode);
                 PathAndBytesable<CuratorOp> builder3 = builder2.withACL(aclList);
                 try
                 {

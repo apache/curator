@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.api;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -34,7 +35,7 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @param createMode mode
      * @return this
      */
-    AsyncPathable<CuratorOp> withMode(CreateMode createMode);
+    AsyncPathAndBytesable<CuratorOp> withMode(CreateMode createMode);
 
     /**
      * Set an ACL list (default is {@link org.apache.zookeeper.ZooDefs.Ids#OPEN_ACL_UNSAFE})
@@ -42,14 +43,26 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @param aclList the ACL list to use
      * @return this
      */
-    AsyncPathable<CuratorOp> withACL(List<ACL> aclList);
+    AsyncPathAndBytesable<CuratorOp> withACL(List<ACL> aclList);
 
     /**
      * Cause the data to be compressed using the configured compression provider
      *
      * @return this
      */
-    AsyncPathable<CuratorOp> compressed();
+    AsyncPathAndBytesable<CuratorOp> compressed();
+
+    /**
+     * Specify a TTL when mode is {@link org.apache.zookeeper.CreateMode#PERSISTENT_WITH_TTL} or
+     * {@link org.apache.zookeeper.CreateMode#PERSISTENT_SEQUENTIAL_WITH_TTL}. If
+     * the znode has not been modified within the given TTL, it will be deleted once it has no
+     * children. The TTL unit is milliseconds and must be greater than 0 and less than or equal to
+     * EphemeralType.MAX_TTL.
+     *
+     * @param ttl the ttl
+     * @return this for chaining
+     */
+    AsyncPathAndBytesable<CuratorOp> withTtl(long ttl);
 
     /**
      * Specify mode, acl list and compression
@@ -62,5 +75,19 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @see #compressed()
      * @return this
      */
-    AsyncPathable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed);
+    AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed);
+
+    /**
+     * Specify mode, acl list, compression and ttl
+     *
+     * @param createMode mode
+     * @param aclList the ACL list to use
+     * @param compressed true to compress
+     * @see #withMode(org.apache.zookeeper.CreateMode)
+     * @see #withACL(java.util.List)
+     * @see #compressed()
+     * @see #withTtl(long)
+     * @return this
+     */
+    AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed, long ttl);
 }

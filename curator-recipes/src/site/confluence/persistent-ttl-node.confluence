@@ -1,0 +1,41 @@
+h1. Persistent TTL Node
+
+h2. Description
+PersistentTtlNode is useful when you need to create a TTL node but don't want to keep it alive manually by periodically setting data \-
+PersistentTtlNode does that for you. Further the keep\-alive is done in a way that does not generate watch triggers on the parent node.
+It also provides similar guarantees that a [[Persistent Node|persistent-node.html]] does: the node attempts to stay present in ZooKeeper,
+even through connection and session interruptions.
+
+h2. Participating Classes
+* PersistentNode
+* PersistentTtlNode
+
+h2. Usage
+h3. Creating a PersistentTtlNode
+{code}
+public PersistentTtlNode(CuratorFramework client,
+                               String path,
+                               long ttlMs,
+                               byte[] initData)
+Parameters:
+client - client instance
+path path for the parent ZNode
+ttlMs max ttl for the node in milliseconds
+initData - initData for the node
+{code}
+
+h3. General Usage
+PersistentTtlNode must be started:
+{code}
+node.start();
+{code}
+
+When you are through with the PersistentTtlNode instance, you should call close:
+{code}
+node.close();
+{code}
+
+NOTE: this will NOT delete the node immediately. The node will get deleted based on the ttl.
+
+h2. Error Handling
+PersistentTtlNode instances internally handle all error states recreating the node as necessary.

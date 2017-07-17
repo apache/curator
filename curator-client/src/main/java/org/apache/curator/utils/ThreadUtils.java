@@ -31,12 +31,14 @@ public class ThreadUtils
 {
     private static final Logger log = LoggerFactory.getLogger(ThreadUtils.class);
 
-    public static void checkInterrupted(Throwable e)
+    public static boolean checkInterrupted(Throwable e)
     {
         if ( e instanceof InterruptedException )
         {
             Thread.currentThread().interrupt();
+            return true;
         }
+        return false;
     }
 
     public static ExecutorService newSingleThreadExecutor(String processName)

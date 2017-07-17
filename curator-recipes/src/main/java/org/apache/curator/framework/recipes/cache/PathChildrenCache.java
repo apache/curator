@@ -133,7 +133,7 @@ public class PathChildrenCache implements Closeable
             handleStateChange(newState);
         }
     };
-    private static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("PathChildrenCache");
+    public static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("PathChildrenCache");
 
     /**
      * @param client the client
@@ -692,7 +692,7 @@ public class PathChildrenCache implements Closeable
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_ADDED, data)));
             }
-            else if ( previousData.getStat().getVersion() != stat.getVersion() )
+            else if ( stat.getMzxid() != previousData.getStat().getMzxid() )
             {
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
             }

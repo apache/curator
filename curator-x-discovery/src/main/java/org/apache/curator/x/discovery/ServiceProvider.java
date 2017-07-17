@@ -21,6 +21,7 @@ package org.apache.curator.x.discovery;
 
 import org.apache.curator.x.discovery.details.InstanceProvider;
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.Collection;
 
 /**
@@ -61,4 +62,10 @@ public interface ServiceProvider<T> extends Closeable
      * @param instance instance that had an error
      */
     public void noteError(ServiceInstance<T> instance);
+
+    /**
+     * Close the provider. Note: it's the provider's responsibility to close any caches it manages
+     */
+    @Override
+    void close() throws IOException;
 }

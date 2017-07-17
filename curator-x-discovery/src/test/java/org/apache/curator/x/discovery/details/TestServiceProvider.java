@@ -85,7 +85,8 @@ public class TestServiceProvider extends BaseClassForTests
             client.start();
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).enabled(false).build();
-            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
+            InstanceSerializer<String> serializer = new JsonInstanceSerializer<>(String.class, false);
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).serializer(serializer).basePath("/test").client(client).thisInstance(instance).build();
             closeables.add(discovery);
             discovery.start();
 
