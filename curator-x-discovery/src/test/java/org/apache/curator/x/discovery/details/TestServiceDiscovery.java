@@ -33,7 +33,6 @@ import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.io.Closeable;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -54,18 +53,18 @@ public class TestServiceDiscovery extends BaseClassForTests
     @Test
     public void testCrashedServerMultiInstances() throws Exception
     {
-        List<Closeable> closeables = Lists.newArrayList();
+        CuratorFramework client = null;
+        ServiceDiscovery<String> discovery = null;
         try
         {
             Timing timing = new Timing();
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-            closeables.add(client);
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
 
             final Semaphore semaphore = new Semaphore(0);
             ServiceInstance<String> instance1 = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
             ServiceInstance<String> instance2 = ServiceInstance.<String>builder().payload("thing").name("test").port(10065).build();
-            ServiceDiscovery<String> discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance1, false)
+            discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance1, false)
             {
                 @Override
                 protected void internalRegisterService(ServiceInstance<String> service) throws Exception
@@ -74,7 +73,6 @@ public class TestServiceDiscovery extends BaseClassForTests
                     semaphore.release();
                 }
             };
-            closeables.add(discovery);
             discovery.start();
             discovery.registerService(instance2);
 
@@ -85,34 +83,31 @@ public class TestServiceDiscovery extends BaseClassForTests
             server.stop();
 
             server.restart();
-            closeables.add(server);
 
             timing.acquireSemaphore(semaphore, 2);
             Assert.assertEquals(discovery.queryForInstances("test").size(), 2);
         }
         finally
         {
-            for ( Closeable c : closeables )
-            {
-                CloseableUtils.closeQuietly(c);
-            }
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
     public void testCrashedServer() throws Exception
     {
-        List<Closeable> closeables = Lists.newArrayList();
+        CuratorFramework client = null;
+        ServiceDiscovery<String> discovery = null;
         try
         {
             Timing timing = new Timing();
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-            closeables.add(client);
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
 
             final Semaphore semaphore = new Semaphore(0);
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String> discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance, false)
+            discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance, false)
             {
                 @Override
                 protected void internalRegisterService(ServiceInstance<String> service) throws Exception
@@ -121,7 +116,6 @@ public class TestServiceDiscovery extends BaseClassForTests
                     semaphore.release();
                 }
             };
-            closeables.add(discovery);
             discovery.start();
 
             timing.acquireSemaphore(semaphore);
@@ -131,35 +125,31 @@ public class TestServiceDiscovery extends BaseClassForTests
             server.stop();
 
             server.restart();
-            closeables.add(server);
 
             timing.acquireSemaphore(semaphore);
             Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
         }
         finally
         {
-            for ( Closeable c : closeables )
-            {
-                CloseableUtils.closeQuietly(c);
-            }
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
     public void testCrashedInstance() throws Exception
     {
-        List<Closeable> closeables = Lists.newArrayList();
+        CuratorFramework client = null;
+        ServiceDiscovery<String> discovery = null;
         try
         {
             Timing timing = new Timing();
 
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-            closeables.add(client);
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String> discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance, false);
-            closeables.add(discovery);
+            discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance, false);
             discovery.start();
 
             Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
@@ -171,11 +161,8 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
         finally
         {
-            Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
-                CloseableUtils.closeQuietly(c);
-            }
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -185,11 +172,11 @@ public class TestServiceDiscovery extends BaseClassForTests
         final String SERVICE_ONE = "one";
         final String SERVICE_TWO = "two";
 
-        List<Closeable> closeables = Lists.newArrayList();
+        CuratorFramework client = null;
+        ServiceDiscovery<Void> discovery = null;
         try
         {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            closeables.add(client);
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client.start();
 
             ServiceInstance<Void> s1_i1 = ServiceInstance.<Void>builder().name(SERVICE_ONE).build();
@@ -197,8 +184,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             ServiceInstance<Void> s2_i1 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
             ServiceInstance<Void> s2_i2 = ServiceInstance.<Void>builder().name(SERVICE_TWO).build();
 
-            ServiceDiscovery<Void> discovery = ServiceDiscoveryBuilder.builder(Void.class).client(client).basePath("/test").build();
-            closeables.add(discovery);
+            discovery = ServiceDiscoveryBuilder.builder(Void.class).client(client).basePath("/test").build();
             discovery.start();
 
             discovery.registerService(s1_i1);
@@ -227,27 +213,23 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
         finally
         {
-            Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
-                CloseableUtils.closeQuietly(c);
-            }
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
     public void testBasic() throws Exception
     {
-        List<Closeable> closeables = Lists.newArrayList();
+        CuratorFramework client = null;
+        ServiceDiscovery<String> discovery = null;
         try
         {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            closeables.add(client);
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client.start();
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
-            closeables.add(discovery);
+            discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
             discovery.start();
 
             Assert.assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
@@ -258,11 +240,8 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
         finally
         {
-            Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
-                CloseableUtils.closeQuietly(c);
-            }
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -271,16 +250,16 @@ public class TestServiceDiscovery extends BaseClassForTests
     {
         Timing timing = new Timing();
         server.stop();
-        List<Closeable> closeables = Lists.newArrayList();
+
+        CuratorFramework client = null;
+        ServiceDiscovery<String> discovery = null;
         try
         {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            closeables.add(client);
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client.start();
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
-            closeables.add(discovery);
+            discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
             discovery.start();
 
             server.restart();
@@ -293,11 +272,8 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
         finally
         {
-            Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
-                CloseableUtils.closeQuietly(c);
-            }
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -308,7 +284,6 @@ public class TestServiceDiscovery extends BaseClassForTests
         final String name = "name";
 
         final CountDownLatch restartLatch = new CountDownLatch(1);
-        List<Closeable> closeables = Lists.newArrayList();
 
         InstanceSerializer<String> slowSerializer = new JsonInstanceSerializer<String>(String.class)
         {
@@ -333,15 +308,15 @@ public class TestServiceDiscovery extends BaseClassForTests
             }
         };
 
+        CuratorFramework client = null;
+        ServiceDiscovery<String> discovery = null;
         try
         {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            closeables.add(client);
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client.start();
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name(name).port(10064).build();
-            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).serializer(slowSerializer).watchInstances(true).build();
-            closeables.add(discovery);
+            discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).serializer(slowSerializer).watchInstances(true).build();
             discovery.start();
 
             Assert.assertFalse(discovery.queryForInstances(name).isEmpty(), "Service should start registered.");
@@ -358,27 +333,23 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
         finally
         {
-            Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
-                CloseableUtils.closeQuietly(c);
-            }
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
     public void testCleaning() throws Exception
     {
-        List<Closeable> closeables = Lists.newArrayList();
+        CuratorFramework client = null;
+        ServiceDiscovery<String> discovery = null;
         try
         {
-            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-            closeables.add(client);
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client.start();
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("thing").name("test").port(10064).build();
-            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
-            closeables.add(discovery);
+            discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
             discovery.start();
             discovery.unregisterService(instance);
 
@@ -386,11 +357,8 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
         finally
         {
-            Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
-                CloseableUtils.closeQuietly(c);
-            }
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
         }
     }
 }
