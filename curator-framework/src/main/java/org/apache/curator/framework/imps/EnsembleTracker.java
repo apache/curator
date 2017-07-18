@@ -20,7 +20,6 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -40,10 +39,9 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -166,12 +164,25 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
         StringBuilder sb = new StringBuilder();
         for ( QuorumPeer.QuorumServer server : data.getAllMembers().values() )
         {
+            if ( server.clientAddr == null )
+            {
+                // Invalid client address configuration in zoo.cfg
+                continue;
+            }
             if ( sb.length() != 0 )
             {
                 sb.append(",");
             }
-            InetSocketAddress address = Objects.firstNonNull(server.clientAddr, server.addr);
-            sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
+            String hostAddress;
+            if ( server.clientAddr.getAddress().isAnyLocalAddress() )
+            {
+                hostAddress = server.addr.getAddress().getHostAddress();
+            }
+            else
+            {
+                hostAddress = server.clientAddr.getAddress().getHostAddress();
+            }
+            sb.append(hostAddress).append(":").append(server.clientAddr.getPort());
         }
 
         return sb.toString();
@@ -183,13 +194,19 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
         properties.load(new ByteArrayInputStream(data));
         log.info("New config event received: {}", properties);
 
-        QuorumMaj newConfig = new QuorumMaj(properties);
-        currentConfig.set(newConfig);
-
-        String connectionString = configToConnectionString(newConfig);
-        if ( connectionString.trim().length() > 0 )
+        if (!properties.isEmpty())
         {
-            ensembleProvider.setConnectionString(connectionString);
+            QuorumMaj newConfig = new QuorumMaj(properties);
+            String connectionString = configToConnectionString(newConfig);
+            if (connectionString.trim().length() > 0)
+            {
+                currentConfig.set(newConfig);
+                ensembleProvider.setConnectionString(connectionString);
+            }
+            else
+            {
+                log.error("Invalid config event received: {}", properties);
+            }
         }
         else
         {
