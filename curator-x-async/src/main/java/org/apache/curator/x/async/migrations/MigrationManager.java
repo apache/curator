@@ -106,7 +106,6 @@ public class MigrationManager
         }
 
         int compareSize = Math.min(set.migrations().size(), operationHashesInOrder.size());
-        List<Migration> subList = set.migrations().subList(0, compareSize);
         for ( int i = 0; i < compareSize; ++i )
         {
             byte[] setHash = hash(set.migrations().get(i).operations());
@@ -184,23 +183,23 @@ public class MigrationManager
         }
 
         return asyncEnsureContainers(client, thisMetaDataPath)
-            .thenCompose(__ -> applyMetaDataAfterEnsure(set, toBeApplied, thisMetaDataPath));
+            .thenCompose(__ -> applyMetaDataAfterEnsure(toBeApplied, thisMetaDataPath));
     }
 
     @VisibleForTesting
     volatile AtomicInteger debugCount = null;
 
-    private CompletionStage<Void> applyMetaDataAfterEnsure(MigrationSet set, List<Migration> toBeApplied, String thisMetaDataPath)
+    private CompletionStage<Void> applyMetaDataAfterEnsure(List<Migration> toBeApplied, String thisMetaDataPath)
     {
         debugCount.incrementAndGet();
 
+        List<CuratorOp> operations = new ArrayList<>();
         String metaDataBasePath = ZKPaths.makePath(thisMetaDataPath, META_DATA_NODE_NAME);
-        List<CompletableFuture<Object>> stages = toBeApplied.stream().map(migration -> {
-            List<CuratorOp> operations = new ArrayList<>();
-            operations.addAll(migration.operations());
-            operations.add(client.transactionOp().create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(metaDataBasePath, hash(operations)));
-            return client.transaction().forOperations(operations).thenApply(__ -> null).toCompletableFuture();
-        }).collect(Collectors.toList());
-        return CompletableFuture.allOf(stages.toArray(new CompletableFuture[stages.size()]));
+        toBeApplied.forEach(migration -> {
+            List<CuratorOp> thisMigrationOperations = migration.operations();
+            operations.addAll(thisMigrationOperations);
+            operations.add(client.transactionOp().create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(metaDataBasePath, hash(thisMigrationOperations)));
+        });
+        return client.transaction().forOperations(operations).thenApply(__ -> null);
     }
 }

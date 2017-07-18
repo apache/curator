@@ -268,7 +268,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
             Assert.assertTrue(Throwables.getRootCause(e) instanceof KeeperException.NoNodeException);
         }
 
-        Assert.assertEquals(client.unwrap().getData().forPath("/test"), "something".getBytes());
+        Assert.assertNull(client.unwrap().checkExists().forPath("/test"));  // should be all or nothing
     }
 
     @Test
