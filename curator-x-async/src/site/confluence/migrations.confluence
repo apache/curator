@@ -91,9 +91,9 @@ manager.migrate(set).exceptionally(e -> {
 });
 {code}
 
-Each migration in the set is applied in a single transaction - i.e. all operations that comprise
+* Each migration in the set is applied in a single transaction - i.e. all operations that comprise
 a migration set (the sum of all individual migration operations) are sent to ZooKeeper as a single
-transaction. MigrationManager stores a hash
-of all operations in a migration so that it can be compared for future operations. i.e.
+transaction.
+* MigrationManager stores a hash of all operations in a migration so that it can be compared for future operations. i.e.
 if, in the future, a migration set is attempted but the hash of one of the previous migrations
 does not match, the stage completes exceptionally with {{MigrationException}}.
