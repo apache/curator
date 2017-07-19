@@ -23,6 +23,7 @@ import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.SafeIsTtlMode;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
@@ -180,7 +181,7 @@ public class TestFrameworkEdges extends BaseClassForTests
             final String TEST_PATH = "/a/b/c/test-";
             long ttl = timing.forWaiting().milliseconds()*1000;
             CreateBuilder firstCreateBuilder = client.create();
-            if(mode.isTTL()) {
+            if( SafeIsTtlMode.isTtl(mode) ) {
                 firstCreateBuilder.withTtl(ttl);
             }
             firstCreateBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
@@ -195,7 +196,7 @@ public class TestFrameworkEdges extends BaseClassForTests
             
             CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.withProtection();
-            if(mode.isTTL()) {
+            if(SafeIsTtlMode.isTtl(mode)) {
                 createBuilder.withTtl(ttl);
             }
 

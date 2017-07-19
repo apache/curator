@@ -324,4 +324,11 @@ public interface CuratorFramework extends Closeable
      * @return schema set
      */
     SchemaSet getSchemaSet();
+
+    /**
+     * Return true if this instance is running in ZK 3.4.x compatibility mode
+     *
+     * @return true/false
+     */
+    boolean isZk34CompatibilityMode();
 }

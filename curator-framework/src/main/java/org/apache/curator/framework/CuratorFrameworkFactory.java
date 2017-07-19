@@ -35,15 +35,16 @@ import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.framework.schema.SchemaSet;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -66,6 +67,33 @@ public class CuratorFrameworkFactory
     private static final DefaultACLProvider DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
     private static final long DEFAULT_INACTIVE_THRESHOLD_MS = (int)TimeUnit.MINUTES.toMillis(3);
     private static final int DEFAULT_CLOSE_WAIT_MS = (int)TimeUnit.SECONDS.toMillis(1);
+
+    private static final boolean hasZooKeeperAdmin;
+    static
+    {
+        boolean hasIt;
+        try
+        {
+            Class.forName("org.apache.zookeeper.admin.ZooKeeperAdmin");
+            hasIt = true;
+        }
+        catch ( ClassNotFoundException e )
+        {
+            hasIt = false;
+            LoggerFactory.getLogger(CuratorFrameworkFactory.class).info("Running in ZooKeeper 3.4.x compatibility mode");
+        }
+        hasZooKeeperAdmin = hasIt;
+    }
+
+    /**
+     * Return true if the classpath ZooKeeper library is 3.4.x
+     *
+     * @return true/false
+     */
+    public static boolean isZK34()
+    {
+        return !hasZooKeeperAdmin;
+    }
 
     /**
      * Return a new builder that builds a CuratorFramework
@@ -145,6 +173,7 @@ public class CuratorFrameworkFactory
         private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
         private ConnectionHandlingPolicy connectionHandlingPolicy = Boolean.getBoolean("curator-use-classic-connection-handling") ? new ClassicConnectionHandlingPolicy() : new StandardConnectionHandlingPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
+        private boolean zk34CompatibilityMode = isZK34();
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -386,6 +415,20 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * If mode is true, create a ZooKeeper 3.4.x compatible client. IMPORTANT: If the client
+         * library used is ZooKeeper 3.4.x <code>zk34CompatibilityMode</code> is enabled by default.
+         *
+         * @since 3.5.0
+         * @param mode true/false
+         * @return this
+         */
+        public Builder zk34CompatibilityMode(boolean mode)
+        {
+            this.zk34CompatibilityMode = mode;
+            return this;
+        }
+
+        /**
          * <p>
          *     Change the connection handling policy. The default policy is {@link StandardConnectionHandlingPolicy}.
          * </p>
@@ -513,6 +556,11 @@ public class CuratorFrameworkFactory
         public SchemaSet getSchemaSet()
         {
             return schemaSet;
+        }
+
+        public boolean isZk34CompatibilityMode()
+        {
+            return zk34CompatibilityMode;
         }
 
         @Deprecated

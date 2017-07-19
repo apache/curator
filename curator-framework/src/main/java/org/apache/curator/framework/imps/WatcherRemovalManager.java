@@ -57,7 +57,7 @@ public class WatcherRemovalManager
         while ( localEntries.size() > 0 )
         {
             NamespaceWatcher watcher = localEntries.remove(0);
-            if ( entries.remove(watcher) )
+            if ( entries.remove(watcher) && !client.isZk34CompatibilityMode() )
             {
                 try
                 {
