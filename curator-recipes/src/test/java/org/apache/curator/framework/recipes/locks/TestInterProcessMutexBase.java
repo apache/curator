@@ -33,6 +33,7 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -128,7 +129,14 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                             }
                             finally
                             {
-                                lock.release();
+                                try
+                                {
+                                    lock.release();
+                                }
+                                catch ( KeeperException.SessionExpiredException dummy )
+                                {
+                                    // happens sometimes with a few tests - ignore
+                                }
                             }
                             return result;
                         }
