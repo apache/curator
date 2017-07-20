@@ -25,8 +25,8 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.KillSession;
-import org.apache.curator.test.Timing;
+import org.apache.curator.test.KillSession2;
+import org.apache.curator.test.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestEnabledSessionExpiredState extends BaseClassForTests
 {
-    private final Timing timing = new Timing();
+    private final Timing2 timing = new Timing2();
 
     private CuratorFramework client;
     private BlockingQueue<ConnectionState> states;
@@ -127,7 +127,7 @@ public class TestEnabledSessionExpiredState extends BaseClassForTests
     {
         Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
 
-        KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+        KillSession2.kill(client.getZookeeperClient().getZooKeeper());
 
         Assert.assertEquals(states.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
         Assert.assertEquals(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);

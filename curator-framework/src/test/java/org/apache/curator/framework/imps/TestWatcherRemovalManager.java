@@ -25,8 +25,10 @@ import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.CuratorTestBase;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.WatchersDebug;
+import org.apache.curator.test.Zk35MethodInterceptor;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -36,7 +38,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
-public class TestWatcherRemovalManager extends BaseClassForTests
+@Test(groups = Zk35MethodInterceptor.zk35Group)
+public class TestWatcherRemovalManager extends CuratorTestBase
 {
     @Test
     public void testSameWatcherDifferentPaths1Triggered() throws Exception

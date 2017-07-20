@@ -16,29 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework;
+package org.apache.curator.test;
 
-import org.apache.curator.utils.Compatibility;
-import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooKeeper;
 
-public class SafeIsTtlMode
+class Compatibility
 {
-    private static class Internal
+    static boolean isZK34()
     {
-        private static final Internal instance = new Internal();
-
-        public boolean isTtl(CreateMode mode)
-        {
-            return mode.isTTL();
-        }
+        return false;
     }
 
-    public static boolean isTtl(CreateMode mode)
+    static void injectSessionExpiration(ZooKeeper zooKeeper)
     {
-        return !Compatibility.isZK34() && Internal.instance.isTtl(mode);
-    }
-
-    private SafeIsTtlMode()
-    {
+        zooKeeper.getTestable().injectSessionExpiration();
     }
 }

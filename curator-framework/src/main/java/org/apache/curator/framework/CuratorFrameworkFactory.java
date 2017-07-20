@@ -44,13 +44,14 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.curator.utils.Compatibility.isZK34;
 
 /**
  * Factory methods for creating framework-style clients
@@ -67,33 +68,6 @@ public class CuratorFrameworkFactory
     private static final DefaultACLProvider DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
     private static final long DEFAULT_INACTIVE_THRESHOLD_MS = (int)TimeUnit.MINUTES.toMillis(3);
     private static final int DEFAULT_CLOSE_WAIT_MS = (int)TimeUnit.SECONDS.toMillis(1);
-
-    private static final boolean hasZooKeeperAdmin;
-    static
-    {
-        boolean hasIt;
-        try
-        {
-            Class.forName("org.apache.zookeeper.admin.ZooKeeperAdmin");
-            hasIt = true;
-        }
-        catch ( ClassNotFoundException e )
-        {
-            hasIt = false;
-            LoggerFactory.getLogger(CuratorFrameworkFactory.class).info("Running in ZooKeeper 3.4.x compatibility mode");
-        }
-        hasZooKeeperAdmin = hasIt;
-    }
-
-    /**
-     * Return true if the classpath ZooKeeper library is 3.4.x
-     *
-     * @return true/false
-     */
-    public static boolean isZK34()
-    {
-        return !hasZooKeeperAdmin;
-    }
 
     /**
      * Return a new builder that builds a CuratorFramework

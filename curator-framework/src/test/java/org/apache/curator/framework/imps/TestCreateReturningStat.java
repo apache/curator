@@ -18,25 +18,24 @@
  */
 package org.apache.curator.framework.imps;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
-import org.apache.curator.framework.api.ExistsBuilder;
-import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.CuratorTestBase;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.Zk35MethodInterceptor;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class TestCreateReturningStat extends BaseClassForTests
+@Test(groups = Zk35MethodInterceptor.zk35Group)
+public class TestCreateReturningStat extends CuratorTestBase
 {
     private CuratorFramework createClient()
     {

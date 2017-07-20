@@ -33,9 +33,9 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.KillSession;
+import org.apache.curator.test.KillSession2;
 import org.apache.curator.test.TestingServer;
-import org.apache.curator.test.Timing;
+import org.apache.curator.test.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -57,7 +57,7 @@ import org.apache.curator.framework.api.CreateBuilder;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
-    private final Timing timing = new Timing();
+    private final Timing2 timing = new Timing2();
 
     @Test
     public void testCreateContainersForBadConnect() throws Exception
@@ -391,7 +391,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             client.checkExists().usingWatcher(watcher).forPath("/sessionTest");
-            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
             Assert.assertNotNull(client.checkExists().forPath("/sessionTest"));
             Assert.assertTrue(sessionDied.get());
         }

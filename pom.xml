@@ -80,6 +80,7 @@
         <maven-shade-plugin-version>2.4.3</maven-shade-plugin-version>
         <slf4j-version>1.7.6</slf4j-version>
         <clirr-maven-plugin-version>2.8</clirr-maven-plugin-version>
+        <build-helper-maven-plugin-version>3.0.0</build-helper-maven-plugin-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -866,6 +867,12 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build-helper-maven-plugin-version}</version>
             </plugin>
         </plugins>
     </build>
