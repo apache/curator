@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test;
+package org.apache.curator.test.compatibility;
 
+import org.apache.curator.test.Compatibility;
 import org.testng.IMethodInstance;
 import org.testng.IMethodInterceptor;
 import org.testng.ITestContext;

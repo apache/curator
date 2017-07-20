@@ -16,24 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test;
+package org.apache.curator.test.compatibility;
 
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.curator.test.BaseClassForTests;
+import org.testng.annotations.Listeners;
 
-/**
- * <p>
- *     Utility to simulate a ZK session dying.
- * </p>
- */
-public class KillSession2
+@Listeners(Zk35MethodInterceptor.class)
+public class CuratorTestBase extends BaseClassForTests
 {
-    /**
-     * Kill the given ZK session
-     *
-     * @param client the client to kill
-     */
-    public static void     kill(ZooKeeper client)
-    {
-        Compatibility.injectSessionExpiration(client);
-    }
+    protected final Timing2 timing = new Timing2();
 }

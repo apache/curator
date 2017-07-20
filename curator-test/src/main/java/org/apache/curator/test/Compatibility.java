@@ -20,14 +20,14 @@ package org.apache.curator.test;
 
 import org.apache.zookeeper.ZooKeeper;
 
-class Compatibility
+public class Compatibility
 {
-    static boolean isZK34()
+    public static boolean isZK34()
     {
         return false;
     }
 
-    static void injectSessionExpiration(ZooKeeper zooKeeper)
+    public static void injectSessionExpiration(ZooKeeper zooKeeper)
     {
         zooKeeper.getTestable().injectSessionExpiration();
     }

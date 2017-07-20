@@ -149,19 +149,23 @@
             </plugin>
 
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>add-compatibility</id>
+                        <id>copy-curator-test-classes</id>
+                        <phase>validate</phase>
                         <goals>
-                            <goal>add-test-source</goal>
+                            <goal>copy-resources</goal>
                         </goals>
-                        <phase>generate-test-sources</phase>
                         <configuration>
-                            <sources>
-                                <source>../curator-test/src/compatibility/java</source>
-                            </sources>
+                            <outputDirectory>${basedir}/target/generated-test-sources/test-annotations/org/apache/curator/test/compatibility</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>../curator-test/src/main/java/org/apache/curator/test/compatibility</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>

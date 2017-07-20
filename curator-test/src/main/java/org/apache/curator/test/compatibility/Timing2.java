@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.curator.test;
+package org.apache.curator.test.compatibility;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
