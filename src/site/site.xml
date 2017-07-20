@@ -102,6 +102,7 @@
         <menu name="Extensions" inherit="top">
             <item name="Service Discovery" href="curator-x-discovery/index.html"/>
             <item name="Service Discovery Server" href="curator-x-discovery-server/index.html"/>
+            <item name="Curator RPC Proxy" href="curator-x-rpc/index.html"/>
         </menu>
 
         <menu name="Community" inherit="top">
