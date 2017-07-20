@@ -16,21 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-body
-{
-    font-size: 16px;
-    line-height: 22px;
-}
 
 tt
 {
-    font-size: 14px;
-    background-color: transparent;
-}
-
-pre
-{
-    font-size: 14px;
+    background-color: #eee;
 }
 
 .well, .breadcrumb
@@ -58,15 +47,8 @@ a:hover
     background-color: #DDDDDD;
 }
 
-footer
+.search-query
 {
-    font-size: 12px;
-    line-height: 15px;
-}
-
-h2
-{
-    text-align: center;
-    border-bottom: 1px solid #0035AC;
-    margin-bottom: 18px;
+    margin-top: 15px;
+    width: 183px;
 }

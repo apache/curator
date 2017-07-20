@@ -21,9 +21,9 @@
 -->
 <project xmlns="http://maven.apache.org/DECORATION/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/DECORATION/1.1.0 http://maven.apache.org/xsd/decoration-1.1.0.xsd" name="Curator Async">
     <body>
-        <head>
+        <head><![CDATA[
             <link rel="stylesheet" href="../css/site.css" />
-            <script type="text/javascript"><![CDATA[
+            <script type="text/javascript">
                 $(function(){
                     if ( location && location.pathname && location.pathname.endsWith('/index.html') ) {
                         $('a[title="Java 8/Async"]').parent().addClass("active");
@@ -33,7 +33,7 @@
                         $('a[title="Strongly Typed Models"]').parent().addClass("active");
                     }
                 });
-            ]]></script>
-        </head>
+            </script>
+        ]]></head>
     </body>
 </project>
