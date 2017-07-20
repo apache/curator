@@ -12,14 +12,9 @@ h2. Getting Started
 
 See the page for quick start: [[Getting Started|getting-started.html]].
 
-h2. Components
+!images/arrow.png!
 
-|[[Recipes|curator-recipes/index.html]]|Implementations of some of the common ZooKeeper "recipes". The implementations are built on top of the Curator Framework.|
-|[[Framework|curator-framework/index.html]]|The Curator Framework is a high\-level API that greatly simplifies using ZooKeeper. It adds many features that build on ZooKeeper and handles the complexity of managing connections to the ZooKeeper cluster and retrying operations.|
-|[[Utilities|utilities.html]]|Various utilities that are useful when using ZooKeeper.|
-|[[Client|curator-client/index.html]]|A replacement for the bundled {{ZooKeeper}} class that takes care of some low\-level housekeeping and provides some useful utilities.|
-|[[Errors|errors.html]]|How Curator deals with errors, connection issues, recoverable exceptions, etc.|
-|Extensions|The curator\-recipes package implements the common recipes that are described in the ZooKeeper documentation. To avoid bloating that package, recipes/applications that have a vertical appeal will be put in separate "extension" packages using the naming convention curator\-x\-name.|
+Use the navigation links in the left\-nav menu for detailed information.
 
 h2. Maven / Artifacts
 
@@ -28,20 +23,17 @@ most users, the only artifact you need is curator\-recipes.
 
 ||GroupID/Org||ArtifactID/Name||Description||
 |org.apache.curator|curator\-recipes|All of the recipes. Note: this artifact has dependencies on client and framework and, so, Maven (or whatever tool you're using) should pull those in automatically.|
+|org.apache.curator|curator\-async|Asynchronous DSL with O/R modeling, migrations and many other features.|
 |org.apache.curator|curator\-framework|The Curator Framework high level API. This is built on top of the client and should pull it in automatically.|
 |org.apache.curator|curator\-client|The Curator Client \- replacement for the ZooKeeper class in the ZK distribution.|
 |org.apache.curator|curator\-test|Contains the TestingServer, the TestingCluster and a few other tools useful for testing.|
 |org.apache.curator|curator\-examples|Example usages of various Curator features.|
 |org.apache.curator|curator\-x\-discovery|A Service Discovery implementation built on the Curator Framework.|
-|org.apache.curator|curator\-x\-discovery-server|A RESTful server that can be used with Curator Discovery.|
+|org.apache.curator|curator\-x\-discovery\-server|A RESTful server that can be used with Curator Discovery.|
 |org.apache.curator|curator\-x\-rpc|A proxy that bridges non\-java environments with the Curator framework and recipes.|
 
-h2. Versions
+h2. ZooKeeper Compatibility
 
-The are currently two released versions of Curator, 2.x.x and 3.x.x:
+Apache Curator is meant to be used with ZooKeeper 3.5\+. However, it is also compatible with ZooKeeper 3.4.x.
+See [[Compatibility|compatibility.html]] for details.
 
-* Curator 2.x.x \- compatible with both ZooKeeper 3.4.x and ZooKeeper 3.5.x
-* Curator 3.x.x \- compatible only with ZooKeeper 3.5.x and includes support for new features such as dynamic reconfiguration, etc.
-
-ZooKeeper 3.5.x adds a number of new features including dynamic reconfiguration, watcher removal and others. The Curator 3.x.x Jira
-issues tracking these features are here: [[https://issues.apache.org/jira/browse/CURATOR-159]].

@@ -472,12 +472,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public ReconfigBuilder reconfig()
     {
+        Preconditions.checkState(!isZk34CompatibilityMode(), "reconfig/config APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new ReconfigBuilderImpl(this);
     }
 
     @Override
     public GetConfigBuilder getConfig()
     {
+        Preconditions.checkState(!isZk34CompatibilityMode(), "reconfig/config APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new GetConfigBuilderImpl(this);
     }
 
@@ -542,6 +544,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public RemoveWatchesBuilder watches()
     {
+        Preconditions.checkState(!isZk34CompatibilityMode(), "Remove watches APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new RemoveWatchesBuilderImpl(this);
     }
 

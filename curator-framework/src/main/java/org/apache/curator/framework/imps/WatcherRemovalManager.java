@@ -53,6 +53,11 @@ public class WatcherRemovalManager
 
     void removeWatchers()
     {
+        if ( client.isZk34CompatibilityMode() )
+        {
+            return;
+        }
+
         List<NamespaceWatcher> localEntries = Lists.newArrayList(entries);
         while ( localEntries.size() > 0 )
         {
