@@ -9,6 +9,10 @@
 
     <artifactId>curator-test-zk34</artifactId>
 
+    <name>Curator ZooKeeper 3.4 Testing</name>
+    <description>Tests for ZoKeeper 3.4 compatibility</description>
+    <inceptionYear>2017</inceptionYear>
+
     <properties>
         <zookeeper-34-version>3.4.8</zookeeper-34-version>
         <curator-2-version>2.12.0</curator-2-version>
