@@ -27,10 +27,10 @@ import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingZooKeeperServer;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.test.compatibility.Zk35MethodInterceptor;
 import org.apache.curator.utils.CloseableUtils;
@@ -94,6 +94,7 @@ public class TestReconfiguration extends CuratorTestBase
     }
 
     @SuppressWarnings("ConstantConditions")
+    @Test(enabled = false)
     public void testApiPermutations() throws Exception
     {
         // not an actual test. Specifies all possible API possibilities
