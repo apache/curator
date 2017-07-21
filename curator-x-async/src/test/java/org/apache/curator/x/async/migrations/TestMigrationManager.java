@@ -67,6 +67,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     private CuratorOp v3op;
     private MigrationManager manager;
     private final AtomicReference<CountDownLatch> filterLatch = new AtomicReference<>();
+    private final CountDownLatch filterIsSetLatch = new CountDownLatch(1);
 
     @BeforeMethod
     @Override
@@ -99,6 +100,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
                 CountDownLatch localLatch = filterLatch.getAndSet(null);
                 if ( localLatch != null )
                 {
+                    filterIsSetLatch.countDown();
                     try
                     {
                         localLatch.await();
@@ -301,6 +303,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         CountDownLatch latch = new CountDownLatch(1);
         filterLatch.set(latch);
         CompletionStage<Void> first = manager.migrate(migrationSet);
+        Assert.assertTrue(timing.awaitLatch(filterIsSetLatch));
 
         MigrationManager manager2 = new MigrationManager(client, LOCK_PATH, META_DATA_PATH, executor, Duration.ofMillis(timing.forSleepingABit().milliseconds()));
         try
@@ -328,6 +331,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         CountDownLatch latch = new CountDownLatch(1);
         filterLatch.set(latch);
         CompletionStage<Void> first = manager.migrate(migrationSet);
+        Assert.assertTrue(timing.awaitLatch(filterIsSetLatch));
 
         CompletionStage<Void> second = manager.migrate(migrationSet);
         try
