@@ -337,7 +337,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         }
         catch ( Throwable e )
         {
-            Assert.assertTrue(Throwables.getRootCause(e) instanceof TimeoutException);
+            Assert.assertTrue(Throwables.getRootCause(e) instanceof TimeoutException, "Should throw TimeoutException, was: " + Throwables.getStackTraceAsString(Throwables.getRootCause(e)));
         }
 
         latch.countDown();
