@@ -17,38 +17,35 @@
  * under the License.
  */
 
-tt
-{
-    background-color: #eee;
+tt {
+  background-color: #EEE;
 }
 
-.well, .breadcrumb
-{
-    background-color: #f5f5ff;
+.well, .breadcrumb {
+  background-color: #EDF1F6;
 }
 
-a:link, a:visited, a:active
-{
-    color: #0035AC;
+a:link, a:visited, a:active {
+  color: #316290;
 }
 
-a:hover
-{
-    color: #001F67;
+a:hover {
+  color: #001F67;
 }
 
-.nav-list .active a:link, .nav-list .active a:visited, .nav-list .active a:active, .nav-list .active a:hover
-{
-    background-color: #0035AC;
+.nav-list .active a:link, .nav-list .active a:visited, .nav-list .active a:active, .nav-list .active a:hover {
+  background-color: #316290;
 }
 
-.nav-list li a:hover
-{
-    background-color: #DDDDDD;
+.nav-list li a:hover {
+  background-color: #DDDDDD;
 }
 
-.search-query
-{
-    margin-top: 15px;
-    width: 183px;
+.search-query {
+  margin-top: 15px;
+  width: 85%;
+}
+
+#banner {
+  margin-bottom: 3px;
 }
