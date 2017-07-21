@@ -313,7 +313,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         }
         catch ( Throwable e )
         {
-            Assert.assertTrue(Throwables.getRootCause(e) instanceof AsyncWrappers.TimeoutException);
+            Assert.assertTrue(Throwables.getRootCause(e) instanceof AsyncWrappers.TimeoutException, "Should throw AsyncWrappers.TimeoutException, was: " + Throwables.getStackTraceAsString(Throwables.getRootCause(e)));
         }
 
         latch.countDown();
