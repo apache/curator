@@ -161,6 +161,7 @@ public class ModeledFrameworkBuilder<T>
 
     ModeledFrameworkBuilder()
     {
+        modeledOptions = Collections.singleton(ModeledOptions.ignoreMissingNodesForChildren);
     }
 
     ModeledFrameworkBuilder(AsyncCuratorFramework client, ModelSpec<T> modelSpec)
