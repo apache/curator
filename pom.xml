@@ -296,7 +296,6 @@
         <module>curator-examples</module>
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
-        <module>curator-x-rpc</module>
         <module>curator-x-async</module>
         <module>curator-test-zk34</module>
     </modules>
@@ -374,12 +373,6 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-x-async</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.curator</groupId>
-                <artifactId>curator-x-rpc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
