@@ -1,9 +1,48 @@
-h1. API Compatibility
+h1. ZooKeeper Version Compatibility
 
-A [[Clirr|http://clirr.sourceforge.net/]] report is generated for each Curator module:
+While ZooKeeper 3.5.x is still considered "beta" by the ZooKeeper development team, the reality is that it is
+used in production by many users. However, ZooKeeper 3.4.x is also used in production. Prior to Apache Curator
+4.0, both versions of ZooKeeper were supported via two versions of Apache Curator. Starting with Curator 4.0
+both versions of ZooKeeper are supported via the same Curator libraries.
 
-* [[Curator Client Report|curator-client/clirr-report.html]]
-* [[Curator Framework Report|curator-framework/clirr-report.html]]
-* [[Curator Recipes Report|curator-recipes/clirr-report.html]]
-* [[Curator Discovery Report|curator-x-discovery/clirr-report.html]]
-* [[Curator Discovery Server Report|curator-x-discovery-server/clirr-report.html]]
+h2. ZooKeeper 3.5.x
+
+* Curator 4.0 has a hard dependency on ZooKeeper 3.5.x
+* If you are using ZooKeeper 3.5.x there's nothing additional to do \- just use Curator 4.0
+
+h2. ZooKeeper 3.4.x
+
+Curator 4.0 supports ZooKeeper 3.4.x ensembles in a soft\-compatibility mode. To use this mode
+you must exclude ZooKeeper when adding Curator to your dependency management tool.
+
+_Maven_
+
+{code}
+<dependency>
+    <groupId>org.apache.curator</groupId>
+    <artifactId>curator-recipes</artifactId>
+    <version>${curator-version}</version>
+    <exclusions>
+        <exclusion>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+{code}
+
+_Gradle_
+
+{code}
+compile('org.apache.curator:curator-recipes:$curatorVersion') {
+  exclude('org.apache.zookeeper:zookeeper')
+}
+{code}
+
+You must add a dependency on ZooKeeper 3.4.x also.
+
+Curator will detect which ZooKeeper library is in use and automatically set ZooKeeper 3.4 compatibility
+mode as needed. In this mode, all features not supported by 3.4 are disabled. It is up to your
+application code to "do the right thing" and not use these features. Use the {{isZk34CompatibilityMode()}}
+method to determine which mode Curator is using at runtime.
+

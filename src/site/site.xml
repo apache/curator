@@ -39,7 +39,7 @@
             <twitter>
                 <user>ApacheCurator</user>
                 <showUser>true</showUser>
-                <showFollowers>true</showFollowers>
+                <showFollowers>false</showFollowers>
             </twitter>
             <googleSearch>
                 <sitesearch>${project.url}</sitesearch>
