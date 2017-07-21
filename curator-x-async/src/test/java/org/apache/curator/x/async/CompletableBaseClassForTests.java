@@ -20,7 +20,7 @@ package org.apache.curator.x.async;
 
 import com.google.common.base.Throwables;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Timing2;
 import org.testng.Assert;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -30,7 +30,7 @@ import java.util.function.BiConsumer;
 
 public abstract class CompletableBaseClassForTests extends BaseClassForTests
 {
-    protected static final Timing timing = new Timing();
+    protected static final Timing2 timing = new Timing2();
 
     protected <T, U> void complete(CompletionStage<T> stage)
     {

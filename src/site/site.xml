@@ -84,6 +84,10 @@
             <item name="Schema Support" href="curator-framework/schema.html"/>
         </menu>
 
+        <menu name="Compatibility" inherit="top">
+            <item name="ZooKeeper Versions" href="compatibility.html"/>
+        </menu>
+
         <menu name="Low Level" inherit="top">
             <item name="Framework" href="curator-framework/index.html"/>
             <item name="Utilities" href="utilities.html"/>
@@ -98,7 +102,6 @@
             <item name="Source Code" href="source-repository.html"/>
             <item name="Project Team" href="team-list.html"/>
             <item name="Project Information" href="project-info.html"/>
-            <item name="API Compatibility" href="compatibility.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/CURATOR"/>
             <item name="Releases" href="https://cwiki.apache.org/confluence/display/CURATOR/Releases"/>

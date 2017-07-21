@@ -35,9 +35,9 @@ import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.framework.schema.SchemaSet;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
@@ -50,6 +50,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.curator.utils.Compatibility.isZK34;
 
 /**
  * Factory methods for creating framework-style clients
@@ -145,6 +147,7 @@ public class CuratorFrameworkFactory
         private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
         private ConnectionHandlingPolicy connectionHandlingPolicy = Boolean.getBoolean("curator-use-classic-connection-handling") ? new ClassicConnectionHandlingPolicy() : new StandardConnectionHandlingPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
+        private boolean zk34CompatibilityMode = isZK34();
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -386,6 +389,20 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * If mode is true, create a ZooKeeper 3.4.x compatible client. IMPORTANT: If the client
+         * library used is ZooKeeper 3.4.x <code>zk34CompatibilityMode</code> is enabled by default.
+         *
+         * @since 3.5.0
+         * @param mode true/false
+         * @return this
+         */
+        public Builder zk34CompatibilityMode(boolean mode)
+        {
+            this.zk34CompatibilityMode = mode;
+            return this;
+        }
+
+        /**
          * <p>
          *     Change the connection handling policy. The default policy is {@link StandardConnectionHandlingPolicy}.
          * </p>
@@ -513,6 +530,11 @@ public class CuratorFrameworkFactory
         public SchemaSet getSchemaSet()
         {
             return schemaSet;
+        }
+
+        public boolean isZk34CompatibilityMode()
+        {
+            return zk34CompatibilityMode;
         }
 
         @Deprecated

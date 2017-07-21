@@ -33,6 +33,7 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.testng.Assert;
@@ -50,7 +51,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TestSharedCount extends BaseClassForTests
+public class TestSharedCount extends CuratorTestBase
 {
     @Test
     public void testMultiClients() throws Exception
@@ -191,8 +192,11 @@ public class TestSharedCount extends BaseClassForTests
             count.addListener(listener);
 
             Assert.assertTrue(count.trySetCount(1));
+            timing.sleepABit();
             Assert.assertTrue(count.trySetCount(2));
+            timing.sleepABit();
             Assert.assertTrue(count.trySetCount(10));
+            timing.sleepABit();
             Assert.assertEquals(count.getCount(), 10);
 
             Assert.assertTrue(new Timing().awaitLatch(setLatch));

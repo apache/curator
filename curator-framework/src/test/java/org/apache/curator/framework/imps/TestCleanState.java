@@ -21,6 +21,7 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.WatchersDebug;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.ZooKeeper;
 import java.util.concurrent.Callable;
 
@@ -30,6 +31,12 @@ public class TestCleanState
     {
         if ( client == null )
         {
+            return;
+        }
+
+        if ( Compatibility.isZK34() )
+        {
+            CloseableUtils.closeQuietly(client);
             return;
         }
 

@@ -17,16 +17,20 @@
  * under the License.
  */
 
-package org.apache.curator.test;
+package org.apache.curator.test.compatibility;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
- * Utility to get various testing times
+ * Utility to get various testing times.
+ *
+ * Copied from the old Timing class which is now deprecated. Needed this to support ZK 3.4 compatibility
  */
-public class Timing
+public class Timing2
 {
     private final long value;
     private final TimeUnit unit;
@@ -34,12 +38,13 @@ public class Timing
 
     private static final int DEFAULT_SECONDS = 10;
     private static final int DEFAULT_WAITING_MULTIPLE = 5;
-    private static final double SESSION_MULTIPLE = .25;
+    private static final double SESSION_MULTIPLE = 1.5;
+    private static final double SESSION_SLEEP_MULTIPLE = SESSION_MULTIPLE * 1.75;  // has to be at least session + 2/3 of a session to account for missed heartbeat then session expiration
 
     /**
      * Use the default base time
      */
-    public Timing()
+    public Timing2()
     {
         this(Integer.getInteger("timing-multiple", 1), getWaitingMultiple());
     }
@@ -49,7 +54,7 @@ public class Timing
      *
      * @param multiple the multiple
      */
-    public Timing(double multiple)
+    public Timing2(double multiple)
     {
         this((long)(DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, getWaitingMultiple());
     }
@@ -60,7 +65,7 @@ public class Timing
      * @param multiple the multiple
      * @param waitingMultiple multiple of main timing to use when waiting
      */
-    public Timing(double multiple, int waitingMultiple)
+    public Timing2(double multiple, int waitingMultiple)
     {
         this((long)(DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, waitingMultiple);
     }
@@ -69,7 +74,7 @@ public class Timing
      * @param value base time
      * @param unit  base time unit
      */
-    public Timing(long value, TimeUnit unit)
+    public Timing2(long value, TimeUnit unit)
     {
         this(value, unit, getWaitingMultiple());
     }
@@ -79,7 +84,7 @@ public class Timing
      * @param unit  base time unit
      * @param waitingMultiple multiple of main timing to use when waiting
      */
-    public Timing(long value, TimeUnit unit, int waitingMultiple)
+    public Timing2(long value, TimeUnit unit, int waitingMultiple)
     {
         this.value = value;
         this.unit = unit;
@@ -110,11 +115,11 @@ public class Timing
      * Wait on the given latch
      *
      * @param latch latch to wait on
-     * @return result of {@link CountDownLatch#await(long, TimeUnit)}
+     * @return result of {@link java.util.concurrent.CountDownLatch#await(long, java.util.concurrent.TimeUnit)}
      */
     public boolean awaitLatch(CountDownLatch latch)
     {
-        Timing m = forWaiting();
+        Timing2 m = forWaiting();
         try
         {
             return latch.await(m.value, m.unit);
@@ -127,14 +132,40 @@ public class Timing
     }
 
     /**
+     * Try to take an item from the given queue
+     *
+     * @param queue queue
+     * @return item
+     * @throws Exception interrupted or timed out
+     */
+    public <T> T takeFromQueue(BlockingQueue<T> queue) throws Exception
+    {
+        Timing2 m = forWaiting();
+        try
+        {
+            T value = queue.poll(m.value, m.unit);
+            if ( value == null )
+            {
+                throw new TimeoutException("Timed out trying to take from queue");
+            }
+            return value;
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw e;
+        }
+    }
+
+    /**
      * Wait on the given semaphore
      *
      * @param semaphore the semaphore
-     * @return result of {@link Semaphore#tryAcquire()}
+     * @return result of {@link java.util.concurrent.Semaphore#tryAcquire()}
      */
     public boolean acquireSemaphore(Semaphore semaphore)
     {
-        Timing m = forWaiting();
+        Timing2 m = forWaiting();
         try
         {
             return semaphore.tryAcquire(m.value, m.unit);
@@ -151,11 +182,11 @@ public class Timing
      *
      * @param semaphore the semaphore
      * @param n         number of permits to acquire
-     * @return result of {@link Semaphore#tryAcquire(int, long, TimeUnit)}
+     * @return result of {@link java.util.concurrent.Semaphore#tryAcquire(int, long, java.util.concurrent.TimeUnit)}
      */
     public boolean acquireSemaphore(Semaphore semaphore, int n)
     {
-        Timing m = forWaiting();
+        Timing2 m = forWaiting();
         try
         {
             return semaphore.tryAcquire(n, m.value, m.unit);
@@ -173,9 +204,21 @@ public class Timing
      * @param n the multiple
      * @return this timing times the multiple
      */
-    public Timing multiple(double n)
+    public Timing2 multiple(double n)
     {
-        return new Timing((int)(value * n), unit);
+        return new Timing2((int)(value * n), unit);
+    }
+
+    /**
+     * Return a new timing that is a multiple of the this timing
+     *
+     * @param n the multiple
+     * @param waitingMultiple new waitingMultiple
+     * @return this timing times the multiple
+     */
+    public Timing2 multiple(double n, int waitingMultiple)
+    {
+        return new Timing2((int)(value * n), unit, waitingMultiple);
     }
 
     /**
@@ -184,9 +227,29 @@ public class Timing
      * @return this timing multiplied
      */
     @SuppressWarnings("PointlessArithmeticExpression")
-    public Timing forWaiting()
+    public Timing2 forWaiting()
     {
         return multiple(waitingMultiple);
+    }
+
+    /**
+     * Return a new timing with a multiple that ensures a ZK session timeout
+     *
+     * @return this timing multiplied
+     */
+    public Timing2 forSessionSleep()
+    {
+        return multiple(SESSION_SLEEP_MULTIPLE, 1);
+    }
+
+    /**
+     * Return a new timing with a multiple for sleeping a smaller amount of time
+     *
+     * @return this timing multiplied
+     */
+    public Timing2 forSleepingABit()
+    {
+        return multiple(.25);
     }
 
     /**
@@ -196,7 +259,17 @@ public class Timing
      */
     public void sleepABit() throws InterruptedException
     {
-        unit.sleep(value / 4);
+        forSleepingABit().sleep();
+    }
+
+    /**
+     * Sleep for a the full amount of time
+     *
+     * @throws InterruptedException if interrupted
+     */
+    public void sleep() throws InterruptedException
+    {
+        unit.sleep(value);
     }
 
     /**

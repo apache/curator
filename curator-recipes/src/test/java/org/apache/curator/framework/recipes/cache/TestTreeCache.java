@@ -21,9 +21,9 @@ package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.test.KillServerSession;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
@@ -423,12 +423,11 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().withMode(CreateMode.EPHEMERAL).forPath("/test/me", "data".getBytes());
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/me");
 
-        KillServerSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
-        assertEvent(TreeCacheEvent.Type.CONNECTION_SUSPENDED);
+        KillSession2.kill(client.getZookeeperClient().getZooKeeper());
         assertEvent(TreeCacheEvent.Type.CONNECTION_LOST);
         assertEvent(TreeCacheEvent.Type.CONNECTION_RECONNECTED);
-        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/me", "data".getBytes());
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, "/test/me", "data".getBytes());
 
         assertNoMoreEvents();
     }

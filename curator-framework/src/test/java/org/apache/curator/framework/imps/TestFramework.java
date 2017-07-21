@@ -31,6 +31,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ZKPaths;
@@ -261,7 +262,7 @@ public class TestFramework extends BaseClassForTests
             client.getChildren().usingWatcher(watcher).forPath("/base");
             client.create().forPath("/base/child");
 
-            String path = new Timing().takeFromQueue(queue);
+            String path = new Timing2().takeFromQueue(queue);
             Assert.assertEquals(path, "/base");
         }
         finally

@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -306,10 +307,7 @@ public class ConnectionStateManager implements Closeable
                 log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d", elapsedMs, useSessionTimeoutMs));
                 try
                 {
-                    // LOL - this method was proposed by me (JZ) in 2013 for totally unrelated reasons
-                    // it got added to ZK 3.5 and now does exactly what we need
-                    // https://issues.apache.org/jira/browse/ZOOKEEPER-1730
-                    client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
+                    Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
                 }
                 catch ( Exception e )
                 {

@@ -27,11 +27,12 @@ import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingZooKeeperServer;
-import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.test.compatibility.Timing2;
+import org.apache.curator.test.compatibility.Zk35MethodInterceptor;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -56,9 +57,10 @@ import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TestReconfiguration extends BaseClassForTests
+@Test(groups = Zk35MethodInterceptor.zk35Group)
+public class TestReconfiguration extends CuratorTestBase
 {
-    private final Timing timing = new Timing();
+    private final Timing2 timing = new Timing2();
     private TestingCluster cluster;
     private EnsembleProvider ensembleProvider;
 
@@ -92,6 +94,7 @@ public class TestReconfiguration extends BaseClassForTests
     }
 
     @SuppressWarnings("ConstantConditions")
+    @Test(enabled = false)
     public void testApiPermutations() throws Exception
     {
         // not an actual test. Specifies all possible API possibilities

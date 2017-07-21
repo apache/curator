@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test;
+package org.apache.curator.test.compatibility;
 
+import org.apache.curator.test.Compatibility;
 import org.apache.zookeeper.ZooKeeper;
 
 /**
@@ -25,43 +26,15 @@ import org.apache.zookeeper.ZooKeeper;
  *     Utility to simulate a ZK session dying.
  * </p>
  */
-public class KillSession
+public class KillSession2
 {
     /**
      * Kill the given ZK session
      *
      * @param client the client to kill
-     * @since 3.0.0
      */
     public static void     kill(ZooKeeper client)
     {
-        client.getTestable().injectSessionExpiration();
-    }
-
-    /**
-     * Kill the given ZK session
-     *
-     * @param client the client to kill
-     * @param connectString server connection string
-     * @throws Exception errors
-     * @deprecated use {@link #kill(ZooKeeper)} instead
-     */
-    public static void     kill(ZooKeeper client, String connectString) throws Exception
-    {
-        kill(client);
-    }
-
-    /**
-     * Kill the given ZK session
-     *
-     * @param client the client to kill
-     * @param connectString server connection string
-     * @param maxMs max time ms to wait for kill
-     * @throws Exception errors
-     * @deprecated use {@link #kill(ZooKeeper)} instead
-     */
-    public static void     kill(ZooKeeper client, String connectString, int maxMs) throws Exception
-    {
-        kill(client);
+        Compatibility.injectSessionExpiration(client);
     }
 }

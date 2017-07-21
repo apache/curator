@@ -26,7 +26,7 @@ import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.schema.Schema;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.KillSession;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
@@ -38,7 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 public class TestInterProcessMutex extends TestInterProcessMutexBase
 {
@@ -173,7 +172,7 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
             Assert.assertTrue(lock.isAcquiredInThisProcess());
 
             // Kill the session, check that lock node still exists
-            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
             Assert.assertNotNull(client.checkExists().forPath(LOCK_PATH));
 
             // Release the lock and verify that the actual lock node created no longer exists
