@@ -191,7 +191,10 @@ public class MigrationManager
 
     private CompletionStage<Void> applyMetaDataAfterEnsure(List<Migration> toBeApplied, String thisMetaDataPath)
     {
-        debugCount.incrementAndGet();
+        if ( debugCount != null )
+        {
+            debugCount.incrementAndGet();
+        }
 
         List<CuratorOp> operations = new ArrayList<>();
         String metaDataBasePath = ZKPaths.makePath(thisMetaDataPath, META_DATA_NODE_NAME);
