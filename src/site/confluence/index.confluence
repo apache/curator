@@ -34,5 +34,5 @@ most users, the only artifact you need is curator\-recipes.
 h2. ZooKeeper Compatibility
 
 Apache Curator is meant to be used with ZooKeeper 3.5\+. However, it is also compatible with ZooKeeper 3.4.x.
-See [[Compatibility|compatibility.html]] for details.
+See [[Compatibility|zk-compatibility.html]] for details.
 
