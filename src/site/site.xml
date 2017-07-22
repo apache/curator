@@ -85,7 +85,7 @@
         </menu>
 
         <menu name="Compatibility" inherit="top">
-            <item name="ZooKeeper Versions" href="compatibility.html"/>
+            <item name="ZooKeeper Versions" href="zk-compatibility.html"/>
         </menu>
 
         <menu name="Low Level" inherit="top">
@@ -102,6 +102,7 @@
             <item name="Source Code" href="source-repository.html"/>
             <item name="Project Team" href="team-list.html"/>
             <item name="Project Information" href="project-info.html"/>
+            <item name="API Compatibility" href="compatibility.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/CURATOR"/>
             <item name="Releases" href="https://cwiki.apache.org/confluence/display/CURATOR/Releases"/>
@@ -110,7 +111,7 @@
         <menu name="Extensions" inherit="top">
             <item name="Service Discovery" href="curator-x-discovery/index.html"/>
             <item name="Service Discovery Server" href="curator-x-discovery-server/index.html"/>
-\        </menu>
+        </menu>
 
         <menu name="Community" inherit="top">
             <item name="Submitting Pull Requests" href="https://cwiki.apache.org/confluence/display/CURATOR/Submitting+Pull+Requests"/>
