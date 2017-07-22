@@ -67,13 +67,15 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     private CuratorOp v3op;
     private MigrationManager manager;
     private final AtomicReference<CountDownLatch> filterLatch = new AtomicReference<>();
-    private final CountDownLatch filterIsSetLatch = new CountDownLatch(1);
+    private CountDownLatch filterIsSetLatch;
 
     @BeforeMethod
     @Override
     public void setup() throws Exception
     {
         super.setup();
+
+        filterIsSetLatch = new CountDownLatch(1);
 
         CuratorFramework rawClient = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
         rawClient.start();
