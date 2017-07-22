@@ -86,6 +86,11 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
             client.getConnectionStateListenable().addListener(listener1);
             log.debug("Starting ZK server");
             server.restart();
+            if ( Boolean.getBoolean("curator-use-classic-connection-handling") )
+            {
+                Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+                Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+            }
             Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
 
             log.debug("Stopping ZK server");
