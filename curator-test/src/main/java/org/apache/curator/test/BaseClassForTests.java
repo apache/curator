@@ -41,7 +41,6 @@ public class BaseClassForTests
     protected TestingServer server;
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private static final int RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
     private static final String INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY;
@@ -167,7 +166,14 @@ public class BaseClassForTests
                 return false;
             }
 
-            log.error("Retrying 1 time");
+            if ( result.getThrowable() != null )
+            {
+                log.error("Retrying 1 time", result.getThrowable());
+            }
+            else
+            {
+                log.error("Retrying 1 time");
+            }
             retryContext.isRetrying.set(true);
             return true;
         }
