@@ -15,7 +15,6 @@
 
     <properties>
         <zookeeper-34-version>3.4.8</zookeeper-34-version>
-        <curator-2-version>2.12.0</curator-2-version>
     </properties>
 
     <dependencies>
@@ -50,7 +49,7 @@
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>
-            <version>${curator-2-version}</version>
+            <version>2.12.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.zookeeper</groupId>
