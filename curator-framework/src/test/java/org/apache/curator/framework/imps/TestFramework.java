@@ -75,15 +75,11 @@ public class TestFramework extends BaseClassForTests
     @Test
     public void testSessionLossWithLongTimeout() throws Exception
     {
-
         final Timing timing = new Timing();
-        //Change this to TRUE and the test will pass.
-        System.setProperty("curator-use-classic-connection-handling", Boolean.FALSE.toString());
-                
+
         try(final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.forWaiting().milliseconds(),
                                                                               timing.connection(), new RetryOneTime(1)))
         {
-            
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             final CountDownLatch lostLatch = new CountDownLatch(1);
             final CountDownLatch restartedLatch = new CountDownLatch(1);
@@ -118,10 +114,6 @@ public class TestFramework extends BaseClassForTests
             
             server.restart();
             Assert.assertTrue(timing.awaitLatch(restartedLatch));
-        }
-        finally
-        {
-            System.clearProperty("curator-use-classic-connection-handling");
         }
     }
 

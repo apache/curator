@@ -174,10 +174,4 @@ public class TestEnabledSessionExpiredState extends BaseClassForTests
 
         Assert.assertNull(states.poll(timing.multiple(.5).milliseconds(), TimeUnit.MILLISECONDS));  // there should be no other events
     }
-
-    @Override
-    protected boolean enabledSessionExpiredStateAware()
-    {
-        return true;
-    }
 }

@@ -21,7 +21,6 @@ package org.apache.curator.framework;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.RetryPolicy;
-import org.apache.curator.connection.ClassicConnectionHandlingPolicy;
 import org.apache.curator.connection.ConnectionHandlingPolicy;
 import org.apache.curator.connection.StandardConnectionHandlingPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -145,7 +144,7 @@ public class CuratorFrameworkFactory
         private boolean canBeReadOnly = false;
         private boolean useContainerParentsIfAvailable = true;
         private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
-        private ConnectionHandlingPolicy connectionHandlingPolicy = Boolean.getBoolean("curator-use-classic-connection-handling") ? new ClassicConnectionHandlingPolicy() : new StandardConnectionHandlingPolicy();
+        private ConnectionHandlingPolicy connectionHandlingPolicy = new StandardConnectionHandlingPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
         private boolean zk34CompatibilityMode = isZK34();
 
@@ -408,9 +407,7 @@ public class CuratorFrameworkFactory
          * </p>
          * <p>
          *     <strong>IMPORTANT: </strong> StandardConnectionHandlingPolicy has different behavior than the connection
-         *     policy handling prior to version 3.0.0. You can specify that the connection handling be the method
-         *     prior to 3.0.0 by passing in an instance of {@link ClassicConnectionHandlingPolicy} here or by
-         *     setting the command line value "curator-use-classic-connection-handling" to true (e.g. <tt>-Dcurator-use-classic-connection-handling=true</tt>).
+         *     policy handling prior to version 3.0.0.
          * </p>
          * <p>
          *     Major differences from the older behavior are:
