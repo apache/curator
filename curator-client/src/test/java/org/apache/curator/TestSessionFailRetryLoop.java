@@ -20,9 +20,8 @@ package org.apache.curator;
 
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.KillSession;
 import org.apache.curator.test.Timing;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -58,7 +57,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                 if ( firstTime.compareAndSet(true, false) )
                                 {
                                     Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
-                                    KillSession.kill(client.getZooKeeper(), server.getConnectString());
+                                    KillSession2.kill(client.getZooKeeper());
                                     client.getZooKeeper();
                                     client.blockUntilConnectedOrTimedOut();
                                 }
@@ -132,7 +131,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                     if ( firstTime.compareAndSet(true, false) )
                                     {
                                         Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
-                                        KillSession.kill(client.getZooKeeper(), server.getConnectString());
+                                        KillSession2.kill(client.getZooKeeper());
                                         client.getZooKeeper();
                                         client.blockUntilConnectedOrTimedOut();
                                     }
@@ -197,7 +196,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                 public Void call() throws Exception
                                 {
                                     Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
-                                    KillSession.kill(client.getZooKeeper(), server.getConnectString());
+                                    KillSession2.kill(client.getZooKeeper());
 
                                     timing.sleepABit();
 
@@ -259,7 +258,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                     public Void call() throws Exception
                                     {
                                         Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
-                                        KillSession.kill(client.getZooKeeper(), server.getConnectString());
+                                        KillSession2.kill(client.getZooKeeper());
 
                                         client.getZooKeeper();
                                         client.blockUntilConnectedOrTimedOut();

@@ -21,7 +21,7 @@ package org.apache.curator;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.KillSession;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
@@ -100,7 +100,7 @@ public class BasicTests extends BaseClassForTests
                                 // ignore
                             }
 
-                            KillSession.kill(client.getZooKeeper(), server.getConnectString());
+                            KillSession2.kill(client.getZooKeeper());
 
                             Assert.assertTrue(timing.awaitLatch(latch));
                         }

@@ -31,6 +31,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ZKPaths;
@@ -74,15 +75,11 @@ public class TestFramework extends BaseClassForTests
     @Test
     public void testSessionLossWithLongTimeout() throws Exception
     {
-
         final Timing timing = new Timing();
-        //Change this to TRUE and the test will pass.
-        System.setProperty("curator-use-classic-connection-handling", Boolean.FALSE.toString());
-                
+
         try(final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.forWaiting().milliseconds(),
                                                                               timing.connection(), new RetryOneTime(1)))
         {
-            
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             final CountDownLatch lostLatch = new CountDownLatch(1);
             final CountDownLatch restartedLatch = new CountDownLatch(1);
@@ -117,10 +114,6 @@ public class TestFramework extends BaseClassForTests
             
             server.restart();
             Assert.assertTrue(timing.awaitLatch(restartedLatch));
-        }
-        finally
-        {
-            System.clearProperty("curator-use-classic-connection-handling");
         }
     }
 
@@ -261,7 +254,7 @@ public class TestFramework extends BaseClassForTests
             client.getChildren().usingWatcher(watcher).forPath("/base");
             client.create().forPath("/base/child");
 
-            String path = queue.take();
+            String path = new Timing2().takeFromQueue(queue);
             Assert.assertEquals(path, "/base");
         }
         finally

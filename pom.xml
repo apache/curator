@@ -23,12 +23,12 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>17</version>
+        <version>18</version>
     </parent>
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>3.3.1-SNAPSHOT</version>
+    <version>4.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -60,11 +60,12 @@
 
         <!-- versions -->
         <zookeeper-version>3.6.0-SNAPSHOT</zookeeper-version>
-        <maven-project-info-reports-plugin-version>2.7</maven-project-info-reports-plugin-version>
+        <maven-project-info-reports-plugin-version>2.9</maven-project-info-reports-plugin-version>
         <maven-bundle-plugin-version>3.2.0</maven-bundle-plugin-version>
-        <maven-javadoc-plugin-version>2.10.3</maven-javadoc-plugin-version>
-        <doxia-module-confluence-version>1.6</doxia-module-confluence-version>
+        <maven-javadoc-plugin-version>2.10.4</maven-javadoc-plugin-version>
+        <doxia-module-confluence-version>1.7</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
+        <javassist-version>3.20.0-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
         <jackson-version>2.7.3</jackson-version>
@@ -73,13 +74,13 @@
         <jetty-version>6.1.26</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
         <resteasy-jaxrs-version>2.3.0.GA</resteasy-jaxrs-version>
-        <guava-version>16.0.1</guava-version>
+        <guava-version>20.0</guava-version>
         <testng-version>6.10</testng-version>
-        <swift-version>0.12.0</swift-version>
+        <swift-version>0.18.0</swift-version>
         <dropwizard-version>0.7.0</dropwizard-version>
         <maven-shade-plugin-version>2.4.3</maven-shade-plugin-version>
         <slf4j-version>1.7.6</slf4j-version>
-        <clirr-maven-plugin-version>2.6.1</clirr-maven-plugin-version>
+        <clirr-maven-plugin-version>2.8</clirr-maven-plugin-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -275,6 +276,17 @@
             <timezone>-8</timezone>
             <url>https://people.apache.org/~enis</url>
         </developer>
+
+        <developer>
+            <name>Fangmin Lyu</name>
+            <email>fangmin@apache.org</email>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <timezone>-8</timezone>
+            <url>https://people.apache.org/~fangmin</url>
+        </developer>
     </developers>
 
     <modules>
@@ -285,8 +297,8 @@
         <module>curator-examples</module>
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
-        <module>curator-x-rpc</module>
         <module>curator-x-async</module>
+        <module>curator-test-zk34</module>
     </modules>
 
     <dependencyManagement>
@@ -336,6 +348,13 @@
 
             <dependency>
                 <groupId>org.apache.curator</groupId>
+                <artifactId>curator-recipes</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
                 <artifactId>curator-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -349,6 +368,12 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-x-discovery-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-x-async</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

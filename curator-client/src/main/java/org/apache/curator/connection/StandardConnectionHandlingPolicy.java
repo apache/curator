@@ -22,8 +22,6 @@ import com.google.common.base.Preconditions;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.utils.ThreadUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 
 /**
@@ -33,7 +31,6 @@ import java.util.concurrent.Callable;
  */
 public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolicy
 {
-    private final Logger log = LoggerFactory.getLogger(getClass());
     private final int expirationPercent;
 
     public StandardConnectionHandlingPolicy()

@@ -23,6 +23,7 @@ import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TypeAndPath;
 import org.apache.zookeeper.MultiTransactionRecord;
 import org.apache.zookeeper.Op;
+import java.security.MessageDigest;
 import java.util.List;
 
 class CuratorMultiTransactionRecord extends MultiTransactionRecord
@@ -49,5 +50,15 @@ class CuratorMultiTransactionRecord extends MultiTransactionRecord
     int             metadataSize()
     {
         return metadata.size();
+    }
+
+    void addToDigest(MessageDigest digest)
+    {
+        for ( Op op : this )
+        {
+            digest.update(op.getPath().getBytes());
+            digest.update(Integer.toString(op.getType()).getBytes());
+            digest.update(op.toRequestRecord().toString().getBytes());
+        }
     }
 }

@@ -30,9 +30,10 @@ import org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.KillSession;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -56,7 +57,7 @@ public class TestLeaderSelector extends BaseClassForTests
     @Test
     public void testErrorPolicies() throws Exception
     {
-        Timing timing = new Timing();
+        Timing2 timing = new Timing2();
         LeaderSelector selector = null;
         CuratorFramework client = CuratorFrameworkFactory
             .builder()
@@ -147,7 +148,7 @@ public class TestLeaderSelector extends BaseClassForTests
     @Test
     public void testLeaderNodeDeleteOnInterrupt() throws Exception
     {
-        Timing timing = new Timing();
+        Timing2 timing = new Timing2();
         LeaderSelector selector = null;
         CuratorFramework client = null;
         try
@@ -193,7 +194,7 @@ public class TestLeaderSelector extends BaseClassForTests
             selector = new LeaderSelector(client, "/leader", listener);
             selector.start();
 
-            Thread leaderThread = queue.take();
+            Thread leaderThread = timing.takeFromQueue(queue);
             server.stop();
             leaderThread.interrupt();
             server.restart();
@@ -486,7 +487,7 @@ public class TestLeaderSelector extends BaseClassForTests
 
             Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
 
-            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
 
             Assert.assertTrue(timing.awaitLatch(interruptedLatch));
             timing.sleepABit();

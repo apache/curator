@@ -1,7 +1,0 @@
-{
-    "thrift": {
-        "port": 1234
-    },
-
-    "pingTime": "10s"
-}

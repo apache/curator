@@ -40,7 +40,7 @@ public class BaseTestTreeCache extends BaseClassForTests
 {
     CuratorFramework client;
     TreeCache cache;
-    private final AtomicBoolean hadBackgroundException = new AtomicBoolean(false);
+    protected final AtomicBoolean hadBackgroundException = new AtomicBoolean(false);
     private final BlockingQueue<TreeCacheEvent> events = new LinkedBlockingQueue<TreeCacheEvent>();
     private final Timing timing = new Timing();
 

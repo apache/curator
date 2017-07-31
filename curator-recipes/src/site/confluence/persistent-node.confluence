@@ -1,0 +1,39 @@
+h1. Persistent Node
+
+h2. Description
+A persistent node is a node that attempts to stay present in ZooKeeper, even through connection and session interruptions.
+
+h2. Participating Classes
+* PersistentNode
+
+h2. Usage
+h3. Creating a PersistentNode
+{code}
+public PersistentNode(CuratorFramework client,
+                               CreateMode mode,
+                               boolean useProtection,
+                               String basePath,
+                               byte[] data)
+Parameters:
+client - client instance
+mode - creation mode
+useProtection - if true, call CreateBuilder.withProtection()
+basePath - the base path for the node
+data - data for the node
+{code}
+
+h3. General Usage
+PersistentNodes must be started:
+{code}
+node.start();
+{code}
+
+When you are through with the PersistentNode instance, you should call close:
+{code}
+node.close();
+{code}
+
+NOTE: this will delete the node
+
+h2. Error Handling
+PersistentNode instances internally handle all error states recreating the node as necessary.

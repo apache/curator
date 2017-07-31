@@ -20,6 +20,7 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.curator.RetryLoop;
@@ -27,6 +28,8 @@ import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
+import org.apache.curator.framework.api.transaction.TransactionCreateBuilder2;
+import org.apache.curator.utils.InternalACLProvider;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
@@ -41,7 +44,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
+public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
     private final CuratorFrameworkImpl client;
     private CreateMode createMode;
@@ -51,9 +54,11 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
     private boolean doProtected;
     private boolean compress;
     private boolean setDataIfExists;
+    private int setDataIfExistsVersion = -1;
     private String protectedId;
     private ACLing acling;
     private Stat storingStat;
+    private long ttl;
 
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
@@ -74,9 +79,10 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
         setDataIfExists = false;
         protectedId = null;
         storingStat = null;
+        ttl = -1;
     }
 
-    public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat)
+    public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat, long ttl)
     {
         this.client = client;
         this.createMode = createMode;
@@ -89,12 +95,33 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
         protectedId = null;
         this.acling = new ACLing(client.getAclProvider(), aclList);
         this.storingStat = storingStat;
+        this.ttl = ttl;
+    }
+
+    public void setSetDataIfExistsVersion(int version)
+    {
+        this.setDataIfExistsVersion = version;
     }
 
     @Override
-    public CreateBuilderMain orSetData()
+    public CreateBuilder2 orSetData()
+    {
+        return orSetData(-1);
+    }
+
+    @Override
+    public CreateBuilder2 orSetData(int version)
     {
         setDataIfExists = true;
+        setDataIfExistsVersion = version;
+        return this;
+    }
+
+    @Override
+    public CreateBuilderMain withTtl(long ttl)
+    {
+        Preconditions.checkState(!client.isZk34CompatibilityMode(), "TTLs are not support when running in ZooKeeper 3.4 compatibility mode");
+        this.ttl = ttl;
         return this;
     }
 
@@ -105,7 +132,20 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             @Override
             public PathAndBytesable<T> withACL(List<ACL> aclList)
             {
-                CreateBuilderImpl.this.withACL(aclList);
+                return withACL(aclList, false);
+            }
+
+            @Override
+            public PathAndBytesable<T> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                CreateBuilderImpl.this.withACL(aclList, applyToParents);
+                return this;
+            }
+
+            @Override
+            public TransactionCreateBuilder2<T> withTtl(long ttl)
+            {
+                CreateBuilderImpl.this.withTtl(ttl);
                 return this;
             }
 
@@ -138,7 +178,14 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
                 }
 
                 String fixedPath = client.fixForNamespace(path);
-                transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
+                if ( client.isZk34CompatibilityMode() )
+                {
+                    transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
+                }
+                else
+                {
+                    transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode, ttl), OperationType.CREATE, path);
+                }
                 return context;
             }
         };
@@ -151,7 +198,8 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
         return new CreateBackgroundModeStatACLable()
         {
             @Override
-            public CreateBackgroundModeACLable storingStatIn(Stat stat) {
+            public CreateBackgroundModeACLable storingStatIn(Stat stat)
+            {
                 storingStat = stat;
                 return asCreateBackgroundModeACLable();
             }
@@ -180,6 +228,12 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
             {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -241,13 +295,25 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
     @Override
     public ACLBackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
     {
-        acling = new ACLing(client.getAclProvider(), aclList);
+        return withACL(aclList, false);
+    }
+
+    @Override
+    public ACLBackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+    {
+        acling = new ACLing(client.getAclProvider(), aclList, applyToParents);
         return new ACLBackgroundPathAndBytesable<String>()
         {
             @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
             {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -330,7 +396,13 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
             {
-                return CreateBuilderImpl.this.withACL(aclList);
+                return withACL(aclList, false);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -388,7 +460,8 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             }
 
             @Override
-            public ACLBackgroundPathAndBytesable<String> storingStatIn(Stat stat) {
+            public ACLBackgroundPathAndBytesable<String> storingStatIn(Stat stat)
+            {
                 storingStat = stat;
                 return CreateBuilderImpl.this;
             }
@@ -414,6 +487,12 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             public PathAndBytesable<String> withACL(List<ACL> aclList)
             {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public PathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -553,78 +632,74 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("CreateBuilderImpl-Background");
             final byte[] data = operationAndData.getData().getData();
 
-            if(storingStat == null)
+            final CompatibleCreateCallback mainCallback = new CompatibleCreateCallback()
             {
+                @Override
+                public void processResult(int rc, String path, Object ctx, String name, Stat stat) {
+                    trace.setReturnCode(rc).setRequestBytesLength(data).setPath(path).commit();
+
+                    if ( (stat != null) && (storingStat != null) )
+                    {
+                        storingStat.setAversion(stat.getAversion());
+                        storingStat.setCtime(stat.getCtime());
+                        storingStat.setCversion(stat.getCversion());
+                        storingStat.setCzxid(stat.getCzxid());
+                        storingStat.setDataLength(stat.getDataLength());
+                        storingStat.setEphemeralOwner(stat.getEphemeralOwner());
+                        storingStat.setMtime(stat.getMtime());
+                        storingStat.setMzxid(stat.getMzxid());
+                        storingStat.setNumChildren(stat.getNumChildren());
+                        storingStat.setPzxid(stat.getPzxid());
+                        storingStat.setVersion(stat.getVersion());
+                    }
+
+                    if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
+                    {
+                        backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, acling.getACLProviderForParents(), createParentsAsContainers);
+                    }
+                    else if ( (rc == KeeperException.Code.NODEEXISTS.intValue()) && setDataIfExists )
+                    {
+                        backgroundSetData(client, operationAndData, operationAndData.getData().getPath(), backgrounding);
+                    }
+                    else
+                    {
+                        sendBackgroundResponse(rc, path, ctx, name, stat, operationAndData);
+                    }
+                }
+            };
+
+            if ( client.isZk34CompatibilityMode() )
+            {
+                AsyncCallback.StringCallback stringCallback = new AsyncCallback.StringCallback()
+                {
+                    @Override
+                    public void processResult(int rc, String path, Object ctx, String name)
+                    {
+                        mainCallback.processResult(rc, path, ctx, name, null);
+                    }
+                };
                 client.getZooKeeper().create
+                    (
+                        operationAndData.getData().getPath(),
+                        data,
+                        acling.getAclList(operationAndData.getData().getPath()),
+                        createMode,
+                        stringCallback,
+                        backgrounding.getContext()
+                    );
+            }
+            else
+            {
+                CreateZK35.create
                 (
+                    client.getZooKeeper(),
                     operationAndData.getData().getPath(),
                     data,
                     acling.getAclList(operationAndData.getData().getPath()),
                     createMode,
-                    new AsyncCallback.StringCallback()
-                    {
-                        @Override
-                        public void processResult(int rc, String path, Object ctx, String name)
-                        {
-                            trace.setReturnCode(rc).setRequestBytesLength(data).setPath(path).commit();
-
-                            if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
-                            {
-                                backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
-                            }
-                            else if ( (rc == KeeperException.Code.NODEEXISTS.intValue()) && setDataIfExists )
-                            {
-                                backgroundSetData(client, operationAndData, operationAndData.getData().getPath(), backgrounding);
-                            }
-                            else
-                            {
-                                sendBackgroundResponse(rc, path, ctx, name, null, operationAndData);
-                            }
-                        }
-                    },
-                    backgrounding.getContext()
-                );
-            }
-            else
-            {
-                client.getZooKeeper().create
-                (
-                    operationAndData.getData().getPath(),
-                    operationAndData.getData().getData(),
-                    acling.getAclList(operationAndData.getData().getPath()),
-                    createMode,
-                    new AsyncCallback.Create2Callback() {
-
-                        @Override
-                        public void processResult(int rc, String path, Object ctx, String name, Stat stat) {
-                            trace.commit();
-
-                            if ( stat != null )
-                            {
-                                storingStat.setAversion(stat.getAversion());
-                                storingStat.setCtime(stat.getCtime());
-                                storingStat.setCversion(stat.getCversion());
-                                storingStat.setCzxid(stat.getCzxid());
-                                storingStat.setDataLength(stat.getDataLength());
-                                storingStat.setEphemeralOwner(stat.getEphemeralOwner());
-                                storingStat.setMtime(stat.getMtime());
-                                storingStat.setMzxid(stat.getMzxid());
-                                storingStat.setNumChildren(stat.getNumChildren());
-                                storingStat.setPzxid(stat.getPzxid());
-                                storingStat.setVersion(stat.getVersion());
-                            }
-
-                            if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
-                            {
-                                backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData().getPath(), backgrounding, createParentsAsContainers);
-                            }
-                            else
-                            {
-                                sendBackgroundResponse(rc, path, ctx, name, stat, operationAndData);
-                            }
-                        }
-                    },
-                    backgrounding.getContext()
+                    mainCallback,
+                    backgrounding.getContext(),
+                    ttl
                 );
             }
         }
@@ -641,8 +716,15 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
         return new CreateProtectACLCreateModePathAndBytesable<String>() {
 
             @Override
-            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList) {
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
+            {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -713,7 +795,7 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
         return PROTECTED_PREFIX + protectedId + "-";
     }
 
-    static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final boolean createParentsAsContainers)
+    static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final InternalACLProvider aclProvider, final boolean createParentsAsContainers)
     {
         BackgroundOperation<T> operation = new BackgroundOperation<T>()
         {
@@ -722,7 +804,7 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             {
                 try
                 {
-                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
+                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, aclProvider, createParentsAsContainers);
                 }
                 catch ( KeeperException e )
                 {
@@ -763,7 +845,7 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             {
                 try
                 {
-                    client.getZooKeeper().setData(path, mainOperationAndData.getData().getData(), -1, statCallback, backgrounding.getContext());
+                    client.getZooKeeper().setData(path, mainOperationAndData.getData().getData(), setDataIfExistsVersion, statCallback, backgrounding.getContext());
                 }
                 catch ( KeeperException e )
                 {
@@ -800,6 +882,13 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             }
 
             @Override
+            public PathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                CreateBuilderImpl.this.withACL(aclList, applyToParents);
+                return this;
+            }
+
+            @Override
             public ACLPathAndBytesable<String> withMode(CreateMode mode)
             {
                 createMode = mode;
@@ -809,6 +898,12 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
                     public PathAndBytesable<String> withACL(List<ACL> aclList)
                     {
                         return CreateBuilderImpl.this.withACL(aclList);
+                    }
+
+                    @Override
+                    public PathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+                    {
+                        return CreateBuilderImpl.this.withACL(aclList, applyToParents);
                     }
 
                     @Override
@@ -846,6 +941,12 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList) {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                return CreateBuilderImpl.this.withACL(aclList, applyToParents);
             }
 
             @Override
@@ -919,6 +1020,13 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
             @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList) {
                 return CreateBuilderImpl.this.withACL(aclList);
+            }
+
+            @Override
+            public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList, boolean applyToParents)
+            {
+                CreateBuilderImpl.this.withACL(aclList, applyToParents);
+                return this;
             }
 
             @Override
@@ -1072,14 +1180,28 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
                         {
                             try
                             {
-                                createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat);
+                                if ( client.isZk34CompatibilityMode() )
+                                {
+                                    createdPath = client.getZooKeeper().create(path, data, aclList, createMode);
+                                }
+                                else
+                                {
+                                    createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
+                                }
                             }
                             catch ( KeeperException.NoNodeException e )
                             {
                                 if ( createParentsIfNeeded )
                                 {
-                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, client.getAclProvider(), createParentsAsContainers);
-                                    createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat);
+                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, acling.getACLProviderForParents(), createParentsAsContainers);
+                                    if ( client.isZk34CompatibilityMode() )
+                                    {
+                                        createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
+                                    }
+                                    else
+                                    {
+                                        createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
+                                    }
                                 }
                                 else
                                 {
@@ -1090,7 +1212,7 @@ public class CreateBuilderImpl implements CreateBuilder, BackgroundOperation<Pat
                             {
                                 if ( setDataIfExists )
                                 {
-                                    client.getZooKeeper().setData(path, data, -1);
+                                    client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
                                     createdPath = path;
                                 }
                                 else

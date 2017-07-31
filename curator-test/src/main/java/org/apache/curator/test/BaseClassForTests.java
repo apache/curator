@@ -25,14 +25,13 @@ import org.testng.IInvokedMethod;
 import org.testng.IInvokedMethodListener2;
 import org.testng.IRetryAnalyzer;
 import org.testng.ITestContext;
-import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
-import org.testng.TestListenerAdapter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import java.io.IOException;
 import java.net.BindException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,7 +40,6 @@ public class BaseClassForTests
     protected TestingServer server;
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private static final int RETRY_WAIT_MS = 5000;
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
     private static final String INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY;
@@ -87,7 +85,7 @@ public class BaseClassForTests
     @BeforeSuite(alwaysRun = true)
     public void beforeSuite(ITestContext context)
     {
-        context.getSuite().addListener(new MethodListener(log, enabledSessionExpiredStateAware()));
+        context.getSuite().addListener(new MethodListener(log));
     }
 
     @BeforeMethod
@@ -136,11 +134,6 @@ public class BaseClassForTests
         }
     }
 
-    protected boolean enabledSessionExpiredStateAware()
-    {
-        return false;
-    }
-
     private static class RetryContext
     {
         final AtomicBoolean isRetrying = new AtomicBoolean(false);
@@ -155,7 +148,7 @@ public class BaseClassForTests
         RetryAnalyzer(Logger log, RetryContext retryContext)
         {
             this.log = log;
-            this.retryContext = retryContext;
+            this.retryContext = Objects.requireNonNull(retryContext, "retryContext cannot be null");
         }
 
         @Override
@@ -167,7 +160,14 @@ public class BaseClassForTests
                 return false;
             }
 
-            log.error("Retrying 1 time");
+            if ( result.getThrowable() != null )
+            {
+                log.error("Retrying 1 time", result.getThrowable());
+            }
+            else
+            {
+                log.error("Retrying 1 time");
+            }
             retryContext.isRetrying.set(true);
             return true;
         }
@@ -176,14 +176,12 @@ public class BaseClassForTests
     private static class MethodListener implements IInvokedMethodListener2
     {
         private final Logger log;
-        private final boolean sessionExpiredStateAware;
 
         private static final String ATTRIBUTE_NAME = "__curator";
 
-        MethodListener(Logger log, boolean sessionExpiredStateAware)
+        MethodListener(Logger log)
         {
             this.log = log;
-            this.sessionExpiredStateAware = sessionExpiredStateAware;
         }
 
         @Override
@@ -209,30 +207,20 @@ public class BaseClassForTests
                     retryContext = new RetryContext();
                     context.setAttribute(ATTRIBUTE_NAME, retryContext);
                 }
-
-                if ( !sessionExpiredStateAware )
-                {
-                    System.setProperty("curator-use-classic-connection-handling", Boolean.toString(retryContext.runVersion.get() > 0));
-                    log.info("curator-use-classic-connection-handling: " + Boolean.toString(retryContext.runVersion.get() > 0));
-                }
             }
             else if ( method.isTestMethod() )
             {
-                method.getTestMethod().setRetryAnalyzer(new RetryAnalyzer(log, (RetryContext)context.getAttribute(ATTRIBUTE_NAME)));
+                RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
+                if ( retryContext != null )
+                {
+                    method.getTestMethod().setRetryAnalyzer(new RetryAnalyzer(log, retryContext));
+                }
             }
         }
 
         @Override
         public void afterInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
         {
-            if ( method.getTestMethod().isBeforeSuiteConfiguration() && !sessionExpiredStateAware )
-            {
-                for ( ITestNGMethod testMethod : context.getAllTestMethods() )
-                {
-                    testMethod.setInvocationCount(2);
-                }
-            }
-
             if ( method.isTestMethod() )
             {
                 RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
@@ -242,7 +230,6 @@ public class BaseClassForTests
                 }
                 else
                 {
-                    System.clearProperty("curator-use-classic-connection-handling");
                     if ( testResult.isSuccess() || (testResult.getStatus() == ITestResult.FAILURE) )
                     {
                         retryContext.isRetrying.set(false);

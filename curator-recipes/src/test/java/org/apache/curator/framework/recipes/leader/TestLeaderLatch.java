@@ -35,6 +35,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -136,7 +137,7 @@ public class TestLeaderLatch extends BaseClassForTests
     @Test
     public void testErrorPolicies() throws Exception
     {
-        Timing timing = new Timing();
+        Timing2 timing = new Timing2();
         LeaderLatch latch = null;
         CuratorFramework client = CuratorFrameworkFactory.builder()
             .connectString(server.getConnectString())

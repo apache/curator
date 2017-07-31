@@ -29,7 +29,7 @@ public interface ExistsBuilder extends
      *
      * @return this
      */
-    ExistsBuilderMain creatingParentsIfNeeded();
+    ACLableExistBuilderMain creatingParentsIfNeeded();
 
     /**
      * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
@@ -39,5 +39,5 @@ public interface ExistsBuilder extends
      *
      * @return this
      */
-    ExistsBuilderMain creatingParentContainersIfNeeded();
+    ACLableExistBuilderMain creatingParentContainersIfNeeded();
 }

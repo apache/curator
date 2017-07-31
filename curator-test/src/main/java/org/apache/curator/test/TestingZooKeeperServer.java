@@ -21,7 +21,6 @@ package org.apache.curator.test;
 
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
-import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
@@ -32,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Thanks to Jeremie BORDIER (ahfeel) for this code
  */
-public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
+public class TestingZooKeeperServer implements Closeable
 {
     private static final Logger logger = LoggerFactory.getLogger(TestingZooKeeperServer.class);
 
@@ -53,14 +52,23 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
 
     public TestingZooKeeperServer(QuorumConfigBuilder configBuilder, int thisInstanceIndex)
     {
+        System.setProperty("zookeeper.jmx.log4j.disable", "true");  // disable JMX logging
+
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
-        main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
     }
 
+    private boolean isCluster() {
+        return configBuilder.size() > 1;
+    }
+    
     public QuorumPeer getQuorumPeer()
     {
-        return main.getQuorumPeer();
+        if (isCluster()) {
+            return ((TestingQuorumPeerMain) main).getTestingQuorumPeer();
+        }
+        throw new UnsupportedOperationException();
     }
 
     public Collection<InstanceSpec> getInstanceSpecs()
@@ -99,7 +107,7 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable
         // Set to a LATENT state so we can restart
         state.set(State.LATENT);
 
-        main = (configBuilder.size() > 1) ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
         start();
     }
 

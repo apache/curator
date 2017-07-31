@@ -20,13 +20,15 @@ package org.apache.curator.framework.imps;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.framework.api.ACLProvider;
+import org.apache.curator.utils.InternalACLProvider;
 import org.apache.zookeeper.data.ACL;
 import java.util.List;
 
-class ACLing
+class ACLing implements InternalACLProvider
 {
     private final List<ACL>     aclList;
     private final ACLProvider   aclProvider;
+    private final boolean       applyToParents;
 
     ACLing(ACLProvider aclProvider)
     {
@@ -35,31 +37,42 @@ class ACLing
 
     ACLing(ACLProvider aclProvider, List<ACL> aclList)
     {
+        this(aclProvider, aclList, false);
+    }
+
+    ACLing(ACLProvider aclProvider, List<ACL> aclList, boolean applyToParents)
+    {
         this.aclProvider = aclProvider;
         this.aclList = (aclList != null) ? ImmutableList.copyOf(aclList) : null;
+        this.applyToParents = applyToParents;
+    }
+
+    InternalACLProvider getACLProviderForParents()
+    {
+        return applyToParents ? this : aclProvider;
     }
 
     List<ACL> getAclList(String path)
     {
-        List<ACL> localAclList = aclList;
-        do
+        if ( aclList != null ) return aclList;
+        if ( path != null )
         {
+            List<ACL> localAclList = aclProvider.getAclForPath(path);
             if ( localAclList != null )
             {
-                break;
+                return localAclList;
             }
+        }
+        return aclProvider.getDefaultAcl();
+    }
 
-            if ( path != null )
-            {
-                localAclList = aclProvider.getAclForPath(path);
-                if ( localAclList != null )
-                {
-                    break;
-                }
-            }
+    @Override
+    public List<ACL> getDefaultAcl() {
+        return aclProvider.getDefaultAcl();
+    }
 
-            localAclList = aclProvider.getDefaultAcl();
-        } while ( false );
-        return localAclList;
+    @Override
+    public List<ACL> getAclForPath(String path) {
+        return getAclList(path);
     }
 }

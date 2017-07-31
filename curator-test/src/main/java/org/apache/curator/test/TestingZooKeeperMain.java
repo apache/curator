@@ -28,7 +28,6 @@ import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,12 +138,6 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
-    @Override
-    public QuorumPeer getQuorumPeer()
-    {
-        throw new UnsupportedOperationException();
-    }
-
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override
     public void blockUntilStarted() throws Exception
@@ -240,7 +233,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             }
             catch ( IOException e )
             {
-                log.info("Could not server. Waiting and trying one more time.", e);
+                log.info("Could not start server. Waiting and trying one more time.", e);
                 timing.sleepABit();
                 cnxnFactory = ServerCnxnFactory.createFactory();
                 cnxnFactory.configure(config.getClientPortAddress(),
@@ -277,6 +270,13 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         public RequestProcessor getFirstProcessor()
         {
             return firstProcessor;
+        }
+
+        @Override
+        protected void setState(State state)
+        {
+            this.state = state;
+            // avoid ZKShutdownHandler is not registered message
         }
 
         protected void registerJMX()

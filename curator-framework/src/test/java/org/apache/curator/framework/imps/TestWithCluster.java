@@ -48,6 +48,20 @@ public class TestWithCluster
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
             client.start();
 
+            final CountDownLatch reconnectedLatch = new CountDownLatch(1);
+            ConnectionStateListener listener = new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.RECONNECTED )
+                    {
+                        reconnectedLatch.countDown();;
+                    }
+                }
+            };
+            client.getConnectionStateListenable().addListener(listener);
+
             client.create().withMode(CreateMode.EPHEMERAL).forPath("/temp", "value".getBytes());
             Assert.assertNotNull(client.checkExists().forPath("/temp"));
 
@@ -59,7 +73,7 @@ public class TestWithCluster
                 timing.sleepABit();
             }
 
-            timing.sleepABit();
+            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
             Assert.assertNotNull(client.checkExists().forPath("/temp"));
         }
         finally

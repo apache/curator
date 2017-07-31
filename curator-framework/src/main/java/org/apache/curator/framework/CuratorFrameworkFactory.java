@@ -21,7 +21,6 @@ package org.apache.curator.framework;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.RetryPolicy;
-import org.apache.curator.connection.ClassicConnectionHandlingPolicy;
 import org.apache.curator.connection.ConnectionHandlingPolicy;
 import org.apache.curator.connection.StandardConnectionHandlingPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -35,9 +34,9 @@ import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.framework.schema.SchemaSet;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
@@ -50,6 +49,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.curator.utils.Compatibility.isZK34;
 
 /**
  * Factory methods for creating framework-style clients
@@ -143,8 +144,9 @@ public class CuratorFrameworkFactory
         private boolean canBeReadOnly = false;
         private boolean useContainerParentsIfAvailable = true;
         private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
-        private ConnectionHandlingPolicy connectionHandlingPolicy = Boolean.getBoolean("curator-use-classic-connection-handling") ? new ClassicConnectionHandlingPolicy() : new StandardConnectionHandlingPolicy();
+        private ConnectionHandlingPolicy connectionHandlingPolicy = new StandardConnectionHandlingPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
+        private boolean zk34CompatibilityMode = isZK34();
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -386,14 +388,26 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * If mode is true, create a ZooKeeper 3.4.x compatible client. IMPORTANT: If the client
+         * library used is ZooKeeper 3.4.x <code>zk34CompatibilityMode</code> is enabled by default.
+         *
+         * @since 3.5.0
+         * @param mode true/false
+         * @return this
+         */
+        public Builder zk34CompatibilityMode(boolean mode)
+        {
+            this.zk34CompatibilityMode = mode;
+            return this;
+        }
+
+        /**
          * <p>
          *     Change the connection handling policy. The default policy is {@link StandardConnectionHandlingPolicy}.
          * </p>
          * <p>
          *     <strong>IMPORTANT: </strong> StandardConnectionHandlingPolicy has different behavior than the connection
-         *     policy handling prior to version 3.0.0. You can specify that the connection handling be the method
-         *     prior to 3.0.0 by passing in an instance of {@link ClassicConnectionHandlingPolicy} here or by
-         *     setting the command line value "curator-use-classic-connection-handling" to true (e.g. <tt>-Dcurator-use-classic-connection-handling=true</tt>).
+         *     policy handling prior to version 3.0.0.
          * </p>
          * <p>
          *     Major differences from the older behavior are:
@@ -513,6 +527,11 @@ public class CuratorFrameworkFactory
         public SchemaSet getSchemaSet()
         {
             return schemaSet;
+        }
+
+        public boolean isZk34CompatibilityMode()
+        {
+            return zk34CompatibilityMode;
         }
 
         @Deprecated

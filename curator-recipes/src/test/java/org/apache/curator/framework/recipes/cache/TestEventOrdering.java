@@ -24,7 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class TestEventOrdering<T extends Closeable> extends BaseClassForTests
 {
-    private final Timing timing = new Timing();
+    private final Timing2 timing = new Timing2();
     private final long start = System.currentTimeMillis();
     private static final int THREAD_QTY = 100;
     private static final int ITERATIONS = 100;
@@ -143,7 +143,7 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
             int eventSuggestedQty = 0;
             while ( events.size() > 0 )
             {
-                Event event = events.take();
+                Event event = timing.takeFromQueue(events);
                 localEvents.add(event);
                 eventSuggestedQty += (event.eventType == EventType.ADDED) ? 1 : -1;
             }

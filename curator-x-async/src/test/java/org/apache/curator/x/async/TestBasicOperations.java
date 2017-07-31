@@ -20,9 +20,8 @@ package org.apache.curator.x.async;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -32,21 +31,18 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 
 import static java.util.EnumSet.of;
 import static org.apache.curator.x.async.api.CreateOption.compress;
 import static org.apache.curator.x.async.api.CreateOption.setDataIfExists;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
+import static org.apache.zookeeper.CreateMode.PERSISTENT_SEQUENTIAL;
 
-public class TestBasicOperations extends BaseClassForTests
+public class TestBasicOperations extends CompletableBaseClassForTests
 {
-    private static final Timing timing = new Timing();
     private AsyncCuratorFramework client;
 
     @BeforeMethod
@@ -67,6 +63,18 @@ public class TestBasicOperations extends BaseClassForTests
         CloseableUtils.closeQuietly(client.unwrap());
 
         super.teardown();
+    }
+
+    @Test
+    public void testCreateTransactionWithMode() throws Exception
+    {
+        complete(AsyncWrappers.asyncEnsureContainers(client, "/test"));
+
+        CuratorOp op1 = client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
+        CuratorOp op2 = client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
+        complete(client.transaction().forOperations(Arrays.asList(op1, op2)));
+
+        Assert.assertEquals(client.unwrap().getChildren().forPath("/test").size(), 2);
     }
 
     @Test
@@ -182,35 +190,13 @@ public class TestBasicOperations extends BaseClassForTests
         });
     }
 
-    private <T, U> void complete(CompletionStage<T> stage)
+    @Test
+    public void testGetDataWithStat()
     {
-        complete(stage, (v, e) -> {});
-    }
+        complete(client.create().forPath("/test", "hey".getBytes()));
 
-    private <T, U> void complete(CompletionStage<T> stage, BiConsumer<? super T, Throwable> handler)
-    {
-        try
-        {
-            stage.handle((v, e) -> {
-                handler.accept(v, e);
-                return null;
-            }).toCompletableFuture().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-        }
-        catch ( ExecutionException e )
-        {
-            if ( e.getCause() instanceof AssertionError )
-            {
-                throw (AssertionError)e.getCause();
-            }
-            Assert.fail("get() failed", e);
-        }
-        catch ( TimeoutException e )
-        {
-            Assert.fail("get() timed out");
-        }
+        Stat stat = new Stat();
+        complete(client.getData().storingStatIn(stat).forPath("/test"));
+        Assert.assertEquals(stat.getDataLength(), "hey".length());
     }
 }

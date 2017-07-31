@@ -25,24 +25,25 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, ErrorListenerPathable<Stat>
+public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, ErrorListenerPathable<Stat>, ACLableExistBuilderMain
 {
     private final CuratorFrameworkImpl client;
     private Backgrounding backgrounding;
     private Watching watching;
     private boolean createParentsIfNeeded;
     private boolean createParentContainersIfNeeded;
+    private ACLing acling;
 
     ExistsBuilderImpl(CuratorFrameworkImpl client)
     {
-        this.client = client;
-        backgrounding = new Backgrounding();
-        watching = new Watching(client);
-        createParentContainersIfNeeded = false;
+        this(client, new Backgrounding(), null, false, false);
     }
 
     public ExistsBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, boolean createParentsIfNeeded, boolean createParentContainersIfNeeded)
@@ -52,10 +53,11 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
         this.watching = new Watching(client, watcher);
         this.createParentsIfNeeded = createParentsIfNeeded;
         this.createParentContainersIfNeeded = createParentContainersIfNeeded;
+        this.acling = new ACLing(client.getAclProvider());
     }
 
     @Override
-    public ExistsBuilderMain creatingParentsIfNeeded()
+    public ACLableExistBuilderMain creatingParentsIfNeeded()
     {
         createParentContainersIfNeeded = false;
         createParentsIfNeeded = true;
@@ -63,10 +65,17 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
     }
 
     @Override
-    public ExistsBuilderMain creatingParentContainersIfNeeded()
+    public ACLableExistBuilderMain creatingParentContainersIfNeeded()
     {
         createParentContainersIfNeeded = true;
         createParentsIfNeeded = false;
+        return this;
+    }
+
+    @Override
+    public ExistsBuilderMain withACL(List<ACL> aclList)
+    {
+        acling = new ACLing(client.getAclProvider(), aclList, true);
         return this;
     }
 
@@ -185,7 +194,7 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
             OperationAndData<String> operationAndData = new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext(), watching);
             if ( createParentContainersIfNeeded || createParentsIfNeeded )
             {
-                CreateBuilderImpl.backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData(), backgrounding, createParentContainersIfNeeded);
+                CreateBuilderImpl.backgroundCreateParentsThenNode(client, operationAndData, operationAndData.getData(), backgrounding, acling.getACLProviderForParents(), createParentContainersIfNeeded);
             }
             else
             {
@@ -218,7 +227,7 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
                         {
                             try
                             {
-                                ZKPaths.mkdirs(client.getZooKeeper(), parent, true, client.getAclProvider(), createParentContainersIfNeeded);
+                                ZKPaths.mkdirs(client.getZooKeeper(), parent, true, acling.getACLProviderForParents(), createParentContainersIfNeeded);
                             }
                             catch ( KeeperException.NodeExistsException e )
                             {

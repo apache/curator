@@ -16,57 +16,36 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-body
-{
-    font-size: 16px;
-    line-height: 22px;
+
+tt {
+  background-color: #EEE;
 }
 
-tt
-{
-    font-size: 14px;
-    background-color: transparent;
+.well, .breadcrumb {
+  background-color: #EDF1F6;
 }
 
-pre
-{
-    font-size: 14px;
+a:link, a:visited, a:active {
+  color: #316290;
 }
 
-.well, .breadcrumb
-{
-    background-color: #f5f5ff;
+a:hover {
+  color: #001F67;
 }
 
-a:link, a:visited, a:active
-{
-    color: #0035AC;
+.nav-list .active a:link, .nav-list .active a:visited, .nav-list .active a:active, .nav-list .active a:hover {
+  background-color: #316290;
 }
 
-a:hover
-{
-    color: #001F67;
+.nav-list li a:hover {
+  background-color: #DDDDDD;
 }
 
-.nav-list .active a:link, .nav-list .active a:visited, .nav-list .active a:active, .nav-list .active a:hover
-{
-    background-color: #0035AC;
+.search-query {
+  margin-top: 15px;
+  width: 85%;
 }
 
-.nav-list li a:hover
-{
-    background-color: #DDDDDD;
-}
-
-footer
-{
-    font-size: 12px;
-    line-height: 15px;
-}
-
-h2
-{
-    text-align: center;
-    border-bottom: 1px solid #0035AC;
-    margin-bottom: 18px;
+#banner {
+  margin-bottom: 3px;
 }

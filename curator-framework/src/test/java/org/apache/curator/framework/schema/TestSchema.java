@@ -299,12 +299,6 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @Override
-    protected boolean enabledSessionExpiredStateAware()
-    {
-        return true;
-    }
-
     private CuratorFramework newClient(SchemaSet schemaSet)
     {
         return CuratorFrameworkFactory.builder()

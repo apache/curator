@@ -27,11 +27,13 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.KillSession;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -127,7 +129,14 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                             }
                             finally
                             {
-                                lock.release();
+                                try
+                                {
+                                    lock.release();
+                                }
+                                catch ( KeeperException.SessionExpiredException dummy )
+                                {
+                                    // happens sometimes with a few tests - ignore
+                                }
                             }
                             return result;
                         }
@@ -149,7 +158,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
     @Test
     public void testKilledSession() throws Exception
     {
-        final Timing timing = new Timing();
+        final Timing2 timing = new Timing2();
 
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
         client.start();
@@ -191,7 +200,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                 );
 
             Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
-            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
             Assert.assertTrue(timing.forSessionSleep().acquireSemaphore(semaphore, 1));
         }
         finally

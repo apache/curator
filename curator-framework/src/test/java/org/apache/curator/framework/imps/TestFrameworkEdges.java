@@ -23,19 +23,19 @@ import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.SafeIsTtlMode;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.KillSession;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.TestingServer;
-import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -53,10 +53,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.framework.api.CreateBuilder;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
-    private final Timing timing = new Timing();
+    private final Timing2 timing = new Timing2();
 
     @Test
     public void testCreateContainersForBadConnect() throws Exception
@@ -64,7 +65,7 @@ public class TestFrameworkEdges extends BaseClassForTests
         final int serverPort = server.getPort();
         server.close();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 1000, 1000, new RetryForever(100));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 1000, 1000, new RetryNTimes(10, timing.forSleepingABit().milliseconds()));
         try
         {
             new Thread()
@@ -178,10 +179,15 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             final String TEST_PATH = "/a/b/c/test-";
-            client.create().withMode(mode).inBackground(callback).forPath(TEST_PATH);
+            long ttl = timing.forWaiting().milliseconds()*1000;
+            CreateBuilder firstCreateBuilder = client.create();
+            if( SafeIsTtlMode.isTtl(mode) ) {
+                firstCreateBuilder.withTtl(ttl);
+            }
+            firstCreateBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
 
-            String name1 = paths.take();
-            String path1 = paths.take();
+            String name1 = timing.takeFromQueue(paths);
+            String path1 = timing.takeFromQueue(paths);
 
             client.close();
 
@@ -190,14 +196,17 @@ public class TestFrameworkEdges extends BaseClassForTests
             
             CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.withProtection();
+            if(SafeIsTtlMode.isTtl(mode)) {
+                createBuilder.withTtl(ttl);
+            }
 
             client.create().forPath(createBuilder.adjustPath(TEST_PATH));
 
             createBuilder.debugForceFindProtectedNode = true;
             createBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
 
-            String name2 = paths.take();
-            String path2 = paths.take();
+            String name2 = timing.takeFromQueue(paths);
+            String path2 = timing.takeFromQueue(paths);
 
             Assert.assertEquals(ZKPaths.getPathAndNode(name1).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
             Assert.assertEquals(ZKPaths.getPathAndNode(name2).getPath(), ZKPaths.getPathAndNode(TEST_PATH).getPath());
@@ -382,7 +391,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             client.checkExists().usingWatcher(watcher).forPath("/sessionTest");
-            KillSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
             Assert.assertNotNull(client.checkExists().forPath("/sessionTest"));
             Assert.assertTrue(sessionDied.get());
         }

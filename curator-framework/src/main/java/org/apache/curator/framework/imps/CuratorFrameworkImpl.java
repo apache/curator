@@ -91,6 +91,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final InternalConnectionHandler internalConnectionHandler;
     private final EnsembleTracker ensembleTracker;
     private final SchemaSet schemaSet;
+    private final boolean zk34CompatibilityMode;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -131,8 +132,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 builder.getConnectionHandlingPolicy()
             );
 
-        boolean isClassic = (builder.getConnectionHandlingPolicy().getSimulatedSessionExpirationPercent() == 0);
-        internalConnectionHandler = isClassic ? new ClassicInternalConnectionHandler() : new StandardInternalConnectionHandler();
+        internalConnectionHandler = new StandardInternalConnectionHandler();
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
         backgroundOperations = new DelayQueue<OperationAndData<?>>();
@@ -146,6 +146,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         useContainerParentsIfAvailable = builder.useContainerParentsIfAvailable();
         connectionStateErrorPolicy = Preconditions.checkNotNull(builder.getConnectionStateErrorPolicy(), "errorPolicy cannot be null");
         schemaSet = Preconditions.checkNotNull(builder.getSchemaSet(), "schemaSet cannot be null");
+        zk34CompatibilityMode = builder.isZk34CompatibilityMode();
 
         byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -155,7 +156,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         failedRemoveWatcherManager = new FailedRemoveWatchManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
 
-        ensembleTracker = new EnsembleTracker(this, builder.getEnsembleProvider());
+        ensembleTracker = zk34CompatibilityMode ? null : new EnsembleTracker(this, builder.getEnsembleProvider());
     }
 
     private List<AuthInfo> buildAuths(CuratorFrameworkFactory.Builder builder)
@@ -230,6 +231,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateErrorPolicy = parent.connectionStateErrorPolicy;
         internalConnectionHandler = parent.internalConnectionHandler;
         schemaSet = parent.schemaSet;
+        zk34CompatibilityMode = parent.zk34CompatibilityMode;
         ensembleTracker = null;
     }
 
@@ -316,7 +318,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             });
 
-            ensembleTracker.start();
+            if ( ensembleTracker != null )
+            {
+                ensembleTracker.start();
+            }
 
             log.info(schemaSet.toDocumentation());
         }
@@ -366,7 +371,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             }
 
-            ensembleTracker.close();
+            if ( ensembleTracker != null )
+            {
+                ensembleTracker.close();
+            }
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
@@ -463,12 +471,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public ReconfigBuilder reconfig()
     {
+        Preconditions.checkState(!isZk34CompatibilityMode(), "reconfig/config APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new ReconfigBuilderImpl(this);
     }
 
     @Override
     public GetConfigBuilder getConfig()
     {
+        Preconditions.checkState(!isZk34CompatibilityMode(), "reconfig/config APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new GetConfigBuilderImpl(this);
     }
 
@@ -533,6 +543,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public RemoveWatchesBuilder watches()
     {
+        Preconditions.checkState(!isZk34CompatibilityMode(), "Remove watches APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new RemoveWatchesBuilderImpl(this);
     }
 
@@ -786,6 +797,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     void addStateChange(ConnectionState newConnectionState)
     {
         connectionStateManager.addStateChange(newConnectionState);
+    }
+
+    @Override
+    public boolean isZk34CompatibilityMode()
+    {
+        return zk34CompatibilityMode;
     }
 
     EnsembleTracker getEnsembleTracker()

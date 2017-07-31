@@ -49,6 +49,11 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
         sharedValue = new SharedValue(client, path, toBytes(seedValue));
     }
 
+    protected SharedCount(CuratorFramework client, String path, SharedValue sv)
+    {
+        sharedValue = sv;
+    }
+
     @Override
     public int getCount()
     {
@@ -141,7 +146,10 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
     @Override
     public void     removeListener(SharedCountListener listener)
     {
-        listeners.remove(listener);
+        SharedValueListener valueListener = listeners.remove(listener);
+        if(valueListener != null) {
+            sharedValue.getListenable().removeListener(valueListener);
+        }
     }
 
     /**

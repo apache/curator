@@ -25,7 +25,7 @@
     <skin>
         <groupId>org.apache.maven.skins</groupId>
         <artifactId>maven-fluido-skin</artifactId>
-        <version>1.3.0</version>
+        <version>1.6</version>
     </skin>
 
     <custom>
@@ -38,9 +38,17 @@
             <googlePlusOne />
             <twitter>
                 <user>ApacheCurator</user>
-                <showUser>false</showUser>
+                <showUser>true</showUser>
                 <showFollowers>false</showFollowers>
             </twitter>
+            <googleSearch>
+                <sitesearch>${project.url}</sitesearch>
+            </googleSearch>
+            <gitHub>
+                <projectId>apache/curator</projectId>
+                <ribbonOrientation>right</ribbonOrientation>
+                <ribbonColor>black</ribbonColor>
+            </gitHub>
         </fluidoSkin>
     </custom>
 
@@ -58,7 +66,7 @@
 
     <publishDate/>
 
-    <version position="none"/>
+    <version position="left"/>
 
     <body>
         <links>
@@ -70,10 +78,20 @@
             <item name="Getting Started" href="getting-started.html"/>
             <item name="Examples" href="curator-examples/index.html"/>
             <item name="Recipes" href="curator-recipes/index.html"/>
+            <item name="Java 8/Async" href="curator-x-async/index.html"/>
+            <item name="Strongly Typed Models" href="curator-x-async/modeled.html"/>
+            <item name="Migrations" href="curator-x-async/migrations.html"/>
+            <item name="Schema Support" href="curator-framework/schema.html"/>
+        </menu>
+
+        <menu name="Compatibility" inherit="top">
+            <item name="ZooKeeper Versions" href="zk-compatibility.html"/>
+        </menu>
+
+        <menu name="Low Level" inherit="top">
             <item name="Framework" href="curator-framework/index.html"/>
             <item name="Utilities" href="utilities.html"/>
             <item name="Client" href="curator-client/index.html"/>
-            <item name="Schema Support" href="curator-framework/schema.html"/>
         </menu>
 
         <menu name="Details" inherit="top">
@@ -93,8 +111,6 @@
         <menu name="Extensions" inherit="top">
             <item name="Service Discovery" href="curator-x-discovery/index.html"/>
             <item name="Service Discovery Server" href="curator-x-discovery-server/index.html"/>
-            <item name="Curator RPC Proxy" href="curator-x-rpc/index.html"/>
-            <item name="Curator Async" href="curator-x-async/index.html"/>
         </menu>
 
         <menu name="Community" inherit="top">
@@ -113,12 +129,12 @@
             <item name="Thanks" href="http://www.apache.org/foundation/thanks.html"/>
         </menu>
 
-        <footer>
+        <footer><![CDATA[
             <div class="row span12" style="margin-bottom: 8px;">
                 Apache Curator, the Apache feather logo, and the Apache Curator project logos are
                 trademarks of The Apache Software Foundation. All other marks mentioned may be
                 trademarks or registered trademarks of their respective owners.
             </div>
-        </footer>
+        ]]></footer>
     </body>
 </project>

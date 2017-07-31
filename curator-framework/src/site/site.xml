@@ -21,7 +21,7 @@
 -->
 <project xmlns="http://maven.apache.org/DECORATION/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/DECORATION/1.1.0 http://maven.apache.org/xsd/decoration-1.1.0.xsd" name="Apache Curator Framework">
     <body>
-        <head>
+        <head><![CDATA[
             <link rel="stylesheet" href="../css/site.css" />
             <script type="text/javascript">
                 $(function(){
@@ -32,6 +32,6 @@
                     }
                 });
             </script>
-        </head>
+        ]]></head>
     </body>
 </project>

@@ -18,8 +18,29 @@
  */
 package org.apache.curator.framework.api;
 
-public interface CreateBuilder extends
-    CreateBuilderMain
+public interface CreateBuilder extends CreateBuilderMain
 {
-    CreateBuilderMain orSetData();
+    /**
+     * Specify a TTL when mode is {@link org.apache.zookeeper.CreateMode#PERSISTENT_WITH_TTL} or
+     * {@link org.apache.zookeeper.CreateMode#PERSISTENT_SEQUENTIAL_WITH_TTL}. If
+     * the znode has not been modified within the given TTL, it will be deleted once it has no
+     * children. The TTL unit is milliseconds and must be greater than 0 and less than or equal to
+     * EphemeralType.MAX_TTL.
+     *
+     * @param ttl the ttl
+     * @return this for chaining
+     */
+    CreateBuilderMain withTtl(long ttl);
+
+    /**
+     * If the ZNode already exists, Curator will instead call setData()
+     */
+    CreateBuilder2 orSetData();
+
+    /**
+     * If the ZNode already exists, Curator will instead call setData()
+     *
+     * @param version the version to use for {@link org.apache.curator.framework.CuratorFramework#setData()}
+     */
+    CreateBuilder2 orSetData(int version);
 }

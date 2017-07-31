@@ -149,6 +149,11 @@ public class NodeCache implements Closeable
         this.dataIsCompressed = dataIsCompressed;
     }
 
+    public CuratorFramework getClient()
+    {
+        return client;
+    }
+
     /**
      * Start the cache. The cache is not started automatically. You must call this method.
      *
@@ -235,6 +240,16 @@ public class NodeCache implements Closeable
     public ChildData getCurrentData()
     {
         return data.get();
+    }
+
+    /**
+     * Return the path this cache is watching
+     *
+     * @return path
+     */
+    public String getPath()
+    {
+        return path;
     }
 
     @VisibleForTesting
