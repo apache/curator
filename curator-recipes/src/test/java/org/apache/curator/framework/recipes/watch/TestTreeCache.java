@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.watch;
 
-import org.apache.curator.test.KillServerSession;
+import org.apache.curator.test.KillSession;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
@@ -401,7 +401,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().withMode(CreateMode.EPHEMERAL).forPath("/test/me", "data".getBytes());
         assertEvent(CacheEvent.NODE_CREATED, "/test/me");
 
-        KillServerSession.kill(client.getZookeeperClient().getZooKeeper(), server.getConnectString());
+        KillSession.kill(client.getZookeeperClient().getZooKeeper());
         assertEvent(CacheEvent.NODE_DELETED, "/test/me", "data".getBytes());
         assertEvent(CacheEvent.CACHE_REFRESHED);
 
