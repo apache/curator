@@ -35,6 +35,7 @@ public class CacheSelectors
 {
     private static final CacheSelector statAndData = new StandardCacheSelector(CacheAction.STAT_AND_DATA);
     private static final CacheSelector uncompressedStatAndData = new StandardCacheSelector(CacheAction.STAT_AND_UNCOMPRESSED_DATA);
+    private static final CacheSelector uncompressedStatOnly = new StandardCacheSelector(CacheAction.UNCOMPRESSED_STAT_ONLY);
     private static final CacheSelector statOnly = new StandardCacheSelector(CacheAction.STAT_ONLY);
     private static final CacheSelector pathOnly = new StandardCacheSelector(CacheAction.PATH_ONLY);
 
@@ -152,6 +153,18 @@ public class CacheSelectors
     public static CacheSelector uncompressedStatAndData()
     {
         return uncompressedStatAndData;
+    }
+
+    /**
+     * Returns a cache selector that stores only the stat and processes the entire tree
+     * from the root path given to the cache builder. In events, however, uncompressed data is
+     * sent (but not stored).
+     *
+     * @return selector
+     */
+    public static CacheSelector getUncompressedStatOnly()
+    {
+        return uncompressedStatOnly;
     }
 
     /**

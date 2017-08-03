@@ -65,6 +65,7 @@ public class CuratorCacheBuilder
         if ( singleNodeCacheAction != null )
         {
             Preconditions.checkState(cacheSelector == null, "Single node mode does not support CacheSelectors");
+            Preconditions.checkState(singleNodeCacheAction != CacheAction.UNCOMPRESSED_STAT_ONLY, "Single node mode does not support UNCOMPRESSED_STAT_ONLY");
             return new InternalNodeCache(client, path, singleNodeCacheAction, cachedNodeMap, sendRefreshEvents, refreshOnStart);
         }
 

@@ -21,17 +21,20 @@ package org.apache.curator.x.async.modeled.details;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.recipes.cache.TreeCache;
-import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
-import org.apache.curator.framework.recipes.cache.TreeCacheListener;
+import org.apache.curator.framework.recipes.watch.CacheEvent;
+import org.apache.curator.framework.recipes.watch.CacheListener;
+import org.apache.curator.framework.recipes.watch.CacheSelectors;
+import org.apache.curator.framework.recipes.watch.CachedNode;
+import org.apache.curator.framework.recipes.watch.CuratorCache;
+import org.apache.curator.framework.recipes.watch.CuratorCacheBuilder;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
+import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
-import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.zookeeper.data.Stat;
 import java.util.AbstractMap;
 import java.util.Map;
@@ -40,9 +43,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
-class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
+class ModeledCacheImpl<T> implements CacheListener, ModeledCache<T>
 {
-    private final TreeCache cache;
+    private final CuratorCache cache;
     private final Map<ZPath, Entry<T>> entries = new ConcurrentHashMap<>();
     private final ModelSerializer<T> serializer;
     private final ListenerContainer<ModeledCacheListener<T>> listenerContainer = new ListenerContainer<>();
@@ -69,11 +72,10 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
 
         basePath = modelSpec.path();
         this.serializer = modelSpec.serializer();
-        cache = TreeCache.newBuilder(client, basePath.fullPath())
-            .setCacheData(false)
-            .setDataIsCompressed(modelSpec.createOptions().contains(CreateOption.compress))
-            .setExecutor(executor)
-            .setCreateParentNodes(modelSpec.createOptions().contains(CreateOption.createParentsIfNeeded) || modelSpec.createOptions().contains(CreateOption.createParentsAsContainers))
+        boolean dataIsCompressed = modelSpec.createOptions().contains(CreateOption.compress);
+        cache = CuratorCacheBuilder.builder(client, basePath.fullPath())
+            .withCacheSelector(dataIsCompressed ? CacheSelectors.uncompressedStatAndData() : CacheSelectors.getUncompressedStatOnly())
+            .sendingRefreshEvents(true)
             .build();
     }
 
@@ -134,11 +136,11 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
     }
 
     @Override
-    public void childEvent(CuratorFramework client, TreeCacheEvent event)
+    public void process(CacheEvent event, String path, CachedNode affectedNode)
     {
         try
         {
-            internalChildEvent(event);
+            internalChildEvent(event, path, affectedNode);
         }
         catch ( Exception e )
         {
@@ -151,42 +153,42 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         }
     }
 
-    private void internalChildEvent(TreeCacheEvent event) throws Exception
+    private void internalChildEvent(CacheEvent event, String pathStr, CachedNode affectedNode) throws Exception
     {
-        switch ( event.getType() )
+        switch ( event )
         {
-        case NODE_ADDED:
-        case NODE_UPDATED:
+        case NODE_CREATED:
+        case NODE_CHANGED:
         {
-            ZPath path = ZPath.parse(event.getData().getPath());
+            ZPath path = ZPath.parse(pathStr);
             if ( !path.equals(basePath) )
             {
-                byte[] bytes = event.getData().getData();
+                byte[] bytes = affectedNode.getData();
                 if ( (bytes != null) && (bytes.length > 0) )    // otherwise it's probably just a parent node being created
                 {
                     T model = serializer.deserialize(bytes);
-                    entries.put(path, new Entry<>(event.getData().getStat(), model));
-                    ModeledCacheListener.Type type = (event.getType() == TreeCacheEvent.Type.NODE_ADDED) ? ModeledCacheListener.Type.NODE_ADDED : ModeledCacheListener.Type.NODE_UPDATED;
-                    accept(type, path, event.getData().getStat(), model);
+                    entries.put(path, new Entry<>(affectedNode.getStat(), model));
+                    ModeledCacheListener.Type type = (event == CacheEvent.NODE_CREATED) ? ModeledCacheListener.Type.NODE_ADDED : ModeledCacheListener.Type.NODE_UPDATED;
+                    accept(type, path, affectedNode.getStat(), model);
                 }
             }
             break;
         }
 
-        case NODE_REMOVED:
+        case NODE_DELETED:
         {
-            ZPath path = ZPath.parse(event.getData().getPath());
+            ZPath path = ZPath.parse(pathStr);
             if ( !path.equals(basePath) )
             {
                 Entry<T> entry = entries.remove(path);
-                T model = (entry != null) ? entry.model : serializer.deserialize(event.getData().getData());
-                Stat stat = (entry != null) ? entry.stat : event.getData().getStat();
+                T model = (entry != null) ? entry.model : serializer.deserialize(affectedNode.getData());
+                Stat stat = (entry != null) ? entry.stat : affectedNode.getStat();
                 accept(ModeledCacheListener.Type.NODE_REMOVED, path, stat, model);
             }
             break;
         }
 
-        case INITIALIZED:
+        case CACHE_REFRESHED:
         {
             listenerContainer.forEach(l -> {
                 l.initialized();

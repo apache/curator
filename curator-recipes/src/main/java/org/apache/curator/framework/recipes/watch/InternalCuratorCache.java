@@ -231,6 +231,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
 
             case STAT_AND_UNCOMPRESSED_DATA:
+            case UNCOMPRESSED_STAT_ONLY:
             {
                 try
                 {
@@ -289,6 +290,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
 
             case STAT_ONLY:
+            case UNCOMPRESSED_STAT_ONLY:
             {
                 putNode = new CachedNode(newNode.getStat());
                 break;

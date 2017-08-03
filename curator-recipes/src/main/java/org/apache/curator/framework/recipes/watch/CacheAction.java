@@ -38,6 +38,11 @@ public enum CacheAction
     PATH_ONLY,
 
     /**
+     * The node and its {@link Stat} are stored - in events, however, uncompressed data is sent (but not stored)
+     */
+    UNCOMPRESSED_STAT_ONLY,
+
+    /**
      * The node and its {@link Stat} are stored
      */
     STAT_ONLY,
