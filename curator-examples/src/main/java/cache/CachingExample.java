@@ -16,47 +16,50 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package cache;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableUtils;
+import discovery.ExampleServer;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.recipes.watch.CacheEvent;
+import org.apache.curator.framework.recipes.watch.CacheListener;
+import org.apache.curator.framework.recipes.watch.CachedNode;
+import org.apache.curator.framework.recipes.watch.CuratorCache;
+import org.apache.curator.framework.recipes.watch.CuratorCacheBuilder;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.TestingServer;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
-import discovery.ExampleServer;
 import org.apache.zookeeper.KeeperException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
- * An example of the PathChildrenCache. The example "harness" is a command processor
- * that allows adding/updating/removed nodes in a path. A PathChildrenCache keeps a
+ * An example of the CuratorCache. The example "harness" is a command processor
+ * that allows adding/updating/removed nodes in a path. A CuratorCache keeps a
  * cache of these changes and outputs when updates occurs.
  */
-public class PathCacheExample
+public class CachingExample
 {
-    private static final String     PATH = "/example/cache";
+    private static final String PATH = "/example/cache";
 
     public static void main(String[] args) throws Exception
     {
-        TestingServer       server = new TestingServer();
-        CuratorFramework    client = null;
-        PathChildrenCache   cache = null;
+        TestingServer server = new TestingServer();
+        CuratorFramework client = null;
+        CuratorCache cache = null;
         try
         {
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(1000, 3));
             client.start();
 
-            // in this example we will cache data. Notice that this is optional.
-            cache = new PathChildrenCache(client, PATH, true);
+            // in this example we will cache data. Note that this is optional.
+            cache = CuratorCacheBuilder.builder(client, PATH).build();
             cache.start();
 
             processCommands(client, cache);
@@ -69,31 +72,31 @@ public class PathCacheExample
         }
     }
 
-    private static void addListener(PathChildrenCache cache)
+    private static void addListener(CuratorCache cache)
     {
         // a PathChildrenCacheListener is optional. Here, it's used just to log changes
-        PathChildrenCacheListener listener = new PathChildrenCacheListener()
+        CacheListener listener = new CacheListener()
         {
             @Override
-            public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+            public void process(CacheEvent event, String path, CachedNode node)
             {
-                switch ( event.getType() )
+                switch ( event )
                 {
-                    case CHILD_ADDED:
+                    case NODE_CREATED:
                     {
-                        System.out.println("Node added: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
+                        System.out.println("Node added: " + ZKPaths.getNodeFromPath(path));
                         break;
                     }
 
-                    case CHILD_UPDATED:
+                    case NODE_CHANGED:
                     {
-                        System.out.println("Node changed: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
+                        System.out.println("Node changed: " + ZKPaths.getNodeFromPath(path));
                         break;
                     }
 
-                    case CHILD_REMOVED:
+                    case NODE_DELETED:
                     {
-                        System.out.println("Node removed: " + ZKPaths.getNodeFromPath(event.getData().getPath()));
+                        System.out.println("Node removed: " + ZKPaths.getNodeFromPath(path));
                         break;
                     }
                 }
@@ -102,7 +105,7 @@ public class PathCacheExample
         cache.getListenable().addListener(listener);
     }
 
-    private static void processCommands(CuratorFramework client, PathChildrenCache cache) throws Exception
+    private static void processCommands(CuratorFramework client, CuratorCache cache) throws Exception
     {
         // More scaffolding that does a simple command line processor
 
@@ -113,26 +116,26 @@ public class PathCacheExample
         {
             addListener(cache);
 
-            BufferedReader  in = new BufferedReader(new InputStreamReader(System.in));
-            boolean         done = false;
+            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+            boolean done = false;
             while ( !done )
             {
                 System.out.print("> ");
 
-                String      line = in.readLine();
+                String line = in.readLine();
                 if ( line == null )
                 {
                     break;
                 }
 
-                String      command = line.trim();
-                String[]    parts = command.split("\\s");
+                String command = line.trim();
+                String[] parts = command.split("\\s");
                 if ( parts.length == 0 )
                 {
                     continue;
                 }
-                String      operation = parts[0];
-                String      args[] = Arrays.copyOfRange(parts, 1, parts.length);
+                String operation = parts[0];
+                String args[] = Arrays.copyOfRange(parts, 1, parts.length);
 
                 if ( operation.equalsIgnoreCase("help") || operation.equalsIgnoreCase("?") )
                 {
@@ -167,17 +170,17 @@ public class PathCacheExample
         }
     }
 
-    private static void list(PathChildrenCache cache)
+    private static void list(CuratorCache cache)
     {
-        if ( cache.getCurrentData().size() == 0 )
+        if ( cache.size() == 0 )
         {
             System.out.println("* empty *");
         }
         else
         {
-            for ( ChildData data : cache.getCurrentData() )
+            for ( Map.Entry<String, CachedNode> entry : cache.view().entrySet() )
             {
-                System.out.println(data.getPath() + " = " + new String(data.getData()));
+                System.out.println(entry.getKey() + " = " + new String(entry.getValue().getData()));
             }
         }
     }
@@ -190,13 +193,13 @@ public class PathCacheExample
             return;
         }
 
-        String      name = args[0];
+        String name = args[0];
         if ( name.contains("/") )
         {
             System.err.println("Invalid node name" + name);
             return;
         }
-        String      path = ZKPaths.makePath(PATH, name);
+        String path = ZKPaths.makePath(PATH, name);
 
         try
         {
@@ -216,15 +219,15 @@ public class PathCacheExample
             return;
         }
 
-        String      name = args[0];
+        String name = args[0];
         if ( name.contains("/") )
         {
             System.err.println("Invalid node name" + name);
             return;
         }
-        String      path = ZKPaths.makePath(PATH, name);
+        String path = ZKPaths.makePath(PATH, name);
 
-        byte[]      bytes = args[1].getBytes();
+        byte[] bytes = args[1].getBytes();
         try
         {
             client.setData().forPath(path, bytes);
@@ -237,7 +240,7 @@ public class PathCacheExample
 
     private static void printHelp()
     {
-        System.out.println("An example of using PathChildrenCache. This example is driven by entering commands at the prompt:\n");
+        System.out.println("An example of using CuratorCache. This example is driven by entering commands at the prompt:\n");
         System.out.println("set <name> <value>: Adds or updates a node with the given name");
         System.out.println("remove <name>: Deletes the node with the given name");
         System.out.println("list: List the nodes/values in the cache");

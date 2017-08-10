@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A managed persisten watcher. The watch will be managed such that it stays set through
+ * A managed persistent watcher. The watch will be managed such that it stays set through
  * connection lapses, etc.
  */
 public class PersistentWatcher implements Closeable
