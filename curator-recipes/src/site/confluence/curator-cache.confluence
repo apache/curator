@@ -1,0 +1,54 @@
+h1. Curator Cache
+
+h2. Description
+A utility to watch a single ZNode, children of a ZNode or an entire tree of ZNodes. The cache will watch the node(s), respond to update/create/delete events, pull
+down the data, etc. You can register a listener that will get notified when changes occur.
+
+h2. Participating Classes
+* CuratorCache
+* CacheListener
+* CachedNode
+* CachedNodeMap
+* CuratorCacheBuilder
+
+h2. Usage
+
+h3. Creating a CuratorCache
+{code}
+public CuratorCacheBuilder.builder(CuratorFramework client,
+                         String path)
+Parameters:
+client - the client
+path - path to watch
+{code}
+
+Once you have a builder instance, set any options/features and then call {{build()}} to get the
+CuratorCache instance.
+
+h2. General Usage
+The cache must be started by calling {{start()}}. Call {{close()}} when you are through with the cache.
+
+At any time, call {{view()}} to get the current state of the cache or call {{get()}} to get the
+cached value of a specific ZNode.
+
+You can register to be notified when a change occurs by calling {{getListenable()}} and then:
+
+{code}
+public void addListener(CacheListener listener)
+     Add a change listener
+Parameters:
+listener - the listener
+{code}
+
+h2. Error Handling
+CuratorCache instances internally monitor a {{ConnectionStateListener}}. If the connection state changes,
+the cache will receive messages detailing the change.
+
+h2. Additional Features
+
+CuratorCache has many additional features accessed when using {{CuratorCacheBuilder}}
+
+* {{forSingleNode()}} - cache a single ZNode instead of an entire tree
+* {{refreshingWhenStarted(boolean)}} - by default listeners get notified when the cache is refreshed. Use this method to change this.
+* {{sortingChildren(boolean)}} - by default, nodes are sorted by their node name. Use this method to change this.
+* {{withCacheSelector(selector)}} - set a filter that controls how the node tree is cached
