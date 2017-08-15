@@ -612,4 +612,57 @@ public class TestFrameworkEdges extends BaseClassForTests
             // correct
         }
     }
+
+    @Test
+    public void testDeleteChildrenConcurrently() throws Exception {
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
+            client.start();
+            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
+            client2.start();
+            client2.getZookeeperClient().blockUntilConnectedOrTimedOut();
+
+            int childCount = 5000;
+            for (int i = 0; i < childCount; i++) {
+                client.create().creatingParentsIfNeeded().forPath("/parent/child" + i);
+            }
+
+            final CountDownLatch countDownLatch = new CountDownLatch(1);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        client.delete().deletingChildrenIfNeeded().forPath("/parent");
+                    } catch (Exception e) {
+                        if (e instanceof KeeperException.NoNodeException) {
+                            Assert.fail("client delete failed, shouldn't throw NoNodeException", e);
+                        } else {
+                            Assert.fail("unknown exception", e);
+                        }
+                    } finally {
+                        countDownLatch.countDown();
+                    }
+                }
+            }).start();
+
+            Thread.sleep(20L);
+            try {
+                client2.delete().forPath("/parent/child" + (childCount/2));
+            } catch (Exception e) {
+                if (e instanceof KeeperException.NoNodeException) {
+                    Assert.fail("client2 delete failed, shouldn't throw NoNodeException", e);
+                } else {
+                    Assert.fail("unknown exception", e);
+                }
+            }
+
+            Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
+
+            Assert.assertNull(client2.checkExists().forPath("/parent"));
+        } finally {
+            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(client2);
+        }
+    }
 }
