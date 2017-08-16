@@ -317,7 +317,7 @@ public class ZKPaths
         try {
             children = zookeeper.getChildren(path, null);
         } catch (KeeperException.NoNodeException e) {
-            // someone else has deleted the node it since we checked
+            // someone else has deleted the node since we checked
             return;
         }
         for ( String child : children )
@@ -339,7 +339,7 @@ public class ZKPaths
             }
             catch ( KeeperException.NoNodeException e )
             {
-                // ignore... someone else has deleted the node it since we checked
+                // ignore... someone else has deleted the node since we checked
             }
         }
     }
