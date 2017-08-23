@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.watch;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.AddPersistentWatchBuilder2;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
@@ -83,6 +84,7 @@ public class PersistentWatcher implements Closeable
     };
     private final CuratorFramework client;
     private final String basePath;
+    private final boolean recursive;
     private final BackgroundCallback backgroundCallback = new BackgroundCallback()
     {
         @Override
@@ -115,11 +117,13 @@ public class PersistentWatcher implements Closeable
     /**
      * @param client client
      * @param basePath path to set the watch on
+     * @param recursive ZooKeeper persistent watches can optionally be recursive
      */
-    public PersistentWatcher(CuratorFramework client, String basePath)
+    public PersistentWatcher(CuratorFramework client, String basePath, boolean recursive)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.basePath = Objects.requireNonNull(basePath, "basePath cannot be null");
+        this.recursive = recursive;
     }
 
     /**
@@ -176,7 +180,8 @@ public class PersistentWatcher implements Closeable
     {
         try
         {
-            client.addPersistentWatch().inBackground(backgroundCallback).usingWatcher(watcher).forPath(basePath);
+            AddPersistentWatchBuilder2 builder = recursive ? client.addPersistentWatch().recursive() : client.addPersistentWatch();
+            builder.inBackground(backgroundCallback).usingWatcher(watcher).forPath(basePath);
         }
         catch ( Exception e )
         {

@@ -21,6 +21,7 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.AddPersistentWatchBuilder;
+import org.apache.curator.framework.api.AddPersistentWatchBuilder2;
 import org.apache.curator.framework.api.AddPersistentWatchable;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -37,6 +38,7 @@ class AddPersistentWatchBuilderImpl implements AddPersistentWatchBuilder, Pathab
     private final CuratorFrameworkImpl client;
     private Watching watching = null;
     private Backgrounding backgrounding = new Backgrounding();
+    private boolean recursive = false;
 
     AddPersistentWatchBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -47,6 +49,13 @@ class AddPersistentWatchBuilderImpl implements AddPersistentWatchBuilder, Pathab
     public AddPersistentWatchable<Pathable<Void>> inBackground()
     {
         backgrounding = new Backgrounding();
+        return this;
+    }
+
+    @Override
+    public AddPersistentWatchBuilder2 recursive()
+    {
+        recursive = true;
         return this;
     }
 
@@ -125,6 +134,7 @@ class AddPersistentWatchBuilderImpl implements AddPersistentWatchBuilder, Pathab
                 (
                     fixedPath,
                     watching.getWatcher(path),
+                    recursive,
                     new AsyncCallback.VoidCallback()
                     {
                         @Override
@@ -156,7 +166,7 @@ class AddPersistentWatchBuilderImpl implements AddPersistentWatchBuilder, Pathab
                 @Override
                 public Void call() throws Exception
                 {
-                    client.getZooKeeper().addPersistentWatch(fixedPath, watching.getWatcher(path));
+                    client.getZooKeeper().addPersistentWatch(fixedPath, watching.getWatcher(path), recursive);
                     return null;
                 }
             }

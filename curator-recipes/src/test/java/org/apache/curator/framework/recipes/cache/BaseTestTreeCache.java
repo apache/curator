@@ -23,23 +23,25 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.TestCleanState;
+import org.apache.curator.framework.recipes.watch.CuratorCache;
+import org.apache.curator.framework.recipes.watch.CuratorCacheBuilder;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import java.io.Closeable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BaseTestTreeCache extends BaseClassForTests
+public class BaseTestTreeCache<T extends Closeable> extends BaseClassForTests
 {
     CuratorFramework client;
-    TreeCache cache;
+    T cache;
     protected final AtomicBoolean hadBackgroundException = new AtomicBoolean(false);
     private final BlockingQueue<TreeCacheEvent> events = new LinkedBlockingQueue<TreeCacheEvent>();
     private final Timing timing = new Timing();
@@ -82,6 +84,26 @@ public class BaseTestTreeCache extends BaseClassForTests
         TreeCache result = new TreeCache(client, path);
         result.getListenable().addListener(eventListener);
         result.getUnhandledErrorListenable().addListener(errorListener);
+        return result;
+    }
+
+    /**
+     * Construct a CuratorCache that records exceptions and automatically listens using the bridge.
+     */
+    protected CuratorCache newCacheWithListeners(CuratorFramework client, String path)
+    {
+        CuratorCache result = CuratorCacheBuilder.builder(client, path).build();
+        ListenerBridge.wrap(client, result.getListenable(), eventListener).add();
+        return result;
+    }
+
+    /**
+     * Finish constructing a CuratorCache that records exceptions and automatically listens.
+     */
+    protected CuratorCache buildCacheWithListeners(CuratorCacheBuilder builder)
+    {
+        CuratorCache result = builder.build();
+        ListenerBridge.wrap(client, result.getListenable(), eventListener).add();
         return result;
     }
 

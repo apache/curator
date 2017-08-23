@@ -33,7 +33,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TestTreeCache extends BaseTestTreeCache
+public class TestTreeCache extends BaseTestTreeCache<TreeCache>
 {
     @Test
     public void testSelector() throws Exception

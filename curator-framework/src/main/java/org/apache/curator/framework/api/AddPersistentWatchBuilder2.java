@@ -18,13 +18,8 @@
  */
 package org.apache.curator.framework.api;
 
-public interface AddPersistentWatchBuilder extends AddPersistentWatchBuilder2
+public interface AddPersistentWatchBuilder2 extends
+    Backgroundable<AddPersistentWatchable<Pathable<Void>>>,
+    AddPersistentWatchable<Pathable<Void>>
 {
-    /**
-     * ZooKeeper persistent watches can optionally be recursive. See
-     * {@link org.apache.zookeeper.ZooKeeper#addPersistentWatch(String, org.apache.zookeeper.Watcher, boolean)}
-     *
-     * @return this
-     */
-    AddPersistentWatchBuilder2 recursive();
 }

@@ -27,16 +27,19 @@ public class WatchersDebug
     private static final Method getDataWatches;
     private static final Method getExistWatches;
     private static final Method getChildWatches;
+    private static final Method getPersistentWatches;
     static
     {
         Method localGetDataWatches = null;
         Method localGetExistWatches = null;
         Method localGetChildWatches = null;
+        Method localGetPersistentWatches = null;
         try
         {
             localGetDataWatches = getMethod("getDataWatches");
             localGetExistWatches = getMethod("getExistWatches");
             localGetChildWatches = getMethod("getChildWatches");
+            localGetPersistentWatches = getMethod("getPersistentWatches");
         }
         catch ( NoSuchMethodException e )
         {
@@ -45,6 +48,7 @@ public class WatchersDebug
         getDataWatches = localGetDataWatches;
         getExistWatches = localGetExistWatches;
         getChildWatches = localGetChildWatches;
+        getPersistentWatches = localGetPersistentWatches;
     }
 
     public static List<String> getDataWatches(ZooKeeper zooKeeper)
@@ -60,6 +64,11 @@ public class WatchersDebug
     public static List<String> getChildWatches(ZooKeeper zooKeeper)
     {
         return callMethod(zooKeeper, getChildWatches);
+    }
+
+    public static List<String> getPersistentWatches(ZooKeeper zooKeeper)
+    {
+        return callMethod(zooKeeper, getPersistentWatches);
     }
 
     private WatchersDebug()

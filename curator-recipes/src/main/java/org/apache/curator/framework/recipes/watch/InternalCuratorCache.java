@@ -71,7 +71,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         this.basePath = Objects.requireNonNull(path, "path cannot be null");
         this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");
         this.sortChildren = sortChildren;
-        watcher = new PersistentWatcher(client, path)
+        watcher = new PersistentWatcher(client, path, true)
         {
             @Override
             protected void noteWatcherReset()
