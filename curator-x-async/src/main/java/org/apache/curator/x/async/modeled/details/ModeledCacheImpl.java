@@ -74,7 +74,7 @@ class ModeledCacheImpl<T> implements CacheListener, ModeledCache<T>
         this.serializer = modelSpec.serializer();
         boolean dataIsCompressed = modelSpec.createOptions().contains(CreateOption.compress);
         cache = CuratorCacheBuilder.builder(client, basePath.fullPath())
-            .withCacheSelector(dataIsCompressed ? CacheSelectors.uncompressedStatAndData() : CacheSelectors.getUncompressedStatOnly())
+            .withCacheSelector(dataIsCompressed ? CacheSelectors.uncompressedStatAndData() : CacheSelectors.statAndData())
             .sendingRefreshEvents(true)
             .build();
     }
