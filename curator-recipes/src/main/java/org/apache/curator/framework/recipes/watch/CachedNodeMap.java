@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Interface for a container of path to {@link org.apache.curator.framework.recipes.watch.CachedNode}
+ * Interface for a container of path to {@link CachedNodeImpl}
  */
 public interface CachedNodeMap
 {

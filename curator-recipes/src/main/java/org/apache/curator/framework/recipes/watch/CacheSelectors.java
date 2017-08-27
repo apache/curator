@@ -23,6 +23,7 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.common.PathUtils;
 import org.apache.zookeeper.server.PathIterator;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;

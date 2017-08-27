@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 abstract class CuratorCacheBase implements CuratorCache
 {
     protected final CachedNodeMap cache;
+    protected final byte[] defaultData;
     private final String mainPath;
     private final ListenerContainer<CacheListener> listeners = new ListenerContainer<>();
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
@@ -54,11 +55,12 @@ abstract class CuratorCacheBase implements CuratorCache
         CLOSED
     }
 
-    protected CuratorCacheBase(String mainPath, CachedNodeMap cache, boolean sendRefreshEvents)
+    protected CuratorCacheBase(String mainPath, CachedNodeMap cache, boolean sendRefreshEvents, byte[] defaultData)
     {
         this.mainPath = Objects.requireNonNull(mainPath, "mainPath cannot be null");
         this.cache = Objects.requireNonNull(cache, "cache cannot be null");
         this.sendRefreshEvents = sendRefreshEvents;
+        this.defaultData = defaultData;
     }
 
     @Override
@@ -140,7 +142,7 @@ abstract class CuratorCacheBase implements CuratorCache
 
     /**
      * As a memory optimization, you can clear the cached data bytes for a node. Subsequent
-     * calls to {@link CachedNode#getData()} for this node will return <code>null</code>.
+     * calls to {@link CachedNodeImpl#getData()} for this node will return <code>null</code>.
      *
      * @param path the path of the node to clear
      */
@@ -152,7 +154,7 @@ abstract class CuratorCacheBase implements CuratorCache
 
     /**
      * As a memory optimization, you can clear the cached data bytes for a node. Subsequent
-     * calls to {@link CachedNode#getData()} for this node will return <code>null</code>.
+     * calls to {@link CachedNodeImpl#getData()} for this node will return <code>null</code>.
      *
      * @param path  the path of the node to clear
      * @param ifVersion if non-negative, only clear the data if the data's version matches this version
@@ -166,7 +168,7 @@ abstract class CuratorCacheBase implements CuratorCache
         {
             if ( (ifVersion < 0) || ((data.getStat() != null) && (ifVersion == data.getStat().getVersion())) )
             {
-                return cache.replace(path, data, new CachedNode(data.getStat()));
+                return cache.replace(path, data, new CachedNodeImpl(data.getStat(), defaultData));
             }
         }
         return false;

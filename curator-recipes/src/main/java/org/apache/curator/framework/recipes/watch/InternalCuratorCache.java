@@ -20,7 +20,6 @@ package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.SettableFuture;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -30,6 +29,7 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collection;
@@ -38,11 +38,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class InternalCuratorCache extends CuratorCacheBase implements Watcher
 {
-    private static final CachedNode nullNode = new CachedNode();
+    private final CachedNode nullNode;
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final PersistentWatcher watcher;
     private final CuratorFramework client;
@@ -64,9 +63,9 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
         }
     };
 
-    InternalCuratorCache(CuratorFramework client, String path, final CacheSelector cacheSelector, CachedNodeMap cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren)
+    InternalCuratorCache(CuratorFramework client, String path, final CacheSelector cacheSelector, CachedNodeMap cache, boolean sendRefreshEvents, final boolean refreshOnStart, boolean sortChildren, byte[] defaultData)
     {
-        super(path, cache, sendRefreshEvents);
+        super(path, cache, sendRefreshEvents, defaultData);
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.basePath = Objects.requireNonNull(path, "path cannot be null");
         this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");
@@ -84,6 +83,8 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
         };
         watcher.getListenable().addListener(this);
+
+        nullNode = new CachedNodeImpl(new Stat(), defaultData);
     }
 
     @Override
@@ -163,7 +164,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
                     if ( event.getType() == CuratorEventType.GET_DATA )
                     {
                         CacheAction cacheAction = (CacheAction)event.getContext();
-                        CachedNode newNode = new CachedNode(event.getStat(), event.getData());
+                        CachedNode newNode = new CachedNodeImpl(event.getStat(), event.getData());
                         CachedNode oldNode = putNewNode(path, cacheAction, newNode);
                         if ( oldNode == null )
                         {
@@ -292,7 +293,7 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             case STAT_ONLY:
             case UNCOMPRESSED_STAT_ONLY:
             {
-                putNode = new CachedNode(newNode.getStat());
+                putNode = new CachedNodeImpl(newNode.getStat(), defaultData);
                 break;
             }
 
@@ -304,14 +305,6 @@ class InternalCuratorCache extends CuratorCacheBase implements Watcher
             }
         }
         return cache.put(path, putNode);
-    }
-
-    private void decrementOutstanding(SettableFuture<Boolean> task, AtomicInteger outstandingCount)
-    {
-        if ( outstandingCount.decrementAndGet() <= 0 )
-        {
-            task.set(true);
-        }
     }
 
     private void remove(String path)

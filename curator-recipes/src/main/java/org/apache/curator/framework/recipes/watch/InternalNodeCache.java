@@ -31,6 +31,7 @@ import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
@@ -44,7 +45,7 @@ class InternalNodeCache extends CuratorCacheBase
     private final String path;
     private final CacheAction cacheAction;
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
-    private static final CachedNode nullNode = new CachedNode();
+    private final CachedNode nullNode;
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
         @Override
@@ -90,12 +91,13 @@ class InternalNodeCache extends CuratorCacheBase
         }
     };
 
-    InternalNodeCache(CuratorFramework client, String path, CacheAction cacheAction, CachedNodeMap cache, boolean sendRefreshEvents, boolean refreshOnStart)
+    InternalNodeCache(CuratorFramework client, String path, CacheAction cacheAction, CachedNodeMap cache, boolean sendRefreshEvents, boolean refreshOnStart, byte[] defaultData)
     {
-        super(path, cache, sendRefreshEvents);
+        super(path, cache, sendRefreshEvents, defaultData);
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.cacheAction = cacheAction;
+        nullNode = new CachedNodeImpl(new Stat(), defaultData);
         Preconditions.checkArgument(refreshOnStart, "refreshingWhenStarted() must be true when forSingleNode() is used");
     }
 
@@ -156,7 +158,7 @@ class InternalNodeCache extends CuratorCacheBase
             {
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    CachedNode cachedNode = new CachedNode(event.getStat(), event.getData());
+                    CachedNode cachedNode = new CachedNodeImpl(event.getStat(), event.getData());
                     setNewData(cachedNode);
                 }
                 break;

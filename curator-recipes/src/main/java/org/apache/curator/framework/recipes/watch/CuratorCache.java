@@ -150,7 +150,7 @@ public interface CuratorCache extends Closeable
 
     /**
      * As a memory optimization, you can clear the cached data bytes for a node. Subsequent
-     * calls to {@link CachedNode#getData()} for this node will return <code>null</code>.
+     * calls to {@link CachedNodeImpl#getData()} for this node will return <code>null</code>.
      *
      * @param path the path of the node to clear
      */
@@ -158,7 +158,7 @@ public interface CuratorCache extends Closeable
 
     /**
      * As a memory optimization, you can clear the cached data bytes for a node. Subsequent
-     * calls to {@link CachedNode#getData()} for this node will return <code>null</code>.
+     * calls to {@link CachedNodeImpl#getData()} for this node will return <code>null</code>.
      *
      * @param path  the path of the node to clear
      * @param ifVersion if non-negative, only clear the data if the data's version matches this version

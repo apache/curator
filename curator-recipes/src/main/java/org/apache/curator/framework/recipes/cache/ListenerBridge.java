@@ -26,8 +26,12 @@ import org.apache.curator.framework.recipes.watch.CacheListener;
 import org.apache.curator.framework.recipes.watch.CachedNode;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -186,7 +190,7 @@ public class ListenerBridge implements CacheListener, ConnectionStateListener
      */
     public static ChildData toData(String path, CachedNode affectedNode)
     {
-        if ( (path != null) && (affectedNode != null) && (affectedNode.getData() != null) )
+        if ( (path != null) && (affectedNode != null) )
         {
             return new ChildData(path, affectedNode.getStat(), affectedNode.getData());
         }
@@ -206,6 +210,26 @@ public class ListenerBridge implements CacheListener, ConnectionStateListener
         TreeCacheEvent.Type type = toType(event);
         ChildData data = (event == CacheEvent.CACHE_REFRESHED) ? null : toData(path, affectedNode);
         return new TreeCacheEvent(type, data);
+    }
+
+    public static Map<String, ChildData> toData(String basePath, Map<String, CachedNode> from)
+    {
+        if ( from.isEmpty() )
+        {
+            return Collections.emptyMap();
+        }
+
+        Map<String, ChildData> mapped = new HashMap<>();
+        for ( Map.Entry<String, CachedNode> entry : from.entrySet() )
+        {
+            String path = entry.getKey();
+            ChildData childData = toData(ZKPaths.makePath(basePath, path), entry.getValue());
+            if ( childData != null )
+            {
+                mapped.put(path, childData);
+            }
+        }
+        return mapped;
     }
 
     protected void handleException(Exception e)

@@ -31,7 +31,11 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.recipes.watch.CacheAction;
+import org.apache.curator.framework.recipes.watch.CacheSelector;
+import org.apache.curator.framework.recipes.watch.CacheSelectors;
 import org.apache.curator.framework.recipes.watch.CuratorCache;
+import org.apache.curator.framework.recipes.watch.CuratorCacheBuilder;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -43,7 +47,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -73,7 +76,7 @@ import static org.apache.curator.utils.PathUtils.validatePath;
  * @deprecated use {@link CuratorCache}
  */
 @Deprecated
-public class TreeCache implements Closeable
+public class TreeCache implements TreeCacheBridge
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
     private final boolean createParentNodes;
@@ -107,6 +110,53 @@ public class TreeCache implements Closeable
                 executor = Executors.newSingleThreadExecutor(defaultThreadFactory);
             }
             return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, selector);
+        }
+
+        public TreeCacheBridge buildBridge()
+        {
+            CuratorCacheBuilder builder = CuratorCacheBuilder.builder(client, path);
+            CacheAction cacheAction;
+            if ( cacheData )
+            {
+                cacheAction = dataIsCompressed ? CacheAction.STAT_AND_UNCOMPRESSED_DATA : CacheAction.STAT_AND_DATA;
+            }
+            else
+            {
+                cacheAction = dataIsCompressed ? CacheAction.UNCOMPRESSED_STAT_ONLY : CacheAction.STAT_ONLY;
+            }
+            final CacheSelector maxDepthSelector = (maxDepth != Integer.MAX_VALUE) ? CacheSelectors.maxDepth(maxDepth) : null;
+            final CacheAction sealedCacheAction = cacheAction;
+            CacheSelector cacheSelector = new CacheSelector()
+            {
+                @Override
+                public boolean traverseChildren(String basePath, String fullPath)
+                {
+                    //noinspection SimplifiableIfStatement
+                    if ( (maxDepthSelector != null) && !maxDepthSelector.traverseChildren(basePath, fullPath) )
+                    {
+                        return false;
+                    }
+                    return selector.traverseChildren(fullPath);
+                }
+
+                @Override
+                public CacheAction actionForPath(String basePath, String fullPath)
+                {
+                    if ( (maxDepthSelector != null) && !maxDepthSelector.traverseChildren(basePath, fullPath) )
+                    {
+                        return CacheAction.NOT_STORED;
+                    }
+                    return selector.acceptChild(fullPath) ? sealedCacheAction : CacheAction.NOT_STORED;
+                }
+            };
+            builder = builder.withCacheSelector(cacheSelector).withDefaultData(null);
+
+            if ( createParentNodes )
+            {
+                LOG.warn("setCreateParentNodes(true) is not supported by TreeCacheBridge. Use EnsureContainers or MigrationManager instead");
+            }
+
+            return new TreeCacheBridgeImpl(client, builder.build());
         }
 
         /**
@@ -579,12 +629,7 @@ public class TreeCache implements Closeable
         this.executorService = Preconditions.checkNotNull(executorService, "executorService cannot be null");
     }
 
-    /**
-     * Start the cache. The cache is not started automatically. You must call this method.
-     *
-     * @return this
-     * @throws Exception errors
-     */
+    @Override
     public TreeCache start() throws Exception
     {
         Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
@@ -600,9 +645,6 @@ public class TreeCache implements Closeable
         return this;
     }
 
-    /**
-     * Close/end the cache.
-     */
     @Override
     public void close()
     {
@@ -624,11 +666,7 @@ public class TreeCache implements Closeable
         }
     }
 
-    /**
-     * Return the cache listenable
-     *
-     * @return listenable
-     */
+    @Override
     public Listenable<TreeCacheListener> getListenable()
     {
         return listeners;
@@ -680,14 +718,7 @@ public class TreeCache implements Closeable
         return current;
     }
 
-    /**
-     * Return the current set of children at the given path, mapped by child name. There are no
-     * guarantees of accuracy; this is merely the most recent view of the data.  If there is no
-     * node at this path, {@code null} is returned.
-     *
-     * @param fullPath full path to the node to check
-     * @return a possibly-empty list of children if the node is alive, or null
-     */
+    @Override
     public Map<String, ChildData> getCurrentChildren(String fullPath)
     {
         TreeNode node = find(fullPath);
@@ -721,14 +752,7 @@ public class TreeCache implements Closeable
         return node.nodeState == NodeState.LIVE ? result : null;
     }
 
-    /**
-     * Return the current data for the given path. There are no guarantees of accuracy. This is
-     * merely the most recent view of the data. If there is no node at the given path,
-     * {@code null} is returned.
-     *
-     * @param fullPath full path to the node to check
-     * @return data if the node is alive, or null
-     */
+    @Override
     public ChildData getCurrentData(String fullPath)
     {
         TreeNode node = find(fullPath);

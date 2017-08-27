@@ -88,6 +88,16 @@ public class BaseTestTreeCache<T extends Closeable> extends BaseClassForTests
     }
 
     /**
+     * Construct a TreeCache that records exceptions and automatically listens.
+     */
+    protected TreeCacheBridge newTreeCacheBridgeWithListeners(CuratorFramework client, String path)
+    {
+        TreeCacheBridge result = TreeCache.newBuilder(client, path).buildBridge();
+        result.getListenable().addListener(eventListener);
+        return result;
+    }
+
+    /**
      * Construct a CuratorCache that records exceptions and automatically listens using the bridge.
      */
     protected CuratorCache newCacheWithListeners(CuratorFramework client, String path)
@@ -115,6 +125,16 @@ public class BaseTestTreeCache<T extends Closeable> extends BaseClassForTests
         TreeCache result = builder.build();
         result.getListenable().addListener(eventListener);
         result.getUnhandledErrorListenable().addListener(errorListener);
+        return result;
+    }
+
+    /**
+     * Finish constructing a TreeCache that records exceptions and automatically listens.
+     */
+    protected TreeCacheBridge buildBridgeWithListeners(TreeCache.Builder builder)
+    {
+        TreeCacheBridge result = builder.buildBridge();
+        result.getListenable().addListener(eventListener);
         return result;
     }
 

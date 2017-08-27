@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +41,7 @@ public class CuratorCacheBuilder
     private boolean usingSoftValues = false;
     private Long expiresAfterWriteMs = null;
     private Long expiresAfterAccessMs = null;
+    private byte[] defaultData = new byte[0];
 
     /**
      * Start a new builder for the given client and main path
@@ -66,10 +68,10 @@ public class CuratorCacheBuilder
         {
             Preconditions.checkState(cacheSelector == null, "Single node mode does not support CacheSelectors");
             Preconditions.checkState(singleNodeCacheAction != CacheAction.UNCOMPRESSED_STAT_ONLY, "Single node mode does not support UNCOMPRESSED_STAT_ONLY");
-            return new InternalNodeCache(client, path, singleNodeCacheAction, cachedNodeMap, sendRefreshEvents, refreshOnStart);
+            return new InternalNodeCache(client, path, singleNodeCacheAction, cachedNodeMap, sendRefreshEvents, refreshOnStart, defaultData);
         }
 
-        return new InternalCuratorCache(client, path, cacheSelector, cachedNodeMap, sendRefreshEvents, refreshOnStart, sortChildren);
+        return new InternalCuratorCache(client, path, cacheSelector, cachedNodeMap, sendRefreshEvents, refreshOnStart, sortChildren, defaultData);
     }
 
     /**
@@ -212,6 +214,20 @@ public class CuratorCacheBuilder
     public CuratorCacheBuilder withCacheSelector(CacheSelector cacheSelector)
     {
         this.cacheSelector = Objects.requireNonNull(cacheSelector, "cacheSelector cannot be null");
+        return this;
+    }
+
+    /**
+     * If a node does not contain data (due to the CacheSelector or other reason), the default is
+     * to set {@link CachedNodeImpl#getData()} to an empty byte array (<code>byte[0]</code>). Use this
+     * method to change to another value or pass <code>null</code>
+     *
+     * @param data data bytes or null
+     * @return this
+     */
+    public CuratorCacheBuilder withDefaultData(byte[] data)
+    {
+        this.defaultData = (data != null) ? Arrays.copyOf(data, data.length) : null;
         return this;
     }
 

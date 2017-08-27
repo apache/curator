@@ -21,6 +21,8 @@ package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.collect.Iterables;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.watch.CachedNode;
+import org.apache.curator.framework.recipes.watch.CuratorCache;
 import org.apache.curator.utils.ZKPaths;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -29,8 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-@SuppressWarnings("deprecation")
-public class TestTreeCacheBridgeRandomTree extends BaseTestTreeCache<TreeCacheBridge>
+public class TestTreeCacheBridgeWrapperRandomTree extends BaseTestTreeCache<CuratorCache>
 {
     /**
      * A randomly generated source-of-truth node for {@link #testGiantRandomDeepTree()}
@@ -56,39 +57,22 @@ public class TestTreeCacheBridgeRandomTree extends BaseTestTreeCache<TreeCacheBr
     private final Random random = new Random();
     private boolean withDepth = false;
 
-    @Test
-    public void testGiantRandomDeepTree() throws Exception {
-        doTestGiantRandomDeepTree();
-    }
-
-    @Test
-    public void testGiantRandomDeepTreeWithDepth() throws Exception {
-        withDepth = true;
-        doTestGiantRandomDeepTree();
-    }
-
     /**
      * Randomly construct a large tree of test data in memory, mirror it into ZK, and then use
      * a TreeCache to follow the changes.  At each step, assert that TreeCache matches our
      * source-of-truth test data, and that we see exactly the set of events we expect to see.
      */
-    private void doTestGiantRandomDeepTree() throws Exception
-    {
+
+    @Test
+    public void testGiantRandomDeepTree() throws Exception {
         client.create().forPath("/tree", null);
         CuratorFramework cl = client.usingNamespace("tree");
-        if ( withDepth )
-        {
-            cache = buildBridgeWithListeners(TreeCache.newBuilder(cl, "/").setMaxDepth(TEST_DEPTH));
-        }
-        else
-        {
-            cache = newTreeCacheBridgeWithListeners(cl, "/");
-        }
+        cache = newCacheWithListeners(cl, "/");
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
         assertEvent(TreeCacheEvent.Type.INITIALIZED);
 
-        TestNode root = new TestNode("/", null);
+        TestNode root = new TestNode("/", new byte[0]);
         int maxDepth = 0;
         int adds = 0;
         int removals = 0;
@@ -185,7 +169,7 @@ public class TestTreeCacheBridgeRandomTree extends BaseTestTreeCache<TreeCacheBr
             }
 
             // Each iteration, ensure the cached state matches our source-of-truth tree.
-            assertNodeEquals(cache.getCurrentData("/"), root);
+            assertNodeEquals(ListenerBridge.toData("/", cache.get("/")), root);
             assertTreeEquals(cache, root, 0);
         }
 
@@ -206,10 +190,10 @@ public class TestTreeCacheBridgeRandomTree extends BaseTestTreeCache<TreeCacheBr
     /**
      * Recursively assert that current children equal expected children.
      */
-    private void assertTreeEquals(TreeCacheBridge cache, TestNode expectedNode, int depth)
+    private void assertTreeEquals(CuratorCache cache, TestNode expectedNode, int depth)
     {
         String path = expectedNode.fullPath;
-        Map<String, ChildData> cacheChildren = cache.getCurrentChildren(path);
+        Map<String, CachedNode> cacheChildren = cache.childrenAtPath(path);
         Assert.assertNotNull(cacheChildren, path);
 
         if (withDepth && depth == TEST_DEPTH) {
@@ -221,9 +205,9 @@ public class TestTreeCacheBridgeRandomTree extends BaseTestTreeCache<TreeCacheBr
         for ( Map.Entry<String, TestNode> entry : expectedNode.children.entrySet() )
         {
             String nodeName = entry.getKey();
-            ChildData childData = cacheChildren.get(nodeName);
+            CachedNode childData = cacheChildren.get(nodeName);
             TestNode expectedChild = entry.getValue();
-            assertNodeEquals(childData, expectedChild);
+            assertNodeEquals(ListenerBridge.toData(expectedChild.fullPath, childData), expectedChild);
             assertTreeEquals(cache, expectedChild, depth + 1);
         }
     }
