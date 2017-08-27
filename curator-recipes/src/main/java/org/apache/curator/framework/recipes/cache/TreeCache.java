@@ -73,7 +73,9 @@ import static org.apache.curator.utils.PathUtils.validatePath;
  * be prepared for false-positives and false-negatives. Additionally, always use the version number
  * when updating data to avoid overwriting another process' change.</p>
  *
- * @deprecated use {@link CuratorCache}
+ * @deprecated use {@link CuratorCache} - to help in upgrading from old code, you can
+ * use {@link org.apache.curator.framework.recipes.cache.TreeCache.Builder#buildBridge()} to build an instance
+ * that roughly matches the TreeCache API but is backed by a CuratorCache
  */
 @Deprecated
 public class TreeCache implements TreeCacheBridge
@@ -112,6 +114,11 @@ public class TreeCache implements TreeCacheBridge
             return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, selector);
         }
 
+        /**
+         * Builds a TreeCacheBridge instance backed by {@link org.apache.curator.framework.recipes.watch.CuratorCache}
+         *
+         * @return instance
+         */
         public TreeCacheBridge buildBridge()
         {
             CuratorCacheBuilder builder = CuratorCacheBuilder.builder(client, path);

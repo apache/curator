@@ -30,10 +30,10 @@ public interface TreeCacheBridge extends Closeable
     /**
      * Return the current set of children at the given path, mapped by child name. There are no
      * guarantees of accuracy; this is merely the most recent view of the data.  If there is no
-     * node at this path, {@code null} is returned.
+     * node at this path, an empty list or {@code null} is returned (depending on implementation).
      *
      * @param fullPath full path to the node to check
-     * @return a possibly-empty list of children if the node is alive, or null
+     * @return a possibly-empty list of children if the node is alive, or null (depending on implementation)
      */
     Map<String, ChildData> getCurrentChildren(String fullPath);
 
