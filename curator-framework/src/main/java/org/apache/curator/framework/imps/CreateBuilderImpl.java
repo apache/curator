@@ -1212,7 +1212,21 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             {
                                 if ( setDataIfExists )
                                 {
-                                    client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
+                                    Stat setStat = client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
+                                    if(storingStat != null)
+                                    {
+                                        storingStat.setAversion(setStat.getAversion());
+                                        storingStat.setCtime(setStat.getCtime());
+                                        storingStat.setCversion(setStat.getCversion());
+                                        storingStat.setCzxid(setStat.getCzxid());
+                                        storingStat.setDataLength(setStat.getDataLength());
+                                        storingStat.setEphemeralOwner(setStat.getEphemeralOwner());
+                                        storingStat.setMtime(setStat.getMtime());
+                                        storingStat.setMzxid(setStat.getMzxid());
+                                        storingStat.setNumChildren(setStat.getNumChildren());
+                                        storingStat.setPzxid(setStat.getPzxid());
+                                        storingStat.setVersion(setStat.getVersion());
+                                    }
                                     createdPath = path;
                                 }
                                 else
