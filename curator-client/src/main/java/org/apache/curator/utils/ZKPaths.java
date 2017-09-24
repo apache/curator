@@ -314,9 +314,12 @@ public class ZKPaths
         PathUtils.validatePath(path);
 
         List<String> children;
-        try {
+        try
+        {
             children = zookeeper.getChildren(path, null);
-        } catch (KeeperException.NoNodeException e) {
+        }
+        catch (KeeperException.NoNodeException e)
+        {
             // someone else has deleted the node since we checked
             return;
         }

@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Queues;
@@ -25,6 +26,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.SafeIsTtlMode;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
@@ -33,8 +35,8 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.TestingServer;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -53,7 +55,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.curator.framework.api.CreateBuilder;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
@@ -179,9 +180,10 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             final String TEST_PATH = "/a/b/c/test-";
-            long ttl = timing.forWaiting().milliseconds()*1000;
+            long ttl = timing.forWaiting().milliseconds() * 1000;
             CreateBuilder firstCreateBuilder = client.create();
-            if( SafeIsTtlMode.isTtl(mode) ) {
+            if ( SafeIsTtlMode.isTtl(mode) )
+            {
                 firstCreateBuilder.withTtl(ttl);
             }
             firstCreateBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
@@ -193,10 +195,11 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryOneTime(1));
             client.start();
-            
+
             CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.withProtection();
-            if(SafeIsTtlMode.isTtl(mode)) {
+            if ( SafeIsTtlMode.isTtl(mode) )
+            {
                 createBuilder.withTtl(ttl);
             }
 
@@ -233,16 +236,13 @@ public class TestFrameworkEdges extends BaseClassForTests
             client.start();
             client.getZookeeperClient().blockUntilConnectedOrTimedOut();
             server.close();
-            client.getChildren().inBackground
-                (
-                    new BackgroundCallback()
-                    {
-                        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                        {
-                            latch.countDown();
-                        }
-                    }
-                ).forPath("/");
+            client.getChildren().inBackground(new BackgroundCallback()
+            {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    latch.countDown();
+                }
+            }).forPath("/");
             Assert.assertTrue(timing.awaitLatch(latch));
         }
         finally
@@ -408,27 +408,24 @@ public class TestFrameworkEdges extends BaseClassForTests
         client.start();
         try
         {
-            client.getCuratorListenable().addListener
-                (
-                    new CuratorListener()
+            client.getCuratorListenable().addListener(new CuratorListener()
+            {
+                @Override
+                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    if ( event.getType() == CuratorEventType.EXISTS )
                     {
-                        @Override
-                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-                        {
-                            if ( event.getType() == CuratorEventType.EXISTS )
-                            {
-                                Stat stat = client.checkExists().forPath("/yo/yo/yo");
-                                Assert.assertNull(stat);
+                        Stat stat = client.checkExists().forPath("/yo/yo/yo");
+                        Assert.assertNull(stat);
 
-                                client.create().inBackground(event.getContext()).forPath("/what");
-                            }
-                            else if ( event.getType() == CuratorEventType.CREATE )
-                            {
-                                ((CountDownLatch)event.getContext()).countDown();
-                            }
-                        }
+                        client.create().inBackground(event.getContext()).forPath("/what");
                     }
-                );
+                    else if ( event.getType() == CuratorEventType.CREATE )
+                    {
+                        ((CountDownLatch)event.getContext()).countDown();
+                    }
+                }
+            });
 
             CountDownLatch latch = new CountDownLatch(1);
             client.checkExists().inBackground(latch).forPath("/hey");
@@ -448,20 +445,17 @@ public class TestFrameworkEdges extends BaseClassForTests
         try
         {
             final CountDownLatch latch = new CountDownLatch(1);
-            client.getConnectionStateListenable().addListener
-                (
-                    new ConnectionStateListener()
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.LOST )
                     {
-                        @Override
-                        public void stateChanged(CuratorFramework client, ConnectionState newState)
-                        {
-                            if ( newState == ConnectionState.LOST )
-                            {
-                                latch.countDown();
-                            }
-                        }
+                        latch.countDown();
                     }
-                );
+                }
+            });
 
             client.checkExists().forPath("/hey");
             client.checkExists().inBackground().forPath("/hey");
@@ -614,45 +608,64 @@ public class TestFrameworkEdges extends BaseClassForTests
     }
 
     @Test
-    public void testDeleteChildrenConcurrently() throws Exception {
+    public void testDeleteChildrenConcurrently() throws Exception
+    {
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try {
+        try
+        {
             client.start();
             client.getZookeeperClient().blockUntilConnectedOrTimedOut();
             client2.start();
             client2.getZookeeperClient().blockUntilConnectedOrTimedOut();
 
             int childCount = 5000;
-            for (int i = 0; i < childCount; i++) {
+            for ( int i = 0; i < childCount; i++ )
+            {
                 client.create().creatingParentsIfNeeded().forPath("/parent/child" + i);
             }
 
             final CountDownLatch countDownLatch = new CountDownLatch(1);
-            new Thread(new Runnable() {
+            new Thread(new Runnable()
+            {
                 @Override
-                public void run() {
-                    try {
+                public void run()
+                {
+                    try
+                    {
                         client.delete().deletingChildrenIfNeeded().forPath("/parent");
-                    } catch (Exception e) {
-                        if (e instanceof KeeperException.NoNodeException) {
+                    }
+                    catch ( Exception e )
+                    {
+                        if ( e instanceof KeeperException.NoNodeException )
+                        {
                             Assert.fail("client delete failed, shouldn't throw NoNodeException", e);
-                        } else {
+                        }
+                        else
+                        {
                             Assert.fail("unknown exception", e);
                         }
-                    } finally {
+                    }
+                    finally
+                    {
                         countDownLatch.countDown();
                     }
                 }
             }).start();
 
             Thread.sleep(20L);
-            try {
-                client2.delete().forPath("/parent/child" + (childCount/2));
-            } catch (Exception e) {
-                if (e instanceof KeeperException.NoNodeException) {
+            try
+            {
+                client2.delete().forPath("/parent/child" + (childCount / 2));
+            }
+            catch ( Exception e )
+            {
+                if ( e instanceof KeeperException.NoNodeException )
+                {
                     Assert.fail("client2 delete failed, shouldn't throw NoNodeException", e);
-                } else {
+                }
+                else
+                {
                     Assert.fail("unknown exception", e);
                 }
             }
@@ -660,7 +673,9 @@ public class TestFrameworkEdges extends BaseClassForTests
             Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
 
             Assert.assertNull(client2.checkExists().forPath("/parent"));
-        } finally {
+        }
+        finally
+        {
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(client2);
         }
