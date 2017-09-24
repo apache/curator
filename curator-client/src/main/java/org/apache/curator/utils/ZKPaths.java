@@ -313,7 +313,13 @@ public class ZKPaths
     {
         PathUtils.validatePath(path);
 
-        List<String> children = zookeeper.getChildren(path, null);
+        List<String> children;
+        try {
+            children = zookeeper.getChildren(path, null);
+        } catch (KeeperException.NoNodeException e) {
+            // someone else has deleted the node since we checked
+            return;
+        }
         for ( String child : children )
         {
             String fullPath = makePath(path, child);
@@ -333,7 +339,7 @@ public class ZKPaths
             }
             catch ( KeeperException.NoNodeException e )
             {
-                // ignore... someone else has deleted the node it since we checked
+                // ignore... someone else has deleted the node since we checked
             }
         }
     }
