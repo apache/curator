@@ -38,6 +38,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.server.DataTree;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -640,17 +642,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
                     if ( (stat != null) && (storingStat != null) )
                     {
-                        storingStat.setAversion(stat.getAversion());
-                        storingStat.setCtime(stat.getCtime());
-                        storingStat.setCversion(stat.getCversion());
-                        storingStat.setCzxid(stat.getCzxid());
-                        storingStat.setDataLength(stat.getDataLength());
-                        storingStat.setEphemeralOwner(stat.getEphemeralOwner());
-                        storingStat.setMtime(stat.getMtime());
-                        storingStat.setMzxid(stat.getMzxid());
-                        storingStat.setNumChildren(stat.getNumChildren());
-                        storingStat.setPzxid(stat.getPzxid());
-                        storingStat.setVersion(stat.getVersion());
+                        DataTree.copyStat(stat, storingStat);
                     }
 
                     if ( (rc == KeeperException.Code.NONODE.intValue()) && createParentsIfNeeded )
@@ -1212,7 +1204,11 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             {
                                 if ( setDataIfExists )
                                 {
-                                    client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
+                                    Stat setStat = client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
+                                    if(storingStat != null)
+                                    {
+                                        DataTree.copyStat(setStat, storingStat);
+                                    }
                                     createdPath = path;
                                 }
                                 else
