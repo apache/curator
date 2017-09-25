@@ -33,11 +33,9 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import org.apache.zookeeper.data.Stat;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -48,6 +46,7 @@ public class LockInternals
     private final String                            basePath;
     private final LockInternalsDriver               driver;
     private final String                            lockName;
+    private final String                            lockKey;
     private final AtomicReference<RevocationSpec>   revocable = new AtomicReference<RevocationSpec>(null);
     private final CuratorWatcher                    revocableWatcher = new CuratorWatcher()
     {
@@ -71,6 +70,8 @@ public class LockInternals
     };
 
     private volatile int    maxLeases;
+
+    static final String KEY_PREFIX = "_k_";
 
     static final byte[]             REVOKE_MESSAGE = "__REVOKE__".getBytes();
 
@@ -103,7 +104,9 @@ public class LockInternals
 
         this.client = client.newWatcherRemoveCuratorFramework();
         this.basePath = PathUtils.validatePath(path);
-        this.path = ZKPaths.makePath(path, lockName);
+        this.lockKey = UUID.randomUUID().toString();
+
+        this.path = ZKPaths.makePath(path, this.KEY_PREFIX + this.lockKey + "-" + lockName);
     }
 
     synchronized void setMaxLeases(int maxLeases)
@@ -150,20 +153,7 @@ public class LockInternals
     public static List<String> getSortedChildren(CuratorFramework client, String basePath, final String lockName, final LockInternalsSorter sorter) throws Exception
     {
         List<String> children = client.getChildren().forPath(basePath);
-        List<String> sortedList = Lists.newArrayList(children);
-        Collections.sort
-        (
-            sortedList,
-            new Comparator<String>()
-            {
-                @Override
-                public int compare(String lhs, String rhs)
-                {
-                    return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
-                }
-            }
-        );
-        return sortedList;
+        return getSortedChildren(lockName, sorter, children);
     }
 
     public static List<String> getSortedChildren(final String lockName, final LockInternalsSorter sorter, List<String> children)
@@ -184,6 +174,7 @@ public class LockInternals
         return sortedList;
     }
 
+
     List<String> getSortedChildren() throws Exception
     {
         return getSortedChildren(client, basePath, lockName, driver);
@@ -201,6 +192,11 @@ public class LockInternals
 
     String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Exception
     {
+        return attemptLock(time, unit, lockNodeBytes, false);
+    }
+
+    String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes, boolean resurrect) throws Exception
+    {
         final long      startMillis = System.currentTimeMillis();
         final Long      millisToWait = (unit != null) ? unit.toMillis(time) : null;
         final byte[]    localLockNodeBytes = (revocable.get() != null) ? new byte[0] : lockNodeBytes;
@@ -211,11 +207,19 @@ public class LockInternals
         boolean         isDone = false;
         while ( !isDone )
         {
+            ourPath = null;
             isDone = true;
+            if ( resurrect )
+            {
+                ourPath = resurrectLock();
+            }
 
             try
             {
-                ourPath = driver.createsTheLock(client, path, localLockNodeBytes);
+                if ( ourPath == null )
+                {
+                    ourPath = driver.createsTheLock(client, path, localLockNodeBytes);
+                }
                 hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
             }
             catch ( KeeperException.NoNodeException e )
@@ -236,6 +240,63 @@ public class LockInternals
         if ( hasTheLock )
         {
             return ourPath;
+        }
+
+        return null;
+    }
+
+    String resurrectLock() throws Exception
+    {
+        List<String> children;
+        try
+        {
+            children = getSortedChildren();
+        }
+        catch ( KeeperException.NoNodeException e )
+        {
+            return null;
+        }
+
+        for ( String child : children )
+        {
+            int i = child.indexOf(KEY_PREFIX);
+            if ( i < 0 )
+            {
+                continue;
+            }
+
+            String s;
+            try
+            {
+                s = child.substring(i + KEY_PREFIX.length(), i + KEY_PREFIX.length() + lockKey.length() + 1);
+            }
+            catch ( IndexOutOfBoundsException e )
+            {
+                continue;
+            }
+
+            if ( !s.equals(lockKey + "-") )
+            {
+                continue;
+            }
+
+            String childPath = basePath + "/" + child;
+            Stat stat = new Stat();
+            try
+            {
+                client.getData().storingStatIn(stat).forPath(childPath);
+            }
+            catch ( KeeperException.NoNodeException e )
+            {
+                return null;
+            }
+
+            if ( stat.getEphemeralOwner() != client.getZookeeperClient().getZooKeeper().getSessionId() )
+            {
+                continue;
+            }
+
+            return childPath;
         }
 
         return null;
@@ -277,6 +338,7 @@ public class LockInternals
                 List<String>        children = getSortedChildren();
                 String              sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
 
+
                 PredicateResults    predicateResults = driver.getsTheLock(client, children, sequenceNodeName, maxLeases);
                 if ( predicateResults.getsTheLock() )
                 {
@@ -288,7 +350,7 @@ public class LockInternals
 
                     synchronized(this)
                     {
-                        try 
+                        try
                         {
                             // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
                             client.getData().usingWatcher(watcher).forPath(previousSequencePath);
@@ -309,7 +371,7 @@ public class LockInternals
                                 wait();
                             }
                         }
-                        catch ( KeeperException.NoNodeException e ) 
+                        catch ( KeeperException.NoNodeException e )
                         {
                             // it has been deleted (i.e. lock released). Try to acquire again
                         }
