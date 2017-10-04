@@ -33,7 +33,7 @@ import org.apache.zookeeper.Watcher;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-class AddPersistentWatchBuilderImpl implements AddPersistentWatchBuilder, Pathable<Void>, BackgroundOperation<String>
+public class AddPersistentWatchBuilderImpl implements AddPersistentWatchBuilder, Pathable<Void>, BackgroundOperation<String>
 {
     private final CuratorFrameworkImpl client;
     private Watching watching = null;
@@ -43,6 +43,14 @@ class AddPersistentWatchBuilderImpl implements AddPersistentWatchBuilder, Pathab
     AddPersistentWatchBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
+    }
+
+    public AddPersistentWatchBuilderImpl(CuratorFrameworkImpl client, Watching watching, Backgrounding backgrounding, boolean recursive)
+    {
+        this.client = client;
+        this.watching = watching;
+        this.backgrounding = backgrounding;
+        this.recursive = recursive;
     }
 
     @Override

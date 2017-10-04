@@ -21,9 +21,8 @@ package org.apache.curator.framework.recipes.watch;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.common.PathUtils;
-import org.apache.zookeeper.server.PathIterator;
+import org.apache.zookeeper.server.PathParentIterator;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -315,10 +314,9 @@ public class CacheSelectors
 
             private CacheSelector getSelector(String fullPath)
             {
-                String parent = ZKPaths.getPathAndNode(fullPath).getPath();
                 for ( CompositeEntry entry : entries )
                 {
-                    PathIterator pathIterator = new PathIterator(fullPath);
+                    PathParentIterator pathIterator = PathParentIterator.forAll(fullPath);
                     while ( pathIterator.hasNext() )
                     {
                         if ( pathIterator.next().equals(entry.path) )

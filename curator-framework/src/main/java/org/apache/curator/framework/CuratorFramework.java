@@ -193,6 +193,11 @@ public interface CuratorFramework extends Closeable
      */
     public SyncBuilder sync();
 
+    /**
+     * Start a persistent watch builder
+     *
+     * @return builder object
+     */
     public AddPersistentWatchBuilder addPersistentWatch();
 
     /**
