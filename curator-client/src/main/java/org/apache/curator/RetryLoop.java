@@ -18,7 +18,6 @@
  */
 package org.apache.curator;
 
-import com.google.common.base.Throwables;
 import org.apache.curator.drivers.EventTrace;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.utils.DebugUtils;
@@ -148,10 +147,9 @@ public class RetryLoop
      */
     public static boolean      isRetryException(Throwable exception)
     {
-        Throwable rootCause = Throwables.getRootCause(exception);
-        if ( rootCause instanceof KeeperException )
+        if ( exception instanceof KeeperException )
         {
-            KeeperException keeperException = (KeeperException)rootCause;
+            KeeperException     keeperException = (KeeperException)exception;
             return shouldRetry(keeperException.code().intValue());
         }
         return false;
