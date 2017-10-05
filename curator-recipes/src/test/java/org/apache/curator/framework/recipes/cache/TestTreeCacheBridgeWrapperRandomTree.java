@@ -65,7 +65,7 @@ public class TestTreeCacheBridgeWrapperRandomTree extends BaseTestTreeCache<Cura
 
     @Test
     public void testGiantRandomDeepTree() throws Exception {
-        client.create().forPath("/tree", null);
+        client.create().forPath("/tree", new byte[0]);
         CuratorFramework cl = client.usingNamespace("tree");
         cache = newCacheWithListeners(cl, "/");
         cache.start();
