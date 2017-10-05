@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.locks;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -133,9 +134,17 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                                 {
                                     lock.release();
                                 }
-                                catch ( KeeperException.SessionExpiredException dummy )
+                                catch ( Exception e )
                                 {
-                                    // happens sometimes with a few tests - ignore
+                                    //noinspection StatementWithEmptyBody
+                                    if ( Throwables.getRootCause(e) instanceof KeeperException.SessionExpiredException )
+                                    {
+                                        // happens sometimes with a few tests - ignore
+                                    }
+                                    else
+                                    {
+                                        throw e;
+                                    }
                                 }
                             }
                             return result;
