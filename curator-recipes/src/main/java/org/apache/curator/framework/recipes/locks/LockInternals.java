@@ -149,21 +149,28 @@ public class LockInternals
 
     public static List<String> getSortedChildren(CuratorFramework client, String basePath, final String lockName, final LockInternalsSorter sorter) throws Exception
     {
-        List<String> children = client.getChildren().forPath(basePath);
-        List<String> sortedList = Lists.newArrayList(children);
-        Collections.sort
-        (
-            sortedList,
-            new Comparator<String>()
-            {
-                @Override
-                public int compare(String lhs, String rhs)
+        try
+        {
+            List<String> children = client.getChildren().forPath(basePath);
+            List<String> sortedList = Lists.newArrayList(children);
+            Collections.sort
+            (
+                sortedList,
+                new Comparator<String>()
                 {
-                    return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
+                    @Override
+                    public int compare(String lhs, String rhs)
+                    {
+                        return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
+                    }
                 }
-            }
-        );
-        return sortedList;
+            );
+            return sortedList;
+        }
+        catch ( KeeperException.NoNodeException ignore )
+        {
+            return Collections.emptyList();
+        }
     }
 
     public static List<String> getSortedChildren(final String lockName, final LockInternalsSorter sorter, List<String> children)

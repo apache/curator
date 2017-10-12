@@ -59,6 +59,17 @@ public class TestLeaderLatch extends BaseClassForTests
     private static final int MAX_LOOPS = 5;
 
     @Test
+    public void testUncreatedPathGetLeader() throws Exception
+    {
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
+        {
+            client.start();
+            LeaderLatch latch = new LeaderLatch(client, "/foo/bar");
+            latch.getLeader();  // CURATOR-436 - was throwing NoNodeException
+        }
+    }
+
+    @Test
     public void testSessionErrorPolicy() throws Exception
     {
         Timing timing = new Timing();
