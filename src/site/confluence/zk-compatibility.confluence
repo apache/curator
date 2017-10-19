@@ -46,3 +46,5 @@ mode as needed. In this mode, all features not supported by 3.4 are disabled. It
 application code to "do the right thing" and not use these features. Use the {{isZk34CompatibilityMode()}}
 method to determine which mode Curator is using at runtime.
 
+The 4.0 version of the curator-test artifact is not compatible with Zookeeper 3.4.x. If your application
+uses curator-test to run tests against Zookeeper 3.4.x, you will need to use the latest 2.x version of curator-test.
