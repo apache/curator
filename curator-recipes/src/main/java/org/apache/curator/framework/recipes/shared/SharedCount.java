@@ -119,7 +119,7 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
     @Override
     public void     addListener(SharedCountListener listener)
     {
-        addListener(listener, MoreExecutors.sameThreadExecutor());
+        addListener(listener, MoreExecutors.directExecutor());
     }
 
     @Override
