@@ -115,6 +115,11 @@ class OperationAndData<T> implements Delayed, RetrySleeper
         return operation;
     }
 
+    void clearSleep()
+    {
+        sleepUntilTimeMs.set(0);
+    }
+
     @Override
     public void sleepFor(long time, TimeUnit unit) throws InterruptedException
     {

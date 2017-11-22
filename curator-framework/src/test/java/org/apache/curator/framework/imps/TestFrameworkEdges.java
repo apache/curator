@@ -61,6 +61,37 @@ public class TestFrameworkEdges extends BaseClassForTests
     private final Timing2 timing = new Timing2();
 
     @Test
+    public void testBackgroundLatencyUnSleep() throws Exception
+    {
+        server.stop();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            ((CuratorFrameworkImpl)client).sleepAndQueueOperationSeconds = Integer.MAX_VALUE;
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    latch.countDown();
+                }
+            };
+            client.create().inBackground(callback).forPath("/test");
+            server.restart();
+
+            Assert.assertTrue(timing.awaitLatch(latch));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testCreateContainersForBadConnect() throws Exception
     {
         final int serverPort = server.getPort();
