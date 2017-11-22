@@ -1001,6 +1001,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
         for ( OperationAndData<?> operation : drain )
         {
             operation.clearSleep();
+            if ( backgroundOperations.remove(operation) )
+            {
+                backgroundOperations.offer(operation);
+            }
         }
     }
 
