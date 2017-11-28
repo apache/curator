@@ -1,9 +1,29 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.curator.framework.recipes.leader.testing;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.xml.ws.Holder;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -19,22 +39,49 @@ import org.slf4j.LoggerFactory;
 
 public class DummyLeaderLatch implements LeaderLatchListener{
 
+	public static class History{
+		private String id;
+		private boolean leader;
+
+		private History(String id, boolean leader){
+			this.id = id;
+			this.leader = leader;
+		}
+
+		public String getId(){
+			return id;
+		}
+
+		public boolean isLeader(){
+			return leader;
+		}
+
+		@Override
+		public String toString(){
+			return id + ": " + (leader ? "toLeader" : "notLeader");
+		}
+	}
+
 	private static final RetryPolicy 	RETRY_POLICY = new ExponentialBackoffRetry(100, 3);
 	private static final String 	   	LATCH_PATH   = "/leader/dummy/leaderLatch";
 	private static final Logger 	  	LOGGER 		 = LoggerFactory.getLogger(DummyLeaderLatch.class);
+	private static LinkedList<History> history = new LinkedList<>();
+
 
 	private final LeaderLatch leaderLatch;
 	private final CuratorFramework curatorFramework;
 	private final AtomicBoolean leader = new AtomicBoolean(false);
-	private final LinkedList<Boolean> history = new LinkedList<>();
 
-	public DummyLeaderLatch(final String connectionString, final Timing timing, final String instanceId){
+	public DummyLeaderLatch(final String connectionString,
+							final int sessionTimeoutMs,
+							final int connectionTimeoutMs,
+							final String instanceId){
 
 		curatorFramework = CuratorFrameworkFactory.builder()
 				.retryPolicy(RETRY_POLICY)
 				.connectString(connectionString)
-				.sessionTimeoutMs(timing.session())
-				.connectionTimeoutMs(timing.connection())
+				.sessionTimeoutMs(sessionTimeoutMs)
+				.connectionTimeoutMs(connectionTimeoutMs)
 				.build();
 		leaderLatch = new LeaderLatch(curatorFramework, LATCH_PATH, instanceId);
 		leaderLatch.addListener(this);
@@ -86,7 +133,7 @@ public class DummyLeaderLatch implements LeaderLatchListener{
 	public void isLeader() {
 		synchronized (this){
 			leader.set(true);
-			history.add(true);
+			history.add( new History(leaderLatch.getId(), true));
 		}
 	}
 
@@ -94,7 +141,7 @@ public class DummyLeaderLatch implements LeaderLatchListener{
 	public void notLeader() {
 		synchronized (this){
 			leader.set(false);
-			history.add(false);
+			history.add( new History(leaderLatch.getId(), false));
 		}
 	}
 
@@ -106,8 +153,12 @@ public class DummyLeaderLatch implements LeaderLatchListener{
 		return leaderLatch.hasLeadership();
 	}
 
-	public List<Boolean> getEventHistory(){
+	public static List<History> getEventHistory(){
 		return history;
+	}
+
+	public static void resetHistory(){
+		history = new LinkedList<>();
 	}
 
 	/**
