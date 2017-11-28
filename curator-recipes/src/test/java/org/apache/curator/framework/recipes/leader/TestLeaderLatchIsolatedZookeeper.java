@@ -33,8 +33,8 @@ import org.apache.zookeeper.server.quorum.Leader;
 import org.apache.zookeeper.server.quorum.LearnerHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /** Tests issue: CURATOR-444: Zookeeper node is isolated from other zookeepers but not from curator
@@ -51,8 +51,8 @@ public class TestLeaderLatchIsolatedZookeeper {
 	private DummyLeaderLatch firstClient;
 	private DummyLeaderLatch secondClient;
 
-	@BeforeTest
-	public void beforeTest() throws Exception {
+	@BeforeMethod
+	public void beforeMethod() throws Exception {
 		cluster = new TestingCluster(3);
 		cluster.start();
 		firstClient  = new DummyLeaderLatch(cluster.getConnectString(), SESSION_TIMEOUT_MS, CONNECTION_TIMEOUT_MS, "First");
@@ -62,8 +62,8 @@ public class TestLeaderLatchIsolatedZookeeper {
 		logger.info("Session: " + SESSION_TIMEOUT_MS + " connection " + CONNECTION_TIMEOUT_MS );
 	}
 
-	@AfterTest
-	public void afterTest() throws IOException {
+	@AfterMethod
+	public void afterMethod() throws IOException {
 		DummyLeaderLatch.resetHistory();
 		firstClient.stop();
 		secondClient.stop();
@@ -81,15 +81,14 @@ public class TestLeaderLatchIsolatedZookeeper {
 		assertEquals(secondClient.isLeaderAccordingToLatch(), secondClient.isLeaderAccordingToEvents());
 	}
 
-	@Test
+	@Test(invocationCount = 10)
 	public void testThatResistsNetworkGlitches() throws Exception {
 
 		blockLeaderListeningForSomeTime(SESSION_TIMEOUT_MS);
 
 		Thread.sleep(SESSION_TIMEOUT_MS * 3);
 
-		assertTrue(isHistoryValid());
-		logger.info("History :" + DummyLeaderLatch.getEventHistory());
+		assertTrue(isHistoryValid(), "History is not valid: " + DummyLeaderLatch.getEventHistory());
 
 		assertEquals(   firstClient.isLeaderAccordingToLatch(),  firstClient.isLeaderAccordingToEvents());
 		assertEquals(  secondClient.isLeaderAccordingToLatch(), secondClient.isLeaderAccordingToEvents());
@@ -124,10 +123,9 @@ public class TestLeaderLatchIsolatedZookeeper {
 
 		@Override
 		public void run() {
-
 			//suspendThread();
 			//closeSocket();
-			lockSocket();
+			//lockSocket();
 			forceTimeout();
 		}
 
@@ -136,7 +134,7 @@ public class TestLeaderLatchIsolatedZookeeper {
 				Socket socket = learnerHandler.getSocket();
 				int oldTimeout = learnerHandler.getSocket().getSoTimeout();
 				socket.setSoTimeout(1);
-				Thread.sleep(milliseconds * 3);
+				Thread.sleep(SESSION_TIMEOUT_MS);
 				socket.setSoTimeout(oldTimeout);
 
 			}catch (SocketException ex){
@@ -198,6 +196,7 @@ public class TestLeaderLatchIsolatedZookeeper {
 	}
 
 	private boolean isHistoryValid(){
+		logger.info("EVENTS HISTORY :" + DummyLeaderLatch.getEventHistory());
 
 		boolean hadLeader = false;
 		String lastLeaderId = null;
