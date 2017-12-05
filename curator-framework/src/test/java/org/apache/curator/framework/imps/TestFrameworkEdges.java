@@ -77,7 +77,10 @@ public class TestFrameworkEdges extends BaseClassForTests
                 @Override
                 public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
                 {
-                    latch.countDown();
+                    if ( (event.getType() == CuratorEventType.CREATE) && (event.getResultCode() == KeeperException.Code.OK.intValue()) )
+                    {
+                        latch.countDown();
+                    }
                 }
             };
             // queue multiple operations for a more complete test
