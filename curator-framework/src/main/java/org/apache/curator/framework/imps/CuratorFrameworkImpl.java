@@ -646,6 +646,10 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
+    /**
+     * @param operationAndData operation entry
+     * @return true if the operation was actually queued, false if not
+     */
     <DATA_TYPE> boolean queueOperation(OperationAndData<DATA_TYPE> operationAndData)
     {
         if ( getState() == CuratorFrameworkState.STARTED )
