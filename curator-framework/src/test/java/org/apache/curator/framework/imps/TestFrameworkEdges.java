@@ -71,7 +71,7 @@ public class TestFrameworkEdges extends BaseClassForTests
             client.start();
             ((CuratorFrameworkImpl)client).sleepAndQueueOperationSeconds = Integer.MAX_VALUE;
 
-            final CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(3);
             BackgroundCallback callback = new BackgroundCallback()
             {
                 @Override
@@ -80,7 +80,10 @@ public class TestFrameworkEdges extends BaseClassForTests
                     latch.countDown();
                 }
             };
+            // queue multiple operations for a more complete test
             client.create().inBackground(callback).forPath("/test");
+            client.create().inBackground(callback).forPath("/test/one");
+            client.create().inBackground(callback).forPath("/test/two");
             server.restart();
 
             Assert.assertTrue(timing.awaitLatch(latch));
