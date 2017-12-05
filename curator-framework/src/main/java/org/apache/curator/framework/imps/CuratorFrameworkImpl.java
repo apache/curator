@@ -1005,7 +1005,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         for ( OperationAndData<?> operation : drain )
         {
             operation.clearSleep();
-            if ( backgroundOperations.remove(operation) )
+            if ( backgroundOperations.remove(operation) )   // due to the internals of DelayQueue, operation must be removed/re-added so that re-sorting occurs
             {
                 backgroundOperations.offer(operation);
             }
