@@ -489,6 +489,11 @@ public class TreeCache implements Closeable
 
             if ( outstandingOps.decrementAndGet() == 0 )
             {
+				//here sleep a shot time to ensure  invoking method "publishEvent"  after all other eventType case,
+				//because I found more event such as NODE_ADD received again after I have received INITIALLIZED eventType when I restart my Application
+				//in my own Linsener which implements the interface TreeCacheListener,so,I believe a concurrent issue occurs,
+				//I guess attitional code execution delayed the invoke method "publishEvent" in CASE GET_DATA.
+				TimeUnit.MILLISECONDS.sleep(10);
                 if ( isInitialized.compareAndSet(false, true) )
                 {
                     publishEvent(TreeCacheEvent.Type.INITIALIZED);
