@@ -86,7 +86,7 @@
         <osgi.export.package />
         <osgi.import.package />
         <osgi.private.package />
-        <osgi.dynamic.import />
+        <osgi.dynamic.import>org.apache.zookeeper.admin</osgi.dynamic.import>
         <osgi.require.bundle />
         <osgi.export.service />
         <osgi.activator />
