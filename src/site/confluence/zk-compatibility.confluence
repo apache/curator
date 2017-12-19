@@ -46,3 +46,32 @@ mode as needed. In this mode, all features not supported by 3.4 are disabled. It
 application code to "do the right thing" and not use these features. Use the {{isZk34CompatibilityMode()}}
 method to determine which mode Curator is using at runtime.
 
+h2. Testing With ZooKeeper 3.4.x
+
+Note: If you wish to use Curator's {{TestingServer}} with ZooKeeper 3.4.x you must use the older version of
+it (in addition to the instructions above):
+
+_Maven_
+
+{code}
+<dependency>
+    <groupId>org.apache.curator</groupId>
+    <artifactId>curator-test</artifactId>
+    <version>2.12.0</version>
+    <exclusions>
+        <exclusion>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+        </exclusion>
+    </exclusions>
+    <scope>test</scope>
+</dependency>
+{code}
+
+_Gradle_
+
+{code}
+compile('org.apache.curator:curator-test:2.12.0') {
+  exclude('org.apache.zookeeper:zookeeper')
+}
+{code}
