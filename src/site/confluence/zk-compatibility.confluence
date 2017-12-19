@@ -71,7 +71,7 @@ _Maven_
 _Gradle_
 
 {code}
-compile('org.apache.curator:curator-test:2.12.0') {
+testCompile('org.apache.curator:curator-test:2.12.0') {
   exclude('org.apache.zookeeper:zookeeper')
 }
 {code}
