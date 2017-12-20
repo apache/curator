@@ -479,7 +479,8 @@ public class PathChildrenCache implements Closeable
     {
         STANDARD,
         FORCE_GET_DATA_AND_STAT,
-        POST_INITIALIZED
+        POST_INITIALIZED,
+        NO_NODE_EXCEPTION
     }
 
     void refresh(final RefreshMode mode) throws Exception
@@ -499,6 +500,20 @@ public class PathChildrenCache implements Closeable
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
                     processChildren(event.getChildren(), mode);
+                }
+                else if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
+                {
+                    if ( mode == RefreshMode.NO_NODE_EXCEPTION )
+                    {
+                        log.debug("KeeperException.NoNodeException received for getChildren() and refresh has failed. Resetting ensureContainers but not refreshing.");
+                        ensureContainers.reset();
+                    }
+                    else
+                    {
+                        log.debug("KeeperException.NoNodeException received for getChildren(). Resetting ensureContainers");
+                        ensureContainers.reset();
+                        offerOperation(new RefreshOperation(PathChildrenCache.this, RefreshMode.NO_NODE_EXCEPTION));
+                    }
                 }
             }
         };
