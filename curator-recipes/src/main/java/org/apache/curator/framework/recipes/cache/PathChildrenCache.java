@@ -505,12 +505,12 @@ public class PathChildrenCache implements Closeable
                 {
                     if ( mode == RefreshMode.NO_NODE_EXCEPTION )
                     {
-                        log.debug("KeeperException.NoNodeException received for getChildren() and refresh has failed. Resetting ensureContainers but not refreshing.");
+                        log.debug("KeeperException.NoNodeException received for getChildren() and refresh has failed. Resetting ensureContainers but not refreshing. Path: [{}]", path);
                         ensureContainers.reset();
                     }
                     else
                     {
-                        log.debug("KeeperException.NoNodeException received for getChildren(). Resetting ensureContainers");
+                        log.debug("KeeperException.NoNodeException received for getChildren(). Resetting ensureContainers. Path: [{}]", path);
                         ensureContainers.reset();
                         offerOperation(new RefreshOperation(PathChildrenCache.this, RefreshMode.NO_NODE_EXCEPTION));
                     }
