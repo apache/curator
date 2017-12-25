@@ -46,7 +46,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
     {
         final Thread owningThread;
         final String lockPath;
-        final AtomicInteger lockCount = new AtomicInteger(1);
+        int lockCount = 1;
 
         private LockData(Thread owningThread, String lockPath)
         {
@@ -140,7 +140,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
             throw new IllegalMonitorStateException("You do not own the lock: " + basePath);
         }
 
-        int newLockCount = lockData.lockCount.decrementAndGet();
+        int newLockCount = --lockData.lockCount;
         if ( newLockCount > 0 )
         {
             return;
@@ -197,13 +197,13 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
 
     /**
      * Returns true if the mutex is acquired by the calling thread
-     * 
+     *
      * @return true/false
      */
     public boolean isOwnedByCurrentThread()
     {
         LockData lockData = threadData.get(Thread.currentThread());
-        return (lockData != null) && (lockData.lockCount.get() > 0);
+        return (lockData != null) && (lockData.lockCount > 0);
     }
 
     protected byte[] getLockNodeBytes()
@@ -230,7 +230,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         if ( lockData != null )
         {
             // re-entering
-            lockData.lockCount.incrementAndGet();
+            ++lockData.lockCount;
             return true;
         }
 
