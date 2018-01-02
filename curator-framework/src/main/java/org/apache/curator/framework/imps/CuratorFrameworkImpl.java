@@ -54,13 +54,16 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -76,6 +79,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ThreadFactory threadFactory;
     private final int maxCloseWaitMs;
     private final BlockingQueue<OperationAndData<?>> backgroundOperations;
+    private final BlockingQueue<OperationAndData<?>> forcedSleepOperations;
     private final NamespaceImpl namespace;
     private final ConnectionStateManager connectionStateManager;
     private final List<AuthInfo> authInfos;
@@ -136,6 +140,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
         backgroundOperations = new DelayQueue<OperationAndData<?>>();
+        forcedSleepOperations = new LinkedBlockingQueue<>();
         namespace = new NamespaceImpl(this, builder.getNamespace());
         threadFactory = getThreadFactory(builder);
         maxCloseWaitMs = builder.getMaxCloseWaitMs();
@@ -217,6 +222,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         threadFactory = parent.threadFactory;
         maxCloseWaitMs = parent.maxCloseWaitMs;
         backgroundOperations = parent.backgroundOperations;
+        forcedSleepOperations = parent.forcedSleepOperations;
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
         failedDeleteManager = parent.failedDeleteManager;
@@ -640,12 +646,18 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    <DATA_TYPE> void queueOperation(OperationAndData<DATA_TYPE> operationAndData)
+    /**
+     * @param operationAndData operation entry
+     * @return true if the operation was actually queued, false if not
+     */
+    <DATA_TYPE> boolean queueOperation(OperationAndData<DATA_TYPE> operationAndData)
     {
         if ( getState() == CuratorFrameworkState.STARTED )
         {
             backgroundOperations.offer(operationAndData);
+            return true;
         }
+        return false;
     }
 
     void logError(String reason, final Throwable e)
@@ -730,6 +742,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             internalConnectionHandler.checkNewConnection(this);
             connectionStateManager.addStateChange(ConnectionState.RECONNECTED);
+            unSleepBackgroundOperations();
         }
         else if ( state == Watcher.Event.KeeperState.ConnectedReadOnly )
         {
@@ -940,8 +953,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 {
                     throw new CuratorConnectionLossException();
                 }
-                operationAndData.sleepFor(1, TimeUnit.SECONDS);
-                queueOperation(operationAndData);
+                sleepAndQueueOperation(operationAndData);
             }
         }
         catch ( Throwable e )
@@ -969,6 +981,33 @@ public class CuratorFrameworkImpl implements CuratorFramework
             else
             {
                 handleBackgroundOperationException(operationAndData, e);
+            }
+        }
+    }
+
+    @VisibleForTesting
+    volatile long sleepAndQueueOperationSeconds = 1;
+
+    private void sleepAndQueueOperation(OperationAndData<?> operationAndData) throws InterruptedException
+    {
+        operationAndData.sleepFor(sleepAndQueueOperationSeconds, TimeUnit.SECONDS);
+        if ( queueOperation(operationAndData) )
+        {
+            forcedSleepOperations.add(operationAndData);
+        }
+    }
+
+    private void unSleepBackgroundOperations()
+    {
+        Collection<OperationAndData<?>> drain = new ArrayList<>(forcedSleepOperations.size());
+        forcedSleepOperations.drainTo(drain);
+        log.debug("Clearing sleep for {} operations", drain.size());
+        for ( OperationAndData<?> operation : drain )
+        {
+            operation.clearSleep();
+            if ( backgroundOperations.remove(operation) )   // due to the internals of DelayQueue, operation must be removed/re-added so that re-sorting occurs
+            {
+                backgroundOperations.offer(operation);
             }
         }
     }
