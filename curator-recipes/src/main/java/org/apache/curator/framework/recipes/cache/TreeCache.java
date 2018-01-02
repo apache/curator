@@ -207,7 +207,8 @@ public class TreeCache implements Closeable
 
     private final class TreeNode extends AtomicReference<ChildData> implements Watcher, BackgroundCallback
     {
-
+        private static final long serialVersionUID = 4736888003207088181L;
+        
         final TreeNode parent;
         final String path;
         volatile ConcurrentMap<String, TreeNode> children;
@@ -813,11 +814,6 @@ public class TreeCache implements Closeable
         publishEvent(new TreeCacheEvent(type, null));
     }
 
-    private void publishEvent(TreeCacheEvent.Type type, String path)
-    {
-        publishEvent(new TreeCacheEvent(type, new ChildData(path, null, null)));
-    }
-
     private void publishEvent(TreeCacheEvent.Type type, ChildData data)
     {
         publishEvent(new TreeCacheEvent(type, data));
@@ -833,16 +829,14 @@ public class TreeCache implements Closeable
                 @Override
                 public void run()
                 {
+                    try
                     {
-                        try
-                        {
-                            callListeners(event);
-                        }
-                        catch ( Exception e )
-                        {
-                            ThreadUtils.checkInterrupted(e);
-                            handleException(e);
-                        }
+                        callListeners(event);
+                    }
+                    catch ( Exception e )
+                    {
+                        ThreadUtils.checkInterrupted(e);
+                        handleException(e);
                     }
                 }
             });
