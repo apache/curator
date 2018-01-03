@@ -22,12 +22,17 @@ package org.apache.curator.test;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Logger;
+
+import org.testng.annotations.Test;
 
 /**
  * manages an internally running ZooKeeper server. FOR TESTING PURPOSES ONLY
  */
 public class TestingServer implements Closeable
 {
+	Logger log = Logger.getLogger(TestingServer.class.getName());
+	
     private final TestingZooKeeperServer testingZooKeeperServer;
     private final InstanceSpec spec;
 
@@ -145,6 +150,7 @@ public class TestingServer implements Closeable
      */
     public void start() throws Exception
     {
+    	log.info("start testing zookeeper server  ["+getConnectString()+"]");
         testingZooKeeperServer.start();
     }
 
