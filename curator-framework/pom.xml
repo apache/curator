@@ -37,7 +37,7 @@
 
     <properties>
         <osgi.import.package>
-            *
+            !org.apache.curator,*
         </osgi.import.package>
         <osgi.export.package>
             org.apache.curator.framework*;version="${project.version}";-noimport:=true
@@ -96,27 +96,6 @@
                     <execution>
                         <goals>
                             <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>3.3.0</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Import-Package>!org.apache.curator,*</Import-Package>
-                        <Export-Package>org.apache.curator.framework.*;version=${project.version};-noimport:=true</Export-Package>
-                    </instructions>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>bundle-manifest</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>manifest</goal>
                         </goals>
                     </execution>
                 </executions>
