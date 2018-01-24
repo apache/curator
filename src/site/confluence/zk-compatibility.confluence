@@ -72,6 +72,6 @@ _Gradle_
 
 {code}
 testCompile('org.apache.curator:curator-test:2.12.0') {
-  exclude('org.apache.zookeeper:zookeeper')
+  exclude group: 'org.apache.zookeeper' module: 'zookeeper'
 }
 {code}
