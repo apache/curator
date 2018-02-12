@@ -442,7 +442,7 @@ public class TreeCache implements Closeable
                     {
                         final ChildData oldChildData = childData;
                         // Ignore this event if we've already processed a newer update for this node.
-                        if ( (isLive(oldChildData) && newStat.getMzxid() <= oldChildData.getStat().getMzxid()) )
+                        if ( isLive(oldChildData) && newStat.getMzxid() <= oldChildData.getStat().getMzxid() )
                         {
                             break;
                         }
