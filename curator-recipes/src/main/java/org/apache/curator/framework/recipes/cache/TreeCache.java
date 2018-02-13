@@ -196,24 +196,19 @@ public class TreeCache implements Closeable
         return new Builder(client, path);
     }
 
-    private enum NodeState
+    private static final ChildData DEAD = new ChildData("/", null, null);
+
+    private static boolean isLive(ChildData cd)
     {
-        PENDING, LIVE, DEAD
+        return cd != null && cd != DEAD;
     }
 
-    private static final AtomicReferenceFieldUpdater<TreeNode, NodeState> nodeStateUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, NodeState.class, "nodeState");
+    private static final AtomicReferenceFieldUpdater<TreeNode, ChildData> childDataUpdater = AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ChildData.class, "childData");
 
-    private static final AtomicReferenceFieldUpdater<TreeNode, ChildData> childDataUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ChildData.class, "childData");
-
-    private static final AtomicReferenceFieldUpdater<TreeNode, ConcurrentMap> childrenUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ConcurrentMap.class, "children");
+    private static final AtomicReferenceFieldUpdater<TreeNode, ConcurrentMap<String, TreeNode>> childrenUpdater = (AtomicReferenceFieldUpdater)AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ConcurrentMap.class, "children");
 
     private final class TreeNode implements Watcher, BackgroundCallback
     {
-
-        volatile NodeState nodeState = NodeState.PENDING;
         volatile ChildData childData;
         final TreeNode parent;
         final String path;
@@ -297,8 +292,12 @@ public class TreeCache implements Closeable
 
         void wasDeleted() throws Exception
         {
-            ChildData oldChildData = childDataUpdater.getAndSet(this, null);
-            ConcurrentMap<String, TreeNode> childMap = childrenUpdater.getAndSet(this,null);
+            ChildData oldChildData = childDataUpdater.getAndSet(this, DEAD);
+            if ( oldChildData == DEAD )
+            {
+                return;
+            }
+            ConcurrentMap<String, TreeNode> childMap = childrenUpdater.getAndSet(this, null);
             if ( childMap != null )
             {
                 ArrayList<TreeNode> childCopy = new ArrayList<TreeNode>(childMap.values());
@@ -314,8 +313,7 @@ public class TreeCache implements Closeable
                 return;
             }
 
-            NodeState oldState = nodeStateUpdater.getAndSet(this, NodeState.DEAD);
-            if ( oldState == NodeState.LIVE )
+            if ( isLive(oldChildData) )
             {
                 publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData);
             }
@@ -377,7 +375,7 @@ public class TreeCache implements Closeable
                 Preconditions.checkState(parent == null, "unexpected EXISTS on non-root node");
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    nodeStateUpdater.compareAndSet(this, NodeState.DEAD, NodeState.PENDING);
+                    childDataUpdater.compareAndSet(this, DEAD, null);
                     wasCreated();
                 }
                 break;
@@ -385,7 +383,8 @@ public class TreeCache implements Closeable
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
                     ChildData oldChildData = childData;
-                    if ( oldChildData != null && oldChildData.getStat().getMzxid() == newStat.getMzxid() )
+                    //TODO consider doing update of cversion, pzxid, numChildren only
+                    if ( isLive(oldChildData) && oldChildData.getStat().getMzxid() == newStat.getMzxid() )
                     {
                         // Only update stat if mzxid is same, otherwise we might obscure
                         // GET_DATA event updates.
@@ -398,7 +397,7 @@ public class TreeCache implements Closeable
                     }
 
                     ConcurrentMap<String, TreeNode> childMap = children;
-                    if ( childMap == null )
+                    while ( childMap == null )
                     {
                         childMap = Maps.newConcurrentMap();
                         if ( !childrenUpdater.compareAndSet(this, null, childMap) )
@@ -436,41 +435,27 @@ public class TreeCache implements Closeable
             case GET_DATA:
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
                 {
-                    ChildData toPublish = new ChildData(event.getPath(), newStat, event.getData());
-                    ChildData oldChildData;
-                    if ( cacheData )
+                    String eventPath = event.getPath();
+                    ChildData toPublish = new ChildData(eventPath, newStat, event.getData());
+                    ChildData toUpdate = cacheData ? toPublish : new ChildData(eventPath, newStat, null);
+                    while ( true )
                     {
-                        oldChildData = childDataUpdater.getAndSet(this, toPublish);
-                    }
-                    else
-                    {
-                        oldChildData = childDataUpdater.getAndSet(this, new ChildData(event.getPath(), newStat, null));
-                    }
-
-                    boolean added;
-                    if (parent == null) {
-                        // We're the singleton root.
-                        added = nodeStateUpdater.getAndSet(this, NodeState.LIVE) != NodeState.LIVE;
-                    } else {
-                        added = nodeStateUpdater.compareAndSet(this, NodeState.PENDING, NodeState.LIVE);
-                        if (!added) {
-                            // Ordinary nodes are not allowed to transition from dead -> live;
-                            // make sure this isn't a delayed response that came in after death.
-                            if (nodeState != NodeState.LIVE) {
-                                return;
-                            }
-                        }
-                    }
-
-                    if ( added )
-                    {
-                        publishEvent(TreeCacheEvent.Type.NODE_ADDED, toPublish);
-                    }
-                    else
-                    {
-                        if ( oldChildData == null || oldChildData.getStat().getMzxid() != newStat.getMzxid() )
+                        final ChildData oldChildData = childData;
+                        // Ignore this event if we've already processed a newer update for this node.
+                        if ( isLive(oldChildData) && newStat.getMzxid() <= oldChildData.getStat().getMzxid() )
                         {
-                            publishEvent(TreeCacheEvent.Type.NODE_UPDATED, toPublish);
+                            break;
+                        }
+                        // Non-root nodes are not allowed to transition from dead -> live;
+                        // make sure this isn't a delayed response that came in after death.
+                        if ( parent != null && oldChildData == DEAD )
+                        {
+                            break;
+                        }
+                        if ( childDataUpdater.compareAndSet(this, oldChildData, toUpdate) )
+                        {
+                            publishEvent(isLive(oldChildData) ? TreeCacheEvent.Type.NODE_UPDATED : TreeCacheEvent.Type.NODE_ADDED, toPublish);
+                            break;
                         }
                     }
                 }
@@ -631,7 +616,7 @@ public class TreeCache implements Closeable
     }
 
     /**
-     * Allows catching unhandled errors in asynchornous operations.
+     * Allows catching unhandled errors in asynchronous operations.
      *
      * TODO: consider making public.
      */
@@ -687,7 +672,7 @@ public class TreeCache implements Closeable
     public Map<String, ChildData> getCurrentChildren(String fullPath)
     {
         TreeNode node = find(fullPath);
-        if ( node == null || node.nodeState != NodeState.LIVE )
+        if ( node == null || !isLive(node.childData) )
         {
             return null;
         }
@@ -702,10 +687,9 @@ public class TreeCache implements Closeable
             ImmutableMap.Builder<String, ChildData> builder = ImmutableMap.builder();
             for ( Map.Entry<String, TreeNode> entry : map.entrySet() )
             {
-                TreeNode childNode = entry.getValue();
-                ChildData childData = childNode.childData;
-                // Double-check liveness after retreiving data.
-                if ( childData != null && childNode.nodeState == NodeState.LIVE )
+                ChildData childData = entry.getValue().childData;
+                // Double-check liveness after retrieving data.
+                if ( isLive(childData) )
                 {
                     builder.put(entry.getKey(), childData);
                 }
@@ -713,8 +697,8 @@ public class TreeCache implements Closeable
             result = builder.build();
         }
 
-        // Double-check liveness after retreiving children.
-        return node.nodeState == NodeState.LIVE ? result : null;
+        // Double-check liveness after retrieving children.
+        return isLive(node.childData) ? result : null;
     }
 
     /**
@@ -728,13 +712,12 @@ public class TreeCache implements Closeable
     public ChildData getCurrentData(String fullPath)
     {
         TreeNode node = find(fullPath);
-        if ( node == null || node.nodeState != NodeState.LIVE )
+        if ( node == null )
         {
             return null;
         }
         ChildData result = node.childData;
-        // Double-check liveness after retreiving data.
-        return node.nodeState == NodeState.LIVE ? result : null;
+        return isLive(result) ? result : null;
     }
 
     private void callListeners(final TreeCacheEvent event)
@@ -834,11 +817,6 @@ public class TreeCache implements Closeable
         publishEvent(new TreeCacheEvent(type, null));
     }
 
-    private void publishEvent(TreeCacheEvent.Type type, String path)
-    {
-        publishEvent(new TreeCacheEvent(type, new ChildData(path, null, null)));
-    }
-
     private void publishEvent(TreeCacheEvent.Type type, ChildData data)
     {
         publishEvent(new TreeCacheEvent(type, data));
@@ -854,16 +832,14 @@ public class TreeCache implements Closeable
                 @Override
                 public void run()
                 {
+                    try
                     {
-                        try
-                        {
-                            callListeners(event);
-                        }
-                        catch ( Exception e )
-                        {
-                            ThreadUtils.checkInterrupted(e);
-                            handleException(e);
-                        }
+                        callListeners(event);
+                    }
+                    catch ( Exception e )
+                    {
+                        ThreadUtils.checkInterrupted(e);
+                        handleException(e);
                     }
                 }
             });
