@@ -315,6 +315,18 @@ public class ConnectionStateManager implements Closeable
                 }
             }
         }
+        else if ( currentConnectionState == ConnectionState.LOST )
+        {
+            try
+            {
+                // give ConnectionState.checkTimeouts() a chance to run, reset ensemble providers, etc.
+                client.getZookeeperClient().getZooKeeper();
+            }
+            catch ( Exception e )
+            {
+                log.error("Could not get ZooKeeper", e);
+            }
+        }
     }
 
     private void setCurrentConnectionState(ConnectionState newConnectionState)

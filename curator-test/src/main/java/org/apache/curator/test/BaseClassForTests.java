@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class BaseClassForTests
 {
-    protected TestingServer server;
+    protected volatile TestingServer server;
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
