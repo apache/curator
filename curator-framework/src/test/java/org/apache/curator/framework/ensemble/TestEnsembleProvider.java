@@ -62,8 +62,6 @@ public class TestEnsembleProvider extends BaseClassForTests
         final CuratorFramework client = newClient(counter);
         try
         {
-            client.start();
-
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             final CountDownLatch lostLatch = new CountDownLatch(1);
             final CountDownLatch reconnectedLatch = new CountDownLatch(1);
@@ -87,6 +85,8 @@ public class TestEnsembleProvider extends BaseClassForTests
                 }
             };
             client.getConnectionStateListenable().addListener(listener);
+            client.start();
+
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
 
             server.stop();
