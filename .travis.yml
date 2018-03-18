@@ -1,0 +1,13 @@
+language: java
+
+dist: trusty
+sudo: false
+
+jdk:
+- oraclejdk8
+
+install: /bin/true
+
+script:
+- mvn --batch-mode install -DskipTests=true -Dmaven.javadoc.skip=true
+- mvn --batch-mode test
