@@ -30,6 +30,7 @@ import org.apache.curator.framework.api.CompressionProvider;
 import org.apache.curator.retry.RetryOneTime;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestCompression extends BaseClassForTests
@@ -44,7 +45,7 @@ public class TestCompression extends BaseClassForTests
         CompressionProvider     compressionProvider = new CompressionProvider()
         {
             @Override
-            public byte[] compress(String path, byte[] data) throws Exception
+            public byte[] compress(String path, byte[] data) throws IOException
             {
                 compressCounter.incrementAndGet();
 
@@ -55,7 +56,7 @@ public class TestCompression extends BaseClassForTests
             }
 
             @Override
-            public byte[] decompress(String path, byte[] compressedData) throws Exception
+            public byte[] decompress(String path, byte[] compressedData) throws IOException
             {
                 decompressCounter.incrementAndGet();
 
