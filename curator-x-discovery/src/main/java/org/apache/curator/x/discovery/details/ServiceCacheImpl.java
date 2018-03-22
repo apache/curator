@@ -93,7 +93,9 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         cache.start(true);
         for ( ChildData childData : cache.getCurrentData() )
         {
-            addInstance(childData, true);
+            if ( childData.getData() != null ) {
+                addInstance(childData, true);
+            } // Otherwise, cache data has already been cleared
         }
         discovery.cacheOpened(this);
     }
