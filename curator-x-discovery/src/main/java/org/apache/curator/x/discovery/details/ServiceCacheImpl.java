@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -85,12 +86,24 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         return Lists.newArrayList(instances.values());
     }
 
-    @Override
-    public void start() throws Exception
-    {
+    @VisibleForTesting
+    void startCache() throws Exception {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         cache.start(true);
+    }
+
+    @VisibleForTesting
+    void oldLloadCacheData() throws Exception {
+        for ( ChildData childData : cache.getCurrentData() )
+        {
+            addInstance(childData, true);
+        }
+        discovery.cacheOpened(this);
+    }
+
+    @VisibleForTesting
+    void loadCacheData() throws Exception {
         for ( ChildData childData : cache.getCurrentData() )
         {
             if ( childData.getData() != null ) {
@@ -98,6 +111,13 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
             } // Otherwise, cache data has already been cleared
         }
         discovery.cacheOpened(this);
+    }
+
+    @Override
+    public void start() throws Exception
+    {
+        startCache();
+        loadCacheData();
     }
 
     @Override
