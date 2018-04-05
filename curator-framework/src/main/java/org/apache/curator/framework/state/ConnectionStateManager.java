@@ -253,16 +253,13 @@ public class ConnectionStateManager implements Closeable
             {
 
                 long localStartOfSuspendedEpoch;
-
                 synchronized (this) {
                     localStartOfSuspendedEpoch = this.startOfSuspendedEpoch;
                 }
-
                 int lastNegotiatedSessionTimeoutMs = client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
                 int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
                 useSessionTimeoutMs = sessionExpirationPercent > 0 && localStartOfSuspendedEpoch != 0 ? (useSessionTimeoutMs * sessionExpirationPercent) / 100 : useSessionTimeoutMs;
                 long elapsedMs = localStartOfSuspendedEpoch == 0 ? useSessionTimeoutMs / 2 : System.currentTimeMillis() - localStartOfSuspendedEpoch;
-
                 long pollMaxMs = useSessionTimeoutMs - elapsedMs;
 
                 final ConnectionState newState = eventQueue.poll(pollMaxMs, TimeUnit.MILLISECONDS);
