@@ -75,8 +75,8 @@ public class ConnectionStateManager implements Closeable
 
     // guarded by sync
     private ConnectionState currentConnectionState;
-    // guarded by sync
-    private long startOfSuspendedEpoch = 0;
+
+    private volatile long startOfSuspendedEpoch = 0;
 
     private enum State
     {
@@ -251,15 +251,8 @@ public class ConnectionStateManager implements Closeable
         {
             try
             {
-
-                int useSessionTimeoutMs;
-                long elapsedMs;
-
-                synchronized (this) {
-                    useSessionTimeoutMs = getUseSessionTimeoutMs();
-                    elapsedMs = this.startOfSuspendedEpoch == 0 ? useSessionTimeoutMs / 2 : System.currentTimeMillis() - this.startOfSuspendedEpoch;
-                }
-
+                int useSessionTimeoutMs = getUseSessionTimeoutMs();
+                long elapsedMs = startOfSuspendedEpoch == 0 ? useSessionTimeoutMs / 2 : System.currentTimeMillis() - startOfSuspendedEpoch;
                 long pollMaxMs = useSessionTimeoutMs - elapsedMs;
 
                 final ConnectionState newState = eventQueue.poll(pollMaxMs, TimeUnit.MILLISECONDS);
@@ -339,7 +332,7 @@ public class ConnectionStateManager implements Closeable
         startOfSuspendedEpoch = (currentConnectionState == ConnectionState.SUSPENDED) ? System.currentTimeMillis() : 0;
     }
 
-    private synchronized int getUseSessionTimeoutMs() {
+    private int getUseSessionTimeoutMs() {
         int lastNegotiatedSessionTimeoutMs = client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
         int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
         useSessionTimeoutMs = sessionExpirationPercent > 0 && startOfSuspendedEpoch != 0 ? (useSessionTimeoutMs * sessionExpirationPercent) / 100 : useSessionTimeoutMs;
