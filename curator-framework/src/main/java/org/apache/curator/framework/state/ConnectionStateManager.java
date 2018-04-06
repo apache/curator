@@ -252,14 +252,14 @@ public class ConnectionStateManager implements Closeable
             try
             {
 
-                long localStartOfSuspendedEpoch;
+                int useSessionTimeoutMs;
+                long elapsedMs;
+
                 synchronized (this) {
-                    localStartOfSuspendedEpoch = this.startOfSuspendedEpoch;
+                    useSessionTimeoutMs = getUseSessionTimeoutMs();
+                    elapsedMs = this.startOfSuspendedEpoch == 0 ? useSessionTimeoutMs / 2 : System.currentTimeMillis() - this.startOfSuspendedEpoch;
                 }
-                int lastNegotiatedSessionTimeoutMs = client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
-                int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
-                useSessionTimeoutMs = sessionExpirationPercent > 0 && localStartOfSuspendedEpoch != 0 ? (useSessionTimeoutMs * sessionExpirationPercent) / 100 : useSessionTimeoutMs;
-                long elapsedMs = localStartOfSuspendedEpoch == 0 ? useSessionTimeoutMs / 2 : System.currentTimeMillis() - localStartOfSuspendedEpoch;
+
                 long pollMaxMs = useSessionTimeoutMs - elapsedMs;
 
                 final ConnectionState newState = eventQueue.poll(pollMaxMs, TimeUnit.MILLISECONDS);
@@ -305,9 +305,7 @@ public class ConnectionStateManager implements Closeable
         if ( (currentConnectionState == ConnectionState.SUSPENDED) && (startOfSuspendedEpoch != 0) )
         {
             long elapsedMs = System.currentTimeMillis() - startOfSuspendedEpoch;
-            int lastNegotiatedSessionTimeoutMs = client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
-            int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
-            useSessionTimeoutMs = (useSessionTimeoutMs * sessionExpirationPercent) / 100;
+            int useSessionTimeoutMs = getUseSessionTimeoutMs();
             if ( elapsedMs >= useSessionTimeoutMs )
             {
                 log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d", elapsedMs, useSessionTimeoutMs));
@@ -340,4 +338,12 @@ public class ConnectionStateManager implements Closeable
         currentConnectionState = newConnectionState;
         startOfSuspendedEpoch = (currentConnectionState == ConnectionState.SUSPENDED) ? System.currentTimeMillis() : 0;
     }
+
+    private synchronized int getUseSessionTimeoutMs() {
+        int lastNegotiatedSessionTimeoutMs = client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
+        int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
+        useSessionTimeoutMs = sessionExpirationPercent > 0 && startOfSuspendedEpoch != 0 ? (useSessionTimeoutMs * sessionExpirationPercent) / 100 : useSessionTimeoutMs;
+        return useSessionTimeoutMs;
+    }
+
 }
