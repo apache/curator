@@ -778,4 +778,53 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             TestCleanState.closeAndTestClean(client);
         }
     }
+    
+    @Test
+    public void testInterruptAcquire() throws Exception
+    {
+        // CURATOR-462
+        final Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        try
+        {
+            final InterProcessSemaphoreV2 s1 = new InterProcessSemaphoreV2(client, "/test", 1);
+            final InterProcessSemaphoreV2 s2 = new InterProcessSemaphoreV2(client, "/test", 1);
+            final InterProcessSemaphoreV2 s3 = new InterProcessSemaphoreV2(client, "/test", 1);
+            
+            final CountDownLatch debugWaitLatch = s2.debugWaitLatch = new CountDownLatch(1);
+            
+            // Acquire exclusive semaphore
+            Lease lease = s1.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            Assert.assertNotNull(lease);
+            
+            // Queue up another semaphore on the same path
+            Future<Object> handle = Executors.newSingleThreadExecutor().submit(new Callable<Object>() {
+                
+                @Override
+                public Object call() throws Exception {
+                    s2.acquire();
+                    return null;
+                }
+            });
+
+            // Wait until second lease is created and the wait is started for it to become active
+            Assert.assertTrue(timing.awaitLatch(debugWaitLatch));
+            
+            // Interrupt the wait
+            handle.cancel(true);
+            
+            // Assert that the second lease is gone
+            timing.sleepABit();
+            Assert.assertEquals(client.getChildren().forPath("/test/leases").size(), 1);
+            
+            // Assert that after closing the first (current) semaphore, we can acquire a new one
+            s1.returnLease(lease);
+            Assert.assertNotNull(s3.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+        }
+        finally
+        {
+            TestCleanState.closeAndTestClean(client);
+        }
+    }
 }
