@@ -54,7 +54,7 @@ public interface DistributedAtomicNumber<T>
 
     /**
      * Atomic values are initially set to the equivalent of <code>NULL</code> in a database.
-     * Use this method to initialize the value. The value will be set if and only iff the node does not exist.
+     * Use this method to initialize the value. The value will be set if and only if the node does not exist.
      *
      * @param value the initial value to set
      * @return true if the value was set, false if the node already existed
