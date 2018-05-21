@@ -331,6 +331,7 @@ public class InterProcessSemaphoreV2
 
     static volatile CountDownLatch debugAcquireLatch = null;
     static volatile CountDownLatch debugFailedGetChildrenLatch = null;
+    volatile CountDownLatch debugWaitLatch = null;
 
     private InternalAcquireResult internalAcquire1Lease(ImmutableList.Builder<Lease> builder, long startMs, boolean hasWait, long waitMs) throws Exception
     {
@@ -353,6 +354,7 @@ public class InterProcessSemaphoreV2
         }
 
         Lease lease = null;
+        boolean success = false;
 
         try
         {
@@ -383,13 +385,11 @@ public class InterProcessSemaphoreV2
                             {
                                 debugFailedGetChildrenLatch.countDown();
                             }
-                            returnLease(lease); // otherwise the just created ZNode will be orphaned causing a dead lock
                             throw e;
                         }
                         if ( !children.contains(nodeName) )
                         {
                             log.error("Sequential path not found: " + path);
-                            returnLease(lease);
                             return InternalAcquireResult.RETRY_DUE_TO_MISSING_NODE;
                         }
     
@@ -402,20 +402,32 @@ public class InterProcessSemaphoreV2
                             long thisWaitMs = getThisWaitMs(startMs, waitMs);
                             if ( thisWaitMs <= 0 )
                             {
-                                returnLease(lease);
                                 return InternalAcquireResult.RETURN_NULL;
+                            }
+                            if ( debugWaitLatch != null )
+                            {
+                                debugWaitLatch.countDown();
                             }
                             wait(thisWaitMs);
                         }
                         else
                         {
+                            if ( debugWaitLatch != null )
+                            {
+                                debugWaitLatch.countDown();
+                            }
                             wait();
                         }
                     }
+                    success = true;
                 }
             }
             finally
             {
+                if ( !success )
+                {
+                    returnLease(lease);
+                }
                 client.removeWatchers();
             }
         }
