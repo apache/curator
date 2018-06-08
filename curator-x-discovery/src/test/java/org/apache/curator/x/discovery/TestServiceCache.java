@@ -28,6 +28,7 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.x.discovery.details.ServiceCacheEventListener;
 import org.apache.curator.x.discovery.details.ServiceCacheListener;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -39,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestServiceCache extends BaseClassForTests
 {
@@ -300,6 +302,84 @@ public class TestServiceCache extends BaseClassForTests
             Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
 
             Assert.assertTrue(exec.isExecuteCalled());
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
+    public void testServiceCacheEventListener() throws Exception
+    {
+        List<Closeable> closeables = Lists.newArrayList();
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").build();
+            closeables.add(cache);
+
+            final CountDownLatch latch = new CountDownLatch(6);
+
+            final AtomicBoolean notifyError = new AtomicBoolean(false);
+            ServiceCacheListener listener = new ServiceCacheEventListener<String>()
+            {
+                @Override
+                public void cacheAdded(final ServiceInstance<String> added) {
+                    latch.countDown();
+
+                    notifyError.compareAndSet(false,added == null);
+                }
+
+                @Override
+                public void cacheDeleted(final ServiceInstance<String> deleted) {
+                    latch.countDown();
+
+                    notifyError.compareAndSet(false,deleted == null);
+                }
+
+                @Override
+                public void cacheUpdated(final ServiceInstance<String> before, final ServiceInstance<String> after) {
+                    latch.countDown();
+
+                    notifyError.compareAndSet(false, !"before".equals(before.getPayload()));
+                    notifyError.compareAndSet(false, !"after".equals(after.getPayload()));
+                }
+
+                @Override
+                public void cacheChanged()
+                {
+                    latch.countDown();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+
+                }
+            };
+            cache.addListener(listener);
+            cache.start();
+
+            ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("before").name("test").port(10064).build();
+            discovery.registerService(instance);
+            instance = ServiceInstance.<String>builder().id(instance.getId()).payload("after").name("test").port(10064).build();
+            discovery.updateService(instance);
+            discovery.unregisterService(instance);
+            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+            Assert.assertFalse(notifyError.get());
         }
         finally
         {
