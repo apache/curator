@@ -93,7 +93,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         cache.start(true);
         for ( ChildData childData : cache.getCurrentData() )
         {
-            addInstance(childData, true);
+            addInstanceOnlyIfAbsent(childData);
         }
         discovery.cacheOpened(this);
     }
@@ -146,39 +146,71 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
     {
-        boolean         notifyListeners = false;
-        switch ( event.getType() )
+	    final Tuple<T> tuple;
+	    switch ( event.getType() )
         {
             case CHILD_ADDED:
+	            tuple = addOrUpdateInstance(event.getData());
+                listenerContainer.forEach(
+                    new Function<ServiceCacheListener, Void>()
+                    {
+                        @Override
+                        public Void apply(ServiceCacheListener listener)
+                        {
+                            listener.cacheChanged();
+
+                            if(listener instanceof  ServiceCacheEventListener) {
+                                ((ServiceCacheEventListener) listener).cacheAdded(tuple.newInstance);
+                            }
+
+                            return null;
+                        }
+                    }
+                );
+                break;
             case CHILD_UPDATED:
             {
-                addInstance(event.getData(), false);
-                notifyListeners = true;
+	            tuple = addOrUpdateInstance(event.getData());
+	            listenerContainer.forEach(
+			            new Function<ServiceCacheListener, Void>()
+			            {
+				            @Override
+				            public Void apply(ServiceCacheListener listener)
+				            {
+					            listener.cacheChanged();
+
+					            if(listener instanceof  ServiceCacheEventListener) {
+						            ((ServiceCacheEventListener) listener).cacheUpdated(tuple.oldInstance, tuple.newInstance);
+					            }
+
+					            return null;
+				            }
+			            }
+	            );
                 break;
             }
 
             case CHILD_REMOVED:
             {
-                instances.remove(instanceIdFromData(event.getData()));
-                notifyListeners = true;
+                final ServiceInstance<T> serviceInstance = instances.remove(instanceIdFromData(event.getData()));
+	            listenerContainer.forEach(
+			            new Function<ServiceCacheListener, Void>()
+			            {
+				            @Override
+				            public Void apply(ServiceCacheListener listener)
+				            {
+					            listener.cacheChanged();
+
+					            if(listener instanceof ServiceCacheEventListener) {
+						            ((ServiceCacheEventListener) listener).cacheDeleted(serviceInstance);
+					            }
+
+					            return null;
+				            }
+			            }
+	            );
                 break;
             }
-        }
-
-        if ( notifyListeners )
-        {
-            listenerContainer.forEach
-            (
-                new Function<ServiceCacheListener, Void>()
-                {
-                    @Override
-                    public Void apply(ServiceCacheListener listener)
-                    {
-                        listener.cacheChanged();
-                        return null;
-                    }
-                }
-            );
         }
     }
 
@@ -187,18 +219,31 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         return ZKPaths.getNodeFromPath(childData.getPath());
     }
 
-    private void addInstance(ChildData childData, boolean onlyIfAbsent) throws Exception
+    private void addInstanceOnlyIfAbsent(ChildData childData) throws Exception
     {
         String                  instanceId = instanceIdFromData(childData);
         ServiceInstance<T>      serviceInstance = discovery.getSerializer().deserialize(childData.getData());
-        if ( onlyIfAbsent )
-        {
-            instances.putIfAbsent(instanceId, serviceInstance);
-        }
-        else
-        {
-            instances.put(instanceId, serviceInstance);
-        }
+
+	    instances.putIfAbsent(instanceId, serviceInstance);
         cache.clearDataBytes(childData.getPath(), childData.getStat().getVersion());
+    }
+
+    private Tuple<T> addOrUpdateInstance(ChildData childData) throws Exception
+    {
+        String                  instanceId = instanceIdFromData(childData);
+        ServiceInstance<T>      serviceInstance = discovery.getSerializer().deserialize(childData.getData());
+        final Tuple<T>          result = new Tuple<>(instances.put(instanceId, serviceInstance), serviceInstance);
+        cache.clearDataBytes(childData.getPath(), childData.getStat().getVersion());
+        return result;
+    }
+
+    private static class Tuple<T> {
+        public final ServiceInstance<T> oldInstance;
+        public final ServiceInstance<T> newInstance;
+
+        private Tuple(final ServiceInstance<T> oldInstance, final ServiceInstance<T> newInstance) {
+            this.oldInstance = oldInstance;
+            this.newInstance = newInstance;
+        }
     }
 }
