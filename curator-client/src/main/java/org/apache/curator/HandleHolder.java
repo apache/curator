@@ -73,9 +73,9 @@ class HandleHolder
         return ((helperConnectionString != null) && !ensembleProvider.getConnectionString().equals(helperConnectionString)) ? helperConnectionString : null;
     }
 
-    void closeAndClear(int timeout) throws Exception
+    void closeAndClear(int waitForShutdownTimeoutMs) throws Exception
     {
-        internalClose(timeout);
+        internalClose(waitForShutdownTimeoutMs);
         helper = null;
     }
 
