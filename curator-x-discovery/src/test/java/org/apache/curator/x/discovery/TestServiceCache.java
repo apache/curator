@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestServiceCache extends BaseClassForTests
 {
+    private final Timing timing = new Timing();
+
     @Test
     public void testInitialLoad() throws Exception
     {
@@ -106,8 +108,6 @@ public class TestServiceCache extends BaseClassForTests
     @Test
     public void testViaProvider() throws Exception
     {
-        Timing timing = new Timing();
-
         List<Closeable> closeables = Lists.newArrayList();
         try
         {
@@ -330,36 +330,33 @@ public class TestServiceCache extends BaseClassForTests
             ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").build();
             closeables.add(cache);
 
-            final CountDownLatch latch = new CountDownLatch(3);
-
-            final AtomicBoolean notifyError = new AtomicBoolean(false);
+            final Semaphore latch = new Semaphore(0);
+            final AtomicBoolean validation = new AtomicBoolean(true);
             ServiceCacheEventListener<String> listener = new ServiceCacheEventListener<String>()
             {
                 @Override
-                public void cacheAdded(final ServiceInstance<String> added) {
-                    latch.countDown();
-
-                    notifyError.compareAndSet(false,added == null);
-                }
-
-                @Override
-                public void cacheDeleted(final ServiceInstance<String> deleted) {
-                    latch.countDown();
-
-                    notifyError.compareAndSet(false,deleted == null);
-                }
-
-                @Override
-                public void cacheUpdated(final ServiceInstance<String> before, final ServiceInstance<String> after) {
-                    latch.countDown();
-
-                    notifyError.compareAndSet(false, !"before".equals(before.getPayload()));
-                    notifyError.compareAndSet(false, !"after".equals(after.getPayload()));
-                }
-
-                @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                public void cacheAdded(final ServiceInstance<String> added)
                 {
+                    latch.release();
+
+                    validation.compareAndSet(true,added != null);
+                }
+
+                @Override
+                public void cacheDeleted(final ServiceInstance<String> deleted)
+                {
+                    latch.release();
+
+                    validation.compareAndSet(true,deleted != null);
+                }
+
+                @Override
+                public void cacheUpdated(final ServiceInstance<String> before, final ServiceInstance<String> after)
+                {
+                    latch.release();
+
+                    validation.compareAndSet(true, "before".equals(before.getPayload()));
+                    validation.compareAndSet(true, "after".equals(after.getPayload()));
                 }
             };
             cache.getCacheEventListenable().addListener(listener);
@@ -367,12 +364,14 @@ public class TestServiceCache extends BaseClassForTests
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("before").name("test").port(10064).build();
             discovery.registerService(instance);
+            Assert.assertTrue(timing.acquireSemaphore(latch));
             instance = ServiceInstance.<String>builder().id(instance.getId()).payload("after").name("test").port(10064).build();
             discovery.updateService(instance);
+            Assert.assertTrue(timing.acquireSemaphore(latch));
             discovery.unregisterService(instance);
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.acquireSemaphore(latch));
 
-            Assert.assertFalse(notifyError.get());
+            Assert.assertTrue(validation.get());
         }
         finally
         {
