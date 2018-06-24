@@ -403,16 +403,16 @@ public class CuratorFrameworkFactory
         }
 
         /**
-         * Set a default timeout for {@link CuratorZookeeperClient#close() }.
+         * Set a timeout for {@link CuratorZookeeperClient#close(int)}  }.
          * The default is 0, which means that this feature is disabled.
          *
          * @since 4.0.2
-         * @param defaultWaitForShutdownTimeoutMs default timeout
+         * @param waitForShutdownTimeoutMs default timeout
          * @return this
          */
-        public Builder defaultWaitForShutdownTimeoutMs(int defaultWaitForShutdownTimeoutMs)
+        public Builder waitForShutdownTimeoutMs(int waitForShutdownTimeoutMs)
         {
-            this.waitForShutdownTimeoutMs = defaultWaitForShutdownTimeoutMs;
+            this.waitForShutdownTimeoutMs = waitForShutdownTimeoutMs;
             return this;
         }
 
