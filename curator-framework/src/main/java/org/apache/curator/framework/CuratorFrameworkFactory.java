@@ -49,6 +49,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.CuratorZookeeperClient;
 
 import static org.apache.curator.utils.Compatibility.isZK34;
 
@@ -147,7 +148,7 @@ public class CuratorFrameworkFactory
         private ConnectionHandlingPolicy connectionHandlingPolicy = new StandardConnectionHandlingPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
         private boolean zk34CompatibilityMode = isZK34();
-
+        private int defaultWaitForShutdownTimeoutMs = 0;
         /**
          * Apply the current values and build a new CuratorFramework
          *
@@ -402,6 +403,20 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * Set a default timeout for {@link CuratorZookeeperClient#close() }.
+         * The default is 0, which means that this feature is disabled.
+         *
+         * @since 4.0.2
+         * @param defaultWaitForShutdownTimeoutMs default timeout
+         * @return this
+         */
+        public Builder defaultWaitForShutdownTimeoutMs(int defaultWaitForShutdownTimeoutMs)
+        {
+            this.defaultWaitForShutdownTimeoutMs = defaultWaitForShutdownTimeoutMs;
+            return this;
+        }
+
+        /**
          * <p>
          *     Change the connection handling policy. The default policy is {@link StandardConnectionHandlingPolicy}.
          * </p>
@@ -492,6 +507,11 @@ public class CuratorFrameworkFactory
         public int getConnectionTimeoutMs()
         {
             return connectionTimeoutMs;
+        }
+
+        public int getDefaultWaitForShutdownTimeoutMs()
+        {
+            return defaultWaitForShutdownTimeoutMs;
         }
 
         public int getMaxCloseWaitMs()

@@ -52,6 +52,7 @@ public class CuratorZookeeperClient implements Closeable
     private final ConnectionState state;
     private final AtomicReference<RetryPolicy> retryPolicy = new AtomicReference<RetryPolicy>();
     private final int connectionTimeoutMs;
+    private final int defaultWaitForShutdownTimeoutMs;
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
     private final ConnectionHandlingPolicy connectionHandlingPolicy;
@@ -112,7 +113,28 @@ public class CuratorZookeeperClient implements Closeable
      * @param connectionHandlingPolicy connection handling policy - use one of the pre-defined policies or write your own
      * @since 3.0.0
      */
-    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy)
+    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy) {
+        this(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, 0,
+                watcher, retryPolicy, canBeReadOnly, connectionHandlingPolicy);
+    }
+    /**
+     * @param zookeeperFactory factory for creating {@link ZooKeeper} instances
+     * @param ensembleProvider the ensemble provider
+     * @param sessionTimeoutMs session timeout
+     * @param connectionTimeoutMs connection timeout
+     * @param defaultWaitForShutdownTimeoutMs default timeout fo close operation
+     * @param watcher default watcher or null
+     * @param retryPolicy the retry policy to use
+     * @param canBeReadOnly if true, allow ZooKeeper client to enter
+     *                      read only mode in case of a network partition. See
+     *                      {@link ZooKeeper#ZooKeeper(String, int, Watcher, long, byte[], boolean)}
+     *                      for details
+     * @param connectionHandlingPolicy connection handling policy - use one of the pre-defined policies or write your own
+     * @since 4.0.2
+     */
+    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider,
+            int sessionTimeoutMs, int connectionTimeoutMs, int defaultWaitForShutdownTimeoutMs, Watcher watcher,
+            RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy)
     {
         this.connectionHandlingPolicy = connectionHandlingPolicy;
         if ( sessionTimeoutMs < connectionTimeoutMs )
@@ -124,6 +146,7 @@ public class CuratorZookeeperClient implements Closeable
         ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
 
         this.connectionTimeoutMs = connectionTimeoutMs;
+        this.defaultWaitForShutdownTimeoutMs = defaultWaitForShutdownTimeoutMs;
         state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly, connectionHandlingPolicy);
         setRetryPolicy(retryPolicy);
     }
@@ -215,10 +238,15 @@ public class CuratorZookeeperClient implements Closeable
     }
     
     /**
-     * Close the client
+     * Close the client.
+     *
+     * Same as {@link #close(int) } using the default timeout set at construction time.
+     *
+     * @see #close(int)
      */
+    @Override
     public void close() {
-        close(0);
+        close(defaultWaitForShutdownTimeoutMs);
     }
             
     /**
