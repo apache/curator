@@ -402,75 +402,72 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return (str != null) ? str : "";
     }
 
+    private void checkState()
+    {
+        CuratorFrameworkState state = getState();
+        Preconditions.checkState(state == CuratorFrameworkState.STARTED, "instance state must be %s before calling this method, however its %s", CuratorFrameworkState.STARTED, state);
+    }
+
     @Override
     public CuratorFramework usingNamespace(String newNamespace)
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return namespaceFacadeCache.get(newNamespace);
     }
 
     @Override
     public CreateBuilder create()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new CreateBuilderImpl(this);
     }
 
     @Override
     public DeleteBuilder delete()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new DeleteBuilderImpl(this);
     }
 
     @Override
     public ExistsBuilder checkExists()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new ExistsBuilderImpl(this);
     }
 
     @Override
     public GetDataBuilder getData()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new GetDataBuilderImpl(this);
     }
 
     @Override
     public SetDataBuilder setData()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new SetDataBuilderImpl(this);
     }
 
     @Override
     public GetChildrenBuilder getChildren()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new GetChildrenBuilderImpl(this);
     }
 
     @Override
     public GetACLBuilder getACL()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new GetACLBuilderImpl(this);
     }
 
     @Override
     public SetACLBuilder setACL()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new SetACLBuilderImpl(this);
     }
 
@@ -491,24 +488,21 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CuratorTransaction inTransaction()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new CuratorTransactionImpl(this);
     }
 
     @Override
     public CuratorMultiTransaction transaction()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new CuratorMultiTransactionImpl(this);
     }
 
     @Override
     public TransactionOp transactionOp()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new TransactionOpImpl(this);
     }
 
@@ -533,7 +527,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public void sync(String path, Object context)
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
+        checkState();
 
         path = fixForNamespace(path);
 
