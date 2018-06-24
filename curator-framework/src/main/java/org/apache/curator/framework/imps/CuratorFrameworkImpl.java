@@ -405,7 +405,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private void checkState()
     {
         CuratorFrameworkState state = getState();
-        Preconditions.checkState(state == CuratorFrameworkState.STARTED, "instance state must be %s before calling this method, however its %s", CuratorFrameworkState.STARTED, state);
+        Preconditions.checkState(state == CuratorFrameworkState.STARTED, "Expected state [%s] was [%s]", CuratorFrameworkState.STARTED, state);
     }
 
     @Override
