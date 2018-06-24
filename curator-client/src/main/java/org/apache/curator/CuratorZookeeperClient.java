@@ -122,7 +122,7 @@ public class CuratorZookeeperClient implements Closeable
      * @param ensembleProvider the ensemble provider
      * @param sessionTimeoutMs session timeout
      * @param connectionTimeoutMs connection timeout
-     * @param defaultWaitForShutdownTimeoutMs default timeout fo close operation
+     * @param waitForShutdownTimeoutMs default timeout fo close operation
      * @param watcher default watcher or null
      * @param retryPolicy the retry policy to use
      * @param canBeReadOnly if true, allow ZooKeeper client to enter
@@ -133,7 +133,7 @@ public class CuratorZookeeperClient implements Closeable
      * @since 4.0.2
      */
     public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider,
-            int sessionTimeoutMs, int connectionTimeoutMs, int defaultWaitForShutdownTimeoutMs, Watcher watcher,
+            int sessionTimeoutMs, int connectionTimeoutMs, int waitForShutdownTimeoutMs, Watcher watcher,
             RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy)
     {
         this.connectionHandlingPolicy = connectionHandlingPolicy;
@@ -146,7 +146,7 @@ public class CuratorZookeeperClient implements Closeable
         ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
 
         this.connectionTimeoutMs = connectionTimeoutMs;
-        this.waitForShutdownTimeoutMs = defaultWaitForShutdownTimeoutMs;
+        this.waitForShutdownTimeoutMs = waitForShutdownTimeoutMs;
         state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly, connectionHandlingPolicy);
         setRetryPolicy(retryPolicy);
     }
