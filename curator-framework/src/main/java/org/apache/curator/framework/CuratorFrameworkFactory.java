@@ -148,7 +148,7 @@ public class CuratorFrameworkFactory
         private ConnectionHandlingPolicy connectionHandlingPolicy = new StandardConnectionHandlingPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
         private boolean zk34CompatibilityMode = isZK34();
-        private int defaultWaitForShutdownTimeoutMs = 0;
+        private int waitForShutdownTimeoutMs = 0;
         /**
          * Apply the current values and build a new CuratorFramework
          *
@@ -412,7 +412,7 @@ public class CuratorFrameworkFactory
          */
         public Builder defaultWaitForShutdownTimeoutMs(int defaultWaitForShutdownTimeoutMs)
         {
-            this.defaultWaitForShutdownTimeoutMs = defaultWaitForShutdownTimeoutMs;
+            this.waitForShutdownTimeoutMs = defaultWaitForShutdownTimeoutMs;
             return this;
         }
 
@@ -509,9 +509,9 @@ public class CuratorFrameworkFactory
             return connectionTimeoutMs;
         }
 
-        public int getDefaultWaitForShutdownTimeoutMs()
+        public int getWaitForShutdownTimeoutMs()
         {
-            return defaultWaitForShutdownTimeoutMs;
+            return waitForShutdownTimeoutMs;
         }
 
         public int getMaxCloseWaitMs()

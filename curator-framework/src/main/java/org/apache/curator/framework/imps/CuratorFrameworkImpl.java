@@ -122,7 +122,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 builder.getEnsembleProvider(),
                 builder.getSessionTimeoutMs(),
                 builder.getConnectionTimeoutMs(),
-                builder.getDefaultWaitForShutdownTimeoutMs(),
+                builder.getWaitForShutdownTimeoutMs(),
                 new Watcher()
                 {
                     @Override

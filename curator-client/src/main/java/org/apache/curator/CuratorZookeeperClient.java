@@ -52,7 +52,7 @@ public class CuratorZookeeperClient implements Closeable
     private final ConnectionState state;
     private final AtomicReference<RetryPolicy> retryPolicy = new AtomicReference<RetryPolicy>();
     private final int connectionTimeoutMs;
-    private final int defaultWaitForShutdownTimeoutMs;
+    private final int waitForShutdownTimeoutMs;
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
     private final ConnectionHandlingPolicy connectionHandlingPolicy;
@@ -146,7 +146,7 @@ public class CuratorZookeeperClient implements Closeable
         ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
 
         this.connectionTimeoutMs = connectionTimeoutMs;
-        this.defaultWaitForShutdownTimeoutMs = defaultWaitForShutdownTimeoutMs;
+        this.waitForShutdownTimeoutMs = defaultWaitForShutdownTimeoutMs;
         state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly, connectionHandlingPolicy);
         setRetryPolicy(retryPolicy);
     }
@@ -240,13 +240,13 @@ public class CuratorZookeeperClient implements Closeable
     /**
      * Close the client.
      *
-     * Same as {@link #close(int) } using the default timeout set at construction time.
+     * Same as {@link #close(int) } using the timeout set at construction time.
      *
      * @see #close(int)
      */
     @Override
     public void close() {
-        close(defaultWaitForShutdownTimeoutMs);
+        close(waitForShutdownTimeoutMs);
     }
             
     /**
