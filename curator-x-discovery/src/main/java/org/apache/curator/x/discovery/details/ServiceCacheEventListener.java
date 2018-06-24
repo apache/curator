@@ -18,27 +18,27 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.x.discovery.ServiceInstance;
 
 /**
  * Listener for events (addition/update/deletion) that happen to a service cache
  */
-public interface ServiceCacheEventListener<T> extends ServiceCacheListener
+public interface ServiceCacheEventListener<T> extends ConnectionStateListener
 {
-
     /**
      * Called when a new cache is added.
      *
      * @param added instance added
      */
-    public void cacheAdded(ServiceInstance<T> added);
+    void cacheAdded(ServiceInstance<T> added);
 
     /**
      * Called when a cache is deleted.
      *
      * @param deleted instance deleted
      */
-    public void cacheDeleted(ServiceInstance<T> deleted);
+    void cacheDeleted(ServiceInstance<T> deleted);
 
     /**
      * Called when a cache is updated.
@@ -46,5 +46,5 @@ public interface ServiceCacheEventListener<T> extends ServiceCacheListener
      * @param old old instance
      * @param updated updated instance
      */
-    public void cacheUpdated(ServiceInstance<T> old, ServiceInstance<T> updated);
+    void cacheUpdated(ServiceInstance<T> old, ServiceInstance<T> updated);
 }

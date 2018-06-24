@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -36,6 +37,7 @@ import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceInstance;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -45,9 +47,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheListener
 {
-    private final ListenerContainer<ServiceCacheListener>           listenerContainer = new ListenerContainer<ServiceCacheListener>();
+    private final ListenerContainer<ServiceCacheEventListener<T>>   listenerContainer = new ListenerContainer<>();
     private final ServiceDiscoveryImpl<T>                           discovery;
-    private final AtomicReference<State>                            state = new AtomicReference<State>(State.LATENT);
+    private final AtomicReference<State>                            state = new AtomicReference<>(State.LATENT);
     private final PathChildrenCache                                 cache;
     private final ConcurrentMap<String, ServiceInstance<T>>         instances = Maps.newConcurrentMap();
 
@@ -125,10 +127,10 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
 
         listenerContainer.forEach
             (
-                new Function<ServiceCacheListener, Void>()
+                new Function<ServiceCacheEventListener<T>, Void>()
                 {
                     @Override
-                    public Void apply(ServiceCacheListener listener)
+                    public Void apply(ServiceCacheEventListener<T> listener)
                     {
                         discovery.getClient().getConnectionStateListenable().removeListener(listener);
                         return null;
@@ -143,98 +145,114 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     }
 
     @Override
+    public Listenable<ServiceCacheEventListener<T>> getCacheEventListenable()
+    {
+        return listenerContainer;
+    }
+
+    @Override
     public void addListener(ServiceCacheListener listener)
     {
-        listenerContainer.addListener(listener);
-        discovery.getClient().getConnectionStateListenable().addListener(listener);
+        ServiceCacheListenerWrapper<T> wrapped = ServiceCacheListenerWrapper.<T>wrap(listener);
+        listenerContainer.addListener(wrapped);
+        discovery.getClient().getConnectionStateListenable().addListener(wrapped);
     }
 
     @Override
     public void addListener(ServiceCacheListener listener, Executor executor)
     {
-        listenerContainer.addListener(listener, executor);
-        discovery.getClient().getConnectionStateListenable().addListener(listener, executor);
+        ServiceCacheListenerWrapper<T> wrapped = ServiceCacheListenerWrapper.<T>wrap(listener);
+        listenerContainer.addListener(wrapped, executor);
+        discovery.getClient().getConnectionStateListenable().addListener(wrapped, executor);
     }
 
     @Override
-    public void removeListener(ServiceCacheListener listener)
+    public void removeListener(final ServiceCacheListener listener)
     {
-        listenerContainer.removeListener(listener);
-        discovery.getClient().getConnectionStateListenable().removeListener(listener);
+        listenerContainer.forEach
+        (
+            new Function<ServiceCacheEventListener<T>, Void>()
+            {
+                @Override
+                public Void apply(ServiceCacheEventListener<T> eventListener)
+                {
+                    if ( Objects.equals(ServiceCacheListenerWrapper.unwrap(eventListener), listener) )
+                    {
+                        listenerContainer.removeListener(eventListener);
+                        discovery.getClient().getConnectionStateListenable().removeListener(eventListener);
+                    }
+                    return null;
+                }
+            }
+        );
     }
 
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
     {
-	    final Tuple<T> tuple;
 	    switch ( event.getType() )
         {
             case CHILD_ADDED:
-	            tuple = addOrUpdateInstance(event.getData());
-                listenerContainer.forEach(
-                    new Function<ServiceCacheListener, Void>()
+            {
+                final Tuple<T> tuple = addOrUpdateInstance(event.getData());
+                listenerContainer.forEach
+                (
+                    new Function<ServiceCacheEventListener<T>, Void>()
                     {
                         @Override
-                        public Void apply(ServiceCacheListener listener)
+                        public Void apply(ServiceCacheEventListener<T> listener)
                         {
-                            listener.cacheChanged();
-
-                            if ( listener instanceof ServiceCacheEventListener )
-                            {
-                                //noinspection unchecked
-                                ((ServiceCacheEventListener) listener).cacheAdded(tuple.newInstance);
-                            }
-
+                            listener.cacheAdded(tuple.newInstance);
                             return null;
                         }
                     }
                 );
                 break;
-            case CHILD_UPDATED:
+            }
+
+        case CHILD_UPDATED:
             {
-	            tuple = addOrUpdateInstance(event.getData());
-	            listenerContainer.forEach(
-			            new Function<ServiceCacheListener, Void>()
-			            {
-				            @Override
-				            public Void apply(ServiceCacheListener listener)
-				            {
-					            listener.cacheChanged();
-
-					            if( listener instanceof ServiceCacheEventListener )
-					            {
-                                    //noinspection unchecked
-                                    ((ServiceCacheEventListener) listener).cacheUpdated(tuple.oldInstance, tuple.newInstance);
-					            }
-
-					            return null;
-				            }
-			            }
-	            );
+                final Tuple<T> tuple = addOrUpdateInstance(event.getData());
+                listenerContainer.forEach
+                (
+                    new Function<ServiceCacheEventListener<T>, Void>()
+                    {
+                        @Override
+                        public Void apply(ServiceCacheEventListener<T> listener)
+                        {
+                            if ( tuple.oldInstance != null )
+                            {
+                                listener.cacheUpdated(tuple.oldInstance, tuple.newInstance);
+                            }
+                            else
+                            {
+                                listener.cacheAdded(tuple.newInstance);
+                            }
+                            return null;
+                        }
+                    }
+                );
                 break;
             }
 
             case CHILD_REMOVED:
             {
                 final ServiceInstance<T> serviceInstance = instances.remove(instanceIdFromData(event.getData()));
-	            listenerContainer.forEach(
-			            new Function<ServiceCacheListener, Void>()
-			            {
-				            @Override
-				            public Void apply(ServiceCacheListener listener)
-				            {
-					            listener.cacheChanged();
-
-					            if ( listener instanceof ServiceCacheEventListener )
-					            {
-                                    //noinspection unchecked
-                                    ((ServiceCacheEventListener) listener).cacheDeleted(serviceInstance);
-					            }
-
-					            return null;
-				            }
-			            }
-	            );
+                if ( serviceInstance != null )
+                {
+                    listenerContainer.forEach
+                    (
+                        new Function<ServiceCacheEventListener<T>, Void>()
+                        {
+                            @Override
+                            public Void apply(ServiceCacheEventListener<T> listener)
+                            {
+                                listener.cacheDeleted(serviceInstance);
+                                return null;
+                            }
+                        }
+                    );
+                }
                 break;
             }
         }

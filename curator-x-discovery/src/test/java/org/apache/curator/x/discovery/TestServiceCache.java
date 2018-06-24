@@ -330,10 +330,10 @@ public class TestServiceCache extends BaseClassForTests
             ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").build();
             closeables.add(cache);
 
-            final CountDownLatch latch = new CountDownLatch(6);
+            final CountDownLatch latch = new CountDownLatch(3);
 
             final AtomicBoolean notifyError = new AtomicBoolean(false);
-            ServiceCacheListener listener = new ServiceCacheEventListener<String>()
+            ServiceCacheEventListener<String> listener = new ServiceCacheEventListener<String>()
             {
                 @Override
                 public void cacheAdded(final ServiceInstance<String> added) {
@@ -358,18 +358,11 @@ public class TestServiceCache extends BaseClassForTests
                 }
 
                 @Override
-                public void cacheChanged()
-                {
-                    latch.countDown();
-                }
-
-                @Override
                 public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
-
                 }
             };
-            cache.addListener(listener);
+            cache.getCacheEventListenable().addListener(listener);
             cache.start();
 
             ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("before").name("test").port(10064).build();
