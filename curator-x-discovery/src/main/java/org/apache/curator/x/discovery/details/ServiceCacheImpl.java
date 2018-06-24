@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -36,6 +37,7 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -85,15 +87,33 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
         return Lists.newArrayList(instances.values());
     }
 
+    @VisibleForTesting
+    volatile CountDownLatch debugStartLatch = null;
+    volatile CountDownLatch debugStartWaitLatch = null;
+
     @Override
     public void start() throws Exception
     {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         cache.start(true);
+        if ( debugStartLatch != null )
+        {
+            debugStartLatch.countDown();
+            debugStartLatch = null;
+        }
+        if ( debugStartWaitLatch != null )
+        {
+            debugStartWaitLatch.await();
+            debugStartWaitLatch = null;
+        }
+
         for ( ChildData childData : cache.getCurrentData() )
         {
-            addInstance(childData, true);
+            if ( childData.getData() != null )  // else already processed by the cache listener
+            {
+                addInstance(childData, true);
+            }
         }
         discovery.cacheOpened(this);
     }
