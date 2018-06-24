@@ -213,18 +213,29 @@ public class CuratorZookeeperClient implements Closeable
 
         state.start();
     }
-
+    
     /**
      * Close the client
      */
-    public void close()
+    public void close() {
+        close(0);
+    }
+            
+    /**
+     * Close this client object as the {@link #close() } method.
+     * This method will wait for internal resources to be released.
+     * 
+     * @param waitForShutdownTimeoutMs timeout (in milliseconds) to wait for resources to be released.
+     *                  Use zero or a negative value to skip the wait.
+     */
+    public void close(int waitForShutdownTimeoutMs)
     {
-        log.debug("Closing");
+        log.debug("Closing, waitForShutdownTimeoutMs {}", waitForShutdownTimeoutMs);
 
         started.set(false);
         try
         {
-            state.close();
+            state.close(waitForShutdownTimeoutMs);
         }
         catch ( IOException e )
         {
