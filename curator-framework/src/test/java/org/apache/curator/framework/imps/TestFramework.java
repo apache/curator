@@ -35,19 +35,23 @@ import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -70,6 +74,48 @@ public class TestFramework extends BaseClassForTests
     {
         System.clearProperty("znode.container.checkIntervalMs");
         super.teardown();
+    }
+
+    @Test
+    public void testWaitForShutdownTimeoutMs() throws Exception
+    {
+        final BlockingQueue<Integer> timeoutQueue = new ArrayBlockingQueue<>(1);
+        ZookeeperFactory zookeeperFactory = new ZookeeperFactory()
+        {
+            @Override
+            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws IOException
+            {
+                return new ZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly)
+                {
+                    @Override
+                    public boolean close(int waitForShutdownTimeoutMs) throws InterruptedException
+                    {
+                        timeoutQueue.add(waitForShutdownTimeoutMs);
+                        return super.close(waitForShutdownTimeoutMs);
+                    }
+                };
+            }
+        };
+
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .zookeeperFactory(zookeeperFactory)
+            .waitForShutdownTimeoutMs(10064)
+            .build();
+        try
+        {
+            client.start();
+            client.checkExists().forPath("/foo");
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+
+        Integer polledValue = timeoutQueue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
+        Assert.assertNotNull(polledValue);
+        Assert.assertEquals(10064, polledValue.intValue());
     }
     
     @Test
