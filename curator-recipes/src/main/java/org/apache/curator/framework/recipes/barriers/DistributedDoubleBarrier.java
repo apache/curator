@@ -121,6 +121,10 @@ public class DistributedDoubleBarrier
         client.create().creatingParentContainersIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
 
         boolean         result = (readyPathExists || internalEnter(startMs, hasMaxWait, maxWaitMs));
+        if ( !result )
+        {
+            client.delete().deletingChildrenIfNeeded().forPath(ourPath);
+        }
         if ( connectionLost.get() )
         {
             throw new KeeperException.ConnectionLossException();

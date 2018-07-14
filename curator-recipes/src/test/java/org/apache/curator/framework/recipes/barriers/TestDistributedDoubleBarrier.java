@@ -38,10 +38,27 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import static org.testng.Assert.assertFalse;
 
 public class TestDistributedDoubleBarrier extends BaseClassForTests
 {
     private static final int           QTY = 5;
+
+    @Test
+    public void testMultipleBarrierConnectWithTimeout() throws Exception{
+        // the issue is that after the first clients attempt to enter the barrier returns false,
+        // that client has been told that it is not in the barrier. But when the second call is made (by client 2),
+        // client 2 perceives client 1 as being in the barrier, so it returns true despite there really only being
+        // one client at the barrier
+        CuratorFramework client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        client1.start();
+        client2.start();
+        DistributedDoubleBarrier barrierForClient1 = new DistributedDoubleBarrier(client1,"/barrier",2);
+        DistributedDoubleBarrier barrierForClient2 = new DistributedDoubleBarrier(client2,"/barrier",2);
+        assertFalse(barrierForClient1.enter(2, TimeUnit.SECONDS));
+        assertFalse(barrierForClient2.enter(2,TimeUnit.SECONDS));
+    }
 
     @Test
     public void     testMultiClient() throws Exception
