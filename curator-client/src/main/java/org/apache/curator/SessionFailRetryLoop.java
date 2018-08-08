@@ -20,12 +20,12 @@ package org.apache.curator;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import java.io.Closeable;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -113,7 +113,7 @@ public class SessionFailRetryLoop implements Closeable
         }
     };
 
-    private static final Set<Thread>        failedSessionThreads = Sets.newSetFromMap(Maps.<Thread, Boolean>newConcurrentMap());
+    private static final Set<Thread>        failedSessionThreads = Collections.newSetFromMap(Maps.<Thread, Boolean>newConcurrentMap());
 
     public static class SessionFailedException extends Exception
     {
