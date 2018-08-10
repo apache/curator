@@ -95,6 +95,57 @@ public class TestPathChildrenCache extends BaseClassForTests
     }
 
     @Test
+    public void testInitializedEvenIfChildDeleted() throws Exception
+    {
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+
+        PathChildrenCache cache = new PathChildrenCache(client, "/a/b/test", true)
+        {
+            @Override
+            void getDataAndStat(final String fullPath) throws Exception
+            {
+                // before installing a data watcher on the child, let's delete this child
+                client.delete().forPath("/a/b/test/one");
+                super.getDataAndStat(fullPath);
+            }
+        };
+
+        Timing timing = new Timing();
+
+        try
+        {
+            client.start();
+
+            final CountDownLatch cacheInitialized = new CountDownLatch(1);
+
+            PathChildrenCacheListener listener = new PathChildrenCacheListener()
+            {
+                @Override
+                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                {
+                    if ( event.getType() == PathChildrenCacheEvent.Type.INITIALIZED )
+                    {
+                        cacheInitialized.countDown();
+                    }
+                }
+            };
+            cache.getListenable().addListener(listener);
+
+            client.create().creatingParentsIfNeeded().forPath("/a/b/test/one");
+
+            cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+
+            Assert.assertTrue(timing.awaitLatch(cacheInitialized));
+            Assert.assertEquals(cache.getCurrentData().size(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testWithBadConnect() throws Exception
     {
         final int serverPort = server.getPort();
