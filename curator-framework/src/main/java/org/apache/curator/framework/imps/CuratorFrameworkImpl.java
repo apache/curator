@@ -100,6 +100,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
 
+    private final boolean createZkWatches;
+
     private static final boolean LOG_ALL_CONNECTION_ISSUES_AS_ERROR_LEVEL = !Boolean.getBoolean(DebugUtils.PROPERTY_LOG_ONLY_FIRST_CONNECTION_ISSUE_AS_ERROR_LEVEL);
 
     interface DebugBackgroundListener
@@ -163,6 +165,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespaceFacadeCache = new NamespaceFacadeCache(this);
 
         ensembleTracker = zk34CompatibilityMode ? null : new EnsembleTracker(this, builder.getEnsembleProvider());
+
+        createZkWatches = builder.shouldCreateZkWatches();
+
     }
 
     private List<AuthInfo> buildAuths(CuratorFrameworkFactory.Builder builder)
@@ -240,6 +245,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         schemaSet = parent.schemaSet;
         zk34CompatibilityMode = parent.zk34CompatibilityMode;
         ensembleTracker = null;
+        createZkWatches = parent.createZkWatches;
     }
 
     @Override
@@ -434,14 +440,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public ExistsBuilder checkExists()
     {
         checkState();
-        return new ExistsBuilderImpl(this);
+        return new ExistsBuilderImpl(this, createZkWatches);
     }
 
     @Override
     public GetDataBuilder getData()
     {
         checkState();
-        return new GetDataBuilderImpl(this);
+        return new GetDataBuilderImpl(this, createZkWatches);
     }
 
     @Override
@@ -455,7 +461,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public GetChildrenBuilder getChildren()
     {
         checkState();
-        return new GetChildrenBuilderImpl(this);
+        return new GetChildrenBuilderImpl(this, createZkWatches);
     }
 
     @Override

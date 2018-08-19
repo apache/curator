@@ -242,6 +242,55 @@ public class TestFramework extends BaseClassForTests
     }
 
     @Test
+    public void testCreateOrSetDataWithNoZkWatches() throws Exception
+    {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        CuratorFramework client = builder.connectString(server.getConnectString()).createZookeeperWatches(false).retryPolicy(new RetryOneTime(1)).build();
+        try
+        {
+            client.start();
+
+            String name = client.create().forPath("/hey", "there".getBytes());
+            Assert.assertEquals(name, "/hey");
+            name = client.create().orSetData().forPath("/hey", "other".getBytes());
+            Assert.assertEquals(name, "/hey");
+            Assert.assertEquals(client.getData().forPath("/hey"), "other".getBytes());
+
+            name = client.create().orSetData().creatingParentsIfNeeded().forPath("/a/b/c", "there".getBytes());
+            Assert.assertEquals(name, "/a/b/c");
+            name = client.create().orSetData().creatingParentsIfNeeded().forPath("/a/b/c", "what".getBytes());
+            Assert.assertEquals(name, "/a/b/c");
+            Assert.assertEquals(client.getData().forPath("/a/b/c"), "what".getBytes());
+
+            final BlockingQueue<CuratorEvent> queue = new LinkedBlockingQueue<>();
+            BackgroundCallback backgroundCallback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    queue.add(event);
+                }
+            };
+            client.create().orSetData().inBackground(backgroundCallback).forPath("/a/b/c", "another".getBytes());
+
+            CuratorEvent event = queue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNotNull(event);
+            Assert.assertEquals(event.getResultCode(), KeeperException.Code.OK.intValue());
+            Assert.assertEquals(event.getType(), CuratorEventType.CREATE);
+            Assert.assertEquals(event.getPath(), "/a/b/c");
+            Assert.assertEquals(event.getName(), "/a/b/c");
+
+            // callback should only be called once
+            CuratorEvent unexpectedEvent = queue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertNull(unexpectedEvent);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testQuietDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -652,6 +701,8 @@ public class TestFramework extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
+
+
 
     private boolean checkForContainers()
     {
