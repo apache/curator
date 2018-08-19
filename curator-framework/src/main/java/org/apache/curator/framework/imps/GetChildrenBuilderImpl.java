@@ -167,8 +167,10 @@ public class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOpe
     @Override
     public BackgroundPathable<List<String>> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(client, watcher);
-        return this;
+       if (createZkWatches) {
+           watching = new Watching(client, watcher);
+       }
+       return this;
     }
 
     @Override

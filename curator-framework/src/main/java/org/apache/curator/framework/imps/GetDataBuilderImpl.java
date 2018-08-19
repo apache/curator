@@ -241,8 +241,10 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
     @Override
     public BackgroundPathable<byte[]> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(client, watcher);
-        return this;
+       if (createZkWatches) {
+           watching = new Watching(client, watcher);
+       }
+       return this;
     }
 
     @Override
