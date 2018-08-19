@@ -101,7 +101,9 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
     @Override
     public BackgroundPathable<Stat> usingWatcher(Watcher watcher)
     {
-        watching = new Watching(client, watcher);
+        if (createZkWatches) {
+            watching = new Watching(client, watcher);
+        }
         return this;
     }
 
