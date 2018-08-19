@@ -40,13 +40,24 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
     private boolean createParentsIfNeeded;
     private boolean createParentContainersIfNeeded;
     private ACLing acling;
+    private boolean createZkWatches;
 
     ExistsBuilderImpl(CuratorFrameworkImpl client)
     {
         this(client, new Backgrounding(), null, false, false);
     }
 
+    ExistsBuilderImpl(CuratorFrameworkImpl client, boolean createZkWatches)
+    {
+        this(client, new Backgrounding(), null, false, false);
+    }
+
     public ExistsBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, boolean createParentsIfNeeded, boolean createParentContainersIfNeeded)
+    {
+        this(client, backgrounding, watcher, createParentsIfNeeded, createParentContainersIfNeeded, true);
+    }
+
+    ExistsBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, boolean createParentsIfNeeded, boolean createParentContainersIfNeeded, boolean createZkWatches)
     {
         this.client = client;
         this.backgrounding = backgrounding;
@@ -54,6 +65,7 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
         this.createParentsIfNeeded = createParentsIfNeeded;
         this.createParentContainersIfNeeded = createParentContainersIfNeeded;
         this.acling = new ACLing(client.getAclProvider());
+        this.createZkWatches = createZkWatches;
     }
 
     @Override

@@ -44,6 +44,7 @@ public class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOpe
     private Watching watching;
     private Backgrounding backgrounding;
     private Stat                                    responseStat;
+    private boolean createZkWatches;
 
     GetChildrenBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -51,6 +52,16 @@ public class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOpe
         watching = new Watching(client);
         backgrounding = new Backgrounding();
         responseStat = null;
+        createZkWatches = true;
+    }
+
+    GetChildrenBuilderImpl(CuratorFrameworkImpl client, boolean createZkWatches)
+    {
+        this.client = client;
+        watching = new Watching(client);
+        backgrounding = new Backgrounding();
+        responseStat = null;
+        this.createZkWatches = createZkWatches;
     }
 
     public GetChildrenBuilderImpl(CuratorFrameworkImpl client, Watcher watcher, Backgrounding backgrounding, Stat responseStat)
@@ -59,6 +70,7 @@ public class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOpe
         this.watching = new Watching(client, watcher);
         this.backgrounding = backgrounding;
         this.responseStat = responseStat;
+        this.createZkWatches = true;
     }
 
     @Override

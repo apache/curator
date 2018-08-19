@@ -149,6 +149,7 @@ public class CuratorFrameworkFactory
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
         private boolean zk34CompatibilityMode = isZK34();
         private int waitForShutdownTimeoutMs = 0;
+        private boolean createZkWatches = true;
         /**
          * Apply the current values and build a new CuratorFramework
          *
@@ -364,6 +365,17 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * @param createZkWatches if true, creates watchers in {@link ZooKeeper} so that they are tracked.
+         * @return this
+         */
+        public Builder createZookeeperWatches(boolean createZkWatches)
+        {
+            this.createZkWatches = createZkWatches;
+            return this;
+        }
+
+
+        /**
          * By default, Curator uses {@link CreateBuilder#creatingParentContainersIfNeeded()}
          * if the ZK JAR supports {@link CreateMode#CONTAINER}. Call this method to turn off this behavior.
          *
@@ -552,6 +564,10 @@ public class CuratorFrameworkFactory
         public boolean isZk34CompatibilityMode()
         {
             return zk34CompatibilityMode;
+        }
+
+        public boolean shouldCreateZkWatches() {
+            return createZkWatches;
         }
 
         @Deprecated

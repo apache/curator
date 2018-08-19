@@ -40,6 +40,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
     private Watching                    watching;
     private Backgrounding               backgrounding;
     private boolean                     decompress;
+    private boolean                     createZkWatches;
 
     GetDataBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -48,6 +49,17 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
         watching = new Watching(client);
         backgrounding = new Backgrounding();
         decompress = false;
+        createZkWatches = true;
+    }
+
+    GetDataBuilderImpl(CuratorFrameworkImpl client, boolean createZkWatches)
+    {
+        this.client = client;
+        responseStat = null;
+        watching = new Watching(client);
+        backgrounding = new Backgrounding();
+        decompress = false;
+        this.createZkWatches = createZkWatches;
     }
 
     public GetDataBuilderImpl(CuratorFrameworkImpl client, Stat responseStat, Watcher watcher, Backgrounding backgrounding, boolean decompress)
@@ -57,6 +69,8 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
         this.watching = new Watching(client, watcher);
         this.backgrounding = backgrounding;
         this.decompress = decompress;
+        this.createZkWatches = true;
+
     }
 
     @Override
