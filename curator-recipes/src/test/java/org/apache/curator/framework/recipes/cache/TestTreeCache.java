@@ -468,6 +468,31 @@ public class TestTreeCache extends BaseTestTreeCache
     }
 
     @Test
+    public void testBasicsWithNoZkWatches() throws Exception
+    {
+        client.create().forPath("/test");
+        client.create().forPath("/test/one", "hey there".getBytes());
+
+
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/test").setCreateZkWatches(false));
+
+        cache.start();
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");
+        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test/one");
+
+        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        Assert.assertEquals(cache.getCurrentChildren("/test").keySet(), ImmutableSet.of("one"));
+        Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
+        Assert.assertEquals(cache.getCurrentChildren("/test/one").keySet(), ImmutableSet.of());
+        Assert.assertNull(cache.getCurrentChildren("/test/o"));
+        Assert.assertNull(cache.getCurrentChildren("/test/onely"));
+        Assert.assertNull(cache.getCurrentChildren("/t"));
+        Assert.assertNull(cache.getCurrentChildren("/testing"));
+
+        assertNoMoreEvents();
+    }
+
+    @Test
     public void testBasicsOnTwoCaches() throws Exception
     {
         TreeCache cache2 = newTreeCacheWithListeners(client, "/test");
