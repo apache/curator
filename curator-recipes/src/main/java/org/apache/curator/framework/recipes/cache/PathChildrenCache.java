@@ -601,7 +601,7 @@ public class PathChildrenCache implements Closeable
         Map<String, ChildData> localInitialSet = initialSet.get();
         if ( localInitialSet != null )
         {
-            localInitialSet.remove(fullPath);
+            localInitialSet.remove(ZKPaths.getNodeFromPath(fullPath));
             maybeOfferInitializedEvent(localInitialSet);
         }
     }
@@ -712,6 +712,11 @@ public class PathChildrenCache implements Closeable
                 offerOperation(new EventOperation(this, new PathChildrenCacheEvent(PathChildrenCacheEvent.Type.CHILD_UPDATED, data)));
             }
             updateInitialSet(ZKPaths.getNodeFromPath(fullPath), data);
+        }
+        else if ( resultCode == KeeperException.Code.NONODE.intValue() )
+        {
+            log.debug("NoNode at path {}, removing child from initialSet", fullPath);
+            remove(fullPath);
         }
     }
 
