@@ -444,6 +444,11 @@ public class LeaderSelector implements Closeable
             if ( hasLeadership )
             {
                 hasLeadership = false;
+                // The following clears and returns the interrupt status.  One reason a
+                // thread may be here is because it was interrupted.  However the interrupt
+                // being set will cause releasing the mutex to fail, so clear the interrupt
+                // status.
+                boolean wasInterruped = Thread.currentThread().interrupted();
                 try
                 {
                     mutex.release();
@@ -453,6 +458,13 @@ public class LeaderSelector implements Closeable
                     ThreadUtils.checkInterrupted(e);
                     log.error("The leader threw an exception", e);
                     // ignore errors - this is just a safety
+                }
+                finally
+                {
+                    if ( wasInterruped )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
         }
