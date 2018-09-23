@@ -474,7 +474,7 @@ public class TestTreeCache extends BaseTestTreeCache
         client.create().forPath("/test/one", "hey there".getBytes());
 
 
-        cache = buildWithListeners(TreeCache.newBuilder(client, "/test").setCreateZkWatches(false));
+        cache = buildWithListeners(TreeCache.newBuilder(client, "/test").disableZkWatches(true));
 
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/test");

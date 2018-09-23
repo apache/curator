@@ -19,29 +19,14 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.curator.utils.PathUtils.validatePath;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.WatcherRemoveCuratorFramework;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.UnhandledErrorListener;
-import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.PathUtils;
-import org.apache.curator.utils.ThreadUtils;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,9 +41,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.curator.utils.PathUtils.validatePath;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.ErrorListenerPathable;
+import org.apache.curator.framework.api.GetDataBuilder;
+import org.apache.curator.framework.api.GetDataWatchBackgroundStatable;
+import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.PathUtils;
+import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
@@ -73,7 +76,7 @@ public class TreeCache implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
     private final boolean createParentNodes;
-    private final boolean createZkWatches;
+    private final boolean disableZkWatches;
     private final TreeCacheSelector selector;
 
     public static final class Builder
@@ -85,7 +88,7 @@ public class TreeCache implements Closeable
         private ExecutorService executorService = null;
         private int maxDepth = Integer.MAX_VALUE;
         private boolean createParentNodes = false;
-        private boolean createZkWatches = true;
+        private boolean disableZkWatches = false;
         private TreeCacheSelector selector = new DefaultTreeCacheSelector();
 
         private Builder(CuratorFramework client, String path)
@@ -104,7 +107,7 @@ public class TreeCache implements Closeable
             {
                 executor = Executors.newSingleThreadExecutor(defaultThreadFactory);
             }
-            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, createZkWatches, selector);
+            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, disableZkWatches, selector);
         }
 
         /**
@@ -170,12 +173,12 @@ public class TreeCache implements Closeable
         /**
          * By default, TreeCache creates {@link org.apache.zookeeper.ZooKeeper} watches for every created path.
          * Change this behavior with this method.
-         * @param createZkWatches true to create watches
+         * @param disableZkWatches false to create watches
          * @return this for chaining
          */
-        public Builder setCreateZkWatches(boolean createZkWatches)
+        public Builder disableZkWatches(boolean disableZkWatches)
         {
-            this.createZkWatches = createZkWatches;
+            this.disableZkWatches = disableZkWatches;
             return this;
         }
 
@@ -267,10 +270,10 @@ public class TreeCache implements Closeable
         {
             if ( treeState.get() == TreeState.STARTED )
             {
-                if (createZkWatches) {
-                    client.getChildren().usingWatcher(this).inBackground(this).forPath(path);
-                } else {
+                if (disableZkWatches) {
                     client.getChildren().inBackground(this).forPath(path);
+                } else {
+                    client.getChildren().usingWatcher(this).inBackground(this).forPath(path);
                 }
             }
         }
@@ -281,21 +284,28 @@ public class TreeCache implements Closeable
             {
                 if ( dataIsCompressed )
                 {
-                    if (createZkWatches) {
-                        client.getData().decompressed().usingWatcher(this).inBackground(this).forPath(path);
-                    } else {
-                        client.getData().decompressed().inBackground(this).forPath(path);
-                    }
+                    maybeWatch(client.getData().decompressed()).forPath(path);
                 }
                 else
                 {
-                   if (createZkWatches) {
-                       client.getData().usingWatcher(this).inBackground(this).forPath(path);
-                   } else {
-                       client.getData().inBackground(this).forPath(path);
-
-                   }
+                    maybeWatch(client.getData()).forPath(path);
                 }
+            }
+        }
+
+        private ErrorListenerPathable<byte[]> maybeWatch(GetDataWatchBackgroundStatable dataBuilder) {
+            if (disableZkWatches) {
+                return dataBuilder.inBackground(this);
+            } else {
+                return dataBuilder.usingWatcher(this).inBackground(this);
+            }
+        }
+
+        private ErrorListenerPathable<byte[]> maybeWatch(GetDataBuilder dataBuilder) {
+            if (disableZkWatches) {
+                return dataBuilder.inBackground(this);
+            } else {
+                return dataBuilder.usingWatcher(this).inBackground(this);
             }
         }
 
@@ -572,10 +582,10 @@ public class TreeCache implements Closeable
      * @param dataIsCompressed if true, data in the path is compressed
      * @param executorService  Closeable ExecutorService to use for the TreeCache's background thread
      * @param createParentNodes true to create parent nodes as containers
-     * @param createZkWatches true to create Zookeeper watches
+     * @param disableZkWatches false to create Zookeeper watches
      * @param selector         the selector to use
      */
-    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final ExecutorService executorService, boolean createParentNodes, boolean createZkWatches, TreeCacheSelector selector)
+    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final ExecutorService executorService, boolean createParentNodes, boolean disableZkWatches, TreeCacheSelector selector)
     {
         this.createParentNodes = createParentNodes;
         this.selector = Preconditions.checkNotNull(selector, "selector cannot be null");
@@ -585,7 +595,7 @@ public class TreeCache implements Closeable
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.maxDepth = maxDepth;
-        this.createZkWatches = createZkWatches;
+        this.disableZkWatches = disableZkWatches;
         this.executorService = Preconditions.checkNotNull(executorService, "executorService cannot be null");
     }
 
