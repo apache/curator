@@ -428,9 +428,10 @@ public class CuratorZookeeperClient implements Closeable
 
             state.addParentWatcher(tempWatcher);
             long startTimeMs = System.currentTimeMillis();
+            long timeoutMs = Math.min(waitTimeMs, 1000);
             try
             {
-                latch.await(1, TimeUnit.SECONDS);
+                latch.await(timeoutMs, TimeUnit.MILLISECONDS);
             }
             finally
             {
