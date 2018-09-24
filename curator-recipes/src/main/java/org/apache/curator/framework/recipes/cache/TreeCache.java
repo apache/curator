@@ -44,11 +44,11 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.BackgroundPathable;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.ErrorListenerPathable;
-import org.apache.curator.framework.api.GetDataBuilder;
-import org.apache.curator.framework.api.GetDataWatchBackgroundStatable;
+import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.api.Watchable;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
@@ -270,11 +270,7 @@ public class TreeCache implements Closeable
         {
             if ( treeState.get() == TreeState.STARTED )
             {
-                if (disableZkWatches) {
-                    client.getChildren().inBackground(this).forPath(path);
-                } else {
-                    client.getChildren().usingWatcher(this).inBackground(this).forPath(path);
-                }
+                maybeWatch(client.getChildren()).forPath(path);
             }
         }
 
@@ -293,15 +289,8 @@ public class TreeCache implements Closeable
             }
         }
 
-        private ErrorListenerPathable<byte[]> maybeWatch(GetDataWatchBackgroundStatable dataBuilder) {
-            if (disableZkWatches) {
-                return dataBuilder.inBackground(this);
-            } else {
-                return dataBuilder.usingWatcher(this).inBackground(this);
-            }
-        }
-
-        private ErrorListenerPathable<byte[]> maybeWatch(GetDataBuilder dataBuilder) {
+        private <T, P extends Watchable<BackgroundPathable<T>> & BackgroundPathable<T>> Pathable<T> maybeWatch(
+            P dataBuilder) {
             if (disableZkWatches) {
                 return dataBuilder.inBackground(this);
             } else {
