@@ -347,11 +347,7 @@ public class TreeCache implements Closeable
             if ( parent == null )
             {
                 // Root node; use an exist query to watch for existence.
-                if (disableZkWatches) {
-                    client.checkExists().forPath(path);
-                } else {
-                    client.checkExists().usingWatcher(this).inBackground(this).forPath(path);
-                }
+                maybeWatch(client.checkExists()).forPath(path);
             }
             else
             {
