@@ -19,11 +19,10 @@
 
 package org.apache.curator.x.discovery.details;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.UriSpec;
-import org.codehaus.jackson.annotate.JsonTypeInfo;
-import org.codehaus.jackson.annotate.JsonTypeInfo.Id;
 
 /**
  * POJO that represents a service instance
@@ -97,7 +96,7 @@ class OldServiceInstance<T>
         return sslPort;
     }
 
-    @JsonTypeInfo(use = Id.CLASS, defaultImpl = Object.class)
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, defaultImpl = Object.class)
     public T getPayload()
     {
         return payload;
