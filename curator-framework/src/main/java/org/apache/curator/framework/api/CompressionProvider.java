@@ -18,9 +18,11 @@
  */
 package org.apache.curator.framework.api;
 
+import java.io.IOException;
+
 public interface CompressionProvider
 {
-    public byte[]       compress(String path, byte[] data) throws Exception;
+    public byte[]       compress(String path, byte[] data) throws IOException;
 
-    public byte[]       decompress(String path, byte[] compressedData) throws Exception;
+    public byte[]       decompress(String path, byte[] compressedData) throws IOException;
 }

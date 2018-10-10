@@ -21,13 +21,14 @@ package org.apache.curator.framework.imps;
 import org.apache.curator.framework.api.CompressionProvider;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class GzipCompressionProvider implements CompressionProvider
 {
     @Override
-    public byte[] compress(String path, byte[] data) throws Exception
+    public byte[] compress(String path, byte[] data) throws IOException
     {
         ByteArrayOutputStream       bytes = new ByteArrayOutputStream();
         GZIPOutputStream            out = new GZIPOutputStream(bytes);
@@ -41,7 +42,7 @@ public class GzipCompressionProvider implements CompressionProvider
     }
 
     @Override
-    public byte[] decompress(String path, byte[] compressedData) throws Exception
+    public byte[] decompress(String path, byte[] compressedData) throws IOException
     {
         ByteArrayOutputStream       bytes = new ByteArrayOutputStream(compressedData.length);
         GZIPInputStream             in = new GZIPInputStream(new ByteArrayInputStream(compressedData));

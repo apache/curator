@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.imps;
 
+import java.io.IOException;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -40,7 +41,7 @@ public class TestCompression extends BaseClassForTests
         CompressionProvider     compressionProvider = new CompressionProvider()
         {
             @Override
-            public byte[] compress(String path, byte[] data) throws Exception
+            public byte[] compress(String path, byte[] data) throws IOException
             {
                 compressCounter.incrementAndGet();
 
@@ -51,7 +52,7 @@ public class TestCompression extends BaseClassForTests
             }
 
             @Override
-            public byte[] decompress(String path, byte[] compressedData) throws Exception
+            public byte[] decompress(String path, byte[] compressedData) throws IOException
             {
                 decompressCounter.incrementAndGet();
 
