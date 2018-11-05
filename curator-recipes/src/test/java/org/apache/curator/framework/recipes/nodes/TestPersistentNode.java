@@ -28,6 +28,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class TestPersistentNode extends BaseClassForTests
@@ -131,6 +133,37 @@ public class TestPersistentNode extends BaseClassForTests
             pen.close();
             timing.sleepABit();
             Assert.assertNull(client.checkExists().forPath("/test/one/two"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(pen);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+    
+    @Test
+    public void testEphemeralSequentialWithProtectionReconnection() throws Exception
+    {
+        Timing timing = new Timing();
+        PersistentNode pen = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/test/one");
+
+            pen = new PersistentNode(client, CreateMode.EPHEMERAL_SEQUENTIAL, true, "/test/one/two", new byte[0]);
+            pen.start();
+            List<String> children = client.getChildren().forPath("/test/one");
+            System.out.println("children before restart: "+children);
+            Assert.assertEquals(1, children.size());
+            server.stop();
+            timing.sleepABit();
+            server.restart();
+            timing.sleepABit();
+            List<String> childrenAfter = client.getChildren().forPath("/test/one");
+            System.out.println("children after restart: "+childrenAfter);
+            Assert.assertEquals(children, childrenAfter, "unexpected znodes: "+childrenAfter);
         }
         finally
         {
