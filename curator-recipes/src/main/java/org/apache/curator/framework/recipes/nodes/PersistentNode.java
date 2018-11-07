@@ -422,6 +422,9 @@ public class PersistentNode implements Closeable
         }
     }
 
+    // Hardcoded in {@link org.apache.zookeeper.server.PrepRequestProcessor}
+    static final int SEQUENTIAL_SUFFIX_DIGITS = 10;
+
     private void createNode()
     {
         if ( !isActive() )
@@ -444,9 +447,19 @@ public class PersistentNode implements Closeable
 
         try
         {
-            String existingPath = nodePath.get();
-            String createPath = existingPath == null || (useProtection && !isSequential(mode)) ? basePath
-                    : (useProtection ? basePath + existingPath.substring(existingPath.length()-10) : existingPath);
+            String existingPath = nodePath.get(), createPath;
+            if ( existingPath != null && !useProtection )
+            {
+                createPath = existingPath;
+            }
+            else
+            {
+                createPath = basePath;
+                if ( useProtection && mode.isSequential() )
+                {
+                    createPath += existingPath.substring(existingPath.length()-SEQUENTIAL_SUFFIX_DIGITS);
+                }
+            }
 
             CreateModable<ACLBackgroundPathAndBytesable<String>> localCreateMethod = createMethod.get();
             if ( localCreateMethod == null )
@@ -463,10 +476,6 @@ public class PersistentNode implements Closeable
             ThreadUtils.checkInterrupted(e);
             throw new RuntimeException("Creating node. BasePath: " + basePath, e);  // should never happen unless there's a programming error - so throw RuntimeException
         }
-    }
-    
-    private static boolean isSequential(CreateMode mode) {
-        return mode == CreateMode.EPHEMERAL_SEQUENTIAL || mode == CreateMode.PERSISTENT_SEQUENTIAL;
     }
 
     private CreateMode getCreateMode(boolean pathIsSet)
