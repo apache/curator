@@ -452,13 +452,13 @@ public class PersistentNode implements Closeable
             {
                 createPath = existingPath;
             }
-            else
+            else if ( existingPath == null || !mode.isSequential() )
             {
                 createPath = basePath;
-                if ( useProtection && mode.isSequential() )
-                {
-                    createPath += existingPath.substring(existingPath.length()-SEQUENTIAL_SUFFIX_DIGITS);
-                }
+            }
+            else
+            {
+                createPath = basePath + existingPath.substring(existingPath.length() - SEQUENTIAL_SUFFIX_DIGITS);
             }
 
             CreateModable<ACLBackgroundPathAndBytesable<String>> localCreateMethod = createMethod.get();
