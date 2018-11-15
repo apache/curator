@@ -177,6 +177,21 @@ public class ZKPaths
         return new PathAndNode(parentPath, node);
     }
 
+    // Hardcoded in {@link org.apache.zookeeper.server.PrepRequestProcessor}
+    static final int SEQUENTIAL_SUFFIX_DIGITS = 10;
+
+    /**
+     * Extracts the ten-digit suffix from a sequential znode path. Does not currently perform validation on the
+     * provided path; it will just return a string comprising the last ten characters.
+     * 
+     * @param path the path of a sequential znodes
+     * @return the sequential suffix
+     */
+    public static String extractSequentialSuffix(String path) {
+        int length = path.length();
+        return length > SEQUENTIAL_SUFFIX_DIGITS ? path.substring(length - SEQUENTIAL_SUFFIX_DIGITS) : path;
+    }
+
     private static final Splitter PATH_SPLITTER = Splitter.on(PATH_SEPARATOR).omitEmptyStrings();
 
     /**

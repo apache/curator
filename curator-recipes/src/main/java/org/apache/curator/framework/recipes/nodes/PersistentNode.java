@@ -37,6 +37,7 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -422,9 +423,6 @@ public class PersistentNode implements Closeable
         }
     }
 
-    // Hardcoded in {@link org.apache.zookeeper.server.PrepRequestProcessor}
-    static final int SEQUENTIAL_SUFFIX_DIGITS = 10;
-
     private void createNode()
     {
         if ( !isActive() )
@@ -452,13 +450,13 @@ public class PersistentNode implements Closeable
             {
                 createPath = existingPath;
             }
-            else if ( existingPath == null || !mode.isSequential() )
+            else if ( existingPath != null && mode.isSequential() )
             {
-                createPath = basePath;
+                createPath = basePath + ZKPaths.extractSequentialSuffix(existingPath);
             }
             else
             {
-                createPath = basePath + existingPath.substring(existingPath.length() - SEQUENTIAL_SUFFIX_DIGITS);
+                createPath = basePath;
             }
 
             CreateModable<ACLBackgroundPathAndBytesable<String>> localCreateMethod = createMethod.get();
