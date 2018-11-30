@@ -70,11 +70,14 @@ public class GzipCompressionProvider implements CompressionProvider
     /** 32-bit CRC and uncompressed data size */
     private static final int GZIP_TRAILER_SIZE = Integer.BYTES + Integer.BYTES;
 
+    /** DEFLATE doesn't produce shorter compressed data */
+    private static final int MIN_COMPRESSED_DATA_SIZE = 2;
+
     /**
      * Since Deflaters and Inflaters are acquired and returned to the pools in try-finally blocks that are free of
      * blocking calls themselves, it's not expected that the number of objects in the pools could exceed the number of
-     * hardware threads on the machine much. Therefore it's accepted to have simple pools of strongly-referenced
-     * objects.
+     * hardware threads on the machine much. Therefore it's accepted to have simple "ever-growing" (in fact, no) pools
+     * of strongly-referenced objects.
      */
     private static final ConcurrentLinkedQueue<Deflater> DEFLATER_POOL = new ConcurrentLinkedQueue<>();
     private static final ConcurrentLinkedQueue<Inflater> INFLATER_POOL = new ConcurrentLinkedQueue<>();
@@ -135,8 +138,7 @@ public class GzipCompressionProvider implements CompressionProvider
                 {
                     break;
                 }
-                // `+ 1` to ensure some growth on the sizes of 0 or 1
-                int newResultLength = result.length + (result.length / 2) + 1;
+                int newResultLength = result.length + (result.length / 2);
                 result = Arrays.copyOf(result, newResultLength);
             }
             // Write GZip trailer
@@ -162,7 +164,7 @@ public class GzipCompressionProvider implements CompressionProvider
         if ( dataSize < 512 )
         {
             // Assuming DEFLATE doesn't compress small data well
-            conservativeCompressedDataSizeEstimate = dataSize;
+            conservativeCompressedDataSizeEstimate = Math.max(dataSize, MIN_COMPRESSED_DATA_SIZE);
         }
         else
         {
@@ -191,7 +193,7 @@ public class GzipCompressionProvider implements CompressionProvider
         ByteBuffer gzippedData = ByteBuffer.wrap(gzippedDataBytes);
         gzippedData.order(ByteOrder.LITTLE_ENDIAN);
         int headerSize = readGzipHeader(gzippedData);
-        if ( gzippedDataBytes.length < headerSize + GZIP_TRAILER_SIZE )
+        if ( gzippedDataBytes.length < headerSize + MIN_COMPRESSED_DATA_SIZE + GZIP_TRAILER_SIZE )
         {
             throw new EOFException("Too short GZipped data");
         }
@@ -220,7 +222,10 @@ public class GzipCompressionProvider implements CompressionProvider
                 {
                     break;
                 }
-                else if ( inflater.needsInput() )
+                // Just calling inflater.needsInput() doesn't work as expected, apparently it doesn't uphold it's own
+                // contract and could have needsInput() == true if numDecompressedBytes != 0 and that just means that
+                // there is not enough space in the result array
+                else if ( numDecompressedBytes == 0 && inflater.needsInput() )
                 {
                     throw new ZipException("Corrupt GZipped data");
                 }
@@ -231,9 +236,8 @@ public class GzipCompressionProvider implements CompressionProvider
                 {
                     throw new OutOfMemoryError("Unable to uncompress that much data into a single byte[] array");
                 }
-                // `+ 1` to ensure some growth on the sizes of 0 or 1
                 int newResultLength =
-                        (int) Math.min((long) result.length + (result.length / 2) + 1, MAX_SAFE_JAVA_BYTE_ARRAY_SIZE);
+                        (int) Math.min((long) result.length + (result.length / 2), MAX_SAFE_JAVA_BYTE_ARRAY_SIZE);
                 if ( result.length != newResultLength )
                 {
                     result = Arrays.copyOf(result, newResultLength);

@@ -21,8 +21,11 @@ package org.apache.curator.framework.imps;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.zip.GZIPOutputStream;
 
 public class GzipCompressionProviderTest
 {
@@ -32,6 +35,8 @@ public class GzipCompressionProviderTest
         GzipCompressionProvider provider = new GzipCompressionProvider();
         byte[] data = "Hello, world!".getBytes();
         byte[] compressedData = provider.compress(null, data);
+        byte[] jdkCompressedData = jdkCompress(data);
+        Assert.assertTrue(Arrays.equals(compressedData, jdkCompressedData));
         byte[] decompressedData = provider.decompress(null, compressedData);
         Assert.assertTrue(Arrays.equals(decompressedData, data));
     }
@@ -42,8 +47,10 @@ public class GzipCompressionProviderTest
         GzipCompressionProvider provider = new GzipCompressionProvider();
         byte[] compressedData = provider.compress(null, new byte[0]);
         byte[] compressedData2 = GzipCompressionProvider.doCompress(new byte[0]);
+        byte[] jdkCompress = jdkCompress(new byte[0]);
         // Ensures GzipCompressionProvider.COMPRESSED_EMPTY_BYTES value is valid
         Assert.assertTrue(Arrays.equals(compressedData, compressedData2));
+        Assert.assertTrue(Arrays.equals(compressedData, jdkCompress));
         byte[] decompressedData = provider.decompress(null, compressedData);
         Assert.assertEquals(0, decompressedData.length);
     }
@@ -84,5 +91,35 @@ public class GzipCompressionProviderTest
                 compressedData[i] = b;
             }
         }
+    }
+
+    @Test
+    public void smokeTestRandomDataWithJdk() throws IOException
+    {
+        GzipCompressionProvider provider = new GzipCompressionProvider();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int len = 1; len < 100; len++)
+        {
+            byte[] data = new byte[len];
+            for (int i = 0; i < 100; i++) {
+                byte[] compressedData = provider.compress(null, data);
+                byte[] jdkCompressedData = jdkCompress(data);
+                Assert.assertTrue(Arrays.equals(compressedData, jdkCompressedData));
+                byte[] decompressedData = provider.decompress(null, compressedData);
+                Assert.assertTrue(Arrays.equals(decompressedData, data));
+                // in the end of the iteration to test empty array first
+                random.nextBytes(data);
+            }
+        }
+    }
+
+    private static byte[] jdkCompress(byte[] data) throws IOException
+    {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (GZIPOutputStream out = new GZIPOutputStream(bytes)) {
+            out.write(data);
+            out.finish();
+        }
+        return bytes.toByteArray();
     }
 }
