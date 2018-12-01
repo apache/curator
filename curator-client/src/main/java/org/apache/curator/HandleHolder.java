@@ -37,7 +37,7 @@ class HandleHolder
     private interface Helper
     {
         ZooKeeper getZooKeeper() throws Exception;
-        
+
         String getConnectionString();
 
         int getNegotiatedSessionTimeoutMs();
@@ -155,7 +155,14 @@ class HandleHolder
                     }
                 };
                 zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
-                zooKeeper.close(waitForShutdownTimeoutMs);
+                if ( waitForShutdownTimeoutMs == 0 )
+                {
+                    zooKeeper.close();
+                }
+                else
+                {
+                    zooKeeper.close(waitForShutdownTimeoutMs);
+                }
             }
         }
         catch ( InterruptedException dummy )

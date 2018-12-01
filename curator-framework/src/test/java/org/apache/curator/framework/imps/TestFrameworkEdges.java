@@ -46,6 +46,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -59,6 +60,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestFrameworkEdges extends BaseClassForTests
 {
     private final Timing2 timing = new Timing2();
+
+    @BeforeClass
+    public static void setUpClass() {
+        System.setProperty("zookeeper.extendedTypesEnabled", "true");
+    }
 
     @Test
     public void testBackgroundLatencyUnSleep() throws Exception
