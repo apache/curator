@@ -29,6 +29,7 @@ import org.apache.curator.test.compatibility.Zk35MethodInterceptor;
 import org.apache.zookeeper.CreateMode;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +37,11 @@ import java.util.concurrent.CountDownLatch;
 @Test(groups = Zk35MethodInterceptor.zk35Group)
 public class TestTtlNodes extends CuratorTestBase
 {
+    @BeforeClass
+    public static void setUpClass() {
+        System.setProperty("zookeeper.extendedTypesEnabled", "true");
+    }
+    
     @BeforeMethod
     @Override
     public void setup() throws Exception
