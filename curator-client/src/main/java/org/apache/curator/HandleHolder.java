@@ -157,7 +157,7 @@ class HandleHolder
                 zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
                 if ( waitForShutdownTimeoutMs == 0 )
                 {
-                    zooKeeper.close();
+                    zooKeeper.close();  // coming from closeAndReset() which is executed in ZK's event thread. Cannot use zooKeeper.close(n) otherwise we'd get a dead lock
                 }
                 else
                 {
