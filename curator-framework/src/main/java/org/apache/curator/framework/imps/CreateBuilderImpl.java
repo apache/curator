@@ -91,13 +91,15 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         this.backgrounding = backgrounding;
         this.createParentsIfNeeded = createParentsIfNeeded;
         this.createParentsAsContainers = createParentsAsContainers;
-        this.doProtected = doProtected;
         this.compress = compress;
         this.setDataIfExists = setDataIfExists;
-        protectedId = null;
         this.acling = new ACLing(client.getAclProvider(), aclList);
         this.storingStat = storingStat;
         this.ttl = ttl;
+        if ( doProtected )
+        {
+            setProtected();
+        }
     }
 
     public void setSetDataIfExistsVersion(int version)
