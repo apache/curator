@@ -46,6 +46,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -389,6 +390,24 @@ public class TestFramework extends BaseClassForTests
             Assert.assertNull(async.checkExists().forPath("/one/two").toCompletableFuture().get());
             new Timing().sleepABit();
             Assert.assertNull(async.checkExists().forPath("/one").toCompletableFuture().get());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testCreateWithProtection() throws ExecutionException, InterruptedException
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            AsyncCuratorFramework async = AsyncCuratorFramework.wrap(client);
+            String path = async.create().withOptions(Collections.singleton(CreateOption.doProtected)).forPath("/yo").toCompletableFuture().get();
+            String node = ZKPaths.getNodeFromPath(path);
+            Assert.assertTrue(node.startsWith(CreateBuilderImpl.PROTECTED_PREFIX), node);
         }
         finally
         {
