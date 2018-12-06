@@ -20,6 +20,7 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.WatchersDebug;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.ZooKeeper;
@@ -42,6 +43,7 @@ public class TestCleanState
 
         try
         {
+            Timing2 timing = new Timing2();
             CuratorFrameworkImpl internalClient = (CuratorFrameworkImpl)client;
             EnsembleTracker ensembleTracker = internalClient.getEnsembleTracker();
             if ( ensembleTracker != null )
@@ -55,12 +57,12 @@ public class TestCleanState
             ZooKeeper zooKeeper = internalClient.getZooKeeper();
             if ( zooKeeper != null )
             {
-                final int maxLoops = 3;
+                final int maxLoops = timing.loopQty();
                 for ( int i = 0; i < maxLoops; ++i )    // it takes time for the watcher removals to settle due to async/watchers, etc. So, if there are remaining watchers, sleep a bit
                 {
                     if ( i > 0 )
                     {
-                        Thread.sleep(500);
+                        timing.multiple(.5).sleepABit();
                     }
                     boolean isLast = (i + 1) == maxLoops;
                     if ( WatchersDebug.getChildWatches(zooKeeper).size() != 0 )

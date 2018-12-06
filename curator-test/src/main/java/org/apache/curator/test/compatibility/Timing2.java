@@ -36,6 +36,7 @@ public class Timing2
     private final TimeUnit unit;
     private final int waitingMultiple;
 
+    private static final int DEFAULT_LOOP_QTY = 3;
     private static final int DEFAULT_SECONDS = 10;
     private static final int DEFAULT_WAITING_MULTIPLE = 5;
     private static final double SESSION_MULTIPLE = 1.5;
@@ -290,6 +291,16 @@ public class Timing2
     public int connection()
     {
         return milliseconds();
+    }
+
+    /**
+     * For timing loops, etc. the number of times to loop
+     *
+     * @return loop qty
+     */
+    public int loopQty()
+    {
+        return DEFAULT_LOOP_QTY * Integer.getInteger("timing-loop-multiple", 1);
     }
 
     private static Integer getWaitingMultiple()
