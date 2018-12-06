@@ -448,7 +448,7 @@ public class LeaderSelector implements Closeable
             if ( hasLeadership )
             {
                 hasLeadership = false;
-                boolean wasInterrupted = Thread.interrupted();
+                boolean wasInterrupted = Thread.interrupted();  // clear any interrupted tatus so that mutex.release() works immediately
                 try
                 {
                     mutex.release();
