@@ -56,6 +56,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         try
         {
             client.start();
+            client.blockUntilConnected();   // avoid PathChildrenCache connected events
 
             final BlockingQueue<PathChildrenCacheEvent.Type> events = Queues.newLinkedBlockingQueue();
             PathChildrenCacheListener listener = new PathChildrenCacheListener()
@@ -68,7 +69,6 @@ public class TestPathChildrenCache extends BaseClassForTests
             };
             cache.getListenable().addListener(listener);
             cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
-            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED);
             Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.INITIALIZED);
 
             client.create().forPath("/a/b/test/one");
@@ -190,11 +190,11 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.getListenable().addListener(listener);
             cache.start();
             Assert.assertTrue(timing.awaitLatch(ensurePathLatch));
-            
+
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             client.getConnectionStateListenable().addListener(new ConnectionStateListener()
             {
-                
+
                 @Override
                 public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
@@ -206,7 +206,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             });
 
             server = new TestingServer(serverPort, true);
-            
+
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
 
             client.create().creatingParentContainersIfNeeded().forPath("/baz", new byte[]{1, 2, 3});
