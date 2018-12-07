@@ -9,3 +9,8 @@ Apache Curator 4.0 adds best-effort backward compatibility for ZooKeeper 3.4 ens
 - A new test base class `CuratorTestBase` is started. Over time more common stuff should go in here but, for now, this defines a TestNG listener, Zk35MethodInterceptor, that allows for tests that are ZooKeeper 3.5 only to be marked by `@Test(groups = Zk35MethodInterceptor.zk35Group)`. These tests will not be run during the 3.4 compatibility check.
 - curator-test-zk34 needs some of the new classes from curator-test. Rather than have copies of the classes the maven-resources-plugin is used to copy from curator-test to the generated sources dir of curator-test-zk34. All classes in `curator-test/src/main/java/org/apache/curator/test/compatibility` are copied.
 
+## Important Note For Building This Module
+
+This module contains a copy of classes from the `curator-test` module in the package `org.apache.curator.test.compatibility`.
+If a change is made to any of the classes in this package, you must run (from the root of Curator) `copyfiles.sh` which
+re-copies those files into the `curator-test-zk34` module and then commit to git.
