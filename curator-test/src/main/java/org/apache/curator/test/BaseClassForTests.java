@@ -160,6 +160,7 @@ public class BaseClassForTests
                 return false;
             }
 
+            result.setStatus(ITestResult.SKIP);
             if ( result.getThrowable() != null )
             {
                 log.error("Retrying 1 time", result.getThrowable());
