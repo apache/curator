@@ -670,7 +670,6 @@
                 <configuration>
                     <threadCount>1</threadCount>
                     <reuseForks>false</reuseForks>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
             </plugin>
 
