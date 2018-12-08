@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>18</version>
+        <version>21</version>
     </parent>
 
     <groupId>org.apache.curator</groupId>
@@ -670,6 +670,7 @@
                 <configuration>
                     <threadCount>1</threadCount>
                     <reuseForks>false</reuseForks>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
             </plugin>
 
