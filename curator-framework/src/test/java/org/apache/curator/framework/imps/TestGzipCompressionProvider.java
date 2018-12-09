@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.GZIPOutputStream;
 
-public class GzipCompressionProviderTest
+public class TestGzipCompressionProvider
 {
     @Test
     public void testSimple() throws IOException
