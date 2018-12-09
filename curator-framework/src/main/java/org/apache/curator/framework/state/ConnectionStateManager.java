@@ -301,6 +301,7 @@ public class ConnectionStateManager implements Closeable
             int useSessionTimeoutMs = getUseSessionTimeoutMs();
             if ( elapsedMs >= useSessionTimeoutMs )
             {
+                startOfSuspendedEpoch = System.currentTimeMillis(); // reset startOfSuspendedEpoch to avoid spinning on this session expiration injection CURATOR-405
                 log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d", elapsedMs, useSessionTimeoutMs));
                 try
                 {
