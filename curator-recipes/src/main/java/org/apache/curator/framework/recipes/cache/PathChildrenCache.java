@@ -97,7 +97,6 @@ public class PathChildrenCache implements Closeable
         @Override
         public void process(WatchedEvent event)
         {
-            System.err.println("child: " + event);
             offerOperation(new RefreshOperation(PathChildrenCache.this, RefreshMode.STANDARD));
         }
     };
@@ -107,7 +106,6 @@ public class PathChildrenCache implements Closeable
         @Override
         public void process(WatchedEvent event)
         {
-            System.err.println("data: " + event);
             try
             {
                 if ( event.getType() == Event.EventType.NodeDeleted )
