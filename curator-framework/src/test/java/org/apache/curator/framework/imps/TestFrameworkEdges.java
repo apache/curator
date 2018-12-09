@@ -45,10 +45,13 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -59,10 +62,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final Timing2 timing = new Timing2();
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass()
+    {
         System.setProperty("zookeeper.extendedTypesEnabled", "true");
     }
 
@@ -668,12 +674,13 @@ public class TestFrameworkEdges extends BaseClassForTests
                 client.create().creatingParentsIfNeeded().forPath("/parent/child" + i);
             }
 
-            final CountDownLatch countDownLatch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(1);
             new Thread(new Runnable()
             {
                 @Override
                 public void run()
                 {
+                    long start = System.currentTimeMillis();
                     try
                     {
                         client.delete().deletingChildrenIfNeeded().forPath("/parent");
@@ -686,35 +693,66 @@ public class TestFrameworkEdges extends BaseClassForTests
                         }
                         else
                         {
-                            Assert.fail("unknown exception", e);
+                            Assert.fail("unexpected exception", e);
                         }
                     }
                     finally
                     {
-                        countDownLatch.countDown();
+                        log.info("client has deleted children, it costs: {}ms", System.currentTimeMillis() - start);
+                        latch.countDown();
                     }
                 }
             }).start();
 
-            Thread.sleep(20L);
-            try
+            boolean threadDeleted = false;
+            boolean client2Deleted = false;
+            Random random = new Random();
+            for ( int i = 0; i < childCount; i++ )
             {
-                client2.delete().forPath("/parent/child" + (childCount / 2));
-            }
-            catch ( Exception e )
-            {
-                if ( e instanceof KeeperException.NoNodeException )
+                String child = "/parent/child" + random.nextInt(childCount);
+                try
                 {
-                    Assert.fail("client2 delete failed, shouldn't throw NoNodeException", e);
+                    if ( !threadDeleted )
+                    {
+                        Stat stat = client2.checkExists().forPath(child);
+                        if ( stat == null )
+                        {
+                            // the thread client has begin deleted the children
+                            threadDeleted = true;
+                            log.info("client has deleted the child {}", child);
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            client2.delete().forPath(child);
+                            client2Deleted = true;
+                            log.info("client2 deleted the child {} successfully", child);
+                            break;
+                        }
+                        catch ( Exception e )
+                        {
+                            if ( e instanceof KeeperException.NoNodeException )
+                            {
+                                // ignore, because it's deleted by the thread client
+                            }
+                            else
+                            {
+                                Assert.fail("unexpected exception", e);
+                            }
+                        }
+                    }
                 }
-                else
+                catch ( Exception e )
                 {
-                    Assert.fail("unknown exception", e);
+                    Assert.fail("unexpected exception", e);
                 }
             }
 
-            Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
-
+            // The case run successfully, if client2 deleted a child successfully and the client deleted children successfully
+            Assert.assertTrue(client2Deleted);
+            Assert.assertTrue(timing.awaitLatch(latch));
             Assert.assertNull(client2.checkExists().forPath("/parent"));
         }
         finally
