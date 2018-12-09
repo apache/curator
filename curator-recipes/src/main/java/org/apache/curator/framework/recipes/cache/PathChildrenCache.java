@@ -27,8 +27,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.EnsureContainers;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.listen.ListenerContainer;
@@ -44,13 +44,16 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -94,6 +97,7 @@ public class PathChildrenCache implements Closeable
         @Override
         public void process(WatchedEvent event)
         {
+            System.err.println("child: " + event);
             offerOperation(new RefreshOperation(PathChildrenCache.this, RefreshMode.STANDARD));
         }
     };
@@ -103,6 +107,7 @@ public class PathChildrenCache implements Closeable
         @Override
         public void process(WatchedEvent event)
         {
+            System.err.println("data: " + event);
             try
             {
                 if ( event.getType() == Event.EventType.NodeDeleted )
@@ -373,6 +378,7 @@ public class PathChildrenCache implements Closeable
         {
             client.getConnectionStateListenable().removeListener(connectionStateListener);
             listeners.clear();
+
             executorService.close();
             client.removeWatchers();
 
@@ -492,9 +498,8 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
-                if (PathChildrenCache.this.state.get().equals(State.CLOSED)) {
-                    // This ship is closed, don't handle the callback
-                    PathChildrenCache.this.client.removeWatchers();
+                if ( reRemoveWatchersOnBackgroundClosed() )
+                {
                     return;
                 }
                 if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
@@ -552,6 +557,10 @@ public class PathChildrenCache implements Closeable
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
             {
+                if ( reRemoveWatchersOnBackgroundClosed() )
+                {
+                    return;
+                }
                 applyNewData(fullPath, event.getResultCode(), event.getStat(), cacheData ? event.getData() : null);
             }
         };
@@ -604,6 +613,16 @@ public class PathChildrenCache implements Closeable
             localInitialSet.remove(ZKPaths.getNodeFromPath(fullPath));
             maybeOfferInitializedEvent(localInitialSet);
         }
+    }
+
+    private boolean reRemoveWatchersOnBackgroundClosed()
+    {
+        if ( state.get().equals(State.CLOSED))
+        {
+        //    client.removeWatchers();
+            return true;
+        }
+        return false;
     }
 
     private void internalRebuildNode(String fullPath) throws Exception
