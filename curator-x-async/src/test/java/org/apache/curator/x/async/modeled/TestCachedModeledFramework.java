@@ -27,6 +27,8 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
@@ -73,7 +75,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
     public void testPostInitializedFilter()
     {
         TestModel model1 = new TestModel("a", "b", "c", 1, BigInteger.ONE);
-        TestModel model2 = new TestModel("d", "e", "e", 1, BigInteger.ONE);
+        TestModel model2 = new TestModel("d", "e", "f", 1, BigInteger.ONE);
         CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached();
         Semaphore semaphore = new Semaphore(0);
         ModeledCacheListener<TestModel> listener = (t, p, s, m) -> semaphore.release();
@@ -91,6 +93,50 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    public void testChildren() throws Exception
+    {
+        TestModel parent = new TestModel("a", "b", "c", 20, BigInteger.ONE);
+        TestModel child1 = new TestModel("d", "e", "f", 1, BigInteger.ONE);
+        TestModel child2 = new TestModel("g", "h", "i", 1, BigInteger.ONE);
+        try (CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached())
+        {
+            Semaphore semaphore = new Semaphore(0);
+            client.listenable().addListener((t, p, s, m) ->
+            {
+                if (m.equals(child2))
+                {
+                    semaphore.release();
+                }
+            });
+
+            client.start();
+            complete(client.child("p").set(parent));
+            complete(client.child("p").child("c1").set(child1));
+            complete(client.child("p").child("c2").set(child2));
+            Assert.assertTrue(timing.forWaiting().acquireSemaphore(semaphore));
+
+            complete(client.child("p").children(), (v, e) ->
+            {
+               Assert.assertEquals(v.size(), 2);
+               Assert.assertTrue(v.contains(client.child("p").child("c1").modelSpec().path()));
+               Assert.assertTrue(v.contains(client.child("p").child("c2").modelSpec().path()));
+            });
+
+            complete(client.child("p").childrenAsZNodes(), (v, e) ->
+            {
+               Assert.assertEquals(v.size(), 2);
+               Set<TestModel> children = new HashSet<>();
+               children.add(child1);
+               children.add(child2);
+               for (ZNode<TestModel> node: v)
+               {
+                   Assert.assertTrue(children.contains(node.model()));
+               }
+            });
         }
     }
 }
