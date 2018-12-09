@@ -27,13 +27,19 @@ public class TestInterProcessSemaphoreMutex extends TestInterProcessMutexBase
 
     @Override
     @Test(enabled = false)
-    public void testReentrant() throws Exception
+    public void testReentrant()
     {
     }
 
     @Override
     @Test(enabled = false)
-    public void testReentrant2Threads() throws Exception
+    public void testReentrant2Threads()
+    {
+    }
+
+    @Override
+    @Test(enabled = false)
+    public void testReentrantSingleLock()
     {
     }
 
