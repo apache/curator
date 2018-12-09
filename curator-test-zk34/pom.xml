@@ -168,6 +168,7 @@
                         <dependency>org.apache.curator:curator-framework</dependency>
                         <dependency>org.apache.curator:curator-recipes</dependency>
                     </dependenciesToScan>
+                    <excludedGroups>zk35</excludedGroups>
                 </configuration>
             </plugin>
 

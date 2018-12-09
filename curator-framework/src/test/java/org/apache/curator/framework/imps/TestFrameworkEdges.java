@@ -696,7 +696,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             }).start();
 
-            Thread.sleep(20L);
+            timing.sleepABit();
             try
             {
                 client2.delete().forPath("/parent/child" + (childCount / 2));
@@ -713,7 +713,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             }
 
-            Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(timing.awaitLatch(countDownLatch));
 
             Assert.assertNull(client2.checkExists().forPath("/parent"));
         }
