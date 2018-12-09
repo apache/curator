@@ -59,6 +59,16 @@ public class TestZPath
         Assert.assertTrue(checkIdLike.isResolved());
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter("others") + "/three");
         Assert.assertTrue(checkIdLike.isResolved());
+
+        Assert.assertTrue(ZPath.parse("/one").isParentOf(ZPath.parse("/one/two/three")));
+        Assert.assertTrue(path.isParentOf(path.child("one")));
+        Assert.assertFalse(path.isParentOf(path));
+        Assert.assertFalse(path.isParentOf(path.parent()));
+
+        // check default implementation
+        Assert.assertTrue(((ZPathImpl)path).defaultIsParentOf(path.child("one")));
+        Assert.assertFalse(((ZPathImpl)path).defaultIsParentOf(path));
+        Assert.assertFalse(((ZPathImpl)path).defaultIsParentOf(path.parent()));
     }
 
     @Test
