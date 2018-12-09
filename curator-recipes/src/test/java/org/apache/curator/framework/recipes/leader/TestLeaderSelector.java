@@ -24,19 +24,23 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -53,6 +57,50 @@ import static org.testng.Assert.fail;
 public class TestLeaderSelector extends BaseClassForTests
 {
     private static final String PATH_NAME = "/one/two/me";
+
+    @Test
+    public void testInterruption() throws Exception
+    {
+        Timing2 timing = new Timing2();
+        LeaderSelector selector = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+
+            CountDownLatch exitLatch = new CountDownLatch(1);
+            BlockingQueue<Thread> threadExchange = new ArrayBlockingQueue<>(1);
+            LeaderSelectorListener listener = new LeaderSelectorListenerAdapter()
+            {
+                @Override
+                public void takeLeadership(CuratorFramework client) throws Exception
+                {
+                    threadExchange.put(Thread.currentThread());
+                    try
+                    {
+                        Thread.currentThread().join();
+                    }
+                    finally
+                    {
+                        exitLatch.countDown();
+                    }
+                }
+            };
+            selector = new LeaderSelector(client, PATH_NAME, listener);
+            selector.failedMutexReleaseCount = new AtomicInteger();
+            selector.start();
+            Thread leaderThread = timing.takeFromQueue(threadExchange);
+            leaderThread.interrupt();
+            Assert.assertTrue(timing.awaitLatch(exitLatch));
+            timing.sleepABit(); // wait for leader selector to clear nodes
+            Assert.assertEquals(0, selector.failedMutexReleaseCount.get());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(selector);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 
     @Test
     public void testErrorPolicies() throws Exception
