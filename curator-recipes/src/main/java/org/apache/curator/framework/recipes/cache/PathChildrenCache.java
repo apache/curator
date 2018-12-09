@@ -617,7 +617,7 @@ public class PathChildrenCache implements Closeable
     {
         if ( state.get().equals(State.CLOSED))
         {
-        //    client.removeWatchers();
+            client.removeWatchers();
             return true;
         }
         return false;
