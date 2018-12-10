@@ -27,8 +27,11 @@ import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.BackgroundPathable;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.api.Watchable;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
@@ -73,6 +76,7 @@ public class TreeCache implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
     private final boolean createParentNodes;
+    private final boolean disableZkWatches;
     private final TreeCacheSelector selector;
 
     public static final class Builder
@@ -84,6 +88,7 @@ public class TreeCache implements Closeable
         private ExecutorService executorService = null;
         private int maxDepth = Integer.MAX_VALUE;
         private boolean createParentNodes = false;
+        private boolean disableZkWatches = false;
         private TreeCacheSelector selector = new DefaultTreeCacheSelector();
 
         private Builder(CuratorFramework client, String path)
@@ -102,7 +107,7 @@ public class TreeCache implements Closeable
             {
                 executor = Executors.newSingleThreadExecutor(defaultThreadFactory);
             }
-            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, selector);
+            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, disableZkWatches, selector);
         }
 
         /**
@@ -162,6 +167,18 @@ public class TreeCache implements Closeable
         public Builder setCreateParentNodes(boolean createParentNodes)
         {
             this.createParentNodes = createParentNodes;
+            return this;
+        }
+
+        /**
+         * By default, TreeCache creates {@link org.apache.zookeeper.ZooKeeper} watches for every created path.
+         * Change this behavior with this method.
+         * @param disableZkWatches true to disable zk watches
+         * @return this for chaining
+         */
+        public Builder disableZkWatches(boolean disableZkWatches)
+        {
+            this.disableZkWatches = disableZkWatches;
             return this;
         }
 
@@ -253,7 +270,7 @@ public class TreeCache implements Closeable
         {
             if ( treeState.get() == TreeState.STARTED )
             {
-                client.getChildren().usingWatcher(this).inBackground(this).forPath(path);
+                maybeWatch(client.getChildren()).forPath(path);
             }
         }
 
@@ -263,12 +280,21 @@ public class TreeCache implements Closeable
             {
                 if ( dataIsCompressed )
                 {
-                    client.getData().decompressed().usingWatcher(this).inBackground(this).forPath(path);
+                    maybeWatch(client.getData().decompressed()).forPath(path);
                 }
                 else
                 {
-                    client.getData().usingWatcher(this).inBackground(this).forPath(path);
+                    maybeWatch(client.getData()).forPath(path);
                 }
+            }
+        }
+
+        private <T, P extends Watchable<BackgroundPathable<T>> & BackgroundPathable<T>> Pathable<T> maybeWatch(
+            P dataBuilder) {
+            if (disableZkWatches) {
+                return dataBuilder.inBackground(this);
+            } else {
+                return dataBuilder.usingWatcher(this).inBackground(this);
             }
         }
 
@@ -321,7 +347,7 @@ public class TreeCache implements Closeable
             if ( parent == null )
             {
                 // Root node; use an exist query to watch for existence.
-                client.checkExists().usingWatcher(this).inBackground(this).forPath(path);
+                maybeWatch(client.checkExists()).forPath(path);
             }
             else
             {
@@ -535,7 +561,7 @@ public class TreeCache implements Closeable
      */
     public TreeCache(CuratorFramework client, String path)
     {
-        this(client, path, true, false, Integer.MAX_VALUE, Executors.newSingleThreadExecutor(defaultThreadFactory), false, new DefaultTreeCacheSelector());
+        this(client, path, true, false, Integer.MAX_VALUE, Executors.newSingleThreadExecutor(defaultThreadFactory), false, false, new DefaultTreeCacheSelector());
     }
 
     /**
@@ -545,9 +571,10 @@ public class TreeCache implements Closeable
      * @param dataIsCompressed if true, data in the path is compressed
      * @param executorService  Closeable ExecutorService to use for the TreeCache's background thread
      * @param createParentNodes true to create parent nodes as containers
+     * @param disableZkWatches true to disable Zookeeper watches
      * @param selector         the selector to use
      */
-    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final ExecutorService executorService, boolean createParentNodes, TreeCacheSelector selector)
+    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final ExecutorService executorService, boolean createParentNodes, boolean disableZkWatches, TreeCacheSelector selector)
     {
         this.createParentNodes = createParentNodes;
         this.selector = Preconditions.checkNotNull(selector, "selector cannot be null");
@@ -557,6 +584,7 @@ public class TreeCache implements Closeable
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.maxDepth = maxDepth;
+        this.disableZkWatches = disableZkWatches;
         this.executorService = Preconditions.checkNotNull(executorService, "executorService cannot be null");
     }
 
