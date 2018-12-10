@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.modeled;
 
+import com.google.common.collect.Sets;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.test.Timing;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
@@ -27,10 +28,14 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.HashSet;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestCachedModeledFramework extends TestModeledFrameworkBase
 {
@@ -97,46 +102,62 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
     }
 
     @Test
-    public void testChildren() throws Exception
+    public void testChildren()
     {
         TestModel parent = new TestModel("a", "b", "c", 20, BigInteger.ONE);
         TestModel child1 = new TestModel("d", "e", "f", 1, BigInteger.ONE);
         TestModel child2 = new TestModel("g", "h", "i", 1, BigInteger.ONE);
+        TestModel grandChild1 = new TestModel("j", "k", "l", 10, BigInteger.ONE);
+        TestModel grandChild2 = new TestModel("m", "n", "0", 5, BigInteger.ONE);
+
         try (CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached())
         {
-            Semaphore semaphore = new Semaphore(0);
-            client.listenable().addListener((t, p, s, m) ->
-            {
-                if (m.equals(child2))
-                {
-                    semaphore.release();
-                }
-            });
+            CountDownLatch latch = new CountDownLatch(5);
+            client.listenable().addListener((t, p, s, m) -> latch.countDown());
 
             client.start();
             complete(client.child("p").set(parent));
             complete(client.child("p").child("c1").set(child1));
             complete(client.child("p").child("c2").set(child2));
-            Assert.assertTrue(timing.forWaiting().acquireSemaphore(semaphore));
+            complete(client.child("p").child("c1").child("g1").set(grandChild1));
+            complete(client.child("p").child("c2").child("g2").set(grandChild2));
+            Assert.assertTrue(timing.awaitLatch(latch));
 
             complete(client.child("p").children(), (v, e) ->
             {
-               Assert.assertEquals(v.size(), 2);
-               Assert.assertTrue(v.contains(client.child("p").child("c1").modelSpec().path()));
-               Assert.assertTrue(v.contains(client.child("p").child("c2").modelSpec().path()));
+                List<ZPath> paths = Arrays.asList(
+                    client.child("p").child("c1").modelSpec().path(),
+                    client.child("p").child("c2").modelSpec().path()
+                );
+                Assert.assertEquals(v, paths);
             });
 
             complete(client.child("p").childrenAsZNodes(), (v, e) ->
             {
-               Assert.assertEquals(v.size(), 2);
-               Set<TestModel> children = new HashSet<>();
-               children.add(child1);
-               children.add(child2);
-               for (ZNode<TestModel> node: v)
-               {
-                   Assert.assertTrue(children.contains(node.model()));
-               }
+                Set<TestModel> cachedModels = toSet(v.stream(), ZNode::model);
+                Assert.assertEquals(cachedModels, Sets.newHashSet(child1, child2));
+
+                // verify that the same nodes are returned from the uncached method
+                complete(ModeledFramework.wrap(async, modelSpec).child("p").childrenAsZNodes(), (v2, e2) -> {
+                    Set<TestModel> uncachedModels = toSet(v2.stream(), ZNode::model);
+                    Assert.assertEquals(cachedModels, uncachedModels);
+                });
+            });
+
+            complete(client.child("p").child("c1").childrenAsZNodes(), (v, e) ->
+            {
+                Assert.assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild1));
+            });
+
+            complete(client.child("p").child("c2").childrenAsZNodes(), (v, e) ->
+            {
+                Assert.assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild2));
             });
         }
+    }
+
+    private <T, R> Set<R> toSet(Stream<T> stream, Function<? super T, ? extends R> mapper)
+    {
+         return stream.map(mapper).collect(Collectors.toSet());
     }
 }
