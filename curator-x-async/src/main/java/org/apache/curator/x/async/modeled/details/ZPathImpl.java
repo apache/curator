@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.async.modeled.details;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.x.async.modeled.NodeName;
@@ -143,27 +142,6 @@ public class ZPathImpl implements ZPath
             rhs = parseInternal(path.fullPath(), s -> s);
         }
         return (nodes.size() >= rhs.nodes.size()) && nodes.subList(0, rhs.nodes.size()).equals(rhs.nodes);
-    }
-
-    @VisibleForTesting
-    public boolean defaultIsParentOf(ZPath path)
-    {
-        return ZPath.super.isParentOf(path);
-    }
-
-    @Override
-    public boolean isParentOf(ZPath path)
-    {
-        ZPathImpl rhs;
-        if ( path instanceof ZPathImpl )
-        {
-            rhs = (ZPathImpl)path;
-        }
-        else
-        {
-            rhs = parseInternal(path.fullPath(), s -> s);
-        }
-        return (rhs.nodes.size() > nodes.size()) && rhs.nodes.subList(0, nodes.size()).equals(nodes);
     }
 
     @Override
