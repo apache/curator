@@ -34,6 +34,7 @@ import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -335,11 +336,12 @@ public interface CuratorFramework extends Closeable
      * done from the {@link #runSafe(Runnable)} thread.
      *
      * @param monitorHolder object to sync on and notify
+     * @return a CompletableFuture that can be used to monitor when the call is complete
      * @since 4.1.0
      */
-    default void postSafeNotify(Object monitorHolder)
+    default CompletableFuture<Void> postSafeNotify(Object monitorHolder)
     {
-        runSafe(() -> {
+        return runSafe(() -> {
             synchronized(monitorHolder) {
                 monitorHolder.notifyAll();
             }
@@ -351,7 +353,8 @@ public interface CuratorFramework extends Closeable
      * and other blocking calls that might normally block ZooKeeper's event thread.
 
      * @param runnable proc to call from a safe internal thread
+     * @return a CompletableFuture that can be used to monitor when the call is complete
      * @since 4.1.0
      */
-    void runSafe(Runnable runnable);
+    CompletableFuture<Void> runSafe(Runnable runnable);
 }
