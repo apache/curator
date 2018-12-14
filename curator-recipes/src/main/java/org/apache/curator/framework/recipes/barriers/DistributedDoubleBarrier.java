@@ -65,7 +65,12 @@ public class DistributedDoubleBarrier
         public void process(WatchedEvent event)
         {
             connectionLost.set(event.getState() != Event.KeeperState.SyncConnected);
-            notifyFromWatcher();
+            client.runSafe(() -> {
+                synchronized(DistributedDoubleBarrier.this) {
+                    hasBeenNotified.set(true);
+                    DistributedDoubleBarrier.this.notifyAll();
+                }
+            });
         }
     };
 
@@ -336,11 +341,5 @@ public class DistributedDoubleBarrier
         } while ( false );
 
         return result;
-    }
-
-    private synchronized void notifyFromWatcher()
-    {
-        hasBeenNotified.set(true);
-        notifyAll();
     }
 }

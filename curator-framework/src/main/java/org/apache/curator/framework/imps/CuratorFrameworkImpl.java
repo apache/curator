@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -96,6 +97,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final EnsembleTracker ensembleTracker;
     private final SchemaSet schemaSet;
     private final boolean zk34CompatibilityMode;
+    private final Executor runSafeService;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -163,6 +165,22 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespaceFacadeCache = new NamespaceFacadeCache(this);
 
         ensembleTracker = zk34CompatibilityMode ? null : new EnsembleTracker(this, builder.getEnsembleProvider());
+
+        runSafeService = makeRunSafeService(builder);
+    }
+
+    private Executor makeRunSafeService(CuratorFrameworkFactory.Builder builder)
+    {
+        if ( builder.getRunSafeService() != null )
+        {
+            return builder.getRunSafeService();
+        }
+        ThreadFactory threadFactory = builder.getThreadFactory();
+        if ( threadFactory == null )
+        {
+            threadFactory = ThreadUtils.newThreadFactory("SafeNotifyService");
+        }
+        return Executors.newSingleThreadExecutor(threadFactory);
     }
 
     private List<AuthInfo> buildAuths(CuratorFrameworkFactory.Builder builder)
@@ -173,6 +191,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
             builder1.addAll(builder.getAuthInfos());
         }
         return builder1.build();
+    }
+
+    @Override
+    public void runSafe(Runnable runnable)
+    {
+        runSafeService.execute(runnable);
     }
 
     @Override
@@ -240,6 +264,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         schemaSet = parent.schemaSet;
         zk34CompatibilityMode = parent.zk34CompatibilityMode;
         ensembleTracker = null;
+        runSafeService = parent.runSafeService;
     }
 
     @Override

@@ -47,6 +47,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.CuratorZookeeperClient;
@@ -149,6 +150,8 @@ public class CuratorFrameworkFactory
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
         private boolean zk34CompatibilityMode = isZK34();
         private int waitForShutdownTimeoutMs = 0;
+        private Executor runSafeService = null;
+
         /**
          * Apply the current values and build a new CuratorFramework
          *
@@ -189,7 +192,7 @@ public class CuratorFrameworkFactory
 
         /**
          * Add connection authorization
-         * 
+         *
          * Subsequent calls to this method overwrite the prior calls.
          *
          * @param scheme the scheme
@@ -472,6 +475,28 @@ public class CuratorFrameworkFactory
         {
             this.schemaSet = schemaSet;
             return this;
+        }
+
+        /**
+         * Curator (and user) recipes will use this executor to call notifyAll
+         * and other blocking calls that might normally block ZooKeeper's event thread.
+         * By default, an executor is allocated internally using the provided (or default)
+         * {@link #threadFactory(java.util.concurrent.ThreadFactory)}. Use this method
+         * to set a custom executor.
+         *
+         * @param runSafeService executor to use for calls to notifyAll from Watcher callbacks etc
+         * @return this
+         * @since 4.1.0
+         */
+        public Builder runSafeService(Executor runSafeService)
+        {
+            this.runSafeService = runSafeService;
+            return null;
+        }
+
+        public Executor getRunSafeService()
+        {
+            return runSafeService;
         }
 
         public ACLProvider getAclProvider()

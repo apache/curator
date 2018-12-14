@@ -25,16 +25,14 @@ import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.api.transaction.TransactionOp;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.schema.SchemaSet;
-import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
-
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
@@ -269,7 +267,7 @@ public interface CuratorFramework extends Closeable
      * Call this method on watchers you are no longer interested in.
      *
      * @param watcher the watcher
-     * 
+     *
      * @deprecated As of ZooKeeper 3.5 Curators recipes will handle removing watcher references
      * when they are no longer used. If you write your own recipe, follow the example of Curator
      * recipes and use {@link #newWatcherRemoveCuratorFramework} calling {@link WatcherRemoveCuratorFramework#removeWatchers()}
@@ -277,7 +275,7 @@ public interface CuratorFramework extends Closeable
      */
     @Deprecated
     public void clearWatcherReferences(Watcher watcher);
-        
+
     /**
      * Block until a connection to ZooKeeper is available or the maxWaitTime has been exceeded
      * @param maxWaitTime The maximum wait time. Specify a value &lt;= 0 to wait indefinitely
@@ -286,7 +284,7 @@ public interface CuratorFramework extends Closeable
      * @throws InterruptedException If interrupted while waiting
      */
     public boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException;
-    
+
     /**
      * Block until a connection to ZooKeeper is available. This method will not return until a
      * connection is available or it is interrupted, in which case an InterruptedException will
@@ -331,4 +329,29 @@ public interface CuratorFramework extends Closeable
      * @return true/false
      */
     boolean isZk34CompatibilityMode();
+
+    /**
+     * Calls {@link #notifyAll()} on the given object after first synchronizing on it. This is
+     * done from the {@link #runSafe(Runnable)} thread.
+     *
+     * @param monitorHolder object to sync on and notify
+     * @since 4.1.0
+     */
+    default void postSafeNotify(Object monitorHolder)
+    {
+        runSafe(() -> {
+            synchronized(monitorHolder) {
+                monitorHolder.notifyAll();
+            }
+        });
+    }
+
+    /**
+     * Curator (and user) recipes can use this to run notifyAll
+     * and other blocking calls that might normally block ZooKeeper's event thread.
+
+     * @param runnable proc to call from a safe internal thread
+     * @since 4.1.0
+     */
+    void runSafe(Runnable runnable);
 }

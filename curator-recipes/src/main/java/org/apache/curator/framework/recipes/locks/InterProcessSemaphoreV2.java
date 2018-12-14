@@ -40,7 +40,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -88,7 +87,7 @@ public class InterProcessSemaphoreV2
         @Override
         public void process(WatchedEvent event)
         {
-            notifyFromWatcher();
+            client.postSafeNotify(InterProcessSemaphoreV2.this);
         }
     };
 
@@ -141,7 +140,7 @@ public class InterProcessSemaphoreV2
                         public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception
                         {
                             InterProcessSemaphoreV2.this.maxLeases = newCount;
-                            notifyFromWatcher();
+                            client.postSafeNotify(InterProcessSemaphoreV2.this);
                         }
 
                         @Override
@@ -373,7 +372,7 @@ public class InterProcessSemaphoreV2
                 synchronized(this)
                 {
                     for(;;)
-                    {    
+                    {
                         List<String> children;
                         try
                         {
@@ -392,7 +391,7 @@ public class InterProcessSemaphoreV2
                             log.error("Sequential path not found: " + path);
                             return InternalAcquireResult.RETRY_DUE_TO_MISSING_NODE;
                         }
-    
+
                         if ( children.size() <= maxLeases )
                         {
                             break;
@@ -478,10 +477,5 @@ public class InterProcessSemaphoreV2
                 return ZKPaths.getNodeFromPath(path);
             }
         };
-    }
-
-    private synchronized void notifyFromWatcher()
-    {
-        notifyAll();
     }
 }
