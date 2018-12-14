@@ -37,6 +37,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.utils.PathUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -52,12 +54,15 @@ import org.apache.curator.utils.PathUtils;
  */
 public class DistributedDoubleBarrier
 {
+    private static final Logger logger = LoggerFactory.getLogger(DistributedDoubleBarrier.class);
+
     private final CuratorFramework client;
     private final String barrierPath;
     private final int memberQty;
     private final String ourPath;
     private final String readyPath;
-    private final AtomicBoolean hasBeenNotified = new AtomicBoolean(false);
+    private final AtomicBoolean hasBeenNotifiedEnter = new AtomicBoolean(false);
+    private final AtomicBoolean hasBeenNotifiedLeave = new AtomicBoolean(false);
     private final AtomicBoolean connectionLost = new AtomicBoolean(false);
     private final Watcher watcher = new Watcher()
     {
@@ -69,7 +74,7 @@ public class DistributedDoubleBarrier
         }
     };
 
-    private static final String     READY_NODE = "ready";
+    private static final String READY_NODE = "ready";
 
     /**
      * Creates the barrier abstraction. <code>memberQty</code> is the number of members in the
@@ -185,10 +190,15 @@ public class DistributedDoubleBarrier
 
     private boolean internalLeave(long startMs, boolean hasMaxWait, long maxWaitMs) throws Exception
     {
+        logger.trace(">>> internalLeave {}", ourPath);
+
         String          ourPathName = ZKPaths.getNodeFromPath(ourPath);
         boolean         ourNodeShouldExist = true;
         boolean         result = true;
-        for(;;)
+
+        hasBeenNotifiedLeave.set(false);
+
+        for ( ;; )
         {
             if ( connectionLost.get() )
             {
@@ -223,6 +233,7 @@ public class DistributedDoubleBarrier
                 }
             }
 
+            logger.trace("children:{}", children);
             if ( children.size() == 1 )
             {
                 if ( ourNodeShouldExist && !children.get(0).equals(ourPathName) )
@@ -233,35 +244,29 @@ public class DistributedDoubleBarrier
                 break;
             }
 
-            Stat            stat;
-            boolean         IsLowestNode = (ourIndex == 0);
-            if ( IsLowestNode )
+            String watchPath; // Watch somebody else that still exists
+            if ( ourIndex == 0 )
             {
-                String  highestNodePath = ZKPaths.makePath(barrierPath, children.get(children.size() - 1));
-                stat = client.checkExists().usingWatcher(watcher).forPath(highestNodePath);
+                watchPath = ZKPaths.makePath(barrierPath, children.get(children.size() - 1));
             }
             else
             {
-                String  lowestNodePath = ZKPaths.makePath(barrierPath, children.get(0));
-                stat = client.checkExists().usingWatcher(watcher).forPath(lowestNodePath);
-
-                checkDeleteOurPath(ourNodeShouldExist);
-                ourNodeShouldExist = false;
+                watchPath = ZKPaths.makePath(barrierPath, children.get(0));
             }
+
+            Stat stat = client.checkExists().usingWatcher(watcher).forPath(watchPath);
+
+            checkDeleteOurPath(ourNodeShouldExist);
+            ourNodeShouldExist = false;
 
             if ( stat != null )
             {
                 if ( hasMaxWait )
                 {
-                    long        elapsed = System.currentTimeMillis() - startMs;
-                    long        thisWaitMs = maxWaitMs - elapsed;
-                    if ( thisWaitMs <= 0 )
+                    result = timedWait(startMs, maxWaitMs, hasBeenNotifiedLeave);
+                    if ( !result )
                     {
-                        result = false;
-                    }
-                    else
-                    {
-                        wait(thisWaitMs);
+                        break;
                     }
                 }
                 else
@@ -293,54 +298,54 @@ public class DistributedDoubleBarrier
 
     private synchronized boolean internalEnter(long startMs, boolean hasMaxWait, long maxWaitMs) throws Exception
     {
+        hasBeenNotifiedEnter.set(false);
         boolean result = true;
-        do
+
+        List<String> children = getChildrenForEntering();
+        int             count = (children != null) ? children.size() : 0;
+        if ( count >= memberQty )
         {
-            List<String>    children = getChildrenForEntering();
-            int             count = (children != null) ? children.size() : 0;
-            if ( count >= memberQty )
+            try
             {
-                try
-                {
-                    client.create().forPath(readyPath);
-                }
-                catch ( KeeperException.NodeExistsException ignore )
-                {
-                    // ignore
-                }
-                break;
+                client.create().forPath(readyPath);
             }
-
-            if ( hasMaxWait && !hasBeenNotified.get() )
+            catch ( KeeperException.NodeExistsException ignore )
             {
-                long        elapsed = System.currentTimeMillis() - startMs;
-                long        thisWaitMs = maxWaitMs - elapsed;
-                if ( thisWaitMs <= 0 )
-                {
-                    result = false;
-                }
-                else
-                {
-                    wait(thisWaitMs);
-                }
-
-                if ( !hasBeenNotified.get() )
-                {
-                    result = false;
-                }
+                // ignore
+            }
+        }
+        else
+        {
+            if ( hasMaxWait )
+            {
+                result = timedWait(startMs, maxWaitMs, hasBeenNotifiedEnter);
             }
             else
             {
                 wait();
             }
-        } while ( false );
+        }
 
         return result;
     }
 
+    private boolean timedWait(long startMs, long maxWaitMs, AtomicBoolean notified) throws InterruptedException
+    {
+        long elapsed = System.currentTimeMillis() - startMs;
+        while ( !notified.get() && elapsed < maxWaitMs )
+        {
+            wait(maxWaitMs - elapsed);
+            elapsed = System.currentTimeMillis() - startMs;
+            logger.trace("max:{} elapsed:{}", maxWaitMs, elapsed);
+        }
+
+        return notified.get();
+    }
+
     private synchronized void notifyFromWatcher()
     {
-        hasBeenNotified.set(true);
+        hasBeenNotifiedEnter.set(true);
+        hasBeenNotifiedLeave.set(true);
         notifyAll();
     }
 }
