@@ -491,7 +491,7 @@ public class CuratorFrameworkFactory
         public Builder runSafeService(Executor runSafeService)
         {
             this.runSafeService = runSafeService;
-            return null;
+            return this;
         }
 
         public Executor getRunSafeService()
