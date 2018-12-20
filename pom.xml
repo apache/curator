@@ -63,7 +63,7 @@
         <maven-project-info-reports-plugin-version>2.9</maven-project-info-reports-plugin-version>
         <maven-bundle-plugin-version>3.2.0</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>2.10.4</maven-javadoc-plugin-version>
-        <doxia-module-confluence-version>1.7</doxia-module-confluence-version>
+        <doxia-module-confluence-version>1.8</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
         <javassist-version>3.20.0-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>

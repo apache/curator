@@ -25,15 +25,11 @@
     <skin>
         <groupId>org.apache.maven.skins</groupId>
         <artifactId>maven-fluido-skin</artifactId>
-        <version>1.6</version>
+        <version>1.7</version>
     </skin>
 
     <custom>
         <fluidoSkin>
-            <ohloh>
-                <projectId>apache-curator</projectId>
-                <widget>factoids</widget>
-            </ohloh>
             <facebookLike />
             <googlePlusOne />
             <twitter>
@@ -75,6 +71,7 @@
 
         <menu name="Apache Curator" inherit="top">
             <item name="About" href="index.html"/>
+            <item name="Download" href="https://cwiki.apache.org/confluence/display/CURATOR/Releases"/>
             <item name="Getting Started" href="getting-started.html"/>
             <item name="Examples" href="curator-examples/index.html"/>
             <item name="Recipes" href="curator-recipes/index.html"/>
