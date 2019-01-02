@@ -36,6 +36,8 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
@@ -53,14 +55,15 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     private Backgrounding backgrounding;
     private boolean createParentsIfNeeded;
     private boolean createParentsAsContainers;
-    private boolean doProtected;
     private boolean compress;
     private boolean setDataIfExists;
     private int setDataIfExistsVersion = -1;
-    private String protectedId;
     private ACLing acling;
     private Stat storingStat;
     private long ttl;
+    private boolean doProtected;
+    private String protectedId;
+    private Watching protectedWatching;
 
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
@@ -77,11 +80,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         createParentsIfNeeded = false;
         createParentsAsContainers = false;
         compress = false;
-        doProtected = false;
         setDataIfExists = false;
-        protectedId = null;
         storingStat = null;
         ttl = -1;
+
+        doProtected = false;
+        protectedId = null;
+        protectedWatching = new Watching(client);
     }
 
     public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat, long ttl)
@@ -398,6 +403,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
+            public Watchable<ACLCreateModeStatBackgroundPathAndBytesable<String>> withWatchedProtection()
+            {
+                return CreateBuilderImpl.this.withWatchedProtection();
+            }
+
+            @Override
             public BackgroundPathAndBytesable<String> withACL(List<ACL> aclList)
             {
                 return withACL(aclList, false);
@@ -477,6 +488,35 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     {
         setProtected();
         return asACLCreateModeStatBackgroundPathAndBytesable();
+    }
+
+    @Override
+    public Watchable<ACLCreateModeStatBackgroundPathAndBytesable<String>> withWatchedProtection()
+    {
+        setProtected();
+        return new Watchable<ACLCreateModeStatBackgroundPathAndBytesable<String>>()
+        {
+            @Override
+            public ACLCreateModeStatBackgroundPathAndBytesable<String> watched()
+            {
+                protectedWatching = new Watching(client, true);
+                return asACLCreateModeStatBackgroundPathAndBytesable();
+            }
+
+            @Override
+            public ACLCreateModeStatBackgroundPathAndBytesable<String> usingWatcher(Watcher watcher)
+            {
+                protectedWatching = new Watching(client, watcher);
+                return asACLCreateModeStatBackgroundPathAndBytesable();
+            }
+
+            @Override
+            public ACLCreateModeStatBackgroundPathAndBytesable<String> usingWatcher(CuratorWatcher watcher)
+            {
+                protectedWatching = new Watching(client, watcher);
+                return asACLCreateModeStatBackgroundPathAndBytesable();
+            }
+        };
     }
 
     @Override
@@ -770,6 +810,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             @Override
             public ACLCreateModeBackgroundPathAndBytesable<String> withProtection() {
                 return CreateBuilderImpl.this.withProtection();
+            }
+
+            @Override
+            public Watchable<ACLCreateModeStatBackgroundPathAndBytesable<String>> withWatchedProtection()
+            {
+                return CreateBuilderImpl.this.withWatchedProtection();
             }
 
             @Override
@@ -1134,8 +1180,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
                 if ( failNextCreateForTesting )
                 {
-                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     failNextCreateForTesting = false;
+                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     throw new KeeperException.ConnectionLossException();
                 }
 
@@ -1253,6 +1299,22 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             List<String> children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
 
                             foundNode = findNode(children, pathAndNode.getPath(), protectedId);
+                            if ( (foundNode != null) && protectedWatching.hasWatcher() )
+                            {
+                                String foundPath = ZKPaths.makePath(pathAndNode.getPath(), foundNode);
+                                Watcher protectedWatcher = protectedWatching.getWatcher(foundPath);
+                                try
+                                {
+                                    client.getZooKeeper().getData(foundPath, protectedWatcher, null);
+                                    protectedWatching.commitWatcher(KeeperException.Code.OK.intValue(), false);
+                                }
+                                catch ( KeeperException.NoNodeException e )
+                                {
+                                    protectedWatching.commitWatcher(KeeperException.Code.CONNECTIONLOSS.intValue(), false); // CONNECTIONLOSS no need to register namespace watcher
+                                    WatchedEvent event = new WatchedEvent(Watcher.Event.EventType.NodeDeleted, Watcher.Event.KeeperState.SyncConnected, e.getPath());
+                                    protectedWatcher.process(event);
+                                }
+                            }
                         }
                         catch ( KeeperException.NoNodeException ignore )
                         {

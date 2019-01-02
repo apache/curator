@@ -69,4 +69,6 @@ public interface CreateProtectACLCreateModePathAndBytesable<T> extends
      * @return this
      */
     public ACLCreateModeBackgroundPathAndBytesable<String>    withProtection();
+
+    public Watchable<ACLCreateModeStatBackgroundPathAndBytesable<String>>    withWatchedProtection();
 }
