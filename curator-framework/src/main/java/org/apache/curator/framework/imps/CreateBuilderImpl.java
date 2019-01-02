@@ -674,7 +674,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 };
                 client.getZooKeeper().create
                     (
-                        operationAndData.getData().getPath(),
+                        insertSessionIdIfNeeded(operationAndData.getData().getPath()),
                         data,
                         acling.getAclList(operationAndData.getData().getPath()),
                         createMode,
@@ -687,7 +687,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 CreateZK35.create
                 (
                     client.getZooKeeper(),
-                    operationAndData.getData().getPath(),
+                    insertSessionIdIfNeeded(operationAndData.getData().getPath()),
                     data,
                     acling.getAclList(operationAndData.getData().getPath()),
                     createMode,
@@ -784,9 +784,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         };
     }
 
-    private static String getProtectedPrefix(String protectedId)
+    private static String getProtectedPrefix(String protectedId, long sessionId)
     {
-        return PROTECTED_PREFIX + protectedId + "-";
+        if ( sessionId != 0 )
+        {
+            return PROTECTED_PREFIX + protectedId + '-' + sessionId + '-';
+        }
+        return PROTECTED_PREFIX + protectedId + '-';
     }
 
     static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final InternalACLProvider aclProvider, final boolean createParentsAsContainers)
@@ -1134,8 +1138,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
                 if ( failNextCreateForTesting )
                 {
-                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     failNextCreateForTesting = false;
+                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     throw new KeeperException.ConnectionLossException();
                 }
 
@@ -1172,29 +1176,30 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
                         if ( createdPath == null )
                         {
+                            String sessionAdjustedPath = insertSessionIdIfNeeded(path);
                             try
                             {
                                 if ( client.isZk34CompatibilityMode() )
                                 {
-                                    createdPath = client.getZooKeeper().create(path, data, aclList, createMode);
+                                    createdPath = client.getZooKeeper().create(sessionAdjustedPath, data, aclList, createMode);
                                 }
                                 else
                                 {
-                                    createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
+                                    createdPath = client.getZooKeeper().create(sessionAdjustedPath, data, aclList, createMode, storingStat, ttl);
                                 }
                             }
                             catch ( KeeperException.NoNodeException e )
                             {
                                 if ( createParentsIfNeeded )
                                 {
-                                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, acling.getACLProviderForParents(), createParentsAsContainers);
+                                    ZKPaths.mkdirs(client.getZooKeeper(), sessionAdjustedPath, false, acling.getACLProviderForParents(), createParentsAsContainers);
                                     if ( client.isZk34CompatibilityMode() )
                                     {
-                                        createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
+                                        createdPath = client.getZooKeeper().create(sessionAdjustedPath, data, acling.getAclList(sessionAdjustedPath), createMode);
                                     }
                                     else
                                     {
-                                        createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
+                                        createdPath = client.getZooKeeper().create(sessionAdjustedPath, data, acling.getAclList(sessionAdjustedPath), createMode, storingStat, ttl);
                                     }
                                 }
                                 else
@@ -1206,12 +1211,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             {
                                 if ( setDataIfExists )
                                 {
-                                    Stat setStat = client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
+                                    Stat setStat = client.getZooKeeper().setData(sessionAdjustedPath, data, setDataIfExistsVersion);
                                     if(storingStat != null)
                                     {
                                         DataTree.copyStat(setStat, storingStat);
                                     }
-                                    createdPath = path;
+                                    createdPath = sessionAdjustedPath;
                                 }
                                 else
                                 {
@@ -1252,7 +1257,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             final ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
                             List<String> children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
 
-                            foundNode = findNode(children, pathAndNode.getPath(), protectedId);
+                            foundNode = findNode(children, pathAndNode.getPath(), protectedId, createMode.isEphemeral() ? client.getZooKeeper().getSessionId() : 0);
                         }
                         catch ( KeeperException.NoNodeException ignore )
                         {
@@ -1273,7 +1278,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         if ( doProtected )
         {
             ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-            String name = getProtectedPrefix(protectedId) + pathAndNode.getNode();
+            String name = getProtectedPrefix(protectedId, 0) + pathAndNode.getNode();
             path = ZKPaths.makePath(pathAndNode.getPath(), name);
         }
         return path;
@@ -1285,11 +1290,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
      * @param children    a list of candidates znodes
      * @param path        the path
      * @param protectedId the protected id
+     * @param sessionId   if a session id should be included, 0 if not
      * @return the absolute path of the znode or <code>null</code> if it is not found
      */
-    static String findNode(final List<String> children, final String path, final String protectedId)
+    static String findNode(final List<String> children, final String path, final String protectedId, final long sessionId)
     {
-        final String protectedPrefix = getProtectedPrefix(protectedId);
+        final String protectedPrefix = getProtectedPrefix(protectedId, sessionId);
         String foundNode = Iterables.find
             (
                 children,
@@ -1308,5 +1314,22 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             foundNode = ZKPaths.makePath(path, foundNode);
         }
         return foundNode;
+    }
+
+    private String insertSessionIdIfNeeded(String path) throws Exception
+    {
+        if ( doProtected && createMode.isEphemeral() )
+        {
+            // per CURATOR-498 - it's been discovered that the protected mode search can discover
+            // a created ephemeral node that will get deleted due to session timeouts. To work around
+            // this include the session ID in the ZNode name and search for the node with the current
+            // session ID thus ignoring created ZNodes with stale session IDs. A UUID is still included
+            // in the node name so that the protection mode contract is maintained
+            ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+            String unadjustedNode = pathAndNode.getNode().substring(PROTECTED_PREFIX.length() + protectedId.length() + 1);
+            String newNode = getProtectedPrefix(protectedId, client.getZooKeeper().getSessionId()) + unadjustedNode;
+            return ZKPaths.makePath(pathAndNode.getPath(), newNode);
+        }
+        return path;
     }
 }

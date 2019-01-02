@@ -30,11 +30,15 @@ import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
+import org.apache.curator.framework.api.ErrorListenerPathAndBytesable;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.InstanceSpec;
+import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.compatibility.Timing2;
@@ -50,11 +54,15 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,7 +70,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
-
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final Timing2 timing = new Timing2();
 
@@ -70,6 +77,79 @@ public class TestFrameworkEdges extends BaseClassForTests
     public static void setUpClass()
     {
         System.setProperty("zookeeper.extendedTypesEnabled", "true");
+    }
+
+    @Test
+    public void testProtectionWithKilledSession() throws Exception
+    {
+        server.stop();  // not needed
+
+        // see CURATOR-498
+        // attempt to re-create the state described in the bug report: create a 3 Instance ensemble;
+        // have Curator connect to only 1 one of those instances; set failNextCreateForTesting to
+        // simulate protection mode searching; kill the connected server when this happens;
+        // wait for session timeout to elapse and then restart the instance. In most cases
+        // this will cause the scenario as Curator will send the session cancel and do protection mode
+        // search around the same time. The protection mode search should return first as it can be resolved
+        // by the Instance Curator is connected to but the session kill needs a quorum vote (it's a
+        // transaction)
+
+        try ( TestingCluster cluster = new TestingCluster(3) )
+        {
+            cluster.start();
+            InstanceSpec instanceSpec0 = cluster.getServers().get(0).getInstanceSpec();
+
+            CountDownLatch serverStoppedLatch = new CountDownLatch(1);
+            RetryPolicy retryPolicy = new RetryForever(100)
+            {
+                @Override
+                public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
+                {
+                    if ( serverStoppedLatch.getCount() > 0 )
+                    {
+                        try
+                        {
+                            cluster.killServer(instanceSpec0);
+                        }
+                        catch ( Exception e )
+                        {
+                            // ignore
+                        }
+                        serverStoppedLatch.countDown();
+                    }
+                    return super.allowRetry(retryCount, elapsedTimeMs, sleeper);
+                }
+            };
+
+            try (CuratorFramework client = CuratorFrameworkFactory.newClient(instanceSpec0.getConnectString(), timing.session(), timing.connection(), retryPolicy))
+            {
+                BlockingQueue<String> createdNode = new LinkedBlockingQueue<>();
+                BackgroundCallback callback = (__, event) -> {
+                    if ( event.getType() == CuratorEventType.CREATE )
+                    {
+                        createdNode.offer(event.getPath());
+                    }
+                };
+
+                client.start();
+                client.create().forPath("/test");
+
+                ErrorListenerPathAndBytesable<String> builder = client.create().withProtection().withMode(CreateMode.EPHEMERAL).inBackground(callback);
+                ((CreateBuilderImpl)builder).failNextCreateForTesting = true;
+
+                builder.forPath("/test/hey");
+
+                Assert.assertTrue(timing.awaitLatch(serverStoppedLatch));
+                timing.forSessionSleep().sleep();   // wait for session to expire
+                cluster.restartServer(instanceSpec0);
+
+                String path = timing.takeFromQueue(createdNode);
+                timing.sleepABit();
+                List<String> children = client.getChildren().forPath("/test");
+                Assert.assertEquals(children, Collections.singletonList(ZKPaths.getNodeFromPath(path)), path + " is not equal to getChildren: " + children);
+                Assert.assertTrue(path.contains(Long.toString(client.getZookeeperClient().getZooKeeper().getSessionId())));
+            }
+        }
     }
 
     @Test

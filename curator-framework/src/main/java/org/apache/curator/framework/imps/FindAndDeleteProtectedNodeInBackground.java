@@ -81,7 +81,7 @@ class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void
 
                 if ( rc == KeeperException.Code.OK.intValue() )
                 {
-                    final String node = CreateBuilderImpl.findNode(strings, "/", protectedId);  // due to namespacing, don't let CreateBuilderImpl.findNode adjust the path
+                    final String node = CreateBuilderImpl.findNode(strings, "/", protectedId, 0);  // due to namespacing, don't let CreateBuilderImpl.findNode adjust the path
                     if ( node != null )
                     {
                         try
