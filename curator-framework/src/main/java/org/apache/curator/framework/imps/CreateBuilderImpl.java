@@ -36,12 +36,12 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -1284,6 +1284,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     {
         OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("CreateBuilderImpl-findProtectedNodeInForeground");
 
+        Logger log = LoggerFactory.getLogger(getClass());
         String returnPath = RetryLoop.callWithRetry
             (
                 client.getZookeeperClient(),
@@ -1299,6 +1300,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             List<String> children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
 
                             foundNode = findNode(children, pathAndNode.getPath(), protectedId);
+                            log.debug("Protected mode findNode result: {}", foundNode);
                             if ( (foundNode != null) && protectedWatching.hasWatcher() )
                             {
                                 String foundPath = ZKPaths.makePath(pathAndNode.getPath(), foundNode);
@@ -1308,11 +1310,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                                     client.getZooKeeper().getData(foundPath, protectedWatcher, null);
                                     protectedWatching.commitWatcher(KeeperException.Code.OK.intValue(), false);
                                 }
-                                catch ( KeeperException.NoNodeException e )
+                                catch ( KeeperException.NoNodeException ignore )
                                 {
-                                    protectedWatching.commitWatcher(KeeperException.Code.CONNECTIONLOSS.intValue(), false); // CONNECTIONLOSS no need to register namespace watcher
-                                    WatchedEvent event = new WatchedEvent(Watcher.Event.EventType.NodeDeleted, Watcher.Event.KeeperState.SyncConnected, e.getPath());
-                                    protectedWatcher.process(event);
+                                    log.warn("protectedWatching failed with NoNodeException for node: {}", foundNode);
+                                    foundNode = null;
                                 }
                             }
                         }

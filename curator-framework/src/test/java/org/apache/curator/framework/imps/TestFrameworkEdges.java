@@ -131,13 +131,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 client.start();
                 client.create().forPath("/test");
 
-                CountDownLatch protectedNodeLatch = new CountDownLatch(1);
-                Watcher protectedNodeWatcher = watchedEvent -> {
-                    if ( watchedEvent.getType() == Watcher.Event.EventType.NodeDeleted )
-                    {
-                        protectedNodeLatch.countDown();
-                    }
-                };
+                Watcher protectedNodeWatcher = __ -> {};
                 ErrorListenerPathAndBytesable<String> builder = client.create().withWatchedProtection().usingWatcher(protectedNodeWatcher).withMode(CreateMode.EPHEMERAL).inBackground(callback);
                 ((CreateBuilderImpl)builder).failNextCreateForTesting = true;
 
@@ -149,7 +143,6 @@ public class TestFrameworkEdges extends BaseClassForTests
 
                 String path = timing.takeFromQueue(createdNode);
                 Assert.assertNotNull(path);
-                Assert.assertTrue(timing.awaitLatch(protectedNodeLatch));
             }
         }
     }
