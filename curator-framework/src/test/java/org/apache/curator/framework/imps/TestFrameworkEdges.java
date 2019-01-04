@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -131,8 +132,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 client.start();
                 client.create().forPath("/test");
 
-                Watcher protectedNodeWatcher = __ -> {};
-                ErrorListenerPathAndBytesable<String> builder = client.create().withWatchedProtection().usingWatcher(protectedNodeWatcher).withMode(CreateMode.EPHEMERAL).inBackground(callback);
+                ErrorListenerPathAndBytesable<String> builder = client.create().withProtection().withMode(CreateMode.EPHEMERAL).inBackground(callback);
                 ((CreateBuilderImpl)builder).failNextCreateForTesting = true;
 
                 builder.forPath("/test/hey");
@@ -142,7 +142,8 @@ public class TestFrameworkEdges extends BaseClassForTests
                 cluster.restartServer(instanceSpec0);
 
                 String path = timing.takeFromQueue(createdNode);
-                Assert.assertNotNull(path);
+                List<String> children = client.getChildren().forPath("/test");
+                Assert.assertEquals(Collections.singletonList(ZKPaths.getNodeFromPath(path)), children);
             }
         }
     }

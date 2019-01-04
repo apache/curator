@@ -33,7 +33,6 @@ import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -53,6 +52,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -81,21 +81,6 @@ public class LeaderLatch implements Closeable
         public void stateChanged(CuratorFramework client, ConnectionState newState)
         {
             handleStateChange(newState);
-        }
-    };
-
-    private final Watcher protectedModeWatcher = watchedEvent -> {
-        if ( watchedEvent.getType() == Watcher.Event.EventType.NodeDeleted )
-        {
-            try
-            {
-                log.warn("Protected mode node was deleted. Resetting.");
-                reset();
-            }
-            catch ( Exception e )
-            {
-                log.error("Could not reset from protectedModeWatcher", e);
-            }
         }
     };
 
@@ -519,7 +504,7 @@ public class LeaderLatch implements Closeable
                 }
             }
         };
-        client.create().creatingParentContainersIfNeeded().withWatchedProtection().usingWatcher(protectedModeWatcher).withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
+        client.create().creatingParentContainersIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
     }
 
     private synchronized void internalStart()

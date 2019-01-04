@@ -83,6 +83,4 @@ public interface CreateBuilderMain extends
      * @return this
      */
     public ACLCreateModeStatBackgroundPathAndBytesable<String>    withProtection();
-
-    public Watchable<ACLCreateModeStatBackgroundPathAndBytesable<String>>    withWatchedProtection();
 }
