@@ -449,7 +449,7 @@ public class TestRemoveWatches extends CuratorTestBase
      * be thrown. 
      * @throws Exception
      */
-    @Test(expectedExceptions=KeeperException.NoWatcherException.class)
+    @Test
     public void testRemoveUnregisteredWatcher() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.builder().
@@ -468,7 +468,15 @@ public class TestRemoveWatches extends CuratorTestBase
                 }                
             };
             
-            client.watches().remove(watcher).forPath(path);
+            try
+            {
+                client.watches().remove(watcher).forPath(path);
+                Assert.fail("Expected KeeperException.NoWatcherException");
+            }
+            catch ( KeeperException.NoWatcherException expected )
+            {
+                // expected
+            }
         }
         finally
         {
