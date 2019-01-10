@@ -56,6 +56,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     private boolean doProtected;
     private boolean compress;
     private boolean setDataIfExists;
+    private boolean allowEmptyNodeName;
     private int setDataIfExistsVersion = -1;
     private String protectedId;
     private ACLing acling;
@@ -154,9 +155,9 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
-            public ACLPathAndBytesable<T> withMode(CreateMode mode)
+            public ACLPathAndBytesable<T> withMode(CreateMode mode, PathEncodingType pathEncodingType)
             {
-                CreateBuilderImpl.this.withMode(mode);
+                CreateBuilderImpl.this.withMode(mode, pathEncodingType);
                 return this;
             }
 
@@ -277,9 +278,9 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
-            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode)
+            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode, PathEncodingType pathEncodingType)
             {
-                return CreateBuilderImpl.this.withMode(mode);
+                return CreateBuilderImpl.this.withMode(mode, pathEncodingType);
             }
 
             @Override
@@ -446,9 +447,9 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
-            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode)
+            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode, PathEncodingType pathEncodingType)
             {
-                return CreateBuilderImpl.this.withMode(mode);
+                return CreateBuilderImpl.this.withMode(mode, pathEncodingType);
             }
 
             @Override
@@ -514,9 +515,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     }
 
     @Override
-    public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode)
+    public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode, PathEncodingType pathEncodingType)
     {
         createMode = mode;
+        this.allowEmptyNodeName = pathEncodingType == PathEncodingType.ALLOW_EMPTY;
         return this;
     }
 
@@ -583,7 +585,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             data = client.getCompressionProvider().compress(givenPath, data);
         }
 
-        final String adjustedPath = adjustPath(client.fixForNamespace(givenPath, createMode.isSequential()));
+        final String adjustedPath = adjustPath(client.fixForNamespace(givenPath, createMode.isSequential(), allowEmptyNodeName));
         List<ACL> aclList = acling.getAclList(adjustedPath);
         client.getSchemaSet().getSchema(givenPath).validateCreate(createMode, givenPath, data, aclList);
 
@@ -763,8 +765,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
-            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode) {
-                return CreateBuilderImpl.this.withMode(mode);
+            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode, PathEncodingType pathEncodingType) {
+                return CreateBuilderImpl.this.withMode(mode, pathEncodingType);
             }
 
             @Override
@@ -883,9 +885,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
-            public ACLPathAndBytesable<String> withMode(CreateMode mode)
-            {
+            public ACLPathAndBytesable<String> withMode(CreateMode mode, PathEncodingType pathEncodingType) {
                 createMode = mode;
+                allowEmptyNodeName = pathEncodingType == PathEncodingType.ALLOW_EMPTY;
+
                 return new ACLPathAndBytesable<String>()
                 {
                     @Override
@@ -944,8 +947,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
-            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode) {
-                return CreateBuilderImpl.this.withMode(mode);
+            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode, PathEncodingType pathEncodingType) {
+                return CreateBuilderImpl.this.withMode(mode, pathEncodingType);
             }
 
             @Override
@@ -1064,8 +1067,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             }
 
             @Override
-            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode) {
-                return CreateBuilderImpl.this.withMode(mode);
+            public ACLBackgroundPathAndBytesable<String> withMode(CreateMode mode, PathEncodingType pathEncodingType) {
+                return CreateBuilderImpl.this.withMode(mode, pathEncodingType);
             }
 
             @Override

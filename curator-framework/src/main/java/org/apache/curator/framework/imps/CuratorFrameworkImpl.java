@@ -722,12 +722,17 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     String fixForNamespace(String path)
     {
-        return namespace.fixForNamespace(path, false);
+        return namespace.fixForNamespace(path, false, false);
     }
 
     String fixForNamespace(String path, boolean isSequential)
     {
-        return namespace.fixForNamespace(path, isSequential);
+        return namespace.fixForNamespace(path, isSequential, false);
+    }
+
+    String fixForNamespace(String path, boolean isSequential, boolean allowEmptyNodeName)
+    {
+        return namespace.fixForNamespace(path, isSequential, allowEmptyNodeName);
     }
 
     byte[] getDefaultData()

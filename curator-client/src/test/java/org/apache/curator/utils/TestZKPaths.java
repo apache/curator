@@ -26,6 +26,18 @@ import java.util.Collections;
 
 public class TestZKPaths
 {
+    @Test
+    public void testFixForNamespaceWithEmptyNodeName()
+    {
+        Assert.assertEquals(ZKPaths.fixForNamespace("foo", "/bar/", true, false), "/foo/bar");
+    }
+
+    @Test
+    public void testFixForNamespaceWithEmptyNodeNameAllowed()
+    {
+        Assert.assertEquals(ZKPaths.fixForNamespace("foo", "/bar/", true, true), "/foo/bar/");
+    }
+
     @SuppressWarnings("NullArgumentToVariableArgMethod")
     @Test
     public void testMakePath()

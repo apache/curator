@@ -90,7 +90,7 @@ public class ZKPaths
      */
     public static String fixForNamespace(String namespace, String path)
     {
-        return fixForNamespace(namespace, path, false);
+        return fixForNamespace(namespace, path, false, false);
     }
 
     /**
@@ -103,12 +103,26 @@ public class ZKPaths
      */
     public static String fixForNamespace(String namespace, String path, boolean isSequential)
     {
+        return fixForNamespace(namespace, path, isSequential, false);
+    }
+
+    /**
+     * Apply the namespace to the given path
+     *
+     * @param namespace          namespace (can be null)
+     * @param path               path
+     * @param isSequential       if the path is being created with a sequential flag
+     * @param allowEmptyNodeName if a node ending in / character should be allowed
+     * @return adjusted path
+     */
+    public static String fixForNamespace(String namespace, String path, boolean isSequential, boolean allowEmptyNodeName)
+    {
         // Child path must be valid in and of itself.
         PathUtils.validatePath(path, isSequential);
 
         if ( namespace != null )
         {
-            return makePath(namespace, path);
+            return makePath(namespace, path, allowEmptyNodeName);
         }
         return path;
     }
@@ -390,14 +404,7 @@ public class ZKPaths
      */
     public static String makePath(String parent, String child)
     {
-        // 2 is the maximum number of additional path separators inserted
-        int maxPathLength = nullableStringLength(parent) + nullableStringLength(child) + 2;
-        // Avoid internal StringBuilder's buffer reallocation by specifying the max path length
-        StringBuilder path = new StringBuilder(maxPathLength);
-
-        joinPath(path, parent, child);
-
-        return path.toString();
+        return makePath(parent, child, false);
     }
 
     /**
@@ -423,7 +430,7 @@ public class ZKPaths
         // Avoid internal StringBuilder's buffer reallocation by specifying the max path length
         StringBuilder path = new StringBuilder(maxPathLength);
 
-        joinPath(path, parent, firstChild);
+        joinPath(path, parent, firstChild, false);
 
         if ( restChildren == null )
         {
@@ -433,11 +440,22 @@ public class ZKPaths
         {
             for ( String child : restChildren )
             {
-                joinPath(path, "", child);
+                joinPath(path, "", child, false);
             }
 
             return path.toString();
         }
+    }
+
+    private static String makePath(String parent, String child, boolean allowEmptyNodeName) {
+        // 2 is the maximum number of additional path separators inserted
+        int maxPathLength = nullableStringLength(parent) + nullableStringLength(child) + 2;
+        // Avoid internal StringBuilder's buffer reallocation by specifying the max path length
+        StringBuilder path = new StringBuilder(maxPathLength);
+
+        joinPath(path, parent, child, allowEmptyNodeName);
+
+        return path.toString();
     }
 
     private static int nullableStringLength(String s)
@@ -452,7 +470,7 @@ public class ZKPaths
      * @param parent the parent
      * @param child  the child
      */
-    private static void joinPath(StringBuilder path, String parent, String child)
+    private static void joinPath(StringBuilder path, String parent, String child, boolean allowEmptyNodeName)
     {
         // Add parent piece, with no trailing slash.
         if ( (parent != null) && (parent.length() > 0) )
@@ -496,7 +514,7 @@ public class ZKPaths
         }
 
         int childAppendEndIndex;
-        if ( child.charAt(child.length() - 1) == PATH_SEPARATOR_CHAR )
+        if ( child.charAt(child.length() - 1) == PATH_SEPARATOR_CHAR && !allowEmptyNodeName )
         {
             childAppendEndIndex = child.length() - 1;
         }
