@@ -36,10 +36,12 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -48,19 +50,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl client;
     private CreateMode createMode;
     private Backgrounding backgrounding;
     private boolean createParentsIfNeeded;
     private boolean createParentsAsContainers;
-    private boolean doProtected;
     private boolean compress;
     private boolean setDataIfExists;
     private int setDataIfExistsVersion = -1;
-    private String protectedId;
     private ACLing acling;
     private Stat storingStat;
     private long ttl;
+    private boolean doProtected;
+    private String protectedId;
+    private long initialSessionId;
 
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
@@ -77,11 +81,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         createParentsIfNeeded = false;
         createParentsAsContainers = false;
         compress = false;
-        doProtected = false;
         setDataIfExists = false;
-        protectedId = null;
         storingStat = null;
         ttl = -1;
+        initialSessionId = 0;
+
+        doProtected = false;
+        protectedId = null;
     }
 
     public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat, long ttl)
@@ -618,9 +624,9 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                  */
                 new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(adjustedPath).getPath(), protectedId).execute();
                 /*
-                * The current UUID is scheduled to be deleted, it is not safe to use it again.
-                * If this builder is used again later create a new UUID
-                */
+                 * The current UUID is scheduled to be deleted, it is not safe to use it again.
+                 * If this builder is used again later create a new UUID
+                 */
                 protectedId = UUID.randomUUID().toString();
             }
 
@@ -685,16 +691,16 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             else
             {
                 CreateZK35.create
-                (
-                    client.getZooKeeper(),
-                    operationAndData.getData().getPath(),
-                    data,
-                    acling.getAclList(operationAndData.getData().getPath()),
-                    createMode,
-                    mainCallback,
-                    backgrounding.getContext(),
-                    ttl
-                );
+                    (
+                        client.getZooKeeper(),
+                        operationAndData.getData().getPath(),
+                        data,
+                        acling.getAclList(operationAndData.getData().getPath()),
+                        createMode,
+                        mainCallback,
+                        backgrounding.getContext(),
+                        ttl
+                    );
             }
         }
         catch ( Throwable e )
@@ -748,7 +754,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
             @Override
             public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context,
-                    Executor executor) {
+                                                                      Executor executor) {
                 return CreateBuilderImpl.this.inBackground(callback, context, executor);
             }
 
@@ -1104,6 +1110,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             {
                 boolean callSuper = true;
                 boolean localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
+                if ( initialSessionId == 0 )
+                {
+                    initialSessionId = client.getZooKeeper().getSessionId();
+                }
                 if ( !localFirstTime && doProtected )
                 {
                     debugForceFindProtectedNode = false;
@@ -1134,8 +1144,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
                 if ( failNextCreateForTesting )
                 {
-                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     failNextCreateForTesting = false;
+                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     throw new KeeperException.ConnectionLossException();
                 }
 
@@ -1162,6 +1172,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     public String call() throws Exception
                     {
                         boolean localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
+                        if ( initialSessionId == 0 )
+                        {
+                            initialSessionId = client.getZooKeeper().getSessionId();
+                        }
 
                         String createdPath = null;
                         if ( !localFirstTime && doProtected )
@@ -1253,6 +1267,22 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             List<String> children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
 
                             foundNode = findNode(children, pathAndNode.getPath(), protectedId);
+                            log.debug("Protected mode findNode result: {}", foundNode);
+
+                            if ( doProtected && createMode.isEphemeral() )
+                            {
+                                if ( initialSessionId != client.getZooKeeper().getSessionId() )
+                                {
+                                    log.info("Session has changed during protected mode with ephemeral. old: {} new: {}", initialSessionId, client.getZooKeeper().getSessionId());
+                                    if ( foundNode != null )
+                                    {
+                                        log.info("Deleted old session's found node: {}", foundNode);
+                                        client.getFailedDeleteManager().executeGuaranteedOperationInBackground(foundNode);
+                                        foundNode = null;
+                                    }
+                                    initialSessionId = client.getZooKeeper().getSessionId();
+                                }
+                            }
                         }
                         catch ( KeeperException.NoNodeException ignore )
                         {

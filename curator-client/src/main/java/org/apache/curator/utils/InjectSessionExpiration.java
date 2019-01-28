@@ -30,7 +30,6 @@ import java.lang.reflect.Method;
 public class InjectSessionExpiration
 {
     private static final Field cnxnField;
-    private static final Field stateField;
     private static final Field eventThreadField;
     private static final Field sendThreadField;
     private static final Method queueEventMethod;
@@ -40,7 +39,6 @@ public class InjectSessionExpiration
     static
     {
         Field localCnxnField;
-        Field localStateField;
         Field localEventThreadField;
         Field localSendThreadField;
         Method localQueueEventMethod;
@@ -55,8 +53,6 @@ public class InjectSessionExpiration
 
             localCnxnField = ZooKeeper.class.getDeclaredField("cnxn");
             localCnxnField.setAccessible(true);
-            localStateField = ClientCnxn.class.getDeclaredField("state");
-            localStateField.setAccessible(true);
             localEventThreadField = ClientCnxn.class.getDeclaredField("eventThread");
             localEventThreadField.setAccessible(true);
             localSendThreadField = ClientCnxn.class.getDeclaredField("sendThread");
@@ -75,7 +71,6 @@ public class InjectSessionExpiration
             throw new RuntimeException("Could not access internal ZooKeeper fields", e);
         }
         cnxnField = localCnxnField;
-        stateField = localStateField;
         eventThreadField = localEventThreadField;
         sendThreadField = localSendThreadField;
         queueEventMethod = localQueueEventMethod;
@@ -94,7 +89,7 @@ public class InjectSessionExpiration
             Object eventThread = eventThreadField.get(clientCnxn);
             queueEventMethod.invoke(eventThread, event);
             queueEventOfDeathMethod.invoke(eventThread);
-            stateField.set(clientCnxn, ZooKeeper.States.CLOSED);
+            // we used to set the state field to CLOSED here but this resulted in CURATOR-498
             Object sendThread = sendThreadField.get(clientCnxn);
             Object clientCnxnSocket = getClientCnxnSocketMethod.invoke(sendThread);
             wakeupCnxnMethod.invoke(clientCnxnSocket);
