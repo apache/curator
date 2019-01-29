@@ -76,7 +76,7 @@ class ProtectedMode
      */
     void checkSetSessionId(CuratorFrameworkImpl client, CreateMode createMode) throws Exception
     {
-        if ( (sessionId == 0) && createMode.isEphemeral() )
+        if ( doProtected && (sessionId == 0) && createMode.isEphemeral() )
         {
             sessionId = client.getZooKeeper().getSessionId();
         }
