@@ -52,6 +52,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl client;
+    private final ProtectedMode protectedMode = new ProtectedMode();
     private CreateMode createMode;
     private Backgrounding backgrounding;
     private boolean createParentsIfNeeded;
@@ -62,9 +63,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     private ACLing acling;
     private Stat storingStat;
     private long ttl;
-    private boolean doProtected;
-    private String protectedId;
-    private long initialSessionId;
 
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
@@ -84,10 +82,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         setDataIfExists = false;
         storingStat = null;
         ttl = -1;
-        initialSessionId = 0;
-
-        doProtected = false;
-        protectedId = null;
     }
 
     public CreateBuilderImpl(CuratorFrameworkImpl client, CreateMode createMode, Backgrounding backgrounding, boolean createParentsIfNeeded, boolean createParentsAsContainers, boolean doProtected, boolean compress, boolean setDataIfExists, List<ACL> aclList, Stat storingStat, long ttl)
@@ -104,7 +98,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         this.ttl = ttl;
         if ( doProtected )
         {
-            setProtected();
+            protectedMode.setProtectedMode();
         }
     }
 
@@ -481,14 +475,14 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @Override
     public ACLCreateModeStatBackgroundPathAndBytesable<String> withProtection()
     {
-        setProtected();
+        protectedMode.setProtectedMode();
         return asACLCreateModeStatBackgroundPathAndBytesable();
     }
 
     @Override
     public ACLPathAndBytesable<String> withProtectedEphemeralSequential()
     {
-        setProtected();
+        protectedMode.setProtectedMode();
         createMode = CreateMode.EPHEMERAL_SEQUENTIAL;
 
         return new ACLPathAndBytesable<String>()
@@ -616,18 +610,18 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         {
             ThreadUtils.checkInterrupted(e);
             if ( ( e instanceof KeeperException.ConnectionLossException ||
-                !( e instanceof KeeperException )) && protectedId != null )
+                !( e instanceof KeeperException )) && protectedMode.doProtected() )
             {
                 /*
                  * CURATOR-45 + CURATOR-79: we don't know if the create operation was successful or not,
                  * register the znode to be sure it is deleted later.
                  */
-                new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(adjustedPath).getPath(), protectedId).execute();
+                new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(adjustedPath).getPath(), protectedMode.protectedId()).execute();
                 /*
                  * The current UUID is scheduled to be deleted, it is not safe to use it again.
                  * If this builder is used again later create a new UUID
                  */
-                protectedId = UUID.randomUUID().toString();
+                protectedMode.resetProtectedId();
             }
 
             throw e;
@@ -865,12 +859,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         client.processBackgroundOperation(operationAndData, event);
     }
 
-    private void setProtected()
-    {
-        doProtected = true;
-        protectedId = UUID.randomUUID().toString();
-    }
-
     private ACLCreateModePathAndBytesable<String> asACLCreateModePathAndBytesable()
     {
         return new ACLCreateModePathAndBytesable<String>()
@@ -1093,12 +1081,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             {
                 public void retriesExhausted(OperationAndData<PathAndBytes> operationAndData)
                 {
-                    if ( doProtected )
+                    if ( protectedMode.doProtected() )
                     {
                         // all retries have failed, findProtectedNodeInForeground(..) included, schedule a clean up
-                        new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(path).getPath(), protectedId).execute();
+                        new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(path).getPath(), protectedMode.protectedId()).execute();
                         // assign a new id if this builder is used again later
-                        protectedId = UUID.randomUUID().toString();
+                        protectedMode.resetProtectedId();
                     }
                 }
             },
@@ -1110,11 +1098,9 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             {
                 boolean callSuper = true;
                 boolean localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
-                if ( initialSessionId == 0 )
-                {
-                    initialSessionId = client.getZooKeeper().getSessionId();
-                }
-                if ( !localFirstTime && doProtected )
+
+                protectedMode.checkSetSessionId(client, createMode);
+                if ( !localFirstTime && protectedMode.doProtected() )
                 {
                     debugForceFindProtectedNode = false;
                     String createdPath = null;
@@ -1172,13 +1158,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     public String call() throws Exception
                     {
                         boolean localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
-                        if ( initialSessionId == 0 )
-                        {
-                            initialSessionId = client.getZooKeeper().getSessionId();
-                        }
+                        protectedMode.checkSetSessionId(client, createMode);
 
                         String createdPath = null;
-                        if ( !localFirstTime && doProtected )
+                        if ( !localFirstTime && protectedMode.doProtected() )
                         {
                             debugForceFindProtectedNode = false;
                             createdPath = findProtectedNodeInForeground(path);
@@ -1266,23 +1249,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             final ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
                             List<String> children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
 
-                            foundNode = findNode(children, pathAndNode.getPath(), protectedId);
+                            foundNode = findNode(children, pathAndNode.getPath(), protectedMode.protectedId());
                             log.debug("Protected mode findNode result: {}", foundNode);
 
-                            if ( doProtected && createMode.isEphemeral() )
-                            {
-                                if ( initialSessionId != client.getZooKeeper().getSessionId() )
-                                {
-                                    log.info("Session has changed during protected mode with ephemeral. old: {} new: {}", initialSessionId, client.getZooKeeper().getSessionId());
-                                    if ( foundNode != null )
-                                    {
-                                        log.info("Deleted old session's found node: {}", foundNode);
-                                        client.getFailedDeleteManager().executeGuaranteedOperationInBackground(foundNode);
-                                        foundNode = null;
-                                    }
-                                    initialSessionId = client.getZooKeeper().getSessionId();
-                                }
-                            }
+                            foundNode = protectedMode.validateFoundNode(client, createMode, foundNode);
                         }
                         catch ( KeeperException.NoNodeException ignore )
                         {
@@ -1300,10 +1270,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @VisibleForTesting
     String adjustPath(String path) throws Exception
     {
-        if ( doProtected )
+        if ( protectedMode.doProtected() )
         {
             ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-            String name = getProtectedPrefix(protectedId) + pathAndNode.getNode();
+            String name = getProtectedPrefix(protectedMode.protectedId()) + pathAndNode.getNode();
             path = ZKPaths.makePath(pathAndNode.getPath(), name);
         }
         return path;
