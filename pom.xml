@@ -94,9 +94,8 @@
 
     <scm>
         <url>https://github.com/apache/curator.git</url>
-        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git
-        </developerConnection>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</developerConnection>
         <tag>apache-curator-3.2.0</tag>
     </scm>
 
