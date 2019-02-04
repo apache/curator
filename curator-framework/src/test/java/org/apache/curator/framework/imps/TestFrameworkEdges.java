@@ -40,9 +40,9 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingServer;
-import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -92,7 +92,7 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             client.checkExists().usingWatcher(watcher).forPath("/foobar");
-            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
             Assert.assertTrue(timing.awaitLatch(expiredLatch));
         }
     }
@@ -523,22 +523,18 @@ public class TestFrameworkEdges extends BaseClassForTests
         {
             client.create().forPath("/sessionTest");
 
-            final AtomicBoolean sessionDied = new AtomicBoolean(false);
-            Watcher watcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
+            CountDownLatch sessionDiedLatch = new CountDownLatch(1);
+            Watcher watcher = event -> {
+                if ( event.getState() == Watcher.Event.KeeperState.Expired )
                 {
-                    if ( event.getState() == Event.KeeperState.Expired )
-                    {
-                        sessionDied.set(true);
-                    }
+                    sessionDiedLatch.countDown();
                 }
             };
+
             client.checkExists().usingWatcher(watcher).forPath("/sessionTest");
-            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
+            Assert.assertTrue(timing.awaitLatch(sessionDiedLatch));
             Assert.assertNotNull(client.checkExists().forPath("/sessionTest"));
-            Assert.assertTrue(sessionDied.get());
         }
         finally
         {

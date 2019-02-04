@@ -467,6 +467,12 @@ public class LeaderLatch implements Closeable
     }
 
     @VisibleForTesting
+    String getOurPath()
+    {
+        return ourPath.get();
+    }
+
+    @VisibleForTesting
     volatile CountDownLatch debugResetWaitLatch = null;
 
     @VisibleForTesting
@@ -524,8 +530,16 @@ public class LeaderLatch implements Closeable
         }
     }
 
+    @VisibleForTesting
+    volatile CountDownLatch debugCheckLeaderShipLatch = null;
+
     private void checkLeadership(List<String> children) throws Exception
     {
+        if ( debugCheckLeaderShipLatch != null )
+        {
+            debugCheckLeaderShipLatch.await();
+        }
+
         final String localOurPath = ourPath.get();
         List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;

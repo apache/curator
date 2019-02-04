@@ -30,9 +30,9 @@ import java.util.UUID;
 class ProtectedMode
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private boolean doProtected = false;
-    private String protectedId = null;
-    private long sessionId = 0;
+    private volatile boolean doProtected = false;
+    private volatile String protectedId = null;
+    private volatile long sessionId = 0;
 
     /**
      * Enable protected mode
@@ -95,16 +95,17 @@ class ProtectedMode
     {
         if ( doProtected && createMode.isEphemeral() )
         {
-            if ( sessionId != client.getZooKeeper().getSessionId() )
+            long clientSessionId = client.getZooKeeper().getSessionId();
+            if ( this.sessionId != clientSessionId )
             {
-                log.info("Session has changed during protected mode with ephemeral. old: {} new: {}", sessionId, client.getZooKeeper().getSessionId());
+                log.info("Session has changed during protected mode with ephemeral. old: {} new: {}", this.sessionId, clientSessionId);
                 if ( foundNode != null )
                 {
                     log.info("Deleted old session's found node: {}", foundNode);
                     client.getFailedDeleteManager().executeGuaranteedOperationInBackground(foundNode);
                     foundNode = null;
                 }
-                sessionId = client.getZooKeeper().getSessionId();
+                this.sessionId = clientSessionId;
             }
         }
         return foundNode;

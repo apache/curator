@@ -31,40 +31,22 @@ public class InjectSessionExpiration
 {
     private static final Field cnxnField;
     private static final Field eventThreadField;
-    private static final Field sendThreadField;
     private static final Method queueEventMethod;
-    private static final Method queueEventOfDeathMethod;
-    private static final Method getClientCnxnSocketMethod;
-    private static final Method wakeupCnxnMethod;
     static
     {
         Field localCnxnField;
         Field localEventThreadField;
-        Field localSendThreadField;
         Method localQueueEventMethod;
-        Method localEventOfDeathMethod;
-        Method localGetClientCnxnSocketMethod;
-        Method localWakeupCnxnMethod;
         try
         {
             Class<?> eventThreadClass = Class.forName("org.apache.zookeeper.ClientCnxn$EventThread");
-            Class<?> sendThreadClass = Class.forName("org.apache.zookeeper.ClientCnxn$SendThread");
-            Class<?> clientCnxnSocketClass = Class.forName("org.apache.zookeeper.ClientCnxnSocket");
 
             localCnxnField = ZooKeeper.class.getDeclaredField("cnxn");
             localCnxnField.setAccessible(true);
             localEventThreadField = ClientCnxn.class.getDeclaredField("eventThread");
             localEventThreadField.setAccessible(true);
-            localSendThreadField = ClientCnxn.class.getDeclaredField("sendThread");
-            localSendThreadField.setAccessible(true);
             localQueueEventMethod = eventThreadClass.getDeclaredMethod("queueEvent", WatchedEvent.class);
             localQueueEventMethod.setAccessible(true);
-            localEventOfDeathMethod = eventThreadClass.getDeclaredMethod("queueEventOfDeath");
-            localEventOfDeathMethod.setAccessible(true);
-            localGetClientCnxnSocketMethod = sendThreadClass.getDeclaredMethod("getClientCnxnSocket");
-            localGetClientCnxnSocketMethod.setAccessible(true);
-            localWakeupCnxnMethod = clientCnxnSocketClass.getDeclaredMethod("wakeupCnxn");
-            localWakeupCnxnMethod.setAccessible(true);
         }
         catch ( ReflectiveOperationException e )
         {
@@ -72,11 +54,7 @@ public class InjectSessionExpiration
         }
         cnxnField = localCnxnField;
         eventThreadField = localEventThreadField;
-        sendThreadField = localSendThreadField;
         queueEventMethod = localQueueEventMethod;
-        queueEventOfDeathMethod = localEventOfDeathMethod;
-        getClientCnxnSocketMethod = localGetClientCnxnSocketMethod;
-        wakeupCnxnMethod = localWakeupCnxnMethod;
     }
 
     public static void injectSessionExpiration(ZooKeeper zooKeeper)
@@ -88,11 +66,8 @@ public class InjectSessionExpiration
             ClientCnxn clientCnxn = (ClientCnxn)cnxnField.get(zooKeeper);
             Object eventThread = eventThreadField.get(clientCnxn);
             queueEventMethod.invoke(eventThread, event);
-            queueEventOfDeathMethod.invoke(eventThread);
-            // we used to set the state field to CLOSED here but this resulted in CURATOR-498
-            Object sendThread = sendThreadField.get(clientCnxn);
-            Object clientCnxnSocket = getClientCnxnSocketMethod.invoke(sendThread);
-            wakeupCnxnMethod.invoke(clientCnxnSocket);
+
+            // we used to set the state field to CLOSED here and a few other things but this resulted in CURATOR-498
         }
         catch ( ReflectiveOperationException e )
         {
