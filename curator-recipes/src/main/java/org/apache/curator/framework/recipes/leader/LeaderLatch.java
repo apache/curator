@@ -381,15 +381,29 @@ public class LeaderLatch implements Closeable
 
         synchronized(this)
         {
-            while ( (waitNanos > 0) && (state.get() == State.STARTED) && !hasLeadership.get() )
+            while ( true )
             {
+                if ( state.get() != State.STARTED )
+                {
+                    return false;
+                }
+
+                if ( hasLeadership() )
+                {
+                    return true;
+                }
+
+                if ( waitNanos <= 0 )
+                {
+                    return false;
+                }
+
                 long startNanos = System.nanoTime();
                 TimeUnit.NANOSECONDS.timedWait(this, waitNanos);
                 long elapsed = System.nanoTime() - startNanos;
                 waitNanos -= elapsed;
             }
         }
-        return hasLeadership();
     }
 
     /**
