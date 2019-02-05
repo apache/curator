@@ -68,7 +68,7 @@ public class TestWithCluster
             for ( InstanceSpec spec : cluster.getInstances() )
             {
                 cluster.killServer(spec);
-                timing.forWaiting().sleepABit();
+                timing.sleepABit();
                 cluster.restartServer(spec);
                 timing.sleepABit();
             }
@@ -87,7 +87,7 @@ public class TestWithCluster
     public void     testSplitBrain() throws Exception
     {
         Timing              timing = new Timing();
-        
+
         CuratorFramework    client = null;
         TestingCluster cluster = new TestingCluster(3);
         cluster.start();
