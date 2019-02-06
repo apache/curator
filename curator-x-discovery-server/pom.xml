@@ -135,8 +135,8 @@
                 <jdk>[1.9,)</jdk>
             </activation>
             <dependencies>
-                <!-- The following dependencies are added to make tests work with JDK 9, as per this
-                     answer: https://stackoverflow.com/questions/43574426#43574427 -->
+                <!-- The following dependencies are added to make tests work with JDK 9 or later,
+                      as per this answer: https://stackoverflow.com/questions/43574426#43574427 -->
 
                 <dependency>
                     <groupId>javax.xml.bind</groupId>
