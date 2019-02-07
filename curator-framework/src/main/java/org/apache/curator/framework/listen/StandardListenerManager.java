@@ -41,11 +41,6 @@ public class StandardListenerManager<T> implements ListenerManager<T, T>
         return new StandardListenerManager<>(container);
     }
 
-    public StandardListenerManager(ListenerManager<T, T> container)
-    {
-        this.container = Objects.requireNonNull(container, "container cannot be null");
-    }
-
     @Override
     public void addListener(T listener)
     {
@@ -80,5 +75,10 @@ public class StandardListenerManager<T> implements ListenerManager<T, T>
     public void forEach(Consumer<T> function)
     {
         container.forEach(function);
+    }
+
+    private StandardListenerManager(ListenerManager<T, T> container)
+    {
+        this.container = container;
     }
 }
