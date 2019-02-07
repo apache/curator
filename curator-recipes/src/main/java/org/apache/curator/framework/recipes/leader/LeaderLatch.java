@@ -74,7 +74,15 @@ public class LeaderLatch implements Closeable
     private final ListenerContainer<LeaderLatchListener> listeners = new ListenerContainer<LeaderLatchListener>();
     private final CloseMode closeMode;
     private final AtomicReference<Future<?>> startTask = new AtomicReference<Future<?>>();
-    private final ConnectionStateListener listener;
+
+    private final ConnectionStateListener listener = new ConnectionStateListener()
+    {
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            handleStateChange(newState);
+        }
+    };
 
     private static final String LOCK_NAME = "latch-";
 
@@ -141,7 +149,6 @@ public class LeaderLatch implements Closeable
         this.latchPath = PathUtils.validatePath(latchPath);
         this.id = Preconditions.checkNotNull(id, "id cannot be null");
         this.closeMode = Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
-        listener = client.decorateConnectionStateListener((__, newState) -> handleStateChange(newState));
     }
 
     /**

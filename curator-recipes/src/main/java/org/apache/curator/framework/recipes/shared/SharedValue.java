@@ -73,7 +73,26 @@ public class SharedValue implements Closeable, SharedValueReader
         }
     };
 
-    private final ConnectionStateListener connectionStateListener;
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    {
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            notifyListenerOfStateChanged(newState);
+            if ( newState.isConnected() )
+            {
+                try
+                {
+                    readValueAndNotifyListenersInBackground();
+                }
+                catch ( Exception e )
+                {
+                    ThreadUtils.checkInterrupted(e);
+                    log.error("Could not read value after reconnect", e);
+                }
+            }
+        }
+    };
 
     private enum State
     {
@@ -94,7 +113,6 @@ public class SharedValue implements Closeable, SharedValueReader
         this.seedValue = Arrays.copyOf(seedValue, seedValue.length);
         this.watcher = new SharedValueCuratorWatcher();
         currentValue = new AtomicReference<VersionedValue<byte[]>>(new VersionedValue<byte[]>(UNINITIALIZED_VERSION, Arrays.copyOf(seedValue, seedValue.length)));
-        connectionStateListener = client.decorateConnectionStateListener((__, newState) -> handleStateChange(newState));
     }
 
     @VisibleForTesting
@@ -106,7 +124,6 @@ public class SharedValue implements Closeable, SharedValueReader
         // inject watcher for testing
         this.watcher = watcher;
         currentValue = new AtomicReference<VersionedValue<byte[]>>(new VersionedValue<byte[]>(UNINITIALIZED_VERSION, Arrays.copyOf(seedValue, seedValue.length)));
-        connectionStateListener = client.decorateConnectionStateListener((__, newState) -> handleStateChange(newState));
     }
 
     @Override
@@ -316,22 +333,5 @@ public class SharedValue implements Closeable, SharedValueReader
                     }
                 }
             );
-    }
-
-    private void handleStateChange(ConnectionState newState)
-    {
-        notifyListenerOfStateChanged(newState);
-        if ( newState.isConnected() )
-        {
-            try
-            {
-                readValueAndNotifyListenersInBackground();
-            }
-            catch ( Exception e )
-            {
-                ThreadUtils.checkInterrupted(e);
-                log.error("Could not read value after reconnect", e);
-            }
-        }
     }
 }

@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -24,15 +23,14 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.curator.utils.CloseableExecutorService;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.CloseableExecutorService;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceInstance;
@@ -47,16 +45,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheListener
 {
-    private final ListenerContainer<ServiceCacheListener> listenerContainer = new ListenerContainer<ServiceCacheListener>();
-    private final ServiceDiscoveryImpl<T> discovery;
-    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final PathChildrenCache cache;
-    private final ConcurrentMap<String, ServiceInstance<T>> instances = Maps.newConcurrentMap();
-    private final ConcurrentMap<ServiceCacheListener, ConnectionStateListener> connectionStateListeners = Maps.newConcurrentMap();
+    private final ListenerContainer<ServiceCacheListener>           listenerContainer = new ListenerContainer<ServiceCacheListener>();
+    private final ServiceDiscoveryImpl<T>                           discovery;
+    private final AtomicReference<State>                            state = new AtomicReference<State>(State.LATENT);
+    private final PathChildrenCache                                 cache;
+    private final ConcurrentMap<String, ServiceInstance<T>>         instances = Maps.newConcurrentMap();
 
     private enum State
     {
-        LATENT, STARTED, STOPPED
+        LATENT,
+        STARTED,
+        STOPPED
     }
 
     private static CloseableExecutorService convertThreadFactory(ThreadFactory threadFactory)
@@ -124,15 +123,18 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     {
         Preconditions.checkState(state.compareAndSet(State.STARTED, State.STOPPED), "Already closed or has not been started");
 
-        listenerContainer.forEach(new Function<ServiceCacheListener, Void>()
-        {
-            @Override
-            public Void apply(ServiceCacheListener listener)
-            {
-                discovery.getClient().getConnectionStateListenable().removeListener(unwrap(listener));
-                return null;
-            }
-        });
+        listenerContainer.forEach
+            (
+                new Function<ServiceCacheListener, Void>()
+                {
+                    @Override
+                    public Void apply(ServiceCacheListener listener)
+                    {
+                        discovery.getClient().getConnectionStateListenable().removeListener(listener);
+                        return null;
+                    }
+                }
+            );
         listenerContainer.clear();
 
         CloseableUtils.closeQuietly(cache);
@@ -144,56 +146,59 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     public void addListener(ServiceCacheListener listener)
     {
         listenerContainer.addListener(listener);
-        discovery.getClient().getConnectionStateListenable().addListener(wrap(listener));
+        discovery.getClient().getConnectionStateListenable().addListener(listener);
     }
 
     @Override
     public void addListener(ServiceCacheListener listener, Executor executor)
     {
         listenerContainer.addListener(listener, executor);
-        discovery.getClient().getConnectionStateListenable().addListener(wrap(listener), executor);
+        discovery.getClient().getConnectionStateListenable().addListener(listener, executor);
     }
 
     @Override
     public void removeListener(ServiceCacheListener listener)
     {
         listenerContainer.removeListener(listener);
-        discovery.getClient().getConnectionStateListenable().removeListener(unwrap(listener));
+        discovery.getClient().getConnectionStateListenable().removeListener(listener);
     }
 
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
     {
-        boolean notifyListeners = false;
+        boolean         notifyListeners = false;
         switch ( event.getType() )
         {
-        case CHILD_ADDED:
-        case CHILD_UPDATED:
-        {
-            addInstance(event.getData(), false);
-            notifyListeners = true;
-            break;
-        }
+            case CHILD_ADDED:
+            case CHILD_UPDATED:
+            {
+                addInstance(event.getData(), false);
+                notifyListeners = true;
+                break;
+            }
 
-        case CHILD_REMOVED:
-        {
-            instances.remove(instanceIdFromData(event.getData()));
-            notifyListeners = true;
-            break;
-        }
+            case CHILD_REMOVED:
+            {
+                instances.remove(instanceIdFromData(event.getData()));
+                notifyListeners = true;
+                break;
+            }
         }
 
         if ( notifyListeners )
         {
-            listenerContainer.forEach(new Function<ServiceCacheListener, Void>()
-            {
-                @Override
-                public Void apply(ServiceCacheListener listener)
+            listenerContainer.forEach
+            (
+                new Function<ServiceCacheListener, Void>()
                 {
-                    listener.cacheChanged();
-                    return null;
+                    @Override
+                    public Void apply(ServiceCacheListener listener)
+                    {
+                        listener.cacheChanged();
+                        return null;
+                    }
                 }
-            });
+            );
         }
     }
 
@@ -204,8 +209,8 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
 
     private void addInstance(ChildData childData, boolean onlyIfAbsent) throws Exception
     {
-        String instanceId = instanceIdFromData(childData);
-        ServiceInstance<T> serviceInstance = discovery.getSerializer().deserialize(childData.getData());
+        String                  instanceId = instanceIdFromData(childData);
+        ServiceInstance<T>      serviceInstance = discovery.getSerializer().deserialize(childData.getData());
         if ( onlyIfAbsent )
         {
             instances.putIfAbsent(instanceId, serviceInstance);
@@ -215,17 +220,5 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
             instances.put(instanceId, serviceInstance);
         }
         cache.clearDataBytes(childData.getPath(), childData.getStat().getVersion());
-    }
-
-    private ConnectionStateListener wrap(ServiceCacheListener listener)
-    {
-        ConnectionStateListener wrapped = discovery.getClient().decorateConnectionStateListener(listener);
-        connectionStateListeners.put(listener, wrapped);
-        return wrapped;
-    }
-
-    private ConnectionStateListener unwrap(ServiceCacheListener listener)
-    {
-        return connectionStateListeners.remove(listener);
     }
 }

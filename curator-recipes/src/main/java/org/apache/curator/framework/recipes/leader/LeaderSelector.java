@@ -26,7 +26,6 @@ import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
@@ -69,7 +68,6 @@ public class LeaderSelector implements Closeable
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final LeaderSelectorListener listener;
-    private final ConnectionStateListener connectionStateListener;
     private final CloseableExecutorService executorService;
     private final InterProcessMutex mutex;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
@@ -147,8 +145,6 @@ public class LeaderSelector implements Closeable
         this.listener = new WrappedListener(this, listener);
         hasLeadership = false;
 
-        connectionStateListener = client.decorateConnectionStateListener(listener);
-
         this.executorService = executorService;
         mutex = new InterProcessMutex(client, leaderPath)
         {
@@ -219,7 +215,7 @@ public class LeaderSelector implements Closeable
         Preconditions.checkState(!executorService.isShutdown(), "Already started");
         Preconditions.checkState(!hasLeadership, "Already has leadership");
 
-        client.getConnectionStateListenable().addListener(connectionStateListener);
+        client.getConnectionStateListenable().addListener(listener);
         requeue();
     }
 
@@ -275,7 +271,7 @@ public class LeaderSelector implements Closeable
     {
         Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
 
-        client.getConnectionStateListenable().removeListener(connectionStateListener);
+        client.getConnectionStateListenable().removeListener(listener);
         executorService.close();
         ourTask.set(null);
     }

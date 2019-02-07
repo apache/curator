@@ -534,7 +534,15 @@ public class TreeCache implements Closeable
     private final ListenerContainer<TreeCacheListener> listeners = new ListenerContainer<TreeCacheListener>();
     private final ListenerContainer<UnhandledErrorListener> errorListeners = new ListenerContainer<UnhandledErrorListener>();
     private final AtomicReference<TreeState> treeState = new AtomicReference<TreeState>(TreeState.LATENT);
-    private final ConnectionStateListener connectionStateListener;
+
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    {
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState)
+        {
+            handleStateChange(newState);
+        }
+    };
 
     static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("TreeCache");
 
@@ -578,7 +586,6 @@ public class TreeCache implements Closeable
         this.maxDepth = maxDepth;
         this.disableZkWatches = disableZkWatches;
         this.executorService = Preconditions.checkNotNull(executorService, "executorService cannot be null");
-        connectionStateListener = client.decorateConnectionStateListener((__, newState) -> handleStateChange(newState));
     }
 
     /**

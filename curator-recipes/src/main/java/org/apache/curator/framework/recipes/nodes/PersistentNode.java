@@ -145,7 +145,17 @@ public class PersistentNode implements Closeable
             }
         }
     };
-    private final ConnectionStateListener connectionStateListener;
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
+    {
+        @Override
+        public void stateChanged(CuratorFramework dummy, ConnectionState newState)
+        {
+            if ( (newState == ConnectionState.RECONNECTED) && isActive() )
+            {
+                createNode();
+            }
+        }
+    };
 
     @VisibleForTesting
     volatile CountDownLatch debugCreateNodeLatch = null;
@@ -203,7 +213,6 @@ public class PersistentNode implements Closeable
         };
 
         this.data.set(Arrays.copyOf(data, data.length));
-        connectionStateListener = client.decorateConnectionStateListener((__, newState) -> handleStateChange(newState));
     }
 
     private void processBackgroundCallbackClosedState(CuratorEvent event)
@@ -544,13 +553,5 @@ public class PersistentNode implements Closeable
     boolean isAuthFailure()
     {
         return authFailure.get();
-    }
-
-    private void handleStateChange(ConnectionState newState)
-    {
-        if ( (newState == ConnectionState.RECONNECTED) && isActive() )
-        {
-            createNode();
-        }
     }
 }

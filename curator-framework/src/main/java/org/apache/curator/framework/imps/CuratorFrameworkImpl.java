@@ -41,7 +41,6 @@ import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.framework.state.ConnectionStateListenerDecorator;
 import org.apache.curator.framework.state.ConnectionStateManager;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
@@ -91,7 +90,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final SchemaSet schemaSet;
     private final boolean zk34CompatibilityMode;
     private final Executor runSafeService;
-    private final ConnectionStateListenerDecorator connectionStateListenerDecorator;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -141,7 +139,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespace = new NamespaceImpl(this, builder.getNamespace());
         threadFactory = getThreadFactory(builder);
         maxCloseWaitMs = builder.getMaxCloseWaitMs();
-        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory(), builder.getSessionTimeoutMs(), builder.getConnectionHandlingPolicy().getSimulatedSessionExpirationPercent());
+        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory(), builder.getSessionTimeoutMs(), builder.getConnectionHandlingPolicy().getSimulatedSessionExpirationPercent(), builder.getConnectionStateListenerDecorator());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
@@ -149,7 +147,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateErrorPolicy = Preconditions.checkNotNull(builder.getConnectionStateErrorPolicy(), "errorPolicy cannot be null");
         schemaSet = Preconditions.checkNotNull(builder.getSchemaSet(), "schemaSet cannot be null");
         zk34CompatibilityMode = builder.isZk34CompatibilityMode();
-        connectionStateListenerDecorator = builder.getConnectionStateListenerDecorator();
 
         byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -236,11 +233,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     protected CuratorFrameworkImpl(CuratorFrameworkImpl parent)
     {
-        this(parent, parent.connectionStateListenerDecorator);
-    }
-
-    private CuratorFrameworkImpl(CuratorFrameworkImpl parent, ConnectionStateListenerDecorator connectionStateListenerDecorator)
-    {
         client = parent.client;
         listeners = parent.listeners;
         unhandledErrorListeners = parent.unhandledErrorListeners;
@@ -265,7 +257,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         zk34CompatibilityMode = parent.zk34CompatibilityMode;
         ensembleTracker = null;
         runSafeService = parent.runSafeService;
-        this.connectionStateListenerDecorator = connectionStateListenerDecorator;
     }
 
     @Override
@@ -333,6 +324,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     {
                         logAsErrorConnectionErrors.set(true);
                     }
+                }
+
+                @Override
+                public boolean doNotDecorate()
+                {
+                    return true;
                 }
             };
 
@@ -596,18 +593,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public SchemaSet getSchemaSet()
     {
         return schemaSet;
-    }
-
-    @Override
-    public ConnectionStateListener decorateConnectionStateListener(ConnectionStateListener actual)
-    {
-        return connectionStateListenerDecorator.decorateListener(this, actual);
-    }
-
-    @Override
-    public CuratorFramework usingConnectionStateListenerDecorator(ConnectionStateListenerDecorator newDecorator)
-    {
-        return new CuratorFrameworkImpl(this, newDecorator);
     }
 
     ACLProvider getAclProvider()

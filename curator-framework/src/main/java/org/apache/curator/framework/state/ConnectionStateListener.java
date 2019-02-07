@@ -28,5 +28,18 @@ public interface ConnectionStateListener
      * @param client the client
      * @param newState the new state
      */
-    public void stateChanged(CuratorFramework client, ConnectionState newState);
+    void stateChanged(CuratorFramework client, ConnectionState newState);
+
+    /**
+     * Normally, ConnectionStateListeners are decorated via the configured
+     * {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator}. For certain
+     * critical cases, however, this is not desired. If your listener returns <code>true</code>
+     * for doNotDecorate(), it will not be passed through the decorator.
+     *
+     * @return true/false
+     */
+    default boolean doNotDecorate()
+    {
+        return false;
+    }
 }

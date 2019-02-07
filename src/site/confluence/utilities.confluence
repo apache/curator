@@ -31,8 +31,7 @@ If the connection has not been restored, the RetryPolicy is checked again. If th
 the RetryPolicy indicates that retries are exhausted then the circuit closes \- if the current state is different than the state that caused the circuit to open it is
 forwarded to the managed listener.
 
-You can enable the Circuit Breaking ConnectionStateListener during creation of your CuratorFramework instance. All Curator recipes will decorate
-their ConnectionStateListeners using the configured decorator. E.g.
+You can enable the Circuit Breaking ConnectionStateListener during creation of your CuratorFramework instance. E.g.
 
 {code}
 ConnectionStateListenerDecorator decorator = ConnectionStateListenerDecorator.circuitBreaking(...);
@@ -41,21 +40,6 @@ CuratorFramework client = CuratorFrameworkFactory.builder()
     .connectionStateListenerDecorator(decorator)
     ...
     .build();
-{code}
-
-If you are setting a ConnectionStateListener you should always "decorate" it by calling {{decorateConnectionStateListener()}}.
-
-{code}
-CuratorFramework client ...
-ConnectionStateListener listener = ...
-ConnectionStateListener decoratedListener = client.decorateConnectionStateListener(listener);
-
-...
-
-client.getConnectionStateListenable().addListener(decoratedListener);
-
-// later, to remove...
-client.getConnectionStateListenable().removeListener(decoratedListener);
 {code}
 
 h2. Locker
