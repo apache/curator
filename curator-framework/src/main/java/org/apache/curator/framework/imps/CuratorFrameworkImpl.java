@@ -236,6 +236,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     protected CuratorFrameworkImpl(CuratorFrameworkImpl parent)
     {
+        this(parent, parent.connectionStateListenerDecorator);
+    }
+
+    private CuratorFrameworkImpl(CuratorFrameworkImpl parent, ConnectionStateListenerDecorator connectionStateListenerDecorator)
+    {
         client = parent.client;
         listeners = parent.listeners;
         unhandledErrorListeners = parent.unhandledErrorListeners;
@@ -260,7 +265,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         zk34CompatibilityMode = parent.zk34CompatibilityMode;
         ensembleTracker = null;
         runSafeService = parent.runSafeService;
-        connectionStateListenerDecorator = parent.connectionStateListenerDecorator;
+        this.connectionStateListenerDecorator = connectionStateListenerDecorator;
     }
 
     @Override
@@ -597,6 +602,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public ConnectionStateListener decorateConnectionStateListener(ConnectionStateListener actual)
     {
         return connectionStateListenerDecorator.decorateListener(this, actual);
+    }
+
+    @Override
+    public CuratorFramework usingConnectionStateListenerDecorator(ConnectionStateListenerDecorator newDecorator)
+    {
+        return new CuratorFrameworkImpl(this, newDecorator);
     }
 
     ACLProvider getAclProvider()

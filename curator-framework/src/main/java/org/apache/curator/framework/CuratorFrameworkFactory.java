@@ -508,7 +508,7 @@ public class CuratorFrameworkFactory
          * @return this
          * @since 4.2.0
          */
-        public Builder connectionStateListenerFactory(ConnectionStateListenerDecorator connectionStateListenerDecorator)
+        public Builder connectionStateListenerDecorator(ConnectionStateListenerDecorator connectionStateListenerDecorator)
         {
             this.connectionStateListenerDecorator = Objects.requireNonNull(connectionStateListenerDecorator, "connectionStateListenerFactory cannot be null");
             return this;

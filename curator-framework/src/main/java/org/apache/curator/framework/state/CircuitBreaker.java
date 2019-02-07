@@ -14,7 +14,7 @@ class CircuitBreaker
 
     private boolean isOpen = false;
     private int retryCount = 0;
-    private long openStartNanos = 0;
+    private long startNanos = 0;
 
     CircuitBreaker(RetryPolicy retryPolicy, ScheduledExecutorService service)
     {
@@ -41,13 +41,13 @@ class CircuitBreaker
 
         isOpen = true;
         retryCount = 0;
-        openStartNanos = System.nanoTime();
-        if ( !tryToRetry(completion) )
+        startNanos = System.nanoTime();
+        if ( tryToRetry(completion) )
         {
-            close();
-            return false;
+            return true;
         }
-        return true;
+        close();
+        return false;
     }
 
     boolean tryToRetry(Runnable completion)
@@ -59,13 +59,13 @@ class CircuitBreaker
 
         long[] sleepTimeNanos = new long[]{0L};
         RetrySleeper retrySleeper = (time, unit) -> sleepTimeNanos[0] = unit.toNanos(time);
-        if ( !retryPolicy.allowRetry(retryCount, System.nanoTime() - openStartNanos, retrySleeper) )
+        if ( retryPolicy.allowRetry(retryCount, System.nanoTime() - startNanos, retrySleeper) )
         {
-            return false;
+            ++retryCount;
+            service.schedule(completion, sleepTimeNanos[0], TimeUnit.NANOSECONDS);
+            return true;
         }
-        ++retryCount;
-        service.schedule(completion, sleepTimeNanos[0], TimeUnit.NANOSECONDS);
-        return true;
+        return false;
     }
 
     boolean close()
@@ -73,7 +73,7 @@ class CircuitBreaker
         boolean wasOpen = isOpen;
         retryCount = 0;
         isOpen = false;
-        openStartNanos = 0;
+        startNanos = 0;
         return wasOpen;
     }
 }

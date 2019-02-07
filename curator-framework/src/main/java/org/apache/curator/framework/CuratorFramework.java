@@ -30,6 +30,7 @@ import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.framework.state.ConnectionStateListenerDecorator;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
@@ -367,4 +368,13 @@ public interface CuratorFramework extends Closeable
      * @return decorated listener
      */
     ConnectionStateListener decorateConnectionStateListener(ConnectionStateListener actual);
+
+    /**
+     * Returns a facade of the current instance that uses the given connection state listener
+     * decorator instead of the configured one
+     *
+     * @param newDecorator decorator to use
+     * @return facade
+     */
+    CuratorFramework usingConnectionStateListenerDecorator(ConnectionStateListenerDecorator newDecorator);
 }

@@ -17,14 +17,14 @@ import java.util.concurrent.ScheduledExecutorService;
  * <code><pre>
  * CuratorFramework client ...
  * ConnectionStateListener listener = ...
- * ConnectionStateListener wrappedListener = client.wrapConnectionStateListener(listener);
+ * ConnectionStateListener decoratedListener = client.decorateConnectionStateListener(listener);
  *
  * ...
  *
- * client.getConnectionStateListenable().addListener(wrappedListener);
+ * client.getConnectionStateListenable().addListener(decoratedListener);
  *
  * // later, to remove...
- * client.getConnectionStateListenable().removeListener(wrappedListener);
+ * client.getConnectionStateListenable().removeListener(decoratedListener);
  * </pre></code>
  * </p>
  */

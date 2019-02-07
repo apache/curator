@@ -64,18 +64,18 @@ public class TestLeaderLatch extends BaseClassForTests
     public void testWithCircuitBreaker() throws Exception
     {
         Timing2 timing = new Timing2();
-        ConnectionStateListenerDecorator factory = ConnectionStateListenerDecorator.circuitBreaking(new RetryForever(timing.milliseconds()));
+        ConnectionStateListenerDecorator decorator = ConnectionStateListenerDecorator.circuitBreaking(new RetryForever(timing.multiple(2).milliseconds()));
         try ( CuratorFramework client = CuratorFrameworkFactory.builder()
             .connectString(server.getConnectString())
             .retryPolicy(new RetryOneTime(1))
-            .connectionStateListenerFactory(factory)
+            .connectionStateListenerDecorator(decorator)
             .connectionTimeoutMs(timing.connection())
             .sessionTimeoutMs(timing.session())
             .build() )
         {
             client.start();
             AtomicInteger resetCount = new AtomicInteger(0);
-            LeaderLatch latch = new LeaderLatch(client, "/foo/bar")
+            try ( LeaderLatch latch = new LeaderLatch(client, "/foo/bar")
             {
                 @Override
                 void reset() throws Exception
@@ -83,18 +83,20 @@ public class TestLeaderLatch extends BaseClassForTests
                     resetCount.incrementAndGet();
                     super.reset();
                 }
-            };
-            latch.start();
-            Assert.assertTrue(latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-
-            for ( int i = 0; i < 5; ++i )
+            } )
             {
-                server.stop();
-                server.restart();
-                timing.sleepABit();
+                latch.start();
+                Assert.assertTrue(latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+
+                for ( int i = 0; i < 5; ++i )
+                {
+                    server.stop();
+                    server.restart();
+                    timing.sleepABit();
+                }
+                Assert.assertTrue(latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+                Assert.assertEquals(resetCount.get(), 2);
             }
-            Assert.assertTrue(latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-            Assert.assertEquals(resetCount.get(), 2);
         }
     }
 

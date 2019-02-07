@@ -19,7 +19,8 @@ in a retry mechanism. Thus, the following guarantees can be made:
 h2. Notifications
 Curator exposes several listenable interfaces for clients to monitor the state of the ZooKeeper connection.
 
-{{ConnectionStateListener}} is called when there are connection disruptions. Clients can monitor these changes and take
+{{ConnectionStateListener}} (note see [[Utilities|utilities.html]] for details on properly decorating listeners) is called when there are connection
+disruptions. Clients can monitor these changes and take
 appropriate action. These are the possible state changes:
 
 |CONNECTED|Sent for the first successful connection to the server. NOTE: You will only get one of these messages for any CuratorFramework instance.|

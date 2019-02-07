@@ -13,7 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *     A decorator/proxy for connection state listeners that adds circuit breaking behavior. During network
  *     outages ZooKeeper can become very noisy sending connection/disconnection events in rapid succession.
  *     Curator recipes respond to these messages by resetting state, etc. E.g. LeaderLatch must delete
- *     its lock node and try to recreated it in order to try to re-obtain leadership, etc.
+ *     its lock node and try to recreate it in order to try to re-obtain leadership, etc.
  * </p>
  *
  * <p>
@@ -114,7 +114,7 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
                 log.debug("Could not open circuit breaker. State: {}", newState);
             }
         }
-        callListener(circuitInitialState);
+        callListener(newState);
     }
 
     private synchronized void handleOpenStateChange(ConnectionState newState)
@@ -126,11 +126,10 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
         }
         else
         {
-            circuitLostHasBeenSent = true;
-            circuitInitialState = ConnectionState.LOST;
-            circuitLastState = newState;
             log.debug("Circuit is open. State changed to LOST. Sending to listener.");
-            callListener(circuitInitialState);
+            circuitLostHasBeenSent = true;
+            circuitLastState = circuitInitialState = ConnectionState.LOST;
+            callListener(ConnectionState.LOST);
         }
     }
 
