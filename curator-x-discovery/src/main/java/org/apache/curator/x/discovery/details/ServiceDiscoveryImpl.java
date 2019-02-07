@@ -65,29 +65,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
     private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
     private final boolean watchInstances;
-    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
-    {
-        @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
-            if ( (newState == ConnectionState.RECONNECTED) || (newState == ConnectionState.CONNECTED) )
-            {
-                try
-                {
-                    log.debug("Re-registering due to reconnection");
-                    reRegisterServices();
-                }
-                catch (InterruptedException ex)
-                {
-                    Thread.currentThread().interrupt();
-                }
-                catch ( Exception e )
-                {
-                    log.error("Could not re-register instances after reconnection", e);
-                }
-            }
-        }
-    };
+    private final ConnectionStateListener connectionStateListener;
 
     private static class Entry<T>
     {
@@ -119,6 +97,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             entry.cache = makeNodeCache(thisInstance);
             services.put(thisInstance.getId(), entry);
         }
+        connectionStateListener = client.decorateConnectionStateListener((__, newState) -> handleStateChange(newState));
     }
 
     /**
@@ -527,6 +506,26 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                 {
                     // ignore
                 }
+            }
+        }
+    }
+
+    private void handleStateChange(ConnectionState newState)
+    {
+        if ( (newState == ConnectionState.RECONNECTED) || (newState == ConnectionState.CONNECTED) )
+        {
+            try
+            {
+                log.debug("Re-registering due to reconnection");
+                reRegisterServices();
+            }
+            catch (InterruptedException ex)
+            {
+                Thread.currentThread().interrupt();
+            }
+            catch ( Exception e )
+            {
+                log.error("Could not re-register instances after reconnection", e);
             }
         }
     }

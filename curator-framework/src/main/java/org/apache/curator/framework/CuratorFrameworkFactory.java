@@ -36,6 +36,7 @@ import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
+import org.apache.curator.framework.state.ConnectionStateListenerDecorator;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
@@ -47,6 +48,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -151,6 +153,7 @@ public class CuratorFrameworkFactory
         private boolean zk34CompatibilityMode = isZK34();
         private int waitForShutdownTimeoutMs = 0;
         private Executor runSafeService = null;
+        private ConnectionStateListenerDecorator connectionStateListenerDecorator = ConnectionStateListenerDecorator.standard;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -494,6 +497,23 @@ public class CuratorFrameworkFactory
             return this;
         }
 
+        /**
+         * Sets the connection state listener decorator. Curator recipes (and proper client code)
+         * will always decorate connection state listeners via this decorator. For example,
+         * you can set use {@link org.apache.curator.framework.state.CircuitBreakingConnectionStateListener}s
+         * via this mechanism by using {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator#circuitBreaking(org.apache.curator.RetryPolicy)}
+         * or {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator#circuitBreaking(org.apache.curator.RetryPolicy, java.util.concurrent.ScheduledExecutorService)}
+         *
+         * @param connectionStateListenerDecorator decorator to use
+         * @return this
+         * @since 4.2.0
+         */
+        public Builder connectionStateListenerFactory(ConnectionStateListenerDecorator connectionStateListenerDecorator)
+        {
+            this.connectionStateListenerDecorator = Objects.requireNonNull(connectionStateListenerDecorator, "connectionStateListenerFactory cannot be null");
+            return this;
+        }
+
         public Executor getRunSafeService()
         {
             return runSafeService;
@@ -639,6 +659,11 @@ public class CuratorFrameworkFactory
         public boolean canBeReadOnly()
         {
             return canBeReadOnly;
+        }
+
+        public ConnectionStateListenerDecorator getConnectionStateListenerDecorator()
+        {
+            return connectionStateListenerDecorator;
         }
 
         private Builder()

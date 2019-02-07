@@ -357,4 +357,14 @@ public interface CuratorFramework extends Closeable
      * @since 4.1.0
      */
     CompletableFuture<Void> runSafe(Runnable runnable);
+
+    /**
+     * Uses the configured {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator}
+     * to decorate the given listener. You should always decorate connection state listeners via
+     * this method. See the Curator recipes for examples.
+     *
+     * @param actual listener to decorate
+     * @return decorated listener
+     */
+    ConnectionStateListener decorateConnectionStateListener(ConnectionStateListener actual);
 }

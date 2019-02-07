@@ -64,32 +64,7 @@ public class NodeCache implements Closeable
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final ListenerContainer<NodeCacheListener> listeners = new ListenerContainer<NodeCacheListener>();
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
-    private ConnectionStateListener connectionStateListener = new ConnectionStateListener()
-    {
-        @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
-            if ( (newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED) )
-            {
-                if ( isConnected.compareAndSet(false, true) )
-                {
-                    try
-                    {
-                        reset();
-                    }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        log.error("Trying to reset after reconnection", e);
-                    }
-                }
-            }
-            else
-            {
-                isConnected.set(false);
-            }
-        }
-    };
+    private volatile ConnectionStateListener connectionStateListener;
 
     private Watcher watcher = new Watcher()
     {
@@ -143,6 +118,8 @@ public class NodeCache implements Closeable
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.dataIsCompressed = dataIsCompressed;
+
+        connectionStateListener = client.decorateConnectionStateListener((__, newState) -> handleStateChange(newState));
     }
 
     public CuratorFramework getClient()
@@ -196,7 +173,7 @@ public class NodeCache implements Closeable
             // has something to do with Guava's cache and circular references
             connectionStateListener = null;
             watcher = null;
-        }        
+        }
     }
 
     /**
@@ -348,7 +325,7 @@ public class NodeCache implements Closeable
             }
         }
     }
-    
+
     /**
      * Default behavior is just to log the exception
      *
@@ -357,5 +334,28 @@ public class NodeCache implements Closeable
     protected void handleException(Throwable e)
     {
         log.error("", e);
+    }
+
+    private void handleStateChange(ConnectionState newState)
+    {
+        if ( (newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED) )
+        {
+            if ( isConnected.compareAndSet(false, true) )
+            {
+                try
+                {
+                    reset();
+                }
+                catch ( Exception e )
+                {
+                    ThreadUtils.checkInterrupted(e);
+                    log.error("Trying to reset after reconnection", e);
+                }
+            }
+        }
+        else
+        {
+            isConnected.set(false);
+        }
     }
 }

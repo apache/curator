@@ -50,7 +50,10 @@ public class ListenerContainer<T> implements Listenable<T>
     @Override
     public void removeListener(T listener)
     {
-        listeners.remove(listener);
+        if ( listener != null )
+        {
+            listeners.remove(listener);
+        }
     }
 
     /**

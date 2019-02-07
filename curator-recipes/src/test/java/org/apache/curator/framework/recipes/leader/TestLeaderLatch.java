@@ -28,8 +28,10 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.framework.state.ConnectionStateListenerDecorator;
 import org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
+import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -57,6 +59,44 @@ public class TestLeaderLatch extends BaseClassForTests
 {
     private static final String PATH_NAME = "/one/two/me";
     private static final int MAX_LOOPS = 5;
+
+    @Test
+    public void testWithCircuitBreaker() throws Exception
+    {
+        Timing2 timing = new Timing2();
+        ConnectionStateListenerDecorator factory = ConnectionStateListenerDecorator.circuitBreaking(new RetryForever(timing.milliseconds()));
+        try ( CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(server.getConnectString())
+            .retryPolicy(new RetryOneTime(1))
+            .connectionStateListenerFactory(factory)
+            .connectionTimeoutMs(timing.connection())
+            .sessionTimeoutMs(timing.session())
+            .build() )
+        {
+            client.start();
+            AtomicInteger resetCount = new AtomicInteger(0);
+            LeaderLatch latch = new LeaderLatch(client, "/foo/bar")
+            {
+                @Override
+                void reset() throws Exception
+                {
+                    resetCount.incrementAndGet();
+                    super.reset();
+                }
+            };
+            latch.start();
+            Assert.assertTrue(latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+
+            for ( int i = 0; i < 5; ++i )
+            {
+                server.stop();
+                server.restart();
+                timing.sleepABit();
+            }
+            Assert.assertTrue(latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+            Assert.assertEquals(resetCount.get(), 2);
+        }
+    }
 
     @Test
     public void testUncreatedPathGetLeader() throws Exception

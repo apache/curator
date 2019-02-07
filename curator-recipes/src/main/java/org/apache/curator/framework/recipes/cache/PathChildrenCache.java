@@ -128,14 +128,7 @@ public class PathChildrenCache implements Closeable
     @VisibleForTesting
     volatile Exchanger<Object> rebuildTestExchanger;
 
-    private volatile ConnectionStateListener connectionStateListener = new ConnectionStateListener()
-    {
-        @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
-            handleStateChange(newState);
-        }
-    };
+    private volatile ConnectionStateListener connectionStateListener;
     public static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("PathChildrenCache");
 
     /**
@@ -225,6 +218,7 @@ public class PathChildrenCache implements Closeable
         this.dataIsCompressed = dataIsCompressed;
         this.executorService = executorService;
         ensureContainers = new EnsureContainers(client, path);
+        connectionStateListener = client.decorateConnectionStateListener((__, newState) -> handleStateChange(newState));
     }
 
     /**
