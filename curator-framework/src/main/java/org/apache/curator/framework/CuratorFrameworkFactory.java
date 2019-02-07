@@ -498,9 +498,8 @@ public class CuratorFrameworkFactory
         }
 
         /**
-         * Sets the connection state listener decorator. Curator recipes (and proper client code)
-         * will always decorate connection state listeners via this decorator. For example,
-         * you can set use {@link org.apache.curator.framework.state.CircuitBreakingConnectionStateListener}s
+         * Sets the connection state listener decorator. For example,
+         * you can set {@link org.apache.curator.framework.state.CircuitBreakingConnectionStateListener}s
          * via this mechanism by using {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator#circuitBreaking(org.apache.curator.RetryPolicy)}
          * or {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator#circuitBreaking(org.apache.curator.RetryPolicy, java.util.concurrent.ScheduledExecutorService)}
          *

@@ -29,7 +29,11 @@ import java.util.concurrent.Executor;
 
 /**
  * Abstracts an object that has listeners
+ *
+ * @deprecated Prefer {@link MappingListenerManager} and
+ * {@link StandardListenerManager}
  */
+@Deprecated
 public class ListenerContainer<T> implements Listenable<T>
 {
     private final Logger                        log = LoggerFactory.getLogger(getClass());

@@ -1,33 +1,53 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.curator.framework.listen;
 
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * Upgraded version of {@link org.apache.curator.framework.listen.ListenerContainer} that
  * doesn't leak Guava's internals and also supports mapping/wrapping of listeners
  */
-public class MappingListenerContainer<K, V> implements Listenable<K>
+public class MappingListenerManager<K, V> implements ListenerManager<K, V>
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final Map<K, ListenerEntry<V>> listeners = Maps.newConcurrentMap();
+    private final Map<K, ListenerEntry<V>> listeners = new ConcurrentHashMap<>();
     private final Function<K, V> mapper;
 
     /**
-     * Returns a new standard version that does no mapping
+     * Returns a new mapping container that maps to the same type
      *
+     * @param mapper listener mapper/wrapper
      * @return new container
      */
-    public static <T> MappingListenerContainer<T, T> nonMapping()
+    public static <T> StandardListenerManager<T> mappingStandard(UnaryOperator<T> mapper)
     {
-        return new MappingListenerContainer<>(Function.identity());
+        MappingListenerManager<T, T> container = new MappingListenerManager<>(mapper);
+        return new StandardListenerManager<>(container);
     }
 
     /**
@@ -36,22 +56,22 @@ public class MappingListenerContainer<K, V> implements Listenable<K>
      * @param mapper listener mapper/wrapper
      * @return new container
      */
-    public static <K, V> MappingListenerContainer<K, V> mapping(Function<K, V> mapper)
+    public static <K, V> ListenerManager<K, V> mapping(Function<K, V> mapper)
     {
-        return new MappingListenerContainer<>(mapper);
+        return new MappingListenerManager<>(mapper);
     }
 
     @Override
     public void addListener(K listener)
     {
-        addListener(listener, MoreExecutors.directExecutor());
+        addListener(listener, Runnable::run);
     }
 
     @Override
     public void addListener(K listener, Executor executor)
     {
         V mapped = mapper.apply(listener);
-        listeners.put(listener, new ListenerEntry<V>(mapped, executor));
+        listeners.put(listener, new ListenerEntry<>(mapped, executor));
     }
 
     @Override
@@ -63,30 +83,19 @@ public class MappingListenerContainer<K, V> implements Listenable<K>
         }
     }
 
-    /**
-     * Remove all listeners
-     */
+    @Override
     public void clear()
     {
         listeners.clear();
     }
 
-    /**
-     * Return the number of listeners
-     *
-     * @return number
-     */
+    @Override
     public int size()
     {
         return listeners.size();
     }
 
-    /**
-     * Utility - apply the given function to each listener. The function receives
-     * the listener as an argument.
-     *
-     * @param function function to call for each listener
-     */
+    @Override
     public void forEach(Consumer<V> function)
     {
         for ( ListenerEntry<V> entry : listeners.values() )
@@ -105,7 +114,7 @@ public class MappingListenerContainer<K, V> implements Listenable<K>
         }
     }
 
-    private MappingListenerContainer(Function<K, V> mapper)
+    MappingListenerManager(Function<K, V> mapper)
     {
         this.mapper = mapper;
     }
