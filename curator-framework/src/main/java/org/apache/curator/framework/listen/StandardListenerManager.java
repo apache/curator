@@ -18,10 +18,10 @@
  */
 package org.apache.curator.framework.listen;
 
-import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * Non mapping version of a listener container
@@ -38,6 +38,18 @@ public class StandardListenerManager<T> implements ListenerManager<T, T>
     public static <T> StandardListenerManager<T> standard()
     {
         MappingListenerManager<T, T> container = new MappingListenerManager<>(Function.identity());
+        return new StandardListenerManager<>(container);
+    }
+
+    /**
+     * Returns a new mapping container that maps to the same type
+     *
+     * @param mapper listener mapper/wrapper
+     * @return new container
+     */
+    public static <T> StandardListenerManager<T> mappingStandard(UnaryOperator<T> mapper)
+    {
+        MappingListenerManager<T, T> container = new MappingListenerManager<>(mapper);
         return new StandardListenerManager<>(container);
     }
 

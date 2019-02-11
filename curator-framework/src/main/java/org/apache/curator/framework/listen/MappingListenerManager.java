@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 /**
  * Upgraded version of {@link org.apache.curator.framework.listen.ListenerContainer} that
@@ -37,18 +36,6 @@ public class MappingListenerManager<K, V> implements ListenerManager<K, V>
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final Map<K, ListenerEntry<V>> listeners = new ConcurrentHashMap<>();
     private final Function<K, V> mapper;
-
-    /**
-     * Returns a new mapping container that maps to the same type
-     *
-     * @param mapper listener mapper/wrapper
-     * @return new container
-     */
-    public static <T> StandardListenerManager<T> mappingStandard(UnaryOperator<T> mapper)
-    {
-        MappingListenerManager<T, T> container = new MappingListenerManager<>(mapper);
-        return new StandardListenerManager<>(container);
-    }
 
     /**
      * Returns a new container that wraps listeners using the given mapper
