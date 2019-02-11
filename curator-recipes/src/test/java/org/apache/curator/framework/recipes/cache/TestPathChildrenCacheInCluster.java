@@ -19,125 +19,23 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.collect.Queues;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.state.ConnectionStateListenerDecorator;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TestPathChildrenCacheInCluster extends BaseClassForTests
 {
-    @Override
-    protected void createServer()
-    {
-        // do nothing
-    }
-
-    @Test
-    public void testWithCircuitBreaker() throws Exception
-    {
-        Timing timing = new Timing();
-        try ( TestingCluster cluster = new TestingCluster(3) )
-        {
-            cluster.start();
-
-            ConnectionStateListenerDecorator decorator = ConnectionStateListenerDecorator.circuitBreaking(new RetryForever(timing.multiple(2).milliseconds()));
-            Iterator<InstanceSpec> iterator = cluster.getInstances().iterator();
-            InstanceSpec client1Instance = iterator.next();
-            InstanceSpec client2Instance = iterator.next();
-            ExponentialBackoffRetry exponentialBackoffRetry = new ExponentialBackoffRetry(100, 3);
-            try (CuratorFramework client1 = CuratorFrameworkFactory.
-                builder()
-                .connectString(client1Instance.getConnectString())
-                .retryPolicy(exponentialBackoffRetry)
-                .sessionTimeoutMs(timing.session())
-                .connectionTimeoutMs(timing.connection())
-                .connectionStateListenerDecorator(decorator)
-                .build()
-            )
-            {
-                client1.start();
-
-                try ( CuratorFramework client2 = CuratorFrameworkFactory.newClient(client2Instance.getConnectString(), timing.session(), timing.connection(), exponentialBackoffRetry) )
-                {
-                    client2.start();
-
-                    AtomicInteger refreshCount = new AtomicInteger(0);
-                    try ( PathChildrenCache cache = new PathChildrenCache(client1, "/test", true) {
-                        @Override
-                        void refresh(RefreshMode mode) throws Exception
-                        {
-                            refreshCount.incrementAndGet();
-                            super.refresh(mode);
-                        }
-                    } )
-                    {
-                        cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
-
-                        client2.create().forPath("/test/1", "one".getBytes());
-                        client2.create().forPath("/test/2", "two".getBytes());
-                        client2.create().forPath("/test/3", "three".getBytes());
-
-                        Future<?> task = Executors.newSingleThreadExecutor().submit(() -> {
-                            try
-                            {
-                                for ( int i = 0; i < 5; ++i )
-                                {
-                                    cluster.killServer(client1Instance);
-                                    cluster.restartServer(client1Instance);
-                                    timing.sleepABit();
-                                }
-                            }
-                            catch ( Exception e )
-                            {
-                                e.printStackTrace();
-                            }
-                        });
-
-                        client2.create().forPath("/test/4", "four".getBytes());
-                        client2.create().forPath("/test/5", "five".getBytes());
-                        client2.delete().forPath("/test/4");
-                        client2.setData().forPath("/test/1", "1".getBytes());
-                        client2.create().forPath("/test/6", "six".getBytes());
-
-                        task.get();
-                        timing.sleepABit();
-
-                        Assert.assertNotNull(cache.getCurrentData("/test/1"));
-                        Assert.assertEquals(cache.getCurrentData("/test/1").getData(), "1".getBytes());
-                        Assert.assertNotNull(cache.getCurrentData("/test/2"));
-                        Assert.assertEquals(cache.getCurrentData("/test/2").getData(), "two".getBytes());
-                        Assert.assertNotNull(cache.getCurrentData("/test/3"));
-                        Assert.assertEquals(cache.getCurrentData("/test/3").getData(), "three".getBytes());
-                        Assert.assertNull(cache.getCurrentData("/test/4"));
-                        Assert.assertNotNull(cache.getCurrentData("/test/5"));
-                        Assert.assertEquals(cache.getCurrentData("/test/5").getData(), "five".getBytes());
-                        Assert.assertNotNull(cache.getCurrentData("/test/6"));
-                        Assert.assertEquals(cache.getCurrentData("/test/6").getData(), "six".getBytes());
-
-                        Assert.assertEquals(refreshCount.get(), 2);
-                    }
-                }
-            }
-        }
-    }
-
     @Test(enabled = false)  // this test is very flakey - it needs to be re-written at some point
     public void testMissedDelete() throws Exception
     {
