@@ -70,6 +70,42 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
+    public void testWatchedNodeDeletedOnReconnect() throws Exception
+    {
+        final String latchPath = "/foo/bar";
+        Timing2 timing = new Timing2();
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)) )
+        {
+            client.start();
+            LeaderLatch latch1 = new LeaderLatch(client, latchPath, "1");
+            try ( LeaderLatch latch2 = new LeaderLatch(client, latchPath, "2") )
+            {
+                latch1.start();
+                latch1.await();
+
+                latch2.start(); // will get a watcher on latch1's node
+                timing.sleepABit();
+
+                latch2.debugCheckLeaderShipLatch = new CountDownLatch(1);
+                latch1.close();   // simulate the leader's path getting deleted
+                latch1 = null;
+                timing.sleepABit(); // after this, latch2 should be blocked just before getting the path in checkLeadership()
+
+                latch2.reset(); // force the internal "ourPath" to get reset
+                latch2.debugCheckLeaderShipLatch.countDown();   // allow checkLeadership() to continue
+
+                Assert.assertTrue(latch2.await(timing.forSessionSleep().forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+                timing.sleepABit();
+                Assert.assertEquals(client.getChildren().forPath(latchPath).size(), 1);
+            }
+            finally
+            {
+                CloseableUtils.closeQuietly(latch1);
+            }
+        }
+    }
+
+    @Test
     public void testSessionErrorPolicy() throws Exception
     {
         Timing timing = new Timing();

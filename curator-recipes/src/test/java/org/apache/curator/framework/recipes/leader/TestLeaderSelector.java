@@ -24,7 +24,6 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
@@ -33,14 +32,11 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
-import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.utils.ZKPaths;
+import org.apache.curator.utils.Compatibility;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -535,7 +531,7 @@ public class TestLeaderSelector extends BaseClassForTests
 
             Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
 
-            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
 
             Assert.assertTrue(timing.awaitLatch(interruptedLatch));
             timing.sleepABit();

@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework.state;
 
-import com.google.common.collect.Queues;
 import org.apache.curator.connection.StandardConnectionHandlingPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -28,8 +27,7 @@ import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class TestConnectionStateManager extends BaseClassForTests {
@@ -46,12 +44,25 @@ public class TestConnectionStateManager extends BaseClassForTests {
             .connectionHandlingPolicy(new StandardConnectionHandlingPolicy(30))
             .build();
 
-        try {
-            final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
-            ConnectionStateListener stateListener = new ConnectionStateListener() {
+        // we should get LOST around 30% of a session plus a little "slop" for processing, etc.
+        final int lostStateExpectedMs = (timing.session() / 3) + timing.forSleepingABit().milliseconds();
+        try
+        {
+            CountDownLatch connectedLatch = new CountDownLatch(1);
+            CountDownLatch lostLatch = new CountDownLatch(1);
+            ConnectionStateListener stateListener = new ConnectionStateListener()
+            {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState) {
-                states.add(newState.name());
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.CONNECTED )
+                    {
+                        connectedLatch.countDown();
+                    }
+                    if ( newState == ConnectionState.LOST )
+                    {
+                        lostLatch.countDown();
+                    }
                 }
             };
 
@@ -59,11 +70,10 @@ public class TestConnectionStateManager extends BaseClassForTests {
 
             client.getConnectionStateListenable().addListener(stateListener);
             client.start();
-            Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
+            Assert.assertTrue(timing.awaitLatch(connectedLatch));
             server.close();
 
-            Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED.name());
-            Assert.assertEquals(states.poll(timing.session() / 3, TimeUnit.MILLISECONDS), ConnectionState.LOST.name());
+            Assert.assertTrue(lostLatch.await(lostStateExpectedMs, TimeUnit.MILLISECONDS));
         }
         finally {
             CloseableUtils.closeQuietly(client);

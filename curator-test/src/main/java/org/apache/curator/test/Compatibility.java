@@ -18,17 +18,10 @@
  */
 package org.apache.curator.test;
 
-import org.apache.zookeeper.ZooKeeper;
-
 public class Compatibility
 {
     public static boolean isZK34()
     {
         return false;
-    }
-
-    public static void injectSessionExpiration(ZooKeeper zooKeeper)
-    {
-        zooKeeper.getTestable().injectSessionExpiration();
     }
 }

@@ -32,8 +32,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
-import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
@@ -190,11 +190,11 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.getListenable().addListener(listener);
             cache.start();
             Assert.assertTrue(timing.awaitLatch(ensurePathLatch));
-            
+
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             client.getConnectionStateListenable().addListener(new ConnectionStateListener()
             {
-                
+
                 @Override
                 public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
@@ -206,7 +206,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             });
 
             server = new TestingServer(serverPort, true);
-            
+
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
 
             client.create().creatingParentContainersIfNeeded().forPath("/baz", new byte[]{1, 2, 3});
@@ -814,7 +814,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             client.create().withMode(CreateMode.EPHEMERAL).forPath("/test/me", "data".getBytes());
             Assert.assertTrue(timing.awaitLatch(childAddedLatch));
 
-            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
             Assert.assertTrue(timing.awaitLatch(lostLatch));
             Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
             Assert.assertTrue(timing.awaitLatch(removedLatch));

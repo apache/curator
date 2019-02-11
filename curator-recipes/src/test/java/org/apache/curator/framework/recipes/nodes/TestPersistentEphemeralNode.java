@@ -31,9 +31,9 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
@@ -329,7 +329,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
 
             node.debugCreateNodeLatch = new CountDownLatch(1);
-            KillSession2.kill(curator.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(curator.getZookeeperClient().getZooKeeper());
 
             // Make sure the node got deleted
             assertTrue(deletedTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
@@ -359,7 +359,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
 
             node.debugCreateNodeLatch = new CountDownLatch(1);
-            KillSession2.kill(curator.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(curator.getZookeeperClient().getZooKeeper());
 
             // Make sure the node got deleted...
             assertTrue(deletedTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
@@ -400,7 +400,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
                 node.debugCreateNodeLatch = new CountDownLatch(1);
                 // Kill the session, thus cleaning up the node...
-                KillSession2.kill(curator.getZookeeperClient().getZooKeeper());
+                Compatibility.injectSessionExpiration(curator.getZookeeperClient().getZooKeeper());
 
                 // Make sure the node ended up getting deleted...
                 assertTrue(deletionTrigger.firedWithin(timing.multiple(1.5).forSessionSleep().seconds(), TimeUnit.SECONDS));
@@ -443,7 +443,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             Trigger deletedTrigger = Trigger.deletedOrSetData();
             observer.checkExists().usingWatcher(deletedTrigger).forPath(node.getActualPath());
 
-            KillSession2.kill(nodeCreator.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(nodeCreator.getZookeeperClient().getZooKeeper());
 
             // Make sure the node got deleted...
             assertTrue(deletedTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
@@ -536,10 +536,10 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             CloseableUtils.closeQuietly(node);
         }
     }
-    
+
     /**
      * Test that if a persistent ephemeral node is created and the node already exists
-     * that if data is present in the PersistentEphermalNode that it is still set. 
+     * that if data is present in the PersistentEphermalNode that it is still set.
      * @throws Exception
      */
     @Test
@@ -547,9 +547,9 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     {
         CuratorFramework curator = newCurator();
         curator.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(PATH, "InitialData".getBytes());
-        
+
         byte[] data = "Hello World".getBytes();
-             
+
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         try
@@ -568,10 +568,10 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     public void testSetDataWhenDisconnected() throws Exception
     {
         CuratorFramework curator = newCurator();
-        
+
         byte[] initialData = "Hello World".getBytes();
         byte[] updatedData = "Updated".getBytes();
-             
+
         PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
         try
         {
@@ -579,11 +579,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
-            
+
             server.stop();
-            
+
             final CountDownLatch dataUpdateLatch = new CountDownLatch(1);
-            
+
             Watcher watcher = new Watcher()
             {
 				@Override
@@ -593,22 +593,22 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 					{
 						dataUpdateLatch.countDown();
 					}
-				}            	
+				}
             };
-            
+
             curator.getData().usingWatcher(watcher).inBackground().forPath(node.getActualPath());
-            
+
             node.setData(updatedData);
             server.restart();
 
             assertTrue(timing.awaitLatch(dataUpdateLatch));
-                       
+
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), updatedData));
         }
         finally
         {
             CloseableUtils.closeQuietly(node);
-        }    	
+        }
     }
 
     @Test
@@ -650,7 +650,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             CloseableUtils.closeQuietly(node);
         }
     }
-    
+
     /**
      * See CURATOR-190
      * For protected nodes on reconnect the current protected name was passed to the create builder meaning that it got
@@ -671,12 +671,12 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertNodeExists(curator, node.getActualPath());
 
-            server.restart();            
-            
+            server.restart();
+
             curator.blockUntilConnected(5, TimeUnit.SECONDS);
 
             assertNodeExists(curator, node.getActualPath());
-            
+
             //There should only be a single child, the persisted ephemeral node
             List<String> children = curator.getChildren().forPath(DIR);
             assertFalse(children == null);
@@ -687,7 +687,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             CloseableUtils.closeQuietly(node);
         }
     }
-    
+
     @Test
     public void testNoCreatePermission() throws Exception
     {
@@ -709,12 +709,12 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
         	//New client without authentication
         	client = newCurator();
-        
+
         	node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH,
                                                                    new byte[0]);
             node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         	node.start();
-        
+
             node.waitForInitialCreate(timing.seconds(), TimeUnit.SECONDS);
             assertNodeDoesNotExist(client, PATH);
             assertTrue(node.isAuthFailure());

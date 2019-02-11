@@ -381,15 +381,29 @@ public class LeaderLatch implements Closeable
 
         synchronized(this)
         {
-            while ( (waitNanos > 0) && (state.get() == State.STARTED) && !hasLeadership.get() )
+            while ( true )
             {
+                if ( state.get() != State.STARTED )
+                {
+                    return false;
+                }
+
+                if ( hasLeadership() )
+                {
+                    return true;
+                }
+
+                if ( waitNanos <= 0 )
+                {
+                    return false;
+                }
+
                 long startNanos = System.nanoTime();
                 TimeUnit.NANOSECONDS.timedWait(this, waitNanos);
                 long elapsed = System.nanoTime() - startNanos;
                 waitNanos -= elapsed;
             }
         }
-        return hasLeadership();
     }
 
     /**
@@ -467,6 +481,12 @@ public class LeaderLatch implements Closeable
     }
 
     @VisibleForTesting
+    String getOurPath()
+    {
+        return ourPath.get();
+    }
+
+    @VisibleForTesting
     volatile CountDownLatch debugResetWaitLatch = null;
 
     @VisibleForTesting
@@ -524,8 +544,16 @@ public class LeaderLatch implements Closeable
         }
     }
 
+    @VisibleForTesting
+    volatile CountDownLatch debugCheckLeaderShipLatch = null;
+
     private void checkLeadership(List<String> children) throws Exception
     {
+        if ( debugCheckLeaderShipLatch != null )
+        {
+            debugCheckLeaderShipLatch.await();
+        }
+
         final String localOurPath = ourPath.get();
         List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;

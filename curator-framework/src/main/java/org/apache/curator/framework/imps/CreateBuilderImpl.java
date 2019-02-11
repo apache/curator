@@ -36,10 +36,12 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -48,16 +50,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl client;
+    private final ProtectedMode protectedMode = new ProtectedMode();
     private CreateMode createMode;
     private Backgrounding backgrounding;
     private boolean createParentsIfNeeded;
     private boolean createParentsAsContainers;
-    private boolean doProtected;
     private boolean compress;
     private boolean setDataIfExists;
     private int setDataIfExistsVersion = -1;
-    private String protectedId;
     private ACLing acling;
     private Stat storingStat;
     private long ttl;
@@ -77,9 +79,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         createParentsIfNeeded = false;
         createParentsAsContainers = false;
         compress = false;
-        doProtected = false;
         setDataIfExists = false;
-        protectedId = null;
         storingStat = null;
         ttl = -1;
     }
@@ -98,7 +98,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         this.ttl = ttl;
         if ( doProtected )
         {
-            setProtected();
+            protectedMode.setProtectedMode();
         }
     }
 
@@ -475,14 +475,14 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @Override
     public ACLCreateModeStatBackgroundPathAndBytesable<String> withProtection()
     {
-        setProtected();
+        protectedMode.setProtectedMode();
         return asACLCreateModeStatBackgroundPathAndBytesable();
     }
 
     @Override
     public ACLPathAndBytesable<String> withProtectedEphemeralSequential()
     {
-        setProtected();
+        protectedMode.setProtectedMode();
         createMode = CreateMode.EPHEMERAL_SEQUENTIAL;
 
         return new ACLPathAndBytesable<String>()
@@ -610,18 +610,18 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         {
             ThreadUtils.checkInterrupted(e);
             if ( ( e instanceof KeeperException.ConnectionLossException ||
-                !( e instanceof KeeperException )) && protectedId != null )
+                !( e instanceof KeeperException )) && protectedMode.doProtected() )
             {
                 /*
                  * CURATOR-45 + CURATOR-79: we don't know if the create operation was successful or not,
                  * register the znode to be sure it is deleted later.
                  */
-                new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(adjustedPath).getPath(), protectedId).execute();
+                new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(adjustedPath).getPath(), protectedMode.protectedId()).execute();
                 /*
-                * The current UUID is scheduled to be deleted, it is not safe to use it again.
-                * If this builder is used again later create a new UUID
-                */
-                protectedId = UUID.randomUUID().toString();
+                 * The current UUID is scheduled to be deleted, it is not safe to use it again.
+                 * If this builder is used again later create a new UUID
+                 */
+                protectedMode.resetProtectedId();
             }
 
             throw e;
@@ -685,16 +685,16 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             else
             {
                 CreateZK35.create
-                (
-                    client.getZooKeeper(),
-                    operationAndData.getData().getPath(),
-                    data,
-                    acling.getAclList(operationAndData.getData().getPath()),
-                    createMode,
-                    mainCallback,
-                    backgrounding.getContext(),
-                    ttl
-                );
+                    (
+                        client.getZooKeeper(),
+                        operationAndData.getData().getPath(),
+                        data,
+                        acling.getAclList(operationAndData.getData().getPath()),
+                        createMode,
+                        mainCallback,
+                        backgrounding.getContext(),
+                        ttl
+                    );
             }
         }
         catch ( Throwable e )
@@ -748,7 +748,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
             @Override
             public ErrorListenerPathAndBytesable<String> inBackground(BackgroundCallback callback, Object context,
-                    Executor executor) {
+                                                                      Executor executor) {
                 return CreateBuilderImpl.this.inBackground(callback, context, executor);
             }
 
@@ -857,12 +857,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
         CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, stat, null, null, null, null, null);
         client.processBackgroundOperation(operationAndData, event);
-    }
-
-    private void setProtected()
-    {
-        doProtected = true;
-        protectedId = UUID.randomUUID().toString();
     }
 
     private ACLCreateModePathAndBytesable<String> asACLCreateModePathAndBytesable()
@@ -1087,12 +1081,12 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             {
                 public void retriesExhausted(OperationAndData<PathAndBytes> operationAndData)
                 {
-                    if ( doProtected )
+                    if ( protectedMode.doProtected() )
                     {
                         // all retries have failed, findProtectedNodeInForeground(..) included, schedule a clean up
-                        new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(path).getPath(), protectedId).execute();
+                        new FindAndDeleteProtectedNodeInBackground(client, ZKPaths.getPathAndNode(path).getPath(), protectedMode.protectedId()).execute();
                         // assign a new id if this builder is used again later
-                        protectedId = UUID.randomUUID().toString();
+                        protectedMode.resetProtectedId();
                     }
                 }
             },
@@ -1104,7 +1098,9 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             {
                 boolean callSuper = true;
                 boolean localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
-                if ( !localFirstTime && doProtected )
+
+                protectedMode.checkSetSessionId(client, createMode);
+                if ( !localFirstTime && protectedMode.doProtected() )
                 {
                     debugForceFindProtectedNode = false;
                     String createdPath = null;
@@ -1134,8 +1130,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
                 if ( failNextCreateForTesting )
                 {
-                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     failNextCreateForTesting = false;
+                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
                     throw new KeeperException.ConnectionLossException();
                 }
 
@@ -1162,9 +1158,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     public String call() throws Exception
                     {
                         boolean localFirstTime = firstTime.getAndSet(false) && !debugForceFindProtectedNode;
+                        protectedMode.checkSetSessionId(client, createMode);
 
                         String createdPath = null;
-                        if ( !localFirstTime && doProtected )
+                        if ( !localFirstTime && protectedMode.doProtected() )
                         {
                             debugForceFindProtectedNode = false;
                             createdPath = findProtectedNodeInForeground(path);
@@ -1252,7 +1249,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                             final ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
                             List<String> children = client.getZooKeeper().getChildren(pathAndNode.getPath(), false);
 
-                            foundNode = findNode(children, pathAndNode.getPath(), protectedId);
+                            foundNode = findNode(children, pathAndNode.getPath(), protectedMode.protectedId());
+                            log.debug("Protected mode findNode result: {}", foundNode);
+
+                            foundNode = protectedMode.validateFoundNode(client, createMode, foundNode);
                         }
                         catch ( KeeperException.NoNodeException ignore )
                         {
@@ -1270,10 +1270,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @VisibleForTesting
     String adjustPath(String path) throws Exception
     {
-        if ( doProtected )
+        if ( protectedMode.doProtected() )
         {
             ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-            String name = getProtectedPrefix(protectedId) + pathAndNode.getNode();
+            String name = getProtectedPrefix(protectedMode.protectedId()) + pathAndNode.getNode();
             path = ZKPaths.makePath(pathAndNode.getPath(), name);
         }
         return path;
