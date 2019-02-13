@@ -72,6 +72,12 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
                 }
             }
         }
+
+        @Override
+        public boolean doNotDecorate()
+        {
+            return true;
+        }
     };
 
     private enum State

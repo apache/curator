@@ -16,30 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.state;
+package org.apache.curator.framework.listen;
 
-import org.apache.curator.framework.CuratorFramework;
+import java.util.function.Consumer;
 
-public interface ConnectionStateListener
+public interface ListenerManager<K, V> extends Listenable<K>
 {
     /**
-     * Called when there is a state change in the connection
-     *
-     * @param client the client
-     * @param newState the new state
+     * Remove all listeners
      */
-    void stateChanged(CuratorFramework client, ConnectionState newState);
+    void clear();
 
     /**
-     * Normally, ConnectionStateListeners are decorated via the configured
-     * {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator}. For certain
-     * critical cases, however, this is not desired. If your listener returns <code>true</code>
-     * for doNotDecorate(), it will not be passed through the decorator.
+     * Return the number of listeners
      *
-     * @return true/false
+     * @return number
      */
-    default boolean doNotDecorate()
-    {
-        return false;
-    }
+    int size();
+
+    /**
+     * Utility - apply the given function to each listener. The function receives
+     * the listener as an argument.
+     *
+     * @param function function to call for each listener
+     */
+    void forEach(Consumer<V> function);
 }

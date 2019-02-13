@@ -19,10 +19,10 @@
 
 package org.apache.curator.framework.state;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
@@ -68,10 +68,10 @@ public class ConnectionStateManager implements Closeable
     private final CuratorFramework client;
     private final int sessionTimeoutMs;
     private final int sessionExpirationPercent;
-    private final ListenerContainer<ConnectionStateListener> listeners = new ListenerContainer<ConnectionStateListener>();
     private final AtomicBoolean initialConnectMessageSent = new AtomicBoolean(false);
     private final ExecutorService service;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+    private final StandardListenerManager<ConnectionStateListener> listeners;
 
     // guarded by sync
     private ConnectionState currentConnectionState;
@@ -93,6 +93,18 @@ public class ConnectionStateManager implements Closeable
      */
     public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent)
     {
+        this(client, threadFactory, sessionTimeoutMs, sessionExpirationPercent, ConnectionStateListenerDecorator.standard);
+    }
+
+    /**
+     * @param client        the client
+     * @param threadFactory thread factory to use or null for a default
+     * @param sessionTimeoutMs the ZK session timeout in milliseconds
+     * @param sessionExpirationPercent percentage of negotiated session timeout to use when simulating a session timeout. 0 means don't simulate at all
+     * @param connectionStateListenerDecorator the decorator to use
+     */
+    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent, ConnectionStateListenerDecorator connectionStateListenerDecorator)
+    {
         this.client = client;
         this.sessionTimeoutMs = sessionTimeoutMs;
         this.sessionExpirationPercent = sessionExpirationPercent;
@@ -101,6 +113,7 @@ public class ConnectionStateManager implements Closeable
             threadFactory = ThreadUtils.newThreadFactory("ConnectionStateManager");
         }
         service = Executors.newSingleThreadExecutor(threadFactory);
+        listeners = StandardListenerManager.mappingStandard(listener -> listener.doNotDecorate() ? listener : connectionStateListenerDecorator.decorateListener(client, listener));
     }
 
     /**
@@ -138,8 +151,9 @@ public class ConnectionStateManager implements Closeable
      * Return the listenable
      *
      * @return listenable
+     * @since 4.2.0 return type has changed from ListenerContainer to Listenable
      */
-    public ListenerContainer<ConnectionStateListener> getListenable()
+    public Listenable<ConnectionStateListener> getListenable()
     {
         return listeners;
     }
@@ -263,18 +277,7 @@ public class ConnectionStateManager implements Closeable
                         log.warn("There are no ConnectionStateListeners registered.");
                     }
 
-                    listeners.forEach
-                        (
-                            new Function<ConnectionStateListener, Void>()
-                            {
-                                @Override
-                                public Void apply(ConnectionStateListener listener)
-                                {
-                                    listener.stateChanged(client, newState);
-                                    return null;
-                                }
-                            }
-                        );
+                    listeners.forEach(listener -> listener.stateChanged(client, newState));
                 }
                 else if ( sessionExpirationPercent > 0 )
                 {
