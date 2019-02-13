@@ -18,8 +18,10 @@
  */
 package org.apache.curator.framework.state;
 
+import org.apache.curator.RetryPolicy;
 import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryNTimes;
+import org.apache.curator.retry.RetryUntilElapsed;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -83,5 +85,14 @@ public class TestCircuitBreaker
         Assert.assertFalse(circuitBreaker.tryToOpen(() -> {}));
         Assert.assertTrue(circuitBreaker.close());
         Assert.assertFalse(circuitBreaker.close());
+    }
+
+    @Test
+    public void testWithRetryUntilElapsed()
+    {
+        RetryPolicy retryPolicy = new RetryUntilElapsed(10000, 10000);
+        CircuitBreaker circuitBreaker = new CircuitBreaker(retryPolicy, service);
+        Assert.assertTrue(circuitBreaker.tryToOpen(() -> {}));
+        Assert.assertEquals(lastDelay[0], Duration.ofMillis(10000));
     }
 }

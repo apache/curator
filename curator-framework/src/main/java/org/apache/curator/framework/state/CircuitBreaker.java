@@ -20,6 +20,7 @@ package org.apache.curator.framework.state;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -77,7 +78,8 @@ class CircuitBreaker
 
         long[] sleepTimeNanos = new long[]{0L};
         RetrySleeper retrySleeper = (time, unit) -> sleepTimeNanos[0] = unit.toNanos(time);
-        if ( retryPolicy.allowRetry(retryCount, System.nanoTime() - startNanos, retrySleeper) )
+        Duration elapsedTime = Duration.ofNanos(System.nanoTime() - startNanos);
+        if ( retryPolicy.allowRetry(retryCount, elapsedTime.toMillis(), retrySleeper) )
         {
             ++retryCount;
             service.schedule(completion, sleepTimeNanos[0], TimeUnit.NANOSECONDS);
