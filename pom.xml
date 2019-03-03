@@ -789,6 +789,7 @@
                 <executions>
                     <execution>
                         <id>license</id>
+                        <phase>validate</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
