@@ -80,6 +80,8 @@
         <!-- resteasy-jaxrs dependency cannot be higher than 2.x for compatibility with Jersey 1.x -->
         <resteasy-jaxrs-version>2.3.5.Final</resteasy-jaxrs-version>
         <guava-version>27.0.1-jre</guava-version>
+        <guava-listenablefuture-version>1.0</guava-listenablefuture-version>
+        <guava-failureaccess-version>1.0.1</guava-failureaccess-version>
         <testng-version>6.14.3</testng-version>
         <swift-version>0.23.1</swift-version>
         <dropwizard-version>1.3.7</dropwizard-version>
@@ -518,6 +520,18 @@
             </dependency>
 
             <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>listenablefuture</artifactId>
+                <version>${guava-listenablefuture-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>failureaccess</artifactId>
+                <version>${guava-failureaccess-version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
                 <version>${testng-version}</version>
@@ -875,6 +889,18 @@
                             <filters>
                                 <filter>
                                     <artifact>com.google.guava:guava</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.google.guava:listenablefuture</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.google.guava:failureaccess</artifact>
                                     <excludes>
                                         <exclude>META-INF/**</exclude>
                                     </excludes>

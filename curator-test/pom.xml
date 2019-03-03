@@ -74,6 +74,8 @@
                             <artifactSet>
                                 <includes>
                                     <include>com.google.guava:guava</include>
+                                    <include>com.google.guava:listenablefuture</include>
+                                    <include>com.google.guava:failureaccess</include>
                                 </includes>
                             </artifactSet>
                             <relocations>
