@@ -3,7 +3,7 @@
     <parent>
         <artifactId>apache-curator</artifactId>
         <groupId>org.apache.curator</groupId>
-        <version>4.2.0</version>
+        <version>4.2.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

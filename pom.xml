@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>4.2.0</version>
+    <version>4.2.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -103,7 +103,7 @@
         <url>https://github.com/apache/curator.git</url>
         <connection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</developerConnection>
-        <tag>apache-curator-4.2.0</tag>
+        <tag>apache-curator-3.2.0</tag>
     </scm>
 
     <issueManagement>
