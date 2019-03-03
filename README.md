@@ -1,5 +1,9 @@
 # Apache Curator
 
+[![Build Status](https://travis-ci.org/apache/curator.svg?branch=master)](https://travis-ci.org/apache/curator)
+[![Maven Central](https://img.shields.io/maven-central/v/org.apache.curator/apache-curator.svg)](http://search.maven.org/#search%7Cga%7C1%7Capache-curator)
+
+
 ## What's is Apache Curator?
 
 Apache Curator is a Java/JVM client library for Apache ZooKeeper[1], a distributed coordination service.
