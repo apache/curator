@@ -68,9 +68,9 @@
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
         <jackson-version>2.9.8</jackson-version>
-        <jersey-version>1.19.4</jersey-version>
         <!-- Upgrading to Jersey 2.x is difficult and of unclear benefits, see
              https://stackoverflow.com/questions/17098341#22033825 -->
+        <jersey-version>1.19.4</jersey-version>
         <jsr311-api-version>1.1.1</jsr311-api-version>
         <!-- See https://stackoverflow.com/questions/43574426#comment93992044_43574427 -->
         <jaxb-version>2.2.11</jaxb-version>
@@ -387,12 +387,6 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math</artifactId>
                 <version>${commons-math-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-mapper-asl</artifactId>
-                <version>${jackson-mapper-asl-version}</version>
             </dependency>
 
             <dependency>

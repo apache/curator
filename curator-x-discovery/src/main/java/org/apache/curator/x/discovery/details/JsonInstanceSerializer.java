@@ -19,11 +19,11 @@
 
 package org.apache.curator.x.discovery.details;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.x.discovery.ServiceInstance;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.JavaType;
 
 /**
  * A serializer that uses Jackson to serialize/deserialize as JSON. IMPORTANT: The instance
@@ -38,7 +38,7 @@ public class JsonInstanceSerializer<T> implements InstanceSerializer<T>
 
     /**
      * CURATOR-275 introduced a new field into {@link org.apache.curator.x.discovery.ServiceInstance}. This caused a potential
-     * {@link org.codehaus.jackson.map.exc.UnrecognizedPropertyException} in older clients that
+     * {@link com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException} in older clients that
      * read newly serialized ServiceInstances. Therefore the default behavior of JsonInstanceSerializer
      * has been changed to <em>NOT</em> serialize the <code>enabled</code> field. If you wish to use that field, use the
      * alternate constructor {@link #JsonInstanceSerializer(Class, boolean)} and pass true for
@@ -54,7 +54,7 @@ public class JsonInstanceSerializer<T> implements InstanceSerializer<T>
 
     /**
      * CURATOR-275 introduced a new field into {@link org.apache.curator.x.discovery.ServiceInstance}. This caused a potential
-     * {@link org.codehaus.jackson.map.exc.UnrecognizedPropertyException} in older clients that
+     * {@link com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException} in older clients that
      * read newly serialized ServiceInstances. If you are susceptible to this you should set the
      * serializer to be an instance of {@link org.apache.curator.x.discovery.details.JsonInstanceSerializer}
      * with <code>compatibleSerializationMode</code> set to true. IMPORTANT: when this is done, the new <code>enabled</code>
@@ -75,7 +75,7 @@ public class JsonInstanceSerializer<T> implements InstanceSerializer<T>
         this.payloadClass = payloadClass;
         this.compatibleSerializationMode = compatibleSerializationMode;
         mapper = new ObjectMapper();
-        mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, failOnUnknownProperties);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, failOnUnknownProperties);
         type = mapper.getTypeFactory().constructType(ServiceInstance.class);
     }
 
