@@ -154,6 +154,49 @@ public class ZKPaths
         {
             return node;
         }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + node.hashCode();
+            result = prime * result + path.hashCode();
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+            {
+              return true;
+            }
+            if (obj == null)
+            {
+              return false;
+            }
+            if (getClass() != obj.getClass())
+            {
+              return false;
+            }
+            PathAndNode other = (PathAndNode) obj;
+            if (!node.equals(other.node))
+            {
+              return false;
+            }
+            if (!path.equals(other.path))
+            {
+              return false;
+            }
+            return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "PathAndNode [path=" + path + ", node=" + node + "]";
+        }
     }
 
     /**
