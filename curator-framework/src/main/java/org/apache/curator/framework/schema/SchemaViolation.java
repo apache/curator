@@ -20,6 +20,8 @@ package org.apache.curator.framework.schema;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.zookeeper.data.ACL;
+
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -81,7 +83,7 @@ public class SchemaViolation extends RuntimeException
         @Override
         public String toString()
         {
-            String dataString = (data != null) ? new String(data) : "";
+            String dataString = (data != null) ? new String(data, StandardCharsets.UTF_8) : "";
             return "ViolatorData{" + "path='" + path + '\'' + ", data=" + dataString + ", acl=" + acl + '}';
         }
     }

@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +90,7 @@ public class TestJsonInstanceSerializer
     public void     testNoEnabledState() throws Exception
     {
         JsonInstanceSerializer<Void>    serializer = new JsonInstanceSerializer<Void>(Void.class);
-        byte[]                          bytes = "{}".getBytes("utf-8");
+        byte[]                          bytes = "{}".getBytes(StandardCharsets.UTF_8);
 
         ServiceInstance<Void>           instance = serializer.deserialize(bytes);
         Assert.assertTrue(instance.isEnabled(), "Instance that has no 'enabled' should be assumed enabled");

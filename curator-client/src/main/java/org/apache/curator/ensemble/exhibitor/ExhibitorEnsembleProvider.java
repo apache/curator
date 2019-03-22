@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -284,7 +285,8 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
             String[]        parts = spec.split("=");
             if ( parts.length == 2 )
             {
-                values.put(parts[0], URLDecoder.decode(parts[1], "UTF-8"));
+                values.put(parts[0],
+                    URLDecoder.decode(parts[1], StandardCharsets.UTF_8.name()));
             }
         }
 
