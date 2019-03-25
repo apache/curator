@@ -24,7 +24,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
@@ -48,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
@@ -62,8 +62,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     private final String basePath;
     private final InstanceSerializer<T> serializer;
     private final ConcurrentMap<String, Entry<T>> services = Maps.newConcurrentMap();
-    private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
-    private final Collection<ServiceProvider<T>> providers = Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
+    private final Collection<ServiceCache<T>> caches = Collections.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
+    private final Collection<ServiceProvider<T>> providers = Collections.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
     private final boolean watchInstances;
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
