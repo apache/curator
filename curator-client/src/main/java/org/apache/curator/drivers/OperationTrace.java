@@ -18,11 +18,11 @@
  */
 package org.apache.curator.drivers;
 
-import org.apache.curator.drivers.TracerDriver;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,6 +32,7 @@ public class OperationTrace
 {
     private final String name;
     private final TracerDriver driver;
+    private final long sessionId;
 
     private int returnCode = KeeperException.Code.OK.intValue();
     private long latencyMs;
@@ -39,7 +40,6 @@ public class OperationTrace
     private long responseBytesLength;
     private String path;
     private boolean withWatcher;
-    private long sessionId;
     private Stat stat;
 
     private final long startTimeNanos = System.nanoTime();
@@ -69,11 +69,7 @@ public class OperationTrace
         return this;
       }
 
-      try {
-        this.setRequestBytesLength(data.getBytes("UTF-8").length);
-      } catch (UnsupportedEncodingException e) {
-        // Ignore the exception.
-      }
+      this.setRequestBytesLength(data.getBytes(StandardCharsets.UTF_8).length);
 
       return this;
     }
