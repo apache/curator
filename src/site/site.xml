@@ -95,9 +95,8 @@
             <item name="Error Handling" href="errors.html"/>
             <item name="Logging and Tracing" href="logging.html"/>
             <item name="Tech Notes" href="https://cwiki.apache.org/confluence/display/CURATOR/Tech+Notes"/>
-            <item name="Exhibitor Integration" href="exhibitor.html"/>
-            <item name="Source Code" href="source-repository.html"/>
-            <item name="Project Team" href="team-list.html"/>
+            <item name="Source Code" href="scm.html"/>
+            <item name="Project Team" href="team.html"/>
             <item name="Project Information" href="project-info.html"/>
             <item name="API Compatibility" href="compatibility.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>
