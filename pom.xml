@@ -293,6 +293,18 @@
             <timezone>-8</timezone>
             <url>https://people.apache.org/~fangmin</url>
         </developer>
+
+        <developer>
+            <id>shayshim</id>
+            <name>Shay Shimony</name>
+            <email>shayshim@apache.org</email>
+            <timezone>+2</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>https://people.apache.org/~shayshim</url>
+        </developer>
     </developers>
 
     <modules>
