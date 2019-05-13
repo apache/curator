@@ -36,7 +36,7 @@
 
     <properties>
         <osgi.import.package>
-            *
+            org.apache.zookeeper.*;version="[3.4,4.0)", *
         </osgi.import.package>
         <osgi.export.package>
             org.apache.curator*;version="${project.version}";-noimport:=true
