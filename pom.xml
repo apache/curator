@@ -56,7 +56,7 @@
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <jdk-version>1.8</jdk-version>
+        <jdk-version>8</jdk-version>
 
         <!-- versions -->
         <zookeeper-version>3.5.4-beta</zookeeper-version>
@@ -668,8 +668,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>${jdk-version}</source>
-                    <target>${jdk-version}</target>
+                    <release>${jdk-version}</release>
                 </configuration>
             </plugin>
 
