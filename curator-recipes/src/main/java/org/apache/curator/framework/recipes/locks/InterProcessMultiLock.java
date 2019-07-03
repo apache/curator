@@ -144,9 +144,9 @@ public class InterProcessMultiLock implements InterProcessLock
     /**
      * {@inheritDoc}
      *
-     *	<p>NOTE: locks are released in the reverse order that they were acquired.</p>
+     * <p>NOTE: locks are released in the reverse order that they were acquired.</p>
      *	
-     *	@throws Exception ZK errors, interruptions, current thread does not own the lock
+     * @throws Exception ZK errors, interruptions, current thread does not own the lock
      *
      */
     @Override
