@@ -44,7 +44,7 @@ public interface InterProcessLock
     /**
      * Perform one release of the mutex.
      *
-     * @throws Exception ZK errors, interruptions, current thread does not own the lock
+     * @throws Exception ZK errors, interruptions
      */
     public void release() throws Exception;
 

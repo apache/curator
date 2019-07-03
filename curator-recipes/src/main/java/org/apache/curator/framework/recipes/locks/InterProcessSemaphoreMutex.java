@@ -61,6 +61,12 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     *	<p>NOTE: Unlike other implementations of {@link org.apache.curator.framework.recipes.locks.InterProcessLock#release()}, this method will NOT throw an exception if it is called on a different thread than the one which acquired the lock.</p>
+     *
+     */
     @Override
     public void release() throws Exception
     {
