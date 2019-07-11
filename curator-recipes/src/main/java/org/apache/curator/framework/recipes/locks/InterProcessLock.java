@@ -20,6 +20,9 @@ package org.apache.curator.framework.recipes.locks;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * NOTE: depending on its implementation, {@link #release()} may throw an exception if the current thread does not own the lock
+ */
 public interface InterProcessLock
 {
     /**
