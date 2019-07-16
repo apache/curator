@@ -891,39 +891,35 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private <DATA_TYPE> void handleBackgroundOperationException(OperationAndData<DATA_TYPE> operationAndData, Throwable e)
     {
-        do
+        if ( (operationAndData != null) && RetryLoop.isRetryException(e) )
         {
-            if ( (operationAndData != null) && RetryLoop.isRetryException(e) )
+            if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
+            {
+                log.debug("Retry-able exception received", e);
+            }
+            if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
             {
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
-                    log.debug("Retry-able exception received", e);
+                    log.debug("Retrying operation");
                 }
-                if ( client.getRetryPolicy().allowRetry(operationAndData.getThenIncrementRetryCount(), operationAndData.getElapsedTimeMs(), operationAndData) )
+                backgroundOperations.offer(operationAndData);
+                return;
+            }
+            else {
+                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
-                    if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
-                    {
-                        log.debug("Retrying operation");
-                    }
-                    backgroundOperations.offer(operationAndData);
-                    break;
+                    log.debug("Retry policy did not allow retry");
                 }
-                else
+                if ( operationAndData.getErrorCallback() != null )
                 {
-                    if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
-                    {
-                        log.debug("Retry policy did not allow retry");
-                    }
-                    if ( operationAndData.getErrorCallback() != null )
-                    {
-                        operationAndData.getErrorCallback().retriesExhausted(operationAndData);
-                    }
+                    operationAndData.getErrorCallback().retriesExhausted(operationAndData);
                 }
             }
-
-            logError("Background exception was not retry-able or retry gave up", e);
         }
-        while ( false );
+
+        logError("Background exception was not retry-able or retry gave up", e);
+
     }
 
     private void backgroundOperationsLoop()
