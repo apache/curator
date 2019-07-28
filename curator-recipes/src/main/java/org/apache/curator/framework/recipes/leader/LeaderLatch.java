@@ -622,7 +622,8 @@ public class LeaderLatch implements Closeable
         client.getChildren().inBackground(callback).forPath(ZKPaths.makePath(latchPath, null));
     }
 
-    private void handleStateChange(ConnectionState newState)
+    @VisibleForTesting
+    protected void handleStateChange(ConnectionState newState)
     {
         switch ( newState )
         {

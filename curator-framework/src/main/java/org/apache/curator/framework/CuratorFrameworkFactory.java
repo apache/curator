@@ -36,7 +36,7 @@ import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
-import org.apache.curator.framework.state.ConnectionStateListenerDecorator;
+import org.apache.curator.framework.state.ConnectionStateListenerManagerFactory;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
@@ -153,7 +153,7 @@ public class CuratorFrameworkFactory
         private boolean zk34CompatibilityMode = isZK34();
         private int waitForShutdownTimeoutMs = 0;
         private Executor runSafeService = null;
-        private ConnectionStateListenerDecorator connectionStateListenerDecorator = ConnectionStateListenerDecorator.standard;
+        private ConnectionStateListenerManagerFactory connectionStateListenerManagerFactory = ConnectionStateListenerManagerFactory.standard;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -498,18 +498,16 @@ public class CuratorFrameworkFactory
         }
 
         /**
-         * Sets the connection state listener decorator. For example,
-         * you can set {@link org.apache.curator.framework.state.CircuitBreakingConnectionStateListener}s
-         * via this mechanism by using {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator#circuitBreaking(org.apache.curator.RetryPolicy)}
-         * or {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator#circuitBreaking(org.apache.curator.RetryPolicy, java.util.concurrent.ScheduledExecutorService)}
+         * Sets the connection state listener manager factory. For example,
+         * you can set {@link org.apache.curator.framework.state.ConnectionStateListenerManagerFactory#circuitBreaking(org.apache.curator.RetryPolicy)}
          *
-         * @param connectionStateListenerDecorator decorator to use
+         * @param connectionStateListenerManagerFactory manager factory to use
          * @return this
          * @since 4.2.0
          */
-        public Builder connectionStateListenerDecorator(ConnectionStateListenerDecorator connectionStateListenerDecorator)
+        public Builder connectionStateListenerManagerFactory(ConnectionStateListenerManagerFactory connectionStateListenerManagerFactory)
         {
-            this.connectionStateListenerDecorator = Objects.requireNonNull(connectionStateListenerDecorator, "connectionStateListenerFactory cannot be null");
+            this.connectionStateListenerManagerFactory = Objects.requireNonNull(connectionStateListenerManagerFactory, "connectionStateListenerManagerFactory cannot be null");
             return this;
         }
 
@@ -660,9 +658,9 @@ public class CuratorFrameworkFactory
             return canBeReadOnly;
         }
 
-        public ConnectionStateListenerDecorator getConnectionStateListenerDecorator()
+        public ConnectionStateListenerManagerFactory getConnectionStateListenerManagerFactory()
         {
-            return connectionStateListenerDecorator;
+            return connectionStateListenerManagerFactory;
         }
 
         private Builder()
