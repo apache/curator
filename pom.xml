@@ -850,7 +850,7 @@
                 <artifactId>clirr-maven-plugin</artifactId>
                 <configuration>
                     <failOnError>false</failOnError>
-                    <logResults>true</logResults>
+                    <logResults>false</logResults>
                     <includes>
                         <include>org/apache/curator/**</include>
                     </includes>
