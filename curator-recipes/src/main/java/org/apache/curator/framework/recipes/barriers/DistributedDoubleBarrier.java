@@ -263,6 +263,7 @@ public class DistributedDoubleBarrier
                     if ( thisWaitMs <= 0 )
                     {
                         result = false;
+                        break;
                     }
                     else
                     {
