@@ -18,32 +18,9 @@
  */
 package org.apache.curator.framework.listen;
 
-import java.util.function.Consumer;
-
-public interface ListenerManager<K, V> extends Listenable<K>
+/**
+ * A {@link ListenerManager} that doesn't do any mapping
+ */
+public interface UnaryListenerManager<T> extends ListenerManager<T, T>
 {
-    /**
-     * Remove all listeners
-     */
-    void clear();
-
-    /**
-     * Return the number of listeners
-     *
-     * @return number
-     */
-    int size();
-
-    /**
-     * Utility - apply the given function to each listener. The function receives
-     * the listener as an argument.
-     *
-     * @param function function to call for each listener
-     */
-    void forEach(Consumer<V> function);
-
-    default boolean isEmpty()
-    {
-        return size() == 0;
-    }
 }

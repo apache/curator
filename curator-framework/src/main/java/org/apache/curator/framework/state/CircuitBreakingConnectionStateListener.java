@@ -20,7 +20,6 @@ package org.apache.curator.framework.state;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Objects;
@@ -28,14 +27,14 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * <p>
- *     A decorator/proxy for connection state listeners that adds circuit breaking behavior. During network
+ *     A proxy for connection state listeners that adds circuit breaking behavior. During network
  *     outages ZooKeeper can become very noisy sending connection/disconnection events in rapid succession.
  *     Curator recipes respond to these messages by resetting state, etc. E.g. LeaderLatch must delete
  *     its lock node and try to recreate it in order to try to re-obtain leadership, etc.
  * </p>
  *
  * <p>
- *     This noisy herding can be avoided by using the circuit breaking listener decorator. When it
+ *     This noisy herding can be avoided by using the circuit breaking listener. When it
  *     receives {@link org.apache.curator.framework.state.ConnectionState#SUSPENDED}, the circuit
  *     becomes "open" (based on the provided {@link org.apache.curator.RetryPolicy}) and will ignore
  *     future connection state changes until RetryPolicy timeout has elapsed. Note: however, if the connection
@@ -44,16 +43,33 @@ import java.util.concurrent.ScheduledExecutorService;
  * </p>
  *
  * <p>
- *     When the circuit decorator is closed, all connection state changes are forwarded to the managed
+ *     When the circuit is closed, all connection state changes are forwarded to the managed
  *     listener. When the first disconnected state is received, the circuit becomes open. The state change
  *     that caused the circuit to open is sent to the managed listener and the RetryPolicy will be used to
- *     get a delay amount. While the delay is active, the decorator will store state changes but will not
+ *     get a delay amount. While the delay is active, the circuit breaker will store state changes but will not
  *     forward them to the managed listener (except, however, the first time the state changes from SUSPENDED to LOST).
  *     When the delay elapses, if the connection has been restored, the circuit closes and forwards the
  *     new state to the managed listener. If the connection has not been restored, the RetryPolicy is checked
  *     again. If the RetryPolicy indicates another retry is allowed the process repeats. If, however, the
  *     RetryPolicy indicates that retries are exhausted then the circuit closes - if the current state
  *     is different than the state that caused the circuit to open it is forwarded to the managed listener.
+ * </p>
+ *
+ * <p>
+ *     <strong>NOTE:</strong> You should not use this listener directly. Instead, set {@link org.apache.curator.framework.state.ConnectionStateListenerManagerFactory#circuitBreaking(org.apache.curator.RetryPolicy)}
+ *     in the {@link org.apache.curator.framework.CuratorFrameworkFactory.Builder#connectionStateListenerManagerFactory(ConnectionStateListenerManagerFactory)}.
+ * </p>
+ *
+ * <p>
+ *     E.g.
+ * <code><pre>
+ * ConnectionStateListenerManagerFactory factory = ConnectionStateListenerManagerFactory.circuitBreaking(...retry policy for circuit breaking...);
+ * CuratorFramework client = CuratorFrameworkFactory.builder()
+ *     .connectionStateListenerManagerFactory(factory)
+ *     ... etc ...
+ *     .build();
+ * // all connection state listeners set for "client" will get circuit breaking behavior
+ * </pre></code>
  * </p>
  */
 public class CircuitBreakingConnectionStateListener implements ConnectionStateListener
@@ -77,7 +93,7 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
      */
     public CircuitBreakingConnectionStateListener(CuratorFramework client, ConnectionStateListener listener, RetryPolicy retryPolicy)
     {
-        this(client, listener, retryPolicy, ThreadUtils.newSingleThreadScheduledExecutor("CircuitBreakingConnectionStateListener"));
+        this(client, listener, CircuitBreaker.build(retryPolicy));
     }
 
     /**
@@ -88,9 +104,14 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
      */
     public CircuitBreakingConnectionStateListener(CuratorFramework client, ConnectionStateListener listener, RetryPolicy retryPolicy, ScheduledExecutorService service)
     {
-        this.client = client;
+        this(client, listener, CircuitBreaker.build(retryPolicy, service));
+    }
+
+    CircuitBreakingConnectionStateListener(CuratorFramework client, ConnectionStateListener listener, CircuitBreaker circuitBreaker)
+    {
+        this.client = Objects.requireNonNull(client, "client cannot be null");
         this.listener = Objects.requireNonNull(listener, "listener cannot be null");
-        circuitBreaker = new CircuitBreaker(retryPolicy, service);
+        this.circuitBreaker = Objects.requireNonNull(circuitBreaker, "circuitBreaker cannot be null");
         reset();
     }
 

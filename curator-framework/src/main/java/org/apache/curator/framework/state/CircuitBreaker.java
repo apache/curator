@@ -20,12 +20,12 @@ package org.apache.curator.framework.state;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
+import org.apache.curator.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-// must be guarded by sync
 class CircuitBreaker
 {
     private final RetryPolicy retryPolicy;
@@ -35,11 +35,17 @@ class CircuitBreaker
     private int retryCount = 0;
     private long startNanos = 0;
 
-    CircuitBreaker(RetryPolicy retryPolicy, ScheduledExecutorService service)
+    static CircuitBreaker build(RetryPolicy retryPolicy)
     {
-        this.retryPolicy = Objects.requireNonNull(retryPolicy, "retryPolicy cannot be null");
-        this.service = Objects.requireNonNull(service, "service cannot be null");
+        return new CircuitBreaker(retryPolicy, ThreadUtils.newSingleThreadScheduledExecutor("CircuitBreakingConnectionStateListener"));
     }
+
+    static CircuitBreaker build(RetryPolicy retryPolicy, ScheduledExecutorService service)
+    {
+        return new CircuitBreaker(retryPolicy, service);
+    }
+
+    // IMPORTANT - all methods below MUST be guarded by synchronization
 
     boolean isOpen()
     {
@@ -95,5 +101,11 @@ class CircuitBreaker
         isOpen = false;
         startNanos = 0;
         return wasOpen;
+    }
+
+    private CircuitBreaker(RetryPolicy retryPolicy, ScheduledExecutorService service)
+    {
+        this.retryPolicy = Objects.requireNonNull(retryPolicy, "retryPolicy cannot be null");
+        this.service = Objects.requireNonNull(service, "service cannot be null");
     }
 }

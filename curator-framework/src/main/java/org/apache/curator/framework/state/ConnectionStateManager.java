@@ -22,7 +22,7 @@ package org.apache.curator.framework.state;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.StandardListenerManager;
+import org.apache.curator.framework.listen.UnaryListenerManager;
 import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
@@ -71,7 +71,7 @@ public class ConnectionStateManager implements Closeable
     private final AtomicBoolean initialConnectMessageSent = new AtomicBoolean(false);
     private final ExecutorService service;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final StandardListenerManager<ConnectionStateListener> listeners;
+    private final UnaryListenerManager<ConnectionStateListener> listeners;
 
     // guarded by sync
     private ConnectionState currentConnectionState;
@@ -93,7 +93,7 @@ public class ConnectionStateManager implements Closeable
      */
     public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent)
     {
-        this(client, threadFactory, sessionTimeoutMs, sessionExpirationPercent, ConnectionStateListenerDecorator.standard);
+        this(client, threadFactory, sessionTimeoutMs, sessionExpirationPercent, ConnectionStateListenerManagerFactory.standard);
     }
 
     /**
@@ -101,9 +101,9 @@ public class ConnectionStateManager implements Closeable
      * @param threadFactory thread factory to use or null for a default
      * @param sessionTimeoutMs the ZK session timeout in milliseconds
      * @param sessionExpirationPercent percentage of negotiated session timeout to use when simulating a session timeout. 0 means don't simulate at all
-     * @param connectionStateListenerDecorator the decorator to use
+     * @param managerFactory manager factory to use
      */
-    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent, ConnectionStateListenerDecorator connectionStateListenerDecorator)
+    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent, ConnectionStateListenerManagerFactory managerFactory)
     {
         this.client = client;
         this.sessionTimeoutMs = sessionTimeoutMs;
@@ -113,7 +113,7 @@ public class ConnectionStateManager implements Closeable
             threadFactory = ThreadUtils.newThreadFactory("ConnectionStateManager");
         }
         service = Executors.newSingleThreadExecutor(threadFactory);
-        listeners = StandardListenerManager.mappingStandard(listener -> listener.doNotDecorate() ? listener : connectionStateListenerDecorator.decorateListener(client, listener));
+        listeners = managerFactory.newManager(client);
     }
 
     /**
@@ -272,7 +272,7 @@ public class ConnectionStateManager implements Closeable
                 final ConnectionState newState = eventQueue.poll(pollMaxMs, TimeUnit.MILLISECONDS);
                 if ( newState != null )
                 {
-                    if ( listeners.size() == 0 )
+                    if ( listeners.isEmpty() )
                     {
                         log.warn("There are no ConnectionStateListeners registered.");
                     }

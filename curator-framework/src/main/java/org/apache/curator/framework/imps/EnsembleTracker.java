@@ -74,7 +74,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
         }
 
         @Override
-        public boolean doNotDecorate()
+        public boolean doNotProxy()
         {
             return true;
         }
