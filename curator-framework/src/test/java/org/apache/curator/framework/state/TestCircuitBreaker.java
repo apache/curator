@@ -58,7 +58,7 @@ public class TestCircuitBreaker
         final int retryQty = 1;
         final Duration delay = Duration.ofSeconds(10);
 
-        CircuitBreaker circuitBreaker = new CircuitBreaker(new RetryNTimes(retryQty, (int)delay.toMillis()), service);
+        CircuitBreaker circuitBreaker = CircuitBreaker.build(new RetryNTimes(retryQty, (int)delay.toMillis()), service);
         AtomicInteger counter = new AtomicInteger(0);
 
         Assert.assertTrue(circuitBreaker.tryToOpen(counter::incrementAndGet));
@@ -79,7 +79,7 @@ public class TestCircuitBreaker
     @Test
     public void testVariousOpenRetryFails()
     {
-        CircuitBreaker circuitBreaker = new CircuitBreaker(new RetryForever(1), service);
+        CircuitBreaker circuitBreaker = CircuitBreaker.build(new RetryForever(1), service);
         Assert.assertFalse(circuitBreaker.tryToRetry(() -> {}));
         Assert.assertTrue(circuitBreaker.tryToOpen(() -> {}));
         Assert.assertFalse(circuitBreaker.tryToOpen(() -> {}));
@@ -91,7 +91,7 @@ public class TestCircuitBreaker
     public void testWithRetryUntilElapsed()
     {
         RetryPolicy retryPolicy = new RetryUntilElapsed(10000, 10000);
-        CircuitBreaker circuitBreaker = new CircuitBreaker(retryPolicy, service);
+        CircuitBreaker circuitBreaker = CircuitBreaker.build(retryPolicy, service);
         Assert.assertTrue(circuitBreaker.tryToOpen(() -> {}));
         Assert.assertEquals(lastDelay[0], Duration.ofMillis(10000));
     }

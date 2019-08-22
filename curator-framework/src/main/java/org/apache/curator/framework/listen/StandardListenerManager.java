@@ -26,7 +26,7 @@ import java.util.function.UnaryOperator;
 /**
  * Non mapping version of a listener container
  */
-public class StandardListenerManager<T> implements ListenerManager<T, T>
+public class StandardListenerManager<T> implements UnaryListenerManager<T>
 {
     private final ListenerManager<T, T> container;
 

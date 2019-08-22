@@ -138,23 +138,23 @@
     <mailingLists>
         <mailingList>
             <name>Users</name>
-            <post>user@curator.apache.org</post>
-            <subscribe>user-subscribe@curator.apache.org</subscribe>
-            <unsubscribe>user-unsubscribe@curator.apache.org</unsubscribe>
+            <subscribe>mailto:user-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>mailto:user-unsubscribe@curator.apache.org</unsubscribe>
+            <post>mailto:user@curator.apache.org</post>
             <archive>http://mail-archives.apache.org/mod_mbox/curator-user/</archive>
         </mailingList>
         <mailingList>
             <name>Development</name>
-            <post>dev@curator.apache.org</post>
-            <subscribe>dev-subscribe@curator.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@curator.apache.org</unsubscribe>
+            <subscribe>mailto:dev-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>mailto:dev-unsubscribe@curator.apache.org</unsubscribe>
+            <post>mailto:dev@curator.apache.org</post>
             <archive>http://mail-archives.apache.org/mod_mbox/curator-dev/</archive>
         </mailingList>
         <mailingList>
             <name>Commits</name>
-            <post>commits@curator.apache.org</post>
-            <subscribe>commits-subscribe@curator.apache.org</subscribe>
-            <unsubscribe>commits-unsubscribe@curator.apache.org</unsubscribe>
+            <subscribe>mailto:commits-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>mailto:commits-unsubscribe@curator.apache.org</unsubscribe>
+            <post>mailto:commits@curator.apache.org</post>
             <archive>http://mail-archives.apache.org/mod_mbox/curator-commits/</archive>
         </mailingList>
     </mailingLists>
@@ -850,7 +850,7 @@
                 <artifactId>clirr-maven-plugin</artifactId>
                 <configuration>
                     <failOnError>false</failOnError>
-                    <logResults>true</logResults>
+                    <logResults>false</logResults>
                     <includes>
                         <include>org/apache/curator/**</include>
                     </includes>

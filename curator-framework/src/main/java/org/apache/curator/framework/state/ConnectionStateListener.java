@@ -31,14 +31,14 @@ public interface ConnectionStateListener
     void stateChanged(CuratorFramework client, ConnectionState newState);
 
     /**
-     * Normally, ConnectionStateListeners are decorated via the configured
-     * {@link org.apache.curator.framework.state.ConnectionStateListenerDecorator}. For certain
-     * critical cases, however, this is not desired. If your listener returns <code>true</code>
-     * for doNotDecorate(), it will not be passed through the decorator.
+     * ConnectionStateListener managers set via {@link org.apache.curator.framework.CuratorFrameworkFactory.Builder#connectionStateListenerManagerFactory(ConnectionStateListenerManagerFactory)}
+     * are allowed to proxy (etc.) ConnectionStateListeners as needed. If this method returns <code>true</code>
+     * the ConnectionStateListener manager must <em>not</em> proxy the listener as it's a vital internal
+     * listener used by Curator.
      *
      * @return true/false
      */
-    default boolean doNotDecorate()
+    default boolean doNotProxy()
     {
         return false;
     }
