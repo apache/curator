@@ -480,8 +480,16 @@ public class LeaderLatch implements Closeable
         return (state.get() == State.STARTED) && hasLeadership.get();
     }
 
-    @VisibleForTesting
-    String getOurPath()
+    /**
+     * Return this instance's lock node path. IMPORTANT: this instance
+     * owns the path returned. This method is meant for reference only. Also,
+     * it is possible for <code>null</code> to be returned. The path, if any,
+     * returned is not guaranteed to be valid at any point in the future as internal
+     * state changes might require the instance to delete and create a new path.
+     *
+     * @return lock node path or <code>null</code>
+     */
+    public String getOurPath()
     {
         return ourPath.get();
     }
