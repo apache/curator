@@ -54,15 +54,11 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -76,6 +72,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final ThreadFactory threadFactory;
     private final int maxCloseWaitMs;
     private final BlockingQueue<OperationAndData<?>> backgroundOperations;
+    private final BlockingQueue<OperationAndData<?>> forcedSleepOperations;
     private final NamespaceImpl namespace;
     private final ConnectionStateManager connectionStateManager;
     private final List<AuthInfo> authInfos;
@@ -92,6 +89,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final EnsembleTracker ensembleTracker;
     private final SchemaSet schemaSet;
     private final boolean zk34CompatibilityMode;
+    private final Executor runSafeService;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -118,6 +116,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 builder.getEnsembleProvider(),
                 builder.getSessionTimeoutMs(),
                 builder.getConnectionTimeoutMs(),
+                builder.getWaitForShutdownTimeoutMs(),
                 new Watcher()
                 {
                     @Override
@@ -136,10 +135,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
         listeners = new ListenerContainer<CuratorListener>();
         unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
         backgroundOperations = new DelayQueue<OperationAndData<?>>();
+        forcedSleepOperations = new LinkedBlockingQueue<>();
         namespace = new NamespaceImpl(this, builder.getNamespace());
         threadFactory = getThreadFactory(builder);
         maxCloseWaitMs = builder.getMaxCloseWaitMs();
-        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory(), builder.getSessionTimeoutMs(), builder.getConnectionHandlingPolicy().getSimulatedSessionExpirationPercent());
+        connectionStateManager = new ConnectionStateManager(this, builder.getThreadFactory(), builder.getSessionTimeoutMs(), builder.getConnectionHandlingPolicy().getSimulatedSessionExpirationPercent(), builder.getConnectionStateListenerManagerFactory());
         compressionProvider = builder.getCompressionProvider();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
@@ -157,6 +157,22 @@ public class CuratorFrameworkImpl implements CuratorFramework
         namespaceFacadeCache = new NamespaceFacadeCache(this);
 
         ensembleTracker = zk34CompatibilityMode ? null : new EnsembleTracker(this, builder.getEnsembleProvider());
+
+        runSafeService = makeRunSafeService(builder);
+    }
+
+    private Executor makeRunSafeService(CuratorFrameworkFactory.Builder builder)
+    {
+        if ( builder.getRunSafeService() != null )
+        {
+            return builder.getRunSafeService();
+        }
+        ThreadFactory threadFactory = builder.getThreadFactory();
+        if ( threadFactory == null )
+        {
+            threadFactory = ThreadUtils.newThreadFactory("SafeNotifyService");
+        }
+        return Executors.newSingleThreadExecutor(threadFactory);
     }
 
     private List<AuthInfo> buildAuths(CuratorFrameworkFactory.Builder builder)
@@ -167,6 +183,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
             builder1.addAll(builder.getAuthInfos());
         }
         return builder1.build();
+    }
+
+    @Override
+    public CompletableFuture<Void> runSafe(Runnable runnable)
+    {
+        return CompletableFuture.runAsync(runnable, runSafeService);
     }
 
     @Override
@@ -217,6 +239,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         threadFactory = parent.threadFactory;
         maxCloseWaitMs = parent.maxCloseWaitMs;
         backgroundOperations = parent.backgroundOperations;
+        forcedSleepOperations = parent.forcedSleepOperations;
         connectionStateManager = parent.connectionStateManager;
         defaultData = parent.defaultData;
         failedDeleteManager = parent.failedDeleteManager;
@@ -233,6 +256,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         schemaSet = parent.schemaSet;
         zk34CompatibilityMode = parent.zk34CompatibilityMode;
         ensembleTracker = null;
+        runSafeService = parent.runSafeService;
     }
 
     @Override
@@ -300,6 +324,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     {
                         logAsErrorConnectionErrors.set(true);
                     }
+                }
+
+                @Override
+                public boolean doNotProxy()
+                {
+                    return true;
                 }
             };
 
@@ -396,75 +426,72 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return (str != null) ? str : "";
     }
 
+    private void checkState()
+    {
+        CuratorFrameworkState state = getState();
+        Preconditions.checkState(state == CuratorFrameworkState.STARTED, "Expected state [%s] was [%s]", CuratorFrameworkState.STARTED, state);
+    }
+
     @Override
     public CuratorFramework usingNamespace(String newNamespace)
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return namespaceFacadeCache.get(newNamespace);
     }
 
     @Override
     public CreateBuilder create()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new CreateBuilderImpl(this);
     }
 
     @Override
     public DeleteBuilder delete()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new DeleteBuilderImpl(this);
     }
 
     @Override
     public ExistsBuilder checkExists()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new ExistsBuilderImpl(this);
     }
 
     @Override
     public GetDataBuilder getData()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new GetDataBuilderImpl(this);
     }
 
     @Override
     public SetDataBuilder setData()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new SetDataBuilderImpl(this);
     }
 
     @Override
     public GetChildrenBuilder getChildren()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new GetChildrenBuilderImpl(this);
     }
 
     @Override
     public GetACLBuilder getACL()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new GetACLBuilderImpl(this);
     }
 
     @Override
     public SetACLBuilder setACL()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new SetACLBuilderImpl(this);
     }
 
@@ -485,24 +512,21 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public CuratorTransaction inTransaction()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new CuratorTransactionImpl(this);
     }
 
     @Override
     public CuratorMultiTransaction transaction()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new CuratorMultiTransactionImpl(this);
     }
 
     @Override
     public TransactionOp transactionOp()
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
-
+        checkState();
         return new TransactionOpImpl(this);
     }
 
@@ -527,7 +551,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public void sync(String path, Object context)
     {
-        Preconditions.checkState(getState() == CuratorFrameworkState.STARTED, "instance must be started before calling this method");
+        checkState();
 
         path = fixForNamespace(path);
 
@@ -646,12 +670,18 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
-    <DATA_TYPE> void queueOperation(OperationAndData<DATA_TYPE> operationAndData)
+    /**
+     * @param operationAndData operation entry
+     * @return true if the operation was actually queued, false if not
+     */
+    <DATA_TYPE> boolean queueOperation(OperationAndData<DATA_TYPE> operationAndData)
     {
         if ( getState() == CuratorFrameworkState.STARTED )
         {
             backgroundOperations.offer(operationAndData);
+            return true;
         }
+        return false;
     }
 
     void logError(String reason, final Throwable e)
@@ -736,6 +766,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         {
             internalConnectionHandler.checkNewConnection(this);
             connectionStateManager.addStateChange(ConnectionState.RECONNECTED);
+            unSleepBackgroundOperations();
         }
         else if ( state == Watcher.Event.KeeperState.ConnectedReadOnly )
         {
@@ -946,8 +977,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 {
                     throw new CuratorConnectionLossException();
                 }
-                operationAndData.sleepFor(1, TimeUnit.SECONDS);
-                queueOperation(operationAndData);
+                sleepAndQueueOperation(operationAndData);
             }
         }
         catch ( Throwable e )
@@ -975,6 +1005,33 @@ public class CuratorFrameworkImpl implements CuratorFramework
             else
             {
                 handleBackgroundOperationException(operationAndData, e);
+            }
+        }
+    }
+
+    @VisibleForTesting
+    volatile long sleepAndQueueOperationSeconds = 1;
+
+    private void sleepAndQueueOperation(OperationAndData<?> operationAndData) throws InterruptedException
+    {
+        operationAndData.sleepFor(sleepAndQueueOperationSeconds, TimeUnit.SECONDS);
+        if ( queueOperation(operationAndData) )
+        {
+            forcedSleepOperations.add(operationAndData);
+        }
+    }
+
+    private void unSleepBackgroundOperations()
+    {
+        Collection<OperationAndData<?>> drain = new ArrayList<>(forcedSleepOperations.size());
+        forcedSleepOperations.drainTo(drain);
+        log.debug("Clearing sleep for {} operations", drain.size());
+        for ( OperationAndData<?> operation : drain )
+        {
+            operation.clearSleep();
+            if ( backgroundOperations.remove(operation) )   // due to the internals of DelayQueue, operation must be removed/re-added so that re-sorting occurs
+            {
+                backgroundOperations.offer(operation);
             }
         }
     }

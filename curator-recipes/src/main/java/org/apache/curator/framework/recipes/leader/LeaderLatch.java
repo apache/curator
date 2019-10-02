@@ -381,15 +381,29 @@ public class LeaderLatch implements Closeable
 
         synchronized(this)
         {
-            while ( (waitNanos > 0) && (state.get() == State.STARTED) && !hasLeadership.get() )
+            while ( true )
             {
+                if ( state.get() != State.STARTED )
+                {
+                    return false;
+                }
+
+                if ( hasLeadership() )
+                {
+                    return true;
+                }
+
+                if ( waitNanos <= 0 )
+                {
+                    return false;
+                }
+
                 long startNanos = System.nanoTime();
                 TimeUnit.NANOSECONDS.timedWait(this, waitNanos);
                 long elapsed = System.nanoTime() - startNanos;
                 waitNanos -= elapsed;
             }
         }
-        return hasLeadership();
     }
 
     /**
@@ -466,6 +480,20 @@ public class LeaderLatch implements Closeable
         return (state.get() == State.STARTED) && hasLeadership.get();
     }
 
+    /**
+     * Return this instance's lock node path. IMPORTANT: this instance
+     * owns the path returned. This method is meant for reference only. Also,
+     * it is possible for <code>null</code> to be returned. The path, if any,
+     * returned is not guaranteed to be valid at any point in the future as internal
+     * state changes might require the instance to delete and create a new path.
+     *
+     * @return lock node path or <code>null</code>
+     */
+    public String getOurPath()
+    {
+        return ourPath.get();
+    }
+
     @VisibleForTesting
     volatile CountDownLatch debugResetWaitLatch = null;
 
@@ -524,8 +552,16 @@ public class LeaderLatch implements Closeable
         }
     }
 
+    @VisibleForTesting
+    volatile CountDownLatch debugCheckLeaderShipLatch = null;
+
     private void checkLeadership(List<String> children) throws Exception
     {
+        if ( debugCheckLeaderShipLatch != null )
+        {
+            debugCheckLeaderShipLatch.await();
+        }
+
         final String localOurPath = ourPath.get();
         List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
@@ -594,7 +630,8 @@ public class LeaderLatch implements Closeable
         client.getChildren().inBackground(callback).forPath(ZKPaths.makePath(latchPath, null));
     }
 
-    private void handleStateChange(ConnectionState newState)
+    @VisibleForTesting
+    protected void handleStateChange(ConnectionState newState)
     {
         switch ( newState )
         {

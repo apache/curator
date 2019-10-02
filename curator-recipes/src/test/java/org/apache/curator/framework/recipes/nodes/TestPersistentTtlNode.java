@@ -30,6 +30,7 @@ import org.apache.curator.test.compatibility.Zk35MethodInterceptor;
 import org.apache.curator.utils.ZKPaths;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.concurrent.Semaphore;
@@ -42,6 +43,11 @@ public class TestPersistentTtlNode extends CuratorTestBase
 {
     private final Timing timing = new Timing();
     private final long ttlMs = timing.multiple(.10).milliseconds(); // a small number
+
+    @BeforeClass
+    public static void setUpClass() {
+        System.setProperty("zookeeper.extendedTypesEnabled", "true");
+    }
 
     @BeforeMethod
     @Override

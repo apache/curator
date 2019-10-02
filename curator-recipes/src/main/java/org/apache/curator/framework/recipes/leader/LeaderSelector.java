@@ -46,6 +46,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.utils.PathUtils;
 
@@ -304,7 +305,7 @@ public class LeaderSelector implements Closeable
         for ( String path : participantNodes )
         {
             Participant participant = participantForPath(client, path, isLeader);
-            
+
             if( participant != null )
             {
                 builder.add(participant);
@@ -340,26 +341,26 @@ public class LeaderSelector implements Closeable
     static Participant getLeader(CuratorFramework client, Collection<String> participantNodes) throws Exception
     {
         Participant result = null;
-        
+
         if ( participantNodes.size() > 0 )
         {
             Iterator<String> iter = participantNodes.iterator();
             while ( iter.hasNext() )
             {
                 result = participantForPath(client, iter.next(), true);
-                
+
                 if ( result != null )
                 {
                     break;
                 }
             }
         }
-        
+
         if( result == null )
         {
             result = new Participant();
         }
-        
+
         return result;
     }
 
@@ -398,6 +399,9 @@ public class LeaderSelector implements Closeable
             return null;
         }
     }
+
+    @VisibleForTesting
+    volatile AtomicInteger failedMutexReleaseCount = null;
 
     @VisibleForTesting
     void doWork() throws Exception
@@ -444,15 +448,28 @@ public class LeaderSelector implements Closeable
             if ( hasLeadership )
             {
                 hasLeadership = false;
+                boolean wasInterrupted = Thread.interrupted();  // clear any interrupted tatus so that mutex.release() works immediately
                 try
                 {
                     mutex.release();
                 }
                 catch ( Exception e )
                 {
+                    if ( failedMutexReleaseCount != null )
+                    {
+                        failedMutexReleaseCount.incrementAndGet();
+                    }
+
                     ThreadUtils.checkInterrupted(e);
                     log.error("The leader threw an exception", e);
                     // ignore errors - this is just a safety
+                }
+                finally
+                {
+                    if ( wasInterrupted )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
         }

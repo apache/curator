@@ -2,7 +2,7 @@ h1. Getting Started
 
 h2. Learn ZooKeeper
 
-Curator users are assumed to know ZooKeeper. A good place to start is here: [[http://zookeeper.apache.org/doc/trunk/zookeeperStarted.html]]
+Curator users are assumed to know ZooKeeper. A good place to start is here: [[https://zookeeper.apache.org/doc/current/zookeeperStarted.html]]
 
 h2. Using Curator
 
@@ -14,7 +14,7 @@ want a wrapper around ZooKeeper that adds connection management and retry polici
 
 h2. Getting a Connection
 
-Curator uses [[Fluent Style|http://en.wikipedia.org/wiki/Fluent%5Finterface]]. If you haven't used this before, it might seem odd
+Curator uses [[Fluent Style|https://en.wikipedia.org/wiki/Fluent%5Finterface]]. If you haven't used this before, it might seem odd
 so it's suggested that you familiarize yourself with the style.
 
 Curator connection instances ({{CuratorFramework}}) are allocated from the {{CuratorFrameworkFactory}}. You only need *one*

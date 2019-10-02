@@ -23,12 +23,12 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>18</version>
+        <version>21</version>
     </parent>
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>4.0.1-SNAPSHOT</version>
+    <version>4.2.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -56,30 +56,38 @@
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <jdk-version>1.7</jdk-version>
+        <short-jdk-version>8</short-jdk-version>
+        <jdk-version>1.${short-jdk-version}</jdk-version>
 
         <!-- versions -->
-        <zookeeper-version>3.5.4-beta-SNAPSHOT</zookeeper-version>
-        <maven-project-info-reports-plugin-version>2.9</maven-project-info-reports-plugin-version>
-        <maven-bundle-plugin-version>3.2.0</maven-bundle-plugin-version>
-        <maven-javadoc-plugin-version>2.10.4</maven-javadoc-plugin-version>
-        <doxia-module-confluence-version>1.7</doxia-module-confluence-version>
+        <zookeeper-version>3.5.5</zookeeper-version>
+        <maven-bundle-plugin-version>4.1.0</maven-bundle-plugin-version>
+        <maven-javadoc-plugin-version>3.0.1</maven-javadoc-plugin-version>
+        <doxia-module-confluence-version>1.8</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
-        <javassist-version>3.20.0-GA</javassist-version>
+        <javassist-version>3.24.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
-        <jackson-version>2.7.3</jackson-version>
-        <jersey-version>1.18.1</jersey-version>
+        <jackson-version>2.9.8</jackson-version>
+        <!-- Upgrading to Jersey 2.x is difficult and of unclear benefits, see
+             https://stackoverflow.com/questions/17098341#22033825 -->
+        <jersey-version>1.19.4</jersey-version>
         <jsr311-api-version>1.1.1</jsr311-api-version>
+        <!-- See https://stackoverflow.com/questions/43574426#comment93992044_43574427 -->
+        <jaxb-version>2.2.11</jaxb-version>
+        <javax-activation-version>1.1.1</javax-activation-version>
         <jetty-version>6.1.26</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
-        <resteasy-jaxrs-version>2.3.0.GA</resteasy-jaxrs-version>
-        <guava-version>20.0</guava-version>
-        <testng-version>6.10</testng-version>
-        <swift-version>0.18.0</swift-version>
-        <dropwizard-version>0.7.0</dropwizard-version>
-        <maven-shade-plugin-version>2.4.3</maven-shade-plugin-version>
-        <slf4j-version>1.7.6</slf4j-version>
+        <!-- resteasy-jaxrs dependency cannot be higher than 2.x for compatibility with Jersey 1.x -->
+        <resteasy-jaxrs-version>2.3.5.Final</resteasy-jaxrs-version>
+        <guava-version>27.0.1-jre</guava-version>
+        <guava-listenablefuture-version>1.0</guava-listenablefuture-version>
+        <guava-failureaccess-version>1.0.1</guava-failureaccess-version>
+        <testng-version>6.14.3</testng-version>
+        <swift-version>0.23.1</swift-version>
+        <dropwizard-version>1.3.7</dropwizard-version>
+        <maven-shade-plugin-version>3.2.1</maven-shade-plugin-version>
+        <slf4j-version>1.7.25</slf4j-version>
         <clirr-maven-plugin-version>2.8</clirr-maven-plugin-version>
 
         <!-- OSGi Properties -->
@@ -94,9 +102,8 @@
 
     <scm>
         <url>https://github.com/apache/curator.git</url>
-        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/curator.git
-        </developerConnection>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</developerConnection>
         <tag>apache-curator-3.2.0</tag>
     </scm>
 
@@ -132,23 +139,23 @@
     <mailingLists>
         <mailingList>
             <name>Users</name>
-            <post>user@curator.apache.org</post>
-            <subscribe>user-subscribe@curator.apache.org</subscribe>
-            <unsubscribe>user-unsubscribe@curator.apache.org</unsubscribe>
+            <subscribe>mailto:user-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>mailto:user-unsubscribe@curator.apache.org</unsubscribe>
+            <post>mailto:user@curator.apache.org</post>
             <archive>http://mail-archives.apache.org/mod_mbox/curator-user/</archive>
         </mailingList>
         <mailingList>
             <name>Development</name>
-            <post>dev@curator.apache.org</post>
-            <subscribe>dev-subscribe@curator.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@curator.apache.org</unsubscribe>
+            <subscribe>mailto:dev-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>mailto:dev-unsubscribe@curator.apache.org</unsubscribe>
+            <post>mailto:dev@curator.apache.org</post>
             <archive>http://mail-archives.apache.org/mod_mbox/curator-dev/</archive>
         </mailingList>
         <mailingList>
             <name>Commits</name>
-            <post>commits@curator.apache.org</post>
-            <subscribe>commits-subscribe@curator.apache.org</subscribe>
-            <unsubscribe>commits-unsubscribe@curator.apache.org</unsubscribe>
+            <subscribe>mailto:commits-subscribe@curator.apache.org</subscribe>
+            <unsubscribe>mailto:commits-unsubscribe@curator.apache.org</unsubscribe>
+            <post>mailto:commits@curator.apache.org</post>
             <archive>http://mail-archives.apache.org/mod_mbox/curator-commits/</archive>
         </mailingList>
     </mailingLists>
@@ -287,6 +294,18 @@
             <timezone>-8</timezone>
             <url>https://people.apache.org/~fangmin</url>
         </developer>
+
+        <developer>
+            <id>shayshim</id>
+            <name>Shay Shimony</name>
+            <email>shayshim@apache.org</email>
+            <timezone>+2</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>https://people.apache.org/~shayshim</url>
+        </developer>
     </developers>
 
     <modules>
@@ -384,12 +403,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-mapper-asl</artifactId>
-                <version>${jackson-mapper-asl-version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>${jackson-version}</version>
@@ -429,6 +442,30 @@
                 <groupId>javax.ws.rs</groupId>
                 <artifactId>jsr311-api</artifactId>
                 <version>${jsr311-api-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>${jaxb-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-core</artifactId>
+                <version>${jaxb-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-impl</artifactId>
+                <version>${jaxb-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.activation</groupId>
+                <artifactId>activation</artifactId>
+                <version>${javax-activation-version}</version>
             </dependency>
 
             <dependency>
@@ -490,6 +527,18 @@
             </dependency>
 
             <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>listenablefuture</artifactId>
+                <version>${guava-listenablefuture-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>failureaccess</artifactId>
+                <version>${guava-failureaccess-version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
                 <version>${testng-version}</version>
@@ -526,7 +575,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>${maven-project-info-reports-plugin-version}</version>
             </plugin>
 
             <plugin>
@@ -615,18 +663,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-install-plugin</artifactId>
-                <configuration>
-                    <createChecksum>true</createChecksum>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${jdk-version}</source>
-                    <target>${jdk-version}</target>
-                </configuration>
             </plugin>
 
             <plugin>
@@ -678,7 +714,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
-                    <aggregate>true</aggregate>
                     <additionalJOptions>
                         <additionalJOption>-J-Xmx1g</additionalJOption>
                     </additionalJOptions>
@@ -758,6 +793,7 @@
                 <executions>
                     <execution>
                         <id>license</id>
+                        <phase>validate</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
@@ -806,7 +842,7 @@
                 <artifactId>clirr-maven-plugin</artifactId>
                 <configuration>
                     <failOnError>false</failOnError>
-                    <logResults>true</logResults>
+                    <logResults>false</logResults>
                     <includes>
                         <include>org/apache/curator/**</include>
                     </includes>
@@ -856,6 +892,18 @@
                                         <exclude>META-INF/**</exclude>
                                     </excludes>
                                 </filter>
+                                <filter>
+                                    <artifact>com.google.guava:listenablefuture</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.google.guava:failureaccess</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
                         </configuration>
                     </execution>
@@ -863,4 +911,42 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jdk-8-minus</id>
+            <activation>
+                <jdk>(,1.8]</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>${jdk-version}</source>
+                            <target>${jdk-version}</target>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>jdk-9-plus</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <release>${short-jdk-version}</release>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

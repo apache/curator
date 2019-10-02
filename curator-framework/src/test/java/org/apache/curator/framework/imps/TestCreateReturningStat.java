@@ -54,6 +54,36 @@ public class TestCreateReturningStat extends CuratorTestBase
     }
     
     @Test
+    public void testOrSetDataStoringStatIn() throws Exception {
+        try (CuratorFramework client = createClient())
+        {
+            client.start();
+            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
+
+            final String path = "/test";
+
+            final Stat versionZeroStat = new Stat();
+            client.create().orSetData().storingStatIn(versionZeroStat).forPath(path);
+            Assert.assertEquals(0, versionZeroStat.getVersion());
+
+            final Stat versionOneStat = new Stat();
+            client.create().orSetData().storingStatIn(versionOneStat).forPath(path);
+            
+            Assert.assertEquals(versionZeroStat.getAversion(), versionOneStat.getAversion());
+            Assert.assertEquals(versionZeroStat.getCtime(), versionOneStat.getCtime());
+            Assert.assertEquals(versionZeroStat.getCversion(), versionOneStat.getCversion());
+            Assert.assertEquals(versionZeroStat.getCzxid(), versionOneStat.getCzxid());
+            Assert.assertEquals(versionZeroStat.getDataLength(), versionOneStat.getDataLength());
+            Assert.assertEquals(versionZeroStat.getEphemeralOwner(), versionOneStat.getEphemeralOwner());
+            Assert.assertTrue(versionZeroStat.getMtime() <= versionOneStat.getMtime());
+            Assert.assertNotEquals(versionZeroStat.getMzxid(), versionOneStat.getMzxid());
+            Assert.assertEquals(versionZeroStat.getNumChildren(), versionOneStat.getNumChildren());
+            Assert.assertEquals(versionZeroStat.getPzxid(), versionOneStat.getPzxid());
+            Assert.assertEquals(1, versionOneStat.getVersion());
+        }
+    }
+    
+    @Test
     public void testCreateReturningStat() throws Exception
     {
         CuratorFramework client = createClient();

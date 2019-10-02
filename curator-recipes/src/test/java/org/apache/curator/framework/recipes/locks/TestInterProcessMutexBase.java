@@ -27,11 +27,11 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
@@ -200,7 +200,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                 );
 
             Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
-            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
             Assert.assertTrue(timing.forSessionSleep().acquireSemaphore(semaphore, 1));
         }
         finally

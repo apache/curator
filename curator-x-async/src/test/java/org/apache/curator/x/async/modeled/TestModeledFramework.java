@@ -36,6 +36,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
+import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -146,9 +147,16 @@ public class TestModeledFramework extends TestModeledFrameworkBase
             Assert.assertNull(e);
             Assert.assertTrue(v.version() > 0);
         }).thenCompose(versioned::set), (s, e) -> Assert.assertNull(e)); // version is correct should succeed
-
+        
         Versioned<TestModel> badVersion = Versioned.from(model, 100000);
         complete(versioned.set(badVersion), (v, e) -> Assert.assertTrue(e instanceof KeeperException.BadVersionException));
+        
+        final Stat stat = new Stat();
+        complete(client.read(stat));
+        // wrong version, needs to fail
+        complete(client.delete(stat.getVersion() + 1), (v, e) -> Assert.assertTrue(e instanceof KeeperException.BadVersionException));
+        // correct version
+        complete(client.delete(stat.getVersion()));
     }
 
     @Test

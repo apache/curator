@@ -206,8 +206,20 @@ public class BaseTestTreeCache<T extends Closeable> extends BaseClassForTests
      */
     TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData) throws InterruptedException
     {
+        return assertEvent(expectedType, expectedPath, expectedData, false);
+    }
+
+    TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData, boolean ignoreConnectionEvents) throws InterruptedException
+    {
         TreeCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
         Assert.assertNotNull(event, String.format("Expected type: %s, path: %s", expectedType, expectedPath));
+        if ( ignoreConnectionEvents )
+        {
+            if ( (event.getType() == TreeCacheEvent.Type.CONNECTION_SUSPENDED) || (event.getType() == TreeCacheEvent.Type.CONNECTION_LOST) || (event.getType() == TreeCacheEvent.Type.CONNECTION_RECONNECTED) )
+            {
+                return assertEvent(expectedType, expectedPath, expectedData, ignoreConnectionEvents);
+            }
+        }
 
         String message = event.toString();
         Assert.assertEquals(event.getType(), expectedType, message);

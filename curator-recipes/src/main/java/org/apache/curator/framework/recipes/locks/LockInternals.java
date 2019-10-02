@@ -66,7 +66,7 @@ public class LockInternals
         @Override
         public void process(WatchedEvent event)
         {
-            notifyFromWatcher();
+            client.postSafeNotify(LockInternals.this);
         }
     };
 
@@ -149,21 +149,28 @@ public class LockInternals
 
     public static List<String> getSortedChildren(CuratorFramework client, String basePath, final String lockName, final LockInternalsSorter sorter) throws Exception
     {
-        List<String> children = client.getChildren().forPath(basePath);
-        List<String> sortedList = Lists.newArrayList(children);
-        Collections.sort
-        (
-            sortedList,
-            new Comparator<String>()
-            {
-                @Override
-                public int compare(String lhs, String rhs)
+        try
+        {
+            List<String> children = client.getChildren().forPath(basePath);
+            List<String> sortedList = Lists.newArrayList(children);
+            Collections.sort
+            (
+                sortedList,
+                new Comparator<String>()
                 {
-                    return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
+                    @Override
+                    public int compare(String lhs, String rhs)
+                    {
+                        return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
+                    }
                 }
-            }
-        );
-        return sortedList;
+            );
+            return sortedList;
+        }
+        catch ( KeeperException.NoNodeException ignore )
+        {
+            return Collections.emptyList();
+        }
     }
 
     public static List<String> getSortedChildren(final String lockName, final LockInternalsSorter sorter, List<String> children)
@@ -288,7 +295,7 @@ public class LockInternals
 
                     synchronized(this)
                     {
-                        try 
+                        try
                         {
                             // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
                             client.getData().usingWatcher(watcher).forPath(previousSequencePath);
@@ -309,7 +316,7 @@ public class LockInternals
                                 wait();
                             }
                         }
-                        catch ( KeeperException.NoNodeException e ) 
+                        catch ( KeeperException.NoNodeException e )
                         {
                             // it has been deleted (i.e. lock released). Try to acquire again
                         }
@@ -343,10 +350,5 @@ public class LockInternals
         {
             // ignore - already deleted (possibly expired session, etc.)
         }
-    }
-
-    private synchronized void notifyFromWatcher()
-    {
-        notifyAll();
     }
 }

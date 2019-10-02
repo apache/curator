@@ -28,5 +28,18 @@ public interface ConnectionStateListener
      * @param client the client
      * @param newState the new state
      */
-    public void stateChanged(CuratorFramework client, ConnectionState newState);
+    void stateChanged(CuratorFramework client, ConnectionState newState);
+
+    /**
+     * ConnectionStateListener managers set via {@link org.apache.curator.framework.CuratorFrameworkFactory.Builder#connectionStateListenerManagerFactory(ConnectionStateListenerManagerFactory)}
+     * are allowed to proxy (etc.) ConnectionStateListeners as needed. If this method returns <code>true</code>
+     * the ConnectionStateListener manager must <em>not</em> proxy the listener as it's a vital internal
+     * listener used by Curator.
+     *
+     * @return true/false
+     */
+    default boolean doNotProxy()
+    {
+        return false;
+    }
 }

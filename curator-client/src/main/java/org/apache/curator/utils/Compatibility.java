@@ -18,8 +18,12 @@
  */
 package org.apache.curator.utils;
 
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.lang.reflect.Method;
 
 /**
  * Utils to help with ZK 3.4.x compatibility
@@ -27,20 +31,36 @@ import org.slf4j.LoggerFactory;
 public class Compatibility
 {
     private static final boolean hasZooKeeperAdmin;
+    private static final Method queueEventMethod;
+    private static final Logger logger = LoggerFactory.getLogger(Compatibility.class);
+
     static
     {
-        boolean hasIt;
+        boolean localHasZooKeeperAdmin;
         try
         {
             Class.forName("org.apache.zookeeper.admin.ZooKeeperAdmin");
-            hasIt = true;
+            localHasZooKeeperAdmin = true;
         }
         catch ( ClassNotFoundException e )
         {
-            hasIt = false;
-            LoggerFactory.getLogger(Compatibility.class).info("Running in ZooKeeper 3.4.x compatibility mode");
+            localHasZooKeeperAdmin = false;
+            logger.info("Running in ZooKeeper 3.4.x compatibility mode");
         }
-        hasZooKeeperAdmin = hasIt;
+        hasZooKeeperAdmin = localHasZooKeeperAdmin;
+
+        Method localQueueEventMethod;
+        try
+        {
+            Class<?> testableClass = Class.forName("org.apache.zookeeper.Testable");
+            localQueueEventMethod = testableClass.getMethod("queueEvent", WatchedEvent.class);
+        }
+        catch ( ReflectiveOperationException ignore )
+        {
+            localQueueEventMethod = null;
+            LoggerFactory.getLogger(Compatibility.class).info("Using emulated InjectSessionExpiration");
+        }
+        queueEventMethod = localQueueEventMethod;
     }
 
     /**
@@ -61,16 +81,21 @@ public class Compatibility
      */
     public static void injectSessionExpiration(ZooKeeper zooKeeper)
     {
-        if ( isZK34() )
+        if ( isZK34() || (queueEventMethod == null) )
         {
             InjectSessionExpiration.injectSessionExpiration(zooKeeper);
         }
         else
         {
-            // LOL - this method was proposed by me (JZ) in 2013 for totally unrelated reasons
-            // it got added to ZK 3.5 and now does exactly what we need
-            // https://issues.apache.org/jira/browse/ZOOKEEPER-1730
-            zooKeeper.getTestable().injectSessionExpiration();
+            try
+            {
+                WatchedEvent event = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Expired, null);
+                queueEventMethod.invoke(zooKeeper.getTestable(), event);
+            }
+            catch ( Exception e )
+            {
+                logger.error("Could not call Testable.queueEvent()", e);
+            }
         }
     }
 }

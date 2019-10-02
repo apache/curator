@@ -44,7 +44,7 @@ public class DistributedBarrier
         @Override
         public void process(WatchedEvent event)
         {
-            notifyFromWatcher();
+            client.postSafeNotify(DistributedBarrier.this);
         }
     };
 
@@ -141,10 +141,5 @@ public class DistributedBarrier
             }
         }
         return result;
-    }
-
-    private synchronized void notifyFromWatcher()
-    {
-        notifyAll();
     }
 }

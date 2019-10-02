@@ -18,11 +18,17 @@
  */
 package org.apache.curator.x.discovery.server.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ArrayNode;
-import org.codehaus.jackson.node.ObjectNode;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
@@ -31,12 +37,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-import java.util.List;
 
 /**
  * Message body reader/writer. Inject this as appropriate for the JAX-RS implementation you are using
@@ -57,7 +57,7 @@ public class JsonServiceNamesMarshaller implements MessageBodyReader<ServiceName
     {
         List<String>        names = Lists.newArrayList();
         ObjectMapper        mapper = new ObjectMapper();
-        JsonNode            tree = mapper.reader().readTree(entityStream);
+        JsonNode tree = mapper.reader().readTree(entityStream);
         for ( int i = 0; i < tree.size(); ++i )
         {
             JsonNode node = tree.get(i);

@@ -38,6 +38,8 @@ public class ZKPaths
      */
     public static final String PATH_SEPARATOR = "/";
 
+    private static final char PATH_SEPARATOR_CHAR = '/';
+
     private static final CreateMode NON_CONTAINER_MODE = CreateMode.PERSISTENT;
 
     /**
@@ -120,7 +122,7 @@ public class ZKPaths
     public static String getNodeFromPath(String path)
     {
         PathUtils.validatePath(path);
-        int i = path.lastIndexOf(PATH_SEPARATOR);
+        int i = path.lastIndexOf(PATH_SEPARATOR_CHAR);
         if ( i < 0 )
         {
             return path;
@@ -152,6 +154,49 @@ public class ZKPaths
         {
             return node;
         }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + node.hashCode();
+            result = prime * result + path.hashCode();
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+            {
+              return true;
+            }
+            if (obj == null)
+            {
+              return false;
+            }
+            if (getClass() != obj.getClass())
+            {
+              return false;
+            }
+            PathAndNode other = (PathAndNode) obj;
+            if (!node.equals(other.node))
+            {
+              return false;
+            }
+            if (!path.equals(other.path))
+            {
+              return false;
+            }
+            return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "PathAndNode [path=" + path + ", node=" + node + "]";
+        }
     }
 
     /**
@@ -163,7 +208,7 @@ public class ZKPaths
     public static PathAndNode getPathAndNode(String path)
     {
         PathUtils.validatePath(path);
-        int i = path.lastIndexOf(PATH_SEPARATOR);
+        int i = path.lastIndexOf(PATH_SEPARATOR_CHAR);
         if ( i < 0 )
         {
             return new PathAndNode(path, "");
@@ -177,7 +222,22 @@ public class ZKPaths
         return new PathAndNode(parentPath, node);
     }
 
-    private static final Splitter PATH_SPLITTER = Splitter.on(PATH_SEPARATOR).omitEmptyStrings();
+    // Hardcoded in {@link org.apache.zookeeper.server.PrepRequestProcessor}
+    static final int SEQUENTIAL_SUFFIX_DIGITS = 10;
+
+    /**
+     * Extracts the ten-digit suffix from a sequential znode path. Does not currently perform validation on the
+     * provided path; it will just return a string comprising the last ten characters.
+     * 
+     * @param path the path of a sequential znodes
+     * @return the sequential suffix
+     */
+    public static String extractSequentialSuffix(String path) {
+        int length = path.length();
+        return length > SEQUENTIAL_SUFFIX_DIGITS ? path.substring(length - SEQUENTIAL_SUFFIX_DIGITS) : path;
+    }
+
+    private static final Splitter PATH_SPLITTER = Splitter.on(PATH_SEPARATOR_CHAR).omitEmptyStrings();
 
     /**
      * Given a full path, return the the individual parts, without slashes.
@@ -256,7 +316,7 @@ public class ZKPaths
         int pos = 1; // skip first slash, root is guaranteed to exist
         do
         {
-            pos = path.indexOf(PATH_SEPARATOR, pos + 1);
+            pos = path.indexOf(PATH_SEPARATOR_CHAR, pos + 1);
 
             if ( pos == -1 )
             {
@@ -313,7 +373,16 @@ public class ZKPaths
     {
         PathUtils.validatePath(path);
 
-        List<String> children = zookeeper.getChildren(path, null);
+        List<String> children;
+        try
+        {
+            children = zookeeper.getChildren(path, null);
+        }
+        catch (KeeperException.NoNodeException e)
+        {
+            // someone else has deleted the node since we checked
+            return;
+        }
         for ( String child : children )
         {
             String fullPath = makePath(path, child);
@@ -333,7 +402,7 @@ public class ZKPaths
             }
             catch ( KeeperException.NoNodeException e )
             {
-                // ignore... someone else has deleted the node it since we checked
+                // ignore... someone else has deleted the node since we checked
             }
         }
     }
@@ -364,7 +433,10 @@ public class ZKPaths
      */
     public static String makePath(String parent, String child)
     {
-        StringBuilder path = new StringBuilder();
+        // 2 is the maximum number of additional path separators inserted
+        int maxPathLength = nullableStringLength(parent) + nullableStringLength(child) + 2;
+        // Avoid internal StringBuilder's buffer reallocation by specifying the max path length
+        StringBuilder path = new StringBuilder(maxPathLength);
 
         joinPath(path, parent, child);
 
@@ -381,7 +453,18 @@ public class ZKPaths
      */
     public static String makePath(String parent, String firstChild, String... restChildren)
     {
-        StringBuilder path = new StringBuilder();
+        // 2 is the maximum number of additional path separators inserted
+        int maxPathLength = nullableStringLength(parent) + nullableStringLength(firstChild) + 2;
+        if ( restChildren != null )
+        {
+            for ( String child : restChildren )
+            {
+                // 1 is for possible additional separator
+                maxPathLength += nullableStringLength(child) + 1;
+            }
+        }
+        // Avoid internal StringBuilder's buffer reallocation by specifying the max path length
+        StringBuilder path = new StringBuilder(maxPathLength);
 
         joinPath(path, parent, firstChild);
 
@@ -400,6 +483,11 @@ public class ZKPaths
         }
     }
 
+    private static int nullableStringLength(String s)
+    {
+        return s != null ? s.length() : 0;
+    }
+
     /**
      * Given a parent and a child node, join them in the given {@link StringBuilder path}
      *
@@ -412,13 +500,13 @@ public class ZKPaths
         // Add parent piece, with no trailing slash.
         if ( (parent != null) && (parent.length() > 0) )
         {
-            if ( !parent.startsWith(PATH_SEPARATOR) )
+            if ( parent.charAt(0) != PATH_SEPARATOR_CHAR )
             {
-                path.append(PATH_SEPARATOR);
+                path.append(PATH_SEPARATOR_CHAR);
             }
-            if ( parent.endsWith(PATH_SEPARATOR) )
+            if ( parent.charAt(parent.length() - 1) == PATH_SEPARATOR_CHAR )
             {
-                path.append(parent.substring(0, parent.length() - 1));
+                path.append(parent, 0, parent.length() - 1);
             }
             else
             {
@@ -426,31 +514,42 @@ public class ZKPaths
             }
         }
 
-        if ( (child == null) || (child.length() == 0) || (child.equals(PATH_SEPARATOR)) )
+        if ( (child == null) || (child.length() == 0) ||
+                (child.length() == 1 && child.charAt(0) == PATH_SEPARATOR_CHAR) )
         {
             // Special case, empty parent and child
             if ( path.length() == 0 )
             {
-                path.append(PATH_SEPARATOR);
+                path.append(PATH_SEPARATOR_CHAR);
             }
             return;
         }
 
         // Now add the separator between parent and child.
-        path.append(PATH_SEPARATOR);
+        path.append(PATH_SEPARATOR_CHAR);
 
-        if ( child.startsWith(PATH_SEPARATOR) )
+        int childAppendBeginIndex;
+        if ( child.charAt(0) == PATH_SEPARATOR_CHAR )
         {
-            child = child.substring(1);
+            childAppendBeginIndex = 1;
+        }
+        else
+        {
+            childAppendBeginIndex = 0;
         }
 
-        if ( child.endsWith(PATH_SEPARATOR) )
+        int childAppendEndIndex;
+        if ( child.charAt(child.length() - 1) == PATH_SEPARATOR_CHAR )
         {
-            child = child.substring(0, child.length() - 1);
+            childAppendEndIndex = child.length() - 1;
+        }
+        else
+        {
+            childAppendEndIndex = child.length();
         }
 
         // Finally, add the child.
-        path.append(child);
+        path.append(child, childAppendBeginIndex, childAppendEndIndex);
     }
 
     private ZKPaths()

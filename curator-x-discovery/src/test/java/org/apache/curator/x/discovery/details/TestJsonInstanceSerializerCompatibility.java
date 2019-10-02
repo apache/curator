@@ -19,12 +19,12 @@
 
 package org.apache.curator.x.discovery.details;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.TestJsonInstanceSerializer;
 import org.apache.curator.x.discovery.UriSpec;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.JavaType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.net.URI;

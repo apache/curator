@@ -72,13 +72,13 @@ public class CuratorTempFrameworkImpl implements CuratorTempFramework
     }
 
     @VisibleForTesting
-    CuratorFrameworkImpl getClient()
+    synchronized CuratorFrameworkImpl getClient()
     {
         return client;
     }
 
     @VisibleForTesting
-    ScheduledExecutorService getCleanup()
+    synchronized ScheduledExecutorService getCleanup()
     {
         return cleanup;
     }

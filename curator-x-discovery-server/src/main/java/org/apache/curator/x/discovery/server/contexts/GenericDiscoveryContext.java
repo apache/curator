@@ -18,13 +18,13 @@
  */
 package org.apache.curator.x.discovery.server.contexts;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.reflect.TypeToken;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ObjectNode;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 
@@ -88,7 +88,7 @@ public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextR
         T payload;
         ObjectMapper mapper = new ObjectMapper();
         //noinspection unchecked
-        payload = (T)mapper.readValue(node, payloadType.getRawType());
+        payload = (T)mapper.readValue(node.toString(), payloadType.getRawType());
         return payload;
     }
 

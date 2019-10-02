@@ -36,6 +36,7 @@ import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
+import org.apache.curator.framework.state.ConnectionStateListenerManagerFactory;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
@@ -47,8 +48,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.CuratorZookeeperClient;
 
 import static org.apache.curator.utils.Compatibility.isZK34;
 
@@ -147,6 +151,9 @@ public class CuratorFrameworkFactory
         private ConnectionHandlingPolicy connectionHandlingPolicy = new StandardConnectionHandlingPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
         private boolean zk34CompatibilityMode = isZK34();
+        private int waitForShutdownTimeoutMs = 0;
+        private Executor runSafeService = null;
+        private ConnectionStateListenerManagerFactory connectionStateListenerManagerFactory = ConnectionStateListenerManagerFactory.standard;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -188,7 +195,7 @@ public class CuratorFrameworkFactory
 
         /**
          * Add connection authorization
-         * 
+         *
          * Subsequent calls to this method overwrite the prior calls.
          *
          * @param scheme the scheme
@@ -402,6 +409,20 @@ public class CuratorFrameworkFactory
         }
 
         /**
+         * Set a timeout for {@link CuratorZookeeperClient#close(int)}  }.
+         * The default is 0, which means that this feature is disabled.
+         *
+         * @since 4.0.2
+         * @param waitForShutdownTimeoutMs default timeout
+         * @return this
+         */
+        public Builder waitForShutdownTimeoutMs(int waitForShutdownTimeoutMs)
+        {
+            this.waitForShutdownTimeoutMs = waitForShutdownTimeoutMs;
+            return this;
+        }
+
+        /**
          * <p>
          *     Change the connection handling policy. The default policy is {@link StandardConnectionHandlingPolicy}.
          * </p>
@@ -459,6 +480,42 @@ public class CuratorFrameworkFactory
             return this;
         }
 
+        /**
+         * Curator (and user) recipes will use this executor to call notifyAll
+         * and other blocking calls that might normally block ZooKeeper's event thread.
+         * By default, an executor is allocated internally using the provided (or default)
+         * {@link #threadFactory(java.util.concurrent.ThreadFactory)}. Use this method
+         * to set a custom executor.
+         *
+         * @param runSafeService executor to use for calls to notifyAll from Watcher callbacks etc
+         * @return this
+         * @since 4.1.0
+         */
+        public Builder runSafeService(Executor runSafeService)
+        {
+            this.runSafeService = runSafeService;
+            return this;
+        }
+
+        /**
+         * Sets the connection state listener manager factory. For example,
+         * you can set {@link org.apache.curator.framework.state.ConnectionStateListenerManagerFactory#circuitBreaking(org.apache.curator.RetryPolicy)}
+         *
+         * @param connectionStateListenerManagerFactory manager factory to use
+         * @return this
+         * @since 4.2.0
+         */
+        public Builder connectionStateListenerManagerFactory(ConnectionStateListenerManagerFactory connectionStateListenerManagerFactory)
+        {
+            this.connectionStateListenerManagerFactory = Objects.requireNonNull(connectionStateListenerManagerFactory, "connectionStateListenerManagerFactory cannot be null");
+            return this;
+        }
+
+        public Executor getRunSafeService()
+        {
+            return runSafeService;
+        }
+
         public ACLProvider getAclProvider()
         {
             return aclProvider;
@@ -492,6 +549,11 @@ public class CuratorFrameworkFactory
         public int getConnectionTimeoutMs()
         {
             return connectionTimeoutMs;
+        }
+
+        public int getWaitForShutdownTimeoutMs()
+        {
+            return waitForShutdownTimeoutMs;
         }
 
         public int getMaxCloseWaitMs()
@@ -594,6 +656,11 @@ public class CuratorFrameworkFactory
         public boolean canBeReadOnly()
         {
             return canBeReadOnly;
+        }
+
+        public ConnectionStateListenerManagerFactory getConnectionStateListenerManagerFactory()
+        {
+            return connectionStateListenerManagerFactory;
         }
 
         private Builder()

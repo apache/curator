@@ -46,8 +46,10 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -389,6 +391,33 @@ public class TestFramework extends BaseClassForTests
             Assert.assertNull(async.checkExists().forPath("/one/two").toCompletableFuture().get());
             new Timing().sleepABit();
             Assert.assertNull(async.checkExists().forPath("/one").toCompletableFuture().get());
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testCreateWithProtection() throws ExecutionException, InterruptedException
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            AsyncCuratorFramework async = AsyncCuratorFramework.wrap(client);
+            String path = async.create().withOptions(Collections.singleton(CreateOption.doProtected)).forPath("/yo").toCompletableFuture().get();
+            String node = ZKPaths.getNodeFromPath(path);
+            Assert.assertTrue(node.startsWith(CreateBuilderImpl.PROTECTED_PREFIX), node);
+
+            // CURATOR-489: confirm that the node contains a valid UUID, eg '_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo'
+            int expectedProtectedIdLength = 36; // '53345f98-9423-4e0c-a7b5-9f819e3ec2e1'
+            int delimeterLength = 1; // '-'
+            int expectedNodeLength = CreateBuilderImpl.PROTECTED_PREFIX.length() + expectedProtectedIdLength + delimeterLength + "yo".length();
+            Assert.assertEquals(node.length(), expectedNodeLength);
+            int uuidStart = CreateBuilderImpl.PROTECTED_PREFIX.length();
+            String protectedId = node.substring(uuidStart, uuidStart + expectedProtectedIdLength);
+            UUID.fromString(protectedId); // will throw if token is not a UUID
         }
         finally
         {

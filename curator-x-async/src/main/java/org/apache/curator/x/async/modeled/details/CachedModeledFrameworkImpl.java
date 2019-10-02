@@ -248,7 +248,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
         List<ZPath> paths = cache.currentChildren(client.modelSpec().path())
             .keySet()
             .stream()
-            .filter(path -> path.equals(cache.basePath()))
+            .filter(path -> !path.isRoot() && path.parent().equals(client.modelSpec().path()))
             .collect(Collectors.toList());
         return completed(paths);
     }
@@ -259,7 +259,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T>
         List<ZNode<T>> nodes = cache.currentChildren(client.modelSpec().path())
             .entrySet()
             .stream()
-            .filter(e -> e.getKey().equals(cache.basePath()))
+            .filter(e -> !e.getKey().isRoot() && e.getKey().parent().equals(client.modelSpec().path()))
             .map(Map.Entry::getValue)
             .collect(Collectors.toList());
         return completed(nodes);

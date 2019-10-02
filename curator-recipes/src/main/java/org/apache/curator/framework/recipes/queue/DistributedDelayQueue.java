@@ -42,7 +42,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
 {
     private final DistributedQueue<T>      queue;
 
-    private static final String            SEPARATOR = "|";
+    private static final char              SEPARATOR = '|';
 
     DistributedDelayQueue
         (

@@ -20,6 +20,7 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -29,10 +30,10 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
-import org.apache.curator.test.compatibility.KillSession2;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
@@ -46,6 +47,104 @@ import static org.testng.AssertJUnit.assertNotNull;
 
 public class TestPathChildrenCache extends BaseClassForTests
 {
+    @Test
+    public void testParentContainerMissing() throws Exception
+    {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        PathChildrenCache cache = new PathChildrenCache(client, "/a/b/test", true);
+        try
+        {
+            client.start();
+            client.blockUntilConnected();   // avoid PathChildrenCache connected events
+
+            final BlockingQueue<PathChildrenCacheEvent.Type> events = Queues.newLinkedBlockingQueue();
+            PathChildrenCacheListener listener = new PathChildrenCacheListener()
+            {
+                @Override
+                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                {
+                    events.add(event.getType());
+                }
+            };
+            cache.getListenable().addListener(listener);
+            cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.INITIALIZED);
+
+            client.create().forPath("/a/b/test/one");
+            client.create().forPath("/a/b/test/two");
+            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+
+            client.delete().forPath("/a/b/test/one");
+            client.delete().forPath("/a/b/test/two");
+            client.delete().forPath("/a/b/test");
+            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+
+            timing.sleepABit();
+
+            client.create().creatingParentContainersIfNeeded().forPath("/a/b/test/new");
+            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testInitializedEvenIfChildDeleted() throws Exception
+    {
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+
+        PathChildrenCache cache = new PathChildrenCache(client, "/a/b/test", true)
+        {
+            @Override
+            void getDataAndStat(final String fullPath) throws Exception
+            {
+                // before installing a data watcher on the child, let's delete this child
+                client.delete().forPath("/a/b/test/one");
+                super.getDataAndStat(fullPath);
+            }
+        };
+
+        Timing timing = new Timing();
+
+        try
+        {
+            client.start();
+
+            final CountDownLatch cacheInitialized = new CountDownLatch(1);
+
+            PathChildrenCacheListener listener = new PathChildrenCacheListener()
+            {
+                @Override
+                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
+                {
+                    if ( event.getType() == PathChildrenCacheEvent.Type.INITIALIZED )
+                    {
+                        cacheInitialized.countDown();
+                    }
+                }
+            };
+            cache.getListenable().addListener(listener);
+
+            client.create().creatingParentsIfNeeded().forPath("/a/b/test/one");
+
+            cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+
+            Assert.assertTrue(timing.awaitLatch(cacheInitialized));
+            Assert.assertEquals(cache.getCurrentData().size(), 0);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(cache);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     @Test
     public void testWithBadConnect() throws Exception
     {
@@ -91,11 +190,11 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.getListenable().addListener(listener);
             cache.start();
             Assert.assertTrue(timing.awaitLatch(ensurePathLatch));
-            
+
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             client.getConnectionStateListenable().addListener(new ConnectionStateListener()
             {
-                
+
                 @Override
                 public void stateChanged(CuratorFramework client, ConnectionState newState)
                 {
@@ -107,7 +206,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             });
 
             server = new TestingServer(serverPort, true);
-            
+
             Assert.assertTrue(timing.awaitLatch(connectedLatch));
 
             client.create().creatingParentContainersIfNeeded().forPath("/baz", new byte[]{1, 2, 3});
@@ -715,7 +814,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             client.create().withMode(CreateMode.EPHEMERAL).forPath("/test/me", "data".getBytes());
             Assert.assertTrue(timing.awaitLatch(childAddedLatch));
 
-            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
             Assert.assertTrue(timing.awaitLatch(lostLatch));
             Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
             Assert.assertTrue(timing.awaitLatch(removedLatch));

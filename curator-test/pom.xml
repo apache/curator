@@ -24,11 +24,11 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>4.0.1-SNAPSHOT</version>
+        <version>4.2.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-test</artifactId>
-    <version>4.0.1-SNAPSHOT</version>
+    <version>4.2.1-SNAPSHOT</version>
 
     <name>Curator Testing</name>
     <description>Unit testing utilities.</description>
@@ -74,6 +74,8 @@
                             <artifactSet>
                                 <includes>
                                     <include>com.google.guava:guava</include>
+                                    <include>com.google.guava:listenablefuture</include>
+                                    <include>com.google.guava:failureaccess</include>
                                 </includes>
                             </artifactSet>
                             <relocations>

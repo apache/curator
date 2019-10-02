@@ -37,7 +37,7 @@ class HandleHolder
     private interface Helper
     {
         ZooKeeper getZooKeeper() throws Exception;
-        
+
         String getConnectionString();
 
         int getNegotiatedSessionTimeoutMs();
@@ -73,15 +73,15 @@ class HandleHolder
         return ((helperConnectionString != null) && !ensembleProvider.getConnectionString().equals(helperConnectionString)) ? helperConnectionString : null;
     }
 
-    void closeAndClear() throws Exception
+    void closeAndClear(int waitForShutdownTimeoutMs) throws Exception
     {
-        internalClose();
+        internalClose(waitForShutdownTimeoutMs);
         helper = null;
     }
 
     void closeAndReset() throws Exception
     {
-        internalClose();
+        internalClose(0);
 
         // first helper is synchronized when getZooKeeper is called. Subsequent calls
         // are not synchronized.
@@ -140,7 +140,7 @@ class HandleHolder
         };
     }
 
-    private void internalClose() throws Exception
+    private void internalClose(int waitForShutdownTimeoutMs) throws Exception
     {
         try
         {
@@ -155,7 +155,14 @@ class HandleHolder
                     }
                 };
                 zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
-                zooKeeper.close();
+                if ( waitForShutdownTimeoutMs == 0 )
+                {
+                    zooKeeper.close();  // coming from closeAndReset() which is executed in ZK's event thread. Cannot use zooKeeper.close(n) otherwise we'd get a dead lock
+                }
+                else
+                {
+                    zooKeeper.close(waitForShutdownTimeoutMs);
+                }
             }
         }
         catch ( InterruptedException dummy )

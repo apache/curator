@@ -112,14 +112,17 @@ class ConnectionState implements Watcher, Closeable
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
+        close(0);
+    }
+    
+    public void close(int waitForShutdownTimeoutMs) throws IOException {
         log.debug("Closing");
 
         CloseableUtils.closeQuietly(ensembleProvider);
         try
         {
-            zooKeeper.closeAndClear();
+            zooKeeper.closeAndClear(waitForShutdownTimeoutMs);
         }
         catch ( Exception e )
         {

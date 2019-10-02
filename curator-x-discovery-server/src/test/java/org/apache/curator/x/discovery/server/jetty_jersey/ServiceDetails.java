@@ -18,10 +18,9 @@
  */
 package org.apache.curator.x.discovery.server.jetty_jersey;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.codehaus.jackson.map.annotate.JsonRootName;
 
 /**
  * Service payload describing details of a service.

@@ -25,15 +25,11 @@
     <skin>
         <groupId>org.apache.maven.skins</groupId>
         <artifactId>maven-fluido-skin</artifactId>
-        <version>1.6</version>
+        <version>1.7</version>
     </skin>
 
     <custom>
         <fluidoSkin>
-            <ohloh>
-                <projectId>apache-curator</projectId>
-                <widget>factoids</widget>
-            </ohloh>
             <facebookLike />
             <googlePlusOne />
             <twitter>
@@ -75,10 +71,11 @@
 
         <menu name="Apache Curator" inherit="top">
             <item name="About" href="index.html"/>
+            <item name="Download" href="https://cwiki.apache.org/confluence/display/CURATOR/Releases"/>
             <item name="Getting Started" href="getting-started.html"/>
             <item name="Examples" href="curator-examples/index.html"/>
             <item name="Recipes" href="curator-recipes/index.html"/>
-            <item name="Java 8/Async" href="curator-x-async/index.html"/>
+            <item name="Curator Async" href="curator-x-async/index.html"/>
             <item name="Strongly Typed Models" href="curator-x-async/modeled.html"/>
             <item name="Migrations" href="curator-x-async/migrations.html"/>
             <item name="Schema Support" href="curator-framework/schema.html"/>
@@ -98,9 +95,8 @@
             <item name="Error Handling" href="errors.html"/>
             <item name="Logging and Tracing" href="logging.html"/>
             <item name="Tech Notes" href="https://cwiki.apache.org/confluence/display/CURATOR/Tech+Notes"/>
-            <item name="Exhibitor Integration" href="exhibitor.html"/>
-            <item name="Source Code" href="source-repository.html"/>
-            <item name="Project Team" href="team-list.html"/>
+            <item name="Source Code" href="scm.html"/>
+            <item name="Project Team" href="team.html"/>
             <item name="Project Information" href="project-info.html"/>
             <item name="API Compatibility" href="compatibility.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>

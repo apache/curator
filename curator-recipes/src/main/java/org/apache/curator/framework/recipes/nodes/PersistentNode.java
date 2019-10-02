@@ -37,6 +37,7 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -444,8 +445,19 @@ public class PersistentNode implements Closeable
 
         try
         {
-            String existingPath = nodePath.get();
-            String createPath = (existingPath != null && !useProtection) ? existingPath : basePath;
+            String existingPath = nodePath.get(), createPath;
+            if ( existingPath != null && !useProtection )
+            {
+                createPath = existingPath;
+            }
+            else if ( existingPath != null && mode.isSequential() )
+            {
+                createPath = basePath + ZKPaths.extractSequentialSuffix(existingPath);
+            }
+            else
+            {
+                createPath = basePath;
+            }
 
             CreateModable<ACLBackgroundPathAndBytesable<String>> localCreateMethod = createMethod.get();
             if ( localCreateMethod == null )

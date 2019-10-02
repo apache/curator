@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Queues;
@@ -25,39 +26,184 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.SafeIsTtlMode;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
+import org.apache.curator.framework.api.ErrorListenerPathAndBytesable;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.KillSession2;
+import org.apache.curator.test.InstanceSpec;
+import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.curator.framework.api.CreateBuilder;
 
 public class TestFrameworkEdges extends BaseClassForTests
 {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final Timing2 timing = new Timing2();
+
+    @BeforeClass
+    public static void setUpClass()
+    {
+        System.setProperty("zookeeper.extendedTypesEnabled", "true");
+    }
+
+    @Test
+    public void testInjectSessionExpiration() throws Exception
+    {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
+        {
+            client.start();
+
+            CountDownLatch expiredLatch = new CountDownLatch(1);
+            Watcher watcher = event -> {
+                if ( event.getState() == Watcher.Event.KeeperState.Expired )
+                {
+                    expiredLatch.countDown();
+                }
+            };
+            client.checkExists().usingWatcher(watcher).forPath("/foobar");
+            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
+            Assert.assertTrue(timing.awaitLatch(expiredLatch));
+        }
+    }
+
+    @Test
+    public void testProtectionWithKilledSession() throws Exception
+    {
+        server.stop();  // not needed
+
+        // see CURATOR-498
+        // attempt to re-create the state described in the bug report: create a 3 Instance ensemble;
+        // have Curator connect to only 1 one of those instances; set failNextCreateForTesting to
+        // simulate protection mode searching; kill the connected server when this happens;
+        // wait for session timeout to elapse and then restart the instance. In most cases
+        // this will cause the scenario as Curator will send the session cancel and do protection mode
+        // search around the same time. The protection mode search should return first as it can be resolved
+        // by the Instance Curator is connected to but the session kill needs a quorum vote (it's a
+        // transaction)
+
+        try (TestingCluster cluster = new TestingCluster(3))
+        {
+            cluster.start();
+            InstanceSpec instanceSpec0 = cluster.getServers().get(0).getInstanceSpec();
+
+            CountDownLatch serverStoppedLatch = new CountDownLatch(1);
+            RetryPolicy retryPolicy = new RetryForever(100)
+            {
+                @Override
+                public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
+                {
+                    if ( serverStoppedLatch.getCount() > 0 )
+                    {
+                        try
+                        {
+                            cluster.killServer(instanceSpec0);
+                        }
+                        catch ( Exception e )
+                        {
+                            // ignore
+                        }
+                        serverStoppedLatch.countDown();
+                    }
+                    return super.allowRetry(retryCount, elapsedTimeMs, sleeper);
+                }
+            };
+
+            try (CuratorFramework client = CuratorFrameworkFactory.newClient(instanceSpec0.getConnectString(), timing.session(), timing.connection(), retryPolicy))
+            {
+                BlockingQueue<String> createdNode = new LinkedBlockingQueue<>();
+                BackgroundCallback callback = (__, event) -> {
+                    if ( event.getType() == CuratorEventType.CREATE )
+                    {
+                        createdNode.offer(event.getPath());
+                    }
+                };
+
+                client.start();
+                client.create().forPath("/test");
+
+                ErrorListenerPathAndBytesable<String> builder = client.create().withProtection().withMode(CreateMode.EPHEMERAL).inBackground(callback);
+                ((CreateBuilderImpl)builder).failNextCreateForTesting = true;
+
+                builder.forPath("/test/hey");
+
+                Assert.assertTrue(timing.awaitLatch(serverStoppedLatch));
+                timing.forSessionSleep().sleep();   // wait for session to expire
+                cluster.restartServer(instanceSpec0);
+
+                String path = timing.takeFromQueue(createdNode);
+                List<String> children = client.getChildren().forPath("/test");
+                Assert.assertEquals(Collections.singletonList(ZKPaths.getNodeFromPath(path)), children);
+            }
+        }
+    }
+
+    @Test
+    public void testBackgroundLatencyUnSleep() throws Exception
+    {
+        server.stop();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            ((CuratorFrameworkImpl)client).sleepAndQueueOperationSeconds = Integer.MAX_VALUE;
+
+            final CountDownLatch latch = new CountDownLatch(3);
+            BackgroundCallback callback = new BackgroundCallback()
+            {
+                @Override
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    if ( (event.getType() == CuratorEventType.CREATE) && (event.getResultCode() == KeeperException.Code.OK.intValue()) )
+                    {
+                        latch.countDown();
+                    }
+                }
+            };
+            // queue multiple operations for a more complete test
+            client.create().inBackground(callback).forPath("/test");
+            client.create().inBackground(callback).forPath("/test/one");
+            client.create().inBackground(callback).forPath("/test/two");
+            server.restart();
+
+            Assert.assertTrue(timing.awaitLatch(latch));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 
     @Test
     public void testCreateContainersForBadConnect() throws Exception
@@ -179,9 +325,10 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             };
             final String TEST_PATH = "/a/b/c/test-";
-            long ttl = timing.forWaiting().milliseconds()*1000;
+            long ttl = timing.forWaiting().milliseconds() * 1000;
             CreateBuilder firstCreateBuilder = client.create();
-            if( SafeIsTtlMode.isTtl(mode) ) {
+            if ( SafeIsTtlMode.isTtl(mode) )
+            {
                 firstCreateBuilder.withTtl(ttl);
             }
             firstCreateBuilder.withMode(mode).inBackground(callback).forPath(TEST_PATH);
@@ -193,10 +340,11 @@ public class TestFrameworkEdges extends BaseClassForTests
 
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), 1, new RetryOneTime(1));
             client.start();
-            
+
             CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.withProtection();
-            if(SafeIsTtlMode.isTtl(mode)) {
+            if ( SafeIsTtlMode.isTtl(mode) )
+            {
                 createBuilder.withTtl(ttl);
             }
 
@@ -233,16 +381,13 @@ public class TestFrameworkEdges extends BaseClassForTests
             client.start();
             client.getZookeeperClient().blockUntilConnectedOrTimedOut();
             server.close();
-            client.getChildren().inBackground
-                (
-                    new BackgroundCallback()
-                    {
-                        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                        {
-                            latch.countDown();
-                        }
-                    }
-                ).forPath("/");
+            client.getChildren().inBackground(new BackgroundCallback()
+            {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    latch.countDown();
+                }
+            }).forPath("/");
             Assert.assertTrue(timing.awaitLatch(latch));
         }
         finally
@@ -378,22 +523,18 @@ public class TestFrameworkEdges extends BaseClassForTests
         {
             client.create().forPath("/sessionTest");
 
-            final AtomicBoolean sessionDied = new AtomicBoolean(false);
-            Watcher watcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
+            CountDownLatch sessionDiedLatch = new CountDownLatch(1);
+            Watcher watcher = event -> {
+                if ( event.getState() == Watcher.Event.KeeperState.Expired )
                 {
-                    if ( event.getState() == Event.KeeperState.Expired )
-                    {
-                        sessionDied.set(true);
-                    }
+                    sessionDiedLatch.countDown();
                 }
             };
+
             client.checkExists().usingWatcher(watcher).forPath("/sessionTest");
-            KillSession2.kill(client.getZookeeperClient().getZooKeeper());
+            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
+            Assert.assertTrue(timing.awaitLatch(sessionDiedLatch));
             Assert.assertNotNull(client.checkExists().forPath("/sessionTest"));
-            Assert.assertTrue(sessionDied.get());
         }
         finally
         {
@@ -408,27 +549,24 @@ public class TestFrameworkEdges extends BaseClassForTests
         client.start();
         try
         {
-            client.getCuratorListenable().addListener
-                (
-                    new CuratorListener()
+            client.getCuratorListenable().addListener(new CuratorListener()
+            {
+                @Override
+                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
+                {
+                    if ( event.getType() == CuratorEventType.EXISTS )
                     {
-                        @Override
-                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-                        {
-                            if ( event.getType() == CuratorEventType.EXISTS )
-                            {
-                                Stat stat = client.checkExists().forPath("/yo/yo/yo");
-                                Assert.assertNull(stat);
+                        Stat stat = client.checkExists().forPath("/yo/yo/yo");
+                        Assert.assertNull(stat);
 
-                                client.create().inBackground(event.getContext()).forPath("/what");
-                            }
-                            else if ( event.getType() == CuratorEventType.CREATE )
-                            {
-                                ((CountDownLatch)event.getContext()).countDown();
-                            }
-                        }
+                        client.create().inBackground(event.getContext()).forPath("/what");
                     }
-                );
+                    else if ( event.getType() == CuratorEventType.CREATE )
+                    {
+                        ((CountDownLatch)event.getContext()).countDown();
+                    }
+                }
+            });
 
             CountDownLatch latch = new CountDownLatch(1);
             client.checkExists().inBackground(latch).forPath("/hey");
@@ -448,20 +586,17 @@ public class TestFrameworkEdges extends BaseClassForTests
         try
         {
             final CountDownLatch latch = new CountDownLatch(1);
-            client.getConnectionStateListenable().addListener
-                (
-                    new ConnectionStateListener()
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
+            {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState)
+                {
+                    if ( newState == ConnectionState.LOST )
                     {
-                        @Override
-                        public void stateChanged(CuratorFramework client, ConnectionState newState)
-                        {
-                            if ( newState == ConnectionState.LOST )
-                            {
-                                latch.countDown();
-                            }
-                        }
+                        latch.countDown();
                     }
-                );
+                }
+            });
 
             client.checkExists().forPath("/hey");
             client.checkExists().inBackground().forPath("/hey");
@@ -610,6 +745,112 @@ public class TestFrameworkEdges extends BaseClassForTests
         catch ( Exception e )
         {
             // correct
+        }
+    }
+
+    @Test
+    public void testDeleteChildrenConcurrently() throws Exception
+    {
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client.start();
+            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
+            client2.start();
+            client2.getZookeeperClient().blockUntilConnectedOrTimedOut();
+
+            int childCount = 5000;
+            for ( int i = 0; i < childCount; i++ )
+            {
+                client.create().creatingParentsIfNeeded().forPath("/parent/child" + i);
+            }
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    long start = System.currentTimeMillis();
+                    try
+                    {
+                        client.delete().deletingChildrenIfNeeded().forPath("/parent");
+                    }
+                    catch ( Exception e )
+                    {
+                        if ( e instanceof KeeperException.NoNodeException )
+                        {
+                            Assert.fail("client delete failed, shouldn't throw NoNodeException", e);
+                        }
+                        else
+                        {
+                            Assert.fail("unexpected exception", e);
+                        }
+                    }
+                    finally
+                    {
+                        log.info("client has deleted children, it costs: {}ms", System.currentTimeMillis() - start);
+                        latch.countDown();
+                    }
+                }
+            }).start();
+
+            boolean threadDeleted = false;
+            boolean client2Deleted = false;
+            Random random = new Random();
+            for ( int i = 0; i < childCount; i++ )
+            {
+                String child = "/parent/child" + random.nextInt(childCount);
+                try
+                {
+                    if ( !threadDeleted )
+                    {
+                        Stat stat = client2.checkExists().forPath(child);
+                        if ( stat == null )
+                        {
+                            // the thread client has begin deleted the children
+                            threadDeleted = true;
+                            log.info("client has deleted the child {}", child);
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            client2.delete().forPath(child);
+                            client2Deleted = true;
+                            log.info("client2 deleted the child {} successfully", child);
+                            break;
+                        }
+                        catch ( Exception e )
+                        {
+                            if ( e instanceof KeeperException.NoNodeException )
+                            {
+                                // ignore, because it's deleted by the thread client
+                            }
+                            else
+                            {
+                                Assert.fail("unexpected exception", e);
+                            }
+                        }
+                    }
+                }
+                catch ( Exception e )
+                {
+                    Assert.fail("unexpected exception", e);
+                }
+            }
+
+            // The case run successfully, if client2 deleted a child successfully and the client deleted children successfully
+            Assert.assertTrue(client2Deleted);
+            Assert.assertTrue(timing.awaitLatch(latch));
+            Assert.assertNull(client2.checkExists().forPath("/parent"));
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+            CloseableUtils.closeQuietly(client2);
         }
     }
 }

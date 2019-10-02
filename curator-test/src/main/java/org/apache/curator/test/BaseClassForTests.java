@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.IInvokedMethod;
 import org.testng.IInvokedMethodListener2;
-import org.testng.IRetryAnalyzer;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
@@ -31,14 +30,14 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import java.io.IOException;
 import java.net.BindException;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class BaseClassForTests
 {
-    protected TestingServer server;
+    protected volatile TestingServer server;
+
     private final Logger log = LoggerFactory.getLogger(getClass());
+    private final AtomicBoolean isRetrying = new AtomicBoolean(false);
 
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
@@ -85,7 +84,33 @@ public class BaseClassForTests
     @BeforeSuite(alwaysRun = true)
     public void beforeSuite(ITestContext context)
     {
-        context.getSuite().addListener(new MethodListener(log));
+        IInvokedMethodListener2 methodListener2 = new IInvokedMethodListener2()
+        {
+            @Override
+            public void beforeInvocation(IInvokedMethod method, ITestResult testResult)
+            {
+                method.getTestMethod().setRetryAnalyzer(BaseClassForTests.this::retry);
+            }
+
+            @Override
+            public void beforeInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
+            {
+                beforeInvocation(method, testResult);
+            }
+
+            @Override
+            public void afterInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
+            {
+                // NOP
+            }
+
+            @Override
+            public void afterInvocation(IInvokedMethod method, ITestResult testResult)
+            {
+                // NOP
+            }
+        };
+        context.getSuite().addListener(methodListener2);
     }
 
     @BeforeMethod
@@ -98,6 +123,11 @@ public class BaseClassForTests
         System.setProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND, "true");
         System.setProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY, "true");
 
+        createServer();
+    }
+
+    protected void createServer() throws Exception
+    {
         while ( server == null )
         {
             try
@@ -134,112 +164,24 @@ public class BaseClassForTests
         }
     }
 
-    private static class RetryContext
+    private boolean retry(ITestResult result)
     {
-        final AtomicBoolean isRetrying = new AtomicBoolean(false);
-        final AtomicInteger runVersion = new AtomicInteger(0);
-    }
-
-    private static class RetryAnalyzer implements IRetryAnalyzer
-    {
-        private final Logger log;
-        private final RetryContext retryContext;
-
-        RetryAnalyzer(Logger log, RetryContext retryContext)
+        if ( result.isSuccess() || isRetrying.get() )
         {
-            this.log = log;
-            this.retryContext = Objects.requireNonNull(retryContext, "retryContext cannot be null");
+            isRetrying.set(false);
+            return false;
         }
 
-        @Override
-        public boolean retry(ITestResult result)
+        result.setStatus(ITestResult.SKIP);
+        if ( result.getThrowable() != null )
         {
-            if ( result.isSuccess() || retryContext.isRetrying.get() )
-            {
-                retryContext.isRetrying.set(false);
-                return false;
-            }
-
-            if ( result.getThrowable() != null )
-            {
-                log.error("Retrying 1 time", result.getThrowable());
-            }
-            else
-            {
-                log.error("Retrying 1 time");
-            }
-            retryContext.isRetrying.set(true);
-            return true;
+            log.error("Retrying 1 time", result.getThrowable());
         }
-    }
-
-    private static class MethodListener implements IInvokedMethodListener2
-    {
-        private final Logger log;
-
-        private static final String ATTRIBUTE_NAME = "__curator";
-
-        MethodListener(Logger log)
+        else
         {
-            this.log = log;
+            log.error("Retrying 1 time");
         }
-
-        @Override
-        public void beforeInvocation(IInvokedMethod method, ITestResult testResult)
-        {
-            // NOP
-        }
-
-        @Override
-        public void afterInvocation(IInvokedMethod method, ITestResult testResult)
-        {
-            // NOP
-        }
-
-        @Override
-        public void beforeInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
-        {
-            if ( method.getTestMethod().isBeforeMethodConfiguration() )
-            {
-                RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
-                if ( retryContext == null )
-                {
-                    retryContext = new RetryContext();
-                    context.setAttribute(ATTRIBUTE_NAME, retryContext);
-                }
-            }
-            else if ( method.isTestMethod() )
-            {
-                RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
-                if ( retryContext != null )
-                {
-                    method.getTestMethod().setRetryAnalyzer(new RetryAnalyzer(log, retryContext));
-                }
-            }
-        }
-
-        @Override
-        public void afterInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
-        {
-            if ( method.isTestMethod() )
-            {
-                RetryContext retryContext = (RetryContext)context.getAttribute(ATTRIBUTE_NAME);
-                if ( retryContext == null )
-                {
-                    log.error("No retryContext!");
-                }
-                else
-                {
-                    if ( testResult.isSuccess() || (testResult.getStatus() == ITestResult.FAILURE) )
-                    {
-                        retryContext.isRetrying.set(false);
-                        if ( retryContext.runVersion.incrementAndGet() > 1 )
-                        {
-                            context.setAttribute(ATTRIBUTE_NAME, null);
-                        }
-                    }
-                }
-            }
-        }
+        isRetrying.set(true);
+        return true;
     }
 }

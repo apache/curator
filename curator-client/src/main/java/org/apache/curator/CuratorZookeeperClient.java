@@ -52,6 +52,7 @@ public class CuratorZookeeperClient implements Closeable
     private final ConnectionState state;
     private final AtomicReference<RetryPolicy> retryPolicy = new AtomicReference<RetryPolicy>();
     private final int connectionTimeoutMs;
+    private final int waitForShutdownTimeoutMs;
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
     private final ConnectionHandlingPolicy connectionHandlingPolicy;
@@ -112,7 +113,28 @@ public class CuratorZookeeperClient implements Closeable
      * @param connectionHandlingPolicy connection handling policy - use one of the pre-defined policies or write your own
      * @since 3.0.0
      */
-    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy)
+    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy) {
+        this(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, 0,
+                watcher, retryPolicy, canBeReadOnly, connectionHandlingPolicy);
+    }
+    /**
+     * @param zookeeperFactory factory for creating {@link ZooKeeper} instances
+     * @param ensembleProvider the ensemble provider
+     * @param sessionTimeoutMs session timeout
+     * @param connectionTimeoutMs connection timeout
+     * @param waitForShutdownTimeoutMs default timeout fo close operation
+     * @param watcher default watcher or null
+     * @param retryPolicy the retry policy to use
+     * @param canBeReadOnly if true, allow ZooKeeper client to enter
+     *                      read only mode in case of a network partition. See
+     *                      {@link ZooKeeper#ZooKeeper(String, int, Watcher, long, byte[], boolean)}
+     *                      for details
+     * @param connectionHandlingPolicy connection handling policy - use one of the pre-defined policies or write your own
+     * @since 4.0.2
+     */
+    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider,
+            int sessionTimeoutMs, int connectionTimeoutMs, int waitForShutdownTimeoutMs, Watcher watcher,
+            RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy)
     {
         this.connectionHandlingPolicy = connectionHandlingPolicy;
         if ( sessionTimeoutMs < connectionTimeoutMs )
@@ -124,6 +146,7 @@ public class CuratorZookeeperClient implements Closeable
         ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
 
         this.connectionTimeoutMs = connectionTimeoutMs;
+        this.waitForShutdownTimeoutMs = waitForShutdownTimeoutMs;
         state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly, connectionHandlingPolicy);
         setRetryPolicy(retryPolicy);
     }
@@ -213,18 +236,34 @@ public class CuratorZookeeperClient implements Closeable
 
         state.start();
     }
-
+    
     /**
-     * Close the client
+     * Close the client.
+     *
+     * Same as {@link #close(int) } using the timeout set at construction time.
+     *
+     * @see #close(int)
      */
-    public void close()
+    @Override
+    public void close() {
+        close(waitForShutdownTimeoutMs);
+    }
+            
+    /**
+     * Close this client object as the {@link #close() } method.
+     * This method will wait for internal resources to be released.
+     * 
+     * @param waitForShutdownTimeoutMs timeout (in milliseconds) to wait for resources to be released.
+     *                  Use zero or a negative value to skip the wait.
+     */
+    public void close(int waitForShutdownTimeoutMs)
     {
-        log.debug("Closing");
+        log.debug("Closing, waitForShutdownTimeoutMs {}", waitForShutdownTimeoutMs);
 
         started.set(false);
         try
         {
-            state.close();
+            state.close(waitForShutdownTimeoutMs);
         }
         catch ( IOException e )
         {
@@ -389,9 +428,10 @@ public class CuratorZookeeperClient implements Closeable
 
             state.addParentWatcher(tempWatcher);
             long startTimeMs = System.currentTimeMillis();
+            long timeoutMs = Math.min(waitTimeMs, 1000);
             try
             {
-                latch.await(1, TimeUnit.SECONDS);
+                latch.await(timeoutMs, TimeUnit.MILLISECONDS);
             }
             finally
             {
