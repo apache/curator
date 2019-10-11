@@ -100,7 +100,7 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
     @Override
     public Optional<ZNode<T>> currentData(ZPath path)
     {
-        Entry<T> entry = entries.remove(path);
+        Entry<T> entry = entries.get(path);
         if ( entry != null )
         {
             return Optional.of(new ZNodeImpl<>(path, entry.stat, entry.model));

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -144,15 +145,30 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
                 });
             });
 
-            complete(client.child("p").child("c1").childrenAsZNodes(), (v, e) ->
-            {
-                Assert.assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild1));
-            });
+            complete(client.child("p").child("c1").childrenAsZNodes(), (v, e) -> Assert.assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild1)));
+            complete(client.child("p").child("c2").childrenAsZNodes(), (v, e) -> Assert.assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild2)));
+        }
+    }
 
-            complete(client.child("p").child("c2").childrenAsZNodes(), (v, e) ->
-            {
-                Assert.assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild2));
-            });
+    // note: CURATOR-546
+    @Test
+    public void testAccessCacheDirectly()
+    {
+        TestModel model = new TestModel("a", "b", "c", 20, BigInteger.ONE);
+        try (CachedModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec).cached())
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            client.listenable().addListener((t, p, s, m) -> latch.countDown());
+
+            client.start();
+            complete(client.child("m").set(model));
+            Assert.assertTrue(timing.awaitLatch(latch));
+
+            // call 2 times in a row to validate CURATOR-546
+            Optional<ZNode<TestModel>> optZNode = client.cache().currentData(modelSpec.path().child("m"));
+            Assert.assertEquals(optZNode.orElseThrow(() -> new AssertionError("node is missing")).model(), model);
+            optZNode = client.cache().currentData(modelSpec.path().child("m"));
+            Assert.assertEquals(optZNode.orElseThrow(() -> new AssertionError("node is missing")).model(), model);
         }
     }
 
