@@ -16,14 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test.compatibility;
+package org.apache.curator.test;
 
-import org.apache.curator.test.BaseClassForTests;
-
-public class CuratorTestBase extends BaseClassForTests
+public class FailedServerStartException extends IllegalStateException
 {
-    public static final String zk36Group = "zk36";
-    public static final String zk35TestCompatibilityGroup = "zk35TestCompatibility";
+    public FailedServerStartException(Throwable cause)
+    {
+        super(cause);
+    }
 
-    protected final Timing2 timing = new Timing2();
+    public FailedServerStartException(String s)
+    {
+        super(s);
+    }
 }

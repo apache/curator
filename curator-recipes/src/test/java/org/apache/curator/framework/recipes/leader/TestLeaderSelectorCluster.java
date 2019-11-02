@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.leader;
 
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -36,7 +37,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public class TestLeaderSelectorCluster
+public class TestLeaderSelectorCluster extends CuratorTestBase
 {
     @Test
     public void     testRestart() throws Exception
@@ -181,5 +182,11 @@ public class TestLeaderSelectorCluster
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(cluster);
         }
+    }
+
+    @Override
+    protected void createServer() throws Exception
+    {
+        // NOP
     }
 }
