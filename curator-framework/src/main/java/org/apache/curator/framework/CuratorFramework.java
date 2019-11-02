@@ -194,6 +194,7 @@ public interface CuratorFramework extends Closeable
 
     /**
      * Start a remove watches builder.
+     *
      * @return builder object
      */
     public RemoveWatchesBuilder watches();
@@ -330,6 +331,13 @@ public interface CuratorFramework extends Closeable
      * @return true/false
      */
     boolean isZk34CompatibilityMode();
+
+    /**
+     * Return true if this instance is running in ZK 3.5.x compatibility mode
+     *
+     * @return true/false
+     */
+    boolean isZk35CompatibilityMode();
 
     /**
      * Calls {@link #notifyAll()} on the given object after first synchronizing on it. This is

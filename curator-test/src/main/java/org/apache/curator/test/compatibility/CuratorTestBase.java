@@ -21,8 +21,11 @@ package org.apache.curator.test.compatibility;
 import org.apache.curator.test.BaseClassForTests;
 import org.testng.annotations.Listeners;
 
-@Listeners(Zk35MethodInterceptor.class)
 public class CuratorTestBase extends BaseClassForTests
 {
+    public static final String zk35Group = "zk35";
+    public static final String zk36Group = "zk36";
+    public static final String zk35CompatibilityGroup = "zk35Compatibility";
+
     protected final Timing2 timing = new Timing2();
 }

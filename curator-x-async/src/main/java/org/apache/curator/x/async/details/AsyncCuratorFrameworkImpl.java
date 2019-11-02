@@ -26,7 +26,9 @@ import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorMultiTransactionImpl;
 import org.apache.curator.framework.imps.GetACLBuilderImpl;
 import org.apache.curator.framework.imps.SyncBuilderImpl;
-import org.apache.curator.x.async.*;
+import org.apache.curator.x.async.AsyncCuratorFramework;
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.*;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
@@ -219,6 +221,16 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     public AsyncGetConfigBuilder getConfig()
     {
         return new AsyncGetConfigBuilderImpl(client, filters, getBuilderWatchMode());
+    }
+
+    Filters getFilters()
+    {
+        return filters;
+    }
+
+    CuratorFrameworkImpl getClient()
+    {
+        return client;
     }
 
     private WatchMode getBuilderWatchMode()

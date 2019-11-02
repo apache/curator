@@ -31,7 +31,9 @@ import java.lang.reflect.Method;
 public class Compatibility
 {
     private static final boolean hasZooKeeperAdmin;
+    private static final boolean hasPersistentWatchers;
     private static final Method queueEventMethod;
+
     private static final Logger logger = LoggerFactory.getLogger(Compatibility.class);
 
     static
@@ -48,6 +50,19 @@ public class Compatibility
             logger.info("Running in ZooKeeper 3.4.x compatibility mode");
         }
         hasZooKeeperAdmin = localHasZooKeeperAdmin;
+
+        boolean localHasPersistentWatchers;
+        try
+        {
+            Class.forName("org.apache.zookeeper.AddWatchMode");
+            localHasPersistentWatchers = true;
+        }
+        catch ( ClassNotFoundException e )
+        {
+            localHasPersistentWatchers = false;
+            logger.info("Persistent Watchers are not available in the version of the ZooKeeper library being used");
+        }
+        hasPersistentWatchers = localHasPersistentWatchers;
 
         Method localQueueEventMethod;
         try
@@ -71,6 +86,26 @@ public class Compatibility
     public static boolean isZK34()
     {
         return !hasZooKeeperAdmin;
+    }
+
+    /**
+     * Return true if the ZooKeeperAdmin class is available
+     *
+     * @return true/false
+     */
+    public static boolean hasZooKeeperAdmin()
+    {
+        return hasZooKeeperAdmin;
+    }
+
+    /**
+     * Return true if persistent watchers are available
+     *
+     * @return true/false
+     */
+    public static boolean hasPersistentWatchers()
+    {
+        return hasPersistentWatchers;
     }
 
     /**
