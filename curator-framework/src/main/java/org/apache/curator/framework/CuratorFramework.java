@@ -194,9 +194,18 @@ public interface CuratorFramework extends Closeable
 
     /**
      * Start a remove watches builder.
+     *
      * @return builder object
+     * @deprecated use {@link #watchers()} in ZooKeeper 3.6+
      */
     public RemoveWatchesBuilder watches();
+
+    /**
+     * Start a watches builder.
+     *
+     * @return builder object
+     */
+    public WatchesBuilder watchers();
 
     /**
      * Returns the listenable interface for the Connect State
@@ -330,6 +339,13 @@ public interface CuratorFramework extends Closeable
      * @return true/false
      */
     boolean isZk34CompatibilityMode();
+
+    /**
+     * Return true if this instance is running in ZK 3.5.x compatibility mode
+     *
+     * @return true/false
+     */
+    boolean isZk35CompatibilityMode();
 
     /**
      * Calls {@link #notifyAll()} on the given object after first synchronizing on it. This is

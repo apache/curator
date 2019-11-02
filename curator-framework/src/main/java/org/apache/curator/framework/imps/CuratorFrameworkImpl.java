@@ -42,6 +42,7 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateManager;
+import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
@@ -571,6 +572,13 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return new RemoveWatchesBuilderImpl(this);
     }
 
+    @Override
+    public WatchesBuilder watchers()
+    {
+        Preconditions.checkState(Compatibility.hasPersistentWatchers(), "addWatch() is not supported in the ZooKeeper library being used. Use watches() instead.");
+        return new WatchesBuilderImpl(this);
+    }
+
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)
     {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
@@ -617,6 +625,15 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     ZooKeeper getZooKeeper() throws Exception
     {
+        return client.getZooKeeper();
+    }
+
+    Object getZooKeeperAdmin() throws Exception
+    {
+        if ( isZk34CompatibilityMode() )
+        {
+            Preconditions.checkState(!isZk34CompatibilityMode(), "getZooKeeperAdmin() is not supported when running in ZooKeeper 3.4 compatibility mode");
+        }
         return client.getZooKeeper();
     }
 
@@ -828,6 +845,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public boolean isZk34CompatibilityMode()
     {
         return zk34CompatibilityMode;
+    }
+
+    @Override
+    public boolean isZk35CompatibilityMode()
+    {
+        return !zk34CompatibilityMode && !Compatibility.hasPersistentWatchers();
     }
 
     EnsembleTracker getEnsembleTracker()

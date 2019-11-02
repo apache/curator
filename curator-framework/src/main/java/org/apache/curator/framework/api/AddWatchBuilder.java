@@ -16,16 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test.compatibility;
+package org.apache.curator.framework.api;
 
-import org.apache.curator.test.BaseClassForTests;
-import org.testng.annotations.Listeners;
+import org.apache.zookeeper.AddWatchMode;
 
-public class CuratorTestBase extends BaseClassForTests
+public interface AddWatchBuilder extends AddWatchBuilder2
 {
-    public static final String zk35Group = "zk35";
-    public static final String zk36Group = "zk36";
-    public static final String zk35CompatibilityGroup = "zk35Compatibility";
-
-    protected final Timing2 timing = new Timing2();
+    /**
+     * The mode to use. By default, {@link org.apache.zookeeper.AddWatchMode#PERSISTENT_RECURSIVE} is used
+     *
+     * @param mode mode to use
+     * @return this
+     */
+    AddWatchBuilder2 withMode(AddWatchMode mode);
 }
