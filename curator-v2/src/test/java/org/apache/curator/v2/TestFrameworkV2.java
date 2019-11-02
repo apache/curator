@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.v2;
 
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -33,11 +34,10 @@ import static org.apache.curator.v2.CuratorFrameworkV2.wrap;
 
 public class TestFrameworkV2 extends CuratorTestBase
 {
-
     @Test
     public void testPersistentRecursiveWatch() throws Exception
     {
-        try ( CuratorFrameworkV2 client = wrap(CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) )
+        try (CuratorFrameworkV2 client = wrap(CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))))
         {
             client.start();
             client.blockUntilConnected();
@@ -55,6 +55,7 @@ public class TestFrameworkV2 extends CuratorTestBase
             Assert.assertTrue(timing.awaitLatch(latch));
         }
     }
+
     @Test
     public void testPersistentRecursiveDefaultWatch() throws Exception
     {
@@ -66,7 +67,7 @@ public class TestFrameworkV2 extends CuratorTestBase
             };
             return new ZooKeeper(connectString, sessionTimeout, actualWatcher);
         };
-        try (CuratorFrameworkV2 client = wrap(CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).zookeeperFactory(zookeeperFactory).build()) )
+        try (CuratorFrameworkV2 client = wrap(CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).zookeeperFactory(zookeeperFactory).build()))
         {
             client.start();
             client.blockUntilConnected();
