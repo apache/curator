@@ -32,6 +32,7 @@ public class Compatibility
 {
     private static final boolean hasZooKeeperAdmin;
     private static final Method queueEventMethod;
+
     private static final Logger logger = LoggerFactory.getLogger(Compatibility.class);
 
     static
@@ -71,6 +72,16 @@ public class Compatibility
     public static boolean isZK34()
     {
         return !hasZooKeeperAdmin;
+    }
+
+    /**
+     * Return true if the ZooKeeperAdmin class is available
+     *
+     * @return true/false
+     */
+    public static boolean hasZooKeeperAdmin()
+    {
+        return hasZooKeeperAdmin;
     }
 
     /**

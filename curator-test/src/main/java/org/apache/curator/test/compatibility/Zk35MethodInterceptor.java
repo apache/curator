@@ -29,6 +29,7 @@ import java.util.List;
 public class Zk35MethodInterceptor implements IMethodInterceptor
 {
     public static final String zk35Group = "zk35";
+    public static final String curatorV2Group = "curatorV2";
 
     @Override
     public List<IMethodInstance> intercept(List<IMethodInstance> methods, ITestContext context)

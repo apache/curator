@@ -59,9 +59,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("deprecation")
+@Test(groups = Zk35MethodInterceptor.curatorV2Group)
 public class TestFramework extends BaseClassForTests
 {
-    @BeforeMethod
+    @BeforeMethod(alwaysRun = true)
     @Override
     public void setup() throws Exception
     {
@@ -69,7 +70,7 @@ public class TestFramework extends BaseClassForTests
         super.setup();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     @Override
     public void teardown() throws Exception
     {

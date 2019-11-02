@@ -1,14 +1,45 @@
 h1. ZooKeeper Version Compatibility
 
-While ZooKeeper 3.5.x is still considered "beta" by the ZooKeeper development team, the reality is that it is
-used in production by many users. However, ZooKeeper 3.4.x is also used in production. Prior to Apache Curator
-4.0, both versions of ZooKeeper were supported via two versions of Apache Curator. Starting with Curator 4.0
-both versions of ZooKeeper are supported via the same Curator libraries.
+There are multiple active version lines of ZooKeeper used in production by users. Curator can act
+as a client for any of these versions.
 
 h2. ZooKeeper 3.5.x
 
-* Curator 4.0 has a hard dependency on ZooKeeper 3.5.x
+* Curator 4.x has a hard dependency on ZooKeeper 3.5.x
 * If you are using ZooKeeper 3.5.x there's nothing additional to do \- just use Curator 4.0
+
+h2. ZooKeeper 3.6.x
+
+ZooKeeper 3.6.x is the newest version of ZooKeeper which adds new features such as
+Persistent/Recursive watchers. To use Curator
+X.X with ZooKeeper 3.6.x use the dependency
+{{curator-v2}} instead of {{curator-recipes}}. Create a {{CuratorFramework}} instance in the
+normal manner. To get access to new features, wrap the CuratorFramework in a CuratorFrameworkV2
+instances. E.g.
+
+{code}
+CuratorFramework client = CuratorFrameworkFactory...
+CuratorFrameworkV2 clientV2 = CuratorFrameworkV2.wrap(client);
+
+client.watches().add()...
+{code}
+
+_Maven_
+
+{code}
+<dependency>
+    <groupId>org.apache.curator</groupId>
+    <artifactId>curator-v2</artifactId>
+    <version>${curator-version}</version>
+</dependency>
+{code}
+
+_Gradle_
+
+{code}
+compile 'org.apache.curator:curator-v2:$curatorVersion'
+{code}
+
 
 h2. ZooKeeper 3.4.x
 

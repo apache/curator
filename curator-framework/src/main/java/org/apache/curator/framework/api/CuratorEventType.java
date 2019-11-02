@@ -96,5 +96,10 @@ public enum CuratorEventType
     /**
      * Event sent when client is being closed
      */
-    CLOSING
+    CLOSING,
+
+    /**
+     * Corresponds to {@code CuratorFrameworkV2.watches().add()}
+     */
+    ADD_WATCH
 }

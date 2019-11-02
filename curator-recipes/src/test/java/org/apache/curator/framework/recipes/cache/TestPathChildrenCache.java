@@ -32,6 +32,7 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.Zk35MethodInterceptor;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.CreateMode;
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.AssertJUnit.assertNotNull;
 
+@Test(groups = Zk35MethodInterceptor.curatorV2Group)
 public class TestPathChildrenCache extends BaseClassForTests
 {
     @Test

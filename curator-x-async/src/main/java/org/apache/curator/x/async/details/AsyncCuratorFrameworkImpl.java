@@ -221,6 +221,16 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
         return new AsyncGetConfigBuilderImpl(client, filters, getBuilderWatchMode());
     }
 
+    Filters getFilters()
+    {
+        return filters;
+    }
+
+    CuratorFrameworkImpl getClient()
+    {
+        return client;
+    }
+
     private WatchMode getBuilderWatchMode()
     {
         return watched ? watchMode : null;
