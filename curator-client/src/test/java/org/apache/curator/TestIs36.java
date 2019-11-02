@@ -30,6 +30,7 @@ public class TestIs36 extends CuratorTestBase
     {
         Assert.assertTrue(Compatibility.hasGetReachableOrOneMethod());
         Assert.assertTrue(Compatibility.hasAddrField());
+        Assert.assertTrue(Compatibility.hasPersistentWatchers());
     }
 
     @Override

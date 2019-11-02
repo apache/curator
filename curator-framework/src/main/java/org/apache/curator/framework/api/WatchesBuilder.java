@@ -16,20 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.zk35;
 
-import org.apache.curator.utils.Compatibility;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+package org.apache.curator.framework.api;
 
-public class TestIs35
+/**
+ * Builder to allow watches to be removed 
+ */
+public interface WatchesBuilder extends RemoveWatchesBuilder
 {
-    @Test
-    public void testIsZk35()
-    {
-        Assert.assertFalse(Compatibility.hasGetReachableOrOneMethod());
-        Assert.assertTrue(Compatibility.hasAddrField());
-        Assert.assertFalse(Compatibility.hasPersistentWatchers());
-    }
+    /**
+     * Start an add watch operation
+     *
+     * @return builder
+     */
+    AddWatchBuilder add();
 }
-

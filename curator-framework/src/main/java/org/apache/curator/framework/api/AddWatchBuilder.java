@@ -16,20 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.zk35;
+package org.apache.curator.framework.api;
 
-import org.apache.curator.utils.Compatibility;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.apache.zookeeper.AddWatchMode;
 
-public class TestIs35
+public interface AddWatchBuilder extends AddWatchBuilder2
 {
-    @Test
-    public void testIsZk35()
-    {
-        Assert.assertFalse(Compatibility.hasGetReachableOrOneMethod());
-        Assert.assertTrue(Compatibility.hasAddrField());
-        Assert.assertFalse(Compatibility.hasPersistentWatchers());
-    }
+    /**
+     * The mode to use. By default, {@link org.apache.zookeeper.AddWatchMode#PERSISTENT_RECURSIVE} is used
+     *
+     * @param mode mode to use
+     * @return this
+     */
+    AddWatchBuilder2 withMode(AddWatchMode mode);
 }
-

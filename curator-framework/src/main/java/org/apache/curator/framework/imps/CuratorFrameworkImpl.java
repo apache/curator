@@ -41,6 +41,7 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateManager;
+import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
@@ -556,6 +557,13 @@ public class CuratorFrameworkImpl implements CuratorFramework
     public RemoveWatchesBuilder watches()
     {
         return new RemoveWatchesBuilderImpl(this);
+    }
+
+    @Override
+    public WatchesBuilder watchers()
+    {
+        Preconditions.checkState(Compatibility.hasPersistentWatchers(), "watchers() is not supported in the ZooKeeper library being used. Use watches() instead.");
+        return new WatchesBuilderImpl(this);
     }
 
     protected void internalSync(CuratorFrameworkImpl impl, String path, Object context)

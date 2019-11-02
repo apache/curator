@@ -31,10 +31,11 @@ import java.net.InetSocketAddress;
  */
 public class Compatibility
 {
+    private static final Logger log = LoggerFactory.getLogger(Compatibility.class);
+
     private static final Method getReachableOrOneMethod;
     private static final Field addrField;
-
-    private static final Logger log = LoggerFactory.getLogger(Compatibility.class);
+    private static final boolean hasPersistentWatchers;
 
     static
     {
@@ -62,6 +63,19 @@ public class Compatibility
             log.error("Could not get addr field! Reconfiguration fail!");
         }
         addrField = localAddrField;
+
+        boolean localHasPersistentWatchers;
+        try
+        {
+            Class.forName("org.apache.zookeeper.AddWatchMode");
+            localHasPersistentWatchers = true;
+        }
+        catch ( ClassNotFoundException e )
+        {
+            localHasPersistentWatchers = false;
+            log.info("Persistent Watchers are not available in the version of the ZooKeeper library being used");
+        }
+        hasPersistentWatchers = localHasPersistentWatchers;
     }
 
     public static boolean hasGetReachableOrOneMethod()
@@ -100,5 +114,10 @@ public class Compatibility
             }
         }
         return (address != null) ? address.getAddress().getHostAddress() : "unknown";
+    }
+
+    public static boolean hasPersistentWatchers()
+    {
+        return hasPersistentWatchers;
     }
 }
