@@ -46,7 +46,7 @@ public class BaseTestTreeCache extends BaseClassForTests
     /**
      * Automatically records all events into an easily testable event stream.
      */
-    final TreeCacheListener eventListener = new TreeCacheListener()
+    public final TreeCacheListener eventListener = new TreeCacheListener()
     {
         @Override
         public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
@@ -136,7 +136,7 @@ public class BaseTestTreeCache extends BaseClassForTests
     /**
      * Asserts the event queue is empty.
      */
-    void assertNoMoreEvents() throws InterruptedException
+    public void assertNoMoreEvents() throws InterruptedException
     {
         timing.sleepABit();
         Assert.assertTrue(events.isEmpty(), String.format("Expected no events, found %d; first event: %s", events.size(), events.peek()));
@@ -145,7 +145,7 @@ public class BaseTestTreeCache extends BaseClassForTests
     /**
      * Asserts the given event is next in the queue, and consumes it from the queue.
      */
-    TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType) throws InterruptedException
+    public TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType) throws InterruptedException
     {
         return assertEvent(expectedType, null);
     }
@@ -153,7 +153,7 @@ public class BaseTestTreeCache extends BaseClassForTests
     /**
      * Asserts the given event is next in the queue, and consumes it from the queue.
      */
-    TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath) throws InterruptedException
+    public TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath) throws InterruptedException
     {
         return assertEvent(expectedType, expectedPath, null);
     }
@@ -161,12 +161,12 @@ public class BaseTestTreeCache extends BaseClassForTests
     /**
      * Asserts the given event is next in the queue, and consumes it from the queue.
      */
-    TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData) throws InterruptedException
+    public TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData) throws InterruptedException
     {
         return assertEvent(expectedType, expectedPath, expectedData, false);
     }
 
-    TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData, boolean ignoreConnectionEvents) throws InterruptedException
+    public TreeCacheEvent assertEvent(TreeCacheEvent.Type expectedType, String expectedPath, byte[] expectedData, boolean ignoreConnectionEvents) throws InterruptedException
     {
         TreeCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
         Assert.assertNotNull(event, String.format("Expected type: %s, path: %s", expectedType, expectedPath));

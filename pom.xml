@@ -370,6 +370,12 @@
 
             <dependency>
                 <groupId>org.apache.curator</groupId>
+                <artifactId>curator-v2</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
                 <artifactId>curator-recipes</artifactId>
                 <version>${project.version}</version>
                 <type>test-jar</type>

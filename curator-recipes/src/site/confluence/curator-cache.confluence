@@ -1,0 +1,36 @@
+h1. Curator Cache
+
+*Note: * CuratorCache requires ZooKeeper 3.6\+.
+
+h2. Description
+A utility that attempts to keep the data from a node locally cached. Optionally the entire tree of children below the node can also be cached.
+Will respond to update/create/delete events, pull down the data, etc. You can register listeners that will get notified when changes occur.
+
+h2. Participating Classes
+* CuratorCache
+* CuratorCacheListener
+* ChildData
+
+h2. Usage
+h3. Creating a CuratorCache
+{code}
+CuratorCache.build(CuratorFramework client, String path, Options... options)
+
+Parameters:
+client - the client
+path - path to watch
+options - empty or one or more options
+{code}
+
+Note: there is a builder factory available for additional options when building the cache instance. See {{CuratorCacheBuilder}} for details.
+
+h2. General Usage
+The cache must be started by calling {{start()}}. Call {{close()}} when you are through with the cache.
+
+At any time, call {{storage()}} to get the current state cache. You can also register to be notified when a change occurs by calling {{listenable()}} and then registering
+a listener for events.
+
+See the examples for an example usage.
+
+h2. Error Handling
+CuratorCache instances internally monitor connection losses, etc. automatically rebuilding the cache on reconnection.
