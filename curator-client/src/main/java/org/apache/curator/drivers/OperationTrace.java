@@ -22,7 +22,7 @@ import org.apache.curator.drivers.TracerDriver;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -69,11 +69,7 @@ public class OperationTrace
         return this;
       }
 
-      try {
-        this.setRequestBytesLength(data.getBytes("UTF-8").length);
-      } catch (UnsupportedEncodingException e) {
-        // Ignore the exception.
-      }
+      this.setRequestBytesLength(data.getBytes(StandardCharsets.UTF_8).length);
 
       return this;
     }

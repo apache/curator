@@ -32,7 +32,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -158,14 +158,7 @@ public class LeaderSelector implements Closeable
 
     static byte[] getIdBytes(String id)
     {
-        try
-        {
-            return id.getBytes("UTF-8");
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new Error(e); // this should never happen
-        }
+        return id.getBytes(StandardCharsets.UTF_8);
     }
 
     /**
@@ -391,7 +384,7 @@ public class LeaderSelector implements Closeable
         try
         {
             byte[] bytes = client.getData().forPath(path);
-            String thisId = new String(bytes, "UTF-8");
+            String thisId = new String(bytes, StandardCharsets.UTF_8);
             return new Participant(thisId, markAsLeader);
         }
         catch ( KeeperException.NoNodeException e )
