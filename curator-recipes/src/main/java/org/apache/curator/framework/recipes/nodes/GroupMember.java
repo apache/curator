@@ -18,16 +18,23 @@
  */
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.util.Map;
 
@@ -35,11 +42,47 @@ import java.util.Map;
  * Group membership management. Adds this instance into a group and
  * keeps a cache of members in the group
  */
-public class GroupMember implements Closeable
-{
+public class GroupMember implements Closeable {
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final CuratorFramework client;
     private final PersistentEphemeralNode pen;
     private final PathChildrenCache cache;
     private final String thisId;
+    private ListenerContainer<GroupMemberListener> listeners = new ListenerContainer<GroupMemberListener>();
+    private final PathChildrenCacheListener childrenCacheListener = new PathChildrenCacheListener()
+    {
+        @Override
+        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+            ChildData data = event.getData();
+            GroupData groupData = new GroupData(idFromPath(data.getPath()), data.getData());
+
+            switch( event.getType() )
+            {
+            case CHILD_ADDED:
+            {
+                callListeners(new GroupMemberEvent(GroupMemberEvent.Type.MEMBER_JOINED, groupData));
+                break;
+            }
+
+            case CHILD_REMOVED:
+            {
+                callListeners(new GroupMemberEvent(GroupMemberEvent.Type.MEMBER_LEFT, groupData));
+                break;
+            }
+
+            case CHILD_UPDATED:
+            {
+                callListeners(new GroupMemberEvent(GroupMemberEvent.Type.MEMBER_UPDATED, groupData));
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+            }
+        }
+    };
 
     /**
      * @param client client
@@ -59,6 +102,7 @@ public class GroupMember implements Closeable
      */
     public GroupMember(CuratorFramework client, String membershipPath, String thisId, byte[] payload)
     {
+        this.client = client;
         this.thisId = Preconditions.checkNotNull(thisId, "thisId cannot be null");
 
         cache = newPathChildrenCache(client, membershipPath);
@@ -75,6 +119,7 @@ public class GroupMember implements Closeable
         try
         {
             cache.start();
+            cache.getListenable().addListener(childrenCacheListener);
         }
         catch ( Exception e )
         {
@@ -99,6 +144,50 @@ public class GroupMember implements Closeable
             ThreadUtils.checkInterrupted(e);
             Throwables.propagate(e);
         }
+    }
+
+    /**
+     * Return the group member listenable
+     *
+     * @return listenable
+     */
+    public ListenerContainer<GroupMemberListener> getListenable()
+    {
+        return listeners;
+    }
+
+    /**
+     * Default behavior is just to log the exception
+     *
+     * @param e the exception
+     */
+    protected void handleException(Throwable e)
+    {
+        log.error("", e);
+    }
+
+    void callListeners(final GroupMemberEvent event)
+    {
+        listeners.forEach
+            (
+                new Function<GroupMemberListener, Void>()
+                {
+                    @Override
+                    public Void apply(GroupMemberListener listener)
+                    {
+                        try
+                        {
+                            listener.groupEvent(client, event);
+                        }
+                        catch ( Exception e )
+                        {
+                            ThreadUtils.checkInterrupted(e);
+                            handleException(e);
+                        }
+                        return null;
+                    }
+                }
+            );
     }
 
     /**
