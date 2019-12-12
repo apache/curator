@@ -574,7 +574,7 @@ public class TreeCache implements Closeable
      * @param disableZkWatches true to disable Zookeeper watches
      * @param selector         the selector to use
      */
-    public TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final ExecutorService executorService, boolean createParentNodes, boolean disableZkWatches, TreeCacheSelector selector)
+    public TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, ExecutorService executorService, boolean createParentNodes, boolean disableZkWatches, TreeCacheSelector selector)
     {
         this.createParentNodes = createParentNodes;
         this.selector = Preconditions.checkNotNull(selector, "selector cannot be null");
