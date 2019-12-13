@@ -42,6 +42,9 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -60,6 +63,8 @@ public class NodeCache implements Closeable
     private final WatcherRemoveCuratorFramework client;
     private final String path;
     private final boolean dataIsCompressed;
+    private final ExecutorService executorService;
+    static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("NodeCache");
     private final AtomicReference<ChildData> data = new AtomicReference<ChildData>(null);
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final ListenerContainer<NodeCacheListener> listeners = new ListenerContainer<NodeCacheListener>();
@@ -143,6 +148,21 @@ public class NodeCache implements Closeable
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.dataIsCompressed = dataIsCompressed;
+        this.executorService = Executors.newSingleThreadExecutor(defaultThreadFactory);
+    }
+
+    /**
+     * @param client curztor client
+     * @param path the full path to the node to cache
+     * @param dataIsCompressed if true, data in the path is compressed
+     * @param executorService  Closeable ExecutorService to use for the NodeCache's background thread
+     */
+    public NodeCache(CuratorFramework client, String path, boolean dataIsCompressed,final ExecutorService executorService)
+    {
+        this.client = client.newWatcherRemoveCuratorFramework();
+        this.path = PathUtils.validatePath(path);
+        this.dataIsCompressed = dataIsCompressed;
+        this.executorService = Preconditions.checkNotNull(executorService, "executorService cannot be null");
     }
 
     public CuratorFramework getClient()
@@ -255,7 +275,7 @@ public class NodeCache implements Closeable
     {
         if ( (state.get() == State.STARTED) && isConnected.get() )
         {
-            client.checkExists().creatingParentContainersIfNeeded().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+            client.checkExists().creatingParentContainersIfNeeded().usingWatcher(watcher).inBackground(backgroundCallback,executorService).forPath(path);
         }
     }
 
@@ -297,11 +317,11 @@ public class NodeCache implements Closeable
                 {
                     if ( dataIsCompressed )
                     {
-                        client.getData().decompressed().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+                        client.getData().decompressed().usingWatcher(watcher).inBackground(backgroundCallback,executorService).forPath(path);
                     }
                     else
                     {
-                        client.getData().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+                        client.getData().usingWatcher(watcher).inBackground(backgroundCallback,executorService).forPath(path);
                     }
                 }
                 break;
