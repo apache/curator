@@ -209,7 +209,7 @@ public class NodeCache implements Closeable
             client.removeWatchers();
             listeners.clear();
             client.getConnectionStateListenable().removeListener(connectionStateListener);
-
+            executorService.shutdown();
             // TODO
             // From PathChildrenCache
             // This seems to enable even more GC - I'm not sure why yet - it
