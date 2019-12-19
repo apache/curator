@@ -102,7 +102,7 @@ public class ListenerContainer<T> implements Listenable<T>
                         catch ( Throwable e )
                         {
                             ThreadUtils.checkInterrupted(e);
-                            log.error(String.format("Listener (%s) threw an exception", entry.listener), e);
+                            log.error("Listener ({}) threw an exception", entry.listener, e);
                         }
                     }
                 }

@@ -159,7 +159,7 @@ public class TestingZooKeeperServer implements Closeable
                 }
                 catch ( Exception e )
                 {
-                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
+                    logger.error("From testing server (random state: {}) for instance: {}", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec(), e);
                 }
             }
         }).start();

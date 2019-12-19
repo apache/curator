@@ -71,7 +71,7 @@ public class ExponentialBackoffRetry extends SleepingRetry
         long sleepMs = baseSleepTimeMs * Math.max(1, random.nextInt(1 << (retryCount + 1)));
         if ( sleepMs > maxSleepMs )
         {
-            log.warn(String.format("Sleep extension too large (%d). Pinning to %d", sleepMs, maxSleepMs));
+            log.warn("Sleep extension too large ({}). Pinning to {}", sleepMs, maxSleepMs);
             sleepMs = maxSleepMs;
         }
         return sleepMs;
@@ -81,7 +81,7 @@ public class ExponentialBackoffRetry extends SleepingRetry
     {
         if ( maxRetries > MAX_RETRIES_LIMIT )
         {
-            log.warn(String.format("maxRetries too large (%d). Pinning to %d", maxRetries, MAX_RETRIES_LIMIT));
+            log.warn("maxRetries too large ({}). Pinning to {}", maxRetries, MAX_RETRIES_LIMIT);
             maxRetries = MAX_RETRIES_LIMIT;
         }
         return maxRetries;

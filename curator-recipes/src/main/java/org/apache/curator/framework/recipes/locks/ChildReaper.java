@@ -241,7 +241,7 @@ public class ChildReaper implements Closeable
     @VisibleForTesting
     protected void warnMaxChildren(String path, Stat stat)
     {
-        log.warn(String.format("Skipping %s as it has too many children: %d", path, stat.getNumChildren()));
+        log.warn("Skipping {} as it has too many children: {}", path, stat.getNumChildren());
     }
 
     private void doWork()
@@ -269,7 +269,7 @@ public class ChildReaper implements Closeable
                     }
 
                     List<String> children = client.getChildren().forPath(path);
-                    log.info(String.format("Found %d children for %s", children.size(), path));
+                    log.info("Found {} children for {}", children.size(), path);
                     for ( String name : children )
                     {
                         String childPath = ZKPaths.makePath(path, name);

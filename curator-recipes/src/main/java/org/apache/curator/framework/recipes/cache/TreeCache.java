@@ -492,7 +492,7 @@ public class TreeCache implements Closeable
                 break;
             default:
                 // An unknown event, probably an error of some sort like connection loss.
-                LOG.info(String.format("Unknown event %s", event));
+                LOG.info("Unknown event {}", event);
                 // Don't produce an initialized event on error; reconnect can fix this.
                 outstandingOps.decrementAndGet();
                 return;

@@ -180,7 +180,7 @@ public abstract class DiscoveryResource<T>
         catch ( Exception e )
         {
             ThreadUtils.checkInterrupted(e);
-            log.error(String.format("Trying to get instances from service (%s)", name), e);
+            log.error("Trying to get instances from service ({})", name, e);
             return Response.serverError().build();
         }
     }
@@ -213,7 +213,7 @@ public abstract class DiscoveryResource<T>
         catch ( Exception e )
         {
             ThreadUtils.checkInterrupted(e);
-            log.error(String.format("Trying to get any instance from service (%s)", name), e);
+            log.error("Trying to get any instance from service ({})", name, e);
             return Response.serverError().build();
         }
     }
@@ -237,7 +237,7 @@ public abstract class DiscoveryResource<T>
         catch ( Exception e )
         {
             ThreadUtils.checkInterrupted(e);
-            log.error(String.format("Trying to get instance (%s) from service (%s)", id, name), e);
+            log.error("Trying to get instance ({}) from service ({})", id, name, e);
             return Response.serverError().build();
         }
     }

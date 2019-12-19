@@ -139,7 +139,7 @@ public class CuratorZookeeperClient implements Closeable
         this.connectionHandlingPolicy = connectionHandlingPolicy;
         if ( sessionTimeoutMs < connectionTimeoutMs )
         {
-            log.warn(String.format("session timeout [%d] is less than connection timeout [%d]", sessionTimeoutMs, connectionTimeoutMs));
+            log.warn("session timeout [{}] is less than connection timeout [{}]", sessionTimeoutMs, connectionTimeoutMs);
         }
 
         retryPolicy = Preconditions.checkNotNull(retryPolicy, "retryPolicy cannot be null");

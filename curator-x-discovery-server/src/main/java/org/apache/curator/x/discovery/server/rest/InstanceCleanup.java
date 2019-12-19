@@ -120,7 +120,7 @@ public class InstanceCleanup implements Closeable
         catch ( Exception e )
         {
             ThreadUtils.checkInterrupted(e);
-            log.error(String.format("GC for service: %s", name), e);
+            log.error("GC for service: {}", name, e);
         }
     }
 }
