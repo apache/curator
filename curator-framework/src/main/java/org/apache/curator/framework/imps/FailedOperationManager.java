@@ -53,7 +53,7 @@ abstract class FailedOperationManager<T>
         
         if ( client.getState() == CuratorFrameworkState.STARTED )
         {
-            log.debug("Details being added to guaranteed operation set: " + details);
+            log.debug("Details being added to guaranteed operation set: {}", details);
             try
             {
                 executeGuaranteedOperationInBackground(details);

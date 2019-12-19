@@ -215,7 +215,7 @@ public class CuratorZookeeperClient implements Closeable
         trace.commit();
 
         boolean localIsConnected = state.isConnected();
-        log.debug("blockUntilConnectedOrTimedOut() end. isConnected: " + localIsConnected);
+        log.debug("blockUntilConnectedOrTimedOut() end. isConnected: {}", localIsConnected);
 
         return localIsConnected;
     }

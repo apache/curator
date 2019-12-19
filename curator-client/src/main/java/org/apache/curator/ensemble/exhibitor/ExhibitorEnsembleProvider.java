@@ -148,7 +148,7 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
     @Override
     public void setConnectionString(String connectionString)
     {
-        log.info("setConnectionString received. Ignoring. " + connectionString);
+        log.info("setConnectionString received. Ignoring. {}", connectionString);
     }
 
     @Override
@@ -248,14 +248,14 @@ public class ExhibitorEnsembleProvider implements EnsembleProvider
                     }
                     else if ( port != thePort )
                     {
-                        log.warn("Inconsistent port in connection component: " + spec);
+                        log.warn("Inconsistent port in connection component: {}", spec);
                     }
                     values.put(VALUE_SERVER_PREFIX + count, hostname);
                     ++count;
                 }
                 else
                 {
-                    log.warn("Bad backup connection component: " + spec);
+                    log.warn("Bad backup connection component: {}", spec);
                 }
             }
             values.put(VALUE_COUNT, Integer.toString(count));

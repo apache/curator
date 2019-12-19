@@ -279,7 +279,7 @@ public class UriSpec implements Iterable<UriSpec.Part>
                 Object value = localVariables.get(p.getValue());
                 if ( value == null )
                 {
-                    log.debug("Variable not found: " + p.getValue());
+                    log.debug("Variable not found: {}", p.getValue());
                 }
                 else
                 {

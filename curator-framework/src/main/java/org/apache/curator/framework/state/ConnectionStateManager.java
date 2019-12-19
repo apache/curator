@@ -248,7 +248,7 @@ public class ConnectionStateManager implements Closeable
 
     private void postState(ConnectionState state)
     {
-        log.info("State change: " + state);
+        log.info("State change: {}", state);
 
         notifyAll();
 

@@ -388,7 +388,7 @@ public class InterProcessSemaphoreV2
                         }
                         if ( !children.contains(nodeName) )
                         {
-                            log.error("Sequential path not found: " + path);
+                            log.error("Sequential path not found: {}", path);
                             return InternalAcquireResult.RETRY_DUE_TO_MISSING_NODE;
                         }
 

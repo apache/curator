@@ -162,7 +162,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
             catch ( Exception e )
             {
                 accumulator.add(e);
-                log.error("Could not unregister instance: " + entry.service.getName(), e);
+                log.error("Could not unregister instance: {}", entry.service.getName(), e);
             }
         }
 
@@ -477,7 +477,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
         }
         catch ( Exception e )
         {
-            log.error("Could not start node cache for: " + instance, e);
+            log.error("Could not start node cache for: {}", instance, e);
         }
         NodeCacheListener listener = new NodeCacheListener()
         {
@@ -498,7 +498,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
                 }
                 else
                 {
-                    log.warn("Instance data has been deleted for: " + instance);
+                    log.warn("Instance data has been deleted for: {}", instance);
                 }
             }
         };

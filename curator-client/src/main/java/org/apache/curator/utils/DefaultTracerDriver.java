@@ -35,7 +35,7 @@ public class DefaultTracerDriver implements TracerDriver
     {
         if ( log.isTraceEnabled() )
         {
-            log.trace("Trace: " + name + " - " + TimeUnit.MILLISECONDS.convert(time, unit) + " ms");
+            log.trace("Trace: {} - {} ms", name, TimeUnit.MILLISECONDS.convert(time, unit));
         }
     }
 
@@ -44,7 +44,7 @@ public class DefaultTracerDriver implements TracerDriver
     {
         if ( log.isTraceEnabled() )
         {
-            log.trace("Counter " + name + ": " + increment);
+            log.trace("Counter {}: {}", name, increment);
         }
     }
 }

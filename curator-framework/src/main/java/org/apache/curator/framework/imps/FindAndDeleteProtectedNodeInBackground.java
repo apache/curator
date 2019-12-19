@@ -92,7 +92,7 @@ class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void
                         catch ( Exception e )
                         {
                             ThreadUtils.checkInterrupted(e);
-                            log.error("Could not start guaranteed delete for node: " + node);
+                            log.error("Could not start guaranteed delete for node: {}", node);
                             rc = KeeperException.Code.CONNECTIONLOSS.intValue();
                         }
                     }

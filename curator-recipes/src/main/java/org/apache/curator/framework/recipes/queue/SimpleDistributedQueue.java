@@ -252,7 +252,7 @@ public class SimpleDistributedQueue
         {
             if ( !node.startsWith(PREFIX) )
             {
-                log.warn("Foreign node in queue path: " + node);
+                log.warn("Foreign node in queue path: {}", node);
                 continue;
             }
 

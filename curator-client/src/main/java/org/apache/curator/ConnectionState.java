@@ -160,7 +160,7 @@ class ConnectionState implements Watcher, Closeable
     {
         if ( LOG_EVENTS )
         {
-            log.debug("ConnectState watcher: " + event);
+            log.debug("ConnectState watcher: {}", event);
         }
 
         if ( event.getType() == Watcher.Event.EventType.None )
@@ -174,7 +174,7 @@ class ConnectionState implements Watcher, Closeable
                 if ( newIsConnected )
                 {
                     lastNegotiatedSessionTimeoutMs.set(zooKeeper.getNegotiatedSessionTimeoutMs());
-                    log.debug("Negotiated session timeout: " + lastNegotiatedSessionTimeoutMs.get());
+                    log.debug("Negotiated session timeout: {}", lastNegotiatedSessionTimeoutMs.get());
                 }
             }
         }
@@ -341,7 +341,7 @@ class ConnectionState implements Watcher, Closeable
 
     private void handleNewConnectionString(String newConnectionString)
     {
-        log.info("Connection string changed to: " + newConnectionString);
+        log.info("Connection string changed to: {}", newConnectionString);
         new EventTrace("connection-string-changed", tracer.get(), getSessionId()).commit();
 
         try

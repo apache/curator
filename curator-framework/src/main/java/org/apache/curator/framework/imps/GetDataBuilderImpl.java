@@ -264,7 +264,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
                         catch ( Exception e )
                         {
                             ThreadUtils.checkInterrupted(e);
-                            log.error("Decompressing for path: " + path, e);
+                            log.error("Decompressing for path: {}", path, e);
                             rc = KeeperException.Code.DATAINCONSISTENCY.intValue();
                         }
                     }

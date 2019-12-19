@@ -284,7 +284,7 @@ public class ChildReaper implements Closeable
                 catch ( Exception e )
                 {
                     ThreadUtils.checkInterrupted(e);
-                    log.error("Could not get children for path: " + path, e);
+                    log.error("Could not get children for path: {}", path, e);
                 }
             }
         }
@@ -295,7 +295,7 @@ public class ChildReaper implements Closeable
         Stat stat = client.checkExists().forPath(path);
         if ( (stat != null) && (stat.getNumChildren() == 0) )
         {
-            log.info("Adding " + path);
+            log.info("Adding {}", path);
             reaper.addPath(path, mode);
         }
     }

@@ -73,7 +73,7 @@ public class ThreadUtils
             @Override
             public void uncaughtException(Thread t, Throwable e)
             {
-                log.error("Unexpected exception in thread: " + t, e);
+                log.error("Unexpected exception in thread: {}", t, e);
                 Throwables.propagate(e);
             }
         };
