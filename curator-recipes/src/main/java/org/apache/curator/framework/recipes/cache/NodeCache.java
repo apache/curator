@@ -125,7 +125,7 @@ public class NodeCache implements Closeable
     };
 
     /**
-     * @param client curztor client
+     * @param client curator client
      * @param path the full path to the node to cache
      */
     public NodeCache(CuratorFramework client, String path)
@@ -134,7 +134,7 @@ public class NodeCache implements Closeable
     }
 
     /**
-     * @param client curztor client
+     * @param client curator client
      * @param path the full path to the node to cache
      * @param dataIsCompressed if true, data in the path is compressed
      */
