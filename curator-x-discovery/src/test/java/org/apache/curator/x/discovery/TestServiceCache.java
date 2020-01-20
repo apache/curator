@@ -28,6 +28,7 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.x.discovery.details.ServiceCacheEventListener;
 import org.apache.curator.x.discovery.details.ServiceCacheListener;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -39,9 +40,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestServiceCache extends BaseClassForTests
 {
+    private final Timing timing = new Timing();
+
     @Test
     public void testInitialLoad() throws Exception
     {
@@ -104,8 +108,6 @@ public class TestServiceCache extends BaseClassForTests
     @Test
     public void testViaProvider() throws Exception
     {
-        Timing timing = new Timing();
-
         List<Closeable> closeables = Lists.newArrayList();
         try
         {
@@ -300,6 +302,76 @@ public class TestServiceCache extends BaseClassForTests
             Assert.assertTrue(semaphore.tryAcquire(10, TimeUnit.SECONDS));
 
             Assert.assertTrue(exec.isExecuteCalled());
+        }
+        finally
+        {
+            Collections.reverse(closeables);
+            for ( Closeable c : closeables )
+            {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
+    public void testServiceCacheEventListener() throws Exception
+    {
+        List<Closeable> closeables = Lists.newArrayList();
+        try
+        {
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            closeables.add(client);
+            client.start();
+
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            closeables.add(discovery);
+            discovery.start();
+
+            ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").build();
+            closeables.add(cache);
+
+            final Semaphore latch = new Semaphore(0);
+            final AtomicBoolean validation = new AtomicBoolean(true);
+            ServiceCacheEventListener<String> listener = new ServiceCacheEventListener<String>()
+            {
+                @Override
+                public void cacheAdded(final ServiceInstance<String> added)
+                {
+                    latch.release();
+
+                    validation.compareAndSet(true,added != null);
+                }
+
+                @Override
+                public void cacheDeleted(final ServiceInstance<String> deleted)
+                {
+                    latch.release();
+
+                    validation.compareAndSet(true,deleted != null);
+                }
+
+                @Override
+                public void cacheUpdated(final ServiceInstance<String> before, final ServiceInstance<String> after)
+                {
+                    latch.release();
+
+                    validation.compareAndSet(true, "before".equals(before.getPayload()));
+                    validation.compareAndSet(true, "after".equals(after.getPayload()));
+                }
+            };
+            cache.getCacheEventListenable().addListener(listener);
+            cache.start();
+
+            ServiceInstance<String> instance = ServiceInstance.<String>builder().payload("before").name("test").port(10064).build();
+            discovery.registerService(instance);
+            Assert.assertTrue(timing.acquireSemaphore(latch));
+            instance = ServiceInstance.<String>builder().id(instance.getId()).payload("after").name("test").port(10064).build();
+            discovery.updateService(instance);
+            Assert.assertTrue(timing.acquireSemaphore(latch));
+            discovery.unregisterService(instance);
+            Assert.assertTrue(timing.acquireSemaphore(latch));
+
+            Assert.assertTrue(validation.get());
         }
         finally
         {

@@ -20,6 +20,7 @@ package org.apache.curator.x.discovery;
 
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.x.discovery.details.InstanceProvider;
+import org.apache.curator.x.discovery.details.ServiceCacheEventListener;
 import org.apache.curator.x.discovery.details.ServiceCacheListener;
 import java.io.Closeable;
 import java.util.List;
@@ -33,12 +34,19 @@ public interface ServiceCache<T> extends Closeable, Listenable<ServiceCacheListe
      *
      * @return the list
      */
-    public List<ServiceInstance<T>> getInstances();
+    List<ServiceInstance<T>> getInstances();
 
     /**
      * The cache must be started before use
      *
      * @throws Exception errors
      */
-    public void start() throws Exception;
+    void start() throws Exception;
+
+    /**
+     * Returns the listenable container over the newer {@link org.apache.curator.x.discovery.details.ServiceCacheEventListener}
+     *
+     * @return listenable
+     */
+    Listenable<ServiceCacheEventListener<T>> getCacheEventListenable();
 }
