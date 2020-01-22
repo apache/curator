@@ -45,7 +45,9 @@ public interface ServiceCacheBuilder<T>
      *
      * @param threadFactory factory
      * @return this
+     * @deprecated use {@link #executorService(ExecutorService)} instead
      */
+    @Deprecated
     public ServiceCacheBuilder<T> threadFactory(ThreadFactory threadFactory);
 
     /**

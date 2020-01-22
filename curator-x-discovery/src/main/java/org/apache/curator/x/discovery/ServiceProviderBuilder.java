@@ -18,7 +18,9 @@
  */
 package org.apache.curator.x.discovery;
 
+import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 public interface ServiceProviderBuilder<T>
@@ -47,11 +49,14 @@ public interface ServiceProviderBuilder<T>
     public ServiceProviderBuilder<T> providerStrategy(ProviderStrategy<T> providerStrategy);
 
     /**
-     * optional - the thread factory to use for creating internal threads
+     * optional - the thread factory to use for creating internal threads. The specified ThreadFactory overrides
+     * any prior ThreadFactory or ClosableExecutorService set on the ServiceProviderBuilder
      *
      * @param threadFactory factory to use
      * @return this
+     * @deprecated use {@link #executorService(ExecutorService)} instead
      */
+    @Deprecated
     public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory);
 
     /**
@@ -71,4 +76,23 @@ public interface ServiceProviderBuilder<T>
      * @return this
      */
     public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter);
+
+    /**
+     * Optional ExecutorService to use for the cache's background thread. The specified ExecutorService
+     * will be wrapped in a CloseableExecutorService and overrides any prior ThreadFactory or CloseableExecutorService
+     * set on the ServiceProviderBuilder.
+     *
+     * @param executorService executor service
+     * @return this
+     */
+    public ServiceProviderBuilder<T> executorService(ExecutorService executorService);
+
+    /**
+     * Optional CloseableExecutorService to use for the cache's background thread. The specified CloseableExecutorService
+     * overrides any prior ThreadFactory or CloseableExecutorService set on the ServiceProviderBuilder.
+     *
+     * @param executorService an instance of CloseableExecutorService
+     * @return this
+     */
+    public ServiceProviderBuilder<T> executorService(CloseableExecutorService executorService);
 }
