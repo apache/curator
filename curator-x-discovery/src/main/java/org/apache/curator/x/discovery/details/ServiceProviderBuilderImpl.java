@@ -19,6 +19,7 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
@@ -26,6 +27,7 @@ import org.apache.curator.x.discovery.ServiceProvider;
 import org.apache.curator.x.discovery.ServiceProviderBuilder;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -37,12 +39,13 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     private String serviceName;
     private ProviderStrategy<T> providerStrategy;
     private ThreadFactory threadFactory;
+    private CloseableExecutorService executorService;
     private List<InstanceFilter<T>> filters = Lists.newArrayList();
     private DownInstancePolicy downInstancePolicy = new DownInstancePolicy();
 
     public ServiceProvider<T> build()
     {
-        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, filters, downInstancePolicy);
+        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, executorService, filters, downInstancePolicy);
     }
 
     ServiceProviderBuilderImpl(ServiceDiscoveryImpl<T> discovery)
@@ -83,9 +86,11 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
      * @return this
      */
     @Override
+    @Deprecated
     public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory)
     {
         this.threadFactory = threadFactory;
+        this.executorService = null;
         return this;
     }
 
@@ -100,6 +105,20 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter)
     {
         filters.add(filter);
+        return this;
+    }
+
+    @Override
+    public ServiceProviderBuilder<T> executorService(ExecutorService executorService)
+    {
+        return executorService(new CloseableExecutorService(executorService));
+    }
+
+    @Override
+    public ServiceProviderBuilder<T> executorService(CloseableExecutorService executorService)
+    {
+        this.executorService = executorService;
+        this.threadFactory = null;
         return this;
     }
 }

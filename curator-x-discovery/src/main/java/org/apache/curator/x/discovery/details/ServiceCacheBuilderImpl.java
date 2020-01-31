@@ -77,6 +77,7 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
      * @return this
      */
     @Override
+    @Deprecated
     public ServiceCacheBuilder<T> threadFactory(ThreadFactory threadFactory)
     {
         this.threadFactory = threadFactory;
@@ -92,9 +93,7 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
      */
     @Override
     public ServiceCacheBuilder<T> executorService(ExecutorService executorService) {
-        this.executorService = new CloseableExecutorService(executorService);
-        this.threadFactory = null;
-        return this;
+        return executorService(new CloseableExecutorService(executorService, false));
     }
 
     /**

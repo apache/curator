@@ -19,21 +19,24 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Lists;
+import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceCache;
+import org.apache.curator.x.discovery.ServiceCacheBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 /**
  * The main interface for Service Discovery. Encapsulates the discovery service for a particular
- * named service along with a provider strategy. 
+ * named service along with a provider strategy.
  */
 public class ServiceProviderImpl<T> implements ServiceProvider<T>
 {
@@ -45,11 +48,29 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
 
     public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
     {
+        this(discovery, serviceName, providerStrategy, threadFactory, null, filters, downInstancePolicy);
+    }
+
+    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, CloseableExecutorService executorService, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
+    {
+        this(discovery, serviceName, providerStrategy, null, executorService, filters, downInstancePolicy);
+    }
+
+    protected ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, CloseableExecutorService executorService, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
+    {
         this.discovery = discovery;
         this.providerStrategy = providerStrategy;
 
         downInstanceManager = new DownInstanceManager<T>(downInstancePolicy);
-        cache = discovery.serviceCacheBuilder().name(serviceName).threadFactory(threadFactory).build();
+        final ServiceCacheBuilder builder = discovery.serviceCacheBuilder().name(serviceName);
+        if (executorService != null)
+        {
+            builder.executorService(executorService);
+        } else
+        {
+            builder.threadFactory(threadFactory);
+        }
+        cache = builder.build();
 
         ArrayList<InstanceFilter<T>> localFilters = Lists.newArrayList(filters);
         localFilters.add(downInstanceManager);

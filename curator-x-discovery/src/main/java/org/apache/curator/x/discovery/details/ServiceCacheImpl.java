@@ -61,7 +61,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     private static CloseableExecutorService convertThreadFactory(ThreadFactory threadFactory)
     {
         Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
-        return new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory));
+        return new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory), true);
     }
 
     ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory)
