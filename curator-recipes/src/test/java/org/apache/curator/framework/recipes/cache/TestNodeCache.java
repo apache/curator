@@ -27,7 +27,6 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.Compatibility;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.Callable;
@@ -196,7 +195,7 @@ public class TestNodeCache extends BaseClassForTests
                 }
             );
 
-            Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
+            client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
             Thread.sleep(timing.multiple(1.5).session());
 
             Assert.assertEquals(cache.getCurrentData().getData(), "start".getBytes());

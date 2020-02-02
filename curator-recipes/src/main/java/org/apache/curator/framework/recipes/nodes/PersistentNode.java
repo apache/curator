@@ -19,11 +19,9 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
-import com.google.common.base.Function;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.SafeIsTtlMode;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -32,7 +30,8 @@ import org.apache.curator.framework.api.CreateBuilderMain;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -77,7 +76,7 @@ public class PersistentNode implements Closeable
     private final BackgroundCallback backgroundCallback;
     private final boolean useProtection;
     private final AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>> createMethod = new AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>>(null);
-    private final ListenerContainer<PersistentNodeListener> listeners = new ListenerContainer<PersistentNodeListener>();
+    private final StandardListenerManager<PersistentNodeListener> listeners = StandardListenerManager.standard();
     private final CuratorWatcher watcher = new CuratorWatcher()
     {
         @Override
@@ -362,7 +361,7 @@ public class PersistentNode implements Closeable
      *
      * @return listenable
      */
-    public ListenerContainer<PersistentNodeListener> getListenable()
+    public Listenable<PersistentNodeListener> getListenable()
     {
         return listeners;
     }
@@ -462,7 +461,7 @@ public class PersistentNode implements Closeable
             CreateModable<ACLBackgroundPathAndBytesable<String>> localCreateMethod = createMethod.get();
             if ( localCreateMethod == null )
             {
-                CreateBuilderMain createBuilder = SafeIsTtlMode.isTtl(mode) ? client.create().withTtl(ttl) : client.create();
+                CreateBuilderMain createBuilder = mode.isTTL() ? client.create().withTtl(ttl) : client.create();
                 CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod = useProtection ? createBuilder.creatingParentContainersIfNeeded().withProtection() : createBuilder.creatingParentContainersIfNeeded();
                 createMethod.compareAndSet(null, tempCreateMethod);
                 localCreateMethod = createMethod.get();
@@ -523,25 +522,17 @@ public class PersistentNode implements Closeable
     private void notifyListeners()
     {
         final String path = getActualPath();
-        listeners.forEach(
-             new Function<PersistentNodeListener, Void>()
-             {
-                 @Override
-                 public Void apply(PersistentNodeListener listener)
-                 {
-                     try
-                    {
-                        listener.nodeCreated(path);
-                    }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        log.error("From PersistentNode listener", e);
-                    }
-                    return null;
-                }
-             }
-        );
+        listeners.forEach(listener -> {
+            try
+            {
+                listener.nodeCreated(path);
+            }
+            catch ( Exception e )
+            {
+                ThreadUtils.checkInterrupted(e);
+                log.error("From PersistentNode listener", e);
+            }
+        });
     }
 
     private boolean isActive()

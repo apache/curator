@@ -22,7 +22,6 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.Compatibility;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.Callable;
@@ -57,7 +56,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                 if ( firstTime.compareAndSet(true, false) )
                                 {
                                     Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
-                                    Compatibility.injectSessionExpiration(client.getZooKeeper());
+                                    client.getZooKeeper().getTestable().injectSessionExpiration();
                                     client.getZooKeeper();
                                     client.blockUntilConnectedOrTimedOut();
                                 }
@@ -131,7 +130,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                     if ( firstTime.compareAndSet(true, false) )
                                     {
                                         Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
-                                        Compatibility.injectSessionExpiration(client.getZooKeeper());
+                                        client.getZooKeeper().getTestable().injectSessionExpiration();
                                         client.getZooKeeper();
                                         client.blockUntilConnectedOrTimedOut();
                                     }
@@ -196,7 +195,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                 public Void call() throws Exception
                                 {
                                     Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
-                                    Compatibility.injectSessionExpiration(client.getZooKeeper());
+                                    client.getZooKeeper().getTestable().injectSessionExpiration();
 
                                     timing.sleepABit();
 
@@ -258,7 +257,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                     public Void call() throws Exception
                                     {
                                         Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
-                                        Compatibility.injectSessionExpiration(client.getZooKeeper());
+                                        client.getZooKeeper().getTestable().injectSessionExpiration();
 
                                         client.getZooKeeper();
                                         client.blockUntilConnectedOrTimedOut();

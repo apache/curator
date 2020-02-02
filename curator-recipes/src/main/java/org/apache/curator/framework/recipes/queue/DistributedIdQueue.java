@@ -21,7 +21,7 @@ package org.apache.curator.framework.recipes.queue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -105,7 +105,7 @@ public class DistributedIdQueue<T> implements QueueBase<T>
     }
 
     @Override
-    public ListenerContainer<QueuePutListener<T>> getPutListenerContainer()
+    public Listenable<QueuePutListener<T>> getPutListenerContainer()
     {
         return queue.getPutListenerContainer();
     }

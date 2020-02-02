@@ -20,7 +20,6 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -33,7 +32,7 @@ import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.Watchable;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -531,8 +530,8 @@ public class TreeCache implements Closeable
     private final boolean cacheData;
     private final boolean dataIsCompressed;
     private final int maxDepth;
-    private final ListenerContainer<TreeCacheListener> listeners = new ListenerContainer<TreeCacheListener>();
-    private final ListenerContainer<UnhandledErrorListener> errorListeners = new ListenerContainer<UnhandledErrorListener>();
+    private final StandardListenerManager<TreeCacheListener> listeners = StandardListenerManager.standard();
+    private final StandardListenerManager<UnhandledErrorListener> errorListeners = StandardListenerManager.standard();
     private final AtomicReference<TreeState> treeState = new AtomicReference<TreeState>(TreeState.LATENT);
 
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -750,21 +749,16 @@ public class TreeCache implements Closeable
 
     private void callListeners(final TreeCacheEvent event)
     {
-        listeners.forEach(new Function<TreeCacheListener, Void>()
+        listeners.forEach(listener ->
         {
-            @Override
-            public Void apply(TreeCacheListener listener)
+            try
             {
-                try
-                {
-                    listener.childEvent(client, event);
-                }
-                catch ( Exception e )
-                {
-                    ThreadUtils.checkInterrupted(e);
-                    handleException(e);
-                }
-                return null;
+                listener.childEvent(client, event);
+            }
+            catch ( Exception e )
+            {
+                ThreadUtils.checkInterrupted(e);
+                handleException(e);
             }
         });
     }
@@ -780,21 +774,16 @@ public class TreeCache implements Closeable
         }
         else
         {
-            errorListeners.forEach(new Function<UnhandledErrorListener, Void>()
+            errorListeners.forEach(listener ->
             {
-                @Override
-                public Void apply(UnhandledErrorListener listener)
+                try
                 {
-                    try
-                    {
-                        listener.unhandledError("", e);
-                    }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        LOG.error("Exception handling exception", e);
-                    }
-                    return null;
+                    listener.unhandledError("", e);
+                }
+                catch ( Exception e2 )
+                {
+                    ThreadUtils.checkInterrupted(e2);
+                    LOG.error("Exception handling exception", e2);
                 }
             });
         }

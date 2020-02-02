@@ -35,7 +35,6 @@ import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.schema.Schema;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.proto.CreateRequest;
@@ -136,22 +135,7 @@ public class CuratorMultiTransactionImpl implements
             if ( (curatorOp.get().getType() == ZooDefs.OpCode.create) || (curatorOp.get().getType() == ZooDefs.OpCode.createContainer) )
             {
                 CreateRequest createRequest = (CreateRequest)curatorOp.get().toRequestRecord();
-                CreateMode createMode;
-                if ( client.isZk34CompatibilityMode() )
-                {
-                    try
-                    {
-                        createMode = CreateMode.fromFlag(createRequest.getFlags());
-                    }
-                    catch ( KeeperException.BadArgumentsException dummy )
-                    {
-                        createMode = CreateMode.PERSISTENT;
-                    }
-                }
-                else
-                {
-                    createMode = CreateMode.fromFlag(createRequest.getFlags(), CreateMode.PERSISTENT);
-                }
+                CreateMode createMode = CreateMode.fromFlag(createRequest.getFlags(), CreateMode.PERSISTENT);
                 schema.validateCreate(createMode, createRequest.getPath(), createRequest.getData(), createRequest.getAcl());
             }
             else if ( (curatorOp.get().getType() == ZooDefs.OpCode.delete) || (curatorOp.get().getType() == ZooDefs.OpCode.deleteContainer) )
