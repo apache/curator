@@ -48,7 +48,7 @@ class ConnectionState implements Watcher, Closeable
     private static final int MAX_BACKGROUND_EXCEPTIONS = 10;
     private static final boolean LOG_EVENTS = Boolean.getBoolean(DebugUtils.PROPERTY_LOG_EVENTS);
     private static final Logger log = LoggerFactory.getLogger(ConnectionState.class);
-    private final HandleHolder zooKeeper;
+    private final HandleHolder handleHolder;
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
     private final AtomicInteger lastNegotiatedSessionTimeoutMs = new AtomicInteger(0);
     private final EnsembleProvider ensembleProvider;
@@ -73,7 +73,7 @@ class ConnectionState implements Watcher, Closeable
             parentWatchers.offer(parentWatcher);
         }
 
-        zooKeeper = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs, canBeReadOnly);
+        handleHolder = new HandleHolder(zookeeperFactory, this, ensembleProvider, sessionTimeoutMs, canBeReadOnly);
     }
 
     ZooKeeper getZooKeeper() throws Exception
@@ -96,7 +96,7 @@ class ConnectionState implements Watcher, Closeable
             checkTimeouts();
         }
 
-        return zooKeeper.getZooKeeper();
+        return handleHolder.getZooKeeper();
     }
 
     boolean isConnected()
@@ -122,7 +122,7 @@ class ConnectionState implements Watcher, Closeable
         CloseableUtils.closeQuietly(ensembleProvider);
         try
         {
-            zooKeeper.closeAndClear(waitForShutdownTimeoutMs);
+            handleHolder.closeAndClear(waitForShutdownTimeoutMs);
         }
         catch ( Exception e )
         {
@@ -173,7 +173,7 @@ class ConnectionState implements Watcher, Closeable
                 connectionStartMs = System.currentTimeMillis();
                 if ( newIsConnected )
                 {
-                    lastNegotiatedSessionTimeoutMs.set(zooKeeper.getNegotiatedSessionTimeoutMs());
+                    lastNegotiatedSessionTimeoutMs.set(handleHolder.getNegotiatedSessionTimeoutMs());
                     log.debug("Negotiated session timeout: " + lastNegotiatedSessionTimeoutMs.get());
                 }
             }
@@ -200,8 +200,8 @@ class ConnectionState implements Watcher, Closeable
 
         isConnected.set(false);
         connectionStartMs = System.currentTimeMillis();
-        zooKeeper.closeAndReset();
-        zooKeeper.getZooKeeper();   // initiate connection
+        handleHolder.closeAndReset();
+        handleHolder.getZooKeeper();   // initiate connection
     }
 
     private synchronized void checkTimeouts() throws Exception
@@ -212,7 +212,7 @@ class ConnectionState implements Watcher, Closeable
             @Override
             public String call()
             {
-                newConnectionString.set(zooKeeper.getNewConnectionString());
+                newConnectionString.set(handleHolder.getNewConnectionString());
                 return newConnectionString.get();
             }
         };
@@ -251,7 +251,7 @@ class ConnectionState implements Watcher, Closeable
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
                     long elapsed = System.currentTimeMillis() - connectionStartMs;
-                    log.error(String.format("Connection timed out for connection string (%s) and timeout (%d) / elapsed (%d)", zooKeeper.getConnectionString(), connectionTimeoutMs, elapsed), connectionLossException);
+                    log.error(String.format("Connection timed out for connection string (%s) and timeout (%d) / elapsed (%d)", handleHolder.getConnectionString(), connectionTimeoutMs, elapsed), connectionLossException);
                 }
                 new EventTrace("connections-timed-out", tracer.get(), getSessionId()).commit();
                 throw connectionLossException;
@@ -271,7 +271,7 @@ class ConnectionState implements Watcher, Closeable
     public long getSessionId() {
         long sessionId = 0;
         try {
-            ZooKeeper zk = zooKeeper.getZooKeeper();
+            ZooKeeper zk = handleHolder.getZooKeeper();
             if (zk != null) {
                 sessionId = zk.getSessionId();
             }
@@ -329,7 +329,7 @@ class ConnectionState implements Watcher, Closeable
 
         if ( checkNewConnectionString )
         {
-            String newConnectionString = zooKeeper.getNewConnectionString();
+            String newConnectionString = handleHolder.getNewConnectionString();
             if ( newConnectionString != null )
             {
                 handleNewConnectionString(newConnectionString);
@@ -346,7 +346,7 @@ class ConnectionState implements Watcher, Closeable
 
         try
         {
-            ZooKeeper zooKeeper = this.zooKeeper.getZooKeeper();
+            ZooKeeper zooKeeper = handleHolder.getZooKeeper();
             if ( zooKeeper == null )
             {
                 log.warn("Could not update the connection string because getZooKeeper() returned null.");
@@ -356,6 +356,7 @@ class ConnectionState implements Watcher, Closeable
                 if ( ensembleProvider.updateServerListEnabled() )
                 {
                     zooKeeper.updateServerList(newConnectionString);
+                    handleHolder.resetConnectionString(newConnectionString);
                 }
                 else
                 {
