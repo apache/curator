@@ -599,7 +599,7 @@ public class DistributedQueue<T> implements QueueBase<T>
 
             if ( !itemNode.startsWith(QUEUE_ITEM_NAME) )
             {
-                log.warn("Foreign node in queue path: " + itemNode);
+                log.warn("Foreign node in queue path: {}", itemNode);
                 processedLatch.release();
                 continue;
             }
@@ -640,7 +640,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                         catch ( Exception e )
                         {
                             ThreadUtils.checkInterrupted(e);
-                            log.error("Error processing message at " + itemNode, e);
+                            log.error("Error processing message at {}", itemNode, e);
                         }
                         finally
                         {
@@ -671,7 +671,7 @@ public class DistributedQueue<T> implements QueueBase<T>
         catch ( Throwable e )
         {
             ThreadUtils.checkInterrupted(e);
-            log.error("Corrupted queue item: " + itemNode, e);
+            log.error("Corrupted queue item: {}", itemNode, e);
             return resultCode;
         }
 
@@ -690,7 +690,7 @@ public class DistributedQueue<T> implements QueueBase<T>
             catch ( Throwable e )
             {
                 ThreadUtils.checkInterrupted(e);
-                log.error("Exception processing queue item: " + itemNode, e);
+                log.error("Exception processing queue item: {}", itemNode, e);
                 if ( errorMode.get() == ErrorMode.REQUEUE )
                 {
                     resultCode = ProcessMessageBytesCode.REQUEUE;

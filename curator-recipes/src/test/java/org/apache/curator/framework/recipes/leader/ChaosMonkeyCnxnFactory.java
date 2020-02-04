@@ -89,14 +89,14 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
             if ( si.type != ZooDefs.OpCode.createSession && si.type != ZooDefs.OpCode.sync && si.type != ZooDefs.OpCode.ping
                 && firstError != 0 && remaining > 0 )
             {
-                log.debug("Rejected : " + si.toString());
+                log.debug("Rejected : {}", si.toString());
                 // Still reject request
-                log.debug("Still not ready for " + remaining + "ms");
+                log.debug("Still not ready for {}ms", remaining);
                 ((NIOServerCnxn)si.cnxn).close();
                 return;
             }
             // Submit the request to the legacy Zookeeper server
-            log.debug("Applied : " + si.toString());
+            log.debug("Applied : {}", si.toString());
             super.submitRequest(si);
             // Raise an error if a lock is created
             if ( (si.type == ZooDefs.OpCode.create) || (si.type == ZooDefs.OpCode.create2) )
@@ -112,7 +112,7 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
                     {
                         firstError = System.currentTimeMillis();
                         // The znode has been created, close the connection and don't tell it to client
-                        log.warn("Closing connection right after " + createRequest.getPath() + " creation");
+                        log.warn("Closing connection right after {} creation", createRequest.getPath());
                         ((NIOServerCnxn)si.cnxn).close();
                     }
                 }

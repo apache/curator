@@ -814,7 +814,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             }
             else if ( event.getType() != EventType.None )
             {
-                log.warn("Unexpected watcher event: " + event);
+                log.warn("Unexpected watcher event: {}", event);
             }
         }
 

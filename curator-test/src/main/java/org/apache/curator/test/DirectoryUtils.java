@@ -37,7 +37,7 @@ public class DirectoryUtils
             deleteDirectoryContents(file);
         }
         if (!file.delete()) {
-            log.error("Failed to delete " + file);
+            log.error("Failed to delete {}", file);
         }
     }
 
@@ -47,7 +47,7 @@ public class DirectoryUtils
             "Not a directory: %s", directory);
         File[] files = directory.listFiles();
         if (files == null) {
-            log.warn("directory.listFiles() returned null for: " + directory);
+            log.warn("directory.listFiles() returned null for: {}", directory);
             return;
         }
         for (File file : files) {

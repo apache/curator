@@ -66,13 +66,13 @@ public class WatcherRemovalManager
             {
                 try
                 {
-                    log.debug("Removing watcher for path: " + watcher.getUnfixedPath());
+                    log.debug("Removing watcher for path: {}", watcher.getUnfixedPath());
                     RemoveWatchesBuilderImpl builder = new RemoveWatchesBuilderImpl(client);
                     builder.internalRemoval(watcher, watcher.getUnfixedPath());
                 }
                 catch ( Exception e )
                 {
-                    log.error("Could not remove watcher for path: " + watcher.getUnfixedPath());
+                    log.error("Could not remove watcher for path: {}", watcher.getUnfixedPath());
                 }
             }
         }

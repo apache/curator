@@ -160,7 +160,7 @@ class ConnectionState implements Watcher, Closeable
     {
         if ( LOG_EVENTS )
         {
-            log.debug("ConnectState watcher: " + event);
+            log.debug("ConnectState watcher: {}", event);
         }
 
         if ( event.getType() == Watcher.Event.EventType.None )
@@ -174,7 +174,7 @@ class ConnectionState implements Watcher, Closeable
                 if ( newIsConnected )
                 {
                     lastNegotiatedSessionTimeoutMs.set(zooKeeper.getNegotiatedSessionTimeoutMs());
-                    log.debug("Negotiated session timeout: " + lastNegotiatedSessionTimeoutMs.get());
+                    log.debug("Negotiated session timeout: {}", lastNegotiatedSessionTimeoutMs.get());
                 }
             }
         }
@@ -239,7 +239,7 @@ class ConnectionState implements Watcher, Closeable
                 {
                     long elapsed = System.currentTimeMillis() - connectionStartMs;
                     int maxTimeout = Math.max(useSessionTimeoutMs, connectionTimeoutMs);
-                    log.warn(String.format("Connection attempt unsuccessful after %d (greater than max timeout of %d). Resetting connection and trying again with a new connection.", elapsed, maxTimeout));
+                    log.warn("Connection attempt unsuccessful after {} (greater than max timeout of {}). Resetting connection and trying again with a new connection.", elapsed, maxTimeout);
                 }
                 reset();
                 break;
@@ -251,7 +251,7 @@ class ConnectionState implements Watcher, Closeable
                 if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
                 {
                     long elapsed = System.currentTimeMillis() - connectionStartMs;
-                    log.error(String.format("Connection timed out for connection string (%s) and timeout (%d) / elapsed (%d)", zooKeeper.getConnectionString(), connectionTimeoutMs, elapsed), connectionLossException);
+                    log.error("Connection timed out for connection string ({}) and timeout ({}) / elapsed ({})", zooKeeper.getConnectionString(), connectionTimeoutMs, elapsed, connectionLossException);
                 }
                 new EventTrace("connections-timed-out", tracer.get(), getSessionId()).commit();
                 throw connectionLossException;
@@ -341,7 +341,7 @@ class ConnectionState implements Watcher, Closeable
 
     private void handleNewConnectionString(String newConnectionString)
     {
-        log.info("Connection string changed to: " + newConnectionString);
+        log.info("Connection string changed to: {}", newConnectionString);
         new EventTrace("connection-string-changed", tracer.get(), getSessionId()).commit();
 
         try

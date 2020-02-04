@@ -528,7 +528,7 @@ public class LeaderLatch implements Closeable
                 }
                 else
                 {
-                    log.error("getChildren() failed. rc = " + event.getResultCode());
+                    log.error("getChildren() failed. rc = {}", event.getResultCode());
                 }
             }
         };
@@ -567,7 +567,7 @@ public class LeaderLatch implements Closeable
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
         if ( ourIndex < 0 )
         {
-            log.error("Can't find our node. Resetting. Index: " + ourIndex);
+            log.error("Can't find our node. Resetting. Index: {}", ourIndex);
             reset();
         }
         else if ( ourIndex == 0 )

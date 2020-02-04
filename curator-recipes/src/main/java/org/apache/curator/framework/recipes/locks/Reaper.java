@@ -280,7 +280,7 @@ public class Reaper implements Closeable
                         try
                         {
                             client.delete().forPath(holder.path);
-                            log.info("Reaping path: " + holder.path);
+                            log.info("Reaping path: {}", holder.path);
                             if ( holder.mode == Mode.REAP_UNTIL_DELETE || holder.mode == Mode.REAP_UNTIL_GONE )
                             {
                                 addBack = false;
@@ -316,7 +316,7 @@ public class Reaper implements Closeable
         catch ( Exception e )
         {
             ThreadUtils.checkInterrupted(e);
-            log.error("Trying to reap: " + holder.path, e);
+            log.error("Trying to reap: {}", holder.path, e);
         }
 
         if ( !addBack )

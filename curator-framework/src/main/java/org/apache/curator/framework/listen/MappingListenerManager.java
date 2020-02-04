@@ -95,7 +95,7 @@ public class MappingListenerManager<K, V> implements ListenerManager<K, V>
                 catch ( Throwable e )
                 {
                     ThreadUtils.checkInterrupted(e);
-                    log.error(String.format("Listener (%s) threw an exception", entry.listener), e);
+                    log.error("Listener ({}) threw an exception", entry.listener, e);
                 }
             });
         }

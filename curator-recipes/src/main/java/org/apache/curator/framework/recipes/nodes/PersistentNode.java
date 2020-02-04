@@ -113,7 +113,7 @@ public class PersistentNode implements Closeable
                     boolean isEphemeral = event.getStat().getEphemeralOwner() != 0;
                     if ( isEphemeral != mode.isEphemeral() )
                     {
-                        log.warn("Existing node ephemeral state doesn't match requested state. Maybe the node was created outside of PersistentNode? " + basePath);
+                        log.warn("Existing node ephemeral state doesn't match requested state. Maybe the node was created outside of PersistentNode? {}", basePath);
                     }
                 }
             }

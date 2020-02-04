@@ -242,7 +242,7 @@ public class DistributedIdQueue<T> implements QueueBase<T>
         int         secondIndex = name.indexOf(SEPARATOR, firstIndex + 1);
         if ( (firstIndex < 0) || (secondIndex < 0) )
         {
-            log.error("Bad node in queue: " + name);
+            log.error("Bad node in queue: {}", name);
             return new Parts(name, name);
         }
 
