@@ -89,6 +89,7 @@ public class InstanceSpec
         try
         {
             server = new ServerSocket(0);
+            server.setReuseAddress(true);
             return server.getLocalPort();
         }
         catch ( IOException e )

@@ -143,7 +143,9 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     public void blockUntilStarted() throws Exception
     {
         if(!timing.awaitLatch(latch))
-            throw new IllegalStateException("Timed out waiting for watch removal");
+        {
+            throw new IllegalStateException("Timed out waiting for server startup");
+        }
 
         if ( zkServer != null )
         {

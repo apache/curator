@@ -22,6 +22,7 @@ package org.apache.curator.test;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.Closeable;
 import java.io.File;
@@ -40,7 +41,7 @@ public class QuorumConfigBuilder implements Closeable
 
     public QuorumConfigBuilder(Collection<InstanceSpec> specs)
     {
-        this(specs.toArray(new InstanceSpec[specs.size()]));
+        this(specs.toArray(new InstanceSpec[0]));
     }
 
     public QuorumConfigBuilder(InstanceSpec... specs)
@@ -109,11 +110,9 @@ public class QuorumConfigBuilder implements Closeable
         properties.setProperty("syncLimit", "5");
         properties.setProperty("dataDir", spec.getDataDirectory().getCanonicalPath());
         properties.setProperty("clientPort", Integer.toString(spec.getPort()));
-        int tickTime = spec.getTickTime();
-        if ( tickTime >= 0 )
-        {
-            properties.setProperty("tickTime", Integer.toString(tickTime));
-        }
+        String tickTime = Integer.toString((spec.getTickTime() >= 0) ? spec.getTickTime() : new Timing2().tickTime());
+        properties.setProperty("tickTime", tickTime);
+        properties.setProperty("minSessionTimeout", tickTime);
         int maxClientCnxns = spec.getMaxClientCnxns();
         if ( maxClientCnxns >= 0 )
         {
