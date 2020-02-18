@@ -18,15 +18,8 @@
  */
 package org.apache.curator;
 
-import org.apache.curator.drivers.EventTrace;
-import org.apache.curator.drivers.TracerDriver;
-import org.apache.curator.utils.DebugUtils;
 import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>Mechanism to perform an operation on Zookeeper that is safe against
@@ -56,34 +49,22 @@ import java.util.concurrent.atomic.AtomicReference;
  *     }
  * }
  * </pre>
+ *
+ * <p>
+ *     Note: this an {@code abstract class} instead of an {@code interface} for historical reasons. It was originally a class
+ *     and if it becomes an interface we risk {@link java.lang.IncompatibleClassChangeError}s with clients.
+ * </p>
  */
-public class RetryLoop
+public abstract class RetryLoop
 {
-    private boolean         isDone = false;
-    private int             retryCount = 0;
-
-    private final Logger            log = LoggerFactory.getLogger(getClass());
-    private final long              startTimeMs = System.currentTimeMillis();
-    private final RetryPolicy       retryPolicy;
-    private final AtomicReference<TracerDriver>     tracer;
-
-    private static final RetrySleeper  sleeper = new RetrySleeper()
-    {
-        @Override
-        public void sleepFor(long time, TimeUnit unit) throws InterruptedException
-        {
-            unit.sleep(time);
-        }
-    };
-
     /**
      * Returns the default retry sleeper
      *
      * @return sleeper
      */
-    public static RetrySleeper      getDefaultRetrySleeper()
+    public static RetrySleeper getDefaultRetrySleeper()
     {
-        return sleeper;
+        return RetryLoopImpl.getRetrySleeper();
     }
 
     /**
@@ -95,15 +76,9 @@ public class RetryLoop
      * @return procedure result
      * @throws Exception any non-retriable errors
      */
-    public static<T> T      callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
+    public static <T> T callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
     {
         return client.getConnectionHandlingPolicy().callWithRetry(client, proc);
-    }
-
-    RetryLoop(RetryPolicy retryPolicy, AtomicReference<TracerDriver> tracer)
-    {
-        this.retryPolicy = retryPolicy;
-        this.tracer = tracer;
     }
 
     /**
@@ -111,18 +86,12 @@ public class RetryLoop
      *
      * @return true/false
      */
-    public boolean      shouldContinue()
-    {
-        return !isDone;
-    }
+    public abstract boolean shouldContinue();
 
     /**
      * Call this when your operation has successfully completed
      */
-    public void     markComplete()
-    {
-        isDone = true;
-    }
+    public abstract void markComplete();
 
     /**
      * Utility - return true if the given Zookeeper result code is retry-able
@@ -130,7 +99,7 @@ public class RetryLoop
      * @param rc result code
      * @return true/false
      */
-    public static boolean      shouldRetry(int rc)
+    public static boolean shouldRetry(int rc)
     {
         return (rc == KeeperException.Code.CONNECTIONLOSS.intValue()) ||
             (rc == KeeperException.Code.OPERATIONTIMEOUT.intValue()) ||
@@ -145,11 +114,11 @@ public class RetryLoop
      * @param exception exception to check
      * @return true/false
      */
-    public static boolean      isRetryException(Throwable exception)
+    public static boolean isRetryException(Throwable exception)
     {
         if ( exception instanceof KeeperException )
         {
-            KeeperException     keeperException = (KeeperException)exception;
+            KeeperException keeperException = (KeeperException)exception;
             return shouldRetry(keeperException.code().intValue());
         }
         return false;
@@ -161,38 +130,5 @@ public class RetryLoop
      * @param exception the exception
      * @throws Exception if not retry-able or the retry policy returned negative
      */
-    public void         takeException(Exception exception) throws Exception
-    {
-        boolean     rethrow = true;
-        if ( isRetryException(exception) )
-        {
-            if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
-            {
-                log.debug("Retry-able exception received", exception);
-            }
-
-            if ( retryPolicy.allowRetry(retryCount++, System.currentTimeMillis() - startTimeMs, sleeper) )
-            {
-                new EventTrace("retries-allowed", tracer.get()).commit();
-                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
-                {
-                    log.debug("Retrying operation");
-                }
-                rethrow = false;
-            }
-            else
-            {
-                new EventTrace("retries-disallowed", tracer.get()).commit();
-                if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
-                {
-                    log.debug("Retry policy not allowing retry");
-                }
-            }
-        }
-
-        if ( rethrow )
-        {
-            throw exception;
-        }
-    }
+    public abstract void takeException(Exception exception) throws Exception;
 }

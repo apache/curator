@@ -51,7 +51,7 @@ public class TestEnsurePath
         ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
         CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
         RetryPolicy             retryPolicy = new RetryOneTime(1);
-        RetryLoop               retryLoop = new RetryLoop(retryPolicy, null);
+        RetryLoop               retryLoop = new RetryLoopImpl(retryPolicy, null);
         when(curator.getConnectionHandlingPolicy()).thenReturn(new StandardConnectionHandlingPolicy());
         when(curator.getZooKeeper()).thenReturn(client);
         when(curator.getRetryPolicy()).thenReturn(retryPolicy);
@@ -76,7 +76,7 @@ public class TestEnsurePath
     {
         ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
         RetryPolicy             retryPolicy = new RetryOneTime(1);
-        RetryLoop               retryLoop = new RetryLoop(retryPolicy, null);
+        RetryLoop               retryLoop = new RetryLoopImpl(retryPolicy, null);
         final CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
         when(curator.getConnectionHandlingPolicy()).thenReturn(new StandardConnectionHandlingPolicy());
         when(curator.getZooKeeper()).thenReturn(client);

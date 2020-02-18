@@ -56,19 +56,27 @@ public class StandardConnectionHandlingPolicy implements ConnectionHandlingPolic
         client.internalBlockUntilConnectedOrTimedOut();
 
         T result = null;
-        RetryLoop retryLoop = client.newRetryLoop();
-        while ( retryLoop.shouldContinue() )
+        ThreadLocalRetryLoop threadLocalRetryLoop = new ThreadLocalRetryLoop();
+        RetryLoop retryLoop = threadLocalRetryLoop.getRetryLoop(client::newRetryLoop);
+        try
         {
-            try
+            while ( retryLoop.shouldContinue() )
             {
-                result = proc.call();
-                retryLoop.markComplete();
+                try
+                {
+                    result = proc.call();
+                    retryLoop.markComplete();
+                }
+                catch ( Exception e )
+                {
+                    ThreadUtils.checkInterrupted(e);
+                    retryLoop.takeException(e);
+                }
             }
-            catch ( Exception e )
-            {
-                ThreadUtils.checkInterrupted(e);
-                retryLoop.takeException(e);
-            }
+        }
+        finally
+        {
+            threadLocalRetryLoop.release();
         }
 
         return result;

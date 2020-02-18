@@ -171,7 +171,7 @@ public class CuratorZookeeperClient implements Closeable
      */
     public RetryLoop newRetryLoop()
     {
-        return new RetryLoop(retryPolicy.get(), tracer);
+        return new RetryLoopImpl(retryPolicy.get(), tracer);
     }
 
     /**
