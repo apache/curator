@@ -32,8 +32,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static java.util.EnumSet.of;
 import static org.apache.curator.x.async.api.CreateOption.compress;
@@ -198,5 +200,17 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         Stat stat = new Stat();
         complete(client.getData().storingStatIn(stat).forPath("/test"));
         Assert.assertEquals(stat.getDataLength(), "hey".length());
+    }
+
+    @Test
+    public void testPersistentRecursiveWatch() throws Exception
+    {
+        BlockingQueue<Watcher.Event.EventType> events = new LinkedBlockingQueue<>();
+        Watcher watcher = event -> events.add(event.getType());
+        complete(client.addPersistentWatch().recursive().usingWatcher(watcher).forPath("/a/b"));
+        client.unwrap().create().creatingParentContainersIfNeeded().forPath("/a/b/c");
+        client.unwrap().create().creatingParentContainersIfNeeded().forPath("/a/b/d");
+        Assert.assertEquals(timing.takeFromQueue(events), Watcher.Event.EventType.NodeCreated);
+        Assert.assertEquals(timing.takeFromQueue(events), Watcher.Event.EventType.NodeCreated);
     }
 }

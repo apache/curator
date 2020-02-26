@@ -115,7 +115,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                         public Object call() throws Exception
                         {
                             InterProcessLock lock = makeLock(client);
-                            lock.acquire();
+                            Assert.assertTrue(lock.acquire(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
                             try
                             {
                                 if ( isFirst.compareAndSet(true, false) )

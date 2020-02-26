@@ -84,6 +84,13 @@ public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework
     AsyncReconfigBuilder reconfig();
 
     /**
+     * Start a persistent watch builder
+     *
+     * @return builder object
+     */
+    AsyncPersistentWatchBuilder addPersistentWatch();
+
+    /**
      * Start a transaction builder
      *
      * @return builder object

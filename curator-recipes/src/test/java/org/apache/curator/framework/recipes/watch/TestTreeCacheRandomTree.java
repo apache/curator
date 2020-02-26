@@ -16,8 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-package org.apache.curator.framework.recipes.cache;
+package org.apache.curator.framework.recipes.watch;
 
 import com.google.common.collect.Iterables;
 import org.apache.curator.framework.CuratorFramework;
@@ -29,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
+public class TestTreeCacheRandomTree extends BaseTestTreeCache
 {
     /**
      * A randomly generated source-of-truth node for {@link #testGiantRandomDeepTree()}
@@ -77,17 +76,17 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
         CuratorFramework cl = client.usingNamespace("tree");
         if ( withDepth )
         {
-            cache = buildWithListeners(TreeCache.newBuilder(cl, "/").setMaxDepth(TEST_DEPTH));
+            cache = buildWithListeners(CuratorCacheBuilder.builder(cl, "/").withCacheSelector(CacheSelectors.maxDepth(TEST_DEPTH)));
         }
         else
         {
             cache = newTreeCacheWithListeners(cl, "/");
         }
         cache.start();
-        assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
-        assertEvent(TreeCacheEvent.Type.INITIALIZED);
+        assertEvent(CacheEvent.NODE_CREATED, "/");
+        assertEvent(CacheEvent.CACHE_REFRESHED);
 
-        TestNode root = new TestNode("/", null);
+        TestNode root = new TestNode("/", new byte[0]);
         int maxDepth = 0;
         int adds = 0;
         int removals = 0;
@@ -125,7 +124,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
                     // TreeCache should see the delete.
                     if (shouldSeeEventAt(node.fullPath))
                     {
-                        assertEvent(TreeCacheEvent.Type.NODE_REMOVED, node.fullPath);
+                        assertEvent(CacheEvent.NODE_DELETED, node.fullPath);
                     }
                     ++removals;
                 }
@@ -150,7 +149,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
                 // TreeCache should see the update.
                 if (shouldSeeEventAt(node.fullPath))
                 {
-                    assertEvent(TreeCacheEvent.Type.NODE_UPDATED, node.fullPath, node.data);
+                    assertEvent(CacheEvent.NODE_CHANGED, node.fullPath, node.data);
                 }
 
                 ++updates;
@@ -176,7 +175,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
                 // TreeCache should see the add.
                 if (shouldSeeEventAt(child.fullPath))
                 {
-                    assertEvent(TreeCacheEvent.Type.NODE_ADDED, child.fullPath, child.data);
+                    assertEvent(CacheEvent.NODE_CREATED, child.fullPath, child.data);
                 }
 
                 ++adds;
@@ -184,7 +183,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
             }
 
             // Each iteration, ensure the cached state matches our source-of-truth tree.
-            assertNodeEquals(cache.getCurrentData("/"), root);
+            assertNodeEquals(cache.get("/"), root);
             assertTreeEquals(cache, root, 0);
         }
 
@@ -205,10 +204,10 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
     /**
      * Recursively assert that current children equal expected children.
      */
-    private void assertTreeEquals(TreeCache cache, TestNode expectedNode, int depth)
+    private void assertTreeEquals(CuratorCache cache, TestNode expectedNode, int depth)
     {
         String path = expectedNode.fullPath;
-        Map<String, ChildData> cacheChildren = cache.getCurrentChildren(path);
+        Map<String, CachedNode> cacheChildren = cache.childrenAtPath(path);
         Assert.assertNotNull(cacheChildren, path);
 
         if (withDepth && depth == TEST_DEPTH) {
@@ -220,7 +219,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
         for ( Map.Entry<String, TestNode> entry : expectedNode.children.entrySet() )
         {
             String nodeName = entry.getKey();
-            ChildData childData = cacheChildren.get(nodeName);
+            CachedNode childData = cacheChildren.get(nodeName);
             TestNode expectedChild = entry.getValue();
             assertNodeEquals(childData, expectedChild);
             assertTreeEquals(cache, expectedChild, depth + 1);
@@ -230,7 +229,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
     /**
      * Assert that the given node data matches expected test node data.
      */
-    private static void assertNodeEquals(ChildData actualChild, TestNode expectedNode)
+    private static void assertNodeEquals(CachedNode actualChild, TestNode expectedNode)
     {
         String path = expectedNode.fullPath;
         Assert.assertNotNull(actualChild, path);

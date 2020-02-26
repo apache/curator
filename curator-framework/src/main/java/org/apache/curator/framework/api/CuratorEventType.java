@@ -96,5 +96,10 @@ public enum CuratorEventType
     /**
      * Event sent when client is being closed
      */
-    CLOSING
+    CLOSING,
+
+    /**
+     * Corresponds to {@link CuratorFramework#addPersistentWatch()}
+     */
+    ADD_PERSISTENT_WATCH
 }

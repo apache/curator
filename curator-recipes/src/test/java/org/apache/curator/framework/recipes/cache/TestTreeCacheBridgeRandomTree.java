@@ -29,7 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
+@SuppressWarnings("deprecation")
+public class TestTreeCacheBridgeRandomTree extends BaseTestTreeCache<TreeCacheBridge>
 {
     /**
      * A randomly generated source-of-truth node for {@link #testGiantRandomDeepTree()}
@@ -77,11 +78,11 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
         CuratorFramework cl = client.usingNamespace("tree");
         if ( withDepth )
         {
-            cache = buildWithListeners(TreeCache.newBuilder(cl, "/").setMaxDepth(TEST_DEPTH));
+            cache = buildBridgeWithListeners(TreeCache.newBuilder(cl, "/").setMaxDepth(TEST_DEPTH));
         }
         else
         {
-            cache = newTreeCacheWithListeners(cl, "/");
+            cache = newTreeCacheBridgeWithListeners(cl, "/");
         }
         cache.start();
         assertEvent(TreeCacheEvent.Type.NODE_ADDED, "/");
@@ -205,7 +206,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache<TreeCache>
     /**
      * Recursively assert that current children equal expected children.
      */
-    private void assertTreeEquals(TreeCache cache, TestNode expectedNode, int depth)
+    private void assertTreeEquals(TreeCacheBridge cache, TestNode expectedNode, int depth)
     {
         String path = expectedNode.fullPath;
         Map<String, ChildData> cacheChildren = cache.getCurrentChildren(path);

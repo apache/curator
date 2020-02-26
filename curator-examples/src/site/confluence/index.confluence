@@ -3,7 +3,7 @@ h1. Examples
 This module contains example usages of various Curator features. Each directory in the module is a separate example.
 
 |/leader|Example leader selector code|
-|/cache|Example PathChildrenCache usage|
+|/cache|Example CuratorCache usage|
 |/locking|Example of using InterProcessMutex|
 |/discovery|Example usage of the Curator's ServiceDiscovery|
 |/framework|A few examples of how to use the CuratorFramework class|
