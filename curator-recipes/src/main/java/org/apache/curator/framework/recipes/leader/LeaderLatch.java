@@ -576,6 +576,7 @@ public class LeaderLatch implements Closeable
         }
         else
         {
+            setLeadership(false);
             String watchPath = sortedChildren.get(ourIndex - 1);
             Watcher watcher = new Watcher()
             {
