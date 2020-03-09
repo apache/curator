@@ -30,6 +30,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -42,11 +43,11 @@ public class BasicTests extends BaseClassForTests
     @Test
     public void     testFactory() throws Exception
     {
-        final ZooKeeper         mockZookeeper = Mockito.mock(ZooKeeper.class);
+        final ZooKeeperAdmin         mockZookeeper = Mockito.mock(ZooKeeperAdmin.class);
         ZookeeperFactory        zookeeperFactory = new ZookeeperFactory()
         {
             @Override
-            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
+            public ZooKeeperAdmin newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
             {
                 return mockZookeeper;
             }

@@ -28,6 +28,7 @@ import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 
 class NamespaceFacade extends CuratorFrameworkImpl
 {
@@ -109,7 +110,7 @@ class NamespaceFacade extends CuratorFrameworkImpl
     }
 
     @Override
-    ZooKeeper getZooKeeper() throws Exception
+    ZooKeeperAdmin getZooKeeper() throws Exception
     {
         return client.getZooKeeper();
     }

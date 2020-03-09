@@ -36,6 +36,7 @@ import org.apache.curator.connection.StandardConnectionHandlingPolicy;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.data.Stat;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -48,7 +49,7 @@ public class TestEnsurePath
     @Test
     public void    testBasic() throws Exception
     {
-        ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
+        ZooKeeperAdmin client = mock(ZooKeeperAdmin.class, Mockito.RETURNS_MOCKS);
         CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
         RetryPolicy             retryPolicy = new RetryOneTime(1);
         RetryLoop               retryLoop = new RetryLoopImpl(retryPolicy, null);
@@ -74,7 +75,7 @@ public class TestEnsurePath
     @Test
     public void    testSimultaneous() throws Exception
     {
-        ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
+        ZooKeeperAdmin               client = mock(ZooKeeperAdmin.class, Mockito.RETURNS_MOCKS);
         RetryPolicy             retryPolicy = new RetryOneTime(1);
         RetryLoop               retryLoop = new RetryLoopImpl(retryPolicy, null);
         final CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);

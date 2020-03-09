@@ -33,6 +33,7 @@ import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
@@ -157,7 +158,7 @@ public class CuratorZookeeperClient implements Closeable
      * @return client the client
      * @throws Exception if the connection timeout has elapsed or an exception occurs in a background process
      */
-    public ZooKeeper getZooKeeper() throws Exception
+    public ZooKeeperAdmin getZooKeeper() throws Exception
     {
         Preconditions.checkState(started.get(), "Client is not started");
 

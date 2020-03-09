@@ -31,6 +31,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
 class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemoveCuratorFramework
@@ -141,7 +142,7 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
     }
 
     @Override
-    ZooKeeper getZooKeeper() throws Exception
+    ZooKeeperAdmin getZooKeeper() throws Exception
     {
         return client.getZooKeeper();
     }

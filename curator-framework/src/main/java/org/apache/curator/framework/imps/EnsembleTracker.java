@@ -182,7 +182,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             String hostAddress;
             if ( server.clientAddr.getAddress().isAnyLocalAddress() )
             {
-                hostAddress = server.addr.getAddress().getHostAddress();
+                hostAddress = server.addr.getReachableOrOne().getAddress().getHostAddress();
             }
             else
             {

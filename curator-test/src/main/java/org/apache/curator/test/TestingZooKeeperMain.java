@@ -21,12 +21,7 @@ package org.apache.curator.test;
 
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.jmx.ZKMBeanInfo;
-import org.apache.zookeeper.server.ContainerManager;
-import org.apache.zookeeper.server.RequestProcessor;
-import org.apache.zookeeper.server.ServerCnxnFactory;
-import org.apache.zookeeper.server.ServerConfig;
-import org.apache.zookeeper.server.ZKDatabase;
-import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.*;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
@@ -81,7 +76,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         {
             if ( cnxnFactory != null )
             {
-                cnxnFactory.closeAll();
+                cnxnFactory.closeAll(ServerCnxn.DisconnectReason.SERVER_SHUTDOWN);
 
                 Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
                 ssField.setAccessible(true);
@@ -125,11 +120,9 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             log.error("Could not fix MBeanRegistry");
         }
 
-        ServerConfig serverConfig = new ServerConfig();
-        serverConfig.readFrom(config);
         try
         {
-            internalRunFromConfig(serverConfig);
+            internalRunFromConfig(config);
         }
         catch ( IOException e )
         {
@@ -215,7 +208,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     }
 
     // copied from ZooKeeperServerMain.java
-    private void internalRunFromConfig(ServerConfig config) throws IOException
+    private void internalRunFromConfig(QuorumPeerConfig qConfig) throws IOException
     {
         log.info("Starting server");
         FileTxnSnapLog txnLog = null;
@@ -224,8 +217,10 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             // so rather than spawning another thread, we will just call
             // run() in this thread.
             // create a file logger url from the command line args
+            final ServerConfig config = new ServerConfig();
+            config.readFrom(qConfig);
             txnLog = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
-            zkServer = new TestZooKeeperServer(txnLog, config);
+            zkServer = new TestZooKeeperServer(txnLog, config, qConfig.getInitialConfig());
 
             try
             {
@@ -262,9 +257,9 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
 
     public static class TestZooKeeperServer extends ZooKeeperServer
     {
-        public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config)
+        public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config, String initialConfig)
         {
-            super(txnLog, config.getTickTime(), config.getMinSessionTimeout(), config.getMaxSessionTimeout(), null);
+            super(txnLog, config.getTickTime(), config.getMinSessionTimeout(), config.getMaxSessionTimeout(), config.getClientPortListenBacklog(), null, initialConfig);
         }
 
         private final AtomicBoolean isRunning = new AtomicBoolean(false);

@@ -24,7 +24,14 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.proto.GetDataResponse;
+import org.apache.zookeeper.proto.ReconfigRequest;
+import org.apache.zookeeper.proto.ReplyHeader;
+import org.apache.zookeeper.proto.RequestHeader;
 import org.apache.zookeeper.server.DataTree;
 import java.util.Arrays;
 import java.util.List;
@@ -268,7 +275,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
                     client.processBackgroundOperation(data, event);
                 }
             };
-            client.getZooKeeper().reconfig(joining, leaving, newMembers, fromConfig, callback, backgrounding.getContext());
+            client.getZooKeeper().reconfigure(joining, leaving, newMembers, fromConfig, callback, backgrounding.getContext());
         }
         catch ( Throwable e )
         {
@@ -282,14 +289,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
         byte[] responseData = RetryLoop.callWithRetry
             (
                 client.getZookeeperClient(),
-                new Callable<byte[]>()
-                {
-                    @Override
-                    public byte[] call() throws Exception
-                    {
-                        return client.getZooKeeper().reconfig(joining, leaving, newMembers, fromConfig, responseStat);
-                    }
-                }
+                    (Callable<byte[]>) () -> client.getZooKeeper().reconfigure(joining, leaving, newMembers, fromConfig, responseStat)
             );
         trace.commit();
         return responseData;

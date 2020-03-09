@@ -18,7 +18,7 @@
  */
 package org.apache.curator;
 
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 
 class Helper
 {
@@ -26,7 +26,7 @@ class Helper
 
     static class Data
     {
-        volatile ZooKeeper zooKeeperHandle = null;
+        volatile ZooKeeperAdmin zooKeeperHandle = null;
         volatile String connectionString = null;
     }
 
@@ -35,7 +35,7 @@ class Helper
         this.data = data;
     }
 
-    ZooKeeper getZooKeeper() throws Exception
+    ZooKeeperAdmin getZooKeeper() throws Exception
     {
         return data.zooKeeperHandle;
     }

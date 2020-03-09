@@ -51,6 +51,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,19 +206,14 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
     {
-        return new ZookeeperFactory()
+        return (connectString, sessionTimeout, watcher, canBeReadOnly) ->
         {
-            @Override
-            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
+            final ZooKeeperAdmin zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
+            for ( AuthInfo auth : authInfos )
             {
-                ZooKeeper zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
-                for ( AuthInfo auth : authInfos )
-                {
-                    zooKeeper.addAuthInfo(auth.getScheme(), auth.getAuth());
-                }
-
-                return zooKeeper;
+                zooKeeper.addAuthInfo(auth.getScheme(), auth.getAuth());
             }
+            return zooKeeper;
         };
     }
 
@@ -615,7 +611,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return client.newRetryLoop();
     }
 
-    ZooKeeper getZooKeeper() throws Exception
+    ZooKeeperAdmin getZooKeeper() throws Exception
     {
         return client.getZooKeeper();
     }

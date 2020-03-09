@@ -43,6 +43,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
@@ -84,9 +85,9 @@ public class TestFramework extends BaseClassForTests
         ZookeeperFactory zookeeperFactory = new ZookeeperFactory()
         {
             @Override
-            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws IOException
+            public ZooKeeperAdmin newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws IOException
             {
-                return new ZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly)
+                return new ZooKeeperAdmin(connectString, sessionTimeout, watcher, canBeReadOnly)
                 {
                     @Override
                     public boolean close(int waitForShutdownTimeoutMs) throws InterruptedException

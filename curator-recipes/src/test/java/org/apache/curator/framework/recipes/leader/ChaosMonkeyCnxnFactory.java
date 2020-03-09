@@ -22,11 +22,7 @@ package org.apache.curator.framework.recipes.leader;
 import org.apache.curator.test.TestingZooKeeperMain;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.proto.CreateRequest;
-import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.apache.zookeeper.server.NIOServerCnxn;
-import org.apache.zookeeper.server.NIOServerCnxnFactory;
-import org.apache.zookeeper.server.Request;
-import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -92,7 +88,7 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
                 log.debug("Rejected : " + si.toString());
                 // Still reject request
                 log.debug("Still not ready for " + remaining + "ms");
-                ((NIOServerCnxn)si.cnxn).close();
+                ((NIOServerCnxn)si.cnxn).close(ServerCnxn.DisconnectReason.SERVER_SHUTDOWN);
                 return;
             }
             // Submit the request to the legacy Zookeeper server
@@ -113,13 +109,13 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
                         firstError = System.currentTimeMillis();
                         // The znode has been created, close the connection and don't tell it to client
                         log.warn("Closing connection right after " + createRequest.getPath() + " creation");
-                        ((NIOServerCnxn)si.cnxn).close();
+                        ((NIOServerCnxn)si.cnxn).close(ServerCnxn.DisconnectReason.SERVER_SHUTDOWN);
                     }
                 }
                 catch ( Exception e )
                 {
                     // Should not happen
-                    ((NIOServerCnxn)si.cnxn).close();
+                    ((NIOServerCnxn)si.cnxn).close(ServerCnxn.DisconnectReason.SERVER_SHUTDOWN);
                 }
             }
         }

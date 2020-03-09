@@ -18,6 +18,7 @@
  */
 package org.apache.curator.test;
 
+import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
@@ -36,10 +37,10 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
         {
             if ( quorumPeer != null )
             {
-                Field               cnxnFactoryField = QuorumPeer.class.getDeclaredField("cnxnFactory");
+                Field  cnxnFactoryField = QuorumPeer.class.getDeclaredField("cnxnFactory");
                 cnxnFactoryField.setAccessible(true);
-                ServerCnxnFactory   cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(quorumPeer);
-                cnxnFactory.closeAll();
+                ServerCnxnFactory cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(quorumPeer);
+                cnxnFactory.closeAll(ServerCnxn.DisconnectReason.SERVER_SHUTDOWN);
 
                 Field               ssField = cnxnFactory.getClass().getDeclaredField("ss");
                 ssField.setAccessible(true);

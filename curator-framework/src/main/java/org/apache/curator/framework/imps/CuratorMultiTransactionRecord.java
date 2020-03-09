@@ -21,12 +21,13 @@ package org.apache.curator.framework.imps;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TypeAndPath;
-import org.apache.zookeeper.MultiTransactionRecord;
+import org.apache.zookeeper.MultiOperationRecord;
 import org.apache.zookeeper.Op;
+
 import java.security.MessageDigest;
 import java.util.List;
 
-class CuratorMultiTransactionRecord extends MultiTransactionRecord
+class CuratorMultiTransactionRecord extends MultiOperationRecord
 {
     private final List<TypeAndPath>     metadata = Lists.newArrayList();
 

@@ -22,7 +22,7 @@ import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 
 class HandleHolder
 {
@@ -43,7 +43,7 @@ class HandleHolder
         this.canBeReadOnly = canBeReadOnly;
     }
 
-    ZooKeeper getZooKeeper() throws Exception
+    ZooKeeperAdmin getZooKeeper() throws Exception
     {
         return (helper != null) ? helper.getZooKeeper() : null;
     }
@@ -90,7 +90,7 @@ class HandleHolder
         helper = new Helper(data)
         {
             @Override
-            ZooKeeper getZooKeeper() throws Exception
+            ZooKeeperAdmin getZooKeeper() throws Exception
             {
                 synchronized(this)
                 {
@@ -112,7 +112,7 @@ class HandleHolder
     {
         try
         {
-            ZooKeeper zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
+            ZooKeeperAdmin zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
             if ( zooKeeper != null )
             {
                 Watcher dummyWatcher = new Watcher()
