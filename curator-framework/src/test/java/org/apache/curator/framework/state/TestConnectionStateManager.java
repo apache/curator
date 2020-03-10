@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework.state;
 
-import org.apache.curator.connection.StandardConnectionHandlingPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -41,7 +40,7 @@ public class TestConnectionStateManager extends BaseClassForTests {
             .sessionTimeoutMs(timing.session())
             .retryPolicy(new RetryOneTime(1))
             .connectionStateErrorPolicy(new SessionConnectionStateErrorPolicy())
-            .connectionHandlingPolicy(new StandardConnectionHandlingPolicy(30))
+            .simulatedSessionExpirationPercent(30)
             .build();
 
         // we should get LOST around 30% of a session plus a little "slop" for processing, etc.
