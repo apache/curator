@@ -18,6 +18,8 @@
  */
 package org.apache.curator;
 
+import org.apache.curator.connection.ThreadLocalRetryLoop;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import java.util.concurrent.Callable;
 
@@ -78,7 +80,33 @@ public abstract class RetryLoop
      */
     public static <T> T callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
     {
-        return client.getConnectionHandlingPolicy().callWithRetry(client, proc);
+        client.internalBlockUntilConnectedOrTimedOut();
+
+        T result = null;
+        ThreadLocalRetryLoop threadLocalRetryLoop = new ThreadLocalRetryLoop();
+        RetryLoop retryLoop = threadLocalRetryLoop.getRetryLoop(client::newRetryLoop);
+        try
+        {
+            while ( retryLoop.shouldContinue() )
+            {
+                try
+                {
+                    result = proc.call();
+                    retryLoop.markComplete();
+                }
+                catch ( Exception e )
+                {
+                    ThreadUtils.checkInterrupted(e);
+                    retryLoop.takeException(e);
+                }
+            }
+        }
+        finally
+        {
+            threadLocalRetryLoop.release();
+        }
+
+        return result;
     }
 
     /**
