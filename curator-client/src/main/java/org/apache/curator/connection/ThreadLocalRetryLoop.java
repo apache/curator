@@ -142,7 +142,7 @@ public class ThreadLocalRetryLoop
     }
 
     /**
-     * Must be called to release the retry loop. See {@link org.apache.curator.connection.StandardConnectionHandlingPolicy#callWithRetry(org.apache.curator.CuratorZookeeperClient, java.util.concurrent.Callable)}
+     * Must be called to release the retry loop. See {@link RetryLoop#callWithRetry(org.apache.curator.CuratorZookeeperClient, java.util.concurrent.Callable)}
      * for an example usage.
      */
     public void release()
