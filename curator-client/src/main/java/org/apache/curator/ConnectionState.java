@@ -49,19 +49,15 @@ class ConnectionState implements Watcher, Closeable
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
     private final AtomicInteger lastNegotiatedSessionTimeoutMs = new AtomicInteger(0);
     private final EnsembleProvider ensembleProvider;
-    private final int sessionTimeoutMs;
-    private final int connectionTimeoutMs;
     private final AtomicReference<TracerDriver> tracer;
     private final Queue<Exception> backgroundExceptions = new ConcurrentLinkedQueue<Exception>();
     private final Queue<Watcher> parentWatchers = new ConcurrentLinkedQueue<Watcher>();
     private final AtomicLong instanceIndex = new AtomicLong();
     private volatile long connectionStartMs = 0;
 
-    ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer, boolean canBeReadOnly)
+    ConnectionState(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, Watcher parentWatcher, AtomicReference<TracerDriver> tracer, boolean canBeReadOnly)
     {
         this.ensembleProvider = ensembleProvider;
-        this.sessionTimeoutMs = sessionTimeoutMs;
-        this.connectionTimeoutMs = connectionTimeoutMs;
         this.tracer = tracer;
         if ( parentWatcher != null )
         {
@@ -88,7 +84,7 @@ class ConnectionState implements Watcher, Closeable
         boolean localIsConnected = isConnected.get();
         if ( !localIsConnected )
         {
-            checkTimeouts();
+            checkNewConnectionString();
         }
 
         return handleHolder.getZooKeeper();
@@ -199,7 +195,7 @@ class ConnectionState implements Watcher, Closeable
         handleHolder.getZooKeeper();   // initiate connection
     }
 
-    private synchronized void checkTimeouts()
+    private synchronized void checkNewConnectionString()
     {
         final String newConnectionString = handleHolder.getNewConnectionString();
 

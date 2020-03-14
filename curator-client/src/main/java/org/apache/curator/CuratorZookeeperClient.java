@@ -124,7 +124,7 @@ public class CuratorZookeeperClient implements Closeable
 
         this.connectionTimeoutMs = connectionTimeoutMs;
         this.waitForShutdownTimeoutMs = waitForShutdownTimeoutMs;
-        state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly);
+        state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, watcher, tracer, canBeReadOnly);
         setRetryPolicy(retryPolicy);
     }
 
