@@ -20,7 +20,6 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.CuratorConnectionLossException;
@@ -36,7 +35,7 @@ import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
@@ -67,8 +66,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorZookeeperClient client;
-    private final ListenerContainer<CuratorListener> listeners;
-    private final ListenerContainer<UnhandledErrorListener> unhandledErrorListeners;
+    private final StandardListenerManager<CuratorListener> listeners;
+    private final StandardListenerManager<UnhandledErrorListener> unhandledErrorListeners;
     private final ThreadFactory threadFactory;
     private final int maxCloseWaitMs;
     private final BlockingQueue<OperationAndData<?>> backgroundOperations;
@@ -88,7 +87,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     private final InternalConnectionHandler internalConnectionHandler;
     private final EnsembleTracker ensembleTracker;
     private final SchemaSet schemaSet;
-    private final boolean zk34CompatibilityMode;
     private final Executor runSafeService;
 
     private volatile ExecutorService executorService;
@@ -131,8 +129,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
             );
 
         internalConnectionHandler = new StandardInternalConnectionHandler();
-        listeners = new ListenerContainer<CuratorListener>();
-        unhandledErrorListeners = new ListenerContainer<UnhandledErrorListener>();
+        listeners = StandardListenerManager.standard();
+        unhandledErrorListeners = StandardListenerManager.standard();
         backgroundOperations = new DelayQueue<OperationAndData<?>>();
         forcedSleepOperations = new LinkedBlockingQueue<>();
         namespace = new NamespaceImpl(this, builder.getNamespace());
@@ -145,7 +143,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         useContainerParentsIfAvailable = builder.useContainerParentsIfAvailable();
         connectionStateErrorPolicy = Preconditions.checkNotNull(builder.getConnectionStateErrorPolicy(), "errorPolicy cannot be null");
         schemaSet = Preconditions.checkNotNull(builder.getSchemaSet(), "schemaSet cannot be null");
-        zk34CompatibilityMode = builder.isZk34CompatibilityMode();
 
         byte[] builderDefaultData = builder.getDefaultData();
         defaultData = (builderDefaultData != null) ? Arrays.copyOf(builderDefaultData, builderDefaultData.length) : new byte[0];
@@ -155,7 +152,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         failedRemoveWatcherManager = new FailedRemoveWatchManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
 
-        ensembleTracker = zk34CompatibilityMode ? null : new EnsembleTracker(this, builder.getEnsembleProvider());
+        ensembleTracker = new EnsembleTracker(this, builder.getEnsembleProvider());
 
         runSafeService = makeRunSafeService(builder);
     }
@@ -253,7 +250,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
         connectionStateErrorPolicy = parent.connectionStateErrorPolicy;
         internalConnectionHandler = parent.internalConnectionHandler;
         schemaSet = parent.schemaSet;
-        zk34CompatibilityMode = parent.zk34CompatibilityMode;
         ensembleTracker = null;
         runSafeService = parent.runSafeService;
     }
@@ -367,22 +363,17 @@ public class CuratorFrameworkImpl implements CuratorFramework
         log.debug("Closing");
         if ( state.compareAndSet(CuratorFrameworkState.STARTED, CuratorFrameworkState.STOPPED) )
         {
-            listeners.forEach(new Function<CuratorListener, Void>()
+            listeners.forEach(listener ->
             {
-                @Override
-                public Void apply(CuratorListener listener)
+                CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null, null);
+                try
                 {
-                    CuratorEvent event = new CuratorEventImpl(CuratorFrameworkImpl.this, CuratorEventType.CLOSING, 0, null, null, null, null, null, null, null, null, null);
-                    try
-                    {
-                        listener.eventReceived(CuratorFrameworkImpl.this, event);
-                    }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        log.error("Exception while sending Closing event", e);
-                    }
-                    return null;
+                    listener.eventReceived(CuratorFrameworkImpl.this, event);
+                }
+                catch ( Exception e )
+                {
+                    ThreadUtils.checkInterrupted(e);
+                    log.error("Exception while sending Closing event", e);
                 }
             });
 
@@ -497,14 +488,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public ReconfigBuilder reconfig()
     {
-        Preconditions.checkState(!isZk34CompatibilityMode(), "reconfig/config APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new ReconfigBuilderImpl(this);
     }
 
     @Override
     public GetConfigBuilder getConfig()
     {
-        Preconditions.checkState(!isZk34CompatibilityMode(), "reconfig/config APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new GetConfigBuilderImpl(this);
     }
 
@@ -566,7 +555,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     @Override
     public RemoveWatchesBuilder watches()
     {
-        Preconditions.checkState(!isZk34CompatibilityMode(), "Remove watches APIs are not support when running in ZooKeeper 3.4 compatibility mode");
         return new RemoveWatchesBuilderImpl(this);
     }
 
@@ -704,15 +692,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
 
         final String localReason = reason;
-        unhandledErrorListeners.forEach(new Function<UnhandledErrorListener, Void>()
-        {
-            @Override
-            public Void apply(UnhandledErrorListener listener)
-            {
-                listener.unhandledError(localReason, e);
-                return null;
-            }
-        });
+        unhandledErrorListeners.forEach(l -> l.unhandledError(localReason, e));
 
         if ( debugUnhandledErrorListener != null )
         {
@@ -821,12 +801,6 @@ public class CuratorFrameworkImpl implements CuratorFramework
     void addStateChange(ConnectionState newConnectionState)
     {
         connectionStateManager.addStateChange(newConnectionState);
-    }
-
-    @Override
-    public boolean isZk34CompatibilityMode()
-    {
-        return zk34CompatibilityMode;
     }
 
     EnsembleTracker getEnsembleTracker()
@@ -1036,23 +1010,18 @@ public class CuratorFrameworkImpl implements CuratorFramework
             validateConnection(curatorEvent.getWatchedEvent().getState());
         }
 
-        listeners.forEach(new Function<CuratorListener, Void>()
+        listeners.forEach(listener ->
         {
-            @Override
-            public Void apply(CuratorListener listener)
+            try
             {
-                try
-                {
-                    OperationTrace trace = client.startAdvancedTracer("EventListener");
-                    listener.eventReceived(CuratorFrameworkImpl.this, curatorEvent);
-                    trace.commit();
-                }
-                catch ( Exception e )
-                {
-                    ThreadUtils.checkInterrupted(e);
-                    logError("Event listener threw exception", e);
-                }
-                return null;
+                OperationTrace trace = client.startAdvancedTracer("EventListener");
+                listener.eventReceived(CuratorFrameworkImpl.this, curatorEvent);
+                trace.commit();
+            }
+            catch ( Exception e )
+            {
+                ThreadUtils.checkInterrupted(e);
+                logError("Event listener threw exception", e);
             }
         });
     }

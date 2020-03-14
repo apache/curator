@@ -1,18 +1,8 @@
-h1. ZooKeeper Version Compatibility
+h1. ZooKeeper Version 3.4.x Compatibility
 
-While ZooKeeper 3.5.x is still considered "beta" by the ZooKeeper development team, the reality is that it is
-used in production by many users. However, ZooKeeper 3.4.x is also used in production. Prior to Apache Curator
-4.0, both versions of ZooKeeper were supported via two versions of Apache Curator. Starting with Curator 4.0
-both versions of ZooKeeper are supported via the same Curator libraries.
-
-h2. ZooKeeper 3.5.x
-
-* Curator 4.0 has a hard dependency on ZooKeeper 3.5.x
-* If you are using ZooKeeper 3.5.x there's nothing additional to do \- just use Curator 4.0
-
-h2. ZooKeeper 3.4.x
-
-Curator 4.0 supports ZooKeeper 3.4.x ensembles in a soft\-compatibility mode. To use this mode
+ZooKeeper 3.4.x is now at end\-of\-life. Consequently, the latest versions of Curator have removed support
+for it. If you wish to use Curator with ZooKeeper 3.4.x you should pin to version 4.2.x of Curator.
+Curator 4.2.x supports ZooKeeper 3.4.x ensembles in a soft\-compatibility mode. To use this mode
 you must exclude ZooKeeper when adding Curator to your dependency management tool.
 
 _Maven_
@@ -21,7 +11,7 @@ _Maven_
 <dependency>
     <groupId>org.apache.curator</groupId>
     <artifactId>curator-recipes</artifactId>
-    <version>${curator-version}</version>
+    <version>4.2.0</version>
     <exclusions>
         <exclusion>
             <groupId>org.apache.zookeeper</groupId>

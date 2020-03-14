@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
@@ -36,7 +36,7 @@ public interface QueueBase<T> extends Closeable
      *
      * @return put listener container
      */
-    ListenerContainer<QueuePutListener<T>> getPutListenerContainer();
+    Listenable<QueuePutListener<T>> getPutListenerContainer();
 
     /**
      * Used when the queue is created with a {@link QueueBuilder#lockPath(String)}. Determines

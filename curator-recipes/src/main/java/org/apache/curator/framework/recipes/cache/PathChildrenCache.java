@@ -20,7 +20,6 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -31,7 +30,8 @@ import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableExecutorService;
@@ -74,7 +74,7 @@ public class PathChildrenCache implements Closeable
     private final CloseableExecutorService executorService;
     private final boolean cacheData;
     private final boolean dataIsCompressed;
-    private final ListenerContainer<PathChildrenCacheListener> listeners = new ListenerContainer<PathChildrenCacheListener>();
+    private final StandardListenerManager<PathChildrenCacheListener> listeners = StandardListenerManager.standard();
     private final ConcurrentMap<String, ChildData> currentData = Maps.newConcurrentMap();
     private final AtomicReference<Map<String, ChildData>> initialSet = new AtomicReference<Map<String, ChildData>>();
     private final Set<Operation> operationsQuantizer = Sets.newSetFromMap(Maps.<Operation, Boolean>newConcurrentMap());
@@ -394,7 +394,7 @@ public class PathChildrenCache implements Closeable
      *
      * @return listenable
      */
-    public ListenerContainer<PathChildrenCacheListener> getListenable()
+    public Listenable<PathChildrenCacheListener> getListenable()
     {
         return listeners;
     }
@@ -526,26 +526,17 @@ public class PathChildrenCache implements Closeable
 
     void callListeners(final PathChildrenCacheEvent event)
     {
-        listeners.forEach
-            (
-                new Function<PathChildrenCacheListener, Void>()
-                {
-                    @Override
-                    public Void apply(PathChildrenCacheListener listener)
-                    {
-                        try
-                        {
-                            listener.childEvent(client, event);
-                        }
-                        catch ( Exception e )
-                        {
-                            ThreadUtils.checkInterrupted(e);
-                            handleException(e);
-                        }
-                        return null;
-                    }
-                }
-            );
+        listeners.forEach(listener -> {
+            try
+            {
+                listener.childEvent(client, event);
+            }
+            catch ( Exception e )
+            {
+                ThreadUtils.checkInterrupted(e);
+                handleException(e);
+            }
+        });
     }
 
     void getDataAndStat(final String fullPath) throws Exception

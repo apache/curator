@@ -325,13 +325,6 @@ public interface CuratorFramework extends Closeable
     SchemaSet getSchemaSet();
 
     /**
-     * Return true if this instance is running in ZK 3.4.x compatibility mode
-     *
-     * @return true/false
-     */
-    boolean isZk34CompatibilityMode();
-
-    /**
      * Calls {@link #notifyAll()} on the given object after first synchronizing on it. This is
      * done from the {@link #runSafe(Runnable)} thread.
      *

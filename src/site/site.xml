@@ -81,10 +81,6 @@
             <item name="Schema Support" href="curator-framework/schema.html"/>
         </menu>
 
-        <menu name="Compatibility" inherit="top">
-            <item name="ZooKeeper Versions" href="zk-compatibility.html"/>
-        </menu>
-
         <menu name="Low Level" inherit="top">
             <item name="Framework" href="curator-framework/index.html"/>
             <item name="Utilities" href="utilities.html"/>
@@ -101,7 +97,9 @@
             <item name="API Compatibility" href="compatibility.html"/>
             <item name="Javadoc" href="apidocs/index.html"/>
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/CURATOR"/>
-            <item name="Releases" href="https://cwiki.apache.org/confluence/display/CURATOR/Releases"/>
+            <item name="Releases/Compatibility" href="https://cwiki.apache.org/confluence/display/CURATOR/Releases"/>
+            <item name="ZooKeeper 3.4.x" href="zk-compatibility-34.html"/>
+            <item name="v5.x Breaking Changes" href="breaking-changes.html"/>
         </menu>
 
         <menu name="Extensions" inherit="top">

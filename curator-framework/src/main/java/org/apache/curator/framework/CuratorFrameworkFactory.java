@@ -51,8 +51,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.CuratorZookeeperClient;
 
-import static org.apache.curator.utils.Compatibility.isZK34;
-
 /**
  * Factory methods for creating framework-style clients
  */
@@ -146,7 +144,6 @@ public class CuratorFrameworkFactory
         private boolean useContainerParentsIfAvailable = true;
         private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
-        private boolean zk34CompatibilityMode = isZK34();
         private int waitForShutdownTimeoutMs = 0;
         private Executor runSafeService = null;
         private ConnectionStateListenerManagerFactory connectionStateListenerManagerFactory = ConnectionStateListenerManagerFactory.standard;
@@ -392,20 +389,6 @@ public class CuratorFrameworkFactory
         }
 
         /**
-         * If mode is true, create a ZooKeeper 3.4.x compatible client. IMPORTANT: If the client
-         * library used is ZooKeeper 3.4.x <code>zk34CompatibilityMode</code> is enabled by default.
-         *
-         * @since 3.5.0
-         * @param mode true/false
-         * @return this
-         */
-        public Builder zk34CompatibilityMode(boolean mode)
-        {
-            this.zk34CompatibilityMode = mode;
-            return this;
-        }
-
-        /**
          * Set a timeout for {@link CuratorZookeeperClient#close(int)}  }.
          * The default is 0, which means that this feature is disabled.
          *
@@ -580,11 +563,6 @@ public class CuratorFrameworkFactory
         public SchemaSet getSchemaSet()
         {
             return schemaSet;
-        }
-
-        public boolean isZk34CompatibilityMode()
-        {
-            return zk34CompatibilityMode;
         }
 
         @Deprecated

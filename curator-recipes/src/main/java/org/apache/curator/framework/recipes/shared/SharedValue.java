@@ -20,14 +20,14 @@
 package org.apache.curator.framework.recipes.shared;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -52,7 +52,7 @@ public class SharedValue implements Closeable, SharedValueReader
 	private static final int UNINITIALIZED_VERSION = -1;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final ListenerContainer<SharedValueListener> listeners = new ListenerContainer<SharedValueListener>();
+    private final StandardListenerManager<SharedValueListener> listeners = StandardListenerManager.standard();
     private final WatcherRemoveCuratorFramework client;
     private final String path;
     private final byte[] seedValue;
@@ -235,7 +235,7 @@ public class SharedValue implements Closeable, SharedValueReader
      *
      * @return listenable
      */
-    public ListenerContainer<SharedValueListener> getListenable()
+    public Listenable<SharedValueListener> getListenable()
     {
         return listeners;
     }
@@ -297,41 +297,21 @@ public class SharedValue implements Closeable, SharedValueReader
     private void notifyListeners()
     {
         final byte[] localValue = getValue();
-        listeners.forEach
-            (
-                new Function<SharedValueListener, Void>()
-                {
-                    @Override
-                    public Void apply(SharedValueListener listener)
-                    {
-                        try
-                        {
-                            listener.valueHasChanged(SharedValue.this, localValue);
-                        }
-                        catch ( Exception e )
-                        {
-                            ThreadUtils.checkInterrupted(e);
-                            log.error("From SharedValue listener", e);
-                        }
-                        return null;
-                    }
-                }
-            );
+        listeners.forEach(listener -> {
+            try
+            {
+                listener.valueHasChanged(SharedValue.this, localValue);
+            }
+            catch ( Exception e )
+            {
+                ThreadUtils.checkInterrupted(e);
+                log.error("From SharedValue listener", e);
+            }
+        });
     }
 
     private void notifyListenerOfStateChanged(final ConnectionState newState)
     {
-        listeners.forEach
-            (
-                new Function<SharedValueListener, Void>()
-                {
-                    @Override
-                    public Void apply(SharedValueListener listener)
-                    {
-                        listener.stateChanged(client, newState);
-                        return null;
-                    }
-                }
-            );
+        listeners.forEach(listener -> listener.stateChanged(client, newState));
     }
 }

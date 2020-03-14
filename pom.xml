@@ -317,7 +317,6 @@
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
         <module>curator-x-async</module>
-        <module>curator-test-zk34</module>
     </modules>
 
     <dependencyManagement>
@@ -873,11 +872,6 @@
                                 <relocation>
                                     <pattern>com.google</pattern>
                                     <shadedPattern>org.apache.curator.shaded.com.google</shadedPattern>
-                                    <excludes>
-                                        <exclude>com.google.common.base.Function</exclude>
-                                        <exclude>com.google.common.base.Predicate</exclude>
-                                        <exclude>com.google.common.reflect.TypeToken</exclude>
-                                    </excludes>
                                 </relocation>
                             </relocations>
                             <artifactSet>

@@ -124,7 +124,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @Override
     public CreateBuilderMain withTtl(long ttl)
     {
-        Preconditions.checkState(!client.isZk34CompatibilityMode(), "TTLs are not support when running in ZooKeeper 3.4 compatibility mode");
         this.ttl = ttl;
         return this;
     }
@@ -182,14 +181,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 }
 
                 String fixedPath = client.fixForNamespace(path);
-                if ( client.isZk34CompatibilityMode() )
-                {
-                    transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
-                }
-                else
-                {
-                    transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode, ttl), OperationType.CREATE, path);
-                }
+                transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode, ttl), OperationType.CREATE, path);
                 return context;
             }
         };
@@ -636,10 +628,11 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("CreateBuilderImpl-Background");
             final byte[] data = operationAndData.getData().getData();
 
-            final CompatibleCreateCallback mainCallback = new CompatibleCreateCallback()
+            AsyncCallback.Create2Callback callback = new AsyncCallback.Create2Callback()
             {
                 @Override
-                public void processResult(int rc, String path, Object ctx, String name, Stat stat) {
+                public void processResult(int rc, String path, Object ctx, String name, Stat stat)
+                {
                     trace.setReturnCode(rc).setRequestBytesLength(data).setPath(path).commit();
 
                     if ( (stat != null) && (storingStat != null) )
@@ -661,41 +654,16 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     }
                 }
             };
-
-            if ( client.isZk34CompatibilityMode() )
-            {
-                AsyncCallback.StringCallback stringCallback = new AsyncCallback.StringCallback()
-                {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx, String name)
-                    {
-                        mainCallback.processResult(rc, path, ctx, name, null);
-                    }
-                };
-                client.getZooKeeper().create
-                    (
-                        operationAndData.getData().getPath(),
-                        data,
-                        acling.getAclList(operationAndData.getData().getPath()),
-                        createMode,
-                        stringCallback,
-                        backgrounding.getContext()
-                    );
-            }
-            else
-            {
-                CreateZK35.create
-                    (
-                        client.getZooKeeper(),
-                        operationAndData.getData().getPath(),
-                        data,
-                        acling.getAclList(operationAndData.getData().getPath()),
-                        createMode,
-                        mainCallback,
-                        backgrounding.getContext(),
-                        ttl
-                    );
-            }
+            client.getZooKeeper().create
+                (
+                    operationAndData.getData().getPath(),
+                    data,
+                    acling.getAclList(operationAndData.getData().getPath()),
+                    createMode,
+                    callback,
+                    backgrounding.getContext(),
+                    ttl
+                );
         }
         catch ( Throwable e )
         {
@@ -1171,28 +1139,14 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                         {
                             try
                             {
-                                if ( client.isZk34CompatibilityMode() )
-                                {
-                                    createdPath = client.getZooKeeper().create(path, data, aclList, createMode);
-                                }
-                                else
-                                {
-                                    createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
-                                }
+                                createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
                             }
                             catch ( KeeperException.NoNodeException e )
                             {
                                 if ( createParentsIfNeeded )
                                 {
                                     ZKPaths.mkdirs(client.getZooKeeper(), path, false, acling.getACLProviderForParents(), createParentsAsContainers);
-                                    if ( client.isZk34CompatibilityMode() )
-                                    {
-                                        createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
-                                    }
-                                    else
-                                    {
-                                        createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
-                                    }
+                                    createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
                                 }
                                 else
                                 {

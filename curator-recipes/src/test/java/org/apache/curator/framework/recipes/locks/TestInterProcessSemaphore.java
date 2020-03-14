@@ -664,53 +664,6 @@ public class TestInterProcessSemaphore extends BaseClassForTests
     }
 
     @Test
-    public void testChildReaperCleansUpLockNodes() throws Exception
-    {
-        Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        client.start();
-
-        ChildReaper childReaper = null;
-        try
-        {
-            InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test/lock", 1);
-            semaphore.returnLease(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-
-            Assert.assertTrue(client.getChildren().forPath("/test").size() > 0);
-
-            childReaper = new ChildReaper(
-                client,
-                "/test",
-                Reaper.Mode.REAP_UNTIL_GONE,
-                ChildReaper.newExecutorService(),
-                1,
-                "/test-leader",
-                InterProcessSemaphoreV2.LOCK_SCHEMA
-            );
-            childReaper.start();
-
-            timing.forWaiting().sleepABit();
-
-            try
-            {
-                List<String> children = client.getChildren().forPath("/test");
-
-                Assert.assertEquals(children.size(), 0, "All children of /test should have been reaped");
-            }
-            catch ( KeeperException.NoNodeException ok )
-            {
-                // this is OK - if Container Nodes are used the "/test" path will go away - no point in updating the test for deprecated code
-            }
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(childReaper);
-            CloseableUtils.closeQuietly(client);
-        }
-
-    }
-
-    @Test
     public void testNoOrphanedNodes() throws Exception
     {
         final Timing timing = new Timing();
