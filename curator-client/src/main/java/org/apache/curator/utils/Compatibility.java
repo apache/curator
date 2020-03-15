@@ -43,7 +43,7 @@ public class Compatibility
         {
             Class<?> multipleAddressesClass = Class.forName("org.apache.zookeeper.server.quorum.MultipleAddresses");
             localGetReachableOrOneMethod = multipleAddressesClass.getMethod("getReachableOrOne");
-            LoggerFactory.getLogger(Compatibility.class).info("Using org.apache.zookeeper.server.quorum.MultipleAddresses");
+            log.info("Using org.apache.zookeeper.server.quorum.MultipleAddresses");
         }
         catch ( ReflectiveOperationException ignore )
         {
@@ -59,7 +59,7 @@ public class Compatibility
         catch ( NoSuchFieldException e )
         {
             localAddrField = null;
-            LoggerFactory.getLogger(Compatibility.class).error("Could not get addr field! Reconfiguration fail!");
+            log.error("Could not get addr field! Reconfiguration fail!");
         }
         addrField = localAddrField;
     }

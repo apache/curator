@@ -99,7 +99,7 @@ public enum CuratorEventType
     CLOSING,
 
     /**
-     * Corresponds to {@link org.apache.curator.framework.CuratorFramework#watchers()}
+     * Corresponds to {@link CuratorFramework#watches()}
      */
     ADD_WATCH
 }
