@@ -113,7 +113,7 @@ public class BaseClassForTests
         context.getSuite().addListener(methodListener2);
     }
 
-    @BeforeMethod
+    @BeforeMethod(alwaysRun = true)
     public void setup() throws Exception
     {
         if ( INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES != null )
@@ -123,7 +123,17 @@ public class BaseClassForTests
         System.setProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND, "true");
         System.setProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY, "true");
 
-        createServer();
+        try
+        {
+            createServer();
+        }
+        catch ( FailedServerStartException ignore )
+        {
+            log.warn("Failed to start server - retrying 1 more time");
+            // server creation failed - we've sometime seen this with re-used addresses, etc. - retry one more time
+            closeServer();
+            createServer();
+        }
     }
 
     protected void createServer() throws Exception
@@ -136,17 +146,22 @@ public class BaseClassForTests
             }
             catch ( BindException e )
             {
-                System.err.println("Getting bind exception - retrying to allocate server");
                 server = null;
+                throw new FailedServerStartException("Getting bind exception - retrying to allocate server");
             }
         }
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void teardown() throws Exception
     {
         System.clearProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY);
         System.clearProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND);
+        closeServer();
+    }
+
+    private void closeServer()
+    {
         if ( server != null )
         {
             try

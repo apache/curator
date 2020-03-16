@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>4.2.1-SNAPSHOT</version>
+    <version>5.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -60,7 +60,7 @@
         <jdk-version>1.${short-jdk-version}</jdk-version>
 
         <!-- versions -->
-        <zookeeper-version>3.5.7</zookeeper-version>
+        <zookeeper-version>3.6.0</zookeeper-version>
         <maven-bundle-plugin-version>4.1.0</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>3.0.1</maven-javadoc-plugin-version>
         <doxia-module-confluence-version>1.8</doxia-module-confluence-version>
@@ -85,25 +85,27 @@
         <guava-failureaccess-version>1.0.1</guava-failureaccess-version>
         <testng-version>6.14.3</testng-version>
         <swift-version>0.23.1</swift-version>
-        <dropwizard-version>1.3.7</dropwizard-version>
         <maven-shade-plugin-version>3.2.1</maven-shade-plugin-version>
         <slf4j-version>1.7.25</slf4j-version>
         <clirr-maven-plugin-version>2.8</clirr-maven-plugin-version>
+        <dropwizard-version>3.2.5</dropwizard-version>
+        <snappy-version>1.1.7</snappy-version>
 
         <!-- OSGi Properties -->
-        <osgi.export.package />
-        <osgi.import.package />
-        <osgi.private.package />
-        <osgi.dynamic.import />
-        <osgi.require.bundle />
-        <osgi.export.service />
-        <osgi.activator />
+        <osgi.export.package/>
+        <osgi.import.package/>
+        <osgi.private.package/>
+        <osgi.dynamic.import/>
+        <osgi.require.bundle/>
+        <osgi.export.service/>
+        <osgi.activator/>
     </properties>
 
     <scm>
         <url>https://github.com/apache/curator.git</url>
         <connection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</developerConnection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/curator.git
+        </developerConnection>
         <tag>apache-curator-3.2.0</tag>
     </scm>
 
@@ -317,6 +319,7 @@
         <module>curator-x-discovery</module>
         <module>curator-x-discovery-server</module>
         <module>curator-x-async</module>
+        <module>curator-test-zk35</module>
     </modules>
 
     <dependencyManagement>
@@ -566,6 +569,24 @@
                 <artifactId>dropwizard-logging</artifactId>
                 <version>${dropwizard-version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${dropwizard-version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>${snappy-version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -581,7 +602,6 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>${maven-javadoc-plugin-version}</version>
                 <configuration>
-                    <aggregate>true</aggregate>
                     <additionalJOptions>
                         <additionalJOption>-J-Xmx1g</additionalJOption>
                     </additionalJOptions>
@@ -941,6 +961,15 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>staging-repo</id>
+            <repositories>
+                <repository>
+                    <id>staging-repo</id>
+                    <url>https://repository.apache.org/content/groups/staging/</url>
+                </repository>
+            </repositories>
         </profile>
     </profiles>
 </project>

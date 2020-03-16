@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -33,7 +34,8 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 
-public class TestWithCluster
+@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+public class TestWithCluster extends CuratorTestBase
 {
     @Test
     public void     testSessionSurvives() throws Exception
@@ -139,5 +141,11 @@ public class TestWithCluster
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(cluster);
         }
+    }
+
+    @Override
+    protected void createServer() throws Exception
+    {
+        // NOP
     }
 }

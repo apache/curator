@@ -16,14 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test.compatibility;
+package org.apache.curator;
 
-import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.utils.Compatibility;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
-public class CuratorTestBase extends BaseClassForTests
+public class TestIs36 extends CuratorTestBase
 {
-    public static final String zk36Group = "zk36";
-    public static final String zk35TestCompatibilityGroup = "zk35TestCompatibility";
+    @Test(groups = zk36Group)
+    public void testIsZk36()
+    {
+        Assert.assertTrue(Compatibility.hasGetReachableOrOneMethod());
+        Assert.assertTrue(Compatibility.hasAddrField());
+    }
 
-    protected final Timing2 timing = new Timing2();
+    @Override
+    protected void createServer()
+    {
+        // NOP
+    }
 }

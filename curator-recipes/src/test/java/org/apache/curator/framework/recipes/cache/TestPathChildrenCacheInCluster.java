@@ -20,6 +20,7 @@ package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.collect.Queues;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -34,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestPathChildrenCacheInCluster extends BaseClassForTests
 {
     @Test(enabled = false)  // this test is very flakey - it needs to be re-written at some point

@@ -81,7 +81,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         {
             if ( cnxnFactory != null )
             {
-                cnxnFactory.closeAll();
+                Compatibility.serverCnxnFactoryCloseAll(cnxnFactory);
 
                 Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
                 ssField.setAccessible(true);
@@ -140,11 +140,11 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override
-    public void blockUntilStarted() throws Exception
+    public void blockUntilStarted()
     {
-        if(!timing.awaitLatch(latch))
+        if (!timing.awaitLatch(latch))
         {
-            throw new IllegalStateException("Timed out waiting for server startup");
+            throw new FailedServerStartException("Timed out waiting for server startup");
         }
 
         if ( zkServer != null )
@@ -154,19 +154,27 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             {
                 while ( !zkServer.isRunning() )
                 {
-                    zkServer.wait();
+                    try
+                    {
+                        zkServer.wait();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        throw new FailedServerStartException("Server start interrupted");
+                    }
                 }
             }
         }
         else
         {
-            throw new Exception("No zkServer.");
+            throw new FailedServerStartException("No zkServer.");
         }
 
         Exception exception = startingException.get();
         if ( exception != null )
         {
-            throw exception;
+            throw new FailedServerStartException(exception);
         }
     }
 
@@ -264,7 +272,9 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     {
         public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config)
         {
-            super(txnLog, config.getTickTime(), config.getMinSessionTimeout(), config.getMaxSessionTimeout(), null);
+            this.setTxnLogFactory(txnLog);
+            this.setMinSessionTimeout(config.getMinSessionTimeout());
+            this.setMaxSessionTimeout(config.getMaxSessionTimeout());
         }
 
         private final AtomicBoolean isRunning = new AtomicBoolean(false);

@@ -16,14 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test.compatibility;
+package org.apache.curator.utils;
 
-import org.apache.curator.test.BaseClassForTests;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 
-public class CuratorTestBase extends BaseClassForTests
+public class NonAdminZookeeperFactory implements ZookeeperFactory
 {
-    public static final String zk36Group = "zk36";
-    public static final String zk35TestCompatibilityGroup = "zk35TestCompatibility";
-
-    protected final Timing2 timing = new Timing2();
+    @Override
+    public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
+    {
+        return new ZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
+    }
 }

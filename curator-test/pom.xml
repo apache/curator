@@ -24,11 +24,11 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>4.2.1-SNAPSHOT</version>
+        <version>5.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-test</artifactId>
-    <version>4.2.1-SNAPSHOT</version>
+    <version>5.0.0-SNAPSHOT</version>
 
     <name>Curator Testing</name>
     <description>Unit testing utilities.</description>
@@ -38,6 +38,16 @@
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
         </dependency>
 
         <dependency>
