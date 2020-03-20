@@ -16,20 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.zk35;
 
-import org.apache.curator.utils.Compatibility;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+package org.apache.curator.framework.api;
 
-public class TestIs35
+public interface AddWatchBuilder2 extends
+    Backgroundable<WatchableBase<Pathable<Void>>>,
+    WatchableBase<Pathable<Void>>,
+    Pathable<Void>
 {
-    @Test
-    public void testIsZk35()
-    {
-        Assert.assertFalse(Compatibility.hasGetReachableOrOneMethod());
-        Assert.assertTrue(Compatibility.hasAddrField());
-        Assert.assertFalse(Compatibility.hasPersistentWatchers());
-    }
 }
-

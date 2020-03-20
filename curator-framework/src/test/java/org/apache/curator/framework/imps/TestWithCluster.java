@@ -34,7 +34,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestWithCluster extends CuratorTestBase
 {
     @Test

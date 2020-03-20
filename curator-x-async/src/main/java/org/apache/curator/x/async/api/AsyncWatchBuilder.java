@@ -16,20 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.zk35;
 
-import org.apache.curator.utils.Compatibility;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+package org.apache.curator.x.async.api;
 
-public class TestIs35
+import org.apache.curator.framework.api.WatchableBase;
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.AddWatchMode;
+
+public interface AsyncWatchBuilder extends
+    WatchableBase<AsyncPathable<AsyncStage<Void>>>,
+    AsyncPathable<AsyncStage<Void>>
 {
-    @Test
-    public void testIsZk35()
-    {
-        Assert.assertFalse(Compatibility.hasGetReachableOrOneMethod());
-        Assert.assertTrue(Compatibility.hasAddrField());
-        Assert.assertFalse(Compatibility.hasPersistentWatchers());
-    }
+    /**
+     * The mode to use. By default, {@link org.apache.zookeeper.AddWatchMode#PERSISTENT_RECURSIVE} is used
+     *
+     * @param mode mode
+     * @return this
+     */
+    AsyncWatchBuilder2 withMode(AddWatchMode mode);
 }
-

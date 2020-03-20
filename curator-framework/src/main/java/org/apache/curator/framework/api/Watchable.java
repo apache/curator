@@ -18,30 +18,12 @@
  */
 package org.apache.curator.framework.api;
 
-import org.apache.zookeeper.Watcher;
-
-public interface Watchable<T>
+public interface Watchable<T> extends WatchableBase<T>
 {
     /**
      * Have the operation set a watch
      *
      * @return this
      */
-    public T watched();
-
-    /**
-     * Set a watcher for the operation
-     *
-     * @param watcher the watcher
-     * @return this
-     */
-    public T usingWatcher(Watcher watcher);
-
-    /**
-     * Set a watcher for the operation
-     *
-     * @param watcher the watcher
-     * @return this
-     */
-    public T usingWatcher(CuratorWatcher watcher);
+    T watched();
 }
