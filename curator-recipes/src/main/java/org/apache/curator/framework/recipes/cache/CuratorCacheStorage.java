@@ -42,7 +42,7 @@ public interface CuratorCacheStorage extends CuratorCacheAccessor
      *
      * @return storage instance that does not retain data bytes
      */
-    static CuratorCacheStorage bytesNotCached()
+    static CuratorCacheStorage dataNotCached()
     {
         return new StandardCuratorCacheStorage(false);
     }

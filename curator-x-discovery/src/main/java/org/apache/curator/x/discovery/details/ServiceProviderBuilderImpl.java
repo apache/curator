@@ -19,7 +19,6 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
@@ -39,7 +38,7 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
     private String serviceName;
     private ProviderStrategy<T> providerStrategy;
     private ThreadFactory threadFactory;
-    private CloseableExecutorService executorService;
+    private ExecutorService executorService;
     private List<InstanceFilter<T>> filters = Lists.newArrayList();
     private DownInstancePolicy downInstancePolicy = new DownInstancePolicy();
 
@@ -110,12 +109,6 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
 
     @Override
     public ServiceProviderBuilder<T> executorService(ExecutorService executorService)
-    {
-        return executorService(new CloseableExecutorService(executorService));
-    }
-
-    @Override
-    public ServiceProviderBuilder<T> executorService(CloseableExecutorService executorService)
     {
         this.executorService = executorService;
         this.threadFactory = null;

@@ -27,7 +27,9 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.ExecuteCalledWatchingExecutorService;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.Compatibility;
 import org.apache.curator.x.discovery.details.ServiceCacheListener;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -40,6 +42,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestServiceCache extends BaseClassForTests
 {
     @Test
@@ -261,6 +264,11 @@ public class TestServiceCache extends BaseClassForTests
     @Test
     public void testExecutorServiceIsInvoked() throws Exception
     {
+        if ( Compatibility.hasPersistentWatchers() )
+        {
+            return; // for ZK 3.6 the underlying cache ignores the executor
+        }
+
         List<Closeable> closeables = Lists.newArrayList();
         try
         {

@@ -20,9 +20,6 @@
 package org.apache.curator.framework.recipes.cache;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
-import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 
 class TreeCacheListenerWrapper implements CuratorCacheListener
 {
@@ -42,19 +39,19 @@ class TreeCacheListenerWrapper implements CuratorCacheListener
         {
             case NODE_CREATED:
             {
-                sendEvent(data, TreeCacheEvent.Type.NODE_ADDED);
+                sendEvent(data, null, TreeCacheEvent.Type.NODE_ADDED);
                 break;
             }
 
             case NODE_CHANGED:
             {
-                sendEvent(data, TreeCacheEvent.Type.NODE_UPDATED);
+                sendEvent(data, oldData, TreeCacheEvent.Type.NODE_UPDATED);
                 break;
             }
 
             case NODE_DELETED:
             {
-                sendEvent(oldData, TreeCacheEvent.Type.NODE_REMOVED);
+                sendEvent(oldData, null, TreeCacheEvent.Type.NODE_REMOVED);
                 break;
             }
         }
@@ -63,12 +60,12 @@ class TreeCacheListenerWrapper implements CuratorCacheListener
     @Override
     public void initialized()
     {
-        sendEvent(null, TreeCacheEvent.Type.INITIALIZED);
+        sendEvent(null, null, TreeCacheEvent.Type.INITIALIZED);
     }
 
-    private void sendEvent(ChildData node, TreeCacheEvent.Type type)
+    private void sendEvent(ChildData node, ChildData oldNode, TreeCacheEvent.Type type)
     {
-        TreeCacheEvent event = new TreeCacheEvent(type, node);
+        TreeCacheEvent event = new TreeCacheEvent(type, node, oldNode);
         try
         {
             listener.childEvent(client, event);

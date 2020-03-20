@@ -19,7 +19,6 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
@@ -51,38 +50,27 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
         this(discovery, serviceName, providerStrategy, threadFactory, null, filters, downInstancePolicy);
     }
 
-    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, CloseableExecutorService executorService, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
-    {
-        this(discovery, serviceName, providerStrategy, null, executorService, filters, downInstancePolicy);
-    }
-
-    protected ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, CloseableExecutorService executorService, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
+    protected ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, ExecutorService executorService, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
     {
         this.discovery = discovery;
         this.providerStrategy = providerStrategy;
 
-        downInstanceManager = new DownInstanceManager<T>(downInstancePolicy);
-        final ServiceCacheBuilder builder = discovery.serviceCacheBuilder().name(serviceName);
+        downInstanceManager = new DownInstanceManager<>(downInstancePolicy);
+        final ServiceCacheBuilder<T> builder = discovery.serviceCacheBuilder().name(serviceName);
         if (executorService != null)
         {
             builder.executorService(executorService);
         } else
         {
+            //noinspection deprecation
             builder.threadFactory(threadFactory);
         }
         cache = builder.build();
 
         ArrayList<InstanceFilter<T>> localFilters = Lists.newArrayList(filters);
         localFilters.add(downInstanceManager);
-        localFilters.add(new InstanceFilter<T>()
-        {
-            @Override
-            public boolean apply(ServiceInstance<T> instance)
-            {
-                return instance.isEnabled();
-            }
-        });
-        instanceProvider = new FilteredInstanceProvider<T>(cache, localFilters);
+        localFilters.add(ServiceInstance::isEnabled);
+        instanceProvider = new FilteredInstanceProvider<>(cache, localFilters);
     }
 
     /**
