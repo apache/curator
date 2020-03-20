@@ -22,15 +22,17 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestServiceDiscoveryBuilder extends BaseClassForTests
 {
     @Test
-    public void testDefaultSerializer() throws Exception
+    public void testDefaultSerializer()
     {        
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         ServiceDiscoveryBuilder<Object> builder = ServiceDiscoveryBuilder.builder(Object.class).client(client);
@@ -41,7 +43,7 @@ public class TestServiceDiscoveryBuilder extends BaseClassForTests
     }
 
     @Test
-    public void testSetSerializer() throws Exception
+    public void testSetSerializer()
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         ServiceDiscoveryBuilder<Object> builder = ServiceDiscoveryBuilder.builder(Object.class).client(client);

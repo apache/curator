@@ -45,7 +45,7 @@ import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Ty
 import static org.apache.zookeeper.KeeperException.Code.NONODE;
 import static org.apache.zookeeper.KeeperException.Code.OK;
 
-class CuratorCacheImpl implements CuratorCache
+class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
@@ -100,6 +100,12 @@ class CuratorCacheImpl implements CuratorCache
                 storage.clear();
             }
         }
+    }
+
+    @Override
+    public boolean isCuratorCache()
+    {
+        return true;
     }
 
     @Override

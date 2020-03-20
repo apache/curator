@@ -98,6 +98,21 @@ public interface CuratorCache extends Closeable, CuratorCacheAccessor
     }
 
     /**
+     * Start a Curator Cache Bridge builder. A Curator Cache Bridge is
+     * a facade that uses {@link org.apache.curator.framework.recipes.cache.CuratorCache} if
+     * persistent watches are available or {@link org.apache.curator.framework.recipes.cache.TreeCache}
+     * otherwise (i.e. if you are using ZooKeeper 3.5.x).
+     *
+     * @param client Curator client
+     * @param path path to cache
+     * @return bridge builder
+     */
+    static CuratorCacheBridgeBuilder bridgeBuilder(CuratorFramework client, String path)
+    {
+        return new CuratorCacheBridgeBuilderImpl(client, path);
+    }
+
+    /**
      * Start the cache. This will cause a complete refresh from the cache's root node and generate
      * events for all nodes found, etc.
      */

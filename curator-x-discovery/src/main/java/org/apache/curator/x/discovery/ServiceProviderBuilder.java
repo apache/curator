@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.discovery;
 
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -30,7 +29,7 @@ public interface ServiceProviderBuilder<T>
      *
      * @return provider
      */
-    public ServiceProvider<T> build();
+    ServiceProvider<T> build();
 
     /**
      * required - set the name of the service to be provided
@@ -38,7 +37,7 @@ public interface ServiceProviderBuilder<T>
      * @param serviceName the name of the service
      * @return this
      */
-    public ServiceProviderBuilder<T> serviceName(String serviceName);
+    ServiceProviderBuilder<T> serviceName(String serviceName);
 
     /**
      * optional - set the provider strategy. The default is {@link RoundRobinStrategy}
@@ -46,7 +45,7 @@ public interface ServiceProviderBuilder<T>
      * @param providerStrategy strategy to use
      * @return this
      */
-    public ServiceProviderBuilder<T> providerStrategy(ProviderStrategy<T> providerStrategy);
+    ServiceProviderBuilder<T> providerStrategy(ProviderStrategy<T> providerStrategy);
 
     /**
      * optional - the thread factory to use for creating internal threads. The specified ThreadFactory overrides
@@ -57,7 +56,7 @@ public interface ServiceProviderBuilder<T>
      * @deprecated use {@link #executorService(ExecutorService)} instead
      */
     @Deprecated
-    public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory);
+    ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory);
 
     /**
      * Set the down instance policy
@@ -65,7 +64,7 @@ public interface ServiceProviderBuilder<T>
      * @param downInstancePolicy new policy
      * @return this
      */
-    public ServiceProviderBuilder<T> downInstancePolicy(DownInstancePolicy downInstancePolicy);
+    ServiceProviderBuilder<T> downInstancePolicy(DownInstancePolicy downInstancePolicy);
 
     /**
      * Add an instance filter. NOTE: this does not remove previously added filters. i.e.
@@ -75,7 +74,7 @@ public interface ServiceProviderBuilder<T>
      * @param filter filter to add
      * @return this
      */
-    public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter);
+    ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter);
 
     /**
      * Optional ExecutorService to use for the cache's background thread. The specified ExecutorService
@@ -85,14 +84,5 @@ public interface ServiceProviderBuilder<T>
      * @param executorService executor service
      * @return this
      */
-    public ServiceProviderBuilder<T> executorService(ExecutorService executorService);
-
-    /**
-     * Optional CloseableExecutorService to use for the cache's background thread. The specified CloseableExecutorService
-     * overrides any prior ThreadFactory or CloseableExecutorService set on the ServiceProviderBuilder.
-     *
-     * @param executorService an instance of CloseableExecutorService
-     * @return this
-     */
-    public ServiceProviderBuilder<T> executorService(CloseableExecutorService executorService);
+    ServiceProviderBuilder<T> executorService(ExecutorService executorService);
 }
