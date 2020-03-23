@@ -42,8 +42,7 @@ public class TestWithCluster extends CuratorTestBase
         Timing              timing = new Timing();
 
         CuratorFramework    client = null;
-        TestingCluster      cluster = new TestingCluster(3);
-        cluster.start();
+        TestingCluster      cluster = createAndStartCluster(3);
         try
         {
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
@@ -90,8 +89,7 @@ public class TestWithCluster extends CuratorTestBase
         Timing              timing = new Timing();
 
         CuratorFramework    client = null;
-        TestingCluster cluster = new TestingCluster(3);
-        cluster.start();
+        TestingCluster cluster = createAndStartCluster(3);
         try
         {
             // make sure all instances are up

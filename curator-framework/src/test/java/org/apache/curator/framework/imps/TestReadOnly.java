@@ -27,6 +27,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
@@ -40,7 +41,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class TestReadOnly
+public class TestReadOnly extends BaseClassForTests
 {
     @BeforeMethod
     public void setup()
@@ -58,12 +59,10 @@ public class TestReadOnly
     public void testConnectionStateNewClient() throws Exception
     {
         Timing timing = new Timing();
-        TestingCluster cluster = new TestingCluster(3);
         CuratorFramework client = null;
+        TestingCluster cluster = createAndStartCluster(3);
         try
         {
-            cluster.start();
-
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
             client.start();
             client.checkExists().forPath("/");
@@ -116,11 +115,9 @@ public class TestReadOnly
         Timing timing = new Timing();
 
         CuratorFramework client = null;
-        TestingCluster cluster = new TestingCluster(2);
+        TestingCluster cluster = createAndStartCluster(2);
         try
         {
-            cluster.start();
-
             client = CuratorFrameworkFactory.builder().connectString(cluster.getConnectString()).canBeReadOnly(true).connectionTimeoutMs(timing.connection()).sessionTimeoutMs(timing.session()).retryPolicy(new ExponentialBackoffRetry(100, 3)).build();
             client.start();
 
@@ -166,5 +163,11 @@ public class TestReadOnly
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(cluster);
         }
+    }
+
+    @Override
+    protected void createServer() throws Exception
+    {
+        // NOP
     }
 }

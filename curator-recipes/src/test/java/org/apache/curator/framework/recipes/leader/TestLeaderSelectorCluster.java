@@ -45,8 +45,7 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
         final Timing        timing = new Timing();
 
         CuratorFramework    client = null;
-        TestingCluster      cluster = new TestingCluster(3);
-        cluster.start();
+        TestingCluster      cluster = createAndStartCluster(3);
         try
         {
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
@@ -91,8 +90,7 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
         final Timing        timing = new Timing();
 
         CuratorFramework    client = null;
-        TestingCluster      cluster = new TestingCluster(3);
-        cluster.start();
+        TestingCluster      cluster = createAndStartCluster(3);
         try
         {
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));

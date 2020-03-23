@@ -75,9 +75,7 @@ public class TestReconfiguration extends CuratorTestBase
         System.setProperty("zookeeper.DigestAuthenticationProvider.superDigest", superUserPasswordDigest);
 
         CloseableUtils.closeQuietly(server);
-        server = null;
-        cluster = new TestingCluster(3);
-        cluster.start();
+        cluster = createAndStartCluster(3);
     }
 
     @AfterMethod
@@ -404,6 +402,12 @@ public class TestReconfiguration extends CuratorTestBase
         String config = "server.1=[2001:db8:85a3:0:0:8a2e:370:7334]:2888:3888:participant;127.0.0.1:2181";
         String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
         Assert.assertEquals("127.0.0.1:2181", configString);
+    }
+
+    @Override
+    protected void createServer() throws Exception
+    {
+        // NOP
     }
 
     private CuratorFramework newClient()

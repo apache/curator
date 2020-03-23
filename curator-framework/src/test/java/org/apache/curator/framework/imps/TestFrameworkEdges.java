@@ -110,9 +110,8 @@ public class TestFrameworkEdges extends BaseClassForTests
         // by the Instance Curator is connected to but the session kill needs a quorum vote (it's a
         // transaction)
 
-        try (TestingCluster cluster = new TestingCluster(3))
+        try (TestingCluster cluster = createAndStartCluster(3))
         {
-            cluster.start();
             InstanceSpec instanceSpec0 = cluster.getServers().get(0).getInstanceSpec();
 
             CountDownLatch serverStoppedLatch = new CountDownLatch(1);

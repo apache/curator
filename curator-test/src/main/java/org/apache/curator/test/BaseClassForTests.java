@@ -136,6 +136,31 @@ public class BaseClassForTests
         }
     }
 
+    public TestingCluster createAndStartCluster(int qty) throws Exception
+    {
+        TestingCluster cluster = new TestingCluster(qty);
+        try
+        {
+            cluster.start();
+        }
+        catch ( FailedServerStartException e )
+        {
+            log.warn("Failed to start cluster - retrying 1 more time");
+            // cluster creation failed - we've sometime seen this with re-used addresses, etc. - retry one more time
+            try
+            {
+                cluster.close();
+            }
+            catch ( Exception ex )
+            {
+                // ignore
+            }
+            cluster = new TestingCluster(qty);
+            cluster.start();
+        }
+        return cluster;
+    }
+
     protected void createServer() throws Exception
     {
         while ( server == null )
