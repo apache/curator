@@ -57,11 +57,9 @@ public class TestLeaderLatchCluster extends CuratorTestBase
         final int sessionLength = timing.session() / 4;
 
         List<ClientAndLatch>    clients = Lists.newArrayList();
-        TestingCluster          cluster = new TestingCluster(PARTICIPANT_QTY);
+        TestingCluster          cluster = createAndStartCluster(PARTICIPANT_QTY);
         try
         {
-            cluster.start();
-
             List<InstanceSpec>      instances = Lists.newArrayList(cluster.getInstances());
             for ( int i = 0; i < PARTICIPANT_QTY; ++i )
             {

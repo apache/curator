@@ -187,7 +187,7 @@ public class TestLeaderLatch extends BaseClassForTests
             try ( LeaderLatch latch2 = new LeaderLatch(client, latchPath, "2") )
             {
                 latch1.start();
-                latch1.await();
+                Assert.assertTrue(latch1.await(timing.milliseconds(), TimeUnit.MILLISECONDS));
 
                 latch2.start(); // will get a watcher on latch1's node
                 timing.sleepABit();
