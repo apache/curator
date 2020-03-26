@@ -18,19 +18,29 @@
  */
 package org.apache.curator.framework.imps;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+
 import org.apache.curator.RetryLoop;
 import org.apache.curator.drivers.OperationTrace;
-import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.ACLableExistBuilderMain;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.BackgroundPathable;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.api.ErrorListenerPathable;
+import org.apache.curator.framework.api.ExistsBuilder;
+import org.apache.curator.framework.api.ExistsBuilderMain;
+import org.apache.curator.framework.api.Pathable;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 
 public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<String>, ErrorListenerPathable<Stat>, ACLableExistBuilderMain
 {
@@ -67,7 +77,9 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
     @Override
     public ACLableExistBuilderMain creatingParentContainersIfNeeded()
     {
-        createParentContainersIfNeeded = true;
+        if (client.useContainerParentsIfAvailable()) {
+            createParentContainersIfNeeded = true;
+        }
         createParentsIfNeeded = false;
         return this;
     }
