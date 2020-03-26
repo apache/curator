@@ -67,7 +67,9 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
     @Override
     public ACLableExistBuilderMain creatingParentContainersIfNeeded()
     {
-        createParentContainersIfNeeded = true;
+        if (client.useContainerParentsIfAvailable()) {
+            createParentContainersIfNeeded = true;
+        }
         createParentsIfNeeded = false;
         return this;
     }
