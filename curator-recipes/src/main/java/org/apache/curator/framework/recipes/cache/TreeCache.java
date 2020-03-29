@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -217,7 +218,7 @@ public class TreeCache implements Closeable
 
     private static final ChildData DEAD = new ChildData("/", null, null);
 
-    private static boolean isLive(ChildData cd)
+    static boolean isLive(ChildData cd)
     {
         return cd != null && cd != DEAD;
     }
@@ -226,7 +227,7 @@ public class TreeCache implements Closeable
 
     private static final AtomicReferenceFieldUpdater<TreeNode, ConcurrentMap<String, TreeNode>> childrenUpdater = (AtomicReferenceFieldUpdater)AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ConcurrentMap.class, "children");
 
-    private final class TreeNode implements Watcher, BackgroundCallback
+    final class TreeNode implements Watcher, BackgroundCallback
     {
         volatile ChildData childData;
         final TreeNode parent;
@@ -343,7 +344,7 @@ public class TreeCache implements Closeable
 
             if ( isLive(oldChildData) )
             {
-                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData);
+                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData, null);
             }
 
             if ( parent == null )
@@ -482,7 +483,14 @@ public class TreeCache implements Closeable
                         }
                         if ( childDataUpdater.compareAndSet(this, oldChildData, toUpdate) )
                         {
-                            publishEvent(isLive(oldChildData) ? TreeCacheEvent.Type.NODE_UPDATED : TreeCacheEvent.Type.NODE_ADDED, toPublish);
+                            if ( isLive(oldChildData) )
+                            {
+                                publishEvent(TreeCacheEvent.Type.NODE_UPDATED, toPublish, oldChildData);
+                            }
+                            else
+                            {
+                                publishEvent(TreeCacheEvent.Type.NODE_ADDED, toPublish, null);
+                            }
                             break;
                         }
                     }
@@ -750,6 +758,49 @@ public class TreeCache implements Closeable
         return isLive(result) ? result : null;
     }
 
+    /**
+     * Return an iterator over all nodes in the cache. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @return a possibly-empty iterator of nodes in the cache
+     */
+    public Iterator<ChildData> iterator()
+    {
+        return new TreeCacheIterator(root);
+    }
+
+    /**
+     * Return the number of nodes in the cache. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @return size
+     */
+    public int size()
+    {
+        return size(root);
+    }
+
+    private int size(TreeNode node)
+    {
+        int size;
+        if ( isLive(node.childData) )
+        {
+            size = 1;
+            if ( node.children != null )
+            {
+                for ( TreeNode child : node.children.values() )
+                {
+                    size += size(child);
+                }
+            }
+        }
+        else
+        {
+            size = 0;
+        }
+        return size;
+    }
+
     private void callListeners(final TreeCacheEvent event)
     {
         listeners.forEach(listener ->
@@ -837,9 +888,9 @@ public class TreeCache implements Closeable
         publishEvent(new TreeCacheEvent(type, null));
     }
 
-    private void publishEvent(TreeCacheEvent.Type type, ChildData data)
+    private void publishEvent(TreeCacheEvent.Type type, ChildData data, ChildData oldData)
     {
-        publishEvent(new TreeCacheEvent(type, data));
+        publishEvent(new TreeCacheEvent(type, data, oldData));
     }
 
     private void publishEvent(final TreeCacheEvent event)

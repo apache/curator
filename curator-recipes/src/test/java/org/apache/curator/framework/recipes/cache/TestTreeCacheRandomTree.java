@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static org.testng.Assert.assertNotNull;
+
 public class TestTreeCacheRandomTree extends BaseTestTreeCache
 {
     /**
@@ -209,7 +211,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     {
         String path = expectedNode.fullPath;
         Map<String, ChildData> cacheChildren = cache.getCurrentChildren(path);
-        Assert.assertNotNull(cacheChildren, path);
+        assertNotNull(cacheChildren, path);
 
         if (withDepth && depth == TEST_DEPTH) {
             return;
@@ -233,7 +235,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     private static void assertNodeEquals(ChildData actualChild, TestNode expectedNode)
     {
         String path = expectedNode.fullPath;
-        Assert.assertNotNull(actualChild, path);
+        assertNotNull(actualChild, path);
         Assert.assertEquals(actualChild.getData(), expectedNode.data, path);
     }
 }

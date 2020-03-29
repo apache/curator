@@ -193,6 +193,16 @@ public class BaseTestTreeCache extends BaseClassForTests
         {
             Assert.assertEquals(event.getData().getData(), expectedData, message);
         }
+
+        if ( event.getType() == TreeCacheEvent.Type.NODE_UPDATED)
+        {
+            Assert.assertNotNull(event.getOldData());
+        }
+        else
+        {
+            Assert.assertNull(event.getOldData());
+        }
+
         return event;
     }
 }

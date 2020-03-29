@@ -26,6 +26,7 @@ public class TreeCacheEvent
 {
     private final Type type;
     private final ChildData data;
+    private final ChildData oldData;
 
     /**
      * Type of change
@@ -113,8 +114,19 @@ public class TreeCacheEvent
      */
     public TreeCacheEvent(Type type, ChildData data)
     {
+        this(type, data, null);
+    }
+
+    /**
+     * @param type event type
+     * @param data event data or null
+     * @param oldData event oldData or null
+     */
+    public TreeCacheEvent(Type type, ChildData data, ChildData oldData)
+    {
         this.type = type;
         this.data = data;
+        this.oldData = oldData;
     }
 
     /**
@@ -131,6 +143,14 @@ public class TreeCacheEvent
     public ChildData getData()
     {
         return data;
+    }
+
+    /**
+     * @return the node's old data when the type is {@link org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type#NODE_UPDATED}
+     */
+    public ChildData getOldData()
+    {
+        return oldData;
     }
 
     @Override
