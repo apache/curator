@@ -816,6 +816,13 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return ensembleTracker;
     }
 
+    @VisibleForTesting
+    volatile CountDownLatch debugCheckBackgroundRetryLatch;
+    @VisibleForTesting
+    volatile CountDownLatch debugCheckBackgroundRetryReadyLatch;
+    @VisibleForTesting
+    volatile KeeperException.Code injectedCode;
+
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     private <DATA_TYPE> boolean checkBackgroundRetry(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
     {
@@ -849,6 +856,26 @@ public class CuratorFrameworkImpl implements CuratorFramework
             if ( e == null )
             {
                 e = new Exception("Unknown result codegetResultCode()");
+            }
+
+            if ( debugCheckBackgroundRetryLatch != null )       // scaffolding to test CURATOR-525
+            {
+                if ( debugCheckBackgroundRetryReadyLatch != null )
+                {
+                    debugCheckBackgroundRetryReadyLatch.countDown();
+                }
+                try
+                {
+                    debugCheckBackgroundRetryLatch.await();
+                    if (injectedCode != null)
+                    {
+                        code = injectedCode;
+                    }
+                }
+                catch ( InterruptedException ex )
+                {
+                    Thread.currentThread().interrupt();
+                }
             }
 
             validateConnection(codeToState(code));
