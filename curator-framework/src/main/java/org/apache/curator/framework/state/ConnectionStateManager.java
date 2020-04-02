@@ -291,16 +291,9 @@ public class ConnectionStateManager implements Closeable
                     if ( (currentConnectionState == ConnectionState.LOST) && client.getZookeeperClient().isConnected() )
                     {
                         // CURATOR-525 - there is a race whereby LOST is sometimes set after the connection has been repaired
-                        // this "hack" fixes it by resetting the connection
-                        log.warn("ConnectionState is LOST but isConnected() is true. Resetting connection.");
-                        try
-                        {
-                            client.getZookeeperClient().reset();
-                        }
-                        catch ( Exception e )
-                        {
-                            log.error("Could not reset connection after LOST/isConnected mismatch");
-                        }
+                        // this "hack" fixes it by forcing the state to RECONNECTED
+                        log.warn("ConnectionState is LOST but isConnected() is true. Forcing RECONNECTED.");
+                        addStateChange(ConnectionState.RECONNECTED);
                     }
                 }
             }
