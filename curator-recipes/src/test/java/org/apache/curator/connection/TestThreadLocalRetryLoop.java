@@ -23,11 +23,13 @@ import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -85,7 +87,14 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
     {
         client.start();
         client.create().forPath("/test");
+        CountDownLatch lostLatch = new CountDownLatch(1);
+        client.getConnectionStateListenable().addListener((__, newState) -> {
+            if (newState == ConnectionState.LOST) {
+                lostLatch.countDown();
+            }
+        });
         server.stop();
+        Assert.assertTrue(timing.awaitLatch(lostLatch));
     }
 
     private Void doLock(CuratorFramework client) throws Exception
