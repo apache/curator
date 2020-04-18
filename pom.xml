@@ -90,6 +90,7 @@
         <clirr-maven-plugin-version>2.8</clirr-maven-plugin-version>
         <dropwizard-version>3.2.5</dropwizard-version>
         <snappy-version>1.1.7</snappy-version>
+        <build-helper-maven-plugin-version>3.1.0</build-helper-maven-plugin-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package/>
@@ -658,6 +659,12 @@
                     <artifactId>clirr-maven-plugin</artifactId>
                     <version>${clirr-maven-plugin-version}</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${build-helper-maven-plugin-version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -919,6 +926,55 @@
                                     </excludes>
                                 </filter>
                             </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <condition property="skip-attaching-original-artifact" else="false">
+                                    <not>
+                                        <or>
+                                            <equals arg1="${project.packaging}" arg2="jar"/>
+                                            <equals arg1="${project.packaging}" arg2="bundle"/>
+                                        </or>
+                                    </not>
+                                </condition>
+                            </target>
+                            <exportAntProperties>true</exportAntProperties>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>${project.build.directory}/original-${project.build.finalName}.jar</file>
+                                    <type>jar</type>
+                                    <classifier>original</classifier>
+                                </artifact>
+                            </artifacts>
+                            <skipAttach>${skip-attaching-original-artifact}</skipAttach>
                         </configuration>
                     </execution>
                 </executions>
