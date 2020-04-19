@@ -936,6 +936,7 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>set-skip-attaching-original-artifact</id>
                         <phase>package</phase>
                         <goals>
                             <goal>run</goal>
@@ -954,6 +955,22 @@
                             <exportAntProperties>true</exportAntProperties>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>rename-original-to-osgi</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <move
+                                    file="${project.build.directory}/original-${project.build.finalName}.jar"
+                                    tofile="${project.build.directory}/osgi-${project.build.finalName}.jar"
+                                />
+                            </target>
+                            <skip>${skip-attaching-original-artifact}</skip>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -969,9 +986,9 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>${project.build.directory}/original-${project.build.finalName}.jar</file>
+                                    <file>${project.build.directory}/osgi-${project.build.finalName}.jar</file>
                                     <type>jar</type>
-                                    <classifier>original</classifier>
+                                    <classifier>osgi</classifier>
                                 </artifact>
                             </artifacts>
                             <skipAttach>${skip-attaching-original-artifact}</skipAttach>
