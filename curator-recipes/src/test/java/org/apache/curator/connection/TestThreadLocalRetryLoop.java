@@ -44,7 +44,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         AtomicInteger count = new AtomicInteger();
         try (CuratorFramework client = newClient(count))
         {
-            prep(client);
+            prep(client, count);
             doOperation(client);
             Assert.assertEquals(count.get(), retryCount + 1);    // Curator's retry policy has been off by 1 since inception - we might consider fixing it someday
         }
@@ -58,7 +58,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         AtomicInteger count = new AtomicInteger();
         try (CuratorFramework client = newClient(count))
         {
-            prep(client);
+            prep(client, count);
             for ( int i = 0; i < threadQty; ++i )
             {
                 executorService.submit(() -> doOperation(client));
@@ -82,7 +82,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         return CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, retryPolicy);
     }
 
-    private void prep(CuratorFramework client) throws Exception
+    private void prep(CuratorFramework client, AtomicInteger count) throws Exception
     {
         client.start();
         client.create().forPath("/test");
@@ -94,6 +94,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         });
         server.stop();
         Assert.assertTrue(timing.awaitLatch(lostLatch));
+        count.set(0);   // in case the server shutdown incremented the count
     }
 
     private Void doOperation(CuratorFramework client) throws Exception
