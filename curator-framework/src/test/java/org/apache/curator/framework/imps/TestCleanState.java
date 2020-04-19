@@ -27,9 +27,11 @@ import java.util.concurrent.Callable;
 
 public class TestCleanState
 {
+    private static final boolean IS_ENABLED = Boolean.getBoolean("PROPERTY_VALIDATE_NO_REMAINING_WATCHERS");
+
     public static void closeAndTestClean(CuratorFramework client)
     {
-        if ( client == null )
+        if ( (client == null) || !IS_ENABLED )
         {
             return;
         }
