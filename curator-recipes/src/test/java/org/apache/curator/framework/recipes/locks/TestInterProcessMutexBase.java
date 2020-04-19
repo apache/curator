@@ -22,7 +22,6 @@ package org.apache.curator.framework.recipes.locks;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -150,7 +149,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -204,7 +203,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            client.close();
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -302,7 +301,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -333,9 +332,9 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                             {
                                 semaphore.acquire();
                                 mutex.acquire();
-                                Assert.assertTrue(hasLock.compareAndSet(false, true));
                                 try
                                 {
+                                    Assert.assertTrue(hasLock.compareAndSet(false, true));
                                     if ( isFirst.compareAndSet(true, false) )
                                     {
                                         semaphore.release(THREAD_QTY - 1);
@@ -368,7 +367,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -414,7 +413,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -431,7 +430,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            TestCleanState.closeAndTestClean(client);
+            CloseableUtils.closeQuietly(client);
         }
     }
 
@@ -569,8 +568,8 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
         finally
         {
-            TestCleanState.closeAndTestClean(client1);
-            TestCleanState.closeAndTestClean(client2);
+            CloseableUtils.closeQuietly(client1);
+            CloseableUtils.closeQuietly(client2);
         }
     }
 }
