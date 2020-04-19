@@ -75,6 +75,42 @@ public class TestFrameworkEdges extends BaseClassForTests
         System.setProperty("zookeeper.extendedTypesEnabled", "true");
     }
 
+    @Test(description = "test case for CURATOR-525")
+    public void testValidateConnectionEventRaces() throws Exception
+    {
+        // test for CURATOR-525 - there is a race whereby Curator can go to LOST
+        // after the connection has been repaired. Prior to the fix, the Curator
+        // instance would become a zombie, never leaving the LOST state
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 2000, 1000, new RetryOneTime(1)))
+        {
+            CuratorFrameworkImpl clientImpl = (CuratorFrameworkImpl)client;
+
+            client.start();
+            client.getChildren().forPath("/");
+            client.create().forPath("/foo");
+
+            BlockingQueue<ConnectionState> stateQueue = new LinkedBlockingQueue<>();
+            client.getConnectionStateListenable().addListener((__, newState) -> stateQueue.add(newState));
+
+            server.stop();
+            Assert.assertEquals(timing.takeFromQueue(stateQueue), ConnectionState.SUSPENDED);
+            Assert.assertEquals(timing.takeFromQueue(stateQueue), ConnectionState.LOST);
+
+            clientImpl.debugCheckBackgroundRetryReadyLatch = new CountDownLatch(1);
+            clientImpl.debugCheckBackgroundRetryLatch = new CountDownLatch(1);
+
+            client.delete().guaranteed().inBackground().forPath("/foo");
+            timing.awaitLatch(clientImpl.debugCheckBackgroundRetryReadyLatch);
+            server.restart();
+            Assert.assertEquals(timing.takeFromQueue(stateQueue), ConnectionState.RECONNECTED);
+            clientImpl.injectedCode = KeeperException.Code.SESSIONEXPIRED;  // simulate an expiration being handled after the connection is repaired
+            clientImpl.debugCheckBackgroundRetryLatch.countDown();
+            Assert.assertEquals(timing.takeFromQueue(stateQueue), ConnectionState.LOST);
+
+            Assert.assertEquals(timing.takeFromQueue(stateQueue), ConnectionState.RECONNECTED);
+        }
+    }
+
     @Test
     public void testInjectSessionExpiration() throws Exception
     {
