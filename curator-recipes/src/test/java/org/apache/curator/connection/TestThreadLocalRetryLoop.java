@@ -22,7 +22,6 @@ import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.compatibility.CuratorTestBase;
@@ -46,7 +45,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         try (CuratorFramework client = newClient(count))
         {
             prep(client);
-            doLock(client);
+            doOperation(client);
             Assert.assertEquals(count.get(), retryCount + 1);    // Curator's retry policy has been off by 1 since inception - we might consider fixing it someday
         }
     }
@@ -62,10 +61,10 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
             prep(client);
             for ( int i = 0; i < threadQty; ++i )
             {
-                executorService.submit(() -> doLock(client));
+                executorService.submit(() -> doOperation(client));
             }
             executorService.shutdown();
-            executorService.awaitTermination(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            Assert.assertTrue(executorService.awaitTermination(timing.milliseconds(), TimeUnit.MILLISECONDS));
             Assert.assertEquals(count.get(), threadQty * (retryCount + 1));    // Curator's retry policy has been off by 1 since inception - we might consider fixing it someday
         }
     }
@@ -97,12 +96,11 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         Assert.assertTrue(timing.awaitLatch(lostLatch));
     }
 
-    private Void doLock(CuratorFramework client) throws Exception
+    private Void doOperation(CuratorFramework client) throws Exception
     {
-        InterProcessReadWriteLock lock = new InterProcessReadWriteLock(client, "/test/lock");
         try
         {
-            lock.readLock().acquire();
+            client.checkExists().forPath("/hey");
             Assert.fail("Should have thrown an exception");
         }
         catch ( KeeperException ignore )
