@@ -971,7 +971,7 @@
                                 <artifact>
                                     <file>${project.build.directory}/original-${project.build.finalName}.jar</file>
                                     <type>jar</type>
-                                    <classifier>original</classifier>
+                                    <classifier>osgi</classifier>
                                 </artifact>
                             </artifacts>
                             <skipAttach>${skip-attaching-original-artifact}</skipAttach>
