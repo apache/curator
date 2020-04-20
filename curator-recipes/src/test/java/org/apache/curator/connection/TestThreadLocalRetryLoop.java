@@ -18,6 +18,7 @@
  */
 package org.apache.curator.connection;
 
+import org.apache.curator.RetryLoop;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.CuratorFramework;
@@ -25,6 +26,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -37,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestThreadLocalRetryLoop extends CuratorTestBase
 {
     private static final int retryCount = 4;
+    private static final String backgroundThreadNameBase = "ignore-curator-background-thread";
 
     @Test(description = "Check for fix for CURATOR-559")
     public void testRecursingRetry() throws Exception
@@ -79,7 +82,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
     private CuratorFramework newClient(AtomicInteger count)
     {
         RetryPolicy retryPolicy = makeRetryPolicy(count);
-        return CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, retryPolicy);
+        return CuratorFrameworkFactory.builder().connectString(server.getConnectString()).connectionTimeoutMs(100).sessionTimeoutMs(100).retryPolicy(retryPolicy).threadFactory(ThreadUtils.newThreadFactory(backgroundThreadNameBase)).build();
     }
 
     private void prep(CuratorFramework client, AtomicInteger count) throws Exception
@@ -88,7 +91,8 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         client.create().forPath("/test");
         CountDownLatch lostLatch = new CountDownLatch(1);
         client.getConnectionStateListenable().addListener((__, newState) -> {
-            if (newState == ConnectionState.LOST) {
+            if ( newState == ConnectionState.LOST )
+            {
                 lostLatch.countDown();
             }
         });
@@ -101,10 +105,13 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
     {
         try
         {
-            client.checkExists().forPath("/hey");
+            RetryLoop.callWithRetry(client.getZookeeperClient(), () -> {
+                client.checkExists().forPath("/hey");
+                return null;
+            });
             Assert.fail("Should have thrown an exception");
         }
-        catch ( KeeperException ignore )
+        catch ( KeeperException dummy )
         {
             // correct
         }
@@ -118,7 +125,10 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
             @Override
             public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
             {
-                count.incrementAndGet();
+                if ( !Thread.currentThread().getName().contains(backgroundThreadNameBase) ) // if it does, it's Curator's background thread - don't count these
+                {
+                    count.incrementAndGet();
+                }
                 return super.allowRetry(retryCount, elapsedTimeMs, sleeper);
             }
         };
