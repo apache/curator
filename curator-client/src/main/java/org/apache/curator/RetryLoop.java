@@ -20,7 +20,6 @@ package org.apache.curator;
 
 import org.apache.curator.connection.ThreadLocalRetryLoop;
 import org.apache.curator.utils.ThreadUtils;
-import org.apache.zookeeper.KeeperException;
 import java.util.concurrent.Callable;
 
 /**
@@ -120,37 +119,6 @@ public abstract class RetryLoop
      * Call this when your operation has successfully completed
      */
     public abstract void markComplete();
-
-    /**
-     * Utility - return true if the given Zookeeper result code is retry-able
-     *
-     * @param rc result code
-     * @return true/false
-     */
-    public static boolean shouldRetry(int rc)
-    {
-        return (rc == KeeperException.Code.CONNECTIONLOSS.intValue()) ||
-            (rc == KeeperException.Code.OPERATIONTIMEOUT.intValue()) ||
-            (rc == KeeperException.Code.SESSIONMOVED.intValue()) ||
-            (rc == KeeperException.Code.SESSIONEXPIRED.intValue()) ||
-            (rc == -13); // KeeperException.Code.NEWCONFIGNOQUORUM.intValue()) - using hard coded value for ZK 3.4.x compatibility
-    }
-
-    /**
-     * Utility - return true if the given exception is retry-able
-     *
-     * @param exception exception to check
-     * @return true/false
-     */
-    public static boolean isRetryException(Throwable exception)
-    {
-        if ( exception instanceof KeeperException )
-        {
-            KeeperException keeperException = (KeeperException)exception;
-            return shouldRetry(keeperException.code().intValue());
-        }
-        return false;
-    }
 
     /**
      * Pass any caught exceptions here

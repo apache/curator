@@ -20,7 +20,6 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.curator.RetryLoop;
@@ -36,14 +35,12 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -770,7 +767,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 }
                 catch ( KeeperException e )
                 {
-                    if ( !RetryLoop.isRetryException(e) )
+                    if ( !client.getZookeeperClient().getRetryPolicy().allowRetry(e) )
                     {
                         throw e;
                     }

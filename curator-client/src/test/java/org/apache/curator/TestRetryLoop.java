@@ -22,7 +22,9 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -160,6 +162,57 @@ public class TestRetryLoop extends BaseClassForTests
             boolean allowed = retryForever.allowRetry(i, 0, sleeper);
             Assert.assertTrue(allowed);
             Mockito.verify(sleeper, times(i + 1)).sleepFor(retryIntervalMs, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Test
+    public void testRetryForeverWithSessionFailed() throws Exception
+    {
+        final Timing timing = new Timing();
+        final RetryPolicy retryPolicy = new SessionFailedRetryPolicy(new RetryForever(1000));
+        final CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, retryPolicy);
+        client.start();
+
+        try
+        {
+            int loopCount = 0;
+            final RetryLoop retryLoop = client.newRetryLoop();
+            while ( retryLoop.shouldContinue()  )
+            {
+                if ( ++loopCount > 1 )
+                {
+                    break;
+                }
+
+                try
+                {
+                    client.getZooKeeper().getTestable().injectSessionExpiration();
+                    client.getZooKeeper().create("/test", new byte[]{1,2,3}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                    retryLoop.markComplete();
+                }
+                catch ( Exception e )
+                {
+                    retryLoop.takeException(e);
+                }
+            }
+
+            Assert.fail("Should failed with SessionExpiredException.");
+        }
+        catch ( Exception e )
+        {
+            if ( e instanceof KeeperException )
+            {
+                int rc = ((KeeperException) e).code().intValue();
+                Assert.assertEquals(rc, KeeperException.Code.SESSIONEXPIRED.intValue());
+            }
+            else
+            {
+                throw e;
+            }
+        }
+        finally
+        {
+            client.close();
         }
     }
 }

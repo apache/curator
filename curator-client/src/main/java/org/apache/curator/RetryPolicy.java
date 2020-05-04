@@ -18,6 +18,8 @@
  */
 package org.apache.curator;
 
+import org.apache.zookeeper.KeeperException;
+
 /**
  * Abstracts the policy to use when retrying connections
  */
@@ -33,5 +35,26 @@ public interface RetryPolicy
      * @param sleeper use this to sleep - DO NOT call Thread.sleep
      * @return true/false
      */
-    public boolean      allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper);
+    boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper);
+
+    /**
+     * Called when an operation has failed with a specific exception. This method
+     * should return true to make another attempt.
+     *
+     * @param exception the cause that this operation failed
+     * @return true/false
+     */
+    default boolean allowRetry(Throwable exception)
+    {
+        if ( exception instanceof KeeperException)
+        {
+            final int rc = ((KeeperException) exception).code().intValue();
+            return (rc == KeeperException.Code.CONNECTIONLOSS.intValue()) ||
+                    (rc == KeeperException.Code.OPERATIONTIMEOUT.intValue()) ||
+                    (rc == KeeperException.Code.SESSIONMOVED.intValue()) ||
+                    (rc == KeeperException.Code.SESSIONEXPIRED.intValue()) ||
+                    (rc == -13); // KeeperException.Code.NEWCONFIGNOQUORUM.intValue()) - using hard coded value for ZK 3.4.x compatibility
+        }
+        return false;
+    }
 }

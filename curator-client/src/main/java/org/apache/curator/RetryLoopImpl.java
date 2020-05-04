@@ -66,7 +66,7 @@ class RetryLoopImpl extends RetryLoop
     public void takeException(Exception exception) throws Exception
     {
         boolean rethrow = true;
-        if ( RetryLoop.isRetryException(exception) )
+        if ( retryPolicy.allowRetry(exception) )
         {
             if ( !Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES) )
             {

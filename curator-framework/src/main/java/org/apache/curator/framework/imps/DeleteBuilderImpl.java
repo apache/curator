@@ -300,7 +300,7 @@ public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<Str
         {
             ThreadUtils.checkInterrupted(e);
             //Only retry a guaranteed delete if it's a retryable error
-            if( (RetryLoop.isRetryException(e) || (e instanceof InterruptedException)) && guaranteed )
+            if ( (client.getZookeeperClient().getRetryPolicy().allowRetry(e) || (e instanceof InterruptedException)) && guaranteed )
             {
                 client.getFailedDeleteManager().addFailedOperation(unfixedPath);
             }
