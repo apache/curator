@@ -153,7 +153,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
         failedRemoveWatcherManager = new FailedRemoveWatchManager(this);
         namespaceFacadeCache = new NamespaceFacadeCache(this);
 
-        ensembleTracker = new EnsembleTracker(this, builder.getEnsembleProvider());
+        ensembleTracker = builder.withEnsembleTracker() ? new EnsembleTracker(this, builder.getEnsembleProvider()) : null;
 
         runSafeService = makeRunSafeService(builder);
     }

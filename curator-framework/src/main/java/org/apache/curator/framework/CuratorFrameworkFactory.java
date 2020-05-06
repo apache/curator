@@ -66,6 +66,7 @@ public class CuratorFrameworkFactory
     private static final DefaultACLProvider DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
     private static final long DEFAULT_INACTIVE_THRESHOLD_MS = (int)TimeUnit.MINUTES.toMillis(3);
     private static final int DEFAULT_CLOSE_WAIT_MS = (int)TimeUnit.SECONDS.toMillis(1);
+    private static final boolean DEFAULT_WITH_ENSEMBLE_TRACKER = true;
 
     /**
      * Return a new builder that builds a CuratorFramework
@@ -129,6 +130,7 @@ public class CuratorFrameworkFactory
     public static class Builder
     {
         private EnsembleProvider ensembleProvider;
+        private boolean withEnsembleTracker = DEFAULT_WITH_ENSEMBLE_TRACKER;
         private int sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
         private int connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
         private int maxCloseWaitMs = DEFAULT_CLOSE_WAIT_MS;
@@ -240,6 +242,29 @@ public class CuratorFrameworkFactory
         {
             this.ensembleProvider = ensembleProvider;
             return this;
+        }
+
+        /**
+         * Allows to configure if the ensemble configuration changes will be watched.
+         * The default value is {@code true}.<br>
+         * 
+         * IMPORTANT: Use this method in combination with {@link #ensembleProvider(EnsembleProvider)} to provide
+         * and instance that returns {@code false} on {@link EnsembleProvider#updateServerListEnabled()} in order
+         * to fully achieve that ensemble server list changes are ignored<br>
+         * 
+         * @param withTracker use {@code false} if you want to avoid following ensemble configuration changes
+         * @return this
+         */
+        public Builder ensembleTracker(boolean withEnsembleTracker) {
+            this.withEnsembleTracker = withEnsembleTracker;
+            return this;
+        }
+
+        /**
+         * @return {@code true} if ensemble configuration changes MUST be watched
+         */
+        public boolean withEnsembleTracker() {
+            return withEnsembleTracker;
         }
 
         /**
