@@ -52,8 +52,7 @@ public interface RetryPolicy
             return (rc == KeeperException.Code.CONNECTIONLOSS.intValue()) ||
                     (rc == KeeperException.Code.OPERATIONTIMEOUT.intValue()) ||
                     (rc == KeeperException.Code.SESSIONMOVED.intValue()) ||
-                    (rc == KeeperException.Code.SESSIONEXPIRED.intValue()) ||
-                    (rc == -13); // KeeperException.Code.NEWCONFIGNOQUORUM.intValue()) - using hard coded value for ZK 3.4.x compatibility
+                    (rc == KeeperException.Code.SESSIONEXPIRED.intValue());
         }
         return false;
     }
