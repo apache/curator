@@ -11,3 +11,5 @@ need to use Curator with ZooKeeper 3.4.x you will need to use a previous version
 * {{newPersistentEphemeralNode(}} and {{newPathChildrenCache}} were removed from {{GroupMember}}
 * {{ServiceCacheBuilder<T> executorService(CloseableExecutorService executorService)} was removed from {{ServiceCacheBuilder}}
 * {{ServiceProviderBuilder<T> executorService(CloseableExecutorService executorService);)} was removed from {{ServiceProviderBuilder}}
+* {{static boolean shouldRetry(int rc);} was removed from {{RetryLoop}}.
+* {{static boolean isRetryException(Throwable exception);} was removed from {{RetryLoop}}.
