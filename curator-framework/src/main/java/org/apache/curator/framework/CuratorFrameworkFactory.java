@@ -249,10 +249,10 @@ public class CuratorFrameworkFactory
          * The default value is {@code true}.<br>
          * 
          * IMPORTANT: Use this method in combination with {@link #ensembleProvider(EnsembleProvider)} to provide
-         * and instance that returns {@code false} on {@link EnsembleProvider#updateServerListEnabled()} in order
+         * an instance that returns {@code false} on {@link EnsembleProvider#updateServerListEnabled()} in order
          * to fully achieve that ensemble server list changes are ignored<br>
          * 
-         * @param withTracker use {@code false} if you want to avoid following ensemble configuration changes
+         * @param withEnsembleTracker use {@code false} if you want to avoid following ensemble configuration changes
          * @return this
          */
         public Builder ensembleTracker(boolean withEnsembleTracker) {
