@@ -637,7 +637,8 @@ public class CuratorFrameworkImpl implements CuratorFramework
         boolean doQueueOperation = false;
         do
         {
-            if ( getZookeeperClient().getRetryPolicy().allowRetry(KeeperException.create(event.getResultCode())) )
+            KeeperException.Code code = KeeperException.Code.get(event.getResultCode());
+            if ( (code != KeeperException.Code.OK) && getZookeeperClient().getRetryPolicy().allowRetry(KeeperException.create(code)) )
             {
                 doQueueOperation = checkBackgroundRetry(operationAndData, event);
                 break;
