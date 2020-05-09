@@ -57,7 +57,14 @@ public class TestPathChildrenCache extends BaseClassForTests
         try
         {
             client.start();
-            client.blockUntilConnected();   // avoid PathChildrenCache connected events
+            CountDownLatch startedLatch = new CountDownLatch(1);
+            client.getConnectionStateListenable().addListener((__, newState) -> {
+                if ( newState == ConnectionState.CONNECTED )
+                {
+                    startedLatch.countDown();
+                }
+            });
+            Assert.assertTrue(timing.awaitLatch(startedLatch));
 
             final BlockingQueue<PathChildrenCacheEvent.Type> events = Queues.newLinkedBlockingQueue();
             PathChildrenCacheListener listener = new PathChildrenCacheListener()
