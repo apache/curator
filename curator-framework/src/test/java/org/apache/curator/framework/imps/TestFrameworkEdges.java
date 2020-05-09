@@ -58,6 +58,8 @@ import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -786,51 +788,46 @@ public class TestFrameworkEdges extends BaseClassForTests
     {
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
         try
         {
             client.start();
-            client.getZookeeperClient().blockUntilConnectedOrTimedOut();
             client2.start();
-            client2.getZookeeperClient().blockUntilConnectedOrTimedOut();
 
-            int childCount = 5000;
+            int childCount = 500;
             for ( int i = 0; i < childCount; i++ )
             {
                 client.create().creatingParentsIfNeeded().forPath("/parent/child" + i);
             }
 
             final CountDownLatch latch = new CountDownLatch(1);
-            new Thread(new Runnable()
-            {
-                @Override
-                public void run()
+            executorService.submit(() -> {
+                try
                 {
-                    long start = System.currentTimeMillis();
-                    try
+                    client.delete().deletingChildrenIfNeeded().forPath("/parent");
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                }
+                catch ( Exception e )
+                {
+                    if ( e instanceof KeeperException.NoNodeException )
                     {
-                        client.delete().deletingChildrenIfNeeded().forPath("/parent");
+                        Assert.fail("client delete failed, shouldn't throw NoNodeException", e);
                     }
-                    catch ( Exception e )
+                    else
                     {
-                        if ( e instanceof KeeperException.NoNodeException )
-                        {
-                            Assert.fail("client delete failed, shouldn't throw NoNodeException", e);
-                        }
-                        else
-                        {
-                            Assert.fail("unexpected exception", e);
-                        }
-                    }
-                    finally
-                    {
-                        log.info("client has deleted children, it costs: {}ms", System.currentTimeMillis() - start);
-                        latch.countDown();
+                        Assert.fail("unexpected exception", e);
                     }
                 }
-            }).start();
+                finally
+                {
+                    latch.countDown();
+                }
+            });
 
             boolean threadDeleted = false;
-            boolean client2Deleted = false;
             Random random = new Random();
             for ( int i = 0; i < childCount; i++ )
             {
@@ -852,20 +849,16 @@ public class TestFrameworkEdges extends BaseClassForTests
                         try
                         {
                             client2.delete().forPath(child);
-                            client2Deleted = true;
                             log.info("client2 deleted the child {} successfully", child);
                             break;
                         }
+                        catch ( KeeperException.NoNodeException ignore )
+                        {
+                            // ignore, because it's deleted by the thread client
+                        }
                         catch ( Exception e )
                         {
-                            if ( e instanceof KeeperException.NoNodeException )
-                            {
-                                // ignore, because it's deleted by the thread client
-                            }
-                            else
-                            {
-                                Assert.fail("unexpected exception", e);
-                            }
+                            Assert.fail("unexpected exception", e);
                         }
                     }
                 }
@@ -875,15 +868,21 @@ public class TestFrameworkEdges extends BaseClassForTests
                 }
             }
 
-            // The case run successfully, if client2 deleted a child successfully and the client deleted children successfully
-            Assert.assertTrue(client2Deleted);
             Assert.assertTrue(timing.awaitLatch(latch));
             Assert.assertNull(client2.checkExists().forPath("/parent"));
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
-            CloseableUtils.closeQuietly(client2);
+            try
+            {
+                executorService.shutdownNow();
+                executorService.awaitTermination(timing.milliseconds(), TimeUnit.MILLISECONDS);
+            }
+            finally
+            {
+                CloseableUtils.closeQuietly(client);
+                CloseableUtils.closeQuietly(client2);
+            }
         }
     }
 }
