@@ -521,7 +521,7 @@ public class TestFrameworkEdges extends BaseClassForTests
             };
             createBuilder.withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath("/");
             String ourPath = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
+            Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", ProtectedUtils.PROTECTED_PREFIX)));
             Assert.assertFalse(createBuilder.failNextCreateForTesting);
         }
         finally
@@ -540,7 +540,7 @@ public class TestFrameworkEdges extends BaseClassForTests
             CreateBuilderImpl createBuilder = (CreateBuilderImpl)client.create();
             createBuilder.failNextCreateForTesting = true;
             String ourPath = createBuilder.withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/");
-            Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", CreateBuilderImpl.PROTECTED_PREFIX)));
+            Assert.assertTrue(ourPath.startsWith(ZKPaths.makePath("/", ProtectedUtils.PROTECTED_PREFIX)));
             Assert.assertFalse(createBuilder.failNextCreateForTesting);
         }
         finally

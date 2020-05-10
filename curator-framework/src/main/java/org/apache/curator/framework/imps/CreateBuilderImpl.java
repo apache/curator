@@ -64,9 +64,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
 
-    @VisibleForTesting
-    static final String PROTECTED_PREFIX = "_c_";
-
     CreateBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
@@ -749,11 +746,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         };
     }
 
-    private static String getProtectedPrefix(String protectedId)
-    {
-        return PROTECTED_PREFIX + protectedId + "-";
-    }
-
     static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final InternalACLProvider aclProvider, final boolean createParentsAsContainers)
     {
         BackgroundOperation<T> operation = new BackgroundOperation<T>()
@@ -1221,13 +1213,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @VisibleForTesting
     String adjustPath(String path) throws Exception
     {
-        if ( protectedMode.doProtected() )
-        {
-            ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-            String name = getProtectedPrefix(protectedMode.protectedId()) + pathAndNode.getNode();
-            path = ZKPaths.makePath(pathAndNode.getPath(), name);
-        }
-        return path;
+        return ProtectedUtils.toProtectedZNodePath(path, protectedMode.protectedId());
     }
 
     /**
@@ -1240,7 +1226,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
      */
     static String findNode(final List<String> children, final String path, final String protectedId)
     {
-        final String protectedPrefix = getProtectedPrefix(protectedId);
+        final String protectedPrefix = ProtectedUtils.getProtectedPrefix(protectedId);
         String foundNode = Iterables.find
             (
                 children,
