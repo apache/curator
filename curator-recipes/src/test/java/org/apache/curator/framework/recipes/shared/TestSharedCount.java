@@ -378,7 +378,6 @@ public class TestSharedCount extends CuratorTestBase
 
         final AtomicInteger numChangeEvents = new AtomicInteger(0);
 
-
         CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(10, 500));
         curatorFramework.start();
         curatorFramework.blockUntilConnected();
@@ -429,7 +428,7 @@ public class TestSharedCount extends CuratorTestBase
 
             // CURATOR-311: when a Curator client's state became RECONNECTED, countHasChanged method is called back
             // because the Curator client calls readValueAndNotifyListenersInBackground in SharedValue#ConnectionStateListener#stateChanged.
-            Assert.assertEquals(numChangeEvents.get(), 3);
+            Assert.assertTrue(numChangeEvents.get() > 2);
         }
         finally
         {
