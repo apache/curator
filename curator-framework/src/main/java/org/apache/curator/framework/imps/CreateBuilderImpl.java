@@ -64,9 +64,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
 
-    @VisibleForTesting
-    static final String PROTECTED_PREFIX = "_c_";
-
     CreateBuilderImpl(CuratorFrameworkImpl client)
     {
         this.client = client;
@@ -751,7 +748,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
     private static String getProtectedPrefix(String protectedId)
     {
-        return PROTECTED_PREFIX + protectedId + "-";
+        return PROTECTED_PREFIX + protectedId + PROTECTED_SEPARATOR;
     }
 
     static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final InternalACLProvider aclProvider, final boolean createParentsAsContainers)
