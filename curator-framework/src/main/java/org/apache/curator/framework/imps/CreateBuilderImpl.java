@@ -746,11 +746,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         };
     }
 
-    private static String getProtectedPrefix(String protectedId)
-    {
-        return PROTECTED_PREFIX + protectedId + PROTECTED_SEPARATOR;
-    }
-
     static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final InternalACLProvider aclProvider, final boolean createParentsAsContainers)
     {
         BackgroundOperation<T> operation = new BackgroundOperation<T>()
@@ -1221,7 +1216,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         if ( protectedMode.doProtected() )
         {
             ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-            String name = getProtectedPrefix(protectedMode.protectedId()) + pathAndNode.getNode();
+            String name = ProtectedUtils.getProtectedPrefix(protectedMode.protectedId()) + pathAndNode.getNode();
             path = ZKPaths.makePath(pathAndNode.getPath(), name);
         }
         return path;
@@ -1237,7 +1232,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
      */
     static String findNode(final List<String> children, final String path, final String protectedId)
     {
-        final String protectedPrefix = getProtectedPrefix(protectedId);
+        final String protectedPrefix = ProtectedUtils.getProtectedPrefix(protectedId);
         String foundNode = Iterables.find
             (
                 children,

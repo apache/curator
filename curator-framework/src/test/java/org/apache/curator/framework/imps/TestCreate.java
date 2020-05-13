@@ -22,7 +22,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.CreateBuilderMain;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -265,31 +264,30 @@ public class TestCreate extends BaseClassForTests
             final List<String> children = client.getChildren().forPath("/parent");
             Assert.assertEquals(1, children.size());
             final String testZNodeName = children.get(0);
-            Assert.assertEquals(testZNodeName.length(), CreateBuilderMain.PROTECTED_PREFIX_WITH_UUID_LENGTH + "test".length());
-            Assert.assertTrue(testZNodeName.startsWith(CreateBuilderMain.PROTECTED_PREFIX));
-            Assert.assertEquals(testZNodeName.charAt(CreateBuilderMain.PROTECTED_PREFIX_WITH_UUID_LENGTH-1), CreateBuilderMain.PROTECTED_SEPARATOR);
-            Assert.assertTrue(CreateBuilderMain.isProtectedZNode(testZNodeName));
-            Assert.assertEquals(CreateBuilderMain.removeProtectedPrefix(testZNodeName), "test");
-            Assert.assertFalse(CreateBuilderMain.isProtectedZNode("parent"));
-            Assert.assertEquals(CreateBuilderMain.removeProtectedPrefix("parent"), "parent");
+            Assert.assertEquals(testZNodeName.length(), ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH + "test".length());
+            Assert.assertTrue(testZNodeName.startsWith(ProtectedUtils.PROTECTED_PREFIX));
+            Assert.assertEquals(testZNodeName.charAt(ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH-1), ProtectedUtils.PROTECTED_SEPARATOR);
+            Assert.assertTrue(ProtectedUtils.isProtectedZNode(testZNodeName));
+            Assert.assertEquals(ProtectedUtils.normalize(testZNodeName), "test");
+            Assert.assertFalse(ProtectedUtils.isProtectedZNode("parent"));
+            Assert.assertEquals(ProtectedUtils.normalize("parent"), "parent");
         }
     }
     
     @Test
-    public void testCreateProtectedUtilsUnit() throws Exception
+    public void testProtectedUtils() throws Exception
     {
         String name = "_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
-        Assert.assertTrue(CreateBuilderMain.isProtectedZNode(name));
-        Assert.assertEquals(CreateBuilderMain.removeProtectedPrefix(name), "yo");
+        Assert.assertTrue(ProtectedUtils.isProtectedZNode(name));
+        Assert.assertEquals(ProtectedUtils.normalize(name), "yo");
         name = "c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
-        Assert.assertFalse(CreateBuilderMain.isProtectedZNode(name));
-        Assert.assertEquals(CreateBuilderMain.removeProtectedPrefix(name), name);
+        Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
+        Assert.assertEquals(ProtectedUtils.normalize(name), name);
         name = "_c_53345f98-hola-4e0c-a7b5-9f819e3ec2e1-yo";
-        Assert.assertFalse(CreateBuilderMain.isProtectedZNode(name));
-        Assert.assertEquals(CreateBuilderMain.removeProtectedPrefix(name), name);
+        Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
+        Assert.assertEquals(ProtectedUtils.normalize(name), name);
         name = "_c_53345f98-hola-4e0c-a7b5-9f819e3ec2e1+yo";
-        Assert.assertFalse(CreateBuilderMain.isProtectedZNode(name));
-        Assert.assertEquals(CreateBuilderMain.removeProtectedPrefix(name), name);
+        Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
+        Assert.assertEquals(ProtectedUtils.normalize(name), name);
     }
-
 }

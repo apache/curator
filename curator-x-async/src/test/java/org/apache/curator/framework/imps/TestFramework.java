@@ -23,7 +23,6 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.CreateBuilderMain;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -409,8 +408,8 @@ public class TestFramework extends BaseClassForTests
             String path = async.create().withOptions(Collections.singleton(CreateOption.doProtected)).forPath("/yo").toCompletableFuture().get();
             String node = ZKPaths.getNodeFromPath(path);
             // CURATOR-489: confirm that the node contains a valid UUID, eg '_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo'
-            Assert.assertTrue(CreateBuilderMain.isProtectedZNode(node));
-            Assert.assertEquals(CreateBuilderMain.removeProtectedPrefix(node), "yo");
+            Assert.assertTrue(ProtectedUtils.isProtectedZNode(node));
+            Assert.assertEquals(ProtectedUtils.normalize(node), "yo");
         }
         finally
         {
