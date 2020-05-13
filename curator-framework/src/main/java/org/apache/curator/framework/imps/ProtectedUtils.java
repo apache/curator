@@ -35,17 +35,17 @@ public final class ProtectedUtils {
     /**
      * First 3 characters in the prefix on ZNode names when using {@link CreateBuilderMain#withProtection()}
      */
-    static final String PROTECTED_PREFIX = "_c_";
+    public static final String PROTECTED_PREFIX = "_c_";
 
     /**
      * Last character used in the prefix on ZNode names when using {@link CreateBuilderMain#withProtection()}
      */
-    static final char PROTECTED_SEPARATOR = '-';
+    public static final char PROTECTED_SEPARATOR = '-';
 
     /**
      * Prefix length on ZNode name when using {@link #withProtection()}
      */
-    static final int PROTECTED_PREFIX_WITH_UUID_LENGTH = 
+    public static final int PROTECTED_PREFIX_WITH_UUID_LENGTH = 
             PROTECTED_PREFIX.length() 
             + 36 // UUID canonical text representation produced by {@link UUID#toString()}
             + 1; // Separator length

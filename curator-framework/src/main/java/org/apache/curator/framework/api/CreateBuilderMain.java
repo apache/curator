@@ -20,6 +20,7 @@ package org.apache.curator.framework.api;
 
 import java.util.UUID;
 
+import org.apache.curator.framework.imps.ProtectedUtils;
 import org.apache.zookeeper.CreateMode;
 
 public interface CreateBuilderMain extends
@@ -29,55 +30,6 @@ public interface CreateBuilderMain extends
     Compressible<CreateBackgroundModeStatACLable>,
     Statable<CreateProtectACLCreateModePathAndBytesable<String>>
 {
-
-    /**
-     * First 3 characters in the prefix on ZNode names when using {@link #withProtection()}
-     */
-    static final String PROTECTED_PREFIX = "_c_";
-
-    /**
-     * Last character used in the prefix on ZNode names when using {@link #withProtection()}
-     */
-    static final char PROTECTED_SEPARATOR = '-';
-
-    /**
-     * Prefix length on ZNode name when using {@link #withProtection()}
-     */
-    static final int PROTECTED_PREFIX_WITH_UUID_LENGTH = 
-            PROTECTED_PREFIX.length() 
-            + 36 // UUID canonical text representation produced by {@link UUID#toString()}
-            + 1; // Separator length
-
-    /**
-     * Utility method to determine if a given ZNode name starts with Curator's generated protected prefix.
-     * 
-     * @param znodeName ZNode name
-     * @return {@code true} if the given ZNode name starts with Curator's generated protected prefix
-     */
-    public static boolean isProtectedZNode(final String znodeName) {
-        if (znodeName.length() > PROTECTED_PREFIX_WITH_UUID_LENGTH
-                && znodeName.startsWith(PROTECTED_PREFIX)
-                && znodeName.charAt(PROTECTED_PREFIX_WITH_UUID_LENGTH-1) == PROTECTED_SEPARATOR
-           ) {
-            try {
-                UUID.fromString(znodeName.substring(PROTECTED_PREFIX.length(), PROTECTED_PREFIX_WITH_UUID_LENGTH-2));
-                return true;
-            } catch (IllegalArgumentException e) {
-                // Just false
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Utility method to remove Curator's generated protected prefix if present
-     * 
-     * @param znodeName ZNode name
-     * @return string without Curator's generated protected prefix if present; original string if prefix not present
-     */
-    public static String removeProtectedPrefix(final String znodeName) {
-        return isProtectedZNode(znodeName) ? znodeName.substring(PROTECTED_PREFIX_WITH_UUID_LENGTH) : znodeName;
-    }
 
     /**
      * Causes any parent nodes to get created if they haven't already been
@@ -128,9 +80,9 @@ public interface CreateBuilderMain extends
      *     Putting the create builder into protection mode works around this.
      *     The name of the node that is created is prefixed with a 40 characters string that is the concatenation of
      *     <ul>
-     *         <li>{@value #PROTECTED_PREFIX}
+     *         <li>{@value ProtectedUtils#PROTECTED_PREFIX}
      *         <li>Canonical text representation of a random generated UUID as produced by {@link UUID#toString()}
-     *         <li>{@value #PROTECTED_SEPARATOR}
+     *         <li>{@value ProtectedUtils#PROTECTED_SEPARATOR}
      *     </ul>
      *     If node creation fails the normal retry mechanism will occur. On the retry, the parent path is first searched
      *     for a node that has previous described prefix in it. If that node is found, it is assumed to be the lost
