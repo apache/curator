@@ -26,6 +26,7 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -34,6 +35,7 @@ import org.testng.annotations.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -266,7 +268,9 @@ public class TestCreate extends BaseClassForTests
             final String testZNodeName = children.get(0);
             Assert.assertEquals(testZNodeName.length(), ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH + "test".length());
             Assert.assertTrue(testZNodeName.startsWith(ProtectedUtils.PROTECTED_PREFIX));
-            Assert.assertEquals(testZNodeName.charAt(ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH-1), ProtectedUtils.PROTECTED_SEPARATOR);
+            Assert.assertEquals(
+                testZNodeName.charAt(ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH-1),
+                ProtectedUtils.PROTECTED_SEPARATOR);
             Assert.assertTrue(ProtectedUtils.isProtectedZNode(testZNodeName));
             Assert.assertEquals(ProtectedUtils.normalize(testZNodeName), "test");
             Assert.assertFalse(ProtectedUtils.isProtectedZNode("parent"));
@@ -280,14 +284,28 @@ public class TestCreate extends BaseClassForTests
         String name = "_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
         Assert.assertTrue(ProtectedUtils.isProtectedZNode(name));
         Assert.assertEquals(ProtectedUtils.normalize(name), "yo");
+        Assert.assertEquals(ProtectedUtils.extractProtectedId(name).get(), "53345f98-9423-4e0c-a7b5-9f819e3ec2e1");
         name = "c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
         Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
         Assert.assertEquals(ProtectedUtils.normalize(name), name);
+        Assert.assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
         name = "_c_53345f98-hola-4e0c-a7b5-9f819e3ec2e1-yo";
         Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
         Assert.assertEquals(ProtectedUtils.normalize(name), name);
+        Assert.assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
         name = "_c_53345f98-hola-4e0c-a7b5-9f819e3ec2e1+yo";
         Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
         Assert.assertEquals(ProtectedUtils.normalize(name), name);
+        Assert.assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
+        name = "_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
+        Assert.assertEquals(name, ProtectedUtils.toProtectedZNode("yo", "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"));
+        Assert.assertEquals("yo", ProtectedUtils.toProtectedZNode("yo", null));
+        String path = ZKPaths.makePath("hola", "yo");
+        Assert.assertEquals(
+            ProtectedUtils.toProtectedZNodePath(path, "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"),
+            ZKPaths.makePath("hola", name));
+        Assert.assertEquals(ProtectedUtils.toProtectedZNodePath(path, null),path);
+        path = ZKPaths.makePath("hola", name);
+        Assert.assertEquals(ProtectedUtils.normalizePath(path), "/hola/yo");
     }
 }

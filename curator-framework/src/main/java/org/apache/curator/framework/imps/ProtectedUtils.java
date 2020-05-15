@@ -19,9 +19,13 @@
 
 package org.apache.curator.framework.imps;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.curator.framework.api.CreateBuilderMain;
+import org.apache.curator.utils.ZKPaths;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Utility class to handle ZNode names when using {@link CreateBuilderMain#withProtection()}
@@ -35,17 +39,20 @@ public final class ProtectedUtils {
     /**
      * First 3 characters in the prefix on ZNode names when using {@link CreateBuilderMain#withProtection()}
      */
-    public static final String PROTECTED_PREFIX = "_c_";
+    @VisibleForTesting
+    static final String PROTECTED_PREFIX = "_c_";
 
     /**
      * Last character used in the prefix on ZNode names when using {@link CreateBuilderMain#withProtection()}
      */
-    public static final char PROTECTED_SEPARATOR = '-';
+    @VisibleForTesting
+    static final char PROTECTED_SEPARATOR = '-';
 
     /**
      * Prefix length on ZNode name when using {@link #withProtection()}
      */
-    public static final int PROTECTED_PREFIX_WITH_UUID_LENGTH = 
+    @VisibleForTesting
+    static final int PROTECTED_PREFIX_WITH_UUID_LENGTH = 
             PROTECTED_PREFIX.length() 
             + 36 // UUID canonical text representation produced by {@link UUID#toString()}
             + 1; // Separator length
@@ -57,9 +64,14 @@ public final class ProtectedUtils {
      * @param protectedId canonical text representation of a UUID
      * @return string that concatenates {@value #PROTECTED_PREFIX}, the given id and {@value #PROTECTED_SEPARATOR}
      */
-    static String getProtectedPrefix(final String protectedId)
+    public static String getProtectedPrefix(final String protectedId)
     {
         return PROTECTED_PREFIX + protectedId + PROTECTED_SEPARATOR;
+    }
+
+    /** Extracts protectedId assuming provided name has a valid protected format */
+    private static String extractProtectedIdInternal(final String znodeName) {
+        return znodeName.substring(PROTECTED_PREFIX.length(), PROTECTED_PREFIX_WITH_UUID_LENGTH-1);
     }
 
     /**
@@ -74,7 +86,7 @@ public final class ProtectedUtils {
                 && znodeName.charAt(PROTECTED_PREFIX_WITH_UUID_LENGTH-1) == PROTECTED_SEPARATOR
            ) {
             try {
-                UUID.fromString(znodeName.substring(PROTECTED_PREFIX.length(), PROTECTED_PREFIX_WITH_UUID_LENGTH-2));
+                UUID.fromString(extractProtectedIdInternal(znodeName));
                 return true;
             } catch (IllegalArgumentException e) {
                 // Not an UUID
@@ -91,5 +103,55 @@ public final class ProtectedUtils {
      */
     public static String normalize(final String znodeName) {
         return isProtectedZNode(znodeName) ? znodeName.substring(PROTECTED_PREFIX_WITH_UUID_LENGTH) : znodeName;
+    }
+
+    /**
+     * Utility method to provide a path removing Curator's generated protected prefix if present in the ZNode name
+     * 
+     * @param path ZNode path
+     * @return string without Curator's generated protected prefix if present in ZNode name; original string if prefix not present
+     */
+    public static String normalizePath(final String path) {
+        final ZKPaths.PathAndNode pathAndNode =  ZKPaths.getPathAndNode(path);
+        final String name = pathAndNode.getNode();
+        return isProtectedZNode(name) ? ZKPaths.makePath(pathAndNode.getPath(), normalize(name)) : path;
+    }
+
+    /**
+     * Extracts protectedId in case the provided name is protected
+     * 
+     * @param znodeName name of the ZNode
+     * @return Optional with protectedId if the name is protected or {@code Optional#empty()}
+     */
+    public static Optional<String> extractProtectedId(final String znodeName) {
+        return Optional.<String>ofNullable(isProtectedZNode(znodeName) ? extractProtectedIdInternal(znodeName) : null);
+    }
+
+    /**
+     * Converts a given ZNode name to protected format
+     * 
+     * @param znodeName name to be converted (e.g. 'name1')
+     * @param protectedId UUID canonical text representation used in protection mode (e.g. '53345f98-9423-4e0c-a7b5-9f819e3ec2e1') 
+     * @return name with protected mode prefix (e.g. '_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-name1')
+     *         or the same name if protectedId is {@code null}
+     */
+    public static String toProtectedZNode (final String znodeName, final String protectedId) {
+        return (protectedId == null) ? znodeName : getProtectedPrefix(protectedId) + znodeName;
+    }
+
+    /**
+     * Converts a given path to protected format
+     * 
+     * @param path complete path to be converted (e.g. '/root/path1')
+     * @param protectedId UUID canonical text representation used in protection mode (e.g. '53345f98-9423-4e0c-a7b5-9f819e3ec2e1') 
+     * @return path with protected mode prefix (e.g. '/root/_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-path1')
+     *         or the same path if protectedId is {@code null}
+     */
+    public static String toProtectedZNodePath (final String path, final String protectedId) {
+        if (protectedId == null) {
+            return path;
+        }
+        final ZKPaths.PathAndNode pathAndNode =  ZKPaths.getPathAndNode(path);
+        return ZKPaths.makePath(pathAndNode.getPath(), toProtectedZNode(pathAndNode.getNode(), protectedId));
     }
 }

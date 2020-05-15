@@ -1213,13 +1213,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @VisibleForTesting
     String adjustPath(String path) throws Exception
     {
-        if ( protectedMode.doProtected() )
-        {
-            ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-            String name = ProtectedUtils.getProtectedPrefix(protectedMode.protectedId()) + pathAndNode.getNode();
-            path = ZKPaths.makePath(pathAndNode.getPath(), name);
-        }
-        return path;
+        return ProtectedUtils.toProtectedZNodePath(path, protectedMode.protectedId());
     }
 
     /**
