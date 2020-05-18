@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>5.0.0-SNAPSHOT</version>
+    <version>5.0.0</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -93,13 +93,13 @@
         <build-helper-maven-plugin-version>3.1.0</build-helper-maven-plugin-version>
 
         <!-- OSGi Properties -->
-        <osgi.export.package/>
-        <osgi.import.package/>
-        <osgi.private.package/>
-        <osgi.dynamic.import/>
-        <osgi.require.bundle/>
-        <osgi.export.service/>
-        <osgi.activator/>
+        <osgi.export.package />
+        <osgi.import.package />
+        <osgi.private.package />
+        <osgi.dynamic.import />
+        <osgi.require.bundle />
+        <osgi.export.service />
+        <osgi.activator />
     </properties>
 
     <scm>
@@ -107,7 +107,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/curator.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/curator.git
         </developerConnection>
-        <tag>apache-curator-3.2.0</tag>
+        <tag>apache-curator-5.0.0</tag>
     </scm>
 
     <issueManagement>
@@ -935,8 +935,8 @@
                                 <condition property="skip-attaching-original-artifact" else="false">
                                     <not>
                                         <or>
-                                            <equals arg1="${project.packaging}" arg2="jar"/>
-                                            <equals arg1="${project.packaging}" arg2="bundle"/>
+                                            <equals arg1="${project.packaging}" arg2="jar" />
+                                            <equals arg1="${project.packaging}" arg2="bundle" />
                                         </or>
                                     </not>
                                 </condition>
