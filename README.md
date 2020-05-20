@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/apache/curator.svg?branch=master)](https://travis-ci.org/apache/curator)
 [![Maven Central](https://img.shields.io/maven-central/v/org.apache.curator/apache-curator.svg?logo=Apache+Maven&logoColor=blue)](http://search.maven.org/#search%7Cga%7C1%7Capache-curator)
-[![Curator Website](https://img.shields.io/badge/curator-website-red?logo=Apache&logoColor=red)](https://curator.apache.org)
+[![Curator Website](https://img.shields.io/badge/curator-Curator_Website-red?logo=Apache&logoColor=red)](https://curator.apache.org)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-Curator_Help-orange?logo=Stack+Overflow&logoColor=orange)](https://stackoverflow.com/questions/tagged/apache-curator)
 
 
