@@ -12,7 +12,7 @@ Apache Curator is a Java/JVM client library for [Apache ZooKeeper](https://zooke
 
 Apache Curator includes a high-level API framework and utilities to make using Apache ZooKeeper much easier and more reliable. It also includes recipes for common use cases and extensions such as service discovery and a Java 8 asynchronous DSL.
 
-For more details, please visit the project website: 
+For more details:
 
 - Apache Curator Website: http://curator.apache.org/
 - Binaries on Maven Central: [http://search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Capache-curator)
