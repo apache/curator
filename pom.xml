@@ -309,6 +309,18 @@
             </roles>
             <url>https://people.apache.org/~shayshim</url>
         </developer>
+
+        <developer>
+            <id>eolivelli</id>
+            <name>Enrico Olivelli</name>
+            <email>eolivelli@apache.org</email>
+            <timezone>+1</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>https://people.apache.org/~eolivelli</url>
+        </developer>
     </developers>
 
     <modules>
