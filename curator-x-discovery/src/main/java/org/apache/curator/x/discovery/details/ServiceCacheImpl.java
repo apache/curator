@@ -84,7 +84,7 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
             .withDataNotCached()
             .build();
         CuratorCacheListener listener = CuratorCacheListener.builder()
-            .forPathChildrenCache(discovery.getClient(), this)
+            .forPathChildrenCache(path, discovery.getClient(), this)
             .forInitialized(this::initialized)
             .build();
         cache.listenable().addListener(listener);

@@ -86,11 +86,12 @@ public interface CuratorCacheListenerBuilder
      * behaves differently than {@link org.apache.curator.framework.recipes.cache.PathChildrenCache} so
      * things such as event ordering will likely be different.
      *
+     * @param rootPath the root path. The listener needs this information in order to bridge only events for children of this path and not the path itself
      * @param client the curator client
      * @param listener the listener to wrap
      * @return a CuratorCacheListener that forwards to the given listener
      */
-    CuratorCacheListenerBuilder forPathChildrenCache(CuratorFramework client, PathChildrenCacheListener listener);
+    CuratorCacheListenerBuilder forPathChildrenCache(String rootPath, CuratorFramework client, PathChildrenCacheListener listener);
 
     /**
      * Bridge listener. You can reuse old-style {@link org.apache.curator.framework.recipes.cache.TreeCacheListener}s

@@ -106,9 +106,9 @@ class CuratorCacheListenerBuilderImpl implements CuratorCacheListenerBuilder
     }
 
     @Override
-    public CuratorCacheListenerBuilder forPathChildrenCache(CuratorFramework client, PathChildrenCacheListener listener)
+    public CuratorCacheListenerBuilder forPathChildrenCache(String rootPath, CuratorFramework client, PathChildrenCacheListener listener)
     {
-        listeners.add(new PathChildrenCacheListenerWrapper(client, listener));
+        listeners.add(new PathChildrenCacheListenerWrapper(rootPath, client, listener));
         return this;
     }
 
