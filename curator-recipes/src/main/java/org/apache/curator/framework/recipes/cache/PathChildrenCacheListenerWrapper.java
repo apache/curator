@@ -19,15 +19,19 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import java.util.Objects;
 import org.apache.curator.framework.CuratorFramework;
 
 class PathChildrenCacheListenerWrapper implements CuratorCacheListener
 {
     private final PathChildrenCacheListener listener;
     private final CuratorFramework client;
+    private final String rootPath;
 
-    PathChildrenCacheListenerWrapper(CuratorFramework client, PathChildrenCacheListener listener)
+    PathChildrenCacheListenerWrapper(String rootPath, CuratorFramework client, PathChildrenCacheListener listener)
     {
+        Objects.requireNonNull(rootPath,"rootPath cannot be null");
+        this.rootPath = rootPath;
         this.listener = listener;
         this.client = client;
     }
@@ -39,18 +43,27 @@ class PathChildrenCacheListenerWrapper implements CuratorCacheListener
         {
             case NODE_CREATED:
             {
+                if (rootPath.equals(data.getPath())) {
+                    return;
+                }
                 sendEvent(data, PathChildrenCacheEvent.Type.CHILD_ADDED);
                 break;
             }
 
             case NODE_CHANGED:
             {
+                if (rootPath.equals(data.getPath())) {
+                    return;
+                }
                 sendEvent(data, PathChildrenCacheEvent.Type.CHILD_UPDATED);
                 break;
             }
 
             case NODE_DELETED:
             {
+                if (rootPath.equals(oldData.getPath())) {
+                    return;
+                }
                 sendEvent(oldData, PathChildrenCacheEvent.Type.CHILD_REMOVED);
                 break;
             }

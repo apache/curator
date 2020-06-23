@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import static org.apache.curator.framework.recipes.cache.CuratorCache.Options.SINGLE_NODE_CACHE;
 import static org.apache.curator.framework.recipes.cache.CuratorCacheAccessor.parentPathFilter;
 import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.builder;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Test(groups = CuratorTestBase.zk36Group)
 public class TestCuratorCacheWrappers extends CuratorTestBase
@@ -51,16 +52,18 @@ public class TestCuratorCacheWrappers extends CuratorTestBase
             client.start();
             client.create().forPath("/test");
 
+            final CopyOnWriteArrayList<PathChildrenCacheEvent> eventsTrace = new CopyOnWriteArrayList<>();
             final BlockingQueue<PathChildrenCacheEvent.Type> events = new LinkedBlockingQueue<>();
             try (CuratorCache cache = CuratorCache.build(client, "/test"))
             {
                 PathChildrenCacheListener listener = (__, event) -> {
+                    eventsTrace.add(event);
                     if ( event.getData().getPath().equals("/test/one") )
                     {
                         events.offer(event.getType());
                     }
                 };
-                cache.listenable().addListener(builder().forPathChildrenCache(client, listener).build());
+                cache.listenable().addListener(builder().forPathChildrenCache("/test", client, listener).build());
                 cache.start();
 
                 client.create().forPath("/test/one", "hey there".getBytes());
@@ -72,6 +75,24 @@ public class TestCuratorCacheWrappers extends CuratorTestBase
 
                 client.delete().forPath("/test/one");
                 Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+
+                // Please note that there is not guarantee on the order of events
+                // For instance INITIALIZED event can appear in the middle of the observed sequence.
+                for (PathChildrenCacheEvent event : eventsTrace) {
+                    switch (event.getType()) {
+                        case CHILD_ADDED:
+                        case CHILD_REMOVED:
+                        case CHILD_UPDATED:
+                            Assert.assertEquals("/test/one", event.getData().getPath());
+                            break;
+                        case INITIALIZED:
+                            Assert.assertNull(event.getData());
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+                Assert.assertEquals(eventsTrace.size(), 4);
             }
         }
     }
