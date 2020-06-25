@@ -22,10 +22,10 @@
 #
 # Usage: ./merge-pr.py (see config env vars below)
 #
-# This utility assumes you already have a local ZooKeeper git folder and that you
+# This utility assumes you already have a local Curator git folder and that you
 # have added remotes corresponding to both:
-# (i) the github apache ZooKeeper mirror and
-# (ii) the apache ZooKeeper git repo.
+# (i) the github apache Curator mirror and
+# (ii) the apache Curator git repo.
 
 import json
 import os
@@ -334,23 +334,23 @@ def standardize_jira_ref(text):
     Standardize the jira reference commit message prefix to "PROJECT_NAME-XXX: Issue"
 
     >>> standardize_jira_ref("%s-5954: Top by key" % CAPITALIZED_PROJECT_NAME)
-    'ZOOKEEPER-5954: Top by key'
+    'CURATOR-5954: Top by key'
     >>> standardize_jira_ref("%s-5821: ParquetRelation2 CTAS should check if delete is successful" % PROJECT_NAME)
-    'ZOOKEEPER-5821: ParquetRelation2 CTAS should check if delete is successful'
+    'CURATOR-5821: ParquetRelation2 CTAS should check if delete is successful'
     >>> standardize_jira_ref("%s-4123: [WIP] Show new dependencies added in pull requests" % PROJECT_NAME)
-    'ZOOKEEPER-4123: [WIP] Show new dependencies added in pull requests'
+    'CURATOR-4123: [WIP] Show new dependencies added in pull requests'
     >>> standardize_jira_ref("%s  5954: Top by key" % PROJECT_NAME)
-    'ZOOKEEPER-5954: Top by key'
+    'CURATOR-5954: Top by key'
     >>> standardize_jira_ref("%s-979: a LRU scheduler for load balancing in TaskSchedulerImpl" % PROJECT_NAME)
-    'ZOOKEEPER-979: a LRU scheduler for load balancing in TaskSchedulerImpl'
+    'CURATOR-979: a LRU scheduler for load balancing in TaskSchedulerImpl'
     >>> standardize_jira_ref("%s-1094: Support MiMa for reporting binary compatibility across versions." % CAPITALIZED_PROJECT_NAME)
-    'ZOOKEEPER-1094: Support MiMa for reporting binary compatibility across versions.'
+    'CURATOR-1094: Support MiMa for reporting binary compatibility across versions.'
     >>> standardize_jira_ref("%s-1146: [WIP] Vagrant support" % CAPITALIZED_PROJECT_NAME)
-    'ZOOKEEPER-1146: [WIP] Vagrant support'
+    'CURATOR-1146: [WIP] Vagrant support'
     >>> standardize_jira_ref("%s-1032: If Yarn app fails before registering, app master stays aroun..." % PROJECT_NAME)
-    'ZOOKEEPER-1032: If Yarn app fails before registering, app master stays aroun...'
+    'CURATOR-1032: If Yarn app fails before registering, app master stays aroun...'
     >>> standardize_jira_ref("%s-6250 %s-6146 %s-5911: Types are now reserved words in DDL parser." % (PROJECT_NAME, PROJECT_NAME, CAPITALIZED_PROJECT_NAME))
-    'ZOOKEEPER-6250 ZOOKEEPER-6146 ZOOKEEPER-5911: Types are now reserved words in DDL parser.'
+    'CURATOR-6250 CURATOR-6146 CURATOR-5911: Types are now reserved words in DDL parser.'
     >>> standardize_jira_ref("Additional information for users building from source code")
     'Additional information for users building from source code'
     """
