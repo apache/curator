@@ -4,6 +4,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/org.apache.curator/apache-curator.svg?logo=Apache+Maven&logoColor=blue)](http://search.maven.org/#search%7Cga%7C1%7Capache-curator)
 [![Curator Website](https://img.shields.io/badge/curator-Curator_Website-red?logo=Apache&logoColor=red)](https://curator.apache.org)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-Curator_Help-orange?logo=Stack+Overflow&logoColor=orange)](https://stackoverflow.com/questions/tagged/apache-curator)
+[![Twitter](https://img.shields.io/badge/Follow-@Curator-55acee?logo=Twitter&logoColor=55acee)](https://twitter.com/intent/follow?original_referer=https%3A%2F%2Fgithub.com%2Fapache%2Fcurator&ref_src=twsrc%5Etfw&region=follow_link&screen_name=ApacheCurator&tw_p=followbutton)
 
 
 ## What's is Apache Curator?
