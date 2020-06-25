@@ -67,7 +67,7 @@ JIRA_API_BASE = "https://issues.apache.org/jira"
 # Prefix added to temporary branches
 TEMP_BRANCH_PREFIX = "PR_TOOL"
 # TODO Introduce a convention as this is too brittle
-RELEASE_BRANCH_PREFIX = "branch-"
+RELEASE_BRANCH_PREFIX = "curator-"
 
 DEV_BRANCH_NAME = "master"
 
@@ -440,8 +440,9 @@ def main():
     check_git_remote()
 
     branches = get_json("%s/branches" % GITHUB_API_BASE)
+    
     branch_names = [x for x in [x['name'] for x in branches] if x.startswith(RELEASE_BRANCH_PREFIX)]
-    # Assumes branch names can be sorted lexicographically
+    
     latest_branch = sorted(branch_names, reverse=True)[0]
 
     pr_num = input("Which pull request would you like to merge? (e.g. 34): ")
