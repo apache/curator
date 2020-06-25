@@ -226,13 +226,12 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     private void internalRunFromConfig(ServerConfig config) throws IOException
     {
         log.info("Starting server");
-        FileTxnSnapLog txnLog = null;
         try {
             // Note that this thread isn't going to be doing anything else,
             // so rather than spawning another thread, we will just call
             // run() in this thread.
             // create a file logger url from the command line args
-            txnLog = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
+            FileTxnSnapLog txnLog = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
             zkServer = new TestZooKeeperServer(txnLog, config);
 
             try
@@ -261,20 +260,33 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             // warn, but generally this is ok
             Thread.currentThread().interrupt();
             log.warn("Server interrupted", e);
-        } finally {
-            if (txnLog != null) {
-                txnLog.close();
-            }
         }
     }
 
     public static class TestZooKeeperServer extends ZooKeeperServer
     {
+        private final FileTxnSnapLog txnLog;
+
         public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config)
         {
+            this.txnLog = txnLog;
             this.setTxnLogFactory(txnLog);
             this.setMinSessionTimeout(config.getMinSessionTimeout());
             this.setMaxSessionTimeout(config.getMaxSessionTimeout());
+        }
+
+        @Override
+        public synchronized void shutdown(boolean fullyShutDown)
+        {
+            super.shutdown(fullyShutDown);
+            try
+            {
+                txnLog.close();
+            }
+            catch ( IOException e )
+            {
+                // ignore
+            }
         }
 
         private final AtomicBoolean isRunning = new AtomicBoolean(false);
