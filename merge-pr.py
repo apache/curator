@@ -71,7 +71,7 @@ RELEASE_BRANCH_PREFIX = "curator"
 
 DEV_BRANCH_NAME = "master"
 
-DEFAULT_FIX_VERSION = os.environ.get("DEFAULT_FIX_VERSION", "branch-3.5")
+DEFAULT_FIX_VERSION = os.environ.get("DEFAULT_FIX_VERSION", "master")
 
 def get_json(url):
     try:
@@ -441,7 +441,7 @@ def main():
 
     branches = get_json("%s/branches" % GITHUB_API_BASE)
     
-    branch_names = [x for x in [x['name'] for x in branches] if x.startswith(RELEASE_BRANCH_PREFIX)]
+    branch_names = [x for x in [x['name'] for x in branches]]
     
     latest_branch = sorted(branch_names, reverse=True)[0]
 
