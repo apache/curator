@@ -799,6 +799,7 @@
                 <configuration>
                     <header>src/etc/header.txt</header>
                     <excludes>
+                        <exclude>**/merge-pr.py</exclude>
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/help.txt</exclude>
                         <exclude>**/*.rdf</exclude>
