@@ -52,6 +52,8 @@
     </organization>
 
     <properties>
+        <currentStableVersion>5.1.0</currentStableVersion>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -800,6 +802,7 @@
                     <header>src/etc/header.txt</header>
                     <excludes>
                         <exclude>**/*.confluence</exclude>
+                        <exclude>**/*.confluence.vm</exclude>
                         <exclude>**/help.txt</exclude>
                         <exclude>**/*.rdf</exclude>
                         <exclude>**/.gitignore</exclude>

@@ -8,6 +8,10 @@ Apache Curator is a Java/JVM client library for [[Apache ZooKeeper|https://zooke
 
 !images/ph-quote.png!
 
+h2. Download
+
+[[Download Apache Curator|releases.html]] from the release page.
+
 h2. Important Compatibility Updates
 
 Note: version 5.0 of Curator has a few breaking changes. Please read the details here:
