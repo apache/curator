@@ -323,6 +323,18 @@
             </roles>
             <url>https://people.apache.org/~eolivelli</url>
         </developer>
+
+        <developer>
+            <id>tison</id>
+            <name>Zili Chen</name>
+            <email>tison@apache.org</email>
+            <timezone>+8</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>https://github.com/tisonkun/</url>
+        </developer>
     </developers>
 
     <modules>
